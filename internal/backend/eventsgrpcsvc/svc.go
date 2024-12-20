@@ -76,6 +76,16 @@ func (s *server) List(ctx context.Context, req *connect.Request[eventsv1.ListReq
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
+	pid, err := sdktypes.ParseProjectID(msg.ProjectId)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	oid, err := sdktypes.ParseOrgID(msg.OrgId)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
 	order := sdkservices.ListOrder(msg.Order)
 
 	// set default order if not set
@@ -90,6 +100,8 @@ func (s *server) List(ctx context.Context, req *connect.Request[eventsv1.ListReq
 	}
 
 	filter := sdkservices.ListEventsFilter{
+		OrgID:         oid,
+		ProjectID:     pid,
 		IntegrationID: iid,
 		DestinationID: did,
 		EventType:     msg.EventType,
@@ -99,7 +111,7 @@ func (s *server) List(ctx context.Context, req *connect.Request[eventsv1.ListReq
 
 	events, err := s.events.List(ctx, filter)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeUnknown, fmt.Errorf("server error: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	eventspb := kittehs.Transform(events, sdktypes.ToProto)
@@ -129,7 +141,7 @@ func (s *server) Save(ctx context.Context, req *connect.Request[eventsv1.SaveReq
 
 	eid, err := s.events.Save(ctx, event)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeUnknown, fmt.Errorf("server error: %w", err))
+		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&eventsv1.SaveResponse{EventId: eid.String()}), nil
