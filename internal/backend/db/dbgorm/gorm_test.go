@@ -23,7 +23,6 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/backend/gormkitteh"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -35,6 +34,8 @@ var (
 	dbType string
 	gormDB gormdb
 	id     int64 // running testID
+
+	testIntegrationID = sdktypes.NewIntegrationIDFromName("test").UUIDValue()
 )
 
 func TestMain(m *testing.M) {
@@ -58,7 +59,6 @@ func TestMain(m *testing.M) {
 	db := setupDB(cfg)
 	z := kittehs.Must1(zap.NewDevelopment())
 	gormDB = gormdb{db: db, cfg: cfg, mu: nil, z: z}
-	gormDB.setupOwnershipChecker(z)
 
 	ctx := context.Background()
 	if err := gormDB.Setup(ctx); err != nil { // ensure migration/schemas
@@ -105,7 +105,7 @@ type dbFixture struct {
 	eventSequence int
 }
 
-func newTestID() sdktypes.UUID {
+func newTestID() uuid.UUID {
 	bytes := make([]byte, 16)
 	id += 1
 	binary.BigEndian.PutUint64(bytes[8:], uint64(id)) // fill the last 8 bytes, leave the first 8 bytes as zero
@@ -113,7 +113,7 @@ func newTestID() sdktypes.UUID {
 	return kittehs.Must1(uuid.FromBytes(bytes[:]))
 }
 
-func idToName(id sdktypes.UUID, prefix string) string {
+func idToName(id uuid.UUID, prefix string) string {
 	idStr := id.String()
 	if len(idStr) > 10 {
 		idStr = idStr[len(idStr)-10:]
@@ -214,11 +214,6 @@ func newDBFixture() *dbFixture {
 	return &f
 }
 
-func (f *dbFixture) withUser(user sdktypes.User) *dbFixture {
-	f.ctx = authcontext.SetAuthnUser(f.ctx, user)
-	return f
-}
-
 func (f *dbFixture) WithForeignKeysDisabled(fn func()) {
 	foreignKeys(f.gormdb, false) // disable
 	fn()
@@ -257,7 +252,6 @@ func findAndAssertOne[T any](t *testing.T, f *dbFixture, schemaObj T, where stri
 
 // check obj is soft-deleted in gorm
 func assertSoftDeleted[T any](t *testing.T, f *dbFixture, m T) {
-	// check that object is not found without unscoped (due to deleted_at)
 	res := f.db.First(&m)
 	require.ErrorIs(t, res.Error, gorm.ErrRecordNotFound)
 
@@ -292,19 +286,20 @@ func (f *dbFixture) newSession(args ...any) scheme.Session {
 		// CurrentStateType: int(st.ToProto()),
 		Inputs:     datatypes.JSON([]byte("{}")),
 		Entrypoint: "loc",
-		CreatedAt:  now,
-		UpdatedAt:  now,
+		Base: scheme.Base{
+			CreatedAt: now,
+		},
 	}
 	for _, a := range args {
 		switch a := a.(type) {
 		case sdktypes.SessionStateType:
 			s.CurrentStateType = int(a.ToProto())
 		case scheme.Build:
-			s.BuildID = &a.BuildID
+			s.BuildID = a.BuildID
 		case scheme.Deployment:
 			s.DeploymentID = &a.DeploymentID
 		case scheme.Project:
-			s.ProjectID = &a.ProjectID
+			s.ProjectID = a.ProjectID
 		case scheme.Event:
 			s.EventID = &a.EventID
 		}
@@ -320,14 +315,14 @@ func (f *dbFixture) newSessionLogRecord() scheme.SessionLogRecord {
 
 func (f *dbFixture) newBuild(args ...any) scheme.Build {
 	b := scheme.Build{
-		BuildID:   newTestID(),
-		Data:      []byte{},
-		CreatedAt: now,
+		BuildID: newTestID(),
+		Data:    []byte{},
+		Base:    scheme.Base{CreatedAt: now},
 	}
 	for _, a := range args {
 		switch a := a.(type) {
 		case scheme.Project:
-			b.ProjectID = &a.ProjectID
+			b.ProjectID = a.ProjectID
 		}
 	}
 	return b
@@ -337,15 +332,14 @@ func (f *dbFixture) newDeployment(args ...any) scheme.Deployment {
 	d := scheme.Deployment{
 		DeploymentID: newTestID(),
 		State:        int32(sdktypes.DeploymentStateUnspecified.ToProto()),
-		CreatedAt:    now,
-		UpdatedAt:    now,
+		Base:         scheme.Base{CreatedAt: now},
 	}
 	for _, a := range args {
 		switch a := a.(type) {
 		case scheme.Build:
 			d.BuildID = a.BuildID
 		case scheme.Project:
-			d.ProjectID = &a.ProjectID
+			d.ProjectID = a.ProjectID
 		}
 	}
 	return d
@@ -371,9 +365,11 @@ func (f *dbFixture) newVar(name string, val string, args ...any) scheme.Var {
 		case scheme.Connection:
 			v.ScopeID = a.ConnectionID
 			v.IntegrationID = *a.IntegrationID
+			v.ProjectID = a.ProjectID
 		case scheme.Project:
 			v.ScopeID = a.ProjectID
-		case sdktypes.UUID:
+			v.ProjectID = a.ProjectID
+		case uuid.UUID:
 			v.ScopeID = a
 		}
 	}
@@ -415,7 +411,7 @@ func (f *dbFixture) newConnection(args ...any) scheme.Connection {
 	for _, a := range args {
 		switch a := a.(type) {
 		case scheme.Project:
-			c.ProjectID = &a.ProjectID
+			c.ProjectID = a.ProjectID
 		case string:
 			c.Name = a
 		}
@@ -426,11 +422,11 @@ func (f *dbFixture) newConnection(args ...any) scheme.Connection {
 func (f *dbFixture) newEvent(args ...any) scheme.Event {
 	f.eventSequence = f.eventSequence + 1
 	e := scheme.Event{
-		EventID:   newTestID(),
-		CreatedAt: now,
-		Seq:       uint64(f.eventSequence),
-		Data:      kittehs.Must1(json.Marshal(struct{}{})),
-		Memo:      kittehs.Must1(json.Marshal(struct{}{})),
+		EventID: newTestID(),
+		Base:    scheme.Base{CreatedAt: now},
+		Seq:     uint64(f.eventSequence),
+		Data:    kittehs.Must1(json.Marshal(struct{}{})),
+		Memo:    kittehs.Must1(json.Marshal(struct{}{})),
 	}
 	for _, a := range args {
 		switch a := a.(type) {
@@ -438,6 +434,8 @@ func (f *dbFixture) newEvent(args ...any) scheme.Event {
 			e.ConnectionID = &a.ConnectionID
 		case scheme.Trigger:
 			e.TriggerID = &a.TriggerID
+		case scheme.Project:
+			e.ProjectID = a.ProjectID
 		}
 	}
 	return e

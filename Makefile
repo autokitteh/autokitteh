@@ -104,7 +104,16 @@ ifneq ($(scripts),)
 endif
 
 .PHONY: test
-test: test-race test-runs test-sessions
+test: test-race test-runs test-sessions test-opa
+
+.PHONY: test-opa
+test-opa:
+	@if which opa >& /dev/null; then \
+		cd configs/opa_bundles/default; \
+		ls | xargs -I {} opa test -v {}; \
+	else \
+		echo "opa not found, skipping OPA tests"; \
+	fi
 
 .PHONY: test-dbgorm
 test-dbgorm:

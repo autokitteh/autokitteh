@@ -23,7 +23,7 @@ var buildCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		_, pid, err := r.ProjectNameOrID(ctx, args[0])
+		pid, err := r.ProjectNameOrID(ctx, args[0])
 		if err != nil {
 			err = fmt.Errorf("project: %w", err)
 

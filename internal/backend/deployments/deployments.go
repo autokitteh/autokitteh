@@ -6,6 +6,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -24,6 +25,10 @@ func New(z *zap.Logger, db db.DB, telemetry *telemetry.Telemetry) sdkservices.De
 }
 
 func (d *deployments) Activate(ctx context.Context, id sdktypes.DeploymentID) error {
+	if err := authz.CheckContext(ctx, id, "write:activate"); err != nil {
+		return err
+	}
+
 	l := d.z.With(zap.String("deployment_id", id.String()))
 	err := d.db.Transaction(ctx, func(tx db.DB) error {
 		deployment, err := tx.GetDeployment(ctx, id)
@@ -67,6 +72,10 @@ func (d *deployments) Activate(ctx context.Context, id sdktypes.DeploymentID) er
 }
 
 func (d *deployments) Test(ctx context.Context, id sdktypes.DeploymentID) error {
+	if err := authz.CheckContext(ctx, id, "write:test"); err != nil {
+		return err
+	}
+
 	return d.db.Transaction(ctx, func(tx db.DB) error {
 		deployment, err := tx.GetDeployment(ctx, id)
 		if err != nil {
@@ -86,6 +95,17 @@ func (d *deployments) Test(ctx context.Context, id sdktypes.DeploymentID) error 
 }
 
 func (d *deployments) Create(ctx context.Context, deployment sdktypes.Deployment) (sdktypes.DeploymentID, error) {
+	if err := authz.CheckContext(
+		ctx,
+		sdktypes.InvalidDeploymentID,
+		"write:create",
+		authz.WithData("deployment", deployment),
+		authz.WithAssociationWithID("project", deployment.ProjectID()),
+		authz.WithAssociationWithID("build", deployment.BuildID()),
+	); err != nil {
+		return sdktypes.InvalidDeploymentID, err
+	}
+
 	deployment = deployment.WithNewID().WithState(sdktypes.DeploymentStateInactive)
 
 	if err := d.db.CreateDeployment(ctx, deployment); err != nil {
@@ -97,6 +117,10 @@ func (d *deployments) Create(ctx context.Context, deployment sdktypes.Deployment
 }
 
 func (d *deployments) Deactivate(ctx context.Context, id sdktypes.DeploymentID) error {
+	if err := authz.CheckContext(ctx, id, "write:deactivate"); err != nil {
+		return err
+	}
+
 	return d.db.Transaction(ctx, func(tx db.DB) error { return deactivate(ctx, tx, id) })
 }
 
@@ -138,6 +162,10 @@ func updateDeploymentState(ctx context.Context, db db.DB, id sdktypes.Deployment
 }
 
 func (d *deployments) Delete(ctx context.Context, id sdktypes.DeploymentID) error {
+	if err := authz.CheckContext(ctx, id, "delete:delete"); err != nil {
+		return err
+	}
+
 	dep, err := d.db.GetDeployment(ctx, id)
 	if err != nil {
 		return err
@@ -151,9 +179,17 @@ func (d *deployments) Delete(ctx context.Context, id sdktypes.DeploymentID) erro
 }
 
 func (d *deployments) List(ctx context.Context, filter sdkservices.ListDeploymentsFilter) ([]sdktypes.Deployment, error) {
+	if err := authz.CheckContext(ctx, filter.ProjectID, "read:list-deployments", authz.WithData("filter", filter)); err != nil {
+		return nil, err
+	}
+
 	return d.db.ListDeployments(ctx, filter)
 }
 
 func (d *deployments) Get(ctx context.Context, id sdktypes.DeploymentID) (sdktypes.Deployment, error) {
+	if err := authz.CheckContext(ctx, id, "read:get"); err != nil {
+		return sdktypes.InvalidDeployment, err
+	}
+
 	return d.db.GetDeployment(ctx, id)
 }

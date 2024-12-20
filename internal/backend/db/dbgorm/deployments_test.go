@@ -2,7 +2,9 @@ package dbgorm
 
 import (
 	"testing"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 
@@ -31,6 +33,14 @@ func (f *dbFixture) listDeploymentsAndAssert(t *testing.T, expected int) []schem
 	return deployments
 }
 
+func (f *dbFixture) createProjectBuild(t *testing.T) (scheme.Project, scheme.Build) {
+	p := f.newProject()
+	b := f.newBuild(p)
+	f.createProjectsAndAssert(t, p)
+	f.saveBuildsAndAssert(t, b)
+	return p, b
+}
+
 func listDeploymentsWithStatsAndAssert(t *testing.T, f *dbFixture, expected int) []scheme.DeploymentWithStats {
 	flt := sdkservices.ListDeploymentsFilter{
 		State:               sdktypes.DeploymentStateUnspecified,
@@ -50,21 +60,23 @@ func (f *dbFixture) assertDeploymentsDeleted(t *testing.T, deployments ...scheme
 	}
 }
 
-func (f *dbFixture) assertDeploymentState(t *testing.T, id sdktypes.UUID, state int32) {
+func (f *dbFixture) assertDeploymentState(t *testing.T, id uuid.UUID, state int32) {
 	d, err := f.gormdb.getDeployment(f.ctx, id)
 	assert.NoError(t, err)
 	assert.Equal(t, state, d.State)
 }
 
 func preDeploymentTest(t *testing.T) *dbFixture {
-	f := newDBFixture().withUser(sdktypes.DefaultUser)
+	f := newDBFixture()
 	f.listDeploymentsAndAssert(t, 0) // no deployments
 	return f
 }
 
-func createBuildAndDeployment(t *testing.T, f *dbFixture) (scheme.Build, scheme.Deployment) {
-	b := f.newBuild()
-	d := f.newDeployment(b)
+func createBuildAndDeployment(t *testing.T, f *dbFixture, p scheme.Project) (scheme.Build, scheme.Deployment) {
+	b := f.newBuild(p)
+	f.createProjectsAndAssert(t, p)
+
+	d := f.newDeployment(b, p)
 	f.saveBuildsAndAssert(t, b)
 	f.createDeploymentsAndAssert(t, d)
 	return b, d
@@ -73,7 +85,7 @@ func createBuildAndDeployment(t *testing.T, f *dbFixture) (scheme.Build, scheme.
 func TestCreateDeployment(t *testing.T) {
 	f := preDeploymentTest(t)
 
-	_, _ = createBuildAndDeployment(t, f)
+	_, _ = createBuildAndDeployment(t, f, f.newProject())
 }
 
 func TestCreateDeploymentsForeignKeys(t *testing.T) {
@@ -82,36 +94,32 @@ func TestCreateDeploymentsForeignKeys(t *testing.T) {
 
 	p, b := f.createProjectBuild(t)
 
-	// negative test with non-existing assets
-	// zero buildID
-	d1 := f.newDeployment()
-	assert.Equal(t, d1.BuildID, sdktypes.UUID{}) // zero value for buildID
-	assert.ErrorIs(t, f.gormdb.createDeployment(f.ctx, &d1), gorm.ErrForeignKeyViolated)
-
 	// valid env, but zero buildID
 	d2 := f.newDeployment(p)
-	assert.Equal(t, d2.BuildID, sdktypes.UUID{}) // zero value for buildID
+	assert.Equal(t, d2.BuildID, uuid.UUID{}) // zero value for buildID
 	assert.ErrorIs(t, f.gormdb.createDeployment(f.ctx, &d2), gorm.ErrForeignKeyViolated)
 
 	// use existing user-owned buildID as fake unexisting projectID
 	d3 := f.newDeployment(b)
-	d3.ProjectID = &b.BuildID // no such projectID, since it's a buildID
+	d3.ProjectID, _ = uuid.NewV7() // no such projectID, since it's a buildID
 	assert.ErrorIs(t, f.gormdb.createDeployment(f.ctx, &d3), gorm.ErrForeignKeyViolated)
 
 	// test with existing assets
-	d3.ProjectID = &p.ProjectID
+	d3.ProjectID = p.ProjectID
 	f.createDeploymentsAndAssert(t, d3)
 }
 
 func TestGetDeployment(t *testing.T) {
 	f := preDeploymentTest(t)
 
-	_, d := createBuildAndDeployment(t, f)
+	_, d := createBuildAndDeployment(t, f, f.newProject())
 
 	// check getDeployment
 	d2, err := f.gormdb.getDeployment(f.ctx, d.DeploymentID)
-	assert.NoError(t, err)
-	assert.Equal(t, d, *d2)
+	if assert.NoError(t, err) {
+		d2.UpdatedAt = time.Time{}
+		assert.Equal(t, d, *d2)
+	}
 
 	// check getDeployment after delete
 	assert.NoError(t, f.gormdb.deleteDeployment(f.ctx, d.DeploymentID))
@@ -121,9 +129,10 @@ func TestGetDeployment(t *testing.T) {
 
 func TestListDeployments(t *testing.T) {
 	f := preDeploymentTest(t)
-	_, d := createBuildAndDeployment(t, f)
+	_, d := createBuildAndDeployment(t, f, f.newProject())
 
 	deployments := f.listDeploymentsAndAssert(t, 1)
+	deployments[0].UpdatedAt = time.Time{}
 	assert.Equal(t, d, deployments[0])
 
 	// test listDeployments after delete
@@ -135,19 +144,22 @@ func TestListDeploymentsWithStats(t *testing.T) {
 	f := preDeploymentTest(t)
 
 	// create deployment and ensure there are no stats
-	_, d := createBuildAndDeployment(t, f)
+	p := f.newProject()
+	b, d := createBuildAndDeployment(t, f, p)
 
 	dWS := scheme.DeploymentWithStats{Deployment: d} // no stats, all zeros
 	deployments := listDeploymentsWithStatsAndAssert(t, f, 1)
+	deployments[0].UpdatedAt = time.Time{}
 	assert.Equal(t, dWS, deployments[0])
 
 	// add session for the stats
-	s := f.newSession(sdktypes.SessionStateTypeCompleted, d)
+	s := f.newSession(sdktypes.SessionStateTypeCompleted, d, b, p)
 	f.createSessionsAndAssert(t, s)
 
 	// ensure that new session is included in stats
 	dWS.Completed = 1
 	deployments = listDeploymentsWithStatsAndAssert(t, f, 1)
+	deployments[0].UpdatedAt = time.Time{}
 	assert.Equal(t, dWS, deployments[0])
 
 	// delete session
@@ -157,21 +169,25 @@ func TestListDeploymentsWithStats(t *testing.T) {
 	// check that deployment stats are updated
 	deployments = listDeploymentsWithStatsAndAssert(t, f, 1)
 	dWS.Completed = 0 // completed session was deleted
+	deployments[0].UpdatedAt = time.Time{}
 	assert.Equal(t, dWS, deployments[0])
 }
 
 func TestDeleteDeployment(t *testing.T) {
 	f := preDeploymentTest(t)
 
-	_, d := createBuildAndDeployment(t, f)
+	p := f.newProject()
+
+	b, d := createBuildAndDeployment(t, f, p)
 
 	// add sessions and check that deployment stats are updated
-	s1 := f.newSession(sdktypes.SessionStateTypeCompleted, d)
-	s2 := f.newSession(sdktypes.SessionStateTypeError, d)
+	s1 := f.newSession(sdktypes.SessionStateTypeCompleted, d, p, b)
+	s2 := f.newSession(sdktypes.SessionStateTypeError, d, p, b)
 	f.createSessionsAndAssert(t, s1, s2)
 
 	dWS := scheme.DeploymentWithStats{Deployment: d, Completed: 1, Error: 1}
 	deployments := listDeploymentsWithStatsAndAssert(t, f, 1)
+	deployments[0].UpdatedAt = time.Time{}
 	assert.Equal(t, dWS, deployments[0])
 
 	// delete deployment. Ensure deployment sessions are marked as deleted as well
@@ -193,7 +209,7 @@ func TestDeleteDeploymentForeignKeys(t *testing.T) {
 func TestUpdateDeploymentStateReturning(t *testing.T) {
 	f := preDeploymentTest(t)
 
-	_, d := createBuildAndDeployment(t, f)
+	_, d := createBuildAndDeployment(t, f, f.newProject())
 
 	prevState := sdktypes.DeploymentStateUnspecified
 	f.assertDeploymentState(t, d.DeploymentID, int32(prevState.ToProto()))

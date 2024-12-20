@@ -3,6 +3,7 @@ package dbgorm
 import (
 	"context"
 	"fmt"
+	"maps"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -14,33 +15,27 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func (gdb *gormdb) withUserConnections(ctx context.Context) *gorm.DB {
-	return gdb.withUserEntity(ctx, "connection")
-}
-
 func (gdb *gormdb) createConnection(ctx context.Context, conn *scheme.Connection) error {
-	createFunc := func(tx *gorm.DB, uid string) error {
+	return gdb.transaction(ctx, func(tx *tx) error {
 		// ensure there is no connection with the same name for the same project
 		var count int64
-		if err := tx.
+		if err := tx.db.
 			Model(&scheme.Connection{}).
-			Scopes(withUserEntity(ctx, gdb, "connection", uid)).
-			Where("name = ?", conn.Name).Where("project_id = ? or project_id is NULL", conn.ProjectID).Count(&count).Error; err != nil {
+			Where("name = ?", conn.Name).Where("project_id = ?", conn.ProjectID).Count(&count).Error; err != nil {
 			return err
 		}
 		if count > 0 {
 			return gorm.ErrDuplicatedKey // active/non-deleted connection was found.
 		}
-		return tx.Create(conn).Error
-	}
-	return gdb.createEntityWithOwnership(ctx, createFunc, conn, conn.ProjectID)
+		return tx.db.Create(conn).Error
+	})
 }
 
-func (gdb *gormdb) deleteConnectionsAndVars(what string, id sdktypes.UUID) error {
+func (gdb *gormdb) deleteConnectionsAndVars(ctx context.Context, what string, id uuid.UUID) error {
 	// should be transactional with context already applied
 
-	var ids []sdktypes.UUID
-	q := gdb.db.Model(&scheme.Connection{})
+	var ids []uuid.UUID
+	q := gdb.db.WithContext(ctx).Model(&scheme.Connection{})
 	q = q.Clauses(clause.Returning{Columns: []clause.Column{{Name: "connection_id"}}})
 	if err := q.Delete(&ids, fmt.Sprintf("%s = ?", what), id).Error; err != nil {
 		return err
@@ -50,30 +45,20 @@ func (gdb *gormdb) deleteConnectionsAndVars(what string, id sdktypes.UUID) error
 	if len(ids) > 0 {
 		return gdb.db.Where("var_id IN (?)", ids).Delete(&scheme.Var{}).Error
 	}
+
 	return nil
 }
 
-func (gdb *gormdb) deleteConnection(ctx context.Context, id sdktypes.UUID) error {
-	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isCtxUserEntity(tx.ctx, id); err != nil {
-			return err
-		}
-		// delete connection and associated vars
-		return tx.deleteConnectionsAndVars("connection_id", id)
-	})
+func (gdb *gormdb) deleteConnection(ctx context.Context, id uuid.UUID) error {
+	return gdb.deleteConnectionsAndVars(ctx, "connection_id", id)
 }
 
-func (gdb *gormdb) updateConnection(ctx context.Context, id sdktypes.UUID, data map[string]any) error {
-	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isCtxUserEntity(tx.ctx, id); err != nil {
-			return err
-		}
-		return tx.db.Model(&scheme.Connection{ConnectionID: id}).Updates(data).Error
-	})
+func (gdb *gormdb) updateConnection(ctx context.Context, id uuid.UUID, data map[string]any) error {
+	return gdb.db.WithContext(ctx).Model(&scheme.Connection{ConnectionID: id}).Updates(data).Error
 }
 
-func (gdb *gormdb) getConnection(ctx context.Context, id sdktypes.UUID) (*scheme.Connection, error) {
-	return getOne[scheme.Connection](gdb.withUserConnections(ctx), "connection_id = ?", id)
+func (gdb *gormdb) getConnection(ctx context.Context, id uuid.UUID) (*scheme.Connection, error) {
+	return getOne[scheme.Connection](gdb.db.WithContext(ctx), "connection_id = ?", id)
 }
 
 func findConnections(query *gorm.DB) ([]scheme.Connection, error) {
@@ -84,20 +69,22 @@ func findConnections(query *gorm.DB) ([]scheme.Connection, error) {
 	return cs, nil
 }
 
-func (gdb *gormdb) getConnections(ctx context.Context, ids ...sdktypes.UUID) ([]scheme.Connection, error) {
-	q := gdb.withUserConnections(ctx).Where("connection_id IN (?)", ids)
+func (gdb *gormdb) getConnections(ctx context.Context, ids ...uuid.UUID) ([]scheme.Connection, error) {
+	q := gdb.db.WithContext(ctx).Where("connection_id IN (?)", ids)
 	return findConnections(q)
 }
 
 func (gdb *gormdb) listConnections(ctx context.Context, filter sdkservices.ListConnectionsFilter, idsOnly bool) ([]scheme.Connection, error) {
-	q := gdb.withUserConnections(ctx)
+	q := gdb.db.WithContext(ctx)
+
+	q = withProjectID(q, "", filter.ProjectID)
 
 	if filter.IntegrationID.IsValid() {
 		q = q.Where("integration_id = ?", filter.IntegrationID.UUIDValue())
 	}
 
 	if filter.ProjectID.IsValid() {
-		q = q.Where("project_id = ?", filter.ProjectID.UUIDValue())
+		q = q.Where("connections.project_id = ?", filter.ProjectID.UUIDValue())
 	}
 
 	if filter.StatusCode != sdktypes.StatusCodeUnspecified {
@@ -116,9 +103,10 @@ func (db *gormdb) CreateConnection(ctx context.Context, conn sdktypes.Connection
 	}
 
 	c := scheme.Connection{
+		Base:          based(ctx),
+		ProjectID:     conn.ProjectID().UUIDValue(),
 		ConnectionID:  conn.ID().UUIDValue(),
-		IntegrationID: scheme.UUIDOrNil(conn.IntegrationID().UUIDValue()),
-		ProjectID:     scheme.UUIDOrNil(conn.ProjectID().UUIDValue()),
+		IntegrationID: uuidPtrOrNil(conn.IntegrationID()),
 		Name:          conn.Name().String(),
 		StatusCode:    int32(conn.Status().Code().ToProto()),
 		StatusMessage: conn.Status().Message(),
@@ -144,6 +132,9 @@ func (db *gormdb) UpdateConnection(ctx context.Context, conn sdktypes.Connection
 		data["status_code"] = int32(conn.Status().Code().ToProto())
 		data["status_message"] = conn.Status().Message()
 	}
+
+	maps.Copy(data, updatedBaseColumns(ctx))
+
 	if len(data) == 0 {
 		return nil
 	}
