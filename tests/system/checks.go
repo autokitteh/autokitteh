@@ -19,7 +19,7 @@ func runCheck(t *testing.T, step string, ak *akResult, resp *httpResponse) error
 	match := steps.FindStringSubmatch(step)
 	switch match[1] {
 	case "output":
-		return checkAKOutput(step, ak)
+		return checkAKOutput(t, step, ak)
 	case "return":
 		return checkAKReturnCode(step, ak)
 	case "resp":
@@ -31,7 +31,17 @@ func runCheck(t *testing.T, step string, ak *akResult, resp *httpResponse) error
 	}
 }
 
-func checkAKOutput(step string, ak *akResult) error {
+func nextField(text string) (string, string) {
+	if text[0] == '\'' || text[0] == '"' {
+		i := strings.IndexFunc(text[1:], func(r rune) bool { return r == rune(text[0]) })
+		return text[1 : i+1], text[i+2:]
+	}
+
+	a, b, _ := strings.Cut(text, " ")
+	return a, b
+}
+
+func checkAKOutput(t *testing.T, step string, ak *akResult) error {
 	match := akCheckOutput.FindStringSubmatch(step)
 	want := strings.TrimSpace(match[3])
 	want = strings.TrimPrefix(want, "'")
@@ -45,6 +55,8 @@ func checkAKOutput(step string, ak *akResult) error {
 		}
 		want = strings.TrimSpace(string(b))
 	}
+
+	t.Logf("step: %q\nwant: %q\ngot: %q", step, want, got)
 
 	switch match[1] {
 	case "equals_json":
@@ -81,6 +93,18 @@ func checkAKOutput(step string, ak *akResult) error {
 		if !matched {
 			return stringCheckFailed(want, got)
 		}
+	case "equals_jq":
+		q, expected := nextField(want)
+
+		got, err := jq(ak.output, q)
+		if err != nil {
+			return fmt.Errorf("failed to run jq: %w", err)
+		}
+
+		if expected != got {
+			return stringCheckFailed(want, got)
+		}
+
 	default:
 		return errors.New("unhandled AK check type")
 	}

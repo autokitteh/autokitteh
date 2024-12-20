@@ -17,8 +17,8 @@ return code == 0
 
 # Negative test: delete same connection again, now by ID.
 ak connection delete con_00000000000000000000000002
-output equals 'Error: connection not found'
-return code == 10
+output equals 'Error: delete connection: not_found'
+return code == $RC_NOT_FOUND
 
 # Delete 2nd connection by ID.
 ak connection delete con_00000000000000000000000003
@@ -26,5 +26,5 @@ return code == 0
 
 # Negative test: delete same connection again, now by name.
 ak connection delete my_project/my_connection_2
-output equals 'Error: connection not found'
-return code == 10
+output equals 'Error: connection: not_found'
+return code == $RC_NOT_FOUND

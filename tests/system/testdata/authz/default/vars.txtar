@@ -1,0 +1,56 @@
+user zumi
+
+ak project create --name pz
+return code == 0
+capture_jq zpid .project_id
+
+ak project create --name pc --org cats
+return code == 0
+capture_jq cpid .project_id
+
+ak var set one 1 --project $zpid
+return code == 0
+
+ak var set cat meow --project $cpid
+return code == 0
+
+ak var get --project $zpid
+return code == 0
+
+user gizmo
+
+ak var set two 2 --project $zpid
+return code == $RC_UNAUTHZ
+
+ak var get --project $zpid
+return code == $RC_NOT_FOUND
+
+ak var get --project $cpid
+return code == 0
+
+ak var get cat --project $cpid
+return code == 0
+
+user zumi
+
+ak connection create c1 --project $zpid --integration test
+return code == 0
+capture_jq zcid .connection_id
+
+ak var set two 2 --connection $zcid
+return code == 0
+
+ak var get --connection $zcid
+return code == 0
+
+user gizmo
+
+ak var get --connection $zcid
+return code == $RC_NOT_FOUND
+
+ak var get two --connection $zcid
+return code == $RC_NOT_FOUND
+
+-- test-config.yaml --
+ak:
+    extra_args: ["-j", "--array_json_list"]
