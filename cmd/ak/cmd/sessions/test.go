@@ -21,7 +21,7 @@ import (
 )
 
 var testCmd = common.StandardCommand(&cobra.Command{
-	Use:   "test <txtar-file> [--build-id=...] [--env=...] [--deployment-id=...] [--entrypoint=...] [--quiet] [--timeout DURATION] [--poll-interval DURATION] [--no-timestamps]",
+	Use:   "test <txtar-file> [--build-id=...] [--project project] [--deployment-id=...] [--entrypoint=...] [--quiet] [--timeout DURATION] [--poll-interval DURATION] [--no-timestamps]",
 	Short: "Test a session run",
 	Args:  cobra.ExactArgs(1),
 
@@ -80,7 +80,7 @@ var testCmd = common.StandardCommand(&cobra.Command{
 			ctx, cancel := common.LimitedContext()
 			defer cancel()
 
-			if bid, err = common.Client().Builds().Save(ctx, sdktypes.NewBuild(), buf.Bytes()); err != nil {
+			if bid, err = common.Client().Builds().Save(ctx, sdktypes.NewBuild().WithProjectID(pid), buf.Bytes()); err != nil {
 				return fmt.Errorf("save build: %w", err)
 			}
 		}
@@ -128,4 +128,7 @@ func init() {
 	testCmd.Flags().DurationVarP(&watchTimeout, "timeout", "t", 0, "watch timeout duration")
 	testCmd.Flags().BoolVar(&noTimestamps, "no-timestamps", false, "omit timestamps from watch output")
 	testCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "don't print anything, just wait to finish")
+	testCmd.Flags().StringVarP(&project, "project", "p", "", "project name or ID")
+	testCmd.Flags().StringVarP(&deploymentID, "deployment-id", "d", "", "deployment ID")
+	testCmd.Flags().StringVarP(&buildID, "build-id", "b", "", "build ID, mutually exclusive with --deployment-id")
 }
