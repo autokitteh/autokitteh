@@ -1,4 +1,4 @@
-package sdktriggerclient
+package sdktriggersclient
 
 import (
 	"context"
