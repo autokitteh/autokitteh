@@ -13,12 +13,12 @@ type Vars struct {
 }
 
 var (
-	AuthType = sdktypes.NewSymbol("authType")
+	AuthType = sdktypes.NewSymbol("auth_type")
 
 	// Custom OAuth
-	ClientID         = sdktypes.NewSymbol("client_id")
-	ClientSecret     = sdktypes.NewSymbol("client_secret")
-	SigningSecret    = sdktypes.NewSymbol("signing_secret")
+	ClientID      = sdktypes.NewSymbol("client_id")
+	ClientSecret  = sdktypes.NewSymbol("client_secret")
+	SigningSecret = sdktypes.NewSymbol("signing_secret")
 
 	// Socket Mode
 	AppTokenName = sdktypes.NewSymbol("AppToken")

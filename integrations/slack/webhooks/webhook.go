@@ -134,21 +134,18 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Log
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return nil
 	}
-	// If there are no connections, respond with a 200 OK but don't process the request
+	// No connections = respond to Slack with 200 OK, but don't process the request.
 	if len(cids) == 0 {
 		return nil
 	}
-	signingSecret := ""
-	// All connections for the same app/enterprise/workspace share the same signing secret
+	// All connections for the same app/enterprise/workspace share the same signing secret.
 	secret, err := h.vars.Get(r.Context(), sdktypes.NewVarScopeID(cids[0]))
 	if err != nil {
 		l.Error("Failed to get signing secret", zap.Error(err))
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return nil
 	}
-	if s := secret.GetValue(vars.SigningSecret); s != "" {
-		signingSecret = s
-	}
+	signingSecret := secret.GetValue(vars.SigningSecret)
 	if signingSecret == "" {
 		signingSecret = os.Getenv(signingSecretEnvVar)
 	}
