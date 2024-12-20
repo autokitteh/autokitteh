@@ -122,9 +122,7 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Log
 
 	appID, teamID, enterpriseID, err := h.extractIDs(body, wantContentType, l)
 	if err != nil {
-		l.Error("Failed to extract IDs",
-			zap.Error(err),
-		)
+		l.Error("Failed to extract IDs", zap.Error(err))
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return nil
 	}
@@ -132,22 +130,24 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Log
 	// Get signing secret.
 	cids, err := h.listConnectionIDs(r.Context(), appID, enterpriseID, teamID)
 	if err != nil {
-		l.Error("Failed to list connection IDs",
-			zap.Error(err),
-		)
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+		l.Error("Failed to list connection IDs", zap.Error(err))
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return nil
+	}
+	// If there are no connections, respond with a 200 OK but don't process the request
+	if len(cids) == 0 {
 		return nil
 	}
 	signingSecret := ""
-	for _, cid := range cids {
-		secret, err := h.vars.Get(r.Context(), sdktypes.NewVarScopeID(cid))
-		if err != nil {
-			continue
-		}
-		if s := secret.GetValue(vars.SigningSecret); s != "" {
-			signingSecret = s
-			break
-		}
+	// All connections for the same app/enterprise/workspace share the same signing secret
+	secret, err := h.vars.Get(r.Context(), sdktypes.NewVarScopeID(cids[0]))
+	if err != nil {
+		l.Error("Failed to get signing secret", zap.Error(err))
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return nil
+	}
+	if s := secret.GetValue(vars.SigningSecret); s != "" {
+		signingSecret = s
 	}
 	if signingSecret == "" {
 		signingSecret = os.Getenv(signingSecretEnvVar)

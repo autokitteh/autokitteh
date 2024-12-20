@@ -487,7 +487,7 @@ func (o *oauth) StartFlow(ctx context.Context, intg string, cid sdktypes.Connect
 	// Identify the relevant connection when we get an OAuth response.
 	state := strings.Replace(cid.String(), "con_", "", 1) + "_" + origin
 
-	if o.vars == nil || !o.isCustomOAuth(ctx, cid) {
+	if !o.isCustomOAuth(ctx, cid) {
 		return cfg.AuthCodeURL(state, authCode(opts)...), nil
 	}
 
@@ -519,11 +519,12 @@ func authCode(opts map[string]string) []oauth2.AuthCodeOption {
 	return acos
 }
 
+// Determines if the connection uses custom OAuth based on the presence of a client secret in vars.
 func (o *oauth) isCustomOAuth(ctx context.Context, cid sdktypes.ConnectionID) bool {
 	vs, err := o.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
 	if err != nil {
 		return false
 	}
 
-	return vs.GetValueByString("client_id") != "" && vs.GetValueByString("client_secret") != ""
+	return vs.GetValueByString("client_secret") != ""
 }

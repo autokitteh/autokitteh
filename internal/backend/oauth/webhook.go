@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
-	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -170,5 +169,5 @@ func transformState(state string) string {
 	if state == "" {
 		return state
 	}
-	return "con_" + strings.Split(state, "_")[0]
+	return "con_" + state
 }
