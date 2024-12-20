@@ -16,8 +16,6 @@ export class Build extends Message<Build> {
   buildId = "";
 
   /**
-   * optional
-   *
    * @generated from field: string project_id = 2;
    */
   projectId = "";
