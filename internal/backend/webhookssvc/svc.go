@@ -68,7 +68,7 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
-
+	sl.Infof("webhook request: method=%s, trigger_event_type=%s", r.Method, t.EventType())
 	data, err := requestToData(r)
 	if err != nil {
 		sl.Errorw("failed to convert request to data", "err", err)
