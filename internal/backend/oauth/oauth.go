@@ -440,18 +440,6 @@ func (o *oauth) Register(ctx context.Context, intg string, cfg *oauth2.Config, o
 	return nil
 }
 
-// TODO: is this needed? if yes and only saving scopes, then this can be simplified
-func (o *oauth) saveConnectionConfig(ctx context.Context, cid sdktypes.ConnectionID, scopes []string) error {
-	vs := sdktypes.NewVars().
-		Set(sdktypes.NewSymbol("scopes"), strings.Join(scopes, ","), false)
-
-	vsl := kittehs.TransformMapToList(vs.ToMap(), func(_ sdktypes.Symbol, v sdktypes.Var) sdktypes.Var {
-		return v.WithScopeID(sdktypes.NewVarScopeID(cid))
-	})
-
-	return o.vars.Set(ctx, vsl...)
-}
-
 func (o *oauth) Get(ctx context.Context, intg string) (*oauth2.Config, map[string]string, error) {
 	cfg, ok := o.configs[intg]
 	if !ok {
@@ -503,15 +491,10 @@ func (o *oauth) StartFlow(ctx context.Context, intg string, cid sdktypes.Connect
 		return cfg.AuthCodeURL(state, authCode(opts)...), nil
 	}
 
-	// err = o.saveConnectionConfig(ctx, cid, intg, cfg.Scopes)
-	// if err != nil {
-	// 	return "", err
-	// }
-
 	return cfg.AuthCodeURL(state, authCode(opts)...), nil
 }
 
-func (o *oauth) Exchange(ctx context.Context, integration, code string, cid sdktypes.ConnectionID) (*oauth2.Token, error) {
+func (o *oauth) Exchange(ctx context.Context, integration string, cid sdktypes.ConnectionID, code string) (*oauth2.Token, error) {
 	// Convert the received temporary authorization code
 	// into a refresh token / user access token.
 	cfg, opts, err := o.getConfigWithConnection(ctx, integration, cid)
@@ -541,6 +524,6 @@ func (o *oauth) isCustomOAuth(ctx context.Context, cid sdktypes.ConnectionID) bo
 	if err != nil {
 		return false
 	}
-	
+
 	return vs.GetValueByString("client_id") != "" && vs.GetValueByString("client_secret") != ""
 }

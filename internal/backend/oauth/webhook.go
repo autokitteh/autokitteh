@@ -138,7 +138,7 @@ func (s *svc) exchange(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := o.Exchange(ctx, intg, code, cid)
+	token, err := o.Exchange(ctx, intg, cid, code)
 	if err != nil {
 		l.Warn("OAuth exchange error", zap.Error(err))
 		abort(w, r, intg, sub[1], sub[2], "OAuth exchange error")

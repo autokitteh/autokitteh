@@ -115,7 +115,7 @@ func (s *server) Exchange(ctx context.Context, req *connect.Request[oauthv1.Exch
 	}
 
 	// Return the exchanged OAuth token, based on the authorization code.
-	token, err := s.impl.Exchange(ctx, req.Msg.Integration, req.Msg.Code, cid)
+	token, err := s.impl.Exchange(ctx, req.Msg.Integration, cid, req.Msg.Code)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}
