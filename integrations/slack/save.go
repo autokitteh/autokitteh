@@ -38,9 +38,9 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	clientSecret := r.FormValue("client_secret")
 	signingSecret := r.FormValue("signing_secret")
 
-	if err := h.saveClientIDAndSecret(r.Context(), c, clientID, clientSecret, signingSecret); err != nil {
+	if err := h.saveClientIDAndSecrets(r.Context(), c, clientID, clientSecret, signingSecret); err != nil {
 		l.Warn("Failed to save client ID and secret", zap.Error(err))
-		c.AbortBadRequest("failed to save client ID and secret")
+		c.AbortBadRequest("failed to save OAuth configuration")
 		return
 	}
 
@@ -48,7 +48,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, redirectURL, http.StatusFound)
 }
 
-func (h handler) saveClientIDAndSecret(ctx context.Context, c sdkintegrations.ConnectionInit, clientID, clientSecret, signingSecret string) error {
+func (h handler) saveClientIDAndSecrets(ctx context.Context, c sdkintegrations.ConnectionInit, clientID, clientSecret, signingSecret string) error {
 	// Sanity check: the connection ID is valid.
 	cid, err := sdktypes.StrictParseConnectionID(c.ConnectionID)
 	if err != nil {

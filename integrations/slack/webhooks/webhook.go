@@ -129,7 +129,7 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Log
 		return nil
 	}
 
-	// Get signing secret
+	// Get signing secret.
 	cids, err := h.listConnectionIDs(r.Context(), appID, enterpriseID, teamID)
 	if err != nil {
 		l.Error("Failed to list connection IDs",
@@ -153,7 +153,7 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Log
 		signingSecret = os.Getenv(signingSecretEnvVar)
 	}
 
-	// Verify signature
+	// Verify signature.
 	if !verifySignature(signingSecret, ts, sig, body) {
 		l.Error("Signature verification failed",
 			zap.String("app_id", appID),
