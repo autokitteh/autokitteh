@@ -16,5 +16,5 @@ type OAuth interface {
 	Register(ctx context.Context, id string, cfg *oauth2.Config, opts map[string]string) error
 	Get(ctx context.Context, id string) (*oauth2.Config, map[string]string, error)
 	StartFlow(ctx context.Context, integration string, cid sdktypes.ConnectionID, origin string) (string, error)
-	Exchange(ctx context.Context, integration, code string) (*oauth2.Token, error)
+	Exchange(ctx context.Context, integration string, cid sdktypes.ConnectionID, code string) (*oauth2.Token, error)
 }

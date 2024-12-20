@@ -44,7 +44,8 @@ message StartFlowResponse {
 
 message ExchangeRequest {
   string integration = 1 [(buf.validate.field).string.min_len = 1];
-  string code = 2 [(buf.validate.field).string.min_len = 1];
+  string connection_id = 2 [(buf.validate.field).string.min_len = 1];
+  string code = 3 [(buf.validate.field).string.min_len = 1];
 }
 
 message ExchangeResponse {

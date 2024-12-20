@@ -78,8 +78,8 @@ func (c *client) StartFlow(ctx context.Context, intg string, cid sdktypes.Connec
 	return resp.Msg.Url, nil
 }
 
-func (c *client) Exchange(ctx context.Context, integration, code string) (*oauth2.Token, error) {
-	req := &oauthv1.ExchangeRequest{Integration: integration, Code: code}
+func (c *client) Exchange(ctx context.Context, integration string, cid sdktypes.ConnectionID, code string) (*oauth2.Token, error) {
+	req := &oauthv1.ExchangeRequest{Integration: integration, Code: code, ConnectionId: cid.String()}
 	resp, err := c.client.Exchange(ctx, connect.NewRequest(req))
 	if err != nil {
 		return nil, err
