@@ -34,6 +34,7 @@ func init() {
 	projectCmd.AddCommand(getCmd)
 	projectCmd.AddCommand(listCmd)
 	projectCmd.AddCommand(exportCmd)
+	projectCmd.AddCommand(lintCmd)
 }
 
 func projects() sdkservices.Projects {
