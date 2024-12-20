@@ -3,6 +3,7 @@ package dbgorm
 import (
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
@@ -41,7 +42,7 @@ func createConnection(t *testing.T, f *dbFixture) (scheme.Connection, scheme.Pro
 }
 
 func preVarTest(t *testing.T) *dbFixture {
-	f := newDBFixture().withUser(sdktypes.DefaultUser)
+	f := newDBFixture()
 	findAndAssertCount[scheme.Var](t, f, 0, "") // no vars
 	return f
 }
@@ -86,7 +87,9 @@ func TestReSetVar(t *testing.T) {
 
 func TestListVarUnexisting(t *testing.T) {
 	f := preVarTest(t)
-	c := f.newConnection()
+	p := f.newProject()
+	c := f.newConnection(p)
+	f.createProjectsAndAssert(t, p)
 	f.createConnectionsAndAssert(t, c)
 
 	v := f.newVar("k", "v", c)
@@ -116,14 +119,11 @@ func (f *dbFixture) testListVar(t *testing.T, v scheme.Var) {
 	assert.NoError(t, err)
 	assert.Len(t, vars, 0)
 
-	// delete scope - either Connection or Env
-	var o scheme.Ownership
-	assert.NoError(t, f.db.Where("entity_id = ?", v.ScopeID).First(&o).Error)
-	switch o.EntityType {
-	case "Connection":
-		assert.NoError(t, f.gormdb.deleteConnection(f.ctx, v.ScopeID))
-	case "Project":
+	// delete scope - either Connection or Project
+	if v.IntegrationID == uuid.Nil {
 		assert.NoError(t, f.gormdb.deleteProject(f.ctx, v.ScopeID))
+	} else {
+		assert.NoError(t, f.gormdb.deleteConnection(f.ctx, v.ScopeID))
 	}
 
 	// test var was deleted due to scope deletion
@@ -176,7 +176,7 @@ func TestDeleteVar(t *testing.T) {
 	f.assertVarDeleted(t, v)
 }
 
-func TestFincConnectionIDByVar(t *testing.T) {
+func TestFindConnectionIDByVar(t *testing.T) {
 	f := preVarTest(t)
 	c1, p1 := createConnection(t, f)
 	c2, p2 := createConnection(t, f)

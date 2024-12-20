@@ -1,0 +1,42 @@
+user zumi
+
+ak project create --name pz
+return code == 0
+capture_jq zpid .project_id
+
+ak connection create c1 --project $zpid --integration test
+return code == 0
+capture_jq cid .connection_id
+
+ak event list 
+return code == $RC_UNAUTHZ
+
+ak event list --integration test
+return code == $RC_UNAUTHZ
+
+ak event list --project pz
+return code == 0
+
+ak event list --connection $cid
+return code == 0
+
+ak event save --from-file event.json 
+return code == $RC_UNAUTHZ
+
+user gizmo
+
+ak event list --project $zpid
+return code == $RC_UNAUTHZ
+
+ak event list --connection $cid
+return code == $RC_UNAUTHZ
+
+-- test-config.yaml --
+ak:
+    extra_args: ["-j", "--array_json_list"]
+
+-- event.json --
+{
+    "destination_id": "con_00000000000000000000000002",
+    "event_type": "test"
+}

@@ -17,6 +17,17 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+var EmptyBuildFileData []byte
+
+func init() {
+	var (
+		bf  BuildFile
+		buf bytes.Buffer
+	)
+	bf.Write(&buf)
+	EmptyBuildFileData = buf.Bytes()
+}
+
 func writeJSON(tw *tar.Writer, name string, data any) error {
 	return writeString(tw, name, string(kittehs.Must1(json.MarshalIndent(data, "", "  ")))+"\n")
 }

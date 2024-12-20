@@ -6,11 +6,17 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/secrets"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
+
+func TestMain(m *testing.M) {
+	authz.DisableCheckForTesting()
+	m.Run()
+}
 
 type secretsMock struct {
 	secrets.Secrets

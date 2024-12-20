@@ -3,7 +3,7 @@
 ak deploy --manifest schedule.yaml --file cron.star
 return code == 0
 
-ak trigger list -j
+ak trigger list -j -p cron
 return code == 0
 output equals_json file triggers.json
 

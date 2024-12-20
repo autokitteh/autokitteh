@@ -19,7 +19,7 @@ func (f *dbFixture) createProjectsAndAssert(t *testing.T, projects ...scheme.Pro
 }
 
 func (f *dbFixture) listProjectsAndAssert(t *testing.T, expected int) []scheme.Project {
-	projects, err := f.gormdb.listProjects(f.ctx)
+	projects, err := f.gormdb.listProjects(f.ctx, sdktypes.InvalidOrgID)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, len(projects))
 	return projects
@@ -32,7 +32,7 @@ func (f *dbFixture) assertProjectDeleted(t *testing.T, projects ...scheme.Projec
 }
 
 func preProjectTest(t *testing.T) *dbFixture {
-	f := newDBFixture().withUser(sdktypes.DefaultUser)
+	f := newDBFixture()
 	findAndAssertCount[scheme.Project](t, f, 0, "") // no projects
 	return f
 }
@@ -81,7 +81,7 @@ func TestGetProjects(t *testing.T) {
 	assert.Equal(t, p, *project)
 
 	// test getProjectByName
-	project, err = f.gormdb.getProjectByName(f.ctx, p.Name)
+	project, err = f.gormdb.getProjectByName(f.ctx, sdktypes.InvalidOrgID, p.Name)
 	assert.NoError(t, err)
 	assert.Equal(t, p, *project)
 
@@ -93,7 +93,7 @@ func TestGetProjects(t *testing.T) {
 	assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
 
 	// test getProjectByName after delete
-	_, err = f.gormdb.getProjectByName(f.ctx, p.Name)
+	_, err = f.gormdb.getProjectByName(f.ctx, sdktypes.InvalidOrgID, p.Name)
 	assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
 }
 
@@ -124,7 +124,7 @@ func TestGetProjectDeployments(t *testing.T) {
 	// p2:
 	// - e4: (d4)
 	p1, p2 := f.newProject(), f.newProject()
-	d1, d2, d3, d4 := f.newDeployment(), f.newDeployment(), f.newDeployment(), f.newDeployment()
+	d1, d2, d3, d4 := f.newDeployment(p1), f.newDeployment(p1), f.newDeployment(p1), f.newDeployment(p1)
 	b := f.newBuild()
 
 	d1.BuildID = b.BuildID

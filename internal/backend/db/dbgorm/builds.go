@@ -4,38 +4,28 @@ import (
 	"context"
 	"slices"
 
-	"gorm.io/gorm"
-
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func (gdb *gormdb) withUserBuilds(ctx context.Context) *gorm.DB {
-	return gdb.withUserEntity(ctx, "build")
-}
-
 func (gdb *gormdb) saveBuild(ctx context.Context, build *scheme.Build) error {
-	createFunc := func(tx *gorm.DB, uid string) error { return tx.Create(build).Error }
-	return gdb.createEntityWithOwnership(ctx, createFunc, build, build.ProjectID)
+	return gdb.db.WithContext(ctx).Create(build).Error
 }
 
 func (gdb *gormdb) deleteBuild(ctx context.Context, buildID sdktypes.UUID) error {
-	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isCtxUserEntity(tx.ctx, buildID); err != nil {
-			return err
-		}
-		return tx.db.Delete(&scheme.Build{BuildID: buildID}).Error
-	})
+	return gdb.db.WithContext(ctx).Delete(&scheme.Build{BuildID: buildID}).Error
 }
 
 func (gdb *gormdb) getBuild(ctx context.Context, buildID sdktypes.UUID) (*scheme.Build, error) {
-	return getOne[scheme.Build](gdb.withUserBuilds(ctx), "build_id = ?", buildID)
+	return getOne[scheme.Build](gdb.db.WithContext(ctx), "build_id = ?", buildID)
 }
 
 func (gdb *gormdb) listBuilds(ctx context.Context, filter sdkservices.ListBuildsFilter) ([]scheme.Build, error) {
-	q := gdb.withUserBuilds(ctx).Order("created_at desc")
+	q := gdb.db.WithContext(ctx).Order("created_at desc")
+
+	q = withProjectID(q, "", filter.ProjectID)
 
 	if filter.Limit != 0 {
 		q = q.Limit(int(filter.Limit))
@@ -53,13 +43,13 @@ func (db *gormdb) SaveBuild(ctx context.Context, build sdktypes.Build, data []by
 		return err
 	}
 
-	// TODO: add Build time
 	b := scheme.Build{
-		BuildID:   build.ID().UUIDValue(),
-		ProjectID: scheme.UUIDOrNil(build.ProjectID().UUIDValue()),
-		Data:      data,
-		CreatedAt: build.CreatedAt(),
+		Base:             based(ctx),
+		BelongsToProject: belongsToProjectID(build.ProjectID()),
+		BuildID:          build.ID().UUIDValue(),
+		Data:             data,
 	}
+
 	return translateError(db.saveBuild(ctx, &b))
 }
 

@@ -9,7 +9,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var listOrder string
+var listOrder, project string
 
 var listCmd = common.StandardCommand(&cobra.Command{
 	Use:     "list [filter flags] [--fail]",
@@ -48,6 +48,14 @@ var listCmd = common.StandardCommand(&cobra.Command{
 			f.IntegrationID = iid
 		}
 
+		if project != "" {
+			pid, err := r.ProjectNameOrID(ctx, project)
+			if err = common.AddNotFoundErrIfCond(err, pid.IsValid()); err != nil {
+				return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "project")
+			}
+			f.ProjectID = pid
+		}
+
 		f.Order = sdkservices.ListOrder(listOrder)
 
 		es, err := events().List(ctx, f)
@@ -64,9 +72,9 @@ func init() {
 	listCmd.Flags().StringVarP(&integration, "integration", "i", "", "integration name or ID")
 	listCmd.Flags().StringVarP(&connection, "connection", "c", "", "connection name or ID")
 	listCmd.Flags().StringVarP(&trigger, "trigger", "t", "", "trigger name or ID")
+	listCmd.Flags().StringVarP(&project, "project", "p", "", "project name or ID")
 	listCmd.Flags().StringVarP(&eventType, "event-type", "e", "", "event type")
 	listCmd.Flags().StringVarP(&listOrder, "order", "o", "DESC", "events order, should be DESC or ASC, default is DESC")
-	listCmd.MarkFlagsOneRequired("integration", "connection", "trigger")
 
 	common.AddFailIfNotFoundFlag(listCmd)
 }
