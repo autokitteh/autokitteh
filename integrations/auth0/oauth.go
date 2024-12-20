@@ -9,20 +9,22 @@ import (
 
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
+	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	"go.uber.org/zap"
 )
 
 type handler struct {
 	logger *zap.Logger
+	vars   sdkservices.Vars
 }
 
 const (
 	domainEnvVarName = "AUTH0_DOMAIN"
 )
 
-func NewHandler(l *zap.Logger) http.Handler {
-	return handler{logger: l}
+func NewHandler(l *zap.Logger, vars sdkservices.Vars) http.Handler {
+	return handler{logger: l, vars: vars}
 }
 
 func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -93,6 +95,6 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c.Finalize(sdktypes.NewVars(data.ToVars()...).
-		Append(sdktypes.NewVar(domain).SetValue(d)).
+		Append(sdktypes.NewVar(domainName).SetValue(d)).
 		Append(sdktypes.NewVar(authType).SetValue(integrations.OAuth)))
 }
