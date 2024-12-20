@@ -47,12 +47,14 @@ class StartFlowResponse(_message.Message):
     def __init__(self, url: _Optional[str] = ...) -> None: ...
 
 class ExchangeRequest(_message.Message):
-    __slots__ = ["integration", "code"]
+    __slots__ = ["integration", "connection_id", "code"]
     INTEGRATION_FIELD_NUMBER: _ClassVar[int]
+    CONNECTION_ID_FIELD_NUMBER: _ClassVar[int]
     CODE_FIELD_NUMBER: _ClassVar[int]
     integration: str
+    connection_id: str
     code: str
-    def __init__(self, integration: _Optional[str] = ..., code: _Optional[str] = ...) -> None: ...
+    def __init__(self, integration: _Optional[str] = ..., connection_id: _Optional[str] = ..., code: _Optional[str] = ...) -> None: ...
 
 class ExchangeResponse(_message.Message):
     __slots__ = ["access_token", "refresh_token", "token_type", "expiry"]

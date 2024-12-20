@@ -253,7 +253,12 @@ export class ExchangeRequest extends Message<ExchangeRequest> {
   integration = "";
 
   /**
-   * @generated from field: string code = 2;
+   * @generated from field: string connection_id = 2;
+   */
+  connectionId = "";
+
+  /**
+   * @generated from field: string code = 3;
    */
   code = "";
 
@@ -266,7 +271,8 @@ export class ExchangeRequest extends Message<ExchangeRequest> {
   static readonly typeName = "autokitteh.oauth.v1.ExchangeRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "integration", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "code", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "connection_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "code", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExchangeRequest {
