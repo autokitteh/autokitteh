@@ -20,16 +20,16 @@ import (
 type handler struct {
 	logger        *zap.Logger
 	vars          sdkservices.Vars
-	dispatcher    sdkservices.Dispatcher
+	dispatch      sdkservices.DispatchFunc
 	integration   sdktypes.Integration
 	integrationID sdktypes.IntegrationID
 }
 
-func NewHandler(l *zap.Logger, v sdkservices.Vars, d sdkservices.Dispatcher, i sdktypes.Integration) handler {
+func NewHandler(l *zap.Logger, v sdkservices.Vars, d sdkservices.DispatchFunc, i sdktypes.Integration) handler {
 	return handler{
 		logger:        l,
 		vars:          v,
-		dispatcher:    d,
+		dispatch:      d,
 		integration:   i,
 		integrationID: i.ID(),
 	}
@@ -145,7 +145,7 @@ func transformEvent(l *zap.Logger, slackEvent any, eventType string) (sdktypes.E
 func (h handler) dispatchAsyncEventsToConnections(cids []sdktypes.ConnectionID, e sdktypes.Event) {
 	ctx := extrazap.AttachLoggerToContext(h.logger, context.Background())
 	for _, cid := range cids {
-		eid, err := h.dispatcher.Dispatch(ctx, e.WithConnectionDestinationID(cid), nil)
+		eid, err := h.dispatch(ctx, e.WithConnectionDestinationID(cid), nil)
 		l := h.logger.With(
 			zap.String("connectionID", cid.String()),
 			zap.String("eventID", eid.String()),
