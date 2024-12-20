@@ -3,12 +3,12 @@ package dbgorm
 import (
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 func (f *dbFixture) saveBuildsAndAssert(t *testing.T, builds ...scheme.Build) {
@@ -18,28 +18,33 @@ func (f *dbFixture) saveBuildsAndAssert(t *testing.T, builds ...scheme.Build) {
 	}
 }
 
-func (f *dbFixture) assertBuildDeleted(t *testing.T, buildID sdktypes.UUID) {
+func (f *dbFixture) assertBuildDeleted(t *testing.T, buildID uuid.UUID) {
 	assertSoftDeleted(t, f, scheme.Build{BuildID: buildID})
 }
 
-func preBuildTest(t *testing.T) *dbFixture {
-	f := newDBFixture().withUser(sdktypes.DefaultUser)
+func preBuildTest(t *testing.T) (*dbFixture, scheme.Project) {
+	f := newDBFixture()
 	findAndAssertCount[scheme.Build](t, f, 0, "")
-	return f
+
+	p := f.newProject()
+	f.createProjectsAndAssert(t, p)
+
+	return f, p
 }
 
 func TestSaveBuild(t *testing.T) {
-	f := preBuildTest(t)
+	f, p := preBuildTest(t)
 
-	b := f.newBuild()
+	b := f.newBuild(p)
+
 	// test saveBuild
 	f.saveBuildsAndAssert(t, b)
 }
 
 func TestDeleteBuild(t *testing.T) {
-	f := preBuildTest(t)
+	f, p := preBuildTest(t)
 
-	b := f.newBuild()
+	b := f.newBuild(p)
 	f.saveBuildsAndAssert(t, b)
 
 	// test deleteBuild
@@ -48,9 +53,9 @@ func TestDeleteBuild(t *testing.T) {
 }
 
 func TestGetBuild(t *testing.T) {
-	f := preBuildTest(t)
+	f, p := preBuildTest(t)
 
-	b := f.newBuild()
+	b := f.newBuild(p)
 	f.saveBuildsAndAssert(t, b)
 
 	// test getBuild
@@ -65,7 +70,7 @@ func TestGetBuild(t *testing.T) {
 }
 
 func TestListBuilds(t *testing.T) {
-	f := preBuildTest(t)
+	f, p := preBuildTest(t)
 
 	// no builds
 	flt := sdkservices.ListBuildsFilter{} // no Limit
@@ -74,7 +79,7 @@ func TestListBuilds(t *testing.T) {
 	assert.Equal(t, 0, len(builds))
 
 	// create build and obtain it via list
-	b := f.newBuild()
+	b := f.newBuild(p)
 	f.saveBuildsAndAssert(t, b)
 
 	// check listBuilds API

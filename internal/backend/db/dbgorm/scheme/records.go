@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
@@ -21,51 +22,25 @@ import (
 // TODO: keep some log of actions performed. Something that
 // can be used for recovery from unintended/malicious actions.
 
-func UUIDOrNil(uuid sdktypes.UUID) *sdktypes.UUID {
-	zero := sdktypes.UUID{}
-	if uuid == zero {
-		return nil
-	}
-
-	return &uuid
-}
-
-var Tables = []any{
-	&Build{},
-	&Connection{},
-	&Deployment{},
-	&Event{},
-	&Ownership{},
-	&Project{},
-	&Secret{},
-	&Session{},
-	&SessionCallAttempt{},
-	&SessionCallSpec{},
-	&SessionLogRecord{},
-	&Signal{},
-	&Trigger{},
-	&User{},
-	&Value{},
-	&Var{},
-}
-
 type Build struct {
-	BuildID   sdktypes.UUID  `gorm:"primaryKey;type:uuid;not null"`
-	ProjectID *sdktypes.UUID `gorm:"index;type:uuid"`
+	Base
+
+	ProjectID uuid.UUID `gorm:"index;type:uuid;not null"`
+	BuildID   uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
 	Data      []byte
-	CreatedAt time.Time
+
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 
 	// enforce foreign keys
-	Project   *Project
-	Ownership *Ownership `gorm:"polymorphic:Entity;"`
+	Project *Project
 }
+
+func (Build) IDFieldName() string { return "build_id" }
 
 func ParseBuild(b Build) (sdktypes.Build, error) {
 	build, err := sdktypes.StrictBuildFromProto(&sdktypes.BuildPB{
-		BuildId:   sdktypes.NewIDFromUUID[sdktypes.BuildID](&b.BuildID).String(),
+		BuildId:   sdktypes.NewIDFromUUID[sdktypes.BuildID](b.BuildID).String(),
 		ProjectId: sdktypes.NewIDFromUUID[sdktypes.ProjectID](b.ProjectID).String(),
-		CreatedAt: timestamppb.New(b.CreatedAt),
 	})
 	if err != nil {
 		return sdktypes.InvalidBuild, fmt.Errorf("invalid record: %w", err)
@@ -75,26 +50,31 @@ func ParseBuild(b Build) (sdktypes.Build, error) {
 }
 
 type Connection struct {
-	ConnectionID  sdktypes.UUID  `gorm:"primaryKey;type:uuid;not null"`
-	IntegrationID *sdktypes.UUID `gorm:"index;type:uuid"`
-	ProjectID     *sdktypes.UUID `gorm:"index;type:uuid"`
+	Base
+
+	ProjectID uuid.UUID `gorm:"index;type:uuid;not null"`
+
+	ConnectionID  uuid.UUID  `gorm:"primaryKey;type:uuid;not null"`
+	IntegrationID *uuid.UUID `gorm:"index;type:uuid"`
 	Name          string
 	StatusCode    int32 `gorm:"index"`
 	StatusMessage string
 
+	UpdatedBy uuid.UUID `gorm:"type:uuid"`
+	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 
-	// enforce foreign keys
-	Project   *Project
-	Ownership *Ownership `gorm:"polymorphic:Entity;"`
-
 	// TODO(ENG-111): Also call "Preload()" where relevant
+
+	Project *Project
 }
+
+func (Connection) IDFieldName() string { return "connection_id" }
 
 func ParseConnection(c Connection) (sdktypes.Connection, error) {
 	conn, err := sdktypes.StrictConnectionFromProto(&sdktypes.ConnectionPB{
-		ConnectionId:  sdktypes.NewIDFromUUID[sdktypes.ConnectionID](&c.ConnectionID).String(),
-		IntegrationId: sdktypes.NewIDFromUUID[sdktypes.IntegrationID](c.IntegrationID).String(),
+		ConnectionId:  sdktypes.NewIDFromUUID[sdktypes.ConnectionID](c.ConnectionID).String(),
+		IntegrationId: sdktypes.NewIDFromUUIDPtr[sdktypes.IntegrationID](c.IntegrationID).String(),
 		ProjectId:     sdktypes.NewIDFromUUID[sdktypes.ProjectID](c.ProjectID).String(),
 		Name:          c.Name,
 		Status: &sdktypes.StatusPB{
@@ -109,13 +89,22 @@ func ParseConnection(c Connection) (sdktypes.Connection, error) {
 }
 
 type Var struct {
+	Base
+
+	ProjectID uuid.UUID `gorm:"index;type:uuid;not null"`
+
 	// varID is scopeID. just mapped directly for reusing the join code
-	VarID         sdktypes.UUID `gorm:"primaryKey;index;type:uuid;not null"`
-	ScopeID       sdktypes.UUID `gorm:"-"`
-	Name          string        `gorm:"primaryKey;index;not null"`
+	VarID         uuid.UUID `gorm:"primaryKey;index;type:uuid;not null"`
+	ScopeID       uuid.UUID `gorm:"-"`
+	Name          string    `gorm:"primaryKey;index;not null"`
 	Value         string
 	IsSecret      bool
-	IntegrationID sdktypes.UUID `gorm:"index;type:uuid"` // var lookup by integration id
+	IntegrationID uuid.UUID `gorm:"index;type:uuid"` // var lookup by integration id
+
+	UpdatedBy uuid.UUID `gorm:"type:uuid"`
+	UpdatedAt time.Time
+
+	Project *Project
 }
 
 // simple hook to populate ScopeID after retrieving a Var from the database
@@ -132,17 +121,27 @@ func (v *Var) BeforeCreate(tx *gorm.DB) (err error) {
 }
 
 type Project struct {
-	ProjectID sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
-	Name      string        `gorm:"index;not null"`
+	Base
+
+	ProjectID uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
+	OrgID     uuid.UUID `gorm:"index;type:uuid;not null"`
+	Name      string    `gorm:"index;not null"`
 	RootURL   string
 	Resources []byte
+
+	UpdatedBy uuid.UUID `gorm:"type:uuid"`
+	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`
-	Ownership *Ownership     `gorm:"polymorphic:Entity;"`
+
+	Project *Project
 }
+
+func (Project) IDFieldName() string { return "project_id" }
 
 func ParseProject(r Project) (sdktypes.Project, error) {
 	p, err := sdktypes.StrictProjectFromProto(&sdktypes.ProjectPB{
-		ProjectId: sdktypes.NewIDFromUUID[sdktypes.ProjectID](&r.ProjectID).String(),
+		ProjectId: sdktypes.NewIDFromUUID[sdktypes.ProjectID](r.ProjectID).String(),
+		OrgId:     sdktypes.NewIDFromUUID[sdktypes.OrgID](r.OrgID).String(),
 		Name:      r.Name,
 	})
 	if err != nil {
@@ -162,25 +161,30 @@ type Secret struct {
 }
 
 type Event struct {
-	EventID       sdktypes.UUID  `gorm:"uniqueIndex;type:uuid;not null"`
-	DestinationID sdktypes.UUID  `gorm:"index;type:uuid;not null"`
-	IntegrationID *sdktypes.UUID `gorm:"index;type:uuid"`
-	ConnectionID  *sdktypes.UUID `gorm:"index;type:uuid"`
-	TriggerID     *sdktypes.UUID `gorm:"index;type:uuid"`
+	Base
+
+	ProjectID     uuid.UUID  `gorm:"index;type:uuid;not null"`
+	EventID       uuid.UUID  `gorm:"uniqueIndex;type:uuid;not null"`
+	DestinationID uuid.UUID  `gorm:"index;type:uuid;not null"`
+	IntegrationID *uuid.UUID `gorm:"index;type:uuid"`
+	ConnectionID  *uuid.UUID `gorm:"index;type:uuid"`
+	TriggerID     *uuid.UUID `gorm:"index;type:uuid"`
 
 	EventType string `gorm:"index:idx_event_type_seq,priority:1;index:idx_event_type"`
 	Data      datatypes.JSON
 	Memo      datatypes.JSON
-	CreatedAt time.Time
 	Seq       uint64 `gorm:"primaryKey;autoIncrement:true,index:idx_event_type_seq,priority:2"`
-
-	DeletedAt gorm.DeletedAt `gorm:"index"`
 
 	// enforce foreign keys
 	Connection *Connection
 	Trigger    *Trigger
-	Ownership  *Ownership `gorm:"polymorphic:Entity;"`
+
+	DeletedAt gorm.DeletedAt `gorm:"index"`
+
+	Project *Project
 }
+
+func (Event) IDFieldName() string { return "event_id" }
 
 func ParseEvent(e Event) (sdktypes.Event, error) {
 	var data map[string]sdktypes.Value
@@ -198,15 +202,15 @@ func ParseEvent(e Event) (sdktypes.Event, error) {
 	var did sdktypes.EventDestinationID
 
 	if uuid := e.ConnectionID; uuid != nil {
-		did = sdktypes.NewEventDestinationID(sdktypes.NewIDFromUUID[sdktypes.ConnectionID](uuid))
+		did = sdktypes.NewEventDestinationID(sdktypes.NewIDFromUUIDPtr[sdktypes.ConnectionID](uuid))
 	} else if uuid := e.TriggerID; uuid != nil {
-		did = sdktypes.NewEventDestinationID(sdktypes.NewIDFromUUID[sdktypes.TriggerID](uuid))
+		did = sdktypes.NewEventDestinationID(sdktypes.NewIDFromUUIDPtr[sdktypes.TriggerID](uuid))
 	} else {
 		return sdktypes.InvalidEvent, sdkerrors.NewInvalidArgumentError("event must have a connection or trigger")
 	}
 
 	return sdktypes.StrictEventFromProto(&sdktypes.EventPB{
-		EventId:       sdktypes.NewIDFromUUID[sdktypes.EventID](&e.EventID).String(),
+		EventId:       sdktypes.NewIDFromUUID[sdktypes.EventID](e.EventID).String(),
 		EventType:     e.EventType,
 		Data:          kittehs.TransformMapValues(data, sdktypes.ToProto),
 		Memo:          memo,
@@ -217,9 +221,11 @@ func ParseEvent(e Event) (sdktypes.Event, error) {
 }
 
 type Trigger struct {
-	TriggerID    sdktypes.UUID  `gorm:"primaryKey;type:uuid;not null"`
-	ProjectID    sdktypes.UUID  `gorm:"index;type:uuid;not null"`
-	ConnectionID *sdktypes.UUID `gorm:"index;type:uuid"`
+	Base
+
+	ProjectID    uuid.UUID  `gorm:"index;type:uuid;not null"`
+	TriggerID    uuid.UUID  `gorm:"primaryKey;type:uuid;not null"`
+	ConnectionID *uuid.UUID `gorm:"index;type:uuid"`
 
 	SourceType   string `gorm:"index"`
 	EventType    string
@@ -233,13 +239,16 @@ type Trigger struct {
 	WebhookSlug string `gorm:"index"`
 	Schedule    string
 
+	UpdatedBy uuid.UUID `gorm:"type:uuid"`
+	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 
 	// enforce foreign keys
-	Project    *Project
 	Connection *Connection
-	Ownership  *Ownership `gorm:"polymorphic:Entity;"`
+	Project    *Project
 }
+
+func (Trigger) IDFieldName() string { return "trigger_id" }
 
 func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
 	loc, err := sdktypes.ParseCodeLocation(e.CodeLocation)
@@ -257,10 +266,10 @@ func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
 	}
 
 	return sdktypes.StrictTriggerFromProto(&sdktypes.TriggerPB{
-		TriggerId:    sdktypes.NewIDFromUUID[sdktypes.TriggerID](&e.TriggerID).String(),
+		TriggerId:    sdktypes.NewIDFromUUID[sdktypes.TriggerID](e.TriggerID).String(),
 		SourceType:   srcType.ToProto(),
-		ConnectionId: sdktypes.NewIDFromUUID[sdktypes.ConnectionID](e.ConnectionID).String(),
-		ProjectId:    sdktypes.NewIDFromUUID[sdktypes.ProjectID](&e.ProjectID).String(),
+		ConnectionId: sdktypes.NewIDFromUUIDPtr[sdktypes.ConnectionID](e.ConnectionID).String(),
+		ProjectId:    sdktypes.NewIDFromUUID[sdktypes.ProjectID](e.ProjectID).String(),
 		EventType:    e.EventType,
 		Filter:       e.Filter,
 		CodeLocation: loc.ToProto(),
@@ -271,8 +280,8 @@ func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
 }
 
 type SessionLogRecord struct {
-	SessionID sdktypes.UUID `gorm:"primaryKey:SessionID;type:uuid;not null"`
-	Seq       uint64        `gorm:"primaryKey;not null"`
+	SessionID uuid.UUID `gorm:"primaryKey:SessionID;type:uuid;not null"`
+	Seq       uint64    `gorm:"primaryKey;not null"`
 	Data      datatypes.JSON
 	Type      string `gorm:"index"`
 
@@ -286,8 +295,8 @@ func ParseSessionLogRecord(c SessionLogRecord) (spec sdktypes.SessionLogRecord, 
 }
 
 type SessionCallSpec struct {
-	SessionID sdktypes.UUID `gorm:"primaryKey:SessionID;type:uuid;not null"`
-	Seq       uint32        `gorm:"primaryKey"`
+	SessionID uuid.UUID `gorm:"primaryKey:SessionID;type:uuid;not null"`
+	Seq       uint32    `gorm:"primaryKey"`
 	Data      datatypes.JSON
 
 	// enforce foreign keys
@@ -300,9 +309,9 @@ func ParseSessionCallSpec(c SessionCallSpec) (spec sdktypes.SessionCallSpec, err
 }
 
 type SessionCallAttempt struct {
-	SessionID sdktypes.UUID `gorm:"uniqueIndex:idx_session_id_seq_attempt,priority:1;type:uuid;not null"`
-	Seq       uint32        `gorm:"uniqueIndex:idx_session_id_seq_attempt,priority:2"`
-	Attempt   uint32        `gorm:"uniqueIndex:idx_session_id_seq_attempt,priority:3"`
+	SessionID uuid.UUID `gorm:"uniqueIndex:idx_session_id_seq_attempt,priority:1;type:uuid;not null"`
+	Seq       uint32    `gorm:"uniqueIndex:idx_session_id_seq_attempt,priority:2"`
+	Attempt   uint32    `gorm:"uniqueIndex:idx_session_id_seq_attempt,priority:3"`
 	Start     datatypes.JSON
 	Complete  datatypes.JSON
 
@@ -321,25 +330,30 @@ func ParseSessionCallAttemptComplete(c SessionCallAttempt) (d sdktypes.SessionCa
 }
 
 type Session struct {
-	SessionID        sdktypes.UUID  `gorm:"primaryKey;type:uuid;not null"`
-	BuildID          *sdktypes.UUID `gorm:"index;type:uuid"`
-	ProjectID        *sdktypes.UUID `gorm:"index;type:uuid"`
-	DeploymentID     *sdktypes.UUID `gorm:"index;type:uuid"`
-	EventID          *sdktypes.UUID `gorm:"index;type:uuid"`
-	CurrentStateType int            `gorm:"index"`
+	Base
+
+	ProjectID        uuid.UUID  `gorm:"index;type:uuid;not null"`
+	SessionID        uuid.UUID  `gorm:"primaryKey;type:uuid;not null"`
+	BuildID          uuid.UUID  `gorm:"index;type:uuid;not null"`
+	DeploymentID     *uuid.UUID `gorm:"index;type:uuid"`
+	EventID          *uuid.UUID `gorm:"index;type:uuid"`
+	CurrentStateType int        `gorm:"index"`
 	Entrypoint       string
 	Inputs           datatypes.JSON
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
-	DeletedAt        gorm.DeletedAt `gorm:"index"`
 	Memo             datatypes.JSON
+
+	UpdatedBy uuid.UUID `gorm:"type:uuid"`
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
 
 	// enforce foreign keys
 	Build      *Build
 	Deployment *Deployment
-	Event      *Event     `gorm:"references:EventID"`
-	Ownership  *Ownership `gorm:"polymorphic:Entity;"`
+	Project    *Project
+	Event      *Event `gorm:"references:EventID"`
 }
+
+func (Session) IDFieldName() string { return "session_id" }
 
 func ParseSession(s Session) (sdktypes.Session, error) {
 	ep, err := sdktypes.ParseCodeLocation(s.Entrypoint)
@@ -362,11 +376,11 @@ func ParseSession(s Session) (sdktypes.Session, error) {
 	}
 
 	session, err := sdktypes.StrictSessionFromProto(&sdktypes.SessionPB{
-		SessionId:    sdktypes.NewIDFromUUID[sdktypes.SessionID](&s.SessionID).String(),
+		SessionId:    sdktypes.NewIDFromUUID[sdktypes.SessionID](s.SessionID).String(),
 		BuildId:      sdktypes.NewIDFromUUID[sdktypes.BuildID](s.BuildID).String(),
 		ProjectId:    sdktypes.NewIDFromUUID[sdktypes.ProjectID](s.ProjectID).String(),
-		DeploymentId: sdktypes.NewIDFromUUID[sdktypes.DeploymentID](s.DeploymentID).String(),
-		EventId:      sdktypes.NewIDFromUUID[sdktypes.EventID](s.EventID).String(),
+		DeploymentId: sdktypes.NewIDFromUUIDPtr[sdktypes.DeploymentID](s.DeploymentID).String(),
+		EventId:      sdktypes.NewIDFromUUIDPtr[sdktypes.EventID](s.EventID).String(),
 		Entrypoint:   ep.ToProto(),
 		Inputs:       kittehs.TransformMapValues(inputs, sdktypes.ToProto),
 		CreatedAt:    timestamppb.New(s.CreatedAt),
@@ -382,19 +396,23 @@ func ParseSession(s Session) (sdktypes.Session, error) {
 }
 
 type Deployment struct {
-	DeploymentID sdktypes.UUID  `gorm:"primaryKey;type:uuid;not null"`
-	ProjectID    *sdktypes.UUID `gorm:"index;type:uuid"`
-	BuildID      sdktypes.UUID  `gorm:"type:uuid;not null"`
+	Base
+
+	ProjectID    uuid.UUID `gorm:"index;type:uuid;not null"`
+	DeploymentID uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
+	BuildID      uuid.UUID `gorm:"type:uuid;not null"`
 	State        int32
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
-	DeletedAt    gorm.DeletedAt `gorm:"index"`
+
+	UpdatedBy uuid.UUID `gorm:"type:uuid"`
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
 
 	// enforce foreign keys
-	Project   *Project
-	Build     *Build
-	Ownership *Ownership `gorm:"polymorphic:Entity;"`
+	Build   *Build
+	Project *Project
 }
+
+func (Deployment) IDFieldName() string { return "deployment_id" }
 
 func (d *Deployment) BeforeUpdate(tx *gorm.DB) (err error) {
 	if tx.Statement.Changed() { // if any fields changed
@@ -405,8 +423,8 @@ func (d *Deployment) BeforeUpdate(tx *gorm.DB) (err error) {
 
 func ParseDeployment(d Deployment) (sdktypes.Deployment, error) {
 	deployment, err := sdktypes.StrictDeploymentFromProto(&sdktypes.DeploymentPB{
-		DeploymentId: sdktypes.NewIDFromUUID[sdktypes.DeploymentID](&d.DeploymentID).String(),
-		BuildId:      sdktypes.NewIDFromUUID[sdktypes.BuildID](&d.BuildID).String(),
+		DeploymentId: sdktypes.NewIDFromUUID[sdktypes.DeploymentID](d.DeploymentID).String(),
+		BuildId:      sdktypes.NewIDFromUUID[sdktypes.BuildID](d.BuildID).String(),
 		ProjectId:    sdktypes.NewIDFromUUID[sdktypes.ProjectID](d.ProjectID).String(),
 		State:        deploymentsv1.DeploymentState(d.State),
 		CreatedAt:    timestamppb.New(d.CreatedAt),
@@ -430,8 +448,8 @@ type DeploymentWithStats struct {
 
 func ParseDeploymentWithSessionStats(d DeploymentWithStats) (sdktypes.Deployment, error) {
 	deployment, err := sdktypes.StrictDeploymentFromProto(&sdktypes.DeploymentPB{
-		DeploymentId: sdktypes.NewIDFromUUID[sdktypes.DeploymentID](&d.DeploymentID).String(),
-		BuildId:      sdktypes.NewIDFromUUID[sdktypes.BuildID](&d.BuildID).String(),
+		DeploymentId: sdktypes.NewIDFromUUID[sdktypes.DeploymentID](d.DeploymentID).String(),
+		BuildId:      sdktypes.NewIDFromUUID[sdktypes.BuildID](d.BuildID).String(),
 		ProjectId:    sdktypes.NewIDFromUUID[sdktypes.ProjectID](d.ProjectID).String(),
 		State:        deploymentsv1.DeploymentState(d.State),
 		CreatedAt:    timestamppb.New(d.CreatedAt),
@@ -467,10 +485,10 @@ func ParseDeploymentWithSessionStats(d DeploymentWithStats) (sdktypes.Deployment
 }
 
 type Signal struct {
-	SignalID      sdktypes.UUID  `gorm:"primaryKey;type:uuid;not null"`
-	DestinationID sdktypes.UUID  `gorm:"index;type:uuid;not null"`
-	ConnectionID  *sdktypes.UUID `gorm:"type:uuid"`
-	TriggerID     *sdktypes.UUID `gorm:"type:uuid"`
+	SignalID      uuid.UUID  `gorm:"primaryKey;type:uuid;not null"`
+	DestinationID uuid.UUID  `gorm:"index;type:uuid;not null"`
+	ConnectionID  *uuid.UUID `gorm:"type:uuid"`
+	TriggerID     *uuid.UUID `gorm:"type:uuid"`
 	CreatedAt     time.Time
 	WorkflowID    string
 	Filter        string
@@ -484,9 +502,9 @@ func ParseSignal(r *Signal) (*types.Signal, error) {
 	var dstID sdktypes.EventDestinationID
 
 	if r.ConnectionID != nil {
-		dstID = sdktypes.NewEventDestinationID(sdktypes.NewIDFromUUID[sdktypes.ConnectionID](r.ConnectionID))
+		dstID = sdktypes.NewEventDestinationID(sdktypes.NewIDFromUUIDPtr[sdktypes.ConnectionID](r.ConnectionID))
 	} else if r.TriggerID != nil {
-		dstID = sdktypes.NewEventDestinationID(sdktypes.NewIDFromUUID[sdktypes.TriggerID](r.TriggerID))
+		dstID = sdktypes.NewEventDestinationID(sdktypes.NewIDFromUUIDPtr[sdktypes.TriggerID](r.TriggerID))
 	} else {
 		return nil, sdkerrors.NewInvalidArgumentError("signal must have a connection or trigger")
 	}
@@ -500,32 +518,82 @@ func ParseSignal(r *Signal) (*types.Signal, error) {
 }
 
 type Value struct {
-	ProjectID sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
-	Key       string        `gorm:"primaryKey;not null"`
+	Base
+
+	ProjectID uuid.UUID `gorm:"index;type:uuid;not null"`
+	Key       string    `gorm:"primaryKey;not null"`
 	Value     []byte
 
+	UpdatedBy uuid.UUID `gorm:"type:uuid"`
 	UpdatedAt time.Time
 
-	// foreign key
 	Project *Project
 }
 
+type User struct {
+	Base
+
+	UserID       uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
+	Email        string    `gorm:"uniqueIndex;not null"`
+	Name         string    `gorm:"uniqueIndex;not null"`
+	DisplayName  string
+	Disabled     bool
+	DefaultOrgID uuid.UUID `gorm:"type:uuid"`
+
+	UpdatedBy uuid.UUID `gorm:"type:uuid"`
+	UpdatedAt time.Time
+}
+
+func ParseUser(r User) (sdktypes.User, error) {
+	n, err := sdktypes.StrictParseSymbol(r.Name)
+	if err != nil {
+		return sdktypes.InvalidUser, err
+	}
+
+	return sdktypes.NewUser(r.Email).
+		WithID(sdktypes.NewIDFromUUID[sdktypes.UserID](r.UserID)).
+		WithDisplayName(r.DisplayName).
+		WithDefaultOrgID(sdktypes.NewIDFromUUID[sdktypes.OrgID](r.DefaultOrgID)).
+		WithName(n).
+		WithDisabled(r.Disabled), nil
+}
+
+type Org struct {
+	Base
+
+	OrgID       uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
+	Name        string    `gorm:"uniqueIndex;not null"`
+	DisplayName string
+
+	UpdatedBy uuid.UUID `gorm:"type:uuid"`
+	UpdatedAt time.Time
+}
+
+func ParseOrg(r Org) (sdktypes.Org, error) {
+	n, err := sdktypes.ParseSymbol(r.Name)
+	if err != nil {
+		return sdktypes.InvalidOrg, fmt.Errorf("name: %w", err)
+	}
+
+	return sdktypes.NewOrg(n).
+		WithID(sdktypes.NewIDFromUUID[sdktypes.OrgID](r.OrgID)).
+		WithDisplayName(r.DisplayName), nil
+}
+
+type OrgMember struct {
+	Base
+
+	OrgID  uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
+	UserID uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
+
+	Org  *Org
+	User *User
+}
+
+// TODO: Remove after migration to new ownership is done.
 type Ownership struct {
-	EntityID   sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
-	EntityType string        `gorm:"not null"`
+	EntityID   uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
+	EntityType string    `gorm:"not null"`
 
 	UserID string `gorm:"not null"`
-
-	// TODO: Polymorphic associations won't enforce foreign key to entities in different tables
-	// we might need to have separated ownership tables for each entity.
-}
-
-type User struct {
-	UserID      sdktypes.UUID `gorm:"primaryKey;type:uuid;not null"`
-	Email       string        `gorm:"uniqueIndex;not null"`
-	DisplayName string
-}
-
-func ParseUser(r User) sdktypes.User {
-	return sdktypes.NewUser(r.Email, r.DisplayName).WithID(sdktypes.NewIDFromUUID[sdktypes.UserID](&r.UserID))
 }
