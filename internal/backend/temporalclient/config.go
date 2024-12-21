@@ -35,8 +35,12 @@ type Config struct {
 	Namespace             string `koanf:"namespace"`
 
 	// DevServer.ClientOptions is not used.
-	DevServer testsuite.DevServerOptions `koanf:"dev_server"`
-	TLS       tlsConfig                  `koanf:"tls"`
+	DevServer                   testsuite.DevServerOptions `koanf:"dev_server"`
+	DevServerStartMaxAttempts   int                        `koanf:"dev_server_start_max_attempts"`
+	DevServerStartRetryInterval time.Duration              `koanf:"dev_server_start_retry_interval"`
+	DevServerStartTimeout       time.Duration              `koanf:"dev_server_start_timeout"`
+
+	TLS tlsConfig `koanf:"tls"`
 
 	DataConverter DataConverterConfig `koanf:"data_converter"`
 
@@ -68,7 +72,9 @@ var (
 				EnableUI:   true,
 				DBFilename: filepath.Join(xdg.DataHomeDir(), "temporal_dev.sqlite"),
 			},
-			EnableHelperRedirect: true,
+			DevServerStartMaxAttempts: 1,
+			DevServerStartTimeout:     time.Second * 5,
+			EnableHelperRedirect:      true,
 		},
 		Test: &Config{
 			Monitor:              defaultMonitorConfig,
@@ -77,6 +83,9 @@ var (
 				LogLevel: zapcore.WarnLevel.String(),
 				EnableUI: true,
 			},
+			DevServerStartMaxAttempts:   3,
+			DevServerStartRetryInterval: time.Second,
+			DevServerStartTimeout:       time.Second * 5,
 		},
 	}
 )

@@ -42,7 +42,7 @@ up() {
     "${ak_filename}" --config "http.addr=:0" --config "runtimes.lazy_load_local_venv=true" --config "http.addr_filename=${addr_filename}" up -m test >& "${logfn}" &
     echo "waiting for autokitteh to be ready"
 
-    while IFS= read -r LL || [[ -n "$LL" ]]; do
+    while IFS= read -t 10 -r LL || [[ -n "$LL" ]]; do
         # TODO: maybe a more accurate way to parse.
         if [[ "${LL}" =~ "ready" ]]; then
             break
