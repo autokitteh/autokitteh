@@ -476,6 +476,7 @@ func (o *oauth) getConfigWithConnection(ctx context.Context, intg string, cid sd
 	cfgCopy.ClientSecret = vs.GetValueByString("client_secret")
 
 	// Special case: Auth0 uses a dynamic domain stored in vars.
+	// TODO(INT-129): Add dynamic domain handling to all OAuth integrations.
 	if intg == "auth0" {
 		cfgCopy.Endpoint.AuthURL = strings.Replace(cfgCopy.Endpoint.AuthURL, "{{AUTH0_DOMAIN}}", vs.GetValueByString("auth0_domain"), 1)
 		cfgCopy.Endpoint.TokenURL = strings.Replace(cfgCopy.Endpoint.TokenURL, "{{AUTH0_DOMAIN}}", vs.GetValueByString("auth0_domain"), 1)
