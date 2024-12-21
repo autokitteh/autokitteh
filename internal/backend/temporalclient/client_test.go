@@ -3,6 +3,7 @@ package temporalclient
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.temporal.io/sdk/client"
@@ -18,7 +19,10 @@ func TestStartDevServer(t *testing.T) {
 
 	c := &impl{
 		cfg: &Config{
-			DevServer: testsuite.DevServerOptions{},
+			DevServer:                   testsuite.DevServerOptions{},
+			DevServerStartMaxAttempts:   3,
+			DevServerStartRetryInterval: time.Second,
+			DevServerStartTimeout:       time.Second * 5,
 		},
 		opts: client.Options{},
 		done: make(chan struct{}),
