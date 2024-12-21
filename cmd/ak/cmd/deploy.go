@@ -46,7 +46,7 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 			return fmt.Errorf("project name provided without manifest")
 		}
 
-		p, pid, err := r.ProjectNameOrID(ctx, project)
+		pid, err := r.ProjectNameOrID(ctx, project)
 		if err != nil {
 			err = fmt.Errorf("project: %w", err)
 
@@ -57,7 +57,7 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 			return err
 		}
 
-		if p.IsValid() {
+		if pid.IsValid() {
 			logFunc(cmd, "plan")(fmt.Sprintf("project %q: found, id=%q", project, pid))
 		}
 

@@ -31,7 +31,7 @@ func ParseEventDestinationID(s string) (EventDestinationID, error) {
 	}
 
 	switch parsed.Kind() {
-	case triggerIDKind, connectionIDKind:
+	case TriggerIDKind, ConnectionIDKind:
 		return EventDestinationID{parsed}, nil
 	default:
 		return InvalidEventDestinationID, sdkerrors.NewInvalidArgumentError("invalid executor id")
@@ -48,7 +48,7 @@ func (e EventDestinationID) ToTriggerID() TriggerID {
 	return id
 }
 
-func (e EventDestinationID) IsConnectionID() bool { return e.Kind() == connectionIDKind }
-func (e EventDestinationID) IsTriggerID() bool    { return e.Kind() == triggerIDKind }
+func (e EventDestinationID) IsConnectionID() bool { return e.Kind() == ConnectionIDKind }
+func (e EventDestinationID) IsTriggerID() bool    { return e.Kind() == TriggerIDKind }
 
 func (e EventDestinationID) AsID() ID { return e }

@@ -7,6 +7,9 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { Message, proto3 } from "@bufbuild/protobuf";
 
 /**
+ * `name` is an org wide unique symbol for the project.
+ * `display_name` is a human-readable name for the project.
+ *
  * @generated from message autokitteh.projects.v1.Project
  */
 export class Project extends Message<Project> {
@@ -20,6 +23,11 @@ export class Project extends Message<Project> {
    */
   name = "";
 
+  /**
+   * @generated from field: string org_id = 4;
+   */
+  orgId = "";
+
   constructor(data?: PartialMessage<Project>) {
     super();
     proto3.util.initPartial(data, this);
@@ -30,6 +38,7 @@ export class Project extends Message<Project> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "org_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Project {

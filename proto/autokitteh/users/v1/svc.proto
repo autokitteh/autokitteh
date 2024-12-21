@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package autokitteh.users.v1;
+
+import "autokitteh/users/v1/user.proto";
+import "buf/validate/validate.proto";
+
+message CreateRequest {
+  User user = 1 [(buf.validate.field).required = true];
+}
+
+message CreateResponse {
+  string user_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message GetRequest {
+  // at least one of these fields must be set.
+  string user_id = 1;
+  string email = 2;
+  string name = 3;
+}
+
+message GetResponse {
+  User user = 1;
+}
+
+message UpdateRequest {
+  User user = 1 [(buf.validate.field).required = true];
+}
+
+message UpdateResponse {}
+
+service UsersService {
+  rpc Create(CreateRequest) returns (CreateResponse);
+  rpc Get(GetRequest) returns (GetResponse);
+  rpc Update(UpdateRequest) returns (UpdateResponse);
+}

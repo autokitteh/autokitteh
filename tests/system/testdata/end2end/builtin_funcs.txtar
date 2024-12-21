@@ -9,7 +9,7 @@ resp code == 202
 wait 5s for session ses_00000000000000000000000007
 
 # Check session's output and final state.
-ak session log --prints-only --page-size 50
+ak session log --prints-only --page-size 50 -p my_project
 return code == 0
 output contains '1st random int with seed: 5'
 output contains '2nd random int with seed: 2'
@@ -20,7 +20,7 @@ output contains 'Store del = 1'
 output regex ' \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{1,9} \+0000 UTC'
 output contains 'done'
 
-ak session list
+ak session list -p my_project
 return code == 0
 output contains 'state:SESSION_STATE_TYPE_COMPLETED'
 

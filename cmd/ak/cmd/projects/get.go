@@ -5,6 +5,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 var getCmd = common.StandardCommand(&cobra.Command{
@@ -18,10 +19,15 @@ var getCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		p, _, err := r.ProjectNameOrID(ctx, args[0])
-		err = common.AddNotFoundErrIfCond(err, p.IsValid())
+		pid, err := r.ProjectNameOrID(ctx, args[0])
+		err = common.AddNotFoundErrIfCond(err, pid.IsValid())
 		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "project"); err == nil {
-			common.RenderKVIfV("project", p)
+			var p sdktypes.Project
+			p, err = projects().GetByID(ctx, pid)
+			err = common.AddNotFoundErrIfCond(err, p.IsValid())
+			if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "project"); err == nil {
+				common.RenderKVIfV("project", p)
+			}
 		}
 		return err
 	},

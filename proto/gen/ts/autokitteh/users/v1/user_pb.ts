@@ -7,6 +7,9 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { Message, proto3 } from "@bufbuild/protobuf";
 
 /**
+ * `display_name` is a human-readable name for the user.
+ * `name` is a globally unique symbol for the user.
+ *
  * @generated from message autokitteh.users.v1.User
  */
 export class User extends Message<User> {
@@ -16,19 +19,33 @@ export class User extends Message<User> {
   userId = "";
 
   /**
+   * if email is empty, user cannot login.
+   *
    * @generated from field: string email = 2;
    */
   email = "";
 
   /**
-   * @generated from field: string display_name = 3;
+   * @generated from field: string name = 3;
+   */
+  name = "";
+
+  /**
+   * @generated from field: string display_name = 4;
    */
   displayName = "";
 
   /**
-   * @generated from field: bool disabled = 4;
+   * @generated from field: bool disabled = 5;
    */
   disabled = false;
+
+  /**
+   * org to use for projects, if not otherwise specified.
+   *
+   * @generated from field: string default_org_id = 6;
+   */
+  defaultOrgId = "";
 
   constructor(data?: PartialMessage<User>) {
     super();
@@ -40,8 +57,10 @@ export class User extends Message<User> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "disabled", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "disabled", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "default_org_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): User {

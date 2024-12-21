@@ -44,11 +44,6 @@ class ProjectsServiceStub(object):
                 request_serializer=autokitteh_dot_projects_dot_v1_dot_svc__pb2.BuildRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_projects_dot_v1_dot_svc__pb2.BuildResponse.FromString,
                 )
-        self.ListForOwner = channel.unary_unary(
-                '/autokitteh.projects.v1.ProjectsService/ListForOwner',
-                request_serializer=autokitteh_dot_projects_dot_v1_dot_svc__pb2.ListForOwnerRequest.SerializeToString,
-                response_deserializer=autokitteh_dot_projects_dot_v1_dot_svc__pb2.ListForOwnerResponse.FromString,
-                )
         self.SetResources = channel.unary_unary(
                 '/autokitteh.projects.v1.ProjectsService/SetResources',
                 request_serializer=autokitteh_dot_projects_dot_v1_dot_svc__pb2.SetResourcesRequest.SerializeToString,
@@ -105,13 +100,6 @@ class ProjectsServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def ListForOwner(self, request, context):
-        """DEPRECATED. Use List instead.
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
     def SetResources(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -162,11 +150,6 @@ def add_ProjectsServiceServicer_to_server(servicer, server):
                     servicer.Build,
                     request_deserializer=autokitteh_dot_projects_dot_v1_dot_svc__pb2.BuildRequest.FromString,
                     response_serializer=autokitteh_dot_projects_dot_v1_dot_svc__pb2.BuildResponse.SerializeToString,
-            ),
-            'ListForOwner': grpc.unary_unary_rpc_method_handler(
-                    servicer.ListForOwner,
-                    request_deserializer=autokitteh_dot_projects_dot_v1_dot_svc__pb2.ListForOwnerRequest.FromString,
-                    response_serializer=autokitteh_dot_projects_dot_v1_dot_svc__pb2.ListForOwnerResponse.SerializeToString,
             ),
             'SetResources': grpc.unary_unary_rpc_method_handler(
                     servicer.SetResources,
@@ -292,23 +275,6 @@ class ProjectsService(object):
         return grpc.experimental.unary_unary(request, target, '/autokitteh.projects.v1.ProjectsService/Build',
             autokitteh_dot_projects_dot_v1_dot_svc__pb2.BuildRequest.SerializeToString,
             autokitteh_dot_projects_dot_v1_dot_svc__pb2.BuildResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
-
-    @staticmethod
-    def ListForOwner(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/autokitteh.projects.v1.ProjectsService/ListForOwner',
-            autokitteh_dot_projects_dot_v1_dot_svc__pb2.ListForOwnerRequest.SerializeToString,
-            autokitteh_dot_projects_dot_v1_dot_svc__pb2.ListForOwnerResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
