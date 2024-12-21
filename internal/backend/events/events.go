@@ -31,7 +31,7 @@ func (e *events) Get(ctx context.Context, id sdktypes.EventID) (sdktypes.Event, 
 }
 
 func (e *events) List(ctx context.Context, filter sdkservices.ListEventsFilter) ([]sdktypes.Event, error) {
-	if !filter.OrgID.IsValid() && !filter.ProjectID.IsValid() && !filter.DestinationID.IsValid() {
+	if !filter.AnyIDSpecified() {
 		filter.OrgID = authcontext.GetAuthnInferredOrgID(ctx)
 	}
 

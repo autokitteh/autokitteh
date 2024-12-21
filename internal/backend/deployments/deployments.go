@@ -6,6 +6,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
@@ -179,7 +180,18 @@ func (d *deployments) Delete(ctx context.Context, id sdktypes.DeploymentID) erro
 }
 
 func (d *deployments) List(ctx context.Context, filter sdkservices.ListDeploymentsFilter) ([]sdktypes.Deployment, error) {
-	if err := authz.CheckContext(ctx, filter.ProjectID, "read:list-deployments", authz.WithData("filter", filter)); err != nil {
+	if !filter.AnyIDSpecified() {
+		filter.OrgID = authcontext.GetAuthnInferredOrgID(ctx)
+	}
+
+	if err := authz.CheckContext(
+		ctx,
+		sdktypes.InvalidDeploymentID, "read:list",
+		authz.WithData("filter", filter),
+		authz.WithAssociationWithID("project", filter.ProjectID),
+		authz.WithAssociationWithID("build", filter.BuildID),
+		authz.WithAssociationWithID("org", filter.OrgID),
+	); err != nil {
 		return nil, err
 	}
 

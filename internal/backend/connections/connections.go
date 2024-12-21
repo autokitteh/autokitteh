@@ -7,6 +7,7 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -89,7 +90,19 @@ func (c *Connections) Delete(ctx context.Context, id sdktypes.ConnectionID) erro
 }
 
 func (c *Connections) List(ctx context.Context, filter sdkservices.ListConnectionsFilter) ([]sdktypes.Connection, error) {
-	if err := authz.CheckContext(ctx, filter.ProjectID, "read:list-connections", authz.WithData("filter", filter)); err != nil {
+	if !filter.AnyIDSpecified() {
+		filter.OrgID = authcontext.GetAuthnInferredOrgID(ctx)
+	}
+
+	if err := authz.CheckContext(
+		ctx,
+		sdktypes.InvalidConnectionID,
+		"read:list",
+		authz.WithData("filter", filter),
+		authz.WithAssociationWithID("org", filter.OrgID),
+		authz.WithAssociationWithID("project", filter.ProjectID),
+		authz.WithAssociationWithID("integration", filter.IntegrationID),
+	); err != nil {
 		return nil, err
 	}
 

@@ -90,6 +90,8 @@ func (gdb *gormdb) listDeploymentsCommonQuery(ctx context.Context, filter sdkser
 
 	q = withProjectID(q, "deployments", filter.ProjectID)
 
+	q = withProjectOrgID(q, filter.OrgID, "deployment_id")
+
 	if filter.BuildID.IsValid() {
 		q = q.Where("deployments.build_id = ?", filter.BuildID.UUIDValue())
 	}
@@ -104,8 +106,7 @@ func (gdb *gormdb) listDeploymentsCommonQuery(ctx context.Context, filter sdkser
 		q = q.Limit(int(filter.Limit))
 	}
 
-	q = q.Order("created_at desc")
-	return q
+	return q.Order("created_at desc")
 }
 
 func (db *gormdb) listDeploymentsWithStats(ctx context.Context, filter sdkservices.ListDeploymentsFilter) ([]scheme.DeploymentWithStats, error) {

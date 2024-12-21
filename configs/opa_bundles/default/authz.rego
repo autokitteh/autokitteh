@@ -111,6 +111,13 @@ allow if {
 	is_org_member_of_resource
 }
 
+allow if {
+	authn
+	input.kind == "con"
+	input.action == "list"
+	member_of_single_assosicated_org_id
+}
+
 #
 # Deployments
 #
@@ -127,6 +134,13 @@ allow if {
 	input.kind == "dep"
 	input.action in ["activate", "deactivate", "delete", "test"]
 	is_org_member_of_resource
+}
+
+allow if {
+	authn
+	input.kind == "dep"
+	input.action == "list"
+	member_of_single_assosicated_org_id
 }
 
 #

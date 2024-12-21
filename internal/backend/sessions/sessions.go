@@ -6,6 +6,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncalls"
@@ -90,6 +91,10 @@ func (s *sessions) Stop(ctx context.Context, sessionID sdktypes.SessionID, reaso
 }
 
 func (s *sessions) List(ctx context.Context, filter sdkservices.ListSessionsFilter) (*sdkservices.ListSessionResult, error) {
+	if !filter.AnyIDSpecified() {
+		filter.OrgID = authcontext.GetAuthnInferredOrgID(ctx)
+	}
+
 	if err := authz.CheckContext(
 		ctx,
 		sdktypes.InvalidSessionID,
@@ -97,6 +102,7 @@ func (s *sessions) List(ctx context.Context, filter sdkservices.ListSessionsFilt
 		authz.WithData("filter", filter),
 		authz.WithAssociationWithID("deployment", filter.DeploymentID),
 		authz.WithAssociationWithID("project", filter.ProjectID),
+		authz.WithAssociationWithID("org", filter.OrgID),
 		authz.WithAssociationWithID("event", filter.EventID),
 		authz.WithAssociationWithID("build", filter.BuildID),
 	); err != nil {

@@ -62,25 +62,25 @@ func (s *server) List(ctx context.Context, req *connect.Request[deploymentsv1.Li
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
-	if bid.IsValid() {
-		filter.BuildID = bid
-	}
+	filter.BuildID = bid
 
 	pid, err := sdktypes.ParseProjectID(msg.ProjectId)
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
-	if pid.IsValid() {
-		filter.ProjectID = pid
+	filter.ProjectID = pid
+
+	oid, err := sdktypes.ParseOrgID(req.Msg.OrgId)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
 	}
+	filter.OrgID = oid
 
 	state, err := sdktypes.DeploymentStateFromProto(msg.State)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	if state != sdktypes.DeploymentStateUnspecified {
-		filter.State = state
-	}
+	filter.State = state
 
 	filter.IncludeSessionStats = msg.IncludeSessionStats
 

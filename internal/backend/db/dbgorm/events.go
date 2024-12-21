@@ -29,9 +29,7 @@ func (gdb *gormdb) getEvent(ctx context.Context, eventID uuid.UUID) (*scheme.Eve
 func (gdb *gormdb) listEvents(ctx context.Context, filter sdkservices.ListEventsFilter) ([]scheme.Event, error) {
 	q := gdb.db.WithContext(ctx)
 
-	if filter.OrgID.IsValid() {
-		q = q.Joins("INNER JOIN projects ON projects.org_id = ?", filter.OrgID.UUIDValue()).Group("event_id")
-	}
+	q = withProjectOrgID(q, filter.OrgID, "event_id")
 
 	if filter.ProjectID.IsValid() {
 		q = q.Where("project_id = ?", filter.ProjectID.UUIDValue())

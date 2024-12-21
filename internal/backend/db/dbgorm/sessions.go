@@ -43,7 +43,7 @@ func (gdb *gormdb) createSession(ctx context.Context, session *scheme.Session) e
 }
 
 func (gdb *gormdb) deleteSession(ctx context.Context, sessionID uuid.UUID) error {
-	return gdb.db.Delete(&scheme.Session{SessionID: sessionID}).Error
+	return gdb.db.WithContext(ctx).Delete(&scheme.Session{SessionID: sessionID}).Error
 }
 
 func (gdb *gormdb) updateSessionState(ctx context.Context, sessionID uuid.UUID, state sdktypes.SessionState) error {
@@ -69,6 +69,8 @@ func (gdb *gormdb) listSessions(ctx context.Context, f sdkservices.ListSessionsF
 	q := gdb.db.WithContext(ctx)
 
 	q = withProjectID(q, "", f.ProjectID)
+
+	q = withProjectOrgID(q, f.OrgID, "session_id")
 
 	if f.DeploymentID.IsValid() {
 		q = q.Where("deployment_id = ?", f.DeploymentID.UUIDValue())

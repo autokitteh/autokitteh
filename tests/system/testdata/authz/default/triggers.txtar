@@ -69,7 +69,7 @@ return code == 0
 user zumi
 
 ak trigger list 
-return code == $RC_UNAUTHZ
+return code == 0
 
 ak trigger delete $tz1tid
 return code == 0

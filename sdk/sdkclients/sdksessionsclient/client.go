@@ -108,6 +108,7 @@ func (c *client) GetLog(ctx context.Context, filter sdkservices.ListSessionLogRe
 func (c *client) List(ctx context.Context, filter sdkservices.ListSessionsFilter) (*sdkservices.ListSessionResult, error) {
 	resp, err := c.client.List(ctx, connect.NewRequest(&sessionsv1.ListRequest{
 		DeploymentId: filter.DeploymentID.String(),
+		OrgId:        filter.OrgID.String(),
 		ProjectId:    filter.ProjectID.String(),
 		EventId:      filter.EventID.String(),
 		BuildId:      filter.BuildID.String(),

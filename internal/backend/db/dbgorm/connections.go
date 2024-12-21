@@ -63,7 +63,7 @@ func (gdb *gormdb) getConnection(ctx context.Context, id uuid.UUID) (*scheme.Con
 
 func findConnections(query *gorm.DB) ([]scheme.Connection, error) {
 	var cs []scheme.Connection
-	if err := query.Find(&cs).Error; err != nil {
+	if err := query.Group("connection_id").Find(&cs).Error; err != nil {
 		return nil, err
 	}
 	return cs, nil
@@ -78,6 +78,8 @@ func (gdb *gormdb) listConnections(ctx context.Context, filter sdkservices.ListC
 	q := gdb.db.WithContext(ctx)
 
 	q = withProjectID(q, "", filter.ProjectID)
+
+	q = withProjectOrgID(q, filter.OrgID, "connection_id")
 
 	if filter.IntegrationID.IsValid() {
 		q = q.Where("integration_id = ?", filter.IntegrationID.UUIDValue())
@@ -94,6 +96,7 @@ func (gdb *gormdb) listConnections(ctx context.Context, filter sdkservices.ListC
 	if idsOnly {
 		q = q.Select("connection_id")
 	}
+
 	return findConnections(q)
 }
 

@@ -23,15 +23,24 @@ func uuidPtrOrNil(o interface{ UUIDValue() uuid.UUID }) *uuid.UUID {
 }
 
 func withProjectID(q *gorm.DB, field string, pid sdktypes.ProjectID) *gorm.DB {
-	if pid.IsValid() {
-		if field != "" {
-			field += "."
-		}
-
-		return q.Where(field+"project_id = ?", pid.UUIDValue())
+	if !pid.IsValid() {
+		return q
 	}
 
-	return q
+	if field != "" {
+		field += "."
+	}
+
+	return q.Where(field+"project_id = ?", pid.UUIDValue())
+}
+
+// groupBy is necessary to avoid duplications because of the join.
+func withProjectOrgID(q *gorm.DB, oid sdktypes.OrgID, groupBy string) *gorm.DB {
+	if !oid.IsValid() {
+		return q
+	}
+
+	return q.Joins("INNER JOIN projects ON projects.org_id = ?", oid.UUIDValue()).Group(groupBy)
 }
 
 // ---
