@@ -31,6 +31,7 @@ func Start(l *zap.Logger, muxes *muxes.Muxes, vars sdkservices.Vars) {
 	// to have an authenticated user context, so the DB layer won't reject them.
 	// For this purpose, init webhooks are managed by the "auth" mux, which passes
 	// through AutoKitteh's auth middleware to extract the user ID from a cookie.
-	muxes.Auth.Handle("GET "+oauthPath, NewHandler(l, vars))
-	muxes.Auth.Handle("GET "+savePath, NewHandler(l, vars))
+	h := NewHTTPHandler(l, vars)
+	muxes.Auth.HandleFunc("GET "+oauthPath, h.handleOAuth)
+	muxes.Auth.HandleFunc("POST "+savePath, h.handleSave)
 }

@@ -84,11 +84,15 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 		// below (if it uses OAuth). This hard-coding is EXTREMELY TEMPORARY!
 		configs: map[string]*oauth2.Config{
 			"auth0": {
-				ClientID:     os.Getenv("AUTH0_CLIENT_ID"),
-				ClientSecret: os.Getenv("AUTH0_CLIENT_SECRET"),
+				// Auth0 is a special case: environment variables are not supported.
+				// All authentication credentials must be stored in `vars`.
+				ClientID:     "",
+				ClientSecret: "",
 				Endpoint: oauth2.Endpoint{
-					AuthURL:  fmt.Sprintf("https://%s/oauth/authorize", os.Getenv("AUTH0_DOMAIN")),
-					TokenURL: fmt.Sprintf("https://%s/oauth/token", os.Getenv("AUTH0_DOMAIN")),
+					// Each Auth0 app has a unique domain stored in `vars`.
+					// This domain is dynamically replaced during the authentication flow.
+					AuthURL:  "https://{{AUTH0_DOMAIN}}/oauth/authorize",
+					TokenURL: "https://{{AUTH0_DOMAIN}}/oauth/token",
 				},
 				RedirectURL: redirectURL + "auth0",
 				Scopes: []string{
@@ -397,8 +401,8 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 
 		opts: map[string]map[string]string{
 			"auth0": {
-				// TODO: audience URL (from env var).
-				"audience":   fmt.Sprintf("https://%s/api/v2/", os.Getenv("AUTH0_DOMAIN")),
+				// Using template-style placeholder for AUTH0_DOMAIN
+				"audience":   "https://{{AUTH0_DOMAIN}}/api/v2/",
 				"grant_type": "client_credentials",
 			},
 			"gmail": {
@@ -470,6 +474,13 @@ func (o *oauth) getConfigWithConnection(ctx context.Context, intg string, cid sd
 	cfgCopy := *baseCfg
 	cfgCopy.ClientID = vs.GetValueByString("client_id")
 	cfgCopy.ClientSecret = vs.GetValueByString("client_secret")
+
+	// Special case: Auth0 uses a dynamic domain stored in vars. 
+	if intg == "auth0" {
+		cfgCopy.Endpoint.AuthURL = strings.Replace(cfgCopy.Endpoint.AuthURL, "{{AUTH0_DOMAIN}}", vs.GetValueByString("auth0_domain"), 1)
+		cfgCopy.Endpoint.TokenURL = strings.Replace(cfgCopy.Endpoint.TokenURL, "{{AUTH0_DOMAIN}}", vs.GetValueByString("auth0_domain"), 1)
+		opts["audience"] = strings.Replace(opts["audience"], "{{AUTH0_DOMAIN}}", vs.GetValueByString("auth0_domain"), 1)
+	}
 
 	return &cfgCopy, opts, nil
 }
