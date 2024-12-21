@@ -144,7 +144,7 @@ func buildInput(ctx context.Context, db db.DB, id sdktypes.ID, action string, cf
 		"action":                 act,                                // [xxx:]action of action.
 		"resource_id":            id.String(),                        // resource id.
 		"resource_org_id":        oid.String(),                       // resource org id, if resource id is valid. else "".
-		"resource_project_id":    pid.String(),                       // resource projec tid, if resource id is valid. else "".
+		"resource_project_id":    pid.String(),                       // resource project tid, if resource id is valid. else "".
 		"data":                   cfg.data,                           // aux data supplied by the caller.
 		"associated_org_ids":     slices.Collect(maps.Keys(oidsSet)), // all unique non-zero associated org ids and the resource org id.
 		"associated_project_ids": slices.Collect(maps.Keys(pidsSet)), // all unique non-zero associated project ids and the resource project id.

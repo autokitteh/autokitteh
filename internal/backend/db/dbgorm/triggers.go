@@ -19,7 +19,7 @@ func (gdb *gormdb) createTrigger(ctx context.Context, trigger *scheme.Trigger) e
 }
 
 func (gdb *gormdb) deleteTrigger(ctx context.Context, triggerID uuid.UUID) error {
-	// NOTE: we allow delettion of triggeres referenced by events. see ENG-1535
+	// NOTE: we allow delettion of triggers referenced by events. see ENG-1535
 	return gdb.db.WithContext(ctx).Delete(&scheme.Trigger{TriggerID: triggerID}).Error
 }
 

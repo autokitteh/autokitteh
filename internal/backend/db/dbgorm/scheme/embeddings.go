@@ -1,4 +1,3 @@
-// TODO: Make atlas/goose ignore these structs.
 package scheme
 
 import (
