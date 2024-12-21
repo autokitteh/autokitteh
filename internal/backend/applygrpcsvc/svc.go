@@ -6,6 +6,7 @@ import (
 
 	"connectrpc.com/connect"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/manifest"
@@ -14,6 +15,7 @@ import (
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/apply/v1/applyv1connect"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 type server struct {
@@ -37,6 +39,15 @@ func (s *server) Apply(ctx context.Context, req *connect.Request[applyv1.ApplyRe
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
+	oid, err := sdktypes.ParseOrgID(msg.OrgId)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	if !oid.IsValid() {
+		oid = authcontext.GetAuthnInferredOrgID(ctx)
+	}
+
 	man, err := manifest.Read([]byte(msg.Manifest), msg.Path)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
@@ -46,7 +57,7 @@ func (s *server) Apply(ctx context.Context, req *connect.Request[applyv1.ApplyRe
 
 	actions, err := manifest.Plan(ctx, man, s.client, manifest.WithLogger(func(msg string) {
 		logs = append(logs, fmt.Sprintf("[plan] %s", msg))
-	}), manifest.WithProjectName(msg.ProjectName))
+	}), manifest.WithProjectName(msg.ProjectName), manifest.WithOrgID(oid))
 	if err != nil {
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}

@@ -40,15 +40,15 @@ const (
 type handler struct {
 	logger        *zap.Logger
 	vars          sdkservices.Vars
-	dispatcher    sdkservices.Dispatcher
+	dispatch      sdkservices.DispatchFunc
 	integrationID sdktypes.IntegrationID
 }
 
-func NewHandler(l *zap.Logger, vars sdkservices.Vars, d sdkservices.Dispatcher, id sdktypes.IntegrationID) handler {
+func NewHandler(l *zap.Logger, vars sdkservices.Vars, d sdkservices.DispatchFunc, id sdktypes.IntegrationID) handler {
 	return handler{
 		logger:        l,
 		vars:          vars,
-		dispatcher:    d,
+		dispatch:      d,
 		integrationID: id,
 	}
 }
@@ -183,7 +183,7 @@ func (h handler) listConnectionIDs(ctx context.Context, appID, enterpriseID, tea
 func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, cids []sdktypes.ConnectionID, e sdktypes.Event) {
 	l := extrazap.ExtractLoggerFromContext(ctx)
 	for _, cid := range cids {
-		eid, err := h.dispatcher.Dispatch(ctx, e.WithConnectionDestinationID(cid), nil)
+		eid, err := h.dispatch(ctx, e.WithConnectionDestinationID(cid), nil)
 		l := l.With(
 			zap.String("connectionID", cid.String()),
 			zap.String("eventID", eid.String()),

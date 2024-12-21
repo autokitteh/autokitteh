@@ -138,7 +138,7 @@ func runTestSteps(t *testing.T, steps []string, akPath, akAddr string, cfg *test
 		step = expandCapture(step)
 
 		if step == "exit" {
-			t.Log("exitting test")
+			t.Log("exiting test")
 			break
 		}
 

@@ -8,6 +8,7 @@ import (
 
 type ListSessionsFilter struct {
 	DeploymentID sdktypes.DeploymentID
+	OrgID        sdktypes.OrgID
 	ProjectID    sdktypes.ProjectID
 	EventID      sdktypes.EventID
 	BuildID      sdktypes.BuildID
@@ -15,6 +16,10 @@ type ListSessionsFilter struct {
 	CountOnly    bool
 
 	sdktypes.PaginationRequest
+}
+
+func (f ListSessionsFilter) AnyIDSpecified() bool {
+	return f.DeploymentID.IsValid() || f.OrgID.IsValid() || f.ProjectID.IsValid() || f.EventID.IsValid() || f.BuildID.IsValid()
 }
 
 type ListSessionResult struct {

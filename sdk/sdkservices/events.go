@@ -19,6 +19,11 @@ type ListEventsFilter struct {
 	Order             ListOrder
 }
 
+func (f ListEventsFilter) AnyIDSpecified() bool {
+	// Do not put IntegrationID here - it does not limit the scope of the results org-wise
+	return f.OrgID.IsValid() || f.ProjectID.IsValid() || f.DestinationID.IsValid()
+}
+
 type ListOrder string
 
 const (

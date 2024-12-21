@@ -58,7 +58,7 @@ func planProject(ctx context.Context, mproj *Project, client sdkservices.Service
 
 	var curr sdktypes.Project
 	if !opts.fromScratch {
-		curr, err = sdkerrors.IgnoreNotFoundErr(client.Projects().GetByName(ctx, name))
+		curr, err = sdkerrors.IgnoreNotFoundErr(client.Projects().GetByName(ctx, opts.oid, name))
 		if err != nil {
 			return nil, fmt.Errorf("get project: %w", err)
 		}
@@ -71,7 +71,8 @@ func planProject(ctx context.Context, mproj *Project, client sdkservices.Service
 	)
 
 	desired, err := sdktypes.ProjectFromProto(&sdktypes.ProjectPB{
-		Name: mproj.Name,
+		Name:  mproj.Name,
+		OrgId: opts.oid.String(),
 	})
 	if err != nil {
 		return nil, err
@@ -87,7 +88,7 @@ func planProject(ctx context.Context, mproj *Project, client sdkservices.Service
 
 		desired = desired.WithID(pid)
 
-		if curr.Equal(desired) {
+		if curr.WithOrgID(opts.oid).Equal(desired) {
 			log.Printf("no changes needed")
 		} else {
 			log.Printf("not as desired, will update")
