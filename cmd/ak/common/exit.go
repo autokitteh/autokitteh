@@ -16,7 +16,7 @@ const (
 	BadRequest                 = 40
 	UnauthenticatedExitCode    = 41
 	FailedPreconditionExitCode = 42
-	UnauthroizedExitCode       = 43
+	UnauthorizedExitCode       = 43
 	NotFoundExitCode           = 44
 )
 
@@ -51,7 +51,7 @@ func ToExitCode(err error) (code int) {
 	if errors.As(err, &ecerr) {
 		code = ecerr.Code
 	} else if errors.Is(err, sdkerrors.ErrUnauthorized) {
-		code = UnauthroizedExitCode
+		code = UnauthorizedExitCode
 	} else if errors.Is(err, sdkerrors.ErrUnauthenticated) {
 		code = UnauthenticatedExitCode
 	} else if errors.Is(err, sdkerrors.ErrNotFound) {
