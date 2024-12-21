@@ -331,7 +331,9 @@ class Runner(pb.runner_rpc.RunnerService):
         )
 
         if err:
-            req.error = str(err)
+            # req.error must not be empty, otherwise the server would not know
+            # that there was an error.
+            req.error = str(err) or "exception"
             tb = exc_traceback(err)
             req.traceback.extend(tb)
         else:
