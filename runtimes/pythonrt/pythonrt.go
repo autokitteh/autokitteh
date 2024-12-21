@@ -547,6 +547,10 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 				return sdktypes.InvalidValue, perr.ToError()
 			}
 
+			if done.Result == nil {
+				return sdktypes.InvalidValue, errors.New("done result is nil")
+			}
+
 			done.Result.Custom.ExecutorId = py.xid.String()
 			return sdktypes.ValueFromProto(done.Result)
 		case <-ctx.Done():
