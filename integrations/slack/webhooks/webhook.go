@@ -5,9 +5,11 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"time"
@@ -16,6 +18,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api"
+	"go.autokitteh.dev/autokitteh/integrations/slack/events"
 	"go.autokitteh.dev/autokitteh/integrations/slack/internal/vars"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -56,7 +59,7 @@ func NewHandler(l *zap.Logger, vars sdkservices.Vars, d sdkservices.Dispatcher, 
 // checkRequest checks that the given HTTP request has a valid content type and
 // a valid Slack signature, and if so it returns the request's body. Otherwise
 // it returns nil, and sends an HTTP error to the Slack platform's client.
-func checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Logger, wantContentType string) []byte {
+func (h handler) checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Logger, wantContentType string) []byte {
 	// "Content-Type" header.
 	gotContentType := r.Header.Get(api.HeaderContentType)
 	if gotContentType == "" || gotContentType != wantContentType {
@@ -108,7 +111,7 @@ func checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Logger, wantCon
 	}
 
 	// Request body.
-	b, err := io.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		l.Error("Failed to read inbound HTTP request body",
 			zap.Error(err),
@@ -116,13 +119,48 @@ func checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Logger, wantCon
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return nil
 	}
-	signingSecret := os.Getenv(signingSecretEnvVar)
-	if !verifySignature(signingSecret, ts, sig, b) {
-		l.Error("Slack signature verification failed")
+
+	appID, teamID, enterpriseID, err := h.extractIDs(body, wantContentType, l)
+	if err != nil {
+		l.Error("Failed to extract IDs", zap.Error(err))
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return nil
+	}
+
+	// Get signing secret.
+	cids, err := h.listConnectionIDs(r.Context(), appID, enterpriseID, teamID)
+	if err != nil {
+		l.Error("Failed to list connection IDs", zap.Error(err))
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return nil
+	}
+	// No connections = respond to Slack with 200 OK, but don't process the request.
+	if len(cids) == 0 {
+		return nil
+	}
+	// All connections for the same app/enterprise/workspace share the same signing secret.
+	secret, err := h.vars.Get(r.Context(), sdktypes.NewVarScopeID(cids[0]))
+	if err != nil {
+		l.Error("Failed to get signing secret", zap.Error(err))
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return nil
+	}
+	signingSecret := secret.GetValue(vars.SigningSecret)
+	if signingSecret == "" {
+		signingSecret = os.Getenv(signingSecretEnvVar)
+	}
+
+	// Verify signature.
+	if !verifySignature(signingSecret, ts, sig, body) {
+		l.Error("Signature verification failed",
+			zap.String("app_id", appID),
+			zap.String("team_id", teamID),
+		)
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return nil
 	}
-	return b
+
+	return body
 }
 
 // verifySignature implements https://api.slack.com/authentication/verifying-requests-from-slack.
@@ -133,6 +171,7 @@ func verifySignature(signingSecret, ts, want string, body []byte) bool {
 	if err != nil || n != len(ts)+4 {
 		return false
 	}
+
 	if n, err := mac.Write(body); err != nil || n != len(body) {
 		return false
 	}
@@ -194,4 +233,47 @@ func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, cids []sd
 		}
 		l.Debug("Event dispatched")
 	}
+}
+
+func (h handler) extractIDs(body []byte, wantContentType string, l *zap.Logger) (appID, teamID, enterpriseID string, err error) {
+	if wantContentType == "application/json" {
+		var cb events.Callback
+		if err := json.Unmarshal(body, &cb); err != nil {
+			l.Error("Failed to parse JSON for app/team IDs",
+				zap.Error(err),
+			)
+			return "", "", "", err
+		}
+		return cb.APIAppID, cb.TeamID, "", nil
+	}
+
+	// Handle form data
+	kv, err := url.ParseQuery(string(body))
+	if err != nil {
+		l.Error("Failed to parse URL-encoded form",
+			zap.ByteString("body", body),
+			zap.Error(err),
+		)
+		return "", "", "", err
+	}
+
+	// Check if this is an interaction payload
+	if payload := kv.Get("payload"); payload != "" {
+		var p BlockActionsPayload
+		if err := json.Unmarshal([]byte(payload), &p); err != nil {
+			l.Error("Failed to parse interaction payload",
+				zap.String("payload", payload),
+				zap.Error(err),
+			)
+			return "", "", "", err
+		}
+
+		if p.IsEnterpriseInstall && p.Enterprise != nil {
+			return p.APIAppID, p.Team.ID, p.Enterprise.ID, nil
+		}
+		return p.APIAppID, p.Team.ID, "", nil
+	}
+
+	// Regular form data (slash commands)
+	return kv.Get("api_app_id"), kv.Get("team_id"), "", nil
 }
