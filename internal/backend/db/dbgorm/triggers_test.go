@@ -2,7 +2,6 @@ package dbgorm
 
 import (
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -61,7 +60,7 @@ func TestGetTrigger(t *testing.T) {
 	// test getTrigger
 	t2, err := f.gormdb.getTriggerByID(f.ctx, t1.TriggerID)
 	assert.NoError(t, err)
-	t2.CreatedAt, t2.UpdatedAt = time.Time{}, time.Time{}
+	resetTimes(t2)
 	assert.Equal(t, t1, *t2)
 
 	assert.NoError(t, f.gormdb.deleteTrigger(f.ctx, t1.TriggerID))
@@ -125,7 +124,7 @@ func TestListTriggers(t *testing.T) {
 	triggers, err := f.gormdb.listTriggers(f.ctx, sdkservices.ListTriggersFilter{})
 	assert.NoError(t, err)
 	assert.Len(t, triggers, 1)
-	triggers[0].CreatedAt, triggers[0].UpdatedAt = time.Time{}, time.Time{}
+	resetTimes(&triggers[0])
 	assert.Equal(t, t1, triggers[0])
 
 	// test listTriggers after delete

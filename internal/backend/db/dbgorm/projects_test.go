@@ -2,7 +2,6 @@ package dbgorm
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -80,13 +79,13 @@ func TestGetProjects(t *testing.T) {
 	// test getProjectByID
 	project, err := f.gormdb.getProject(f.ctx, p.ProjectID)
 	assert.NoError(t, err)
-	project.UpdatedAt, project.CreatedAt = time.Time{}, time.Time{}
+	resetTimes(project)
 	assert.Equal(t, p, *project)
 
 	// test getProjectByName
 	project, err = f.gormdb.getProjectByName(f.ctx, sdktypes.InvalidOrgID, p.Name)
 	assert.NoError(t, err)
-	project.UpdatedAt, project.CreatedAt = time.Time{}, time.Time{}
+	resetTimes(project)
 	assert.Equal(t, p, *project)
 
 	// delete project
@@ -109,7 +108,7 @@ func TestListProjects(t *testing.T) {
 
 	// test listProjects
 	projects := f.listProjectsAndAssert(t, 1)
-	projects[0].UpdatedAt, projects[0].CreatedAt = time.Time{}, time.Time{}
+	resetTimes(&projects[0])
 	assert.Equal(t, p, projects[0])
 
 	// test listProjects after delete
@@ -214,6 +213,6 @@ func TestUpdateProject(t *testing.T) {
 	p.Name = p.Name + "_updated"
 	assert.NoError(t, f.gormdb.updateProject(f.ctx, &p))
 	res := findAndAssertCount[scheme.Project](t, f, 1, "project_id = ?", p.ProjectID)
-	res[0].CreatedAt, res[0].UpdatedAt = time.Time{}, time.Time{}
+	resetTimes(&res[0])
 	require.Equal(t, p, res[0])
 }

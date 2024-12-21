@@ -2,7 +2,6 @@ package dbgorm
 
 import (
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -79,6 +78,7 @@ func createBuildAndDeployment(t *testing.T, f *dbFixture, p scheme.Project) (sch
 	d := f.newDeployment(b, p)
 	f.saveBuildsAndAssert(t, b)
 	f.createDeploymentsAndAssert(t, d)
+
 	return b, d
 }
 
@@ -117,7 +117,7 @@ func TestGetDeployment(t *testing.T) {
 	// check getDeployment
 	d2, err := f.gormdb.getDeployment(f.ctx, d.DeploymentID)
 	if assert.NoError(t, err) {
-		d2.UpdatedAt = time.Time{}
+		resetTimes(d2)
 		assert.Equal(t, d, *d2)
 	}
 
@@ -132,7 +132,7 @@ func TestListDeployments(t *testing.T) {
 	_, d := createBuildAndDeployment(t, f, f.newProject())
 
 	deployments := f.listDeploymentsAndAssert(t, 1)
-	deployments[0].UpdatedAt = time.Time{}
+	resetTimes(&deployments[0])
 	assert.Equal(t, d, deployments[0])
 
 	// test listDeployments after delete
@@ -149,7 +149,7 @@ func TestListDeploymentsWithStats(t *testing.T) {
 
 	dWS := scheme.DeploymentWithStats{Deployment: d} // no stats, all zeros
 	deployments := listDeploymentsWithStatsAndAssert(t, f, 1)
-	deployments[0].UpdatedAt = time.Time{}
+	resetTimes(&deployments[0], &dWS.Deployment)
 	assert.Equal(t, dWS, deployments[0])
 
 	// add session for the stats
@@ -159,7 +159,7 @@ func TestListDeploymentsWithStats(t *testing.T) {
 	// ensure that new session is included in stats
 	dWS.Completed = 1
 	deployments = listDeploymentsWithStatsAndAssert(t, f, 1)
-	deployments[0].UpdatedAt = time.Time{}
+	resetTimes(&deployments[0])
 	assert.Equal(t, dWS, deployments[0])
 
 	// delete session
@@ -169,7 +169,7 @@ func TestListDeploymentsWithStats(t *testing.T) {
 	// check that deployment stats are updated
 	deployments = listDeploymentsWithStatsAndAssert(t, f, 1)
 	dWS.Completed = 0 // completed session was deleted
-	deployments[0].UpdatedAt = time.Time{}
+	resetTimes(&deployments[0])
 	assert.Equal(t, dWS, deployments[0])
 }
 
@@ -187,7 +187,7 @@ func TestDeleteDeployment(t *testing.T) {
 
 	dWS := scheme.DeploymentWithStats{Deployment: d, Completed: 1, Error: 1}
 	deployments := listDeploymentsWithStatsAndAssert(t, f, 1)
-	deployments[0].UpdatedAt = time.Time{}
+	resetTimes(&deployments[0])
 	assert.Equal(t, dWS, deployments[0])
 
 	// delete deployment. Ensure deployment sessions are marked as deleted as well

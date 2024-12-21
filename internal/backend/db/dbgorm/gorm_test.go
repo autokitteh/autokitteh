@@ -247,6 +247,7 @@ func findAndAssertCount[T any](t *testing.T, f *dbFixture, expected int, where s
 
 func findAndAssertOne[T any](t *testing.T, f *dbFixture, schemaObj T, where string, args ...any) {
 	res := findAndAssertCount[T](t, f, 1, where, args...)
+	resetTimes(&res[0], &schemaObj)
 	require.Equal(t, schemaObj, res[0])
 }
 
@@ -304,6 +305,9 @@ func (f *dbFixture) newSession(args ...any) scheme.Session {
 			s.EventID = &a.EventID
 		}
 	}
+
+	resetTimes(&s)
+
 	return s
 }
 
@@ -342,6 +346,8 @@ func (f *dbFixture) newDeployment(args ...any) scheme.Deployment {
 			d.ProjectID = a.ProjectID
 		}
 	}
+
+	resetTimes(&d)
 	return d
 }
 
@@ -454,4 +460,42 @@ func (f *dbFixture) newSignal(args ...any) scheme.Signal {
 		}
 	}
 	return s
+}
+
+// Reset all time.Time fields to zero. This is needed to compare objects with time fields.
+// Each v in vs must be a pointer to a struct.
+func resetTimes(vs ...any) {
+	for _, v := range vs {
+		rv := reflect.ValueOf(v)
+		if rv.Kind() != reflect.Ptr {
+			panic("expected a pointer")
+		}
+
+		rv = rv.Elem()
+
+		for i := 0; i < rv.NumField(); i++ {
+			fv := rv.Field(i)
+			if fv.Kind() == reflect.Struct {
+				if fv.Type().Name() == "Time" {
+					fv.Set(reflect.ValueOf(time.Time{}))
+				} else {
+					resetTimes(fv.Addr().Interface())
+				}
+			}
+		}
+	}
+}
+
+func TestResetTimes(t *testing.T) {
+	type X struct {
+		Time time.Time
+	}
+	type T struct {
+		Time time.Time
+		X    X
+	}
+	t1 := T{Time: time.Now(), X: X{Time: time.Now()}}
+	resetTimes(&t1)
+	require.Equal(t, time.Time{}, t1.Time)
+	require.Equal(t, time.Time{}, t1.X.Time)
 }

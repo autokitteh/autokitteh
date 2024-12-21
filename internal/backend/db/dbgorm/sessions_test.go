@@ -3,7 +3,6 @@ package dbgorm
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -126,8 +125,7 @@ func TestGetSession(t *testing.T) {
 	// check getSession
 	session, err := f.gormdb.getSession(f.ctx, s.SessionID)
 	assert.NoError(t, err)
-	s.CreatedAt, s.UpdatedAt = time.Time{}, time.Time{}
-	session.CreatedAt, session.UpdatedAt = time.Time{}, time.Time{}
+	resetTimes(session)
 	assert.Equal(t, s, *session)
 
 	// check that after deleteSession it's not found
@@ -144,8 +142,7 @@ func TestListSessions(t *testing.T) {
 
 	sessions := f.listSessionsAndAssert(t, 1)
 	s.Inputs = nil
-	s.CreatedAt, s.UpdatedAt = time.Time{}, time.Time{}
-	sessions[0].CreatedAt, sessions[0].UpdatedAt = time.Time{}, time.Time{}
+	resetTimes(&sessions[0])
 	assert.Equal(t, s, sessions[0])
 
 	// deleteSession and ensure that listSessions is empty

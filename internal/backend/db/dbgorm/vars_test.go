@@ -2,7 +2,6 @@ package dbgorm
 
 import (
 	"testing"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -15,8 +14,7 @@ import (
 // specialized version of findAndAssertOne in order to exclude var.ID from the comparison
 func findAndAssertOneVar(t *testing.T, f *dbFixture, v scheme.Var) {
 	vr := findAndAssertCount[scheme.Var](t, f, 1, "var_id = ? and name = ?", v.ScopeID, v.Name)[0]
-	vr.CreatedAt, vr.UpdatedAt = time.Time{}, time.Time{}
-	v.CreatedAt, v.UpdatedAt = time.Time{}, time.Time{}
+	resetTimes(&v, &vr)
 	require.Equal(t, v, vr)
 }
 
@@ -101,7 +99,7 @@ func TestListVarUnexisting(t *testing.T) {
 	vars, err := f.gormdb.listVars(f.ctx, c.ConnectionID, v.Name) // the same as v.ScopeID or v.VarID
 	assert.NoError(t, err)
 	assert.Len(t, vars, 1)
-	vars[0].CreatedAt, vars[0].UpdatedAt = time.Time{}, time.Time{}
+	resetTimes(&vars[0])
 	assert.Equal(t, v, vars[0])
 
 	// test listVars with non-existing var
@@ -115,7 +113,7 @@ func (f *dbFixture) testListVar(t *testing.T, v scheme.Var) {
 	vars, err := f.gormdb.listVars(f.ctx, v.ScopeID, v.Name)
 	assert.NoError(t, err)
 	assert.Len(t, vars, 1)
-	vars[0].CreatedAt, vars[0].UpdatedAt = time.Time{}, time.Time{}
+	resetTimes(&vars[0])
 	assert.Equal(t, v, vars[0])
 
 	// test listVars with non-existing var

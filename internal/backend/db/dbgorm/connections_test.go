@@ -3,7 +3,6 @@ package dbgorm
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
@@ -148,8 +147,7 @@ func TestGetConnection(t *testing.T) {
 		assert.Equal(t, c2.CreatedAt, c2.UpdatedAt)
 	}
 
-	c2.CreatedAt = time.Time{}
-	c2.UpdatedAt = time.Time{}
+	resetTimes(c2, &c)
 
 	assert.NoError(t, err)
 	assert.Equal(t, c, *c2)
@@ -168,8 +166,7 @@ func TestListConnection(t *testing.T) {
 
 	// test listConnection
 	cc, err := f.gormdb.listConnections(f.ctx, sdkservices.ListConnectionsFilter{}, false)
-	cc[0].CreatedAt = time.Time{}
-	cc[0].UpdatedAt = time.Time{}
+	resetTimes(&cc[0])
 	assert.NoError(t, err)
 	assert.Len(t, cc, 1)
 	assert.Equal(t, c, cc[0])
