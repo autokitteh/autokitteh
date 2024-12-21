@@ -92,7 +92,7 @@ for f in tests/sessions/${TESTS}; do
 
     AK="${PWD}/${ak_filename} -C http.service_url=http://$(cat ${addr_filename})"
 
-    ${AK} session test "${f}"
+    ${AK} session test -k "${f}"
 
     down 
 done

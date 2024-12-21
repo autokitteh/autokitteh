@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"regexp"
 	"slices"
 	"strings"
 
@@ -20,8 +21,12 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+var trimPythonExceptionPath bool
+
+var trimRe = regexp.MustCompile(`\/.*\/ak-(user|runner)-.*?\/`)
+
 var testCmd = common.StandardCommand(&cobra.Command{
-	Use:   "test <txtar-file> [--build-id=...] [--env=...] [--deployment-id=...] [--entrypoint=...] [--quiet] [--timeout DURATION] [--poll-interval DURATION] [--no-timestamps]",
+	Use:   "test <txtar-file> [--build-id=...] [--env=...] [--deployment-id=...] [--entrypoint=...] [--quiet] [--timeout DURATION] [--poll-interval DURATION] [--no-timestamps] [--trim-exception-path]",
 	Short: "Test a session run",
 	Args:  cobra.ExactArgs(1),
 
@@ -107,6 +112,10 @@ var testCmd = common.StandardCommand(&cobra.Command{
 		var prints strings.Builder
 		for _, r := range rs {
 			if p, ok := r.GetPrint(); ok {
+				if trimPythonExceptionPath {
+					p = trimRe.ReplaceAllString(p, "")
+				}
+
 				prints.WriteString(p)
 				prints.WriteRune('\n')
 			}
@@ -128,4 +137,5 @@ func init() {
 	testCmd.Flags().DurationVarP(&watchTimeout, "timeout", "t", 0, "watch timeout duration")
 	testCmd.Flags().BoolVar(&noTimestamps, "no-timestamps", false, "omit timestamps from watch output")
 	testCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "don't print anything, just wait to finish")
+	testCmd.Flags().BoolVarP(&trimPythonExceptionPath, "trim-exception-path", "k", false, "trim python exception path temporary directory prefix")
 }
