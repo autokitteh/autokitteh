@@ -108,7 +108,7 @@ test: test-race test-runs test-sessions test-opa
 
 .PHONY: test-opa
 test-opa:
-	@if which opa >& /dev/null; then \
+	@if which opa > /dev/null; then \
 		cd configs/opa_bundles/default; \
 		ls | xargs -I {} opa test -v {}; \
 	else \
