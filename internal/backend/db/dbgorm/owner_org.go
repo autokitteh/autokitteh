@@ -57,6 +57,8 @@ func (gdb *gormdb) getRecordProjectOwner(
 
 func (gdb *gormdb) GetOrgIDOf(ctx context.Context, id sdktypes.ID) (sdktypes.OrgID, error) {
 	switch id.Kind() {
+	case sdktypes.OrgIDKind:
+		return sdktypes.FromID[sdktypes.OrgID](id), nil
 	case sdktypes.ProjectIDKind:
 		return gdb.getProjectOrg(ctx, id)
 	case sdktypes.BuildIDKind:
@@ -71,12 +73,10 @@ func (gdb *gormdb) GetOrgIDOf(ctx context.Context, id sdktypes.ID) (sdktypes.Org
 		return gdb.getRecordProjectOwner(ctx, scheme.Deployment{}, id)
 	case sdktypes.EventIDKind:
 		return gdb.getRecordProjectOwner(ctx, scheme.Event{}, id)
-	case sdktypes.OrgIDKind:
-		return sdktypes.FromID[sdktypes.OrgID](id), nil
 	case sdktypes.IntegrationIDKind:
 		return sdktypes.InvalidOrgID, nil
 	default:
-		return sdktypes.InvalidOrgID, sdkerrors.NewInvalidArgumentError("unhandled id kind")
+		return sdktypes.InvalidOrgID, sdkerrors.NewInvalidArgumentError("unhandled id kind %q", id.Kind())
 	}
 }
 
@@ -85,6 +85,8 @@ func (gdb *gormdb) GetProjectIDOf(ctx context.Context, id sdktypes.ID) (sdktypes
 
 	// Only records that project is mandatory in them.
 	switch id.Kind() {
+	case sdktypes.ProjectIDKind:
+		return sdktypes.FromID[sdktypes.ProjectID](id), nil
 	case sdktypes.BuildIDKind:
 		m = scheme.Build{}
 	case sdktypes.SessionIDKind:
@@ -97,10 +99,10 @@ func (gdb *gormdb) GetProjectIDOf(ctx context.Context, id sdktypes.ID) (sdktypes
 		m = scheme.Deployment{}
 	case sdktypes.EventIDKind:
 		m = scheme.Event{}
-	case sdktypes.IntegrationIDKind:
+	case sdktypes.IntegrationIDKind, sdktypes.OrgIDKind:
 		return sdktypes.InvalidProjectID, nil
 	default:
-		return sdktypes.InvalidProjectID, sdkerrors.NewInvalidArgumentError("unhandled id kind")
+		return sdktypes.InvalidProjectID, sdkerrors.NewInvalidArgumentError("unhandled id kind %q", id.Kind())
 	}
 
 	var p struct {

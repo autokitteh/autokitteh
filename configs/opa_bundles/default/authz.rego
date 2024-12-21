@@ -18,6 +18,11 @@ member_of_single_assosicated_org_id if {
 	is_org_member_of(input.associated_org_ids[0])
 }
 
+single_associated_project_id(pid) if {
+	count(input.associated_project_ids) == 1
+	input.associated_project_ids[0] == pid
+}
+
 #
 # Base
 #
@@ -39,8 +44,6 @@ allow if {
 	authn
 	input.kind == "prj"
 	input.action == "create"
-
-	# TODO: ensure build in the same project.
 	member_of_single_assosicated_org_id
 }
 
@@ -127,6 +130,7 @@ allow if {
 	input.kind == "dep"
 	input.action == "create"
 	member_of_single_assosicated_org_id
+	single_associated_project_id(input.data.deployment.project_id)
 }
 
 allow if {

@@ -72,24 +72,28 @@ func buildInput(ctx context.Context, db db.DB, id sdktypes.ID, action string, cf
 		actType, act = "", action
 	}
 
-	var oid sdktypes.OrgID
+	oidsSet := make(map[string]bool)
+	pidsSet := make(map[string]bool)
+
+	var (
+		oid sdktypes.OrgID
+		pid sdktypes.ProjectID
+	)
 
 	if id.IsValid() {
 		// Get the resource org.
-
 		if oid, err = db.GetOrgIDOf(ctx, id); err != nil {
 			return nil, fmt.Errorf("get org: %w", err)
+		} else if oid.IsValid() {
+			oidsSet[oid.String()] = true
 		}
 
-		if !oid.IsValid() {
-			return nil, fmt.Errorf("could not figure out resource org")
+		// Get the resource project.
+		if pid, err = db.GetProjectIDOf(ctx, id); err != nil {
+			return nil, fmt.Errorf("get project: %w", err)
+		} else if pid.IsValid() {
+			pidsSet[pid.String()] = true
 		}
-	}
-
-	oidsSet := make(map[string]bool, len(cfg.associations)+1)
-
-	if oid.IsValid() {
-		oidsSet[oid.String()] = true
 	}
 
 	associations := make(map[string]map[string]string)
@@ -108,28 +112,43 @@ func buildInput(ctx context.Context, db db.DB, id sdktypes.ID, action string, cf
 			return nil, fmt.Errorf("get project org: %w", err)
 		}
 
-		if !oid.IsValid() {
-			continue
+		associations[name] = map[string]string{}
+
+		if oid.IsValid() {
+			oidsSet[oid.String()] = true
+			associations[name]["org_id"] = oid.String()
 		}
 
-		oidsSet[oid.String()] = true
+		if id.Kind() == sdktypes.ProjectIDKind {
+			pidsSet[id.String()] = true
+			associations[name]["project_id"] = id.String()
+		} else {
+			pid, err := db.GetProjectIDOf(ctx, id)
+			if err != nil {
+				return nil, fmt.Errorf("get project id: %w", err)
+			}
 
-		associations[name] = map[string]string{
-			"org_id": oid.String(),
+			if pid.IsValid() {
+				pidsSet[pid.String()] = true
+				associations[name]["project_id"] = pid.String()
+			}
 		}
+
 	}
 
 	data := map[string]any{
-		"kind":               id.Kind(),                          // resource kind. available even if id is invalid, as it still contains the kind.
-		"user_id":            uid.String(),                       // requester user id if valid, else "".
-		"user_org_ids":       kittehs.TransformToStrings(uoids),  // orgs the user is part of.
-		"action_type":        actType,                            // [type:]xxx of action, or "" if not specified.
-		"action":             act,                                // [xxx:]action of action.
-		"resource_id":        id.String(),                        // resource id.
-		"resource_org_id":    oid.String(),                       // resource org id, if resource id is valid. else "".
-		"data":               cfg.data,                           // aux data supplied by the caller.
-		"associated_org_ids": slices.Collect(maps.Keys(oidsSet)), // all unique non-zero associated org ids and the resource org id.
-		"associations":       associations,                       // name -> {"org_id": "xxx"} of associated resources.
+		"kind":                   id.Kind(),                          // resource kind. available even if id is invalid, as it still contains the kind.
+		"user_id":                uid.String(),                       // requester user id if valid, else "".
+		"user_org_ids":           kittehs.TransformToStrings(uoids),  // orgs the user is part of.
+		"action_type":            actType,                            // [type:]xxx of action, or "" if not specified.
+		"action":                 act,                                // [xxx:]action of action.
+		"resource_id":            id.String(),                        // resource id.
+		"resource_org_id":        oid.String(),                       // resource org id, if resource id is valid. else "".
+		"resource_project_id":    pid.String(),                       // resource projec tid, if resource id is valid. else "".
+		"data":                   cfg.data,                           // aux data supplied by the caller.
+		"associated_org_ids":     slices.Collect(maps.Keys(oidsSet)), // all unique non-zero associated org ids and the resource org id.
+		"associated_project_ids": slices.Collect(maps.Keys(pidsSet)), // all unique non-zero associated project ids and the resource project id.
+		"associations":           associations,                       // name -> {"org_id": "xxx"} of associated resources.
 	}
 
 	return data, nil
