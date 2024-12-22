@@ -533,12 +533,14 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 				cb.successChannel <- val
 			}
 		case v := <-py.channels.done:
+			py.log.Info("done signal", zap.String("error", v.Error))
 			pCtx, cancel := context.WithTimeout(ctx, time.Second)
 			defer cancel()
 			py.drainPrints(pCtx)
 
 			done = v
 			if done.Error != "" {
+				py.log.Error("done error", zap.String("error", done.Error))
 				perr := sdktypes.NewProgramError(
 					sdktypes.NewStringValue(done.Error),
 					py.tracebackToLocation(done.Traceback),
@@ -548,6 +550,7 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 			}
 
 			if done.Result == nil {
+				py.log.Error("done: nil result")
 				return sdktypes.InvalidValue, errors.New("done result is nil")
 			}
 

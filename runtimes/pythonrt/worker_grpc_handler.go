@@ -146,6 +146,7 @@ func (s *workerGRPCHandler) Print(ctx context.Context, req *userCode.PrintReques
 }
 
 func (s *workerGRPCHandler) Done(ctx context.Context, req *userCode.DoneRequest) (*userCode.DoneResponse, error) {
+	s.log.Info("Done request", zap.String("error", req.Error))
 	w.mu.Lock()
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
 	w.mu.Unlock()
@@ -155,6 +156,7 @@ func (s *workerGRPCHandler) Done(ctx context.Context, req *userCode.DoneRequest)
 	}
 
 	runner.channels.done <- req
+	close(runner.channels.done)
 	return &userCode.DoneResponse{}, nil
 }
 

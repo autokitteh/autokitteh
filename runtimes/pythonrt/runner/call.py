@@ -31,6 +31,14 @@ def full_func_name(fn):
     return fn.__name__
 
 
+def caller_info():
+    frames = inspect.stack()
+    if len(frames) > 2:
+        return Path(frames[2].filename).name, frames[2].lineno
+    else:
+        return "<unknown>", 0
+
+
 class AKCall:
     """Callable wrapping functions with activities."""
 
@@ -74,12 +82,7 @@ class AKCall:
 
     def __call__(self, func, *args, **kw):
         if not callable(func):
-            frames = inspect.stack()
-            if len(frames) > 1:
-                file, lnum = Path(frames[1].filename).name, frames[1].lineno
-            else:
-                file, lnum = "<unknown>", 0
-
+            file, lnum = caller_info()
             raise ValueError(f"{func!r} is not callable (user bug at {file}:{lnum}?)")
 
         log.info("__call__: %s", full_func_name(func))
