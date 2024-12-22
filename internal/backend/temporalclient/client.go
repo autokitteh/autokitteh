@@ -127,6 +127,7 @@ func (c *impl) startDevServer(ctx context.Context) error {
 				// nop
 			case <-ctx.Done():
 				err = fmt.Errorf("context done: %w", ctx.Err())
+				break
 			}
 		}
 
