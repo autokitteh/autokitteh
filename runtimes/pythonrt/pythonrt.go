@@ -369,7 +369,7 @@ func (py *pySvc) call(ctx context.Context, val sdktypes.Value, args []sdktypes.V
 	out, err := py.cbs.Call(py.ctx, py.runID, val, args, kw)
 	switch {
 	case err != nil:
-		py.log.Warn("activity reply error", zap.Error(err))
+		py.log.Info("activity reply error", zap.Error(err))
 		req.Error = err.Error()
 	case !out.IsCustom():
 		py.log.Error("activity reply value not Custom", zap.Any("value", out))
@@ -382,16 +382,8 @@ func (py *pySvc) call(ctx context.Context, val sdktypes.Value, args []sdktypes.V
 	ctx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
 
-	reply, err := py.runner.ActivityReply(ctx, &req)
-	if err != nil || reply.Error != "" {
-		var error string
-		if err != nil {
-			error = err.Error()
-		} else {
-			error = reply.Error
-		}
-
-		py.log.Warn("activity reply error", zap.String("reply error", error))
+	if _, err = py.runner.ActivityReply(ctx, &req); err != nil {
+		py.log.Error("activity reply error", zap.Error(err))
 	}
 }
 
@@ -521,7 +513,7 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 
 			done = v
 			if done.Error != "" {
-				py.log.Error("done error", zap.String("error", done.Error))
+				py.log.Info("done error", zap.String("error", done.Error))
 				perr := sdktypes.NewProgramError(
 					sdktypes.NewStringValue(done.Error),
 					py.tracebackToLocation(done.Traceback),
