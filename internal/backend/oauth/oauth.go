@@ -27,6 +27,7 @@ import (
 
 type oauth struct {
 	logger *zap.Logger
+	vars   sdkservices.Vars
 
 	// Configs and opts store registration data together.
 	// If we replace these in-memory maps with persistent
@@ -35,7 +36,7 @@ type oauth struct {
 	opts    map[string]map[string]string
 }
 
-func New(l *zap.Logger) sdkservices.OAuth {
+func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 	// TODO(ENG-112): Remove (see Register below).
 	redirectURL := fmt.Sprintf("https://%s/oauth/redirect/", os.Getenv("WEBHOOK_ADDRESS"))
 
@@ -77,10 +78,28 @@ func New(l *zap.Logger) sdkservices.OAuth {
 
 	return &oauth{
 		logger: l,
+		vars:   vars,
 		// TODO(ENG-112): Construct the following 2 maps with dynamic integration
 		// registrations, where each integration registration will call Register
 		// below (if it uses OAuth). This hard-coding is EXTREMELY TEMPORARY!
 		configs: map[string]*oauth2.Config{
+			"auth0": {
+				ClientID:     os.Getenv("AUTH0_CLIENT_ID"),
+				ClientSecret: os.Getenv("AUTH0_CLIENT_SECRET"),
+				Endpoint: oauth2.Endpoint{
+					AuthURL:  fmt.Sprintf("https://%s/oauth/authorize", os.Getenv("AUTH0_DOMAIN")),
+					TokenURL: fmt.Sprintf("https://%s/oauth/token", os.Getenv("AUTH0_DOMAIN")),
+				},
+				RedirectURL: redirectURL + "auth0",
+				Scopes: []string{
+					"openid",
+					"profile",
+					"email",
+					"read:users", // For reading user data
+					"read:users_app_metadata",
+					"offline_access", // For refresh tokens
+				},
+			},
 			"confluence": {
 				// TODO(ENG-965): From new-connection form instead of env vars.
 				ClientID:     os.Getenv("CONFLUENCE_CLIENT_ID"),
@@ -285,6 +304,27 @@ func New(l *zap.Logger) sdkservices.OAuth {
 				},
 			},
 
+			// Based on:
+			// https://developers.hubspot.com/beta-docs/guides/apps/authentication/working-with-oauth
+			"hubspot": {
+				ClientID:     os.Getenv("HUBSPOT_CLIENT_ID"),
+				ClientSecret: os.Getenv("HUBSPOT_CLIENT_SECRET"),
+				Endpoint: oauth2.Endpoint{
+					AuthURL:  "https://app.hubspot.com/oauth/authorize",
+					TokenURL: "https://api.hubapi.com/oauth/v1/token",
+				},
+				RedirectURL: redirectURL + "hubspot",
+				Scopes: []string{
+					"crm.objects.contacts.read",
+					"crm.objects.contacts.write",
+					"crm.objects.companies.read",
+					"crm.objects.companies.write",
+					"crm.objects.deals.read",
+					"crm.objects.deals.write",
+					"crm.objects.owners.read",
+				},
+			},
+
 			"jira": {
 				// TODO(ENG-965): From new-connection form instead of env vars.
 				ClientID:     os.Getenv("JIRA_CLIENT_ID"),
@@ -356,6 +396,11 @@ func New(l *zap.Logger) sdkservices.OAuth {
 		},
 
 		opts: map[string]map[string]string{
+			"auth0": {
+				// TODO: audience URL (from env var).
+				"audience":   fmt.Sprintf("https://%s/api/v2/", os.Getenv("AUTH0_DOMAIN")),
+				"grant_type": "client_credentials",
+			},
 			"gmail": {
 				"access_type": "offline", // oauth2.AccessTypeOffline
 				"prompt":      "consent", // oauth2.ApprovalForce
@@ -403,14 +448,36 @@ func (o *oauth) Get(ctx context.Context, intg string) (*oauth2.Config, map[strin
 	return cfg, o.opts[intg], nil
 }
 
-func (o *oauth) StartFlow(ctx context.Context, intg string, cid sdktypes.ConnectionID, origin string) (string, error) {
-	cfg, opts, err := o.Get(ctx, intg)
-	if err != nil {
-		return "", err
+func (o *oauth) getConfigWithConnection(ctx context.Context, intg string, cid sdktypes.ConnectionID) (*oauth2.Config, map[string]string, error) {
+	if !cid.IsValid() {
+		return nil, nil, errors.New("invalid connection ID")
 	}
 
-	if !cid.IsValid() {
-		return "", errors.New("invalid connection ID")
+	baseCfg, opts, err := o.Get(ctx, intg)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if !o.isCustomOAuth(ctx, cid) {
+		return baseCfg, opts, nil
+	}
+
+	vs, err := o.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	cfgCopy := *baseCfg
+	cfgCopy.ClientID = vs.GetValueByString("client_id")
+	cfgCopy.ClientSecret = vs.GetValueByString("client_secret")
+
+	return &cfgCopy, opts, nil
+}
+
+func (o *oauth) StartFlow(ctx context.Context, intg string, cid sdktypes.ConnectionID, origin string) (string, error) {
+	cfg, opts, err := o.getConfigWithConnection(ctx, intg, cid)
+	if err != nil {
+		return "", err
 	}
 
 	if origin == "" {
@@ -420,13 +487,17 @@ func (o *oauth) StartFlow(ctx context.Context, intg string, cid sdktypes.Connect
 	// Identify the relevant connection when we get an OAuth response.
 	state := strings.Replace(cid.String(), "con_", "", 1) + "_" + origin
 
+	if !o.isCustomOAuth(ctx, cid) {
+		return cfg.AuthCodeURL(state, authCode(opts)...), nil
+	}
+
 	return cfg.AuthCodeURL(state, authCode(opts)...), nil
 }
 
-func (o *oauth) Exchange(ctx context.Context, integration, code string) (*oauth2.Token, error) {
+func (o *oauth) Exchange(ctx context.Context, integration string, cid sdktypes.ConnectionID, code string) (*oauth2.Token, error) {
 	// Convert the received temporary authorization code
 	// into a refresh token / user access token.
-	cfg, opts, err := o.Get(ctx, integration)
+	cfg, opts, err := o.getConfigWithConnection(ctx, integration, cid)
 	if err != nil {
 		return nil, fmt.Errorf("bad oauth integration name: %w", err)
 	}
@@ -446,4 +517,14 @@ func authCode(opts map[string]string) []oauth2.AuthCodeOption {
 		acos = append(acos, oauth2.SetAuthURLParam(k, v))
 	}
 	return acos
+}
+
+// Determines if the connection uses custom OAuth based on the presence of a client secret in vars.
+func (o *oauth) isCustomOAuth(ctx context.Context, cid sdktypes.ConnectionID) bool {
+	vs, err := o.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+	if err != nil {
+		return false
+	}
+
+	return vs.GetValueByString("client_secret") != ""
 }

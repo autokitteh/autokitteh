@@ -14,3 +14,7 @@ upload: build
 
 install-deps:
 	python -m pip install build twine
+
+build-docs:
+	cd docs && ./gen-reqs.py
+	$(MAKE) -C docs html

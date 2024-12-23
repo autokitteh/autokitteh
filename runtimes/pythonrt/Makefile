@@ -8,7 +8,7 @@ export PYTHONPATH=$(PWD)/py-sdk
 
 test: test-py test-go
 
-ci: deps test-py
+ci: deps test-py check-sdk-docs-requirements
 
 test-py:
 	cd runner && $(MAKE) test
@@ -48,3 +48,8 @@ clean-dbs:
 	rm -f $(cfg_dir)/*sql*
 
 test-workflow: deploy-workflow run
+
+check-sdk-docs-requirements:
+	cd py-sdk/docs && ./gen-reqs.py
+	git add -N .
+	git diff --name-only --exit-code

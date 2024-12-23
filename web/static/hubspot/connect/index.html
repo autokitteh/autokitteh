@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>AutoKitteh - HubSpot - New Connection</title>
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/static/apple-touch-icon.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/static/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/static/favicon-16x16.png"
+    />
+    <link rel="manifest" href="/static/site.webmanifest" />
+    <link rel="stylesheet" type="text/css" href="styles.css" />
+    <meta name="robots" content="noindex, nofollow" />
+  </head>
+
+  <body>
+    <a href="/" target="_self">
+      <img class="banner" src="/static/banner.svg" alt="AutoKitteh" />
+    </a>
+
+    <table class="title">
+      <td><img class="logo" src="/static/images/hubspot.svg" alt="Logo" /></td>
+      <td>
+        <h1>HubSpot - Create a New Connection</h1>
+      </td>
+    </table>
+
+    <p class="info">Information:</p>
+    <ul class="links">
+      <li>
+        <a href="https://developers.hubspot.com/" target="_blank" class="info">
+          HubSpot developer platform
+        </a>
+      </li>
+    </ul>
+
+    <p class="info">
+      Click the button below to install and authorize<br />
+      the <b>AutoKitteh</b> app in your HubSpot workspace
+    </p>
+    <a id="oauth-link" href="/oauth/start/hubspot" class="clickable"
+      >Start OAuth Flow</a
+    >
+
+    <!-- TODO(ENG-799) -->
+    <script>
+      const queryString = window.location.search;
+      document
+        .getElementById("oauth-link")
+        .setAttribute("href", "/oauth/start/hubspot" + queryString);
+    </script>
+  </body>
+</html>

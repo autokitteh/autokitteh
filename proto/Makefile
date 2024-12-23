@@ -21,12 +21,10 @@ buf-build:
 
 .PHONY: buf-gen
 buf-gen: buf-build
-	buf generate --include-imports
+	buf generate # --include-imports
 	./scripts/fixpy.sh
-	buf generate --template buf.remote.gen.yaml --include-imports
+	buf generate --template buf.remote.gen.yaml # --include-imports
 	./scripts/fix_remote_py.sh
-
-	
 
 .PHONY: clean
 clean:

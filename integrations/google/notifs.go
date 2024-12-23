@@ -2,10 +2,18 @@ package google
 
 import (
 	"context"
+	"crypto/rsa"
+	"encoding/base64"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
+	"math/big"
 	"net/http"
+	"strings"
+	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations/google/calendar"
@@ -64,16 +72,10 @@ func (h handler) handleCalNotification(w http.ResponseWriter, r *http.Request) {
 // handleFormsNotification receives and dispatches asynchronous Google Forms
 // notifications from a push subscription to a GCP Cloud Pub/Sub topic.
 func (h handler) handleFormsNotification(w http.ResponseWriter, r *http.Request) {
-	l := h.logger.With(
-		zap.String("urlPath", r.URL.Path),
-		zap.String("eventType", r.Header.Get("Eventtype")),
-		zap.String("formID", r.Header.Get("Formid")),
-		zap.String("watchID", r.Header.Get("Watchid")),
-		zap.String("messageID", r.Header.Get("X-Goog-Pubsub-Message-Id")),
-		zap.String("publishTime", r.Header.Get("X-Goog-Pubsub-Publish-Time")),
-		zap.String("subscriptionName", r.Header.Get("X-Goog-Pubsub-Subscription-Name")),
-	)
-	l.Info("Received Google Forms notification")
+	l := h.logger.With(zap.String("urlPath", r.URL.Path))
+	if !checkRequest(w, r, l) {
+		return
+	}
 
 	// Parse event details from the request headers.
 	eventType := forms.WatchEventType(r.Header.Get("Eventtype"))
@@ -83,6 +85,16 @@ func (h handler) handleFormsNotification(w http.ResponseWriter, r *http.Request)
 	if eventType == forms.WatchSchemaChanges {
 		name = vars.FormSchemaWatchID
 	}
+
+	l = l.With(
+		zap.String("eventType", r.Header.Get("Eventtype")),
+		zap.String("formID", r.Header.Get("Formid")),
+		zap.String("watchID", watchID),
+		zap.String("messageID", r.Header.Get("X-Goog-Pubsub-Message-Id")),
+		zap.String("publishTime", r.Header.Get("X-Goog-Pubsub-Publish-Time")),
+		zap.String("subscriptionName", r.Header.Get("X-Goog-Pubsub-Subscription-Name")),
+	)
+	l.Info("received Google Forms notification")
 
 	// Find all the connection IDs associated with the watch ID.
 	ctx := extrazap.AttachLoggerToContext(l, r.Context())
@@ -122,8 +134,12 @@ type gmailNotifBody struct {
 // handleGmailNotification receives and dispatches asynchronous Gmail
 // notifications from a push subscription to a GCP Cloud Pub/Sub topic.
 func (h handler) handleGmailNotification(w http.ResponseWriter, r *http.Request) {
-	l := h.logger.With(
-		zap.String("urlPath", r.URL.Path),
+	l := h.logger.With(zap.String("urlPath", r.URL.Path))
+	if !checkRequest(w, r, l) {
+		return
+	}
+
+	l = l.With(
 		zap.String("messageID", r.Header.Get("X-Goog-Pubsub-Message-Id")),
 		zap.String("publishTime", r.Header.Get("X-Goog-Pubsub-Publish-Time")),
 		zap.String("subscriptionName", r.Header.Get("X-Goog-Pubsub-Subscription-Name")),
@@ -198,4 +214,123 @@ func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, cids []sd
 	}
 
 	return nil
+}
+
+// checkRequest checks the authenticity of the given HTTP POST request.
+// If the check fails, it also sets an HTTP error to the impostor client.
+func checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Logger) bool {
+	// Read the bearer token from the Authorization request header.
+	auth := r.Header.Get("Authorization")
+	if auth == "" {
+		l.Warn("missing authorization header in Google push notification")
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return false
+	}
+
+	if !strings.HasPrefix(auth, "Bearer ") {
+		l.Warn("invalid authorization header in Google push notification")
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return false
+	}
+
+	auth = strings.TrimPrefix(auth, "Bearer ")
+
+	// Download and cache Google's OAuth public keys.
+	rsaPublicKeys, err := fetchGoogleCerts()
+	if err != nil {
+		l.Error("failed to fetch Google OAuth certs", zap.Error(err))
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return false
+	}
+
+	// Parse the JWT and verify its signature.
+	token, err := jwt.Parse(auth, func(t *jwt.Token) (interface{}, error) {
+		kid, ok := t.Header["kid"].(string)
+		if !ok {
+			return nil, errors.New("missing or invalid kid in token header")
+		}
+
+		key, exists := rsaPublicKeys[kid]
+		if !exists {
+			return nil, fmt.Errorf("Google public key not found for kid: %s", kid)
+		}
+		return key, nil
+	})
+	if err != nil {
+		l.Error("failed to parse JWT in Google push notification", zap.Error(err))
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return false
+	}
+
+	return token.Valid
+}
+
+const (
+	googleCertsURL = "https://www.googleapis.com/oauth2/v3/certs"
+	cacheTimeout   = 24 * time.Hour
+)
+
+var (
+	cachedPublicKeys map[string]*rsa.PublicKey
+	cacheDeadline    = time.Now()
+)
+
+// fetchGoogleCerts downloads Google's OAuth public keys and caches them.
+func fetchGoogleCerts() (map[string]*rsa.PublicKey, error) {
+	// Return the cached results if they're still fresh.
+	if time.Now().Before(cacheDeadline) {
+		return cachedPublicKeys, nil
+	}
+
+	// Download JSON.
+	resp, err := http.Get(googleCertsURL)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching Google OAuth certs: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("fetching Google OAuth certs resulted in status %d", resp.StatusCode)
+	}
+
+	// Read JSON.
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error reading Google OAuth certs: %w", err)
+	}
+
+	var certs struct {
+		Keys []struct {
+			KID string `json:"kid"`
+			N   string `json:"n"`
+			E   string `json:"e"`
+		} `json:"keys"`
+	}
+
+	// Parse JSON.
+	if err := json.Unmarshal(body, &certs); err != nil {
+		return nil, fmt.Errorf("error unmarshalling Google OAuth certs: %w", err)
+	}
+
+	cachedPublicKeys = make(map[string]*rsa.PublicKey)
+	for _, key := range certs.Keys {
+		n, err := base64.RawURLEncoding.DecodeString(key.N)
+		if err != nil {
+			return nil, fmt.Errorf("error decoding modulus %q: %w", key.N, err)
+		}
+
+		e, err := base64.RawURLEncoding.DecodeString(key.E)
+		if err != nil {
+			return nil, fmt.Errorf("error decoding exponent %q: %w", key.N, err)
+		}
+
+		pk := &rsa.PublicKey{
+			N: new(big.Int).SetBytes(n),
+			E: int(new(big.Int).SetBytes(e).Uint64()),
+		}
+		cachedPublicKeys[key.KID] = pk
+	}
+
+	cacheDeadline = time.Now().Add(cacheTimeout)
+	return cachedPublicKeys, nil
 }

@@ -9,6 +9,7 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/asana"
 	"go.autokitteh.dev/autokitteh/integrations/atlassian/confluence"
 	"go.autokitteh.dev/autokitteh/integrations/atlassian/jira"
+	"go.autokitteh.dev/autokitteh/integrations/auth0"
 	"go.autokitteh.dev/autokitteh/integrations/aws"
 	"go.autokitteh.dev/autokitteh/integrations/chatgpt"
 	"go.autokitteh.dev/autokitteh/integrations/discord"
@@ -21,6 +22,7 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/google/gmail"
 	"go.autokitteh.dev/autokitteh/integrations/google/sheets"
 	"go.autokitteh.dev/autokitteh/integrations/grpc"
+	"go.autokitteh.dev/autokitteh/integrations/hubspot"
 	"go.autokitteh.dev/autokitteh/integrations/redis"
 	"go.autokitteh.dev/autokitteh/integrations/slack"
 	"go.autokitteh.dev/autokitteh/integrations/twilio"
@@ -52,6 +54,7 @@ func integration[T any](name string, cfg configset.Set[T], init any) fx.Option {
 func integrationsFXOption() fx.Option {
 	return fx.Options(
 		integration("asana", configset.Empty, asana.New),
+		integration("auth0", configset.Empty, auth0.New),
 		integration("aws", configset.Empty, aws.New),
 		integration("calendar", configset.Empty, calendar.New),
 		integration("chatgpt", configset.Empty, chatgpt.New),
@@ -64,6 +67,7 @@ func integrationsFXOption() fx.Option {
 		integration("gemini", configset.Empty, gemini.New),
 		integration("google", configset.Empty, google.New),
 		integration("grpc", configset.Empty, grpc.New),
+		integration("hubspot", configset.Empty, hubspot.New),
 		integration("jira", configset.Empty, jira.New),
 		integration("redis", configset.Empty, redis.New),
 		integration("sheets", configset.Empty, sheets.New),
@@ -72,6 +76,7 @@ func integrationsFXOption() fx.Option {
 		fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, muxes *muxes.Muxes, svcs sdkservices.Services) {
 			HookOnStart(lc, func(ctx context.Context) error {
 				asana.Start(l, muxes)
+				auth0.Start(l, muxes)
 				aws.Start(l, muxes)
 				chatgpt.Start(l, muxes)
 				confluence.Start(l, muxes, svcs.Vars(), svcs.OAuth(), svcs.Dispatcher())
@@ -79,6 +84,7 @@ func integrationsFXOption() fx.Option {
 				github.Start(l, muxes, svcs.Vars(), svcs.OAuth(), svcs.Dispatcher())
 				gemini.Start(l, muxes)
 				google.Start(l, muxes, svcs.Vars(), svcs.OAuth(), svcs.Dispatcher())
+				hubspot.Start(l, svcs.OAuth(), muxes)
 				jira.Start(l, muxes, svcs.Vars(), svcs.OAuth(), svcs.Dispatcher())
 				slack.Start(l, muxes, svcs.Vars(), svcs.Dispatcher())
 				twilio.Start(l, muxes, svcs.Vars(), svcs.Dispatcher())

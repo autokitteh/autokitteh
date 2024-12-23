@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"regexp"
 	"slices"
 	"strings"
 
@@ -19,6 +20,8 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
+
+var trimRe = regexp.MustCompile(`\/.*\/ak-(user|runner)-.*?\/`)
 
 var testCmd = common.StandardCommand(&cobra.Command{
 	Use:   "test <txtar-file> [--build-id=...] [--env=...] [--deployment-id=...] [--entrypoint=...] [--quiet] [--timeout DURATION] [--poll-interval DURATION] [--no-timestamps]",
@@ -107,6 +110,8 @@ var testCmd = common.StandardCommand(&cobra.Command{
 		var prints strings.Builder
 		for _, r := range rs {
 			if p, ok := r.GetPrint(); ok {
+				p = trimRe.ReplaceAllString(p, "")
+
 				prints.WriteString(p)
 				prints.WriteRune('\n')
 			}

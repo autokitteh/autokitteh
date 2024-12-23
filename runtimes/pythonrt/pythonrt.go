@@ -8,6 +8,7 @@ import (
 	"maps"
 	"net"
 	"path"
+	"slices"
 	"strings"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
+	pbModule "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/module/v1"
 	pbUserCode "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/user_code/v1"
 	pbValues "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/values/v1"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -122,7 +124,7 @@ func New(cfg *Config, l *zap.Logger, getLocalAddr func() string) (*sdkruntimes.R
 		}); err != nil {
 			return nil, fmt.Errorf("configure remote runner manager: %w", err)
 		}
-		l.Info("remote runner configued")
+		l.Info("remote runner configured")
 	default:
 		if err := configureLocalRunnerManager(l,
 			LocalRunnerManagerConfig{
@@ -178,14 +180,25 @@ var pyModuleFunc = kittehs.Must1(sdktypes.ModuleFunctionFromProto(&sdktypes.Modu
 	},
 }))
 
-func entriesToValues(xid sdktypes.ExecutorID, entries []string) (map[string]sdktypes.Value, error) {
+func entriesToValues(xid sdktypes.ExecutorID, entries []*pbUserCode.Export) (map[string]sdktypes.Value, error) {
 	values := make(map[string]sdktypes.Value)
-	for _, name := range entries {
-		fn, err := sdktypes.NewFunctionValue(xid, name, nil, nil, pyModuleFunc)
+	for _, export := range entries {
+		modPB := sdktypes.ModuleFunctionPB{
+			Input: make([]*pbModule.FunctionField, len(export.Args)),
+		}
+
+		for i, name := range export.Args {
+			modPB.Input[i] = &pbModule.FunctionField{
+				Name: name,
+			}
+		}
+
+		modFunc := kittehs.Must1(sdktypes.ModuleFunctionFromProto(&modPB))
+		fn, err := sdktypes.NewFunctionValue(xid, export.Name, nil, nil, modFunc)
 		if err != nil {
 			return nil, err
 		}
-		values[name] = fn
+		values[export.Name] = fn
 	}
 
 	return values, nil
@@ -214,7 +227,7 @@ func loadSyscall(values map[string]sdktypes.Value) (sdktypes.Value, error) {
 }
 
 // entryPointFileName strips the handler from the entry point
-// "porgram.py:on_event" -> "program.py"
+// "program.py:on_event" -> "program.py"
 func entryPointFileName(entryPoint string) string {
 	i := strings.Index(entryPoint, ":")
 	if i > 0 {
@@ -370,12 +383,35 @@ func (py *pySvc) call(ctx context.Context, val sdktypes.Value, args []sdktypes.V
 	defer cancel()
 
 	reply, err := py.runner.ActivityReply(ctx, &req)
-	switch {
-	case err != nil:
-		py.log.Warn("activity reply error", zap.Error(err))
-	case reply.Error != "":
-		py.log.Warn("activity reply error", zap.String("reply error", reply.Error))
+	if err != nil || reply.Error != "" {
+		var error string
+		if err != nil {
+			error = err.Error()
+		} else {
+			error = reply.Error
+		}
+
+		py.log.Warn("activity reply error", zap.String("reply error", error))
+		// Stop the run
+		req := newDoneFromError(py.runnerID, error)
+		py.channels.done <- req
 	}
+}
+
+func newDoneFromError(runnerID string, error string) *pbUserCode.DoneRequest {
+	req := pbUserCode.DoneRequest{
+		RunnerId: runnerID,
+		Result: &pbValues.Value{
+			Custom: &pbValues.Custom{
+				Value: &pbValues.Value{
+					Nothing: &pbValues.Nothing{},
+				},
+				Data: nil,
+			},
+		},
+		Error: error,
+	}
+	return &req
 }
 
 // initialCall handles initial call from autokitteh, it does the message loop with Python.
@@ -397,7 +433,8 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 		return sdktypes.InvalidValue, fmt.Errorf("can't convert: %w", err)
 	}
 
-	py.log.Info("event", zap.Any("keys", maps.Keys(event)))
+	keys := slices.Collect(maps.Keys(event))
+	py.log.Info("event", zap.Any("keys", keys))
 
 	eventData, err := json.Marshal(event)
 	if err != nil {
@@ -508,6 +545,10 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 					map[string]string{"raw": done.Error},
 				)
 				return sdktypes.InvalidValue, perr.ToError()
+			}
+
+			if done.Result == nil {
+				return sdktypes.InvalidValue, errors.New("done result is nil")
 			}
 
 			done.Result.Custom.ExecutorId = py.xid.String()

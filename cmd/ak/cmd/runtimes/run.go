@@ -84,7 +84,7 @@ var runCmd = common.StandardCommand(&cobra.Command{
 			var buildPaths []string
 
 			if !local {
-				// if builds is not local, we don't want to upload the entrie
+				// if build is not local, we don't want to upload the entries
 				// local directory. This, however, prevents single files from being
 				// run remotely if the load other files.
 				buildPaths = []string{path}

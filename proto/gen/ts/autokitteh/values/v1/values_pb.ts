@@ -600,7 +600,7 @@ export class Function extends Message<Function> {
   desc?: Function$1;
 
   /**
-   * Data that is transfered along with the function itself.
+   * Data that is transferred along with the function itself.
    * This can be used by the function implementing the name
    * above, to store data in its internal scope.
    *

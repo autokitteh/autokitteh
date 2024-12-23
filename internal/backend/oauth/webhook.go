@@ -103,6 +103,25 @@ func (s *svc) exchange(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Special case: GitHub gives us what we need for generating JWTs in the future
+	// (i.e. the GitHub app's installation ID) without exchanging the code below.
+	if intg == "github" {
+		l = l.With(
+			zap.String("setup_action", r.FormValue("setup_action")),
+			zap.String("installation_id", r.FormValue("installation_id")),
+		)
+
+		paramData, err := sdkintegrations.OAuthData{Token: nil, Params: r.URL.Query()}.Encode()
+		if err != nil {
+			abort(w, r, intg, sub[1], sub[2], "URL parameters encoding error")
+			return
+		}
+
+		l.Info("GitHub app flow successful")
+		redirect(w, r, intg, sub[1], sub[2], "oauth", paramData)
+		return
+	}
+
 	// Convert the OAuth code into a refresh token / user access token.
 	code := r.FormValue("code")
 	if code == "" {
@@ -111,7 +130,14 @@ func (s *svc) exchange(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := o.Exchange(ctx, intg, code)
+	cid, err := sdktypes.ParseConnectionID(transformState(sub[1]))
+	if err != nil {
+		l.Warn("Invalid connection ID in state parameter", zap.String("state", state))
+		abort(w, r, intg, sub[1], sub[2], "invalid connection ID")
+		return
+	}
+
+	token, err := o.Exchange(ctx, intg, cid, code)
 	if err != nil {
 		l.Warn("OAuth exchange error", zap.Error(err))
 		abort(w, r, intg, sub[1], sub[2], "OAuth exchange error")
@@ -137,4 +163,11 @@ func abort(w http.ResponseWriter, r *http.Request, intg, cid, origin, err string
 func redirect(w http.ResponseWriter, r *http.Request, intg, cid, origin, param, value string) {
 	u := fmt.Sprintf("/%s/oauth?cid=con_%s&origin=%s&%s=%s", intg, cid, origin, param, value)
 	http.Redirect(w, r, u, http.StatusFound)
+}
+
+func transformState(state string) string {
+	if state == "" {
+		return state
+	}
+	return "con_" + state
 }

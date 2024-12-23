@@ -29,7 +29,7 @@ func (gdb *gormdb) deleteTrigger(ctx context.Context, triggerID sdktypes.UUID) e
 			return err
 		}
 
-		// NOTE: we allow delettion of triggeres referenced by events. see ENG-1535
+		// NOTE: we allow delettion of triggers referenced by events. see ENG-1535
 
 		return tx.db.Delete(&scheme.Trigger{TriggerID: triggerID}).Error
 	})
@@ -79,7 +79,7 @@ func triggerUniqueName(p string, name sdktypes.Symbol) string {
 	return fmt.Sprintf("%s/%s", p, name.String())
 }
 
-func (db *gormdb) triggerToRecord(ctx context.Context, trigger sdktypes.Trigger) (*scheme.Trigger, error) {
+func (db *gormdb) triggerToRecord(trigger sdktypes.Trigger) (*scheme.Trigger, error) {
 	pid := trigger.ProjectID()
 
 	uniqueName := triggerUniqueName(pid.String(), trigger.Name())
@@ -105,7 +105,7 @@ func (db *gormdb) CreateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 	}
 
 	// Note: building trigger record involves non-transactionl fetching connectionID and projectID from the DB
-	t, err := db.triggerToRecord(ctx, trigger)
+	t, err := db.triggerToRecord(trigger)
 	if err != nil {
 		return err
 	}
@@ -123,7 +123,7 @@ func (db *gormdb) UpdateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 		return translateError(err)
 	}
 
-	// We're not checking anything else here and modifiying only the following fields.
+	// We're not checking anything else here and modifying only the following fields.
 	// This means that there'll be no error if an unmodifyable field is requested
 	// to be changed by the caller, and it will not be modified in the DB.
 

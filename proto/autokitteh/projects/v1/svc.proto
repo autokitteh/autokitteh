@@ -109,7 +109,7 @@ message ExportRequest {
 }
 
 message ExportResponse {
-  // Zip of the mainfest + files
+  // Zip of the manifest + files
   bytes zip_archive = 1 [(buf.validate.field).bytes.min_len = 10];
 }
 

@@ -89,7 +89,7 @@ func execute(ctx context.Context, name string, args []string, write map[string]a
 			// rc could not be determined and the context was canceled or timed out.
 			err = ctx.Err()
 		} else {
-			// rc could be determined or no error context occured.
+			// rc could be determined or no error context occurred.
 			err = nil
 		}
 	}

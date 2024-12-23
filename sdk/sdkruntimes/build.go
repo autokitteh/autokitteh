@@ -134,7 +134,7 @@ func Build(
 		q = append(q, cached.data.Artifact.Requirements()...)
 	}
 
-	rtDatas := kittehs.TransformMapToList(rtCache, func(_ string, c *rtCacheEntry) *sdkbuildfile.RuntimeData { return c.data })
+	rtData := kittehs.TransformMapToList(rtCache, func(_ string, c *rtCacheEntry) *sdkbuildfile.RuntimeData { return c.data })
 
 	if externals == nil {
 		externals = []sdktypes.BuildRequirement{}
@@ -144,7 +144,7 @@ func Build(
 		Info: sdkbuildfile.BuildInfo{
 			Memo: memo,
 		},
-		Runtimes:            rtDatas,
+		Runtimes:            rtData,
 		RuntimeRequirements: externals,
 	}, nil
 }

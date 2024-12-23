@@ -21,7 +21,7 @@ var (
 
 var eventCmd = common.StandardCommand(&cobra.Command{
 	Use:     "event",
-	Short:   "Events: save, get, list, (re)dispath, record",
+	Short:   "Events: save, get, list, (re)dispatch, record",
 	Aliases: []string{"evt"},
 	Args:    cobra.NoArgs,
 })

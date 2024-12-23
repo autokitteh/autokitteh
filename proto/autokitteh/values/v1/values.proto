@@ -88,7 +88,7 @@ message Function {
 
   module.v1.Function desc = 3;
 
-  // Data that is transfered along with the function itself.
+  // Data that is transferred along with the function itself.
   // This can be used by the function implementing the name
   // above, to store data in its internal scope.
   bytes data = 4;

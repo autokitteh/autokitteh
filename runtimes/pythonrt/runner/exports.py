@@ -1,3 +1,6 @@
+# Must be first import
+import filter_warnings  # noqa: F401
+
 from argparse import ArgumentParser
 import json
 import sys
@@ -15,13 +18,6 @@ if __name__ == "__main__":
         if path.name[0] == ".":
             continue
 
-        entries = loader.exports(args.code_dir, path.name)
-        for name in entries:
-            exports.append(
-                {
-                    "file": path.name,
-                    "name": name,
-                }
-            )
+        exports += loader.exports(args.code_dir, path.name)
 
     json.dump(exports, sys.stdout)

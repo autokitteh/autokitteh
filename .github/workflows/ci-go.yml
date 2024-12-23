@@ -14,7 +14,7 @@ jobs:
   build-and-test:
     name: Build + unit tests
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -90,6 +90,29 @@ jobs:
           python-version: "3.12" # Should be in sync with runtimes/pythonrt/pythonrt.go:minPyVersion
       - name: Session tests
         run: make bin/ak test-sessions
+
+  verify-docker-builds:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: github.ref != 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup version info
+        run: |
+          # These are consumed in the Dockerfile.
+          echo "${GITHUB_REF#refs/tags/}" > .version
+          echo "${GITHUB_SHA}" > .commit
+      - name: Verify Image Builds
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          platforms: linux/amd64
+          tags: autokitteh:latest
+          push: false
+          provenance: false
 
   publish_docker_image:
     needs:

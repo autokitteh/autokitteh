@@ -9,7 +9,7 @@ message Artifact {
   repeated Requirement requirements = 1 [(buf.validate.field).repeated.items.required = true];
   repeated Export exports = 2 [(buf.validate.field).repeated.items.required = true];
 
-  // Runtime specific build output. This essentialy the "executable".
+  // Runtime specific build output. This essentially the "executable".
   // Map structure for convenience. Intended to use as a filesystem -
   // each entry will be stored as a different file in a persistent store.
   // This means that each key must be a relative path, no '..' or '.' allowed.

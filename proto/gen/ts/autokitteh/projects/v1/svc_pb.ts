@@ -729,7 +729,7 @@ export class ExportRequest extends Message<ExportRequest> {
  */
 export class ExportResponse extends Message<ExportResponse> {
   /**
-   * Zip of the mainfest + files
+   * Zip of the manifest + files
    *
    * @generated from field: bytes zip_archive = 1;
    */

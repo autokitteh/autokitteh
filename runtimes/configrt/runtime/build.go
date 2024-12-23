@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
+	"maps"
+	"slices"
 	"strings"
 
-	"golang.org/x/exp/maps"
 	"google.golang.org/protobuf/proto"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -35,7 +36,7 @@ func Build(ctx context.Context, fs fs.FS, mainPath string) (sdktypes.BuildArtifa
 	}
 
 	if !compiled.IsDict() && !compiled.IsStruct() && !compiled.IsModule() {
-		return sdktypes.InvalidBuildArtifact, fmt.Errorf("source represents niether a dict, struct or module")
+		return sdktypes.InvalidBuildArtifact, fmt.Errorf("source represents neither a dict, struct or module")
 	}
 
 	exports, err := evaluateValue(compiled)
@@ -50,7 +51,7 @@ func Build(ctx context.Context, fs fs.FS, mainPath string) (sdktypes.BuildArtifa
 
 	return sdktypes.BuildArtifactFromProto(
 		&sdktypes.BuildArtifactPB{
-			Exports: kittehs.Transform(maps.Keys(exports), func(key string) *sdktypes.BuildExportPB {
+			Exports: kittehs.Transform(slices.Collect(maps.Keys(exports)), func(key string) *sdktypes.BuildExportPB {
 				sym := kittehs.Must1(sdktypes.ParseSymbol(key))
 				return sdktypes.NewBuildExport().WithSymbol(sym).ToProto()
 			}),
