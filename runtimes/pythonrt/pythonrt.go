@@ -392,9 +392,6 @@ func (py *pySvc) call(ctx context.Context, val sdktypes.Value, args []sdktypes.V
 		}
 
 		py.log.Warn("activity reply error", zap.String("reply error", error))
-		// Stop the run
-		req := newDoneFromError(py.runnerID, error)
-		py.channels.done <- req
 	}
 }
 
