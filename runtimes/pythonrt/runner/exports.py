@@ -1,6 +1,3 @@
-# Must be first import
-import filter_warnings  # noqa: F401
-
 from argparse import ArgumentParser
 import json
 import sys

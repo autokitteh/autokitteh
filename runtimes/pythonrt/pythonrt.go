@@ -392,26 +392,7 @@ func (py *pySvc) call(ctx context.Context, val sdktypes.Value, args []sdktypes.V
 		}
 
 		py.log.Warn("activity reply error", zap.String("reply error", error))
-		// Stop the run
-		req := newDoneFromError(py.runnerID, error)
-		py.channels.done <- req
 	}
-}
-
-func newDoneFromError(runnerID string, error string) *pbUserCode.DoneRequest {
-	req := pbUserCode.DoneRequest{
-		RunnerId: runnerID,
-		Result: &pbValues.Value{
-			Custom: &pbValues.Custom{
-				Value: &pbValues.Value{
-					Nothing: &pbValues.Nothing{},
-				},
-				Data: nil,
-			},
-		},
-		Error: error,
-	}
-	return &req
 }
 
 // initialCall handles initial call from autokitteh, it does the message loop with Python.
@@ -533,12 +514,14 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 				cb.successChannel <- val
 			}
 		case v := <-py.channels.done:
+			py.log.Info("done signal", zap.String("error", v.Error))
 			pCtx, cancel := context.WithTimeout(ctx, time.Second)
 			defer cancel()
 			py.drainPrints(pCtx)
 
 			done = v
 			if done.Error != "" {
+				py.log.Error("done error", zap.String("error", done.Error))
 				perr := sdktypes.NewProgramError(
 					sdktypes.NewStringValue(done.Error),
 					py.tracebackToLocation(done.Traceback),
@@ -548,6 +531,7 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 			}
 
 			if done.Result == nil {
+				py.log.Error("done: nil result")
 				return sdktypes.InvalidValue, errors.New("done result is nil")
 			}
 

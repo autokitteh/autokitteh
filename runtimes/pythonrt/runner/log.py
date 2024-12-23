@@ -1,6 +1,7 @@
+import json
 import logging
 from logging import LogRecord
-import json
+from os import environ
 
 
 class JsonFormatter(logging.Formatter):
@@ -20,7 +21,7 @@ class JsonFormatter(logging.Formatter):
 formatter = JsonFormatter()
 
 _log = logging.getLogger()
-_log.setLevel(logging.INFO)
+_log.setLevel(environ.get("AK_WORKER_PYTHON_LOG_LEVEL") or logging.INFO)
 _stream_handler = logging.StreamHandler()
 _stream_handler.setFormatter(formatter)
 _log.addHandler(_stream_handler)
