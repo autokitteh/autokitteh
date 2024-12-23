@@ -35,23 +35,75 @@
         <h1>Auth0 - Create a New Connection</h1>
       </td>
     </table>
-    <!-- TODO() -->
 
-    <p class="info">
-      Click the button below to install and authorize<br />
-      the <b>AutoKitteh</b> app in your Auth0 tenant
-    </p>
-    <!-- TODO(ENG-799): remove ID once its unused -->
-    <a id="oauth-link" href="/oauth/start/auth0" class="clickable"
-      >Start OAuth Flow</a
-    >
+    <p class="info">Information:</p>
+    <ul class="links">
+      <li>
+        <a
+          href="https://docs.autokitteh.com/integrations/auth0/config"
+          target="_blank"
+          class="info"
+        >
+          AutoKitteh guide: configuring Auth0 integration
+        </a>
+      </li>
+    </ul>
 
-    <!-- TODO(ENG-799) -->
+    <form id="save-form" method="post" action="/auth0/save">
+      <input type="hidden" name="auth_type" value="oauth" />
+
+      <div class="form-group">
+        <label for="client_id">Client ID</label>
+        <input
+          type="text"
+          id="clientId"
+          name="client_id"
+          autocomplete="off"
+          spellcheck="false"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="client_secret">Client Secret</label>
+        <input
+          type="text"
+          id="clientSecret" 
+          name="client_secret"
+          autocomplete="off"
+          spellcheck="false"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="auth0_domain">Auth0 Domain</label>
+        <input
+          type="text"
+          id="auth0Domain"
+          name="auth0_domain"
+          autocomplete="off"
+          spellcheck="false"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <p class="info">
+          Click the button below to install and authorize<br />
+          the <strong>AutoKitteh</strong> app in your Auth0 tenant
+        </p>
+      </div>
+
+      <button type="submit" class="submit-btn">Start OAuth Flow</button>
+    </form>
+
+
     <script>
       const queryString = window.location.search;
       document
-        .getElementById("oauth-link")
-        .setAttribute("href", "/oauth/start/auth0" + queryString);
+        .getElementById("save-form")
+        .setAttribute("action", "/auth0/save" + queryString);
     </script>
   </body>
 </html>
