@@ -395,22 +395,6 @@ func (py *pySvc) call(ctx context.Context, val sdktypes.Value, args []sdktypes.V
 	}
 }
 
-func newDoneFromError(runnerID string, error string) *pbUserCode.DoneRequest {
-	req := pbUserCode.DoneRequest{
-		RunnerId: runnerID,
-		Result: &pbValues.Value{
-			Custom: &pbValues.Custom{
-				Value: &pbValues.Value{
-					Nothing: &pbValues.Nothing{},
-				},
-				Data: nil,
-			},
-		},
-		Error: error,
-	}
-	return &req
-}
-
 // initialCall handles initial call from autokitteh, it does the message loop with Python.
 // We split it from Call since Call is also used to execute activities.
 func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
