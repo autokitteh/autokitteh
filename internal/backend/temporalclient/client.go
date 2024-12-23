@@ -118,11 +118,37 @@ func (c *impl) startDevServer(ctx context.Context) error {
 	c.cfg.DevServer.Stderr = c.logFile
 	c.cfg.DevServer.Stdout = c.logFile
 
-	if c.srv, err = testsuite.StartDevServer(ctx, c.cfg.DevServer); err != nil {
+	for i := 0; i < c.cfg.DevServerStartMaxAttempts && c.srv == nil; i++ {
+		c.l.Info("starting temporal dev server", zap.Int("attempt", i))
+
+		if i > 0 {
+			select {
+			case <-time.After(c.cfg.DevServerStartRetryInterval):
+				// nop
+			case <-ctx.Done():
+				return fmt.Errorf("context done: %w", ctx.Err())
+			}
+		}
+
+		startCtx := ctx
+
+		if c.cfg.DevServerStartTimeout != 0 {
+			var done func()
+			startCtx, done = context.WithTimeout(ctx, c.cfg.DevServerStartTimeout)
+			defer done()
+		}
+
+		c.srv, err = testsuite.StartDevServer(startCtx, c.cfg.DevServer)
+		if err != nil {
+			c.l.Error("failed to start temporal dev server", zap.Error(err), zap.Int("attempt", i))
+		}
+	}
+
+	if err != nil {
 		return fmt.Errorf("start Temporal dev server: %w", err)
 	}
 
-	c.l.Info("Started Temporal dev server", zap.String("address", c.srv.FrontendHostPort()))
+	c.l.Info("started temporal dev server", zap.String("address", c.srv.FrontendHostPort()))
 
 	if c.client != nil {
 		c.client.Close()
