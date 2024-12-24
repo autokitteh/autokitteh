@@ -2,6 +2,8 @@ package jira
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -9,6 +11,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
+	"go.uber.org/zap"
 )
 
 type integration struct {
@@ -86,18 +89,60 @@ func connTest(i *integration) sdkintegrations.OptFn {
 			return sdktypes.InvalidStatus, err
 		}
 
-		baseURL, err := apiBaseURL()
+		at := vs.Get(authType)
+		if !at.IsValid() || at.Value() == "" {
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+		}
+
+		oauthURL, err := apiBaseURL()
 		if err != nil {
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 		}
 
-		token := vs.GetValueByString("oauth_AccessToken")
+		switch at.Value() {
+		case integrations.OAuth:
+			token := vs.GetValueByString("oauth_AccessToken")
+			_, err := accessibleOAuth(nil, oauthURL, token)
+			if err != nil {
+				return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
+			}
+		case integrations.APIToken: // Isnt it supposed to be PAT?
+			patURL := vs.Get(baseURL).Value()
+			email := vs.Get(email).Value()
+			token := vs.Get(token).Value()
+			err := accessiblePAT(nil, patURL, email, token)
+			if err != nil {
+				return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
+			}
 
-		res, err := accessibleResources(nil, baseURL, token)
-		print(res)
-		if err != nil {
-			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 		}
+
 		return sdktypes.NewStatus(sdktypes.StatusCodeOK, ""), nil
 	})
+}
+
+func accessiblePAT(l *zap.Logger, baseURL string, email string, token string) error {
+	u := fmt.Sprintf("%s/rest/api/3/myself", baseURL)
+	req, err := http.NewRequest("GET", u, nil)
+	if err != nil {
+		logWarnIfNotNil(l, "Failed to construct HTTP request for PAT test", zap.Error(err))
+		return err
+	}
+
+	req.SetBasicAuth(email, token)
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		logWarnIfNotNil(l, "Failed to request accessible resources for PAT token", zap.Error(err))
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		logWarnIfNotNil(l, "Unexpected response on accessible resources", zap.Int("status", resp.StatusCode))
+		return fmt.Errorf("accessible resources: unexpected status code %d", resp.StatusCode)
+	}
+
+	return nil
 }
