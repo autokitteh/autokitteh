@@ -29,4 +29,4 @@ def auth0_client(connection: str, **kwargs) -> Auth0:
     if not token or not domain:
         raise ConnectionInitError(connection)
 
-    return Auth0(domain, token)
+    return Auth0(domain, token, **kwargs)
