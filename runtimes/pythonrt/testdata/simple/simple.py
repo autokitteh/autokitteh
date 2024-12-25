@@ -15,7 +15,7 @@ def greet(event):
     display(f"simple: USER: {USER}")  # From 'var' in manifest
     try:
         printer(event)
-    except Exception as err:
+    except ZeroDivisionError as err:
         print("ZERR:", err, type(err))
 
     body = event.data.body.bytes
