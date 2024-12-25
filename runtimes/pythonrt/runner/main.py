@@ -46,9 +46,7 @@ def parse_entry_point(entry_point):
     return file_name[:-3], func_name
 
 
-def exc_traceback(err):
-    """Format traceback to JSONable list."""
-    te = TracebackException.from_exception(err)
+def pb_traceback(stack):
     return [
         pb.user_code.Frame(
             filename=frame.filename,
@@ -56,7 +54,7 @@ def exc_traceback(err):
             code=frame.line,
             name=frame.name,
         )
-        for frame in te.stack
+        for frame in stack
     ]
 
 
@@ -115,6 +113,7 @@ def abort_with_exception(context, status, err):
 
 
 Call = namedtuple("Call", "fn args kw fut")
+Result = namedtuple("Result", "value error traceback")
 
 
 class Runner(pb.runner_rpc.RunnerService):
@@ -127,7 +126,7 @@ class Runner(pb.runner_rpc.RunnerService):
         self.executor = ThreadPoolExecutor()
 
         self.lock = Lock()
-        self.activity_calls: list[Call] = []
+        self.activity_call = None
         self._orig_print = print
         self._start_called = False
 
@@ -209,49 +208,34 @@ class Runner(pb.runner_rpc.RunnerService):
 
     def Execute(self, request: pb.runner.ExecuteRequest, context: grpc.ServicerContext):
         with self.lock:
-            call = self.activity_calls[-1] if self.activity_calls else None
+            call: Call = self.activity_call
 
         if call is None:
             context.abort(grpc.StatusCode.INVALID_ARGUMENT, "no pending activity calls")
 
-        func_name = full_func_name(call.fn)
-        log.info("calling %s", func_name)
-        result = err = None
-        try:
-            result = call.fn(*call.args, **call.kw)
-        except Exception as e:
-            log.error("%s failed: %s", func_name, e)
-            display_err(call.fn, e)
-            err = e
-
-        # Always set the result since it contains call info
+        result = self._call(call.fn, call.args, call.kw)
         resp = pb.runner.ExecuteResponse(
             result=pb.values.Value(
                 custom=pb.values.Custom(
-                    data=pickle.dumps(result, protocol=0),
-                    value=safe_wrap(result),
+                    data=pickle.dumps(result),
+                    value=safe_wrap(result.value),
                 ),
             )
         )
-
-        if err:
-            resp.error = str(err)
-            tb = exc_traceback(err)
-            resp.traceback.extend(tb)
 
         return resp
 
     def ActivityReply(
         self, request: pb.runner.ActivityReplyRequest, context: grpc.ServicerContext
     ):
-        if request.error and not request.result.custom.data:
+        if not request.result.custom.data:
             req = pb.handler.DoneRequest(
                 runner_id=self.id,
-                error=request.error,
+                error="activity reply not a Custom value",
             )
             resp = self.worker.Done(req)
             if resp.error:
-                log.error("on_event: done send error: %r", resp.error)
+                log.error("done send error: %r", resp.error)
 
             return pb.runner.ActivityReplyResponse(error=request.error)
 
@@ -262,22 +246,26 @@ class Runner(pb.runner_rpc.RunnerService):
             log.exception(f"can't decode data: pickle: {err}")
             abort_with_exception(context, grpc.StatusCode.INTERNAL, err)
 
+        if not isinstance(result, Result):
+            context.abort(
+                grpc.StatusCode.INVALID_ARGUMENT, "ActivityReply data not a Result"
+            )
+
         with self.lock:
-            call = self.activity_calls.pop() if self.activity_calls else None
+            call = self.activity_call
+            self.activity_call = None
 
         if call is None:
             context.abort(
                 grpc.StatusCode.INVALID_ARGUMENT, "ActivityReply without pending calls"
             )
 
-        if request.error:
-            call.fut.set_exception(ActivityError(request.error))
-            context.abort(
-                grpc.StatusCode.ABORTED,
-                f"activity error: {request.error}",
-            )
+        if result.error:
+            # TODO: Restore exception traceback
+            call.fut.set_exception(result.error)
+        else:
+            call.fut.set_result(result.value)
 
-        call.fut.set_result(result)
         return pb.runner.ActivityReplyResponse()
 
     def Health(
@@ -297,7 +285,10 @@ class Runner(pb.runner_rpc.RunnerService):
         log.info("calling %s", fn_name)
         call = Call(fn, args, kw, Future())
         with self.lock:
-            self.activity_calls.append(call)
+            if self.activity_call:
+                log.error("nested activity: %r < %r", self.activity_call, call)
+                raise RuntimeError(f"nested activity: {self.activity_call} < {call}")
+            self.activity_call = call
 
         req = pb.handler.ActivityRequest(
             runner_id=self.id,
@@ -314,34 +305,37 @@ class Runner(pb.runner_rpc.RunnerService):
         log.info("activity request ended")
         return call.fut
 
-    def on_event(self, fn, event):
-        log.info("on_event: start")
-
-        # TODO: This is similar to Execute, merge?
-        err = result = None
+    def _call(self, fn, args, kw):
+        func_name = full_func_name(fn)
+        log.info("calling %s", func_name)
+        value = error = tb = None
         try:
-            result = fn(event)
-        except Exception as e:
-            display_err(fn, e)
-            err = e
+            value = fn(*args, **kw)
+        except Exception as err:
+            log.error("%s raised: %s", func_name, err)
+            tb = TracebackException.from_exception(err)
+            error = err
 
-        self.signal_done(result, err)
+        return Result(value, error, tb.stack if tb else None)
 
-    def signal_done(self, result, error=None):
-        log.info("on_event: end: error=%r", error)
+    def on_event(self, fn, event):
+        log.info("start event: %s", full_func_name(fn))
+
+        result = self._call(fn, [event], {})
+        log.info("event end: error=%r", result.error)
         req = pb.handler.DoneRequest(
             runner_id=self.id,
         )
 
-        if error:
+        if result.error:
             # req.error must not be empty, otherwise the server would not know
             # that there was an error.
-            req.error = str(error) or "exception"
-            tb = exc_traceback(error)
+            req.error = str(result.error) or "unknown exception"
+            tb = pb_traceback(result.traceback)
             req.traceback.extend(tb)
         else:
-            req.result.custom.data = pickle.dumps(result, protocol=0)
-            req.result.custom.value.CopyFrom(safe_wrap(result))
+            req.result.custom.data = pickle.dumps(result)
+            req.result.custom.value.CopyFrom(safe_wrap(result.value))
 
         resp = self.worker.Done(req)
         if resp.Error:

@@ -60,12 +60,12 @@ def test_execute():
         server=None,
     )
 
-    runner.activity_calls.append(main.Call(sub, [1, 7], {}, Future()))
+    runner.activity_call = main.Call(sub, [1, 7], {}, Future())
     req = runner_pb.ExecuteRequest()
     resp = runner.Execute(req, None)
     assert resp.error == ""
-    value = pickle.loads(resp.result.custom.data)
-    assert value == -6
+    result = pickle.loads(resp.result.custom.data)
+    assert result.value == -6
 
 
 def test_activity_reply():
@@ -76,18 +76,18 @@ def test_activity_reply():
         server=None,
     )
     fut = Future()
-    runner.activity_calls.append(main.Call(print, (), {}, fut))
-    value = 42
+    runner.activity_call = main.Call(print, (), {}, fut)
+    result = main.Result(42, None, None)
     req = runner_pb.ActivityReplyRequest(
         result=pb_values.Value(
             custom=pb_values.Custom(
                 executor_id=runner.id,
-                data=pickle.dumps(value, protocol=0),
-                value=main.safe_wrap(value),
+                data=pickle.dumps(result),
+                value=main.safe_wrap(result.value),
             ),
         )
     )
     resp = runner.ActivityReply(req, MagicMock())
     assert resp.error == ""
     assert fut.done()
-    assert fut.result() == value
+    assert fut.result() == result.value
