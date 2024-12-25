@@ -116,31 +116,17 @@ func (db *gormdb) SetVars(ctx context.Context, vars []sdktypes.Var) error {
 		return c.ID(), c.IntegrationID()
 	})
 
-	pids := kittehs.ListToMap(cs, func(c sdktypes.Connection) (sdktypes.VarScopeID, sdktypes.ProjectID) {
-		return sdktypes.NewVarScopeID(c.ID()), c.ProjectID()
-	})
-
 	for _, v := range vars {
 		var (
 			sid = v.ScopeID()
 			iid sdktypes.IntegrationID
-			pid sdktypes.ProjectID
 		)
 
 		if cid := sid.ToConnectionID(); cid.IsValid() {
 			if iid = iids[cid]; !iid.IsValid() {
 				return sdkerrors.NewInvalidArgumentError("integration id %v not found", iid)
 			}
-
-			pid = pids[sid]
-		} else if tid := sid.ToTriggerID(); tid.IsValid() {
-			t, err := db.GetTriggerByID(ctx, tid)
-			if err != nil {
-				return translateError(err)
-			}
-
-			pid = t.ProjectID()
-		} else if pid = sid.ToProjectID(); !pid.IsValid() {
+		} else if !sid.ToTriggerID().IsValid() && !sid.ToProjectID().IsValid() {
 			return sdkerrors.NewInvalidArgumentError("unhandled scope %v", sid)
 		}
 
