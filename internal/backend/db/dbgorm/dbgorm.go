@@ -7,13 +7,16 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/google/uuid"
 	"github.com/pressly/goose/v3"
+	"go.jetify.com/typeid"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
 	_ "ariga.io/atlas-provider-gorm/gormschema"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
+	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/backend/gormkitteh"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/migrations"
@@ -58,27 +61,31 @@ func New(z *zap.Logger, cfg *Config) (db.DB, error) {
 
 func (db *gormdb) GormDB() *gorm.DB { return db.db }
 
-func (db *gormdb) Connect(ctx context.Context) error {
-	client, err := gormkitteh.OpenZ(db.z.Named("gorm"), db.cfg, func(cfg *gorm.Config) {
+func connect(ctx context.Context, z *zap.Logger, cfg *Config) (*gorm.DB, error) {
+	client, err := gormkitteh.OpenZ(z, cfg, func(cfg *gorm.Config) {
 		cfg.SkipDefaultTransaction = true
 	})
 	if err != nil {
-		return fmt.Errorf("opendb: %w", err)
+		return nil, fmt.Errorf("opendb: %w", err)
 	}
 	sqlDB, err := client.DB()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	if db.cfg.MaxOpenConns > 0 {
-		sqlDB.SetMaxOpenConns(db.cfg.MaxOpenConns)
+	if cfg.MaxOpenConns > 0 {
+		sqlDB.SetMaxOpenConns(cfg.MaxOpenConns)
 	}
-	if db.cfg.MaxIdleConns > 0 {
-		sqlDB.SetMaxIdleConns(db.cfg.MaxIdleConns)
+	if cfg.MaxIdleConns > 0 {
+		sqlDB.SetMaxIdleConns(cfg.MaxIdleConns)
 	}
 
-	db.db = client
-	return nil
+	return client, nil
+}
+
+func (db *gormdb) Connect(ctx context.Context) (err error) {
+	db.db, err = connect(ctx, db.z.Named("gorm"), db.cfg)
+	return
 }
 
 func (db *gormdb) locked(f func(db *gormdb) error) error {
@@ -158,7 +165,115 @@ func (db *gormdb) Migrate(ctx context.Context) error {
 	}
 
 	migrationsDir := db.cfg.Type
-	return goose.Up(client, migrationsDir)
+	if err := goose.UpContext(ctx, client, migrationsDir); err != nil {
+		return fmt.Errorf("goose up: %w", err)
+	}
+
+	if err := db.backfillUsersAndOrgs(ctx); err != nil {
+		return fmt.Errorf("backfill users and orgs: %w", err)
+	}
+
+	return nil
+}
+
+func (db *gormdb) backfillUsersAndOrgs(ctx context.Context) error {
+	l := db.z
+
+	gdb, err := connect(ctx, db.z.Named("gorm-migrate"), db.cfg)
+	if err != nil {
+		return err
+	}
+
+	gdb = gdb.WithContext(ctx)
+
+	// Backfill users.
+
+	var users []scheme.User
+	if err := gdb.Where("default_org_id is NULL").Find(&users).Error; err != nil {
+		return err
+	}
+
+	l.Info("backfilling users and orgs for users without default orgs", zap.Int("users", len(users)))
+
+	usersMap := make(map[uuid.UUID]scheme.User, len(users))
+
+	for i, user := range users {
+		l := l.With(zap.String("user_id", user.UserID.String()), zap.Int("i", i))
+
+		org := scheme.Org{
+			OrgID:       kittehs.Must1(uuid.NewV7()),
+			DisplayName: fmt.Sprintf("%s's Personal Org", user.DisplayName),
+		}
+
+		l = l.With(zap.String("org_id", org.OrgID.String()))
+
+		l.Info("creating org for user")
+
+		if err := gdb.Create(&org).Error; err != nil {
+			return err
+		}
+
+		l.Info("updating user with org")
+
+		user.DefaultOrgID = org.OrgID
+		if err := gdb.Save(&user).Error; err != nil {
+			return err
+		}
+
+		usersMap[user.UserID] = user
+	}
+
+	// Backfill projects.
+
+	var projects []struct {
+		scheme.Project
+		scheme.Ownership
+	}
+
+	if err := gdb.Where("org_id is NULL").Joins("left join ownerships on ownerships.entity_id = projects.project_id").Find(&projects).Error; err != nil {
+		return err
+	}
+
+	l.Info("backfilling projects without org", zap.Int("projects", len(projects)))
+
+	for i, project := range projects {
+		l := l.With(zap.String("project_id", project.ProjectID.String()), zap.String("raw_user_id", project.UserID), zap.Int("i", i))
+
+		uid, err := uuid.Parse(project.UserID)
+		if err != nil {
+			aid, err := typeid.Parse[typeid.AnyID](project.UserID)
+			if err != nil {
+				l.Error("failed to parse user id", zap.Error(err))
+				continue
+			}
+
+			if uid, err = uuid.Parse(aid.UUID()); err != nil {
+				l.Error("failed to parse user uuid", zap.Error(err))
+				continue
+			}
+		}
+
+		user, found := usersMap[uid]
+		if !found {
+			// user is not found since it already had a default org before migration, and just now updating its projects.
+			if err := gdb.Where("user_id = ?", uid).First(&user).Error; err != nil {
+				l.Error("failed to find user", zap.Error(err))
+				continue
+			}
+		}
+
+		l = l.With(zap.String("user_id", user.UserID.String()), zap.String("org_id", user.DefaultOrgID.String()))
+
+		l.Info("updating project with org")
+
+		err = gdb.Model(&scheme.Project{}).Update("org_id", user.DefaultOrgID).Where("project_id = ?", project.ProjectID).Error
+		if err != nil {
+			l.Error("failed to update project", zap.Error(err))
+			continue
+		}
+	}
+
+	return nil
 }
 
 func (db *gormdb) MigrationRequired(ctx context.Context) (bool, int64, error) {
