@@ -33,5 +33,5 @@ func Start(l *zap.Logger, muxes *muxes.Muxes, vars sdkservices.Vars) {
 	// through AutoKitteh's auth middleware to extract the user ID from a cookie.
 	h := NewHTTPHandler(l, vars)
 	muxes.Auth.HandleFunc("GET "+oauthPath, h.handleOAuth)
-	muxes.Auth.HandleFunc("POST "+savePath, h.handleSave)
+	muxes.Auth.HandleFunc("GET "+savePath, h.handleSave)
 }
