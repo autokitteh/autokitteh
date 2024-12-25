@@ -95,6 +95,7 @@ func (c *client) GetWithStatus(ctx context.Context, id sdktypes.ConnectionID) (s
 func (c *client) List(ctx context.Context, filter sdkservices.ListConnectionsFilter) ([]sdktypes.Connection, error) {
 	resp, err := c.client.List(ctx, connect.NewRequest(&connectionsv1.ListRequest{
 		IntegrationId: filter.IntegrationID.String(),
+		OrgId:         filter.OrgID.String(),
 		ProjectId:     filter.ProjectID.String(),
 		StatusCode:    filter.StatusCode.ToProto(),
 	}))

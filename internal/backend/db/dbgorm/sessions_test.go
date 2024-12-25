@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
@@ -41,15 +42,18 @@ func (f *dbFixture) assertSessionsDeleted(t *testing.T, sessions ...scheme.Sessi
 	}
 }
 
-func preSessionTest(t *testing.T) *dbFixture {
-	f := newDBFixture().withUser(sdktypes.DefaultUser)
+func preSessionTest(t *testing.T) (*dbFixture, scheme.Project, scheme.Build) {
+	f := newDBFixture()
 	f.listSessionsAndAssert(t, 0) // no sessions
 	findAndAssertCount[scheme.SessionLogRecord](t, f, 0, "")
-	return f
+
+	p, b := f.createProjectBuild(t)
+
+	return f, p, b
 }
 
-func testLastLogRecord(t *testing.T, f *dbFixture, numRecords int, sessionID sdktypes.UUID, lr sdktypes.SessionLogRecord) {
-	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](&sessionID)
+func testLastLogRecord(t *testing.T, f *dbFixture, numRecords int, sessionID uuid.UUID, lr sdktypes.SessionLogRecord) {
+	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](sessionID)
 	logs, _, err := f.gormdb.getSessionLogRecords(f.ctx, sdkservices.ListSessionLogRecordsFilter{SessionID: sid, PaginationRequest: sdktypes.PaginationRequest{Ascending: false}})
 	assert.NoError(t, err)
 	assert.Equal(t, numRecords, len(logs))
@@ -72,10 +76,10 @@ func assertSessionLogRecordsEqual(t *testing.T, a, b sdktypes.SessionLogRecord) 
 }
 
 func TestCreateSession(t *testing.T) {
-	f := preSessionTest(t)
+	f, p, b := preSessionTest(t)
 
 	// test createSession
-	s := f.newSession(sdktypes.SessionStateTypeCompleted)
+	s := f.newSession(sdktypes.SessionStateTypeCompleted, p, b)
 	f.createSessionsAndAssert(t, s) // all session assets are optional and will be set to nil
 
 	// test getSessionLogRecords and ensure that session logs contain the only CREATED record
@@ -84,17 +88,13 @@ func TestCreateSession(t *testing.T) {
 
 func TestCreateSessionForeignKeys(t *testing.T) {
 	// check session creation if foreign keys are not nil
-	f := preSessionTest(t)
+	f, p, b := preSessionTest(t)
 
 	// test with existing assets
-	p := f.newProject()
-	b := f.newBuild()
-	d := f.newDeployment(b)
-	evt := f.newEvent()
+	d := f.newDeployment(b, p)
+	evt := f.newEvent(p)
 	s := f.newSession(sdktypes.SessionStateTypeCompleted, d, b, p, evt)
 
-	f.createProjectsAndAssert(t, p)
-	f.saveBuildsAndAssert(t, b)
 	f.createDeploymentsAndAssert(t, d)
 	f.createEventsAndAssert(t, evt)
 	f.createSessionsAndAssert(t, s)
@@ -104,9 +104,8 @@ func TestCreateSessionForeignKeys(t *testing.T) {
 
 	s2 := f.newSession(sdktypes.SessionStateTypeCompleted)
 
-	s2.BuildID = &p.ProjectID // no such buildID, since it's a projectID
+	s2.BuildID = p.ProjectID // no such buildID, since it's a projectID
 	assert.ErrorIs(t, f.gormdb.createSession(f.ctx, &s2), gorm.ErrForeignKeyViolated)
-	s2.BuildID = nil
 
 	s2.DeploymentID = &p.ProjectID // no such deploymentID, since it's a projectID
 	assert.ErrorIs(t, f.gormdb.createSession(f.ctx, &s2), gorm.ErrForeignKeyViolated)
@@ -118,14 +117,15 @@ func TestCreateSessionForeignKeys(t *testing.T) {
 }
 
 func TestGetSession(t *testing.T) {
-	f := preSessionTest(t)
+	f, p, b := preSessionTest(t)
 
-	s := f.newSession(sdktypes.SessionStateTypeCompleted)
+	s := f.newSession(sdktypes.SessionStateTypeCompleted, p, b)
 	f.createSessionsAndAssert(t, s)
 
 	// check getSession
 	session, err := f.gormdb.getSession(f.ctx, s.SessionID)
 	assert.NoError(t, err)
+	resetTimes(session)
 	assert.Equal(t, s, *session)
 
 	// check that after deleteSession it's not found
@@ -135,13 +135,14 @@ func TestGetSession(t *testing.T) {
 }
 
 func TestListSessions(t *testing.T) {
-	f := preSessionTest(t)
+	f, p, b := preSessionTest(t)
 
-	s := f.newSession(sdktypes.SessionStateTypeCompleted)
+	s := f.newSession(sdktypes.SessionStateTypeCompleted, p, b)
 	f.createSessionsAndAssert(t, s)
 
 	sessions := f.listSessionsAndAssert(t, 1)
 	s.Inputs = nil
+	resetTimes(&sessions[0])
 	assert.Equal(t, s, sessions[0])
 
 	// deleteSession and ensure that listSessions is empty
@@ -150,16 +151,16 @@ func TestListSessions(t *testing.T) {
 }
 
 func TestListSessionsNoSessions(t *testing.T) {
-	f := preSessionTest(t)
+	f, _, _ := preSessionTest(t)
 
 	sessions := f.listSessionsAndAssert(t, 0)
 	assert.Equal(t, sessions, []scheme.Session{})
 }
 
 func TestListSessionsCountOnly(t *testing.T) {
-	f := preSessionTest(t)
+	f, p, b := preSessionTest(t)
 
-	s := f.newSession(sdktypes.SessionStateTypeCompleted)
+	s := f.newSession(sdktypes.SessionStateTypeCompleted, p, b)
 	f.createSessionsAndAssert(t, s)
 
 	flt := sdkservices.ListSessionsFilter{
@@ -174,7 +175,7 @@ func TestListSessionsCountOnly(t *testing.T) {
 }
 
 func TestListSessionsNoSessionsCountOnly(t *testing.T) {
-	f := preSessionTest(t)
+	f, _, _ := preSessionTest(t)
 
 	flt := sdkservices.ListSessionsFilter{
 		CountOnly: true,
@@ -188,12 +189,12 @@ func TestListSessionsNoSessionsCountOnly(t *testing.T) {
 }
 
 func TestListPaginatedSession(t *testing.T) {
-	f := preSessionTest(t)
+	f, p, b := preSessionTest(t)
 
-	s := f.newSession(sdktypes.SessionStateTypeCompleted)
+	s := f.newSession(sdktypes.SessionStateTypeCompleted, p, b)
 	f.createSessionsAndAssert(t, s)
 
-	s = f.newSession(sdktypes.SessionStateTypeCompleted)
+	s = f.newSession(sdktypes.SessionStateTypeCompleted, p, b)
 	f.createSessionsAndAssert(t, s)
 
 	flt := sdkservices.ListSessionsFilter{
@@ -209,9 +210,9 @@ func TestListPaginatedSession(t *testing.T) {
 }
 
 func TestDeleteSession(t *testing.T) {
-	f := preSessionTest(t)
+	f, p, b := preSessionTest(t)
 
-	s := f.newSession(sdktypes.SessionStateTypeCompleted)
+	s := f.newSession(sdktypes.SessionStateTypeCompleted, p, b)
 	f.createSessionsAndAssert(t, s)
 
 	assert.NoError(t, f.gormdb.deleteSession(f.ctx, s.SessionID))
@@ -225,9 +226,9 @@ func TestDeleteSessionForeignKeys(t *testing.T) {
 */
 
 func TestAddSessionLogRecordUnexistingSession(t *testing.T) {
-	f := preSessionTest(t)
+	f, p, b := preSessionTest(t)
 
-	s := f.newSession(sdktypes.SessionStateTypeCompleted)
+	s := f.newSession(sdktypes.SessionStateTypeCompleted, p, b)
 	logr := f.newSessionLogRecord() // invalid sessionID
 
 	assert.ErrorIs(t, f.gormdb.addSessionLogRecord(f.ctx, &logr, ""), gorm.ErrForeignKeyViolated)
@@ -240,9 +241,9 @@ func TestAddSessionLogRecordUnexistingSession(t *testing.T) {
 }
 
 func TestAddSessionPrintLogRecord(t *testing.T) {
-	f := preSessionTest(t)
+	f, p, b := preSessionTest(t)
 
-	s := f.newSession(sdktypes.SessionStateTypeCompleted)
+	s := f.newSession(sdktypes.SessionStateTypeCompleted, p, b)
 	l := sdktypes.NewPrintSessionLogRecord("meow")
 	logr, err := toSessionLogRecord(s.SessionID, l)
 	assert.NoError(t, err)
@@ -254,9 +255,9 @@ func TestAddSessionPrintLogRecord(t *testing.T) {
 }
 
 func TestSessionLogRecordListOrder(t *testing.T) {
-	f := preSessionTest(t)
+	f, p, b := preSessionTest(t)
 
-	s := f.newSession(sdktypes.SessionStateTypeCompleted)
+	s := f.newSession(sdktypes.SessionStateTypeCompleted, p, b)
 	l := sdktypes.NewPrintSessionLogRecord("meow")
 	logr, err := toSessionLogRecord(s.SessionID, l)
 	assert.NoError(t, err)
@@ -264,7 +265,7 @@ func TestSessionLogRecordListOrder(t *testing.T) {
 	f.createSessionsAndAssert(t, s) // will create session and session record as well
 	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr, ""))
 
-	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](&s.SessionID)
+	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](s.SessionID)
 
 	tests := []struct {
 		name  string
@@ -295,9 +296,9 @@ func TestSessionLogRecordListOrder(t *testing.T) {
 }
 
 func TestSessionLogRecordPageSizeAndTotalCount(t *testing.T) {
-	f := preSessionTest(t)
+	f, p, b := preSessionTest(t)
 
-	s := f.newSession(sdktypes.SessionStateTypeCompleted)
+	s := f.newSession(sdktypes.SessionStateTypeCompleted, p, b)
 	l := sdktypes.NewPrintSessionLogRecord("meow")
 	logr, err := toSessionLogRecord(s.SessionID, l)
 	assert.NoError(t, err)
@@ -305,7 +306,7 @@ func TestSessionLogRecordPageSizeAndTotalCount(t *testing.T) {
 	f.createSessionsAndAssert(t, s) // will create session and session record as well
 	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr, ""))
 
-	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](&s.SessionID)
+	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](s.SessionID)
 	logs, n, err := f.gormdb.getSessionLogRecords(f.ctx,
 		sdkservices.ListSessionLogRecordsFilter{
 			SessionID:         sid,
@@ -318,9 +319,9 @@ func TestSessionLogRecordPageSizeAndTotalCount(t *testing.T) {
 }
 
 func TestSessionLogRecordSkipAll(t *testing.T) {
-	f := preSessionTest(t)
+	f, p, b := preSessionTest(t)
 
-	s := f.newSession(sdktypes.SessionStateTypeCompleted)
+	s := f.newSession(sdktypes.SessionStateTypeCompleted, p, b)
 	l := sdktypes.NewPrintSessionLogRecord("meow")
 	logr, err := toSessionLogRecord(s.SessionID, l)
 	assert.NoError(t, err)
@@ -328,7 +329,7 @@ func TestSessionLogRecordSkipAll(t *testing.T) {
 	f.createSessionsAndAssert(t, s) // will create session and session record as well
 	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr, ""))
 
-	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](&s.SessionID)
+	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](s.SessionID)
 	logs, n, err := f.gormdb.getSessionLogRecords(f.ctx,
 		sdkservices.ListSessionLogRecordsFilter{
 			SessionID:         sid,
@@ -341,9 +342,9 @@ func TestSessionLogRecordSkipAll(t *testing.T) {
 }
 
 func TestSessionLogRecordSkip(t *testing.T) {
-	f := preSessionTest(t)
+	f, p, b := preSessionTest(t)
 
-	s := f.newSession(sdktypes.SessionStateTypeCompleted)
+	s := f.newSession(sdktypes.SessionStateTypeCompleted, p, b)
 	l := sdktypes.NewPrintSessionLogRecord("meow")
 	logr, err := toSessionLogRecord(s.SessionID, l)
 	assert.NoError(t, err)
@@ -351,7 +352,7 @@ func TestSessionLogRecordSkip(t *testing.T) {
 	f.createSessionsAndAssert(t, s) // will create session and session record as well
 	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr, ""))
 
-	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](&s.SessionID)
+	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](s.SessionID)
 	logs, n, err := f.gormdb.getSessionLogRecords(f.ctx,
 		sdkservices.ListSessionLogRecordsFilter{
 			SessionID:         sid,
@@ -364,9 +365,9 @@ func TestSessionLogRecordSkip(t *testing.T) {
 }
 
 func TestSessionLogRecordNextPageTokenEmpty(t *testing.T) {
-	f := preSessionTest(t)
+	f, p, b := preSessionTest(t)
 
-	s := f.newSession(sdktypes.SessionStateTypeCompleted)
+	s := f.newSession(sdktypes.SessionStateTypeCompleted, p, b)
 	l := sdktypes.NewPrintSessionLogRecord("meow")
 	logr, err := toSessionLogRecord(s.SessionID, l)
 	assert.NoError(t, err)
@@ -374,7 +375,7 @@ func TestSessionLogRecordNextPageTokenEmpty(t *testing.T) {
 	f.createSessionsAndAssert(t, s) // will create session and session record as well
 	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr, ""))
 
-	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](&s.SessionID)
+	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](s.SessionID)
 	res, err := f.gormdb.GetSessionLog(context.Background(),
 		sdkservices.ListSessionLogRecordsFilter{
 			SessionID:         sid,
@@ -388,9 +389,9 @@ func TestSessionLogRecordNextPageTokenEmpty(t *testing.T) {
 }
 
 func TestSessionLogRecordNextPageTokenNotEmpty(t *testing.T) {
-	f := preSessionTest(t)
+	f, p, b := preSessionTest(t)
 
-	s := f.newSession(sdktypes.SessionStateTypeCompleted)
+	s := f.newSession(sdktypes.SessionStateTypeCompleted, p, b)
 	l := sdktypes.NewPrintSessionLogRecord("meow")
 	logr, err := toSessionLogRecord(s.SessionID, l)
 	assert.NoError(t, err)
@@ -399,7 +400,7 @@ func TestSessionLogRecordNextPageTokenNotEmpty(t *testing.T) {
 	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr, ""))
 	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr, ""))
 
-	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](&s.SessionID)
+	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](s.SessionID)
 	res, err := f.gormdb.GetSessionLog(context.Background(),
 		sdkservices.ListSessionLogRecordsFilter{
 			SessionID:         sid,

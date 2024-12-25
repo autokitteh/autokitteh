@@ -21,41 +21,71 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )
 
 const (
-	rootDir     = "testdata/"
+	rootDir     = "testdata"
 	stopTimeout = 3 * time.Second
 )
 
 func TestSuite(t *testing.T) {
 	akPath := setUpSuite(t)
 
-	err := filepath.WalkDir(rootDir, func(path string, d fs.DirEntry, err error) error {
+	tests := make(map[string]*testFile)
+
+	var exclusives []string
+
+	// Each .txtar file is a test-case, with potentially
+	// multiple actions, checks, and embedded files.
+	err := fs.WalkDir(testDataFS, rootDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
-			t.Fatal(err) // Abort the entire test suite on walking errors.
+			return err
 		}
 
 		if d.IsDir() || !strings.HasSuffix(d.Name(), ".txtar") {
 			return nil // Skip directories and non-test files.
 		}
 
-		// Each .txtar file is a test-case, with potentially
-		// multiple actions, checks, and embedded files.
-		t.Run(strings.TrimPrefix(path, rootDir), func(t *testing.T) {
-			steps := readTestFile(t, path)
-			akAddr := setUpTest(t, akPath)
-			runTestSteps(t, steps, akPath, akAddr)
-		})
+		f, err := readTestFile(t, path)
+		if err != nil {
+			return err
+		}
+
+		path = strings.TrimPrefix(path, rootDir+"/")
+
+		tests[path] = f
+
+		if f.config.Exclusive {
+			exclusives = append(exclusives, path)
+		}
 
 		return nil
 	})
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	filter := func(string) bool { return true }
+	if len(exclusives) > 0 {
+		filter = kittehs.ContainedIn(exclusives...)
+	}
+
+	for path, test := range tests {
+		t.Run(path, func(t *testing.T) {
+			if !filter(path) {
+				t.Skip("skipping")
+			}
+
+			prepTestFiles(t, test.a)
+
+			akAddr := setUpTest(t, akPath, test.config.Server)
+			runTestSteps(t, test.steps, akPath, akAddr, &test.config)
+		})
 	}
 }
 
@@ -68,12 +98,14 @@ func setUpSuite(t *testing.T) string {
 	return akPath
 }
 
-func setUpTest(t *testing.T, akPath string) string {
+func setUpTest(t *testing.T, akPath string, cfg map[string]any) string {
 	// TODO: Replace "/backend/internal/temporalclient/client.go"?
+
+	setFirstUser()
 
 	// Start the AK server.
 	ctx := context.Background()
-	svc, addr, err := startAKServer(ctx, akPath)
+	svc, addr, err := startAKServer(t, ctx, akPath, cfg)
 	if err != nil {
 		t.Fatalf("start AK server error: %v", err)
 	}
@@ -90,7 +122,7 @@ func setUpTest(t *testing.T, akPath string) string {
 	return addr
 }
 
-func runTestSteps(t *testing.T, steps []string, akPath, akAddr string) {
+func runTestSteps(t *testing.T, steps []string, akPath, akAddr string, cfg *testConfig) {
 	var (
 		actionIndex int
 		ak          *akResult
@@ -104,6 +136,11 @@ func runTestSteps(t *testing.T, steps []string, akPath, akAddr string) {
 		}
 
 		step = expandCapture(step)
+
+		if step == "exit" {
+			t.Log("exiting test")
+			break
+		}
 
 		// Actions: ak, http, wait.
 		if actions.MatchString(step) {
@@ -123,7 +160,7 @@ func runTestSteps(t *testing.T, steps []string, akPath, akAddr string) {
 
 			// Now start with the new action, and store its result.
 			actionIndex = i
-			result, err := runAction(t, akPath, akAddr, step)
+			result, err := runAction(t, akPath, akAddr, i, step, cfg)
 			if err != nil {
 				t.Errorf("line %d: %s", i+1, step)
 				// Fail-fast, don't run subsequent test steps.

@@ -1,0 +1,38 @@
+user zumi
+
+ak project create --name pz
+return code == 0
+capture_jq zpid .project_id
+
+ak project deploy $zpid --file main.star 
+return code == 0
+capture_jq zbid .[].build_id | select (.)
+
+ak session start --build-id $zbid --project $zpid --entrypoint main.star:main
+return code == 0
+capture_jq zsid .session_id
+
+ak session get $zsid -f
+return code == 0
+
+ak session stop $zsid
+return code == 0
+
+user gizmo
+
+ak session stop $zsid
+return code == $RC_UNAUTHZ
+
+ak session get $zsid -f
+return code == $RC_NOT_FOUND
+
+ak session start --build-id $zbid --project $zpid --entrypoint main.star:main
+return code == $RC_NOT_FOUND
+
+-- test-config.yaml --
+ak:
+    extra_args: ["-j", "--array_json_list"]
+
+-- main.star --
+def main():
+    sleep(5)

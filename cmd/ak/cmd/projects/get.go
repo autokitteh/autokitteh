@@ -18,12 +18,21 @@ var getCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		p, _, err := r.ProjectNameOrID(ctx, args[0])
-		err = common.AddNotFoundErrIfCond(err, p.IsValid())
-		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "project"); err == nil {
-			common.RenderKVIfV("project", p)
+		pid, err := r.ProjectNameOrID(ctx, args[0])
+		err = common.AddNotFoundErrIfCond(err, pid.IsValid())
+		if err := common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "project"); err != nil {
+			return err
 		}
-		return err
+
+		p, err := projects().GetByID(ctx, pid)
+		err = common.AddNotFoundErrIfCond(err, p.IsValid())
+		if err := common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "project"); err != nil {
+			return err
+		}
+
+		common.RenderKVIfV("project", p)
+
+		return nil
 	},
 })
 

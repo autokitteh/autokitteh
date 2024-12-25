@@ -1,0 +1,85 @@
+user zumi
+
+ak project create --name pz
+return code == 0
+capture_jq zpid .project_id
+
+ak project create --name pc --org $CATS_OID
+return code == 0
+capture_jq cpid .project_id
+
+ak connection create cz --project $zpid --integration test
+return code == 0
+capture_jq zcid .connection_id
+
+ak connection create cc --project $cpid --integration test
+return code == 0
+capture_jq ccid .connection_id
+
+ak trigger create -n tz1 -p $zpid -c $zcid -E event
+return code == 0
+capture_jq tz1tid .trigger_id
+
+ak trigger get $tz1tid -f
+return code == 0
+
+ak trigger create -n tz2 -p $zpid --webhook
+return code == 0
+capture_jq tz2tid .trigger_id
+
+ak trigger create -n tz3 -p $zpid --schedule "1 1 1 1 1"
+return code == 0
+
+ak trigger create -n err -p $zpid -c $ccid -E event
+return code == $RC_UNAUTHZ
+
+user gizmo
+
+ak trigger create -n err -p $zpid --webhook
+return code == $RC_UNAUTHZ
+
+ak trigger create -n err -p $zpid --schedule "1 1 1 1 1"
+return code == $RC_UNAUTHZ
+
+ak trigger create -n tc1 -p $cpid -c $ccid -E event
+return code == 0
+capture_jq tc1tid .trigger_id
+
+ak trigger create -n err -p $cpid -c $zcid -E event
+return code == $RC_UNAUTHZ
+
+ak trigger get $tz1tid -f
+return code == $RC_NOT_FOUND
+
+ak trigger get $tc1tid -f
+return code == 0
+
+ak trigger delete $tz1tid
+return code == $RC_NOT_FOUND
+
+ak trigger list --project $zpid
+return code == $RC_UNAUTHZ
+
+ak trigger list --project $cpid
+return code == 0
+
+ak trigger list --connection $ccid
+return code == 0
+
+user zumi
+
+ak trigger list 
+return code == 0
+
+ak trigger delete $tz1tid
+return code == 0
+
+ak trigger delete $tc1tid
+return code == 0
+
+ak trigger list --project $zpid
+return code == 0
+
+-- test-config.yaml --
+ak:
+    extra_args: ["-j", "--array_json_list"]

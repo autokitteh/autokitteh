@@ -27,7 +27,7 @@ func (c *execContext) resolveProjectID(ctx context.Context, name string) (sdktyp
 		return sdktypes.InvalidProjectID, err
 	}
 
-	p, err := c.client.Projects().GetByName(ctx, sdkName)
+	p, err := c.client.Projects().GetByName(ctx, sdktypes.InvalidOrgID, sdkName)
 	if err != nil {
 		return sdktypes.InvalidProjectID, err
 	}

@@ -3,12 +3,12 @@ package dbgorm
 import (
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 func (f *dbFixture) createTriggersAndAssert(t *testing.T, triggers ...scheme.Trigger) {
@@ -35,7 +35,7 @@ func (f *dbFixture) createProjectConnection(t *testing.T) (scheme.Project, schem
 }
 
 func preTriggerTest(t *testing.T) *dbFixture {
-	f := newDBFixture().withUser(sdktypes.DefaultUser)
+	f := newDBFixture()
 	findAndAssertCount[scheme.Trigger](t, f, 0, "") // no triggers
 	return f
 }
@@ -60,6 +60,7 @@ func TestGetTrigger(t *testing.T) {
 	// test getTrigger
 	t2, err := f.gormdb.getTriggerByID(f.ctx, t1.TriggerID)
 	assert.NoError(t, err)
+	resetTimes(t2)
 	assert.Equal(t, t1, *t2)
 
 	assert.NoError(t, f.gormdb.deleteTrigger(f.ctx, t1.TriggerID))
@@ -70,15 +71,15 @@ func TestGetTrigger(t *testing.T) {
 func TestCreateTriggerForeignKeys(t *testing.T) {
 	f := preTriggerTest(t)
 
-	b := f.newBuild()
 	p, c := f.createProjectConnection(t)
+	b := f.newBuild(p)
 	f.saveBuildsAndAssert(t, b)
 
 	// negative test with non-existing assets
 
 	// zero ProjectID and ConnectionID
 	t1 := f.newTrigger()
-	assert.Equal(t, t1.ProjectID, sdktypes.UUID{})
+	assert.Equal(t, t1.ProjectID, uuid.Nil)
 	assert.Nil(t, t1.ConnectionID)
 	assert.ErrorIs(t, f.gormdb.createTrigger(f.ctx, &t1), gorm.ErrForeignKeyViolated)
 
@@ -104,7 +105,7 @@ func TestDeleteTriggerForeignKeys(t *testing.T) {
 
 	trg := f.newTrigger(p, c)
 	f.createTriggersAndAssert(t, trg)
-	evt := f.newEvent(trg)
+	evt := f.newEvent(trg, p)
 	f.createEventsAndAssert(t, evt)
 
 	// trigger could be deleted, even if it refenced by non-deleted event
@@ -123,6 +124,7 @@ func TestListTriggers(t *testing.T) {
 	triggers, err := f.gormdb.listTriggers(f.ctx, sdkservices.ListTriggersFilter{})
 	assert.NoError(t, err)
 	assert.Len(t, triggers, 1)
+	resetTimes(&triggers[0])
 	assert.Equal(t, t1, triggers[0])
 
 	// test listTriggers after delete
@@ -149,7 +151,7 @@ func TestDuplicatedTrigger(t *testing.T) {
 
 	p1 := f.newProject()
 	p2 := f.newProject()
-	c := f.newConnection() // trigger doesn't check for connection's projectID
+	c := f.newConnection(p1)
 	f.createProjectsAndAssert(t, p1, p2)
 	f.createConnectionsAndAssert(t, c)
 

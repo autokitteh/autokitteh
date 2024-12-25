@@ -8,8 +8,13 @@ import (
 
 type ListConnectionsFilter struct {
 	IntegrationID sdktypes.IntegrationID
+	OrgID         sdktypes.OrgID
 	ProjectID     sdktypes.ProjectID
 	StatusCode    sdktypes.StatusCode
+}
+
+func (f ListConnectionsFilter) AnyIDSpecified() bool {
+	return f.IntegrationID.IsValid() || f.OrgID.IsValid() || f.ProjectID.IsValid()
 }
 
 type Connections interface {

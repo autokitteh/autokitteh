@@ -5,6 +5,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authusers"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -30,6 +31,10 @@ func (a *auth) CreateToken(ctx context.Context) (string, error) {
 
 	if a.tokens == nil {
 		return "", sdkerrors.ErrNotImplemented
+	}
+
+	if authusers.IsInternalUserID(u.ID()) {
+		return "", sdkerrors.ErrUnauthorized
 	}
 
 	return a.tokens.Create(u)
