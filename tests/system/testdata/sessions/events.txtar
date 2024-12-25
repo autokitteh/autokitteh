@@ -28,7 +28,7 @@ resp code == 202
 ak session watch ses_0000000000000000000000000b --end-state COMPLETED
 return code == 0
 
-ak session log --prints-only --no-timestamps
+ak session log --prints-only --no-timestamps -p myproject
 output equals file prints.txt
 
 

@@ -13,14 +13,16 @@ type Services interface {
 }
 
 type DBServices interface {
-	Integrations() Integrations
-	Projects() Projects
 	Builds() Builds
-	Deployments() Deployments
 	Connections() Connections
-	Sessions() Sessions
+	Deployments() Deployments
 	Events() Events
+	Integrations() Integrations
+	Orgs() Orgs
+	Projects() Projects
+	Sessions() Sessions
 	Triggers() Triggers
+	Users() Users
 	Vars() Vars
 }
 
@@ -35,11 +37,13 @@ type ServicesStruct struct {
 	Events_       Events       `optional:"true"`
 	Integrations_ Integrations `optional:"true"`
 	OAuth_        OAuth        `optional:"true"`
+	Orgs_         Orgs         `optional:"true"`
 	Projects_     Projects     `optional:"true"`
 	Runtimes_     Runtimes     `optional:"true"`
 	Sessions_     Sessions     `optional:"true"`
 	Store_        Store        `optional:"true"`
 	Triggers_     Triggers     `optional:"true"`
+	Users_        Users        `optional:"true"`
 	Vars_         Vars         `optional:"true"`
 }
 
@@ -53,9 +57,11 @@ func (s *ServicesStruct) Dispatcher() Dispatcher     { return s.Dispatcher_ }
 func (s *ServicesStruct) Events() Events             { return s.Events_ }
 func (s *ServicesStruct) Integrations() Integrations { return s.Integrations_ }
 func (s *ServicesStruct) OAuth() OAuth               { return s.OAuth_ }
+func (s *ServicesStruct) Orgs() Orgs                 { return s.Orgs_ }
 func (s *ServicesStruct) Projects() Projects         { return s.Projects_ }
 func (s *ServicesStruct) Runtimes() Runtimes         { return s.Runtimes_ }
 func (s *ServicesStruct) Sessions() Sessions         { return s.Sessions_ }
 func (s *ServicesStruct) Store() Store               { return s.Store_ }
 func (s *ServicesStruct) Triggers() Triggers         { return s.Triggers_ }
+func (s *ServicesStruct) Users() Users               { return s.Users_ }
 func (s *ServicesStruct) Vars() Vars                 { return s.Vars_ }

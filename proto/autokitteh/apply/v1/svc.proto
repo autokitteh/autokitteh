@@ -8,6 +8,7 @@ message ApplyRequest {
   string manifest = 1 [(buf.validate.field).string.min_len = 1];
   string path = 2 [(buf.validate.field).string.min_len = 1];
   string project_name = 3;
+  string org_id = 4;
 }
 
 message Effect {

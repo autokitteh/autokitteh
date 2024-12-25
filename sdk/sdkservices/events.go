@@ -8,6 +8,8 @@ import (
 )
 
 type ListEventsFilter struct {
+	OrgID             sdktypes.OrgID
+	ProjectID         sdktypes.ProjectID
 	IntegrationID     sdktypes.IntegrationID
 	DestinationID     sdktypes.EventDestinationID
 	EventType         string
@@ -15,6 +17,11 @@ type ListEventsFilter struct {
 	CreatedAfter      *time.Time
 	MinSequenceNumber uint64
 	Order             ListOrder
+}
+
+func (f ListEventsFilter) AnyIDSpecified() bool {
+	// Do not put IntegrationID here - it does not limit the scope of the results org-wise
+	return f.OrgID.IsValid() || f.ProjectID.IsValid() || f.DestinationID.IsValid()
 }
 
 type ListOrder string

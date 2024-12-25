@@ -9,7 +9,8 @@ import (
 )
 
 type ListBuildsFilter struct {
-	Limit uint32
+	ProjectID sdktypes.ProjectID `json:"project_id"`
+	Limit     uint32             `json:"limit"`
 }
 
 type Builds interface {

@@ -29,6 +29,12 @@ func TestSequentialID(t *testing.T) {
 	}
 }
 
+func TestFromID(t *testing.T) {
+	tid := NewTriggerID()
+	id := NewEventDestinationID(tid)
+	assert.Equal(t, FromID[TriggerID](id), tid)
+}
+
 func TestID(t *testing.T) {
 	zero, err := ParseProjectID("")
 	if assert.NoError(t, err) {

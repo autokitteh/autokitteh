@@ -1,7 +1,7 @@
 # Negative test: deploy nonexistent manifest file.
 ak manifest deploy bad_filename.yaml
 output equals 'Error: open bad_filename.yaml: no such file or directory'
-return code == 10
+return code == $RC_NOT_FOUND
 
 # Deploy based on new manifest.
 ak manifest deploy my_project/manifest.yaml
@@ -16,11 +16,11 @@ output equals file expected_output_second_deploy.txt
 # Negative test: deploy project with nonexistent files and directories.
 ak manifest deploy my_project/manifest.yaml --file bad_filename
 output contains 'Error: stat bad_filename: no such file or directory'
-return code == 10
+return code == $RC_NOT_FOUND
 
 ak manifest deploy my_project/manifest.yaml --dir bad_dir_name
 output contains 'Error: stat bad_dir_name: no such file or directory'
-return code == 10
+return code == $RC_NOT_FOUND
 
 # Deploy project from a single file.
 ak manifest deploy my_project/manifest.yaml --file single_file.star

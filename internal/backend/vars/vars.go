@@ -7,6 +7,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/secrets"
@@ -51,6 +52,17 @@ func (v *Vars) SetConnections(conns sdkservices.Connections) { v.conns = conns }
 // the values of secret variables to be the secret key in the secret store.
 // Do not change this behavior - it's useful, even though it's unexpected.
 func (v *Vars) Set(ctx context.Context, vs ...sdktypes.Var) error {
+	for _, va := range vs {
+		if err := authz.CheckContext(
+			ctx,
+			va.ScopeID(),
+			"write:set-var",
+			authz.WithData("var", va),
+		); err != nil {
+			return err
+		}
+	}
+
 	scids := make(map[sdktypes.VarScopeID]bool, len(vs))
 
 	for i, va := range vs {
@@ -72,7 +84,7 @@ func (v *Vars) Set(ctx context.Context, vs ...sdktypes.Var) error {
 	}
 
 	err := v.db.Transaction(ctx, func(tx db.DB) error {
-		if maxN := v.cfg.MaxNumVarsPerScope; maxN != 0 && len(vs) > maxN {
+		if maxN := v.cfg.MaxNumVarsPerScope; maxN != 0 {
 			for scid := range scids {
 				n, err := tx.CountVars(ctx, scid)
 				if err != nil {
@@ -104,6 +116,18 @@ func (v *Vars) Set(ctx context.Context, vs ...sdktypes.Var) error {
 }
 
 func (v *Vars) Delete(ctx context.Context, sid sdktypes.VarScopeID, names ...sdktypes.Symbol) error {
+	if len(names) == 0 {
+		if err := authz.CheckContext(ctx, sid, "write:delete-all-vars"); err != nil {
+			return err
+		}
+	} else {
+		for _, name := range names {
+			if err := authz.CheckContext(ctx, sid, "write:delete-var", authz.WithData("name", name)); err != nil {
+				return err
+			}
+		}
+	}
+
 	vars, err := v.db.GetVars(ctx, sid, names)
 	if err != nil {
 		return err
@@ -133,6 +157,18 @@ func (v *Vars) Delete(ctx context.Context, sid sdktypes.VarScopeID, names ...sdk
 }
 
 func (v *Vars) Get(ctx context.Context, sid sdktypes.VarScopeID, names ...sdktypes.Symbol) (sdktypes.Vars, error) {
+	if len(names) == 0 {
+		if err := authz.CheckContext(ctx, sid, "read:get-all-vars", authz.WithConvertForbiddenToNotFound); err != nil {
+			return nil, err
+		}
+	} else {
+		for _, name := range names {
+			if err := authz.CheckContext(ctx, sid, "read:get-var", authz.WithData("name", name), authz.WithConvertForbiddenToNotFound); err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	vars, err := v.db.GetVars(ctx, sid, names)
 	if err != nil {
 		return nil, err
@@ -154,5 +190,9 @@ func (v *Vars) Get(ctx context.Context, sid sdktypes.VarScopeID, names ...sdktyp
 }
 
 func (v *Vars) FindConnectionIDs(ctx context.Context, iid sdktypes.IntegrationID, name sdktypes.Symbol, value string) ([]sdktypes.ConnectionID, error) {
+	if err := authz.CheckContext(ctx, sdktypes.InvalidIntegrationID, "read:find-var-connections-ids", authz.WithData("integration_id", iid), authz.WithData("name", name)); err != nil {
+		return nil, err
+	}
+
 	return v.db.FindConnectionIDsByVar(ctx, iid, name, value)
 }

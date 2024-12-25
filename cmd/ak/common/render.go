@@ -102,7 +102,16 @@ func RenderKVIfV[T any](k string, v T) {
 	Render(KVIfV[T]{K: k, V: v})
 }
 
+var arrayJSONList bool
+
+func SetArrayJSONList(p bool) { arrayJSONList = p }
+
 func RenderList[T fmt.Stringer](ts []T) {
+	if arrayJSONList {
+		Render(ts)
+		return
+	}
+
 	for _, t := range ts {
 		Render(t)
 	}

@@ -3,17 +3,18 @@ package dbgorm
 import (
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 // specialized version of findAndAssertOne in order to exclude var.ID from the comparison
 func findAndAssertOneVar(t *testing.T, f *dbFixture, v scheme.Var) {
 	vr := findAndAssertCount[scheme.Var](t, f, 1, "var_id = ? and name = ?", v.ScopeID, v.Name)[0]
+	resetTimes(&v, &vr)
 	require.Equal(t, v, vr)
 }
 
@@ -41,7 +42,7 @@ func createConnection(t *testing.T, f *dbFixture) (scheme.Connection, scheme.Pro
 }
 
 func preVarTest(t *testing.T) *dbFixture {
-	f := newDBFixture().withUser(sdktypes.DefaultUser)
+	f := newDBFixture()
 	findAndAssertCount[scheme.Var](t, f, 0, "") // no vars
 	return f
 }
@@ -66,8 +67,8 @@ func TestSetVar(t *testing.T) {
 
 	// scopeID is zero, thus violates foreign key constraint
 	v4 := f.newVar("v4", "invalid")
-	assert.Equal(t, v4.ScopeID, sdktypes.UUID{}) // zero
-	assert.Equal(t, v4.VarID, sdktypes.UUID{})   // zero
+	assert.Equal(t, v4.ScopeID, uuid.Nil) // zero
+	assert.Equal(t, v4.VarID, uuid.Nil)   // zero
 	assert.ErrorIs(t, f.gormdb.setVar(f.ctx, &v4), gorm.ErrForeignKeyViolated)
 }
 
@@ -86,7 +87,9 @@ func TestReSetVar(t *testing.T) {
 
 func TestListVarUnexisting(t *testing.T) {
 	f := preVarTest(t)
-	c := f.newConnection()
+	p := f.newProject()
+	c := f.newConnection(p)
+	f.createProjectsAndAssert(t, p)
 	f.createConnectionsAndAssert(t, c)
 
 	v := f.newVar("k", "v", c)
@@ -96,6 +99,7 @@ func TestListVarUnexisting(t *testing.T) {
 	vars, err := f.gormdb.listVars(f.ctx, c.ConnectionID, v.Name) // the same as v.ScopeID or v.VarID
 	assert.NoError(t, err)
 	assert.Len(t, vars, 1)
+	resetTimes(&vars[0])
 	assert.Equal(t, v, vars[0])
 
 	// test listVars with non-existing var
@@ -109,6 +113,7 @@ func (f *dbFixture) testListVar(t *testing.T, v scheme.Var) {
 	vars, err := f.gormdb.listVars(f.ctx, v.ScopeID, v.Name)
 	assert.NoError(t, err)
 	assert.Len(t, vars, 1)
+	resetTimes(&vars[0])
 	assert.Equal(t, v, vars[0])
 
 	// test listVars with non-existing var
@@ -116,14 +121,11 @@ func (f *dbFixture) testListVar(t *testing.T, v scheme.Var) {
 	assert.NoError(t, err)
 	assert.Len(t, vars, 0)
 
-	// delete scope - either Connection or Env
-	var o scheme.Ownership
-	assert.NoError(t, f.db.Where("entity_id = ?", v.ScopeID).First(&o).Error)
-	switch o.EntityType {
-	case "Connection":
-		assert.NoError(t, f.gormdb.deleteConnection(f.ctx, v.ScopeID))
-	case "Project":
+	// delete scope - either Connection or Project
+	if v.IntegrationID == uuid.Nil {
 		assert.NoError(t, f.gormdb.deleteProject(f.ctx, v.ScopeID))
+	} else {
+		assert.NoError(t, f.gormdb.deleteConnection(f.ctx, v.ScopeID))
 	}
 
 	// test var was deleted due to scope deletion
@@ -176,7 +178,7 @@ func TestDeleteVar(t *testing.T) {
 	f.assertVarDeleted(t, v)
 }
 
-func TestFincConnectionIDByVar(t *testing.T) {
+func TestFindConnectionIDByVar(t *testing.T) {
 	f := preVarTest(t)
 	c1, p1 := createConnection(t, f)
 	c2, p2 := createConnection(t, f)
@@ -193,5 +195,5 @@ func TestFincConnectionIDByVar(t *testing.T) {
 	// test findConnectionIDsByVar
 	vars, err := f.gormdb.findConnectionIDsByVar(f.ctx, *c1.IntegrationID, "v", "")
 	assert.NoError(t, err)
-	assert.Equal(t, vars, []sdktypes.UUID{vc1.ScopeID, vc2.ScopeID})
+	assert.Equal(t, vars, []uuid.UUID{vc1.ScopeID, vc2.ScopeID})
 }
