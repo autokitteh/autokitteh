@@ -14,7 +14,7 @@ import (
 type integration struct{ vars sdkservices.Vars }
 
 var (
-	integrationID    = sdktypes.NewIntegrationIDFromName("auth0")
+	integrationID = sdktypes.NewIntegrationIDFromName("auth0")
 
 	authType         = sdktypes.NewSymbol("auth_type")
 	clientIDName     = sdktypes.NewSymbol("client_id")
