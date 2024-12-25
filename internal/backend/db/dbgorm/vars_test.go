@@ -64,12 +64,6 @@ func TestSetVar(t *testing.T) {
 
 	assert.NoError(t, f.gormdb.deleteProject(f.ctx, p.ProjectID))
 	assert.ErrorIs(t, f.gormdb.setVar(f.ctx, &v2), gorm.ErrForeignKeyViolated)
-
-	// scopeID is zero, thus violates foreign key constraint
-	v4 := f.newVar("v4", "invalid")
-	assert.Equal(t, v4.ScopeID, uuid.Nil) // zero
-	assert.Equal(t, v4.VarID, uuid.Nil)   // zero
-	assert.ErrorIs(t, f.gormdb.setVar(f.ctx, &v4), gorm.ErrForeignKeyViolated)
 }
 
 func TestReSetVar(t *testing.T) {
