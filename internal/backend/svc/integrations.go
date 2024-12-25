@@ -76,7 +76,7 @@ func integrationsFXOption() fx.Option {
 		fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, muxes *muxes.Muxes, svcs sdkservices.Services) {
 			HookOnStart(lc, func(ctx context.Context) error {
 				asana.Start(l, muxes)
-				auth0.Start(l, muxes)
+				auth0.Start(l, muxes, svcs.Vars())
 				aws.Start(l, muxes)
 				chatgpt.Start(l, muxes)
 				confluence.Start(l, muxes, svcs.Vars(), svcs.OAuth(), svcs.Dispatcher())
