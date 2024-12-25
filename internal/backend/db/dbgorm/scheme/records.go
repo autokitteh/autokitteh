@@ -101,8 +101,6 @@ type Var struct {
 
 	UpdatedBy uuid.UUID `gorm:"type:uuid"`
 	UpdatedAt time.Time
-
-	Project *Project
 }
 
 // simple hook to populate ScopeID after retrieving a Var from the database
