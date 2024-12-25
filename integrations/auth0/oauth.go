@@ -18,10 +18,6 @@ type handler struct {
 	vars   sdkservices.Vars
 }
 
-const (
-	domainEnvVarName = "AUTH0_DOMAIN"
-)
-
 func NewHTTPHandler(l *zap.Logger, vars sdkservices.Vars) handler {
 	return handler{logger: l, vars: vars}
 }
@@ -60,18 +56,19 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	}
 	vs, err := h.vars.Get(r.Context(), sdktypes.NewVarScopeID(cid))
 	if err != nil {
-		l.Error("Failed to get Auth0 domain from vars", zap.Error(err))
-		c.AbortBadRequest("unknown Auth0 domain")
+		l.Error("Failed to get Auth0 vars", zap.Error(err))
+		c.AbortServerError("unknown Auth0 domain")
 		return
 	}
 
 	// Test the OAuth token's usability and get authoritative installation details.
 	d := vs.GetValueByString("auth0_domain")
 	if d == "" {
-		l.Error("Missing Auth0 domain env var")
-		c.AbortBadRequest("unknown Auth0 domain")
+		l.Error("Missing Auth0 domain in connection vars")
+		c.AbortServerError("unknown Auth0 domain")
 		return
 	}
+
 	// Tests OAuth0's Management API.
 	req, err := http.NewRequest("GET", fmt.Sprintf("https://%s/api/v2/roles", d), nil)
 	if err != nil {
@@ -79,7 +76,9 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		c.AbortServerError("request creation error")
 		return
 	}
+
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", oauthToken.AccessToken))
+
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -88,12 +87,14 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer resp.Body.Close()
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		l.Error("Failed to read response body", zap.Error(err))
 		c.AbortServerError("response reading error")
 		return
 	}
+
 	// Check response status code.
 	if resp.StatusCode != http.StatusOK {
 		l.Error("Auth0 API request failed",

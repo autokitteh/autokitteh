@@ -14,11 +14,12 @@ import (
 type integration struct{ vars sdkservices.Vars }
 
 var (
+	integrationID    = sdktypes.NewIntegrationIDFromName("auth0")
+
 	authType         = sdktypes.NewSymbol("auth_type")
 	clientIDName     = sdktypes.NewSymbol("client_id")
 	clientSecretName = sdktypes.NewSymbol("client_secret")
 	domainName       = sdktypes.NewSymbol("auth0_domain")
-	integrationID    = sdktypes.NewIntegrationIDFromName("auth0")
 )
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
