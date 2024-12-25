@@ -116,12 +116,6 @@ func (s *server) List(ctx context.Context, req *connect.Request[connectionsv1.Li
 	}
 	f.ProjectID = pid
 
-	oid, err := sdktypes.ParseOrgID(req.Msg.OrgId) // Optional
-	if err != nil {
-		return nil, sdkerrors.AsConnectError(err)
-	}
-	f.OrgID = oid
-
 	code, err := sdktypes.StatusCodeFromProto(req.Msg.StatusCode) // Optional
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)

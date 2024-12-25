@@ -36,7 +36,6 @@ message ListRequest {
   string event_id = 3;
   string build_id = 4;
   SessionStateType state_type = 5 [(buf.validate.field).enum.defined_only = true];
-  string org_id = 6;
 
   bool count_only = 10;
 

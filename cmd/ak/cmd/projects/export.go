@@ -31,16 +31,16 @@ func export(cmd *cobra.Command, args []string) error {
 	defer cancel()
 
 	name := args[0]
-	pid, err := r.ProjectNameOrID(ctx, name)
+	prj, _, err := r.ProjectNameOrID(ctx, name)
 	if err != nil {
 		return err
 	}
 
-	if !pid.IsValid() {
+	if !prj.IsValid() {
 		return fmt.Errorf("project %q not found", name)
 	}
 
-	zipData, err := r.Client.Projects().Export(ctx, pid)
+	zipData, err := r.Client.Projects().Export(ctx, prj.ID())
 	if err != nil {
 		return err
 	}

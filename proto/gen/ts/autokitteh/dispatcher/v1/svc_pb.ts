@@ -105,6 +105,13 @@ export class RedispatchRequest extends Message<RedispatchRequest> {
   eventId = "";
 
   /**
+   * either id or name.
+   *
+   * @generated from field: string project = 2;
+   */
+  project = "";
+
+  /**
    * @generated from field: string deployment_id = 3;
    */
   deploymentId = "";
@@ -118,6 +125,7 @@ export class RedispatchRequest extends Message<RedispatchRequest> {
   static readonly typeName = "autokitteh.dispatcher.v1.RedispatchRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "event_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 

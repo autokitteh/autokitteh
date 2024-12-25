@@ -35,12 +35,6 @@ func NewTestIntegration(vars sdkservices.Vars) sdkservices.Integration {
 			),
 		),
 		sdkintegrations.WithConnectionConfigFromVars(vars),
-		sdkintegrations.WithConnectionTest(func(context.Context, sdktypes.ConnectionID) (sdktypes.Status, error) {
-			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "OK"), nil
-		}),
-		sdkintegrations.WithConnectionStatus(func(context.Context, sdktypes.ConnectionID) (sdktypes.Status, error) {
-			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "OK"), nil
-		}),
 	)
 }
 

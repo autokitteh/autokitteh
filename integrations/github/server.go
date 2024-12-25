@@ -23,7 +23,7 @@ const (
 
 // Start initializes all the HTTP handlers of the GitHub integration.
 // This includes connection UIs, initialization webhooks, and event webhooks.
-func Start(l *zap.Logger, muxes *muxes.Muxes, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.DispatchFunc) {
+func Start(l *zap.Logger, muxes *muxes.Muxes, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.Dispatcher) {
 	// Connection UI.
 	uiPath := "GET " + desc.ConnectionURL().Path + "/"
 	muxes.NoAuth.HandleFunc(uiPath, connect.ServeHTTP)

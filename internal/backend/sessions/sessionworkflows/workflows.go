@@ -14,6 +14,7 @@ import (
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
 
+	akCtx "go.autokitteh.dev/autokitteh/internal/backend/context"
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncalls"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessiondata"
@@ -91,21 +92,13 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 
 	l := ws.l.Sugar().With("session_id", sessionID)
 
-	oid, err := ws.svcs.DB.GetOrgIDOf(ctx, session.ProjectID())
-	if err != nil {
-		return fmt.Errorf("get org id: %w", err)
-	}
-
 	memo := map[string]string{
-		"process_id":      fixtures.ProcessID(),
 		"session_id":      sessionID.Value().String(),
 		"session_uuid":    sessionID.UUIDValue().String(),
 		"deployment_id":   session.DeploymentID().String(),
 		"deployment_uuid": session.DeploymentID().UUIDValue().String(),
-		"project_id":      session.ProjectID().String(),
-		"project_uuid":    session.ProjectID().UUIDValue().String(),
-		"org_id":          oid.String(),
-		"org_uuid":        oid.UUIDValue().String(),
+		"workflow_id":     workflowID(sessionID),
+		"process_id":      fixtures.ProcessID(),
 	}
 
 	if session.ParentSessionID().IsValid() {
@@ -115,7 +108,7 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 
 	maps.Copy(memo, session.Memo())
 
-	data, err := sessiondata.Get(ctx, ws.svcs, session)
+	data, err := sessiondata.Get(akCtx.WithRequestOrginator(ctx, akCtx.SessionWorkflow), ws.svcs, session)
 	if err != nil {
 		return fmt.Errorf("get session data: %w", err)
 	}
@@ -287,6 +280,7 @@ func (ws *workflows) errored(wctx workflow.Context, sessionID sdktypes.SessionID
 
 func (ws *workflows) StopWorkflow(ctx context.Context, sessionID sdktypes.SessionID, reason string, force bool) error {
 	wid := workflowID(sessionID)
+	ctx = akCtx.WithRequestOrginator(ctx, akCtx.SessionWorkflow)
 
 	if force {
 		// run the termination in a separate workflow to avoid having the workflow terminated but not updated in

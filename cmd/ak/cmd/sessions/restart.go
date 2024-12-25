@@ -6,24 +6,29 @@ import (
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
+	"go.autokitteh.dev/autokitteh/internal/resolver"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 var restartCmd = common.StandardCommand(&cobra.Command{
-	Use:   "restart [session ID | project] [--watch [--watch-timeout <duration>] [--poll-interval <duration>] [--no-timestamps] [--quiet]]",
+	Use:   "restart [session ID] [--watch [--watch-timeout <duration>] [--poll-interval <duration>] [--no-timestamps] [--quiet]]",
 	Short: "Start new instance of existing session",
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.MaximumNArgs(1),
 
 	RunE: func(cmd *cobra.Command, args []string) error {
-		sid, err := acquireSessionID(args[0])
-		if err = common.AddNotFoundErrIfCond(err, sid.IsValid()); err != nil {
-			return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "session")
+		if len(args) == 0 {
+			id, err := latestSessionID()
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
 		}
 
+		r := resolver.Resolver{Client: common.Client()}
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		s, err := sessions().Get(ctx, sid)
+		s, _, err := r.SessionID(ctx, args[0])
 		if err != nil {
 			return err
 		}
@@ -33,7 +38,7 @@ var restartCmd = common.StandardCommand(&cobra.Command{
 		}
 		s = s.WithNoID() // remove sessionID
 
-		sid, err = sessions().Start(ctx, s)
+		sid, err := sessions().Start(ctx, s)
 		if err != nil {
 			return fmt.Errorf("start session: %w", err)
 		}

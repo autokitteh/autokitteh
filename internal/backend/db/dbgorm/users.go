@@ -3,56 +3,53 @@ package dbgorm
 import (
 	"context"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/auth/authusers"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func (gdb *gormdb) GetUser(ctx context.Context, id sdktypes.UserID, email string) (sdktypes.User, error) {
-	if id == authusers.DefaultUser.ID() {
-		return authusers.DefaultUser, nil
-	}
-
-	q := gdb.db.WithContext(ctx)
-
-	if !id.IsValid() && email == "" {
-		return sdktypes.InvalidUser, sdkerrors.NewInvalidArgumentError("missing id or email")
-	}
-
-	if id.IsValid() {
-		q = q.Where("user_id = ?", id.UUIDValue())
-	}
-
-	if email != "" {
-		q = q.Where("email = ?", email)
+func (gdb *gormdb) GetUserByID(ctx context.Context, id sdktypes.UserID) (sdktypes.User, error) {
+	if id == sdktypes.DefaultUser.ID() {
+		return sdktypes.DefaultUser, nil
 	}
 
 	var r scheme.User
-	err := q.First(&r).Error
+	err := gdb.db.WithContext(ctx).Where("user_id = ?", id.UUIDValue()).First(&r).Error
 	if err != nil {
 		return sdktypes.InvalidUser, translateError(err)
 	}
 
-	return scheme.ParseUser(r)
+	return scheme.ParseUser(r), nil
+}
+
+func (gdb *gormdb) GetUserByEmail(ctx context.Context, email string) (sdktypes.User, error) {
+	if email == sdktypes.DefaultUser.Email() {
+		return sdktypes.DefaultUser, nil
+	}
+
+	var r scheme.User
+	err := gdb.db.WithContext(ctx).Where("email = ?", email).First(&r).Error
+	if err != nil {
+		return sdktypes.InvalidUser, translateError(err)
+	}
+
+	return scheme.ParseUser(r), nil
 }
 
 func (gdb *gormdb) CreateUser(ctx context.Context, u sdktypes.User) (sdktypes.UserID, error) {
+	if u.Email() == sdktypes.DefaultUser.Email() {
+		return sdktypes.InvalidUserID, sdkerrors.NewInvalidArgumentError("cannot create default user")
+	}
+
 	uid := u.ID()
 	if !uid.IsValid() {
 		uid = sdktypes.NewUserID()
-	} else if authusers.IsInternalUserID(uid) {
-		return sdktypes.InvalidUserID, sdkerrors.ErrAlreadyExists
 	}
 
 	user := scheme.User{
-		Base: based(ctx),
-
-		UserID:       uid.UUIDValue(),
-		Email:        u.Email(),
-		DisplayName:  u.DisplayName(),
-		Disabled:     u.Disabled(),
-		DefaultOrgID: u.DefaultOrgID().UUIDValue(),
+		UserID:      uid.UUIDValue(),
+		Email:       u.Email(),
+		DisplayName: u.DisplayName(),
 	}
 
 	err := gdb.db.WithContext(ctx).Create(&user).Error
@@ -61,27 +58,4 @@ func (gdb *gormdb) CreateUser(ctx context.Context, u sdktypes.User) (sdktypes.Us
 	}
 
 	return uid, nil
-}
-
-func (gdb *gormdb) UpdateUser(ctx context.Context, u sdktypes.User) error {
-	if !u.ID().IsValid() {
-		return sdkerrors.NewInvalidArgumentError("missing uid")
-	}
-
-	if authusers.IsInternalUserID(u.ID()) {
-		return sdkerrors.ErrUnauthorized
-	}
-
-	data := updatedBaseColumns(ctx)
-	data["display_name"] = u.DisplayName()
-	data["disabled"] = u.Disabled()
-	data["default_org_id"] = u.DefaultOrgID().UUIDValue()
-
-	return translateError(
-		gdb.db.WithContext(ctx).
-			Model(&scheme.User{}).
-			Where("user_id = ?", u.ID().UUIDValue()).
-			Updates(data).
-			Error,
-	)
 }

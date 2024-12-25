@@ -31,7 +31,7 @@ func ParseExecutorID(s string) (ExecutorID, error) {
 	}
 
 	switch parsed.Kind() {
-	case runIDKind, IntegrationIDKind:
+	case runIDKind, integrationIDKind:
 		return ExecutorID{parsed}, nil
 	default:
 		return InvalidExecutorID, sdkerrors.NewInvalidArgumentError("invalid executor id")
@@ -49,4 +49,4 @@ func (e ExecutorID) ToIntegrationID() IntegrationID {
 }
 
 func (e ExecutorID) IsRunID() bool         { return e.Kind() == runIDKind }
-func (e ExecutorID) IsIntegrationID() bool { return e.Kind() == IntegrationIDKind }
+func (e ExecutorID) IsIntegrationID() bool { return e.Kind() == integrationIDKind }

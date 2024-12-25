@@ -6,8 +6,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
-	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
+	akCtx "go.autokitteh.dev/autokitteh/internal/backend/context"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncalls"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionsvcs"
@@ -66,57 +65,23 @@ func (s *sessions) StartWorkers(ctx context.Context) error {
 	return nil
 }
 
-func (s *sessions) GetLog(ctx context.Context, filter sdkservices.ListSessionLogRecordsFilter) (*sdkservices.GetLogResults, error) {
-	if err := authz.CheckContext(ctx, filter.SessionID, "read:get-log", authz.WithData("filter", filter), authz.WithConvertForbiddenToNotFound); err != nil {
-		return nil, err
-	}
-
+func (s *sessions) GetLog(ctx context.Context, filter sdkservices.ListSessionLogRecordsFilter) (sdkservices.GetLogResults, error) {
 	return s.svcs.DB.GetSessionLog(ctx, filter)
 }
 
 func (s *sessions) Get(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.Session, error) {
-	if err := authz.CheckContext(ctx, sessionID, "read:get", authz.WithConvertForbiddenToNotFound); err != nil {
-		return sdktypes.InvalidSession, err
-	}
-
 	return s.svcs.DB.GetSession(ctx, sessionID)
 }
 
 func (s *sessions) Stop(ctx context.Context, sessionID sdktypes.SessionID, reason string, force bool) error {
-	if err := authz.CheckContext(ctx, sessionID, "write:stop", authz.WithData("force", force)); err != nil {
-		return err
-	}
-
 	return s.workflows.StopWorkflow(ctx, sessionID, reason, force)
 }
 
-func (s *sessions) List(ctx context.Context, filter sdkservices.ListSessionsFilter) (*sdkservices.ListSessionResult, error) {
-	if !filter.AnyIDSpecified() {
-		filter.OrgID = authcontext.GetAuthnInferredOrgID(ctx)
-	}
-
-	if err := authz.CheckContext(
-		ctx,
-		sdktypes.InvalidSessionID,
-		"list",
-		authz.WithData("filter", filter),
-		authz.WithAssociationWithID("deployment", filter.DeploymentID),
-		authz.WithAssociationWithID("project", filter.ProjectID),
-		authz.WithAssociationWithID("org", filter.OrgID),
-		authz.WithAssociationWithID("event", filter.EventID),
-		authz.WithAssociationWithID("build", filter.BuildID),
-	); err != nil {
-		return nil, err
-	}
-
+func (s *sessions) List(ctx context.Context, filter sdkservices.ListSessionsFilter) (sdkservices.ListSessionResult, error) {
 	return s.svcs.DB.ListSessions(ctx, filter)
 }
 
 func (s *sessions) Delete(ctx context.Context, sessionID sdktypes.SessionID) error {
-	if err := authz.CheckContext(ctx, sessionID, "delete:delete"); err != nil {
-		return err
-	}
-
 	session, err := s.Get(ctx, sessionID)
 	if err != nil {
 		return err
@@ -137,20 +102,6 @@ func (s *sessions) Delete(ctx context.Context, sessionID sdktypes.SessionID) err
 }
 
 func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktypes.SessionID, error) {
-	if err := authz.CheckContext(
-		ctx,
-		sdktypes.InvalidSessionID,
-		"create:start",
-		authz.WithData("session", session),
-		authz.WithAssociationWithID("build", session.BuildID()),
-		authz.WithAssociationWithID("deployment", session.DeploymentID()),
-		authz.WithAssociationWithID("event", session.EventID()),
-		authz.WithAssociationWithID("parent_session", session.ParentSessionID()),
-		authz.WithAssociationWithID("project", session.ProjectID()),
-	); err != nil {
-		return sdktypes.InvalidSessionID, err
-	}
-
 	if session.ID().IsValid() {
 		return sdktypes.InvalidSessionID, sdkerrors.NewInvalidArgumentError("session id is not nil")
 	}
@@ -162,6 +113,15 @@ func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktype
 	session = session.WithNewID()
 	sid := session.ID()
 	l := s.l.With(zap.Any("session_id", sid))
+
+	ctx = akCtx.WithRequestOrginator(ctx, akCtx.SessionWorkflow)
+
+	if pid := session.ProjectID(); pid.IsValid() {
+		var err error
+		if ctx, err = akCtx.WithOwnershipOf(ctx, s.svcs.DB.GetOwnership, pid.UUIDValue()); err != nil {
+			return sdktypes.InvalidSessionID, fmt.Errorf("ownership: %w", err)
+		}
+	}
 
 	if err := s.svcs.DB.CreateSession(ctx, session); err != nil {
 		return sdktypes.InvalidSessionID, fmt.Errorf("start session: %w", err)

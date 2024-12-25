@@ -100,9 +100,7 @@ for f in tests/sessions/${TESTS}; do
 
     AK="${PWD}/${ak_filename} -C http.service_url=http://$(cat ${addr_filename})"
 
-    ${AK} project create --name test
-
-    ${AK} session test "${f}" --project test
+    ${AK} session test "${f}"
 
     down 
 done

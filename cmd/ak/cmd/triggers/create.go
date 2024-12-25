@@ -18,9 +18,9 @@ var (
 )
 
 var createCmd = common.StandardCommand(&cobra.Command{
-	Use: `create -n name [--call file:func] [-p project] -c connection [-E event] [-f filter]
-             create -n name [--call file:func] [-p project] -s "schedule"
-             create -n name [--call file:func] [-p project] --webhook
+	Use: `create -n name --call file:func [-p project] -c connection [-E event] [-f filter]
+             create -n name --call file:func [-p project] -s "schedule"
+             create -n name --call file:func [-p project] --webhook
 `,
 
 	Short: "Create event trigger",
@@ -42,9 +42,9 @@ var createCmd = common.StandardCommand(&cobra.Command{
 			return errors.New("missing project")
 		}
 
-		pid, err := r.ProjectNameOrID(ctx, project)
+		_, pid, err := r.ProjectNameOrID(ctx, project)
 		if err = common.AddNotFoundErrIfCond(err, pid.IsValid()); err != nil {
-			return common.WrapError(err, "project")
+			return common.ToExitCodeError(err, "project")
 		}
 
 		t, err := sdktypes.TriggerFromProto(&sdktypes.TriggerPB{
@@ -61,7 +61,7 @@ var createCmd = common.StandardCommand(&cobra.Command{
 		if connection != "" {
 			_, cid, err := r.ConnectionNameOrID(ctx, connection, project)
 			if err != nil {
-				return common.WrapError(err, "connection")
+				return common.ToExitCodeError(err, "connection")
 			}
 
 			t = t.WithConnectionID(cid)
@@ -90,6 +90,7 @@ func init() {
 	kittehs.Must0(createCmd.MarkFlagRequired("name"))
 
 	createCmd.Flags().StringVarP(&call, "call", "l", "", `entry-point to call ("filename:function")`)
+	kittehs.Must0(createCmd.MarkFlagRequired("call"))
 
 	createCmd.Flags().VarP(common.NewNonEmptyString("", &project), "project", "p", "project name or ID")
 

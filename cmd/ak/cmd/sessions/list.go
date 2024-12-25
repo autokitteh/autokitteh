@@ -41,11 +41,11 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		if project != "" {
-			pid, err := r.ProjectNameOrID(ctx, project)
-			if err = common.AddNotFoundErrIfCond(err, pid.IsValid()); err != nil {
+			p, _, err := r.ProjectNameOrID(ctx, project)
+			if err = common.AddNotFoundErrIfCond(err, p.IsValid()); err != nil {
 				return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "project")
 			}
-			f.ProjectID = pid
+			f.ProjectID = p.ID()
 		}
 
 		if eventID != "" {
@@ -74,9 +74,6 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		result, err := sessions().List(ctx, f)
-		if result == nil {
-			result = &sdkservices.ListSessionResult{}
-		}
 		err = common.AddNotFoundErrIfCond(err, len(result.Sessions) > 0)
 		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "sessions"); err == nil {
 			if !withInputs {

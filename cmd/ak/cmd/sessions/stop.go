@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
+	"go.autokitteh.dev/autokitteh/internal/resolver"
 )
 
 var (
@@ -14,20 +15,33 @@ var (
 )
 
 var stopCmd = common.StandardCommand(&cobra.Command{
-	Use:   "stop [session ID | project] [--reason <...>] [--force]",
+	Use:   "stop [session ID] [--reason <...>] [--force]",
 	Short: "Stop running session",
 	Args:  cobra.MaximumNArgs(1),
 
 	RunE: func(cmd *cobra.Command, args []string) error {
-		sid, err := acquireSessionID(args[0])
-		if err = common.AddNotFoundErrIfCond(err, sid.IsValid()); err != nil {
-			return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "session")
+		if len(args) == 0 {
+			id, err := latestSessionID()
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
 		}
 
+		r := resolver.Resolver{Client: common.Client()}
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		if err = sessions().Stop(ctx, sid, reason, force); err != nil {
+		s, id, err := r.SessionID(ctx, args[0])
+		if err != nil {
+			return err
+		}
+		if !s.IsValid() {
+			err = fmt.Errorf("session ID %q not found", args[0])
+			return common.NewExitCodeError(common.NotFoundExitCode, err)
+		}
+
+		if err = sessions().Stop(ctx, id, reason, force); err != nil {
 			return fmt.Errorf("stop session: %w", err)
 		}
 

@@ -64,13 +64,11 @@ func (c *client) Get(ctx context.Context, eventId sdktypes.EventID) (sdktypes.Ev
 func (c *client) List(ctx context.Context, filter sdkservices.ListEventsFilter) ([]sdktypes.Event, error) {
 	resp, err := c.client.List(ctx, connect.NewRequest(
 		&eventsv1.ListRequest{
-			OrgId:         filter.OrgID.String(),
 			IntegrationId: filter.IntegrationID.String(),
 			EventType:     filter.EventType,
 			DestinationId: filter.DestinationID.String(),
 			MaxResults:    uint32(filter.Limit),
 			Order:         string(filter.Order),
-			ProjectId:     filter.ProjectID.String(),
 		},
 	))
 	if err != nil {

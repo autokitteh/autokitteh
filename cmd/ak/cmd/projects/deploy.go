@@ -14,8 +14,10 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+var env string
+
 var deployCmd = common.StandardCommand(&cobra.Command{
-	Use:   "deploy <project name or ID> [--dir <path> [...]] [--file <path> [...]]",
+	Use:   "deploy <project name or ID> [--dir <path> [...]] [--file <path> [...]] [--env <name or ID>]",
 	Short: "Build, deploy, and activate project",
 	Long:  `Build, deploy, and activate project - see also the "build" sibling and "deployment" parent commands`,
 	Args:  cobra.ExactArgs(1),
@@ -25,7 +27,7 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		pid, err := r.ProjectNameOrID(ctx, args[0])
+		_, pid, err := r.ProjectNameOrID(ctx, args[0])
 		if err != nil {
 			err = fmt.Errorf("project: %w", err)
 
@@ -74,6 +76,8 @@ func init() {
 	kittehs.Must0(deployCmd.MarkFlagDirname("dir"))
 	kittehs.Must0(deployCmd.MarkFlagFilename("file"))
 	deployCmd.MarkFlagsOneRequired("dir", "file")
+
+	deployCmd.Flags().StringVarP(&env, "env", "e", "", "environment name or ID")
 }
 
 func deployments() sdkservices.Deployments {

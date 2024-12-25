@@ -7,8 +7,6 @@ import (
 
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
-	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/scheduler"
 	"go.autokitteh.dev/autokitteh/internal/backend/webhookssvc"
@@ -28,17 +26,6 @@ func New(l *zap.Logger, db db.DB, scheduler *scheduler.Scheduler) sdkservices.Tr
 }
 
 func (m *triggers) Create(ctx context.Context, trigger sdktypes.Trigger) (sdktypes.TriggerID, error) {
-	if err := authz.CheckContext(
-		ctx,
-		sdktypes.InvalidTriggerID,
-		"write:create",
-		authz.WithData("trigger", trigger),
-		authz.WithAssociationWithID("connection", trigger.ConnectionID()),
-		authz.WithAssociationWithID("project", trigger.ProjectID()),
-	); err != nil {
-		return sdktypes.InvalidTriggerID, err
-	}
-
 	if trigger.ID().IsValid() {
 		return sdktypes.InvalidTriggerID, errors.New("trigger ID already defined")
 	}
@@ -82,15 +69,6 @@ func (m *triggers) Create(ctx context.Context, trigger sdktypes.Trigger) (sdktyp
 }
 
 func (m *triggers) Update(ctx context.Context, trigger sdktypes.Trigger) error {
-	if err := authz.CheckContext(
-		ctx,
-		trigger.ID(),
-		"update:update",
-		authz.WithData("trigger", trigger),
-	); err != nil {
-		return err
-	}
-
 	trigger = trigger.WithWebhookSlug("") // ignore webhook slug.
 
 	if trigger.IsZero() {
@@ -129,10 +107,6 @@ func (m *triggers) Update(ctx context.Context, trigger sdktypes.Trigger) error {
 
 // Delete implements sdkservices.Triggers.
 func (m *triggers) Delete(ctx context.Context, triggerID sdktypes.TriggerID) error {
-	if err := authz.CheckContext(ctx, triggerID, "write:delete"); err != nil {
-		return err
-	}
-
 	trigger, err := m.db.GetTriggerByID(ctx, triggerID)
 	if err != nil {
 		return err
@@ -154,30 +128,10 @@ func (m *triggers) Delete(ctx context.Context, triggerID sdktypes.TriggerID) err
 
 // Get implements sdkservices.Triggers.
 func (m *triggers) Get(ctx context.Context, triggerID sdktypes.TriggerID) (sdktypes.Trigger, error) {
-	if err := authz.CheckContext(ctx, triggerID, "read:get", authz.WithConvertForbiddenToNotFound); err != nil {
-		return sdktypes.InvalidTrigger, err
-	}
-
 	return m.db.GetTriggerByID(ctx, triggerID)
 }
 
 // List implements sdkservices.Triggers.
 func (m *triggers) List(ctx context.Context, filter sdkservices.ListTriggersFilter) ([]sdktypes.Trigger, error) {
-	if !filter.AnyIDSpecified() {
-		filter.OrgID = authcontext.GetAuthnInferredOrgID(ctx)
-	}
-
-	if err := authz.CheckContext(
-		ctx,
-		sdktypes.InvalidTriggerID,
-		"read:list",
-		authz.WithData("filter", filter),
-		authz.WithAssociationWithID("connection", filter.ConnectionID),
-		authz.WithAssociationWithID("project", filter.ProjectID),
-		authz.WithAssociationWithID("org", filter.OrgID),
-	); err != nil {
-		return nil, err
-	}
-
 	return m.db.ListTriggers(ctx, filter)
 }

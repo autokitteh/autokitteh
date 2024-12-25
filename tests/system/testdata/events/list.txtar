@@ -1,12 +1,12 @@
+# Negative tests: empty events list, with/out --fail flag.
+ak event list --integration test
+
+ak event list --integration test --fail
+output equals 'Error: events not found'
+return code == 10
+
 ak deploy --manifest project.yaml
 return code == 0
-
-# Negative tests: empty events list, with/out --fail flag.
-ak event list --project my_project --integration test
-
-ak event list --project my_project --integration test --fail
-output equals 'Error: events: not_found'
-return code == $RC_NOT_FOUND
 
 # Send HTTP GET request to create new events.
 http get /webhooks/00000000000000000000000003
@@ -17,6 +17,11 @@ resp code == 202
 
 http get /webhooks/00000000000000000000000003
 resp code == 202
+
+# Negative test: list all events, without any filter.
+ak event list
+return code == 1
+output equals 'Error: at least one of the flags in the group [integration connection trigger] is required'
 
 # List all events, with multiple filters.
 ak event list --trigger my_project/http --event-type get

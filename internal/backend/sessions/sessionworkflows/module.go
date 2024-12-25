@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/sdk/sdkexecutor"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
@@ -47,7 +46,7 @@ func (w *sessionWorkflow) isDeploymentActive(ctx context.Context, args []sdktype
 	state := sdktypes.DeploymentStateUnspecified
 
 	if did := w.data.Session.DeploymentID(); did.IsValid() {
-		d, err := w.ws.svcs.Deployments.Get(authcontext.SetAuthnSystemUser(ctx), did)
+		d, err := w.ws.svcs.Deployments.Get(ctx, did)
 		if err != nil {
 			return sdktypes.InvalidValue, err
 		}

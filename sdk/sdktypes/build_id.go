@@ -1,12 +1,12 @@
 package sdktypes
 
-const BuildIDKind = "bld"
+const buildIDKind = "bld"
 
 type BuildID = id[buildIDTraits]
 
 type buildIDTraits struct{}
 
-func (buildIDTraits) Prefix() string { return BuildIDKind }
+func (buildIDTraits) Prefix() string { return buildIDKind }
 
 func NewBuildID() BuildID                          { return newID[BuildID]() }
 func ParseBuildID(s string) (BuildID, error)       { return ParseID[BuildID](s) }

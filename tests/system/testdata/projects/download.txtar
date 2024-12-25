@@ -5,20 +5,20 @@ output equals 'project_id: prj_00000000000000000000000001'
 
 # Negative tests: download resources of nonexistent project, with/out --fail flag.
 ak project download bad_project
-output equals 'Error: project: not_found'
-return code == $RC_NOT_FOUND
+output equals 'Error: project not found'
+return code == 10
 
 ak project download prj_deadbeef0deadbeef0deadbeef
-output equals 'Error: project: not_found'
-return code == $RC_NOT_FOUND
+output equals 'Error: project not found'
+return code == 10
 
 ak project download bad_project --fail
-output equals 'Error: project: not_found'
-return code == $RC_NOT_FOUND
+output equals 'Error: project not found'
+return code == 10
 
 ak project download prj_deadbeef0deadbeef0deadbeef --fail
-output equals 'Error: project: not_found'
-return code == $RC_NOT_FOUND
+output equals 'Error: project not found'
+return code == 10
 
 # Negative tests: download nonexistent resources of existing project, with/out --fail flag.
 ak project download my_project
@@ -30,9 +30,9 @@ return code == 0
 output equals ''
 
 ak project download my_project --fail
-output equals 'Error: resources: not_found'
-return code == $RC_NOT_FOUND
+output equals 'Error: resources not found'
+return code == 10
 
 ak project download prj_00000000000000000000000001 --fail
-output equals 'Error: resources: not_found'
-return code == $RC_NOT_FOUND
+output equals 'Error: resources not found'
+return code == 10

@@ -9,24 +9,26 @@ import (
 
 var uuidGenerator = UUIDGenerator
 
-func SetIDGenerator(f func() uuid.UUID) { uuidGenerator = f }
+type UUID = uuid.UUID
+
+func SetIDGenerator(f func() UUID) { uuidGenerator = f }
 
 func NewUUID() uuid.UUID { return uuidGenerator() }
 
-func UUIDGenerator() uuid.UUID {
+func UUIDGenerator() UUID {
 	return uuid.Must(uuid.NewV7())
 }
 
 // To be used for testing only, when we expect a certain ID.
 // First ID generated will be init+1.
-func NewSequentialIDGeneratorForTesting(init uint64) func() uuid.UUID {
+func NewSequentialIDGeneratorForTesting(init uint64) func() UUID {
 	var n atomic.Uint64
 	n.Store(init)
 
-	return func() uuid.UUID {
+	return func() UUID {
 		n1 := n.Add(1)
 
-		var b uuid.UUID
+		var b UUID
 		binary.BigEndian.PutUint64(b[8:], n1)
 
 		return b

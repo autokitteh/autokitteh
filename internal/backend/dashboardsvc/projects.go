@@ -28,7 +28,7 @@ func (p project) ExtraFields() map[string]any { return nil }
 func toProject(sdkP sdktypes.Project) project { return project{sdkP} }
 
 func (s *svc) listProjects(w http.ResponseWriter, r *http.Request) (list, error) {
-	sdkPs, err := s.Projects().List(r.Context(), sdktypes.InvalidOrgID)
+	sdkPs, err := s.Projects().List(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return list{}, err

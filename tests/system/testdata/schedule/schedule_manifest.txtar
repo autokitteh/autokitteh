@@ -2,7 +2,7 @@
 ak deploy --manifest schedule.yaml --file cron.star
 return code == 0
 
-ak trigger list -p cron -j
+ak trigger list -j
 return code == 0
 output equals_json file triggers.json
 
@@ -22,13 +22,13 @@ ak trigger delete trg_00000000000000000000000002
 #ak deploy --manifest no_schedule.yaml --file cron.star
 return code == 0
 
-ak trigger list -p cron
+ak trigger list
 return code == 0
 output equals ''
 
 # only 2 sessions since trigger and schedule were cancelled
 wait 3s unless session ses_0000000000000000000000000c
-ak session list -p cron
+ak session list
 return code == 0
 output regex '(?m)^session_id:"ses_0+9.*\n^session_id:"ses_0+7.*$'
 

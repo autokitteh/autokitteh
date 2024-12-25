@@ -46,8 +46,6 @@ message ListRequest {
   string event_type = 3;
   uint32 max_results = 4;
   string order = 5; // ASC or DESC values are supported
-  string project_id = 7;
-  string org_id = 8;
 
   // see GetRequest.json_values.
   bool json_values = 6;

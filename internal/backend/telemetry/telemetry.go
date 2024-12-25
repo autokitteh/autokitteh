@@ -88,7 +88,7 @@ func (t *Telemetry) ensureServiceName(name string) string {
 }
 
 func (t *Telemetry) NewUpDownCounter(name string, description string) (metric.Int64UpDownCounter, error) {
-	if t == nil || !t.cfg.Enabled {
+	if !t.cfg.Enabled {
 		return noop.Int64UpDownCounter{}, nil
 	}
 	meter := otel.GetMeterProvider().Meter(t.cfg.ServiceName)
@@ -102,7 +102,7 @@ func (t *Telemetry) NewUpDownCounter(name string, description string) (metric.In
 }
 
 func (t *Telemetry) NewCounter(name string, description string) (metric.Int64Counter, error) {
-	if t == nil || !t.cfg.Enabled {
+	if !t.cfg.Enabled {
 		return noop.Int64Counter{}, nil
 	}
 	meter := otel.GetMeterProvider().Meter(t.cfg.ServiceName)
@@ -116,7 +116,7 @@ func (t *Telemetry) NewCounter(name string, description string) (metric.Int64Cou
 }
 
 func (t *Telemetry) NewHistogram(name string, description string) (metric.Int64Histogram, error) {
-	if t == nil || !t.cfg.Enabled {
+	if !t.cfg.Enabled {
 		return noop.Int64Histogram{}, nil
 	}
 	meter := otel.GetMeterProvider().Meter(t.cfg.ServiceName)

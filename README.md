@@ -120,7 +120,6 @@ $ ak version
 - jq (for advanced output formatting)
 - atlasgo (for new DB migrations)
 - nodejs >= 20 (only if updating the UI)
-- opa >= 0.70.0 (for checking opa policies)
 
 ## Contact Us
 

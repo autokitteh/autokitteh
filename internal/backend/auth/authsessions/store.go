@@ -28,8 +28,8 @@ type sessionData struct {
 	CreatedAt time.Time
 }
 
-func NewSessionData(uid sdktypes.UserID) *sessionData {
-	return &sessionData{
+func NewSessionData(uid sdktypes.UserID) sessionData {
+	return sessionData{
 		UserID:    uid,
 		Validator: uuid.NewString(),
 		CreatedAt: time.Now(),

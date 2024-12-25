@@ -20,7 +20,7 @@ var (
 )
 
 var startCmd = common.StandardCommand(&cobra.Command{
-	Use:   "start {--deployment-id <ID>|--build-id <ID> --project <name or ID>} --entrypoint <...> [--memo <...>] [--input <JSON> [...]] [--watch [--watch-timeout <duration>] [--poll-interval <duration>] [--no-timestamps] [--quiet]]",
+	Use:   "start {--deployment-id <ID>|--build-id <ID> --env <name or ID>} --entrypoint <...> [--memo <...>] [--input <JSON> [...]] [--watch [--watch-timeout <duration>] [--poll-interval <duration>] [--no-timestamps] [--quiet]]",
 	Short: "Start new session",
 	Args:  cobra.NoArgs,
 
@@ -136,10 +136,11 @@ func sessionArgs() (did sdktypes.DeploymentID, pid sdktypes.ProjectID, bid sdkty
 	}
 
 	if project != "" {
-		if pid, err = r.ProjectNameOrID(ctx, project); err != nil {
+		var e sdktypes.Project
+		if e, pid, err = r.ProjectNameOrID(ctx, project); err != nil {
 			return
 		}
-		if project != "" && !pid.IsValid() {
+		if project != "" && !e.IsValid() {
 			err = fmt.Errorf("project %q not found", project)
 			err = common.NewExitCodeError(common.NotFoundExitCode, err)
 			return

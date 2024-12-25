@@ -211,9 +211,6 @@ func newSession(event sdktypes.Event, inputs map[string]sdktypes.Value, data ses
 		memo["connection_name"] = c.Name().String()
 	}
 
-	memo["org_id"] = data.OrgID.String()
-	memo["org_uuid"] = data.OrgID.UUIDValue().String()
-
 	pid := data.Deployment.ProjectID()
 
 	memo["project_id"] = pid.String()

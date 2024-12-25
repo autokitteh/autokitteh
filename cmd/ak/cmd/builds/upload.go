@@ -7,13 +7,11 @@ import (
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	"go.autokitteh.dev/autokitteh/internal/resolver"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 var uploadCmd = common.StandardCommand(&cobra.Command{
-	Use:     "upload <build file path> --project <project id>",
+	Use:     "upload <build file path>",
 	Short:   "Upload local build data to server",
 	Aliases: []string{"up", "u"},
 	Args:    cobra.ExactArgs(1),
@@ -27,13 +25,7 @@ var uploadCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		r := resolver.Resolver{Client: common.Client()}
-		pid, err := r.ProjectNameOrID(ctx, project)
-		if err != nil {
-			return err
-		}
-
-		id, err := builds().Save(ctx, sdktypes.NewBuild().WithProjectID(pid), data)
+		id, err := builds().Save(ctx, sdktypes.NewBuild(), data)
 		if err != nil {
 			return fmt.Errorf("save build: %w", err)
 		}
@@ -42,8 +34,3 @@ var uploadCmd = common.StandardCommand(&cobra.Command{
 		return nil
 	},
 })
-
-func init() {
-	uploadCmd.Flags().StringVarP(&project, "project", "p", "", "Project ID")
-	kittehs.Must0(uploadCmd.MarkFlagRequired("project"))
-}

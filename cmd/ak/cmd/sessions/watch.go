@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
+	"go.autokitteh.dev/autokitteh/internal/resolver"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -21,13 +22,25 @@ var (
 )
 
 var watchCmd = common.StandardCommand(&cobra.Command{
-	Use:   "watch [sessions ID | project] [--fail] [--end-state <state>] [--end-print-re <re>] [--timeout <duration>] [--poll-interval <duration>] [--no-timestamps] [--quiet] [--prints-only] [--wait-created]",
+	Use:   "watch [sessions ID] [--fail] [--end-state <state>] [--end-print-re <re>] [--timeout <duration>] [--poll-interval <duration>] [--no-timestamps] [--quiet] [--prints-only] [--wait-created]",
 	Short: "Watch session runtime logs (prints, calls, errors, state changes)",
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.MaximumNArgs(1),
 
 	RunE: func(cmd *cobra.Command, args []string) error {
-		sid, err := acquireSessionID(args[0])
-		if err = common.AddNotFoundErrIfCond(err, sid.IsValid()); err != nil {
+		if len(args) == 0 {
+			id, err := latestSessionID()
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+
+		r := resolver.Resolver{Client: common.Client()}
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
+
+		s, sid, err := r.SessionID(ctx, args[0])
+		if err = common.AddNotFoundErrIfCond(err, s.IsValid()); err != nil {
 			return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "session")
 		}
 

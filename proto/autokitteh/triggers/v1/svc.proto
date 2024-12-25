@@ -49,7 +49,6 @@ message ListRequest {
   string connection_id = 1;
   string project_id = 2;
   Trigger.SourceType source_type = 3;
-  string org_id = 4;
 }
 
 message ListResponse {

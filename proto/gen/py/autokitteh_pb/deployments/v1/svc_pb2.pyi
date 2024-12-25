@@ -50,20 +50,18 @@ class TestResponse(_message.Message):
     def __init__(self) -> None: ...
 
 class ListRequest(_message.Message):
-    __slots__ = ["project_id", "build_id", "state", "limit", "include_session_stats", "org_id"]
+    __slots__ = ["project_id", "build_id", "state", "limit", "include_session_stats"]
     PROJECT_ID_FIELD_NUMBER: _ClassVar[int]
     BUILD_ID_FIELD_NUMBER: _ClassVar[int]
     STATE_FIELD_NUMBER: _ClassVar[int]
     LIMIT_FIELD_NUMBER: _ClassVar[int]
     INCLUDE_SESSION_STATS_FIELD_NUMBER: _ClassVar[int]
-    ORG_ID_FIELD_NUMBER: _ClassVar[int]
     project_id: str
     build_id: str
     state: _deployment_pb2.DeploymentState
     limit: int
     include_session_stats: bool
-    org_id: str
-    def __init__(self, project_id: _Optional[str] = ..., build_id: _Optional[str] = ..., state: _Optional[_Union[_deployment_pb2.DeploymentState, str]] = ..., limit: _Optional[int] = ..., include_session_stats: bool = ..., org_id: _Optional[str] = ...) -> None: ...
+    def __init__(self, project_id: _Optional[str] = ..., build_id: _Optional[str] = ..., state: _Optional[_Union[_deployment_pb2.DeploymentState, str]] = ..., limit: _Optional[int] = ..., include_session_stats: bool = ...) -> None: ...
 
 class ListResponse(_message.Message):
     __slots__ = ["deployments"]

@@ -7,16 +7,14 @@ from typing import ClassVar as _ClassVar, Iterable as _Iterable, Mapping as _Map
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class ApplyRequest(_message.Message):
-    __slots__ = ["manifest", "path", "project_name", "org_id"]
+    __slots__ = ["manifest", "path", "project_name"]
     MANIFEST_FIELD_NUMBER: _ClassVar[int]
     PATH_FIELD_NUMBER: _ClassVar[int]
     PROJECT_NAME_FIELD_NUMBER: _ClassVar[int]
-    ORG_ID_FIELD_NUMBER: _ClassVar[int]
     manifest: str
     path: str
     project_name: str
-    org_id: str
-    def __init__(self, manifest: _Optional[str] = ..., path: _Optional[str] = ..., project_name: _Optional[str] = ..., org_id: _Optional[str] = ...) -> None: ...
+    def __init__(self, manifest: _Optional[str] = ..., path: _Optional[str] = ..., project_name: _Optional[str] = ...) -> None: ...
 
 class Effect(_message.Message):
     __slots__ = ["subject_id", "type", "text"]

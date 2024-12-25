@@ -47,7 +47,7 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		pid, err := r.ProjectNameOrID(ctx, project)
+		_, pid, err := r.ProjectNameOrID(ctx, project)
 		if err != nil {
 			return err
 		}

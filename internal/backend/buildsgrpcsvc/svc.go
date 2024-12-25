@@ -60,14 +60,8 @@ func (s *server) List(ctx context.Context, req *connect.Request[buildsv1.ListReq
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	pid, err := sdktypes.ParseProjectID(msg.ProjectId)
-	if err != nil {
-		return nil, sdkerrors.AsConnectError(err)
-	}
-
 	filter := sdkservices.ListBuildsFilter{
-		Limit:     msg.Limit,
-		ProjectID: pid,
+		Limit: msg.Limit,
 	}
 
 	builds, err := s.builds.List(ctx, filter)

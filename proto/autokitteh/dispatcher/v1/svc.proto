@@ -26,6 +26,7 @@ message DispatchResponse {
 
 message RedispatchRequest {
   string event_id = 1 [(buf.validate.field).string.min_len = 1];
+  string project = 2; // either id or name.
   string deployment_id = 3;
 }
 

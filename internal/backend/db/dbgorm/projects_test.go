@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
@@ -20,7 +19,7 @@ func (f *dbFixture) createProjectsAndAssert(t *testing.T, projects ...scheme.Pro
 }
 
 func (f *dbFixture) listProjectsAndAssert(t *testing.T, expected int) []scheme.Project {
-	projects, err := f.gormdb.listProjects(f.ctx, sdktypes.InvalidOrgID)
+	projects, err := f.gormdb.listProjects(f.ctx)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, len(projects))
 	return projects
@@ -33,7 +32,7 @@ func (f *dbFixture) assertProjectDeleted(t *testing.T, projects ...scheme.Projec
 }
 
 func preProjectTest(t *testing.T) *dbFixture {
-	f := newDBFixture()
+	f := newDBFixture().withUser(sdktypes.DefaultUser)
 	findAndAssertCount[scheme.Project](t, f, 0, "") // no projects
 	return f
 }
@@ -79,13 +78,11 @@ func TestGetProjects(t *testing.T) {
 	// test getProjectByID
 	project, err := f.gormdb.getProject(f.ctx, p.ProjectID)
 	assert.NoError(t, err)
-	resetTimes(project)
 	assert.Equal(t, p, *project)
 
 	// test getProjectByName
-	project, err = f.gormdb.getProjectByName(f.ctx, sdktypes.InvalidOrgID, p.Name)
+	project, err = f.gormdb.getProjectByName(f.ctx, p.Name)
 	assert.NoError(t, err)
-	resetTimes(project)
 	assert.Equal(t, p, *project)
 
 	// delete project
@@ -96,7 +93,7 @@ func TestGetProjects(t *testing.T) {
 	assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
 
 	// test getProjectByName after delete
-	_, err = f.gormdb.getProjectByName(f.ctx, sdktypes.InvalidOrgID, p.Name)
+	_, err = f.gormdb.getProjectByName(f.ctx, p.Name)
 	assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
 }
 
@@ -108,7 +105,6 @@ func TestListProjects(t *testing.T) {
 
 	// test listProjects
 	projects := f.listProjectsAndAssert(t, 1)
-	resetTimes(&projects[0])
 	assert.Equal(t, p, projects[0])
 
 	// test listProjects after delete
@@ -128,8 +124,8 @@ func TestGetProjectDeployments(t *testing.T) {
 	// p2:
 	// - e4: (d4)
 	p1, p2 := f.newProject(), f.newProject()
-	d1, d2, d3, d4 := f.newDeployment(p1), f.newDeployment(p1), f.newDeployment(p1), f.newDeployment(p1)
-	b := f.newBuild(p1)
+	d1, d2, d3, d4 := f.newDeployment(), f.newDeployment(), f.newDeployment(), f.newDeployment()
+	b := f.newBuild()
 
 	d1.BuildID = b.BuildID
 	d2.BuildID = b.BuildID
@@ -165,12 +161,12 @@ func TestDeleteProjectAndDependents(t *testing.T) {
 	c := f.newConnection(p1)
 
 	t1, t2 := f.newTrigger(p1, c), f.newTrigger(p1, c)
-	b := f.newBuild(p1)
+	b := f.newBuild()
 	d1e1p1, d2e1p1, d1e2p1, d1e1p2 := f.newDeployment(p1, b), f.newDeployment(p1, b), f.newDeployment(p1, b), f.newDeployment(p2, b)
 
-	s1d1e1p1 := f.newSession(sdktypes.SessionStateTypeCompleted, d1e1p1, p1, b)
-	s2d1e2p1 := f.newSession(sdktypes.SessionStateTypeError, d1e2p1, p1, b)
-	s3d1e1p2 := f.newSession(sdktypes.SessionStateTypeCompleted, d1e1p2, p2, b)
+	s1d1e1p1 := f.newSession(sdktypes.SessionStateTypeCompleted, d1e1p1)
+	s2d1e2p1 := f.newSession(sdktypes.SessionStateTypeError, d1e2p1)
+	s3d1e1p2 := f.newSession(sdktypes.SessionStateTypeCompleted, d1e1p2)
 
 	sig := f.newSignal(c)
 
@@ -212,7 +208,5 @@ func TestUpdateProject(t *testing.T) {
 	// update project
 	p.Name = p.Name + "_updated"
 	assert.NoError(t, f.gormdb.updateProject(f.ctx, &p))
-	res := findAndAssertCount[scheme.Project](t, f, 1, "project_id = ?", p.ProjectID)
-	resetTimes(&res[0])
-	require.Equal(t, p, res[0])
+	findAndAssertOne(t, f, p, "project_id = ?", p.ProjectID)
 }

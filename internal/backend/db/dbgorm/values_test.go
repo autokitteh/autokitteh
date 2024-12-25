@@ -8,18 +8,24 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func TestValues(t *testing.T) {
-	pids := []sdktypes.ProjectID{sdktypes.NewProjectID(), sdktypes.NewProjectID(), sdktypes.NewProjectID()}
+var pids = []sdktypes.ProjectID{
+	sdktypes.NewProjectID(),
+	sdktypes.NewProjectID(),
+	sdktypes.NewProjectID(),
+}
 
+func TestValues(t *testing.T) {
 	db, err := dbgorm.New(zap.NewNop(), &dbgorm.Config{})
 	require.NoError(t, err)
 
 	ctx := context.Background()
+	ctx = authcontext.SetAuthnUser(ctx, sdktypes.DefaultUser)
 
 	require.NoError(t, db.Connect(ctx))
 	require.NoError(t, db.Setup(ctx))

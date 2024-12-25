@@ -27,9 +27,9 @@ type ID interface {
 	Kind() string
 
 	// Value returns the id value, meaning without the prefix.
-	Value() *uuid.UUID
+	Value() *UUID
 
-	UUIDValue() uuid.UUID
+	UUIDValue() UUID
 
 	isID()
 }
@@ -62,10 +62,14 @@ func (i id[T]) String() string {
 }
 
 func (i id[T]) Kind() string {
+	if !i.IsValid() {
+		return ""
+	}
+
 	return i.tid.Prefix()
 }
 
-func (i id[T]) Value() *uuid.UUID {
+func (i id[T]) Value() *UUID {
 	if !i.IsValid() {
 		return nil
 	}
@@ -74,15 +78,15 @@ func (i id[T]) Value() *uuid.UUID {
 	return &u
 }
 
-func (i id[T]) UUIDValue() uuid.UUID {
+func (i id[T]) UUIDValue() UUID {
 	if !i.IsValid() {
-		return uuid.UUID{}
+		return UUID{}
 	}
 
 	return uuid.UUID(i.tid.UUIDBytes())
 }
 
-func (i id[T]) UUIDValuePtr() *uuid.UUID {
+func (i id[T]) UUIDValuePtr() *UUID {
 	if !i.IsValid() {
 		return nil
 	}
@@ -94,26 +98,17 @@ func (i id[T]) UUIDValuePtr() *uuid.UUID {
 func (i id[T]) MarshalJSON() ([]byte, error)           { return json.Marshal(i.tid) }
 func (i *id[T]) UnmarshalJSON(data []byte) (err error) { err = json.Unmarshal(data, &i.tid); return }
 
-func (i id[T]) ToTypeID() typeid.TypeID[T] { return i.tid }
-
 func newID[ID id[T], T idTraits]() ID {
 	uuid := NewUUID()
 	return ID(id[T]{tid: typeid.Must(typeid.FromUUIDBytes[typeid.TypeID[T]](uuid[:]))})
 }
 
-func NewIDFromUUID[ID id[T], T idTraits](in uuid.UUID) (out ID) {
-	if in != uuid.Nil {
-		out = ID(id[T]{tid: typeid.Must(typeid.FromUUIDBytes[typeid.TypeID[T]](in[:]))})
+func NewIDFromUUID[ID id[T], T idTraits](uuid *UUID) ID {
+	if uuid == nil {
+		var zero ID
+		return zero
 	}
-	return
-}
-
-func NewIDFromUUIDPtr[ID id[T], T idTraits](in *uuid.UUID) (_ ID) {
-	if in == nil {
-		return
-	}
-
-	return NewIDFromUUID[ID](*in)
+	return ID(id[T]{tid: typeid.Must(typeid.FromUUIDBytes[typeid.TypeID[T]](uuid[:]))})
 }
 
 func NewIDFromUUIDString[ID id[T], T idTraits](str string) (ID, error) {
@@ -121,7 +116,7 @@ func NewIDFromUUIDString[ID id[T], T idTraits](str string) (ID, error) {
 	if err != nil {
 		return ID{}, err
 	}
-	return NewIDFromUUID[ID](uuidUUID), nil
+	return NewIDFromUUID[ID](&uuidUUID), nil
 }
 
 func ParseID[ID id[T], T idTraits](s string) (ID, error) {
@@ -137,10 +132,6 @@ func ParseID[ID id[T], T idTraits](s string) (ID, error) {
 	}
 
 	return ID(id[T]{tid: tid}), nil
-}
-
-func FromID[RetID id[T], T idTraits](id ID) RetID {
-	return kittehs.Must1(ParseID[RetID](id.String()))
 }
 
 func IsIDOf[T idTraits](s string) bool {

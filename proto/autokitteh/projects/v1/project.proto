@@ -2,10 +2,7 @@ syntax = "proto3";
 
 package autokitteh.projects.v1;
 
-// `name` is an org wide unique symbol for the project.
-// `display_name` is a human-readable name for the project.
 message Project {
   string project_id = 1;
   string name = 2;
-  string org_id = 4;
 }

@@ -27,11 +27,11 @@ var createCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		pid, err := r.ProjectNameOrID(ctx, project)
+		p, pid, err := r.ProjectNameOrID(ctx, project)
 		if err != nil {
 			return err
 		}
-		if !pid.IsValid() {
+		if !p.IsValid() {
 			err = fmt.Errorf("project %q not found", project)
 			return common.NewExitCodeError(common.NotFoundExitCode, err)
 		}

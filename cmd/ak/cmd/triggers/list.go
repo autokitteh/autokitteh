@@ -9,7 +9,7 @@ import (
 )
 
 var listCmd = common.StandardCommand(&cobra.Command{
-	Use:     "list [-p project] [-c connection] [--fail]",
+	Use:     "list [-p project] [-e env] [-c connection] [--fail]",
 	Short:   "List all event triggers",
 	Aliases: []string{"ls"},
 	Args:    cobra.NoArgs,
@@ -23,8 +23,8 @@ var listCmd = common.StandardCommand(&cobra.Command{
 
 		// All flags are optional.
 		if project != "" {
-			pid, err := r.ProjectNameOrID(ctx, project)
-			if err = common.AddNotFoundErrIfCond(err, pid.IsValid()); err != nil {
+			p, pid, err := r.ProjectNameOrID(ctx, project)
+			if err = common.AddNotFoundErrIfCond(err, p.IsValid()); err != nil {
 				return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "project")
 			}
 			f.ProjectID = pid

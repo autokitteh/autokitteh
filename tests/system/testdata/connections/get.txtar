@@ -17,12 +17,12 @@ return code == 0
 output equals ''
 
 ak connection get my_project/bad_connection --fail
-output equals 'Error: connection: not_found'
-return code == $RC_NOT_FOUND
+output equals 'Error: connection not found'
+return code == 10
 
 ak connection get con_0000000000000000000000dead --fail
-output equals 'Error: connection: not_found'
-return code == $RC_NOT_FOUND
+output equals 'Error: connection not found'
+return code == 10
 
 # Negative test: get connection by name, without project prefix.
 ak connection get my_connection
@@ -48,16 +48,10 @@ output equals file expected_connection.json
     "integration_id": "int_3kth00testaf9d33c5697341f0",
     "project_id": "prj_00000000000000000000000001",
     "name": "my_connection",
-    "status": {
-      "code": "CODE_OK",
-      "message": "OK"
-    },
-    "capabilities": {
-      "supports_connection_test": true
-    },
+    "status": {},
+    "capabilities": {},
     "links": {
-      "self_url": "/connections/con_00000000000000000000000002",
-      "test_url": "/connections/con_00000000000000000000000002/test"
+      "self_url": "/connections/con_00000000000000000000000002"
     }
   }
 }

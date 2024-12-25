@@ -3,16 +3,18 @@ package dispatcher
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/google/uuid"
 	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/sdk/activity"
 	"go.temporal.io/sdk/worker"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
+	akCtx "go.autokitteh.dev/autokitteh/internal/backend/context"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/backend/types"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -51,7 +53,6 @@ type sessionData struct {
 	CodeLocation sdktypes.CodeLocation
 	Trigger      sdktypes.Trigger
 	Connection   sdktypes.Connection
-	OrgID        sdktypes.OrgID
 }
 
 func (d *Dispatcher) listWaitingSignalsActivity(ctx context.Context, dstid sdktypes.EventDestinationID) ([]*types.Signal, error) {
@@ -60,12 +61,22 @@ func (d *Dispatcher) listWaitingSignalsActivity(ctx context.Context, dstid sdkty
 }
 
 func (d *Dispatcher) startSessionActivity(ctx context.Context, session sdktypes.Session) (sdktypes.SessionID, error) {
-	sid, err := d.svcs.Sessions.Start(authcontext.SetAuthnSystemUser(ctx), session)
+	ctx = akCtx.WithRequestOrginator(ctx, akCtx.Dispatcher)
+	var err error
+	if ctx, err = akCtx.WithOwnershipOf(ctx, d.svcs.DB.GetOwnership, session.ProjectID().UUIDValue()); err != nil {
+		return sdktypes.InvalidSessionID, fmt.Errorf("ownership: %w", err)
+	}
+
+	sid, err := d.svcs.Sessions.Start(ctx, session)
 	return sid, temporalclient.TranslateError(err, "start session %v", session.ID())
 }
 
 func (d *Dispatcher) getEventSessionDataActivity(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) ([]sessionData, error) {
-	ctx = authcontext.SetAuthnSystemUser(ctx)
+	ctx = akCtx.WithRequestOrginator(ctx, akCtx.EventWorkflow)
+	var err error
+	if ctx, err = akCtx.WithOwnershipOf(ctx, d.svcs.DB.GetOwnership, event.DestinationID().UUIDValue()); err != nil {
+		return nil, fmt.Errorf("ownership: %w", err)
+	}
 
 	eid := event.ID()
 	dstid := event.DestinationID()
@@ -76,13 +87,37 @@ func (d *Dispatcher) getEventSessionDataActivity(ctx context.Context, event sdkt
 		opts = &sdkservices.DispatchOptions{}
 	}
 
+	var optsProjectID sdktypes.ProjectID
+
+	if opts.Project != "" {
+		sl = sl.With("project", opts.Project)
+
+		if sdktypes.IsProjectID(opts.Project) {
+			if optsProjectID, err = sdktypes.ParseProjectID(opts.Project); err != nil {
+				return nil, temporalclient.TranslateError(sdkerrors.NewInvalidArgumentError("invalid project id: %v", err), "invalid project id")
+			}
+		} else {
+			n, err := sdktypes.ParseSymbol(opts.Project)
+			if err != nil {
+				return nil, temporalclient.TranslateError(sdkerrors.NewInvalidArgumentError("invalid project name: %v", err), "invalid project name")
+			}
+
+			p, err := d.svcs.Projects.GetByName(ctx, n)
+			if err != nil {
+				return nil, temporalclient.TranslateError(sdkerrors.ErrNotFound, "project %q not found", n)
+			}
+
+			optsProjectID = p.ID()
+		}
+	}
+
 	if opts.DeploymentID.IsValid() {
 		sl = sl.With("deployment_id", opts.DeploymentID)
 	}
 
 	var ts []sdktypes.Trigger
+
 	if cid := dstid.ToConnectionID(); cid.IsValid() {
-		var err error
 		if ts, err = d.svcs.Triggers.List(ctx, sdkservices.ListTriggersFilter{ConnectionID: cid}); err != nil {
 			return nil, temporalclient.TranslateError(err, "list triggers for %v", cid)
 		}
@@ -102,34 +137,21 @@ func (d *Dispatcher) getEventSessionDataActivity(ctx context.Context, event sdkt
 		return nil, nil
 	}
 
-	oid, err := d.svcs.DB.GetOrgIDOf(ctx, dstid)
-	if err != nil {
-		sl.With("err", err).Errorf("get org id for %v: %v", dstid, err)
-		return nil, temporalclient.TranslateError(err, "get org id for %v", dstid)
-	}
-
-	pid, err := d.svcs.DB.GetProjectIDOf(ctx, dstid)
-	if err != nil {
-		sl.With("err", err).Errorf("get project id for %v: %v", dstid, err)
-		return nil, temporalclient.TranslateError(err, "get project id for %v", dstid)
-	}
-
-	sl = sl.With("project_id", pid)
-
 	var sds []sessionData
 
 	deploymentsForProject := make(map[sdktypes.ProjectID][]sdktypes.Deployment)
 
 	eventType := event.Type()
 	for _, t := range ts {
-		if pid != t.ProjectID() {
-			sl.Errorf("trigger %v does not belong to project %v", t.ID(), pid)
-			continue
-		}
-
+		pid := t.ProjectID()
 		triggerEventType := t.EventType()
 
 		sl := sl.With("trigger_id", t.ID())
+
+		if optsProjectID.IsValid() && pid != optsProjectID {
+			sl.Infof("irrelevant project %v != required %v", pid, optsProjectID)
+			continue
+		}
 
 		if !t.CodeLocation().IsValid() {
 			sl.Info("no entry point, ignoring trigger")
@@ -184,8 +206,7 @@ func (d *Dispatcher) getEventSessionDataActivity(ctx context.Context, event sdkt
 		}
 
 		var c sdktypes.Connection
-		if cid := t.ConnectionID(); cid.IsValid() { // only if this trigger has a connection defined.
-			var err error
+		if cid := t.ConnectionID(); cid.IsValid() { // only if this trigger has connection defined
 			c, err = d.svcs.Connections.Get(ctx, t.ConnectionID())
 			if err != nil {
 				sl.With("err", err).Errorf("could not fetch connection %v: %v", t.ConnectionID(), err)
@@ -195,7 +216,7 @@ func (d *Dispatcher) getEventSessionDataActivity(ctx context.Context, event sdkt
 
 		cl := t.CodeLocation()
 		for _, dep := range deployments {
-			sds = append(sds, sessionData{Deployment: dep, CodeLocation: cl, Trigger: t, Connection: c, OrgID: oid})
+			sds = append(sds, sessionData{Deployment: dep, CodeLocation: cl, Trigger: t, Connection: c})
 			sl.Infof("relevant deployment %v found for %v", dep.ID(), eid)
 		}
 	}

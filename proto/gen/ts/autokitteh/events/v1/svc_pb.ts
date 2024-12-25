@@ -197,16 +197,6 @@ export class ListRequest extends Message<ListRequest> {
   order = "";
 
   /**
-   * @generated from field: string project_id = 7;
-   */
-  projectId = "";
-
-  /**
-   * @generated from field: string org_id = 8;
-   */
-  orgId = "";
-
-  /**
    * see GetRequest.json_values.
    *
    * @generated from field: bool json_values = 6;
@@ -226,8 +216,6 @@ export class ListRequest extends Message<ListRequest> {
     { no: 3, name: "event_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "max_results", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 5, name: "order", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 7, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 8, name: "org_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "json_values", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 

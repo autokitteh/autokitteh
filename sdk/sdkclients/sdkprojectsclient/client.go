@@ -99,11 +99,10 @@ func (c *client) GetByID(ctx context.Context, pid sdktypes.ProjectID) (sdktypes.
 	return project, nil
 }
 
-func (c *client) GetByName(ctx context.Context, oid sdktypes.OrgID, n sdktypes.Symbol) (sdktypes.Project, error) {
+func (c *client) GetByName(ctx context.Context, n sdktypes.Symbol) (sdktypes.Project, error) {
 	resp, err := c.client.Get(ctx, connect.NewRequest(
 		&projectsv1.GetRequest{
-			Name:  n.String(),
-			OrgId: oid.String(),
+			Name: n.String(),
 		},
 	))
 	if err != nil {
@@ -126,8 +125,8 @@ func (c *client) GetByName(ctx context.Context, oid sdktypes.OrgID, n sdktypes.S
 	return project, nil
 }
 
-func (c *client) List(ctx context.Context, oid sdktypes.OrgID) ([]sdktypes.Project, error) {
-	resp, err := c.client.List(ctx, connect.NewRequest(&projectsv1.ListRequest{OrgId: oid.String()}))
+func (c *client) List(ctx context.Context) ([]sdktypes.Project, error) {
+	resp, err := c.client.List(ctx, connect.NewRequest(&projectsv1.ListRequest{}))
 	if err != nil {
 		return nil, rpcerrors.ToSDKError(err)
 	}

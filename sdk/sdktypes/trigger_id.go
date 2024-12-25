@@ -1,12 +1,12 @@
 package sdktypes
 
-const TriggerIDKind = "trg"
+const triggerIDKind = "trg"
 
 type TriggerID = id[triggerIDTraits]
 
 type triggerIDTraits struct{}
 
-func (triggerIDTraits) Prefix() string { return TriggerIDKind }
+func (triggerIDTraits) Prefix() string { return triggerIDKind }
 
 func NewTriggerID() TriggerID                          { return newID[TriggerID]() }
 func ParseTriggerID(s string) (TriggerID, error)       { return ParseID[TriggerID](s) }

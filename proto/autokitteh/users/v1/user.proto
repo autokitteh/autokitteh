@@ -2,12 +2,11 @@ syntax = "proto3";
 
 package autokitteh.users.v1;
 
-// `display_name` is a human-readable name for the user.
-// `name` is a globally unique symbol for the user.
+import "buf/validate/validate.proto";
+
 message User {
   string user_id = 1;
-  string email = 2; // if email is empty, user cannot login.
+  string email = 2 [(buf.validate.field).string.email = true];
   string display_name = 3;
   bool disabled = 4;
-  string default_org_id = 5; // org to use for projects, if not otherwise specified.
 }

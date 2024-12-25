@@ -1,7 +1,6 @@
 package authloginhttpsvc
 
 import (
-	"context"
 	_ "embed"
 	"errors"
 	"net/http"
@@ -13,7 +12,7 @@ import (
 
 const descopeLoginPath = "/auth/descope/login"
 
-func registerDescopeRoutes(mux *http.ServeMux, cfg descopeConfig, onSuccess func(context.Context, *loginData) http.Handler) error {
+func registerDescopeRoutes(mux *http.ServeMux, cfg descopeConfig, onSuccess func(*loginData) http.Handler) error {
 	if cfg.ProjectID == "" {
 		return errors.New("descope login is enabled, but missing DESCOPE_PROJECT_ID")
 	}
@@ -34,11 +33,9 @@ func registerDescopeRoutes(mux *http.ServeMux, cfg descopeConfig, onSuccess func
 			return
 		}
 
-		ctx := r.Context()
-
 		// post-login
 
-		authorized, tok, err := client.Auth.ValidateSessionWithToken(ctx, jwt)
+		authorized, tok, err := client.Auth.ValidateSessionWithToken(r.Context(), jwt)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -63,7 +60,7 @@ func registerDescopeRoutes(mux *http.ServeMux, cfg descopeConfig, onSuccess func
 			DisplayName:  name,
 		}
 
-		onSuccess(ctx, &ld).ServeHTTP(w, r)
+		onSuccess(&ld).ServeHTTP(w, r)
 	}))
 
 	return nil

@@ -3,11 +3,9 @@ package systest
 import (
 	"context"
 	"fmt"
-	"maps"
 	"os"
 	"strconv"
 	"strings"
-	"testing"
 	"time"
 
 	"go.autokitteh.dev/autokitteh/backend/svc"
@@ -23,24 +21,17 @@ const (
 // Start the AK server, as an in-process goroutine rather than a separate
 // subprocess (to support breakpoint debugging, and measure test coverage),
 // unless the environment variable AK_SYSTEST_USE_PROC_SVC is set to "true".
-func startAKServer(t *testing.T, ctx context.Context, akPath string, userCfg map[string]any) (svc.Service, string, error) {
-	for _, sc := range seedCommands {
-		t.Logf("seed command: %s", sc)
-	}
-
+func startAKServer(ctx context.Context, akPath string) (svc.Service, string, error) {
 	runOpts := svc.RunOptions{Mode: "test"}
-
-	cfgMap := map[string]any{
+	cfg := kittehs.Must1(svc.LoadConfig("", map[string]any{
 		"db.type": "sqlite",
 		"db.dsn":  "file:autokitteh.sqlite", // In the test's temporary directory.
 
 		"http.addr":                           ":0",
 		"http.addr_filename":                  serverHTTPAddrFile, // In the test's temporary directory.
 		"authhttpmiddleware.use_default_user": "false",
-		"db.seed_commands":                    strings.Join(seedCommands, ";") + ";",
-	}
-
-	maps.Copy(cfgMap, userCfg)
+		"db.seed_commands":                    seedCommand,
+	}, ""))
 
 	// Instantiate the server, either as a subprocess or in-process.
 	var (
@@ -49,9 +40,9 @@ func startAKServer(t *testing.T, ctx context.Context, akPath string, userCfg map
 	)
 
 	if subproc, _ := strconv.ParseBool(os.Getenv("AK_SYSTEST_USE_PROC_SVC")); subproc {
-		server, err = svcproc.NewSvcProc(akPath, cfgMap, runOpts)
+		server, err = svcproc.NewSvcProc(akPath, cfg, runOpts)
 	} else {
-		server, err = svc.New(kittehs.Must1(svc.LoadConfig("", cfgMap, "")), runOpts)
+		server, err = svc.New(cfg, runOpts)
 	}
 	if err != nil {
 		return nil, "", fmt.Errorf("new AK server: %w", err)

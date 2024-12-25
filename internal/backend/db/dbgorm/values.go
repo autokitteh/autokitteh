@@ -2,9 +2,12 @@ package dbgorm
 
 import (
 	"context"
+	"time"
 
 	"google.golang.org/protobuf/proto"
+	"gorm.io/gorm"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -22,28 +25,30 @@ func (db *gormdb) SetValue(ctx context.Context, pid sdktypes.ProjectID, key stri
 		return sdkerrors.NewInvalidArgumentError("value too large > %d bytes", maxValueSize)
 	}
 
+	uid := authcontext.GetAuthnUser(ctx).ID().UUIDValue().String()
+
 	return translateError(db.transaction(ctx, func(tx *tx) error {
+		db := tx.db
+
+		oo, err := tx.owner.EnsureUserAccessToEntitiesWithOwnership(tx.ctx, db, uid, pid.UUIDValue())
+		if err != nil {
+			return err
+		}
+		if len(oo) != 1 {
+			return gorm.ErrForeignKeyViolated
+		}
+
 		bs, err := proto.Marshal(v.ToProto())
 		if err != nil {
 			return err
 		}
 
-		return tx.db.Save(&scheme.Value{
-			// This does not take into account if value was also previously set,
-			// so `created_by` and `updated_by` would always point to the last user
-			// that updated the user.
-			// Getting `created_by` correctly would neccessitate another query, not
-			// worth it currently.
-			Base:      based(ctx),
-			ProjectID: pid.UUIDValue(),
-			Key:       key,
-			Value:     bs,
-		}).Error
+		return tx.db.Save(&scheme.Value{ProjectID: pid.UUIDValue(), Key: key, Value: bs, UpdatedAt: time.Now().UTC()}).Error
 	}))
 }
 
 func (db *gormdb) GetValue(ctx context.Context, pid sdktypes.ProjectID, key string) (sdktypes.Value, error) {
-	r, err := getOne[scheme.Value](db.db.WithContext(ctx), "project_id = ? AND key = ?", pid.UUIDValue(), key)
+	r, err := getOne[scheme.Value](db.withUserProjects(ctx), "project_id = ? AND key = ?", pid.UUIDValue(), key)
 	if err != nil {
 		return sdktypes.InvalidValue, translateError(err)
 	}
@@ -59,7 +64,7 @@ func (db *gormdb) GetValue(ctx context.Context, pid sdktypes.ProjectID, key stri
 
 func (db *gormdb) ListValues(ctx context.Context, pid sdktypes.ProjectID) (map[string]sdktypes.Value, error) {
 	var rs []*scheme.Value
-	if err := db.db.WithContext(ctx).Where("project_id = ?", pid.UUIDValue()).Find(&rs).Error; err != nil {
+	if err := db.withUserProjects(ctx).Where("project_id = ?", pid.UUIDValue()).Find(&rs).Error; err != nil {
 		return nil, translateError(err)
 	}
 

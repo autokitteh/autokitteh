@@ -49,7 +49,6 @@ message ListRequest {
   DeploymentState state = 3 [(buf.validate.field).enum.defined_only = true];
   uint32 limit = 4;
   bool include_session_stats = 5;
-  string org_id = 6;
 
   // TODO: FieldMask.
   // TODO: Paging.

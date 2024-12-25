@@ -1,12 +1,12 @@
 package sdktypes
 
-const ConnectionIDKind = "con"
+const connectionIDKind = "con"
 
 type ConnectionID = id[connectionIDTraits]
 
 type connectionIDTraits struct{}
 
-func (connectionIDTraits) Prefix() string { return ConnectionIDKind }
+func (connectionIDTraits) Prefix() string { return connectionIDKind }
 
 func NewConnectionID() ConnectionID                          { return newID[ConnectionID]() }
 func ParseConnectionID(s string) (ConnectionID, error)       { return ParseID[ConnectionID](s) }

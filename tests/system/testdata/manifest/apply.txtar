@@ -1,7 +1,7 @@
 # Graceful handling of a nonexistent manifest file.
 ak manifest apply nonexistent.yaml
 output equals 'Error: open nonexistent.yaml: no such file or directory'
-return code == $RC_NOT_FOUND
+return code == 10
 
 # Graceful handling of an invalid manifest file.
 ak manifest apply invalid.yaml
@@ -133,8 +133,7 @@ project:
 {
   "project": {
     "project_id": "prj_00000000000000000000000001",
-    "name": "my_project",
-    "org_id": "org_3kthzvm10r16a40eef31710220"
+    "name": "my_project"
   }
 }
 
@@ -145,16 +144,10 @@ project:
     "integration_id": "int_3kth00testaf9d33c5697341f0",
     "project_id": "prj_00000000000000000000000001",
     "name": "my_connection",
-    "status": {
-      "code": "CODE_OK",
-      "message": "OK"
-    },
-    "capabilities": {
-      "supports_connection_test": true
-    },
+    "status": {},
+    "capabilities": {},
     "links": {
-      "self_url": "/connections/con_00000000000000000000000002",
-      "test_url": "/connections/con_00000000000000000000000002/test"
+      "self_url": "/connections/con_00000000000000000000000002"
     }
   }
 }

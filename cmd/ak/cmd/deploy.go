@@ -24,7 +24,7 @@ var (
 )
 
 var deployCmd = common.StandardCommand(&cobra.Command{
-	Use:   "deploy {--manifest <file> [--project-name <name>]|--project <name or ID>} [--dir <path> [...]] [--file <path> [...]] ",
+	Use:   "deploy {--manifest <file> [--project-name <name>]|--project <name or ID>} [--dir <path> [...]] [--file <path> [...]] [--env <name or ID>]",
 	Short: "Create, configure, build, deploy, and activate project",
 	Long:  `Create, configure, build, deploy, and activate project - see also the "manifest", "build", "deployment", and "project" parent commands`,
 	Args:  cobra.NoArgs,
@@ -46,7 +46,7 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 			return fmt.Errorf("project name provided without manifest")
 		}
 
-		pid, err := r.ProjectNameOrID(ctx, project)
+		p, pid, err := r.ProjectNameOrID(ctx, project)
 		if err != nil {
 			err = fmt.Errorf("project: %w", err)
 
@@ -57,7 +57,7 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 			return err
 		}
 
-		if pid.IsValid() {
+		if p.IsValid() {
 			logFunc(cmd, "plan")(fmt.Sprintf("project %q: found, id=%q", project, pid))
 		}
 

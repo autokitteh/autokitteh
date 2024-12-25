@@ -131,11 +131,6 @@ func (s *Server) Get(ctx context.Context, req *connect.Request[projectsv1.GetReq
 		return toResponse(s.projects.GetByID(ctx, pid))
 	}
 
-	oid, err := sdktypes.ParseOrgID(msg.OrgId)
-	if err != nil {
-		return nil, sdkerrors.AsConnectError(err)
-	}
-
 	n, err := sdktypes.StrictParseSymbol(msg.Name)
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
@@ -147,7 +142,29 @@ func (s *Server) Get(ctx context.Context, req *connect.Request[projectsv1.GetReq
 		return nil, sdkerrors.AsConnectError(fmt.Errorf("missing name"))
 	}
 
-	return toResponse(s.projects.GetByName(ctx, oid, n))
+	return toResponse(s.projects.GetByName(ctx, n))
+}
+
+func (s *Server) list(ctx context.Context) ([]*sdktypes.ProjectPB, error) {
+	ps, err := s.projects.List(ctx)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	return kittehs.Transform(ps, sdktypes.ToProto), nil
+}
+
+func (s *Server) ListForOwner(ctx context.Context, req *connect.Request[projectsv1.ListForOwnerRequest]) (*connect.Response[projectsv1.ListForOwnerResponse], error) {
+	if err := proto.Validate(req.Msg); err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	ps, err := s.list(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return connect.NewResponse(&projectsv1.ListForOwnerResponse{Projects: ps}), nil
 }
 
 func (s *Server) List(ctx context.Context, req *connect.Request[projectsv1.ListRequest]) (*connect.Response[projectsv1.ListResponse], error) {
@@ -155,17 +172,12 @@ func (s *Server) List(ctx context.Context, req *connect.Request[projectsv1.ListR
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	oid, err := sdktypes.ParseOrgID(req.Msg.OrgId)
+	ps, err := s.list(ctx)
 	if err != nil {
-		return nil, sdkerrors.AsConnectError(err)
+		return nil, err
 	}
 
-	ps, err := s.projects.List(ctx, oid)
-	if err != nil {
-		return nil, sdkerrors.AsConnectError(err)
-	}
-
-	return connect.NewResponse(&projectsv1.ListResponse{Projects: kittehs.Transform(ps, sdktypes.ToProto)}), nil
+	return connect.NewResponse(&projectsv1.ListResponse{Projects: ps}), nil
 }
 
 func (s *Server) Build(ctx context.Context, req *connect.Request[projectsv1.BuildRequest]) (*connect.Response[projectsv1.BuildResponse], error) {
@@ -243,6 +255,7 @@ func (s *Server) DownloadResources(ctx context.Context, req *connect.Request[pro
 }
 
 func (s *Server) Export(ctx context.Context, req *connect.Request[projectsv1.ExportRequest]) (*connect.Response[projectsv1.ExportResponse], error) {
+
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {

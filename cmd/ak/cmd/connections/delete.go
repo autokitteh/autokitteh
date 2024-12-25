@@ -19,15 +19,15 @@ var deleteCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		_, id, err := r.ConnectionNameOrID(ctx, args[0], "")
+		c, id, err := r.ConnectionNameOrID(ctx, args[0], "")
 		if err != nil {
-			return common.WrapError(err, "connection")
+			return common.ToExitCodeError(err, "connection")
 		}
-		if !id.IsValid() {
-			return common.WrapError(sdkerrors.ErrNotFound, "connection")
+		if !c.IsValid() {
+			return common.ToExitCodeError(sdkerrors.ErrNotFound, "connection")
 		}
 
 		err = connections().Delete(ctx, id)
-		return common.WrapError(err, "delete connection")
+		return common.ToExitCodeError(err, "delete connection")
 	},
 })

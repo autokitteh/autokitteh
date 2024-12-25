@@ -7,16 +7,11 @@ import (
 )
 
 type ListDeploymentsFilter struct {
-	OrgID               sdktypes.OrgID
 	ProjectID           sdktypes.ProjectID
 	BuildID             sdktypes.BuildID
 	State               sdktypes.DeploymentState
 	Limit               uint32
 	IncludeSessionStats bool
-}
-
-func (f ListDeploymentsFilter) AnyIDSpecified() bool {
-	return f.OrgID.IsValid() || f.ProjectID.IsValid() || f.BuildID.IsValid()
 }
 
 type Deployments interface {

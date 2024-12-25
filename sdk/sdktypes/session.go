@@ -113,6 +113,6 @@ func (s Session) WithEndpoint(ep CodeLocation) Session {
 	return Session{s.forceUpdate(func(pb *SessionPB) { pb.Entrypoint = ToProto(ep) })}
 }
 
-func (s Session) WithID(id SessionID) Session {
-	return Session{s.forceUpdate(func(pb *SessionPB) { pb.SessionId = id.String() })}
+func (s Session) WithInptus(inputs map[string]Value) Session {
+	return Session{s.forceUpdate(func(pb *SessionPB) { pb.Inputs = kittehs.TransformMapValues(inputs, ToProto) })}
 }

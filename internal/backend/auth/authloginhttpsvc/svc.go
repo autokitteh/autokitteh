@@ -1,7 +1,6 @@
 package authloginhttpsvc
 
 import (
-	"context"
 	_ "embed"
 	"encoding/json"
 	"errors"
@@ -18,7 +17,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
-	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 
 	"go.uber.org/fx"
@@ -34,7 +32,7 @@ type Deps struct {
 	DB       db.DB
 	Sessions authsessions.Store
 	Tokens   authtokens.Tokens
-	Users    sdkservices.Users
+	Users    authusers.Users
 }
 
 type svc struct{ Deps }
@@ -176,65 +174,50 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 	return nil
 }
 
-type errorHandler struct {
-	err  string
-	code int
-}
-
-func (e errorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) { http.Error(w, e.err, e.code) }
-
-func (a *svc) newSuccessLoginHandler(ctx context.Context, ld *loginData) http.Handler {
+func (a *svc) newSuccessLoginHandler(ld *loginData) http.Handler {
 	sl := a.L.Sugar().With("login_data", ld)
 
-	newErrHandler := func(err string, code int) http.Handler { return errorHandler{err: err, code: code} }
-
-	if ld.Email == "" {
-		sl.Error("login without email")
-		return newErrHandler("email required for login", http.StatusBadRequest)
-	}
-
-	u, err := a.Users.Get(authcontext.SetAuthnSystemUser(ctx), sdktypes.InvalidUserID, ld.Email)
-	if err != nil && !errors.Is(err, sdkerrors.ErrNotFound) {
-		sl.With("err", err).Errorf("failed getting user by email: %v", err)
-		return newErrHandler("internal server error", http.StatusInternalServerError)
-	}
-
-	uid := u.ID()
-
-	if u.IsValid() {
-		sl = sl.With("user_id", uid)
-
-		if u.Disabled() {
-			sl.Infof("disabled user: %v", ld.Email)
-			return newErrHandler("user is disabled", http.StatusForbidden)
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		u, err := a.Users.GetByEmail(r.Context(), ld.Email)
+		if err != nil && !errors.Is(err, sdkerrors.ErrNotFound) {
+			sl.With("err", err).Errorf("failed getting user by email: %v", err)
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+			return
 		}
 
-		if authusers.IsInternalUserID(uid) {
-			sl.Errorf("internal user attempting to login: %v", u)
-			return newErrHandler("internal user, cannot login", http.StatusBadRequest)
+		uid := u.ID()
+
+		if u.IsValid() {
+			if u.Disabled() {
+				sl.Infof("disabled user: %v", ld.Email)
+				http.Error(w, "user is disabled", http.StatusForbidden)
+				return
+			}
+		} else {
+			// New user.
+
+			if a.Cfg.RejectNewUsers {
+				sl.Infof("unregistered user: %v", ld.Email)
+				http.Error(w, "unregistered user", http.StatusForbidden)
+				return
+			}
+
+			u := sdktypes.NewUser(ld.Email, ld.DisplayName)
+
+			if uid, err = a.Users.Create(r.Context(), u); err != nil {
+				sl.With("err", err).Errorf("failed creating user: %v", err)
+				http.Error(w, "internal server error", http.StatusInternalServerError)
+				return
+			}
+
+			sl = sl.With("user_id", uid)
+
+			sl.With("username", ld.Email).Infof("created user %v for %q", uid, ld.Email)
 		}
-	} else {
-		// New user.
 
-		if a.Cfg.RejectNewUsers {
-			sl.Infof("unregistered user: %v", ld.Email)
-			return newErrHandler("unregistered user", http.StatusForbidden)
-		}
+		sd := authsessions.NewSessionData(uid)
 
-		u := sdktypes.NewUser(ld.Email).WithDisplayName(ld.DisplayName)
-
-		if uid, err = a.Users.Create(authcontext.SetAuthnSystemUser(ctx), u); err != nil {
-			sl.With("err", err).Errorf("failed creating user: %v", err)
-			return newErrHandler("internal server error", http.StatusInternalServerError)
-		}
-
-		sl = sl.With("user_id", uid)
-
-		sl.With("username", ld.Email).Infof("created user %v for %q", uid, ld.Email)
-	}
-
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if err := a.Deps.Sessions.Set(w, authsessions.NewSessionData(uid)); err != nil {
+		if err := a.Deps.Sessions.Set(w, &sd); err != nil {
 			sl.With("err", err).Errorf("failed storing session: %v", err)
 			http.Error(w, "internal server error", http.StatusInternalServerError)
 			return
@@ -246,5 +229,7 @@ func (a *svc) newSuccessLoginHandler(ctx context.Context, ld *loginData) http.Ha
 		}
 
 		http.Redirect(w, r, getRedirect(r), http.StatusFound)
-	})
+	}
+
+	return http.HandlerFunc(fn)
 }

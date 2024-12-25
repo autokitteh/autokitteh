@@ -39,8 +39,8 @@ func StrictDeploymentFromProto(m *DeploymentPB) (Deployment, error) {
 	return Strict(DeploymentFromProto(m))
 }
 
-func NewDeployment(id DeploymentID, pid ProjectID, buildID BuildID) Deployment {
-	return kittehs.Must1(DeploymentFromProto(&DeploymentPB{DeploymentId: id.String(), ProjectId: pid.String(), BuildId: buildID.String()}))
+func NewDeployment(id DeploymentID, envID ProjectID, buildID BuildID) Deployment {
+	return kittehs.Must1(DeploymentFromProto(&DeploymentPB{DeploymentId: id.String(), ProjectId: envID.String(), BuildId: buildID.String()}))
 }
 
 func (p Deployment) ID() DeploymentID { return kittehs.Must1(ParseDeploymentID(p.read().DeploymentId)) }

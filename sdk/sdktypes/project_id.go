@@ -1,12 +1,12 @@
 package sdktypes
 
-const ProjectIDKind = "prj"
+const projectIDKind = "prj"
 
 type ProjectID = id[projectIDTraits]
 
 type projectIDTraits struct{}
 
-func (projectIDTraits) Prefix() string { return ProjectIDKind }
+func (projectIDTraits) Prefix() string { return projectIDKind }
 
 func NewProjectID() ProjectID                          { return newID[ProjectID]() }
 func ParseProjectID(s string) (ProjectID, error)       { return ParseID[ProjectID](s) }

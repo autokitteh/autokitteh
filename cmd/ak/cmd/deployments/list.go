@@ -38,11 +38,11 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		f.BuildID = bid
 
 		if project != "" {
-			pid, err := r.ProjectNameOrID(ctx, project)
-			if err = common.AddNotFoundErrIfCond(err, pid.IsValid()); err != nil {
+			p, _, err := r.ProjectNameOrID(ctx, project)
+			if err = common.AddNotFoundErrIfCond(err, p.IsValid()); err != nil {
 				return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "project")
 			}
-			f.ProjectID = pid
+			f.ProjectID = p.ID()
 		}
 
 		if f.State, err = sdktypes.ParseDeploymentState(state.String()); err != nil {

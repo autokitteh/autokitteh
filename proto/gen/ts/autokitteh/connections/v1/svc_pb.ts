@@ -317,13 +317,6 @@ export class ListRequest extends Message<ListRequest> {
    */
   statusCode = Status_Code.UNSPECIFIED;
 
-  /**
-   * Optional.
-   *
-   * @generated from field: string org_id = 4;
-   */
-  orgId = "";
-
   constructor(data?: PartialMessage<ListRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -335,7 +328,6 @@ export class ListRequest extends Message<ListRequest> {
     { no: 1, name: "integration_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "status_code", kind: "enum", T: proto3.getEnumType(Status_Code) },
-    { no: 4, name: "org_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListRequest {

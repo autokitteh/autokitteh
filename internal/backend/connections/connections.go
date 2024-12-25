@@ -7,8 +7,6 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
-	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -27,17 +25,6 @@ type Connections struct {
 func New(c Connections) sdkservices.Connections { return &c }
 
 func (c *Connections) Create(ctx context.Context, conn sdktypes.Connection) (sdktypes.ConnectionID, error) {
-	if err := authz.CheckContext(
-		ctx,
-		sdktypes.InvalidConnectionID,
-		"write:create",
-		authz.WithData("connection", conn),
-		authz.WithAssociationWithID("integration", conn.IntegrationID()),
-		authz.WithAssociationWithID("project", conn.ProjectID()),
-	); err != nil {
-		return sdktypes.InvalidConnectionID, err
-	}
-
 	intg, err := c.Integrations.GetByID(ctx, conn.IntegrationID())
 	if err != nil {
 		return sdktypes.InvalidConnectionID, err
@@ -70,10 +57,6 @@ func (c *Connections) Create(ctx context.Context, conn sdktypes.Connection) (sdk
 }
 
 func (c *Connections) Update(ctx context.Context, conn sdktypes.Connection) error {
-	if err := authz.CheckContext(ctx, conn.ID(), "update:update", authz.WithData("connection", conn)); err != nil {
-		return err
-	}
-
 	if err := c.DB.UpdateConnection(ctx, conn); err != nil {
 		return err
 	}
@@ -82,30 +65,10 @@ func (c *Connections) Update(ctx context.Context, conn sdktypes.Connection) erro
 }
 
 func (c *Connections) Delete(ctx context.Context, id sdktypes.ConnectionID) error {
-	if err := authz.CheckContext(ctx, id, "delete:delete", authz.WithConvertForbiddenToNotFound); err != nil {
-		return err
-	}
-
 	return c.DB.DeleteConnection(ctx, id)
 }
 
 func (c *Connections) List(ctx context.Context, filter sdkservices.ListConnectionsFilter) ([]sdktypes.Connection, error) {
-	if !filter.AnyIDSpecified() {
-		filter.OrgID = authcontext.GetAuthnInferredOrgID(ctx)
-	}
-
-	if err := authz.CheckContext(
-		ctx,
-		sdktypes.InvalidConnectionID,
-		"read:list",
-		authz.WithData("filter", filter),
-		authz.WithAssociationWithID("org", filter.OrgID),
-		authz.WithAssociationWithID("project", filter.ProjectID),
-		authz.WithAssociationWithID("integration", filter.IntegrationID),
-	); err != nil {
-		return nil, err
-	}
-
 	conns, err := c.DB.ListConnections(ctx, filter, false)
 	if err != nil {
 		return nil, err
@@ -126,10 +89,6 @@ func (c *Connections) attachIntegration(ctx context.Context, id sdktypes.Connect
 }
 
 func (c *Connections) Test(ctx context.Context, id sdktypes.ConnectionID) (sdktypes.Status, error) {
-	if err := authz.CheckContext(ctx, id, "test"); err != nil {
-		return sdktypes.InvalidStatus, err
-	}
-
 	i, err := c.attachIntegration(ctx, id)
 	if err != nil {
 		return sdktypes.InvalidStatus, err
@@ -143,10 +102,6 @@ func (c *Connections) Test(ctx context.Context, id sdktypes.ConnectionID) (sdkty
 }
 
 func (c *Connections) RefreshStatus(ctx context.Context, id sdktypes.ConnectionID) (sdktypes.Status, error) {
-	if err := authz.CheckContext(ctx, id, "refresh"); err != nil {
-		return sdktypes.InvalidStatus, err
-	}
-
 	i, err := c.attachIntegration(ctx, id)
 	if err != nil {
 		return sdktypes.InvalidStatus, err
@@ -165,10 +120,6 @@ func (c *Connections) RefreshStatus(ctx context.Context, id sdktypes.ConnectionI
 }
 
 func (c *Connections) Get(ctx context.Context, id sdktypes.ConnectionID) (sdktypes.Connection, error) {
-	if err := authz.CheckContext(ctx, id, "read:get", authz.WithConvertForbiddenToNotFound); err != nil {
-		return sdktypes.InvalidConnection, err
-	}
-
 	conn, err := c.DB.GetConnection(ctx, id)
 	if err != nil || !conn.IsValid() {
 		return sdktypes.InvalidConnection, err

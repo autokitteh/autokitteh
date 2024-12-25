@@ -10,6 +10,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 func (f *dbFixture) createEventsAndAssert(t *testing.T, events ...scheme.Event) {
@@ -26,17 +27,14 @@ func (f *dbFixture) assertEventsDeleted(t *testing.T, events ...scheme.Event) {
 }
 
 func preEventTest(t *testing.T) *dbFixture {
-	f := newDBFixture()
+	f := newDBFixture().withUser(sdktypes.DefaultUser)
 	findAndAssertCount[scheme.Event](t, f, 0, "") // no events
 	return f
 }
 
 func TestCreateEvent(t *testing.T) {
 	f := preEventTest(t)
-
-	p := f.newProject()
-	f.createProjectsAndAssert(t, p)
-	e := f.newEvent(p)
+	e := f.newEvent()
 
 	// test createEvent
 	f.createEventsAndAssert(t, e)
@@ -45,12 +43,10 @@ func TestCreateEvent(t *testing.T) {
 func TestCreateEventForeignKeys(t *testing.T) {
 	f := preEventTest(t)
 
-	p := f.newProject()
-	e := f.newEvent(p)
-	c := f.newConnection(p)
-	b := f.newBuild(p)
+	e := f.newEvent()
+	c := f.newConnection()
+	b := f.newBuild()
 
-	f.createProjectsAndAssert(t, p)
 	f.saveBuildsAndAssert(t, b)
 	f.createConnectionsAndAssert(t, c)
 
@@ -68,9 +64,8 @@ func TestCreateEventForeignKeys(t *testing.T) {
 
 func TestDeleteEvent(t *testing.T) {
 	f := preEventTest(t)
-	p := f.newProject()
-	f.createProjectsAndAssert(t, p)
-	e := f.newEvent(p) // connection is nil
+
+	e := f.newEvent() // connection is nil
 	f.createEventsAndAssert(t, e)
 
 	// test deleteEvent
@@ -80,15 +75,13 @@ func TestDeleteEvent(t *testing.T) {
 
 func TestGetEvent(t *testing.T) {
 	f := preEventTest(t)
-	p := f.newProject()
-	f.createProjectsAndAssert(t, p)
-	e := f.newEvent(p)
+
+	e := f.newEvent()
 	f.createEventsAndAssert(t, e)
 
 	// test getEvent
 	e2, err := f.gormdb.getEvent(f.ctx, e.EventID)
 	assert.NoError(t, err)
-
 	assert.Equal(t, e, *e2)
 
 	assert.NoError(t, f.gormdb.deleteEvent(f.ctx, e.EventID))
@@ -98,11 +91,9 @@ func TestGetEvent(t *testing.T) {
 
 func TestListEventsOrder(t *testing.T) {
 	f := preEventTest(t)
-	p := f.newProject()
-	f.createProjectsAndAssert(t, p)
 
-	ev1 := f.newEvent(p)
-	ev2 := f.newEvent(p)
+	ev1 := f.newEvent()
+	ev2 := f.newEvent()
 	f.createEventsAndAssert(t, ev1, ev2)
 
 	tests := []struct {

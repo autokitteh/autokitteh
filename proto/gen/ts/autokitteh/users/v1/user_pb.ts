@@ -7,9 +7,6 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { Message, proto3 } from "@bufbuild/protobuf";
 
 /**
- * `display_name` is a human-readable name for the user.
- * `name` is a globally unique symbol for the user.
- *
  * @generated from message autokitteh.users.v1.User
  */
 export class User extends Message<User> {
@@ -19,8 +16,6 @@ export class User extends Message<User> {
   userId = "";
 
   /**
-   * if email is empty, user cannot login.
-   *
    * @generated from field: string email = 2;
    */
   email = "";
@@ -35,13 +30,6 @@ export class User extends Message<User> {
    */
   disabled = false;
 
-  /**
-   * org to use for projects, if not otherwise specified.
-   *
-   * @generated from field: string default_org_id = 5;
-   */
-  defaultOrgId = "";
-
   constructor(data?: PartialMessage<User>) {
     super();
     proto3.util.initPartial(data, this);
@@ -54,7 +42,6 @@ export class User extends Message<User> {
     { no: 2, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "disabled", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 5, name: "default_org_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): User {

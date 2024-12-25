@@ -5,7 +5,6 @@ import (
 
 	"connectrpc.com/connect"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/proto"
@@ -43,10 +42,6 @@ func (s *server) Get(ctx context.Context, req *connect.Request[integrationsv1.Ge
 			return nil, sdkerrors.AsConnectError(err)
 		}
 
-		if err := authz.CheckContext(ctx, id, "get"); err != nil {
-			return nil, sdkerrors.AsConnectError(err)
-		}
-
 		if i, err = s.integrations.GetByID(ctx, id); err != nil {
 			return nil, sdkerrors.AsConnectError(err)
 		}
@@ -59,10 +54,6 @@ func (s *server) Get(ctx context.Context, req *connect.Request[integrationsv1.Ge
 		if i, err = s.integrations.GetByName(ctx, n); err != nil {
 			return nil, sdkerrors.AsConnectError(err)
 		}
-
-		if err := authz.CheckContext(ctx, i.ID(), "get"); err != nil {
-			return nil, sdkerrors.AsConnectError(err)
-		}
 	}
 
 	return connect.NewResponse(&integrationsv1.GetResponse{Integration: i.ToProto()}), nil
@@ -70,10 +61,6 @@ func (s *server) Get(ctx context.Context, req *connect.Request[integrationsv1.Ge
 
 func (s *server) List(ctx context.Context, req *connect.Request[integrationsv1.ListRequest]) (*connect.Response[integrationsv1.ListResponse], error) {
 	if err := proto.Validate(req.Msg); err != nil {
-		return nil, sdkerrors.AsConnectError(err)
-	}
-
-	if err := authz.CheckContext(ctx, sdktypes.InvalidIntegrationID, "list"); err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
@@ -87,4 +74,14 @@ func (s *server) List(ctx context.Context, req *connect.Request[integrationsv1.L
 	return connect.NewResponse(&integrationsv1.ListResponse{
 		Integrations: kittehs.Transform(is, sdktypes.ToProto),
 	}), nil
+}
+
+func (*server) Call(context.Context, *connect.Request[integrationsv1.CallRequest]) (*connect.Response[integrationsv1.CallResponse], error) {
+	// TODO
+	return nil, sdkerrors.AsConnectError(sdkerrors.ErrNotImplemented)
+}
+
+func (*server) Configure(context.Context, *connect.Request[integrationsv1.ConfigureRequest]) (*connect.Response[integrationsv1.ConfigureResponse], error) {
+	// TODO
+	return nil, sdkerrors.AsConnectError(sdkerrors.ErrNotImplemented)
 }

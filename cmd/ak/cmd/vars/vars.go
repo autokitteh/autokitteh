@@ -69,11 +69,11 @@ func resolveScopeID() (sdktypes.VarScopeID, error) {
 		return sdktypes.NewVarScopeID(id), nil
 	}
 
-	id, err := r.ProjectNameOrID(ctx, project)
+	p, id, err := r.ProjectNameOrID(ctx, project)
 	if err != nil {
 		return sdktypes.InvalidVarScopeID, err
 	}
-	if !id.IsValid() {
+	if !p.IsValid() {
 		err = fmt.Errorf("project %q not found", project)
 		return sdktypes.InvalidVarScopeID, common.NewExitCodeError(common.NotFoundExitCode, err)
 	}

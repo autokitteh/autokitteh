@@ -23,12 +23,14 @@ class DispatchResponse(_message.Message):
     def __init__(self, event_id: _Optional[str] = ...) -> None: ...
 
 class RedispatchRequest(_message.Message):
-    __slots__ = ["event_id", "deployment_id"]
+    __slots__ = ["event_id", "project", "deployment_id"]
     EVENT_ID_FIELD_NUMBER: _ClassVar[int]
+    PROJECT_FIELD_NUMBER: _ClassVar[int]
     DEPLOYMENT_ID_FIELD_NUMBER: _ClassVar[int]
     event_id: str
+    project: str
     deployment_id: str
-    def __init__(self, event_id: _Optional[str] = ..., deployment_id: _Optional[str] = ...) -> None: ...
+    def __init__(self, event_id: _Optional[str] = ..., project: _Optional[str] = ..., deployment_id: _Optional[str] = ...) -> None: ...
 
 class RedispatchResponse(_message.Message):
     __slots__ = ["event_id"]

@@ -14,7 +14,7 @@ import (
 var secret bool
 
 var setCmd = common.StandardCommand(&cobra.Command{
-	Use:     "set <key> [<value>] [--secret]  <--connection=.... | --project=...]",
+	Use:     "set <key> [<value>] [--secret]  <--env=.. | --connection=....> [--project=...]",
 	Short:   "Set variable",
 	Long:    "Set a variable. If <value> is not specified it will be read from standard input.",
 	Aliases: []string{"s"},

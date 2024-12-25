@@ -7,14 +7,9 @@ import (
 )
 
 type ListTriggersFilter struct {
-	OrgID        sdktypes.OrgID
 	ProjectID    sdktypes.ProjectID
 	ConnectionID sdktypes.ConnectionID
 	SourceType   sdktypes.TriggerSourceType
-}
-
-func (f ListTriggersFilter) AnyIDSpecified() bool {
-	return f.OrgID.IsValid() || f.ProjectID.IsValid() || f.ConnectionID.IsValid()
 }
 
 type Triggers interface {

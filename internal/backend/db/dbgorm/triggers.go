@@ -3,42 +3,58 @@ package dbgorm
 import (
 	"context"
 	"fmt"
-	"time"
 
-	"github.com/google/uuid"
+	"gorm.io/gorm"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func (gdb *gormdb) createTrigger(ctx context.Context, trigger *scheme.Trigger) error {
-	return gormErrNotFoundToForeignKey(gdb.db.WithContext(ctx).Create(trigger).Error)
+func (gdb *gormdb) withUserTriggers(ctx context.Context) *gorm.DB {
+	return gdb.withUserEntity(ctx, "trigger")
 }
 
-func (gdb *gormdb) deleteTrigger(ctx context.Context, triggerID uuid.UUID) error {
-	// NOTE: we allow delettion of triggers referenced by events. see ENG-1535
-	return gdb.db.WithContext(ctx).Delete(&scheme.Trigger{TriggerID: triggerID}).Error
+func (gdb *gormdb) createTrigger(ctx context.Context, trigger *scheme.Trigger) error {
+	idsToVerify := []*sdktypes.UUID{&trigger.ProjectID}
+	createFunc := func(tx *gorm.DB, uid string) error { return tx.Create(trigger).Error }
+	return gormErrNotFoundToForeignKey(
+		gdb.createEntityWithOwnership(ctx, createFunc, trigger, idsToVerify...))
+}
+
+func (gdb *gormdb) deleteTrigger(ctx context.Context, triggerID sdktypes.UUID) error {
+	return gdb.transaction(ctx, func(tx *tx) error {
+		if err := tx.isCtxUserEntity(tx.ctx, triggerID); err != nil {
+			return err
+		}
+
+		// NOTE: we allow delettion of triggers referenced by events. see ENG-1535
+
+		return tx.db.Delete(&scheme.Trigger{TriggerID: triggerID}).Error
+	})
 }
 
 func (gdb *gormdb) updateTrigger(ctx context.Context, trigger *scheme.Trigger) error {
-	return gdb.db.WithContext(ctx).Model(&scheme.Trigger{TriggerID: trigger.TriggerID}).Updates(trigger).Error
+	return gdb.transaction(ctx, func(tx *tx) error {
+		if err := tx.isCtxUserEntity(tx.ctx, trigger.TriggerID); err != nil {
+			return err
+		}
+
+		return tx.db.Model(&scheme.Trigger{TriggerID: trigger.TriggerID}).Updates(trigger).Error
+	})
 }
 
-func (gdb *gormdb) getTriggerByID(ctx context.Context, triggerID uuid.UUID) (*scheme.Trigger, error) {
-	return getOne[scheme.Trigger](gdb.db.WithContext(ctx), "trigger_id = ?", triggerID)
+func (gdb *gormdb) getTriggerByID(ctx context.Context, triggerID sdktypes.UUID) (*scheme.Trigger, error) {
+	return getOne[scheme.Trigger](gdb.withUserTriggers(ctx), "trigger_id = ?", triggerID)
 }
 
 func (gdb *gormdb) listTriggers(ctx context.Context, filter sdkservices.ListTriggersFilter) ([]scheme.Trigger, error) {
-	q := gdb.db.WithContext(ctx)
+	q := gdb.withUserTriggers(ctx)
 
 	if filter.ProjectID.IsValid() {
-		q = q.Where("triggers.project_id = ?", filter.ProjectID.UUIDValue())
+		q = q.Where("project_id = ?", filter.ProjectID.UUIDValue())
 	}
-
-	q = withProjectOrgID(q, filter.OrgID, "trigger_id")
 
 	if filter.ConnectionID.IsValid() {
 		q = q.Where("connection_id = ?", filter.ConnectionID.UUIDValue())
@@ -46,6 +62,10 @@ func (gdb *gormdb) listTriggers(ctx context.Context, filter sdkservices.ListTrig
 
 	if !filter.SourceType.IsZero() {
 		q = q.Where("source_type = ?", filter.SourceType.String())
+	}
+
+	if filter.ProjectID.IsValid() {
+		q = q.Where("project_id = ?", filter.ProjectID.UUIDValue())
 	}
 
 	var ts []scheme.Trigger
@@ -59,19 +79,14 @@ func triggerUniqueName(p string, name sdktypes.Symbol) string {
 	return fmt.Sprintf("%s/%s", p, name.String())
 }
 
-func (db *gormdb) CreateTrigger(ctx context.Context, trigger sdktypes.Trigger) error {
-	if err := trigger.Strict(); err != nil { // name, connection, and project
-		return err
-	}
-
+func (db *gormdb) triggerToRecord(trigger sdktypes.Trigger) (*scheme.Trigger, error) {
 	pid := trigger.ProjectID()
 
 	uniqueName := triggerUniqueName(pid.String(), trigger.Name())
 
-	t := &scheme.Trigger{
-		Base:         based(ctx),
-		ProjectID:    trigger.ProjectID().UUIDValue(),
+	return &scheme.Trigger{
 		TriggerID:    trigger.ID().UUIDValue(),
+		ProjectID:    pid.UUIDValue(),
 		ConnectionID: trigger.ConnectionID().UUIDValuePtr(),
 		SourceType:   trigger.SourceType().String(),
 		EventType:    trigger.EventType(),
@@ -81,6 +96,18 @@ func (db *gormdb) CreateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 		UniqueName:   uniqueName,
 		WebhookSlug:  trigger.WebhookSlug(),
 		Schedule:     trigger.Schedule(),
+	}, nil
+}
+
+func (db *gormdb) CreateTrigger(ctx context.Context, trigger sdktypes.Trigger) error {
+	if err := trigger.Strict(); err != nil { // name, connection, and project
+		return err
+	}
+
+	// Note: building trigger record involves non-transactionl fetching connectionID and projectID from the DB
+	t, err := db.triggerToRecord(trigger)
+	if err != nil {
+		return err
 	}
 
 	return translateError(db.createTrigger(ctx, t))
@@ -106,8 +133,6 @@ func (db *gormdb) UpdateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 	r.Schedule = trigger.Schedule()
 	r.Name = trigger.Name().String()
 	r.UniqueName = triggerUniqueName(r.ProjectID.String(), trigger.Name())
-	r.UpdatedAt = time.Now().UTC()
-	r.UpdatedBy = authcontext.GetAuthnUserID(ctx).UUIDValue()
 
 	return translateError(db.updateTrigger(ctx, r))
 }
@@ -130,7 +155,7 @@ func (db *gormdb) ListTriggers(ctx context.Context, filter sdkservices.ListTrigg
 }
 
 func (db *gormdb) GetTriggerByWebhookSlug(ctx context.Context, slug string) (sdktypes.Trigger, error) {
-	r, err := getOne[scheme.Trigger](db.db.WithContext(ctx), "webhook_slug = ?", slug)
+	r, err := getOne[scheme.Trigger](db.withUserTriggers(ctx), "webhook_slug = ?", slug)
 	if err != nil {
 		return sdktypes.InvalidTrigger, translateError(err)
 	}
