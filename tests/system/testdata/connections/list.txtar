@@ -1,16 +1,17 @@
-# Negative tests: empty connections list, with/out --fail flag.
-ak connection list
-return code == 0
-output equals ''
-
-ak connection list --fail
-output equals 'Error: connections not found'
-return code == 10
 
 # Precondition: create project.
 ak project create --name my_project
 return code == 0
 output equals 'project_id: prj_00000000000000000000000001'
+
+# Negative tests: empty connections list, with/out --fail flag.
+ak connection list --project my_project
+return code == 0
+output equals ''
+
+ak connection list --project my_project --fail
+output equals 'Error: connections: not_found'
+return code == $RC_NOT_FOUND
 
 # Preconditions: create connections.
 ak connection create my_connection_1 --project my_project --integration test -q
@@ -22,36 +23,36 @@ return code == 0
 output equals 'connection_id: con_00000000000000000000000003'
 
 # List all connections, with/out JSON.
-ak connection list
+ak connection list --project my_project
 return code == 0
 output contains 'connection_id:"con_00000000000000000000000002"'
 output contains 'connection_id:"con_00000000000000000000000003"'
 
-ak connection list -j
+ak connection list --project my_project -j
 return code == 0
 output equals file expected_all_unformatted.json
 
 # List all connections after filtering.
-ak connection list --integration test -J
+ak connection list --project my_project --integration test -J
 return code == 0
 output equals file expected_all_formatted.json
 
 # List no connections after filtering.
-ak connection list --integration github -J
+ak connection list --project my_project --integration github -J
 return code == 0
 output equals ''
 
-ak connection list --integration meow -J
+ak connection list --project my_project --integration meow -J
 return code == 0
 output equals ''
 
-ak connection list -f --integration meow -J 
-return code == 10
-output equals 'Error: integration not found'
+ak connection list --project my_project -f --integration meow -J 
+return code == $RC_NOT_FOUND
+output equals 'Error: integration: not_found'
 
 -- expected_all_unformatted.json --
-{"connection_id":"con_00000000000000000000000002","integration_id":"int_3kth00testaf9d33c5697341f0","project_id":"prj_00000000000000000000000001","name":"my_connection_1","status":{},"capabilities":{},"links":{"self_url":"/connections/con_00000000000000000000000002"}}
-{"connection_id":"con_00000000000000000000000003","integration_id":"int_3kth00testaf9d33c5697341f0","project_id":"prj_00000000000000000000000001","name":"my_connection_2","status":{},"capabilities":{},"links":{"self_url":"/connections/con_00000000000000000000000003"}}
+{"connection_id":"con_00000000000000000000000002","integration_id":"int_3kth00testaf9d33c5697341f0","project_id":"prj_00000000000000000000000001","name":"my_connection_1","status":{"code":"CODE_OK","message":"OK"},"capabilities":{"supports_connection_test":true},"links":{"self_url":"/connections/con_00000000000000000000000002","test_url":"/connections/con_00000000000000000000000002/test"}}
+{"connection_id":"con_00000000000000000000000003","integration_id":"int_3kth00testaf9d33c5697341f0","project_id":"prj_00000000000000000000000001","name":"my_connection_2","status":{"code":"CODE_OK","message":"OK"},"capabilities":{"supports_connection_test":true},"links":{"self_url":"/connections/con_00000000000000000000000003","test_url":"/connections/con_00000000000000000000000003/test"}}
 
 -- expected_all_formatted.json --
 {
@@ -59,10 +60,16 @@ output equals 'Error: integration not found'
   "integration_id": "int_3kth00testaf9d33c5697341f0",
   "project_id": "prj_00000000000000000000000001",
   "name": "my_connection_1",
-  "status": {},
-  "capabilities": {},
+  "status": {
+    "code": "CODE_OK",
+    "message": "OK"
+  },
+  "capabilities": {
+    "supports_connection_test": true
+  },
   "links": {
-    "self_url": "/connections/con_00000000000000000000000002"
+    "self_url": "/connections/con_00000000000000000000000002",
+    "test_url": "/connections/con_00000000000000000000000002/test"
   }
 }
 {
@@ -70,9 +77,15 @@ output equals 'Error: integration not found'
   "integration_id": "int_3kth00testaf9d33c5697341f0",
   "project_id": "prj_00000000000000000000000001",
   "name": "my_connection_2",
-  "status": {},
-  "capabilities": {},
+  "status": {
+    "code": "CODE_OK",
+    "message": "OK"
+  },
+  "capabilities": {
+    "supports_connection_test": true
+  },
   "links": {
-    "self_url": "/connections/con_00000000000000000000000003"
+    "self_url": "/connections/con_00000000000000000000000003",
+    "test_url": "/connections/con_00000000000000000000000003/test"
   }
 }

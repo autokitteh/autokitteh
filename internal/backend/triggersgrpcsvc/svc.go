@@ -126,6 +126,11 @@ func (s *server) List(ctx context.Context, req *connect.Request[triggersv1.ListR
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
+	oid, err := sdktypes.ParseOrgID(msg.OrgId)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
 	stype, err := sdktypes.TriggerSourceTypeFromProto(msg.SourceType)
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
@@ -133,6 +138,7 @@ func (s *server) List(ctx context.Context, req *connect.Request[triggersv1.ListR
 
 	filter := sdkservices.ListTriggersFilter{
 		ProjectID:    pid,
+		OrgID:        oid,
 		ConnectionID: cid,
 		SourceType:   stype,
 	}

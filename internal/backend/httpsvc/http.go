@@ -10,11 +10,14 @@ import (
 
 	"connectrpc.com/grpcreflect"
 	"github.com/rs/cors"
-	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
+
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
+	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
+	"go.autokitteh.dev/autokitteh/proto"
 )
 
 type Svc interface {
@@ -30,7 +33,7 @@ type svc struct {
 func (s *svc) Mux() *http.ServeMux { return s.mux }
 func (s *svc) Addr() string        { return s.addr }
 
-func New(lc fx.Lifecycle, z *zap.Logger, cfg *Config, reflectors []string, extractors []RequestLogExtractor, telemetry *telemetry.Telemetry) (Svc, error) {
+func New(lc fx.Lifecycle, z *zap.Logger, cfg *Config, authzCheckFunc authz.CheckFunc, extractors []RequestLogExtractor, telemetry *telemetry.Telemetry) (Svc, error) {
 	rootMux := http.NewServeMux()
 
 	cors := cors.New(cors.Options{
@@ -50,20 +53,23 @@ func New(lc fx.Lifecycle, z *zap.Logger, cfg *Config, reflectors []string, extra
 	rootMux.Handle("/", cors.Handler(interceptor))
 
 	if cfg.EnableGRPCReflection {
-		reflector := grpcreflect.NewStaticReflector(reflectors...)
+		reflector := grpcreflect.NewStaticReflector(proto.ServiceNames...)
 		interceptedMux.Handle(grpcreflect.NewHandlerV1(reflector))
 		interceptedMux.Handle(grpcreflect.NewHandlerV1Alpha(reflector))
 	}
 
+	var h http.Handler = rootMux
+	h = authz.HTTPInterceptor(authzCheckFunc, h)
+
 	server := http.Server{
 		Addr:    cfg.Addr,
-		Handler: rootMux,
+		Handler: h,
 	}
 
 	// TODO(ENG-43): Do we need H2C?
 	if cfg.H2C.Enable {
 		z.Debug("using h2c")
-		server.Handler = h2c.NewHandler(rootMux, &http2.Server{})
+		server.Handler = h2c.NewHandler(server.Handler, &http2.Server{})
 	}
 
 	svc := &svc{mux: interceptedMux}
