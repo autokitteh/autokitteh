@@ -136,7 +136,7 @@ func (d *Dispatcher) getEventSessionDataActivity(ctx context.Context, event sdkt
 			continue
 		}
 
-		if triggerEventType != "" && eventType != triggerEventType {
+		if triggerEventType != "" && triggerEventType != "*" && eventType != triggerEventType {
 			sl.Infof("irrelevant event type %v != required %v", triggerEventType, eventType)
 			continue
 		}
