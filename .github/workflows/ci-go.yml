@@ -58,6 +58,20 @@ jobs:
           # https://github.com/golangci/golangci-lint-action/issues/308
           args: --timeout=5m
 
+  test-opa:
+    name: Run OPA tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Setup OPA
+        uses: open-policy-agent/setup-opa@v2
+        with:
+          version: latest
+      - name: Run tests
+        run: make test-opa
+
   test-runs:
     name: Run tests
     runs-on: ubuntu-latest

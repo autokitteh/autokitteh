@@ -11,11 +11,13 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkeventsclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkintegrationsclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkoauthclient"
+	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkorgsclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkprojectsclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkruntimesclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdksessionsclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkstoreclient"
-	sdktriggerclient "go.autokitteh.dev/autokitteh/sdk/sdkclients/sdktriggersclient"
+	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdktriggersclient"
+	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkusersclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkvarsclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
@@ -29,12 +31,14 @@ type client struct {
 	events       func() sdkservices.Events
 	integrations func() sdkservices.Integrations
 	oauth        func() sdkservices.OAuth
+	orgs         func() sdkservices.Orgs
 	params       sdkclient.Params
 	projects     func() sdkservices.Projects
 	runtimes     func() sdkservices.Runtimes
 	sessions     func() sdkservices.Sessions
 	store        func() sdkservices.Store
 	triggers     func() sdkservices.Triggers
+	users        func() sdkservices.Users
 	vars         func() sdkservices.Vars
 }
 
@@ -54,8 +58,10 @@ func New(params sdkclient.Params) sdkservices.Services {
 		runtimes:     kittehs.LazyCache(sdkruntimesclient.New, params),
 		sessions:     kittehs.LazyCache(sdksessionsclient.New, params),
 		store:        kittehs.LazyCache(sdkstoreclient.New, params),
-		triggers:     kittehs.LazyCache(sdktriggerclient.New, params),
+		triggers:     kittehs.LazyCache(sdktriggersclient.New, params),
+		users:        kittehs.LazyCache(sdkusersclient.New, params),
 		vars:         kittehs.LazyCache(sdkvarsclient.New, params),
+		orgs:         kittehs.LazyCache(sdkorgsclient.New, params),
 	}
 }
 
@@ -72,4 +78,6 @@ func (c *client) Runtimes() sdkservices.Runtimes         { return c.runtimes() }
 func (c *client) Sessions() sdkservices.Sessions         { return c.sessions() }
 func (c *client) Store() sdkservices.Store               { return c.store() }
 func (c *client) Triggers() sdkservices.Triggers         { return c.triggers() }
+func (c *client) Users() sdkservices.Users               { return c.users() }
 func (c *client) Vars() sdkservices.Vars                 { return c.vars() }
+func (c *client) Orgs() sdkservices.Orgs                 { return c.orgs() }

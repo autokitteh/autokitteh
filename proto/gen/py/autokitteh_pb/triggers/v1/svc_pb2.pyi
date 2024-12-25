@@ -52,14 +52,16 @@ class GetResponse(_message.Message):
     def __init__(self, trigger: _Optional[_Union[_trigger_pb2.Trigger, _Mapping]] = ...) -> None: ...
 
 class ListRequest(_message.Message):
-    __slots__ = ["connection_id", "project_id", "source_type"]
+    __slots__ = ["connection_id", "project_id", "source_type", "org_id"]
     CONNECTION_ID_FIELD_NUMBER: _ClassVar[int]
     PROJECT_ID_FIELD_NUMBER: _ClassVar[int]
     SOURCE_TYPE_FIELD_NUMBER: _ClassVar[int]
+    ORG_ID_FIELD_NUMBER: _ClassVar[int]
     connection_id: str
     project_id: str
     source_type: _trigger_pb2.Trigger.SourceType
-    def __init__(self, connection_id: _Optional[str] = ..., project_id: _Optional[str] = ..., source_type: _Optional[_Union[_trigger_pb2.Trigger.SourceType, str]] = ...) -> None: ...
+    org_id: str
+    def __init__(self, connection_id: _Optional[str] = ..., project_id: _Optional[str] = ..., source_type: _Optional[_Union[_trigger_pb2.Trigger.SourceType, str]] = ..., org_id: _Optional[str] = ...) -> None: ...
 
 class ListResponse(_message.Message):
     __slots__ = ["triggers"]

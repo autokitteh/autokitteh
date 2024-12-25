@@ -11,7 +11,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authusers"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
-	akCtx "go.autokitteh.dev/autokitteh/internal/backend/context"
+	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -31,14 +31,15 @@ type Deps struct {
 	fx.In
 
 	Cfg      *Config
-	Users    authusers.Users
+	Users    sdkservices.Users
 	Sessions authsessions.Store `optional:"true"`
 	Tokens   authtokens.Tokens  `optional:"true"`
 }
 
 func newTokensMiddleware(next http.Handler, deps Deps) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := akCtx.WithRequestOrginator(r.Context(), akCtx.User)
+		ctx := r.Context()
+
 		user := authcontext.GetAuthnUser(r.Context())
 		authHdr := r.Header.Get("Authorization")
 
@@ -47,7 +48,7 @@ func newTokensMiddleware(next http.Handler, deps Deps) http.HandlerFunc {
 				http.Error(w, "only default user is allowed", http.StatusUnauthorized)
 				return
 			}
-			ctx = authcontext.SetAuthnUser(ctx, sdktypes.DefaultUser)
+			ctx = authcontext.SetAuthnUser(ctx, authusers.DefaultUser)
 		} else {
 			if !user.IsValid() && authHdr != "" {
 				kind, payload, _ := strings.Cut(authHdr, " ")
@@ -60,7 +61,7 @@ func newTokensMiddleware(next http.Handler, deps Deps) http.HandlerFunc {
 					}
 
 					// make sure the user exists.
-					u, err = deps.Users.GetByID(r.Context(), u.ID())
+					u, err = deps.Users.Get(authcontext.SetAuthnSystemUser(r.Context()), u.ID(), "")
 					if err != nil {
 						http.Error(w, "unknown user", http.StatusUnauthorized)
 						return
@@ -85,7 +86,7 @@ func newTokensMiddleware(next http.Handler, deps Deps) http.HandlerFunc {
 	}
 }
 
-func newSessionsMiddleware(next http.Handler, sessions authsessions.Store, users authusers.Users) http.HandlerFunc {
+func newSessionsMiddleware(next http.Handler, sessions authsessions.Store, users sdkservices.Users) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
@@ -97,7 +98,7 @@ func newSessionsMiddleware(next http.Handler, sessions authsessions.Store, users
 			}
 
 			if session != nil {
-				u, err := users.GetByID(r.Context(), session.UserID)
+				u, err := users.Get(authcontext.SetAuthnSystemUser(ctx), session.UserID, "")
 				if err != nil {
 					http.Error(w, "invalid user", http.StatusUnauthorized)
 					return
@@ -115,7 +116,7 @@ func New(deps Deps) AuthMiddlewareDecorator {
 	return func(next http.Handler) http.Handler {
 		f := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if user := authcontext.GetAuthnUser(r.Context()); !user.IsValid() {
-				http.Error(w, "unauthorized user", http.StatusUnauthorized)
+				http.Error(w, "unauthenticated", http.StatusUnauthorized)
 				return
 			}
 

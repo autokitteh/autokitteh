@@ -31,7 +31,7 @@ func ParseVarScopeID(s string) (VarScopeID, error) {
 	}
 
 	switch parsed.Kind() {
-	case projectIDKind, connectionIDKind, triggerIDKind:
+	case ProjectIDKind, ConnectionIDKind, TriggerIDKind:
 		return VarScopeID{parsed}, nil
 	default:
 		return InvalidVarScopeID, sdkerrors.NewInvalidArgumentError("invalid var scope id")
@@ -42,8 +42,8 @@ func (e VarScopeID) ToProjectID() ProjectID       { id, _ := ParseProjectID(e.St
 func (e VarScopeID) ToConnectionID() ConnectionID { id, _ := ParseConnectionID(e.String()); return id }
 func (e VarScopeID) ToTriggerID() TriggerID       { id, _ := ParseTriggerID(e.String()); return id }
 
-func (e VarScopeID) IsProjectID() bool    { return e.Kind() == projectIDKind }
-func (e VarScopeID) IsConnectionID() bool { return e.Kind() == connectionIDKind }
-func (e VarScopeID) IsTriggerID() bool    { return e.Kind() == triggerIDKind }
+func (e VarScopeID) IsProjectID() bool    { return e.Kind() == ProjectIDKind }
+func (e VarScopeID) IsConnectionID() bool { return e.Kind() == ConnectionIDKind }
+func (e VarScopeID) IsTriggerID() bool    { return e.Kind() == TriggerIDKind }
 
 func (e VarScopeID) AsID() ID { return e }

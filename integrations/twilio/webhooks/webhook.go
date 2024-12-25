@@ -15,17 +15,17 @@ import (
 type handler struct {
 	logger        *zap.Logger
 	vars          sdkservices.Vars
-	dispatcher    sdkservices.Dispatcher
+	dispatch      sdkservices.DispatchFunc
 	scope         string
 	integration   sdktypes.Integration
 	integrationID sdktypes.IntegrationID
 }
 
-func NewHandler(l *zap.Logger, vars sdkservices.Vars, d sdkservices.Dispatcher, scope string, i sdktypes.Integration) handler {
+func NewHandler(l *zap.Logger, vars sdkservices.Vars, d sdkservices.DispatchFunc, scope string, i sdktypes.Integration) handler {
 	return handler{
 		logger:        l,
 		vars:          vars,
-		dispatcher:    d,
+		dispatch:      d,
 		scope:         scope,
 		integration:   i,
 		integrationID: i.ID(),
@@ -50,7 +50,7 @@ func NewHandler(l *zap.Logger, vars sdkservices.Vars, d sdkservices.Dispatcher, 
 func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, cids []sdktypes.ConnectionID, e sdktypes.Event) {
 	l := extrazap.ExtractLoggerFromContext(ctx)
 	for _, cid := range cids {
-		eid, err := h.dispatcher.Dispatch(ctx, e.WithConnectionDestinationID(cid), nil)
+		eid, err := h.dispatch(ctx, e.WithConnectionDestinationID(cid), nil)
 		l := l.With(
 			zap.String("connectionID", cid.String()),
 			zap.String("eventID", eid.String()),

@@ -12,7 +12,9 @@ import (
 	"github.com/google/uuid"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authusers"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -59,6 +61,10 @@ func New(cfg *Config) (authtokens.Tokens, error) {
 }
 
 func (js *tokens) Create(u sdktypes.User) (string, error) {
+	if authusers.IsInternalUserID(u.ID()) {
+		return "", sdkerrors.NewInvalidArgumentError("internal user")
+	}
+
 	uuid, err := uuid.NewV7()
 	if err != nil {
 		return "", fmt.Errorf("generate UUID: %w", err)
