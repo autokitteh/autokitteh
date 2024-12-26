@@ -37,15 +37,15 @@ func printBanner(cfg *bannerConfig, opts RunOptions, addr, wpAddr, wpVersion, te
 
 	var mode string
 	if opts.Mode != "" {
-		mode = "Mode:         " + fieldColor(opts.Mode) + " "
+		mode = "Mode:           " + fieldColor(opts.Mode) + " "
 	}
 
 	if temporalFrontendAddr != "" {
-		temporalFrontendAddr = "Temporal:     " + fieldColor(temporalFrontendAddr) + " "
+		temporalFrontendAddr = "Temporal:       " + fieldColor(temporalFrontendAddr) + " "
 	}
 
 	if temporalUIAddr != "" {
-		temporalUIAddr = "Temporal UI:  " + fieldColor(temporalUIAddr) + " "
+		temporalUIAddr = "Temporal UI:    " + fieldColor(temporalUIAddr) + " "
 	}
 
 	webAddr := fmt.Sprintf("http://%s", addr)
