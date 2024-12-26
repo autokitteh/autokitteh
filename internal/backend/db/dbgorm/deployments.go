@@ -90,7 +90,7 @@ func (gdb *gormdb) listDeploymentsCommonQuery(ctx context.Context, filter sdkser
 
 	q = withProjectID(q, "deployments", filter.ProjectID)
 
-	q = withProjectOrgID(q, filter.OrgID)
+	q = withProjectOrgID(q, filter.OrgID, "deployments")
 
 	if filter.BuildID.IsValid() {
 		q = q.Where("deployments.build_id = ?", filter.BuildID.UUIDValue())
