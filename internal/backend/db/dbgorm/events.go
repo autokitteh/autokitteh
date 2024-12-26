@@ -29,7 +29,7 @@ func (gdb *gormdb) getEvent(ctx context.Context, eventID uuid.UUID) (*scheme.Eve
 func (gdb *gormdb) listEvents(ctx context.Context, filter sdkservices.ListEventsFilter) ([]scheme.Event, error) {
 	q := gdb.db.WithContext(ctx)
 
-	q = withProjectOrgID(q, filter.OrgID)
+	q = withProjectOrgID(q, filter.OrgID, "events")
 
 	if filter.ProjectID.IsValid() {
 		q = q.Where("project_id = ?", filter.ProjectID.UUIDValue())
