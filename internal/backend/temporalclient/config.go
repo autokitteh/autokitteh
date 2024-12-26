@@ -73,7 +73,7 @@ var (
 				DBFilename: filepath.Join(xdg.DataHomeDir(), "temporal_dev.sqlite"),
 			},
 			DevServerStartMaxAttempts: 1,
-			DevServerStartTimeout:     time.Second * 5,
+			DevServerStartTimeout:     time.Second * 15,
 			EnableHelperRedirect:      true,
 		},
 		Test: &Config{
@@ -85,7 +85,7 @@ var (
 			},
 			DevServerStartMaxAttempts:   3,
 			DevServerStartRetryInterval: time.Second,
-			DevServerStartTimeout:       time.Second * 5,
+			DevServerStartTimeout:       time.Second * 15,
 		},
 	}
 )
