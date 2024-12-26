@@ -41,7 +41,7 @@ brews:
     commit_author:
       name: goreleaserbot
       email: bot@goreleaser.com
-    commit_msg_template: "{{ .ProjectName }} {{ .Tag }}"
+    commit_msg_template: "{{ .ProjectName }} {{ .Version }}"
 
 source:
   enabled: false
