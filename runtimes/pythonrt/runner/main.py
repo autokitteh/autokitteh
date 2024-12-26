@@ -46,7 +46,7 @@ def parse_entry_point(entry_point):
     return file_name[:-3], func_name
 
 
-def pb_traceback(stack):
+def pb_traceback(tb):
     return [
         pb.user_code.Frame(
             filename=frame.filename,
@@ -54,7 +54,7 @@ def pb_traceback(stack):
             code=frame.line,
             name=frame.name,
         )
-        for frame in stack
+        for frame in tb.stack
     ]
 
 
@@ -223,6 +223,11 @@ class Runner(pb.runner_rpc.RunnerService):
             )
         )
 
+        if result.error:
+            io = StringIO()
+            print("".join(result.traceback.format()), file=io)
+            resp.error = io.getvalue()
+
         return resp
 
     def ActivityReply(
@@ -315,8 +320,9 @@ class Runner(pb.runner_rpc.RunnerService):
             log.error("%s raised: %s", func_name, err)
             tb = TracebackException.from_exception(err)
             error = err
+            error.add_note("".join(tb.format()))
 
-        return Result(value, error, tb.stack if tb else None)
+        return Result(value, error, tb)
 
     def on_event(self, fn, event):
         log.info("start event: %s", full_func_name(fn))
@@ -330,7 +336,7 @@ class Runner(pb.runner_rpc.RunnerService):
         if result.error:
             # req.error must not be empty, otherwise the server would not know
             # that there was an error.
-            req.error = str(result.error) or "unknown exception"
+            req.error = repr(result.error)
             tb = pb_traceback(result.traceback)
             req.traceback.extend(tb)
         else:

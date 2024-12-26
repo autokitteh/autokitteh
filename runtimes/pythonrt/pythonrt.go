@@ -258,7 +258,11 @@ func (py *pySvc) Run(
 	py.runID = runID
 	py.sessionID = sessionID
 	py.xid = sdktypes.NewExecutorID(runID) // Should be first
-	py.log = py.log.With(zap.String("run_id", runID.String()), zap.String("session_id", sessionID.String()), zap.String("path", mainPath))
+	py.log = py.log.With(
+		zap.String("run_id", runID.String()),
+		zap.String("session_id", sessionID.String()),
+		zap.String("path", mainPath),
+	)
 
 	py.cbs = cbs
 
@@ -615,7 +619,7 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 	case err != nil:
 		return sdktypes.InvalidValue, err
 	case resp.Error != "":
-		return sdktypes.InvalidValue, fmt.Errorf("%s", resp.Error)
+		py.log.Warn("activity error", zap.String("error", resp.Error))
 	}
 
 	resp.Result.Custom.ExecutorId = py.xid.String()
