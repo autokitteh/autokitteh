@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/open-policy-agent/contrib/logging/plugins/ozap"
 	"github.com/open-policy-agent/opa/v1/sdk"
 	sdktest "github.com/open-policy-agent/opa/v1/sdk/test"
 	"go.uber.org/zap"
@@ -21,18 +20,17 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/policy"
 )
 
-const defaultConfig = "default"
+// Embedded config path in opa_bundles.FS.
+const embeddedDefaultConfigPath = "default"
 
 type Config struct {
-	// If empty, use bundled config with the name `defaultConfig`.
-	// If begings with "!", use bundled config with that name (without the "!" prefix).
-	ConfigPath string `koanf:"config_path"`
+	ConfigPath         string `koanf:"config_path"`       // if empty, use embedded default config.
+	MinLogLevel        string `koanf:"log_level"`         // log level threshold to emit. if empty: "warn".
+	MinConsoleLogLevel string `koanf:"console_log_level"` // console log level threshold to emit. if empty: "warn".
 }
 
 var Configs = configset.Set[Config]{
-	Default: &Config{
-		ConfigPath: "!" + defaultConfig,
-	},
+	Default: &Config{},
 }
 
 func startBundleServer(path string) (*sdktest.Server, error) {
@@ -61,7 +59,7 @@ func startBundleServer(path string) (*sdktest.Server, error) {
 
 func startEmbeddedConfig(l *zap.Logger, name string) ([]byte, error) {
 	if name == "" {
-		name = defaultConfig
+		name = embeddedDefaultConfigPath
 	}
 
 	srv, err := startBundleServer(name)
@@ -83,14 +81,22 @@ decision_logs:
 `, srv.URL(), name, name)), nil
 }
 
+func parseLogLevel(txt, def string) (zap.AtomicLevel, error) {
+	if txt == "" {
+		txt = def
+	}
+
+	return zap.ParseAtomicLevel(txt)
+}
+
 func New(cfg *Config, l *zap.Logger) (policy.DecideFunc, error) {
 	var (
 		cfgf []byte
 		err  error
 	)
 
-	if strings.HasPrefix(cfg.ConfigPath, "!") {
-		if cfgf, err = startEmbeddedConfig(l, cfg.ConfigPath[1:]); err != nil {
+	if cfg.ConfigPath == "" {
+		if cfgf, err = startEmbeddedConfig(l, embeddedDefaultConfigPath); err != nil {
 			return nil, fmt.Errorf("start embedded config: %w", err)
 		}
 	} else {
@@ -99,11 +105,21 @@ func New(cfg *Config, l *zap.Logger) (policy.DecideFunc, error) {
 		}
 	}
 
+	consoleLogLevel, err := parseLogLevel(cfg.MinConsoleLogLevel, "warn")
+	if err != nil {
+		return nil, fmt.Errorf("parse console log level %q: %w", cfg.MinConsoleLogLevel, err)
+	}
+
+	logLevel, err := parseLogLevel(cfg.MinLogLevel, "warn")
+	if err != nil {
+		return nil, fmt.Errorf("parse log level %q: %w", cfg.MinLogLevel, err)
+	}
+
 	client, err := sdk.New(
 		context.Background(),
 		sdk.Options{
-			Logger:        ozap.Wrap(l, nil),
-			ConsoleLogger: ozap.Wrap(l.Named("opaconsole"), nil),
+			Logger:        wrapLogger(l.Named("opa"), &logLevel),
+			ConsoleLogger: wrapLogger(l.Named("opaconsole"), &consoleLogLevel),
 			Config:        bytes.NewReader(cfgf),
 			ID:            fixtures.ProcessID(),
 		},
