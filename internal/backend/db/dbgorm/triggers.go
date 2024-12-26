@@ -38,7 +38,7 @@ func (gdb *gormdb) listTriggers(ctx context.Context, filter sdkservices.ListTrig
 		q = q.Where("triggers.project_id = ?", filter.ProjectID.UUIDValue())
 	}
 
-	q = withProjectOrgID(q, filter.OrgID, "trigger_id")
+	q = withProjectOrgID(q, filter.OrgID)
 
 	if filter.ConnectionID.IsValid() {
 		q = q.Where("connection_id = ?", filter.ConnectionID.UUIDValue())

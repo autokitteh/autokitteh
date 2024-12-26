@@ -70,7 +70,7 @@ func (gdb *gormdb) listSessions(ctx context.Context, f sdkservices.ListSessionsF
 
 	q = withProjectID(q, "", f.ProjectID)
 
-	q = withProjectOrgID(q, f.OrgID, "session_id")
+	q = withProjectOrgID(q, f.OrgID)
 
 	if f.DeploymentID.IsValid() {
 		q = q.Where("deployment_id = ?", f.DeploymentID.UUIDValue())
