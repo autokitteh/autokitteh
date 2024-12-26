@@ -12,6 +12,8 @@ jobs:
   goreleaser:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
