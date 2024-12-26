@@ -43,8 +43,8 @@ var BotEventHandlers = map[string]BotEventHandler{
 	// TODO: im_history_changed
 
 	"member_joined_channel": events.ChannelGroupHandler,
-
-	"message": events.MessageHandler,
+	"member_left_channel":   events.MemberLeftChannelHandler,
+	"message":               events.MessageHandler,
 
 	"reaction_added":   events.ReactionHandler,
 	"reaction_removed": events.ReactionHandler,

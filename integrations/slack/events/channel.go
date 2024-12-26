@@ -102,3 +102,27 @@ func ChannelGroupHandler(l *zap.Logger, w http.ResponseWriter, body []byte, cb *
 	}
 	return j.Event
 }
+
+// https://api.slack.com/events/member_left_channel
+type MemberLeftChannelEvent struct {
+	Type        string `json:"type,omitempty"`
+	User        string `json:"user,omitempty"`
+	Channel     string `json:"channel,omitempty"`
+	ChannelType string `json:"channel_type,omitempty"`
+	Team        string `json:"team,omitempty"`
+	EventTS     string `json:"event_ts,omitempty"`
+}
+
+type MemberLeftChannelContainer struct {
+	Event *MemberLeftChannelEvent `json:"event"`
+}
+
+// https://api.slack.com/events/member_left_channel
+func MemberLeftChannelHandler(l *zap.Logger, w http.ResponseWriter, body []byte, cb *Callback) any {
+	j := &MemberLeftChannelContainer{}
+	if err := json.Unmarshal(body, j); err != nil {
+		invalidEventError(l, w, body, err)
+		return nil
+	}
+	return j.Event
+}
