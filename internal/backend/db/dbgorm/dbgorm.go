@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/pressly/goose/v3"
@@ -15,6 +16,7 @@ import (
 
 	_ "ariga.io/atlas-provider-gorm/gormschema"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authusers"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/backend/gormkitteh"
@@ -203,6 +205,10 @@ func (db *gormdb) backfillUsersAndOrgs(ctx context.Context) error {
 		org := scheme.Org{
 			OrgID:       kittehs.Must1(uuid.NewV7()),
 			DisplayName: fmt.Sprintf("%s's Personal Org", user.DisplayName),
+			Base: scheme.Base{
+				CreatedBy: authusers.SystemUser.DefaultOrgID().UUIDValue(),
+				CreatedAt: time.Now().UTC(),
+			},
 		}
 
 		l = l.With(zap.String("org_id", org.OrgID.String()))
@@ -221,27 +227,43 @@ func (db *gormdb) backfillUsersAndOrgs(ctx context.Context) error {
 		}
 
 		usersMap[user.UserID] = user
+
+		l.Info("registering user as org member")
+
+		if err := gdb.Save(&scheme.OrgMember{
+			OrgID:  org.OrgID,
+			UserID: user.UserID,
+			Base: scheme.Base{
+				CreatedBy: authusers.SystemUser.DefaultOrgID().UUIDValue(),
+				CreatedAt: time.Now().UTC(),
+			},
+		}).Error; err != nil {
+			return err
+		}
 	}
 
 	// Backfill projects.
 
-	var projects []struct {
-		scheme.Project
-		scheme.Ownership
-	}
+	var projects []scheme.Project
 
-	if err := gdb.Where("org_id is NULL").Joins("left join ownerships on ownerships.entity_id = projects.project_id").Find(&projects).Error; err != nil {
+	if err := gdb.Where("org_id is NULL").Find(&projects).Error; err != nil {
 		return err
 	}
 
 	l.Info("backfilling projects without org", zap.Int("projects", len(projects)))
 
 	for i, project := range projects {
-		l := l.With(zap.String("project_id", project.ProjectID.String()), zap.String("raw_user_id", project.UserID), zap.Int("i", i))
+		l := l.With(zap.String("project_id", project.ProjectID.String()), zap.Int("i", i))
 
-		uid, err := uuid.Parse(project.UserID)
+		var ownership scheme.Ownership
+		if err := gdb.Where("entity_id = ?", project.ProjectID).First(&ownership).Error; err != nil {
+			l.Error("failed to find ownership", zap.Error(err))
+			continue
+		}
+
+		uid, err := uuid.Parse(ownership.UserID)
 		if err != nil {
-			aid, err := typeid.Parse[typeid.AnyID](project.UserID)
+			aid, err := typeid.Parse[typeid.AnyID](ownership.UserID)
 			if err != nil {
 				l.Error("failed to parse user id", zap.Error(err))
 				continue
@@ -253,20 +275,31 @@ func (db *gormdb) backfillUsersAndOrgs(ctx context.Context) error {
 			}
 		}
 
-		user, found := usersMap[uid]
-		if !found {
-			// user is not found since it already had a default org before migration, and just now updating its projects.
-			if err := gdb.Where("user_id = ?", uid).First(&user).Error; err != nil {
-				l.Error("failed to find user", zap.Error(err))
-				continue
+		l = l.With(zap.String("user_id", uid.String()))
+
+		var oid uuid.UUID
+
+		if uid == authusers.DefaultUser.ID().UUIDValue() {
+			// this is the default user, it already has a default org.
+			oid = authusers.DefaultUser.DefaultOrgID().UUIDValue()
+		} else {
+			user, found := usersMap[uid]
+			if !found {
+				// user is not found since it already had a default org before migration, and just now updating its projects.
+				if err := gdb.Where("user_id = ?", uid).First(&user).Error; err != nil {
+					l.Error("failed to find user", zap.Error(err))
+					continue
+				}
 			}
+
+			oid = user.DefaultOrgID
 		}
 
-		l = l.With(zap.String("user_id", user.UserID.String()), zap.String("org_id", user.DefaultOrgID.String()))
+		l = l.With(zap.String("org_id", oid.String()))
 
 		l.Info("updating project with org")
 
-		err = gdb.Model(&scheme.Project{}).Update("org_id", user.DefaultOrgID).Where("project_id = ?", project.ProjectID).Error
+		err = gdb.Model(&scheme.Project{}).Where("project_id = ?", project.ProjectID).Update("org_id", oid).Error
 		if err != nil {
 			l.Error("failed to update project", zap.Error(err))
 			continue
