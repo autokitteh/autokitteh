@@ -35,12 +35,12 @@ func withProjectID(q *gorm.DB, field string, pid sdktypes.ProjectID) *gorm.DB {
 }
 
 // groupBy is necessary to avoid duplications because of the join.
-func withProjectOrgID(q *gorm.DB, oid sdktypes.OrgID, groupBy string) *gorm.DB {
+func withProjectOrgID(q *gorm.DB, oid sdktypes.OrgID) *gorm.DB {
 	if !oid.IsValid() {
 		return q
 	}
 
-	return q.Joins("INNER JOIN projects ON projects.org_id = ?", oid.UUIDValue()).Group(groupBy)
+	return q.Joins("INNER JOIN projects ON projects.org_id = ?", oid.UUIDValue()).Distinct()
 }
 
 // ---
