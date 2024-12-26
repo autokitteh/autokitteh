@@ -25,7 +25,7 @@ brews:
     homepage: "https://autokitteh.com/"
     license: "Apache-2.0"
 
-    url_template: "https://github.com/autokitteh/autokitteh/releases/download/{{ .Version }}/{{ .ArtifactName }}"
+    url_template: "https://github.com/autokitteh/autokitteh/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
     install: |
       bin.install "ak"
       generate_completions_from_executable(bin/"ak", "completion")
@@ -41,7 +41,7 @@ brews:
     commit_author:
       name: goreleaserbot
       email: bot@goreleaser.com
-    commit_msg_template: "{{ .ProjectName }} {{ .Tag }}"
+    commit_msg_template: "{{ .ProjectName }} {{ .Version }}"
 
 source:
   enabled: false
