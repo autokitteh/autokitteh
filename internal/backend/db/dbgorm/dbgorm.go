@@ -144,17 +144,18 @@ func foreignKeys(gormdb *gormdb, enable bool) {
 	gormdb.db.Exec(stmt)
 }
 
-func initGoose(client *sql.DB, dialect string) error {
+func initGoose(client *sql.DB, dialect string) (ver int64, err error) {
 	goose.SetBaseFS(migrations.Migrations)
 
-	if err := goose.SetDialect(dialect); err != nil {
-		return err
+	if err = goose.SetDialect(dialect); err != nil {
+		return
 	}
 
-	if _, err := goose.EnsureDBVersion(client); err != nil {
-		return fmt.Errorf("failed to ensure DB version: %w", err)
+	if ver, err = goose.EnsureDBVersion(client); err != nil {
+		err = fmt.Errorf("failed to ensure DB version: %w", err)
 	}
-	return nil
+
+	return
 }
 
 func (db *gormdb) Migrate(ctx context.Context) error {
@@ -162,7 +163,8 @@ func (db *gormdb) Migrate(ctx context.Context) error {
 
 	client := db.client(true)
 
-	if err := initGoose(client, db.cfg.Type); err != nil {
+	ver, err := initGoose(client, db.cfg.Type)
+	if err != nil {
 		return err
 	}
 
@@ -171,8 +173,11 @@ func (db *gormdb) Migrate(ctx context.Context) error {
 		return fmt.Errorf("goose up: %w", err)
 	}
 
-	if err := db.backfillUsersAndOrgs(ctx); err != nil {
-		return fmt.Errorf("backfill users and orgs: %w", err)
+	if ver >= 20241225035414 {
+		// This is needed only when initializing the database from a specific version.
+		if err := db.backfillUsersAndOrgs(ctx); err != nil {
+			return fmt.Errorf("backfill users and orgs: %w", err)
+		}
 	}
 
 	return nil
@@ -319,11 +324,7 @@ func (db *gormdb) backfillUsersAndOrgs(ctx context.Context) error {
 
 func (db *gormdb) MigrationRequired(ctx context.Context) (bool, int64, error) {
 	client := db.client(false)
-	if err := initGoose(client, db.cfg.Type); err != nil {
-		return false, 0, err
-	}
-
-	dbversion, err := goose.GetDBVersion(client)
+	dbversion, err := initGoose(client, db.cfg.Type)
 	if err != nil {
 		return false, 0, err
 	}
