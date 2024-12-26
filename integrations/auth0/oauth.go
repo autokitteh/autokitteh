@@ -70,7 +70,8 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Tests OAuth0's Management API.
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://%s/api/v2/roles", d), nil)
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/api/v2/roles", d), nil)
+
 	if err != nil {
 		l.Error("Failed to create HTTP request", zap.Error(err))
 		c.AbortServerError("request creation error")
