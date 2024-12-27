@@ -55,7 +55,6 @@ func TestMain(m *testing.M) {
 	// setup test bench - gorm, schemas, migrations, etc
 	cfg := &gormkitteh.Config{Type: dbType, DSN: ""} // "" for in-memory, or specify a file
 	cfg, _ = cfg.Explicit()
-	cfg.Ownership = "users"
 	db := setupDB(cfg)
 	z := kittehs.Must1(zap.NewDevelopment())
 	gormDB = gormdb{db: db, cfg: cfg, mu: nil, z: z}
