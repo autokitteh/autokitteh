@@ -65,9 +65,10 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 			if token == "" {
 				return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 			}
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using OAuth 2.0"), nil
 		}
 
-		return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using OAuth 2.0"), nil
+		return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil
 	})
 }
 
