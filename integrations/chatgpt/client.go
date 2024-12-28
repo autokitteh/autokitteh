@@ -4,6 +4,7 @@ import (
 	"context"
 
 	openai "github.com/sashabaranov/go-openai"
+	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -16,9 +17,10 @@ import (
 type integration struct{ vars sdkservices.Vars }
 
 var (
-	apiKeyVar     = sdktypes.NewSymbol("apiKey")
-	authType      = sdktypes.NewSymbol("authType")
 	integrationID = sdktypes.NewIntegrationIDFromName("chatgpt")
+
+	apiKeyVar = sdktypes.NewSymbol("apiKey")
+	authType  = sdktypes.NewSymbol("authType")
 )
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
@@ -66,6 +68,7 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 
 		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
 		if err != nil {
+			zap.L().Error("failed to read connection vars", zap.String("connection_id", cid.String()), zap.Error(err))
 			return sdktypes.InvalidStatus, err
 		}
 
@@ -92,6 +95,7 @@ func connTest(i *integration) sdkintegrations.OptFn {
 
 		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
 		if err != nil {
+			zap.L().Error("failed to read connection vars", zap.String("connection_id", cid.String()), zap.Error(err))
 			return sdktypes.InvalidStatus, err
 		}
 
