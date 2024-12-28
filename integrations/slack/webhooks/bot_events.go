@@ -44,7 +44,8 @@ var BotEventHandlers = map[string]BotEventHandler{
 
 	"member_joined_channel": events.ChannelGroupHandler,
 	"member_left_channel":   events.MemberLeftChannelHandler,
-	"message":               events.MessageHandler,
+
+	"message": events.MessageHandler,
 
 	"reaction_added":   events.ReactionHandler,
 	"reaction_removed": events.ReactionHandler,
