@@ -11,13 +11,15 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
+	"go.uber.org/zap"
 )
 
 type integration struct{ vars sdkservices.Vars }
 
 var (
-	authType      = sdktypes.NewSymbol("auth_type")
 	integrationID = sdktypes.NewIntegrationIDFromName("hubspot")
+
+	authType = sdktypes.NewSymbol("auth_type")
 )
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
@@ -85,12 +87,12 @@ func connTest(i *integration) sdkintegrations.OptFn {
 
 		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
 		if err != nil {
+			zap.L().Error("failed to read connection vars", zap.String("connection_id", cid.String()), zap.Error(err))
 			return sdktypes.InvalidStatus, err
 		}
 
-		token := vs.GetValueByString("oauth_AccessToken")
-		url := fmt.Sprintf("https://api.hubapi.com/oauth/v1/access-tokens/%s", token)
-
+		token := vs.GetValueByString("oauth_RefreshToken")
+		url := fmt.Sprintf("https://api.hubapi.com/oauth/v1/refresh-tokens/%s", token)
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
@@ -104,7 +106,7 @@ func connTest(i *integration) sdkintegrations.OptFn {
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
-			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Invalid OAuth token"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad OAuth refresh token"), nil
 		}
 
 		return sdktypes.NewStatus(sdktypes.StatusCodeOK, "OK"), nil
