@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"go.temporal.io/sdk/workflow"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncontext"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
@@ -89,7 +90,7 @@ func (w *sessionWorkflow) start(ctx context.Context, args []sdktypes.Value, kwar
 		WithDeploymentID(w.data.Session.DeploymentID()).
 		WithProjectID(w.data.Session.ProjectID())
 
-	sessionID, err := w.ws.sessions.Start(ctx, session)
+	sessionID, err := w.ws.sessions.Start(authcontext.SetAuthnSystemUser(ctx), session)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
