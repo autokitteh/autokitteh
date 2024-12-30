@@ -48,7 +48,7 @@ func NewPolicyCheckFunc(l *zap.Logger, db db.DB, decide policy.DecideFunc) Check
 		l.Debug("authz opa decision")
 
 		if !decision {
-			l.Warn("authz opa decision: denied")
+			l.WithOptions(zap.AddStacktrace(zap.WarnLevel)).Warn("authz opa decision: denied")
 
 			if cfg.convertForbiddenToNotFound {
 				return sdkerrors.ErrNotFound
