@@ -47,6 +47,7 @@ def parse_entry_point(entry_point):
 
 
 def pb_traceback(tb):
+    """Convert traceback to a list of pb.user_code.Frame for serialization."""
     return [
         pb.user_code.Frame(
             filename=frame.filename,
@@ -67,17 +68,17 @@ for more details.
 """
 
 
-def display_err(fn, err):
-    func_name = full_func_name(fn)
-    log.exception("calling %s: %s", func_name, err)
+def result_error(err):
+    io = StringIO()
 
     if "pickle" in str(err):
-        print(pickle_help, file=sys.stderr)
+        print(pickle_help, file=io)
 
     exc = "".join(format_exception(err))
-
     # Print the error to stderr so it'll show in session logs
-    print(f"error: {err}\n\n{exc}", file=sys.stderr)
+    print(f"error: {err}\n\n{exc}", file=io)
+
+    return io.getvalue()
 
 
 # Go passes HTTP event.data.body.bytes as base64 encode string
@@ -106,10 +107,10 @@ def killIfStartWasntCalled(runner):
 
 def abort_with_exception(context, status, err):
     io = StringIO()
-    print(err, file=io)
     for line in format_exception(err):
         io.write(line)
-    context.abort(status, io.getvalue())
+    text = io.getvalue()
+    context.abort(status, text)
 
 
 Call = namedtuple("Call", "fn args kw fut")
@@ -223,11 +224,6 @@ class Runner(pb.runner_rpc.RunnerService):
             )
         )
 
-        if result.error:
-            io = StringIO()
-            print("".join(result.traceback.format()), file=io)
-            resp.error = io.getvalue()
-
         return resp
 
     def ActivityReply(
@@ -320,7 +316,6 @@ class Runner(pb.runner_rpc.RunnerService):
             log.error("%s raised: %s", func_name, err)
             tb = TracebackException.from_exception(err)
             error = err
-            error.add_note("".join(tb.format()))
 
         return Result(value, error, tb)
 
@@ -334,9 +329,7 @@ class Runner(pb.runner_rpc.RunnerService):
         )
 
         if result.error:
-            # req.error must not be empty, otherwise the server would not know
-            # that there was an error.
-            req.error = repr(result.error)
+            req.error = result_error(result.error)
             tb = pb_traceback(result.traceback)
             req.traceback.extend(tb)
         else:

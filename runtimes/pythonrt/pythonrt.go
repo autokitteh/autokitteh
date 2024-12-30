@@ -550,6 +550,7 @@ func (py *pySvc) drainPrints(ctx context.Context) {
 			py.log.Log(pyLevelToZap(r.level), r.message)
 		case r := <-py.channels.print:
 			py.cbs.Print(ctx, py.runID, r.message)
+			close(r.doneChannel)
 		}
 	}
 }
