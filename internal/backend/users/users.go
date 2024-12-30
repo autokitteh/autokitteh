@@ -18,7 +18,12 @@ import (
 
 type Config struct {
 	// If set, do not create a personal org for new users. Instead, set this as their default org.
-	DefaultOrgID sdktypes.OrgID `json:"default_org_id"`
+	// This is useful for single tenants setups where all users belong to the same org.
+	DefaultOrgID string `json:"default_org_id"`
+}
+
+func (c *Config) GetDefaultOrgID() (sdktypes.OrgID, error) {
+	return sdktypes.ParseOrgID(c.DefaultOrgID)
 }
 
 var Configs = configset.Set[Config]{
@@ -31,8 +36,12 @@ type users struct {
 	cfg *Config
 }
 
-func New(cfg *Config, db db.DB, l *zap.Logger) sdkservices.Users {
-	return &users{cfg: cfg, db: db, l: l}
+func New(cfg *Config, db db.DB, l *zap.Logger) (sdkservices.Users, error) {
+	if _, err := cfg.GetDefaultOrgID(); err != nil {
+		return nil, fmt.Errorf("invalid default org ID: %w", err)
+	}
+
+	return &users{cfg: cfg, db: db, l: l}, nil
 }
 
 func (u *users) Create(ctx context.Context, user sdktypes.User) (sdktypes.UserID, error) {
@@ -50,10 +59,14 @@ func (u *users) Create(ctx context.Context, user sdktypes.User) (sdktypes.UserID
 		var oid sdktypes.OrgID
 
 		if !user.DefaultOrgID().IsValid() {
-			if u.cfg.DefaultOrgID.IsValid() {
-				oid = u.cfg.DefaultOrgID
-			} else {
-				org := sdktypes.NewOrg().WithDisplayName(fmt.Sprintf("%s's Personal Org", user.DisplayName()))
+			// If user has not default org id set, set the one from the config, if specified.
+			if oid, _ = u.cfg.GetDefaultOrgID(); !oid.IsValid() {
+				// ... otherwise create a new personal org for that user.
+				org := sdktypes.NewOrg()
+
+				if user.DisplayName() != "" {
+					org = org.WithDisplayName(fmt.Sprintf("%s's Personal Org", user.DisplayName()))
+				}
 
 				var err error
 				if oid, err = orgs.Create(ctx, db, org); err != nil {
@@ -62,8 +75,8 @@ func (u *users) Create(ctx context.Context, user sdktypes.User) (sdktypes.UserID
 			}
 		}
 
-		uid, err := db.CreateUser(ctx, user.WithNewID().WithDefaultOrgID(oid))
-		if err != nil {
+		var err error
+		if uid, err = db.CreateUser(ctx, user.WithNewID().WithDefaultOrgID(oid)); err != nil {
 			return err
 		}
 
