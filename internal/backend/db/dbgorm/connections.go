@@ -79,7 +79,7 @@ func (gdb *gormdb) listConnections(ctx context.Context, filter sdkservices.ListC
 
 	q = withProjectID(q, "", filter.ProjectID)
 
-	q = withProjectOrgID(q, filter.OrgID, "connection_id")
+	q = withProjectOrgID(q, filter.OrgID, "connections")
 
 	if filter.IntegrationID.IsValid() {
 		q = q.Where("integration_id = ?", filter.IntegrationID.UUIDValue())

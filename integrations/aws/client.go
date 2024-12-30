@@ -17,6 +17,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sns"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -117,6 +118,7 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 
 		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
 		if err != nil {
+			zap.L().Error("failed to read connection vars", zap.String("connection_id", cid.String()), zap.Error(err))
 			return sdktypes.InvalidStatus, err
 		}
 
@@ -143,6 +145,7 @@ func connTest(i *integration) sdkintegrations.OptFn {
 
 		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
 		if err != nil {
+			zap.L().Error("failed to read connection vars", zap.String("connection_id", cid.String()), zap.Error(err))
 			return sdktypes.InvalidStatus, err
 		}
 

@@ -2,6 +2,7 @@ package dbgorm
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -35,12 +36,12 @@ func withProjectID(q *gorm.DB, field string, pid sdktypes.ProjectID) *gorm.DB {
 }
 
 // groupBy is necessary to avoid duplications because of the join.
-func withProjectOrgID(q *gorm.DB, oid sdktypes.OrgID, groupBy string) *gorm.DB {
+func withProjectOrgID(q *gorm.DB, oid sdktypes.OrgID, table string) *gorm.DB {
 	if !oid.IsValid() {
 		return q
 	}
 
-	return q.Joins("INNER JOIN projects ON projects.org_id = ?", oid.UUIDValue()).Group(groupBy)
+	return q.Joins(fmt.Sprintf("INNER JOIN projects ON %s.project_id = projects.project_id AND projects.org_id = ?", table), oid.UUIDValue()).Distinct()
 }
 
 // ---

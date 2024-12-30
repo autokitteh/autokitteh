@@ -103,7 +103,7 @@ allow if {
 allow if {
 	authn
 	input.kind == "int"
-	input.action == "list"
+	input.action in ["get", "list"]
 }
 
 #

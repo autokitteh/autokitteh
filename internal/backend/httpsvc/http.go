@@ -17,6 +17,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/proto"
 )
 
@@ -81,20 +82,7 @@ func New(lc fx.Lifecycle, z *zap.Logger, cfg *Config, authzCheckFunc authz.Check
 				return fmt.Errorf("listen: %w", err)
 			}
 
-			svc.addr = ln.Addr().String()
-			if host, port, err := net.SplitHostPort(svc.addr); err == nil {
-				ip := net.ParseIP(host)
-
-				var addr string
-				if ip.IsUnspecified() {
-					addr = "localhost"
-				} else {
-					addr = ip.To4().String()
-				}
-
-				svc.addr = fmt.Sprintf("%s:%s", addr, port)
-			}
-
+			svc.addr = kittehs.DisplayAddress(ln.Addr().String())
 			z.Debug("listening", zap.String("addr", svc.addr))
 
 			if cfg.AddrFilename != "" {

@@ -11,7 +11,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
-	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -98,10 +97,6 @@ func (sch *Scheduler) Create(ctx context.Context, tid sdktypes.TriggerID, schedu
 }
 
 func (sch *Scheduler) Delete(ctx context.Context, tid sdktypes.TriggerID) error {
-	if err := authz.CheckContext(ctx, tid, "write:delete-schedule"); err != nil {
-		return err
-	}
-
 	sl := sch.sl.With("trigger_id", tid)
 
 	scheduleHandle := sch.temporal.Temporal().ScheduleClient().GetHandle(ctx, tid.String()) // validity of scheduleID is not checked by temporal

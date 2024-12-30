@@ -16,6 +16,8 @@ const (
 	contentTypeForm   = "application/x-www-form-urlencoded"
 )
 
+// handleCreds acts as a passthrough for the OAuth connection mode,
+// to save OAuth details (custom client ID & secret, Auth0 domain).
 func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, desc)
 
@@ -28,8 +30,8 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 
 	// Read and parse POST request body.
 	if err := r.ParseForm(); err != nil {
-		l.Error("Failed to parse incoming HTTP request", zap.Error(err))
-		c.AbortServerError("form parsing error")
+		l.Warn("Failed to parse incoming HTTP request", zap.Error(err))
+		c.AbortBadRequest("form parsing error")
 		return
 	}
 

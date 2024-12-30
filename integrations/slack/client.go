@@ -17,6 +17,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
+	"go.uber.org/zap"
 )
 
 var integrationID = sdktypes.NewIntegrationIDFromName("slack")
@@ -59,6 +60,7 @@ func connStatus(cvars sdkservices.Vars) sdkintegrations.OptFn {
 
 		vs, err := cvars.Get(ctx, sdktypes.NewVarScopeID(cid))
 		if err != nil {
+			zap.L().Error("failed to read connection vars", zap.String("connection_id", cid.String()), zap.Error(err))
 			return sdktypes.InvalidStatus, err
 		}
 
@@ -89,6 +91,7 @@ func connTest(cvars sdkservices.Vars) sdkintegrations.OptFn {
 
 		vs, err := cvars.Get(ctx, sdktypes.NewVarScopeID(cid))
 		if err != nil {
+			zap.L().Error("failed to read connection vars", zap.String("connection_id", cid.String()), zap.Error(err))
 			return sdktypes.InvalidStatus, err
 		}
 

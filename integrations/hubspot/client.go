@@ -2,19 +2,24 @@ package hubspot
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 
+	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
+	"go.uber.org/zap"
 )
 
 type integration struct{ vars sdkservices.Vars }
 
 var (
-	authType      = sdktypes.NewSymbol("auth_type")
 	integrationID = sdktypes.NewIntegrationIDFromName("hubspot")
+
+	authType = sdktypes.NewSymbol("auth_type")
 )
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
@@ -51,6 +56,7 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 
 		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
 		if err != nil {
+			zap.L().Error("failed to read connection vars", zap.String("connection_id", cid.String()), zap.Error(err))
 			return sdktypes.InvalidStatus, err
 		}
 
@@ -59,13 +65,51 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 		}
 
-		return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using OAuth 2.0"), nil
+		if at.Value() == integrations.OAuth {
+			token := vs.GetValueByString("oauth_AccessToken")
+			if token == "" {
+				return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+			}
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using OAuth 2.0"), nil
+		}
+
+		return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil
 	})
 }
 
-// TODO(INT-105): Implement
-func connTest(_ *integration) sdkintegrations.OptFn {
+// connTest is an optional connection test provided by the integration
+// to AutoKitteh. It is used to verify that the connection is working
+// as expected. The possible results are "OK" and "error".
+func connTest(i *integration) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
+		if !cid.IsValid() {
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Init required"), nil
+		}
+
+		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+		if err != nil {
+			zap.L().Error("failed to read connection vars", zap.String("connection_id", cid.String()), zap.Error(err))
+			return sdktypes.InvalidStatus, err
+		}
+
+		token := vs.GetValueByString("oauth_RefreshToken")
+		url := fmt.Sprintf("https://api.hubapi.com/oauth/v1/refresh-tokens/%s", token)
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
+		}
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad OAuth refresh token"), nil
+		}
+
 		return sdktypes.NewStatus(sdktypes.StatusCodeOK, "OK"), nil
 	})
 }

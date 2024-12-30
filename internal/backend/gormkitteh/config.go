@@ -26,8 +26,6 @@ type Config struct {
 	// and the user has to run 'ak server migrate' explicitly.
 	AutoMigrate bool `koanf:"auto_migrate"`
 
-	Ownership string `koanf:"ownership"`
-
 	MaxOpenConns int `koanf:"max_open_conns"`
 	MaxIdleConns int `koanf:"max_idle_conns"`
 
@@ -61,10 +59,6 @@ func (c Config) Explicit() (*Config, error) {
 				return nil, ErrInvalidDSN
 			}
 		}
-	}
-
-	if c.Ownership != "none" {
-		c.Ownership = "users"
 	}
 
 	return &c, nil

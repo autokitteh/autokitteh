@@ -19,6 +19,7 @@ import (
 	googleoauth2 "google.golang.org/api/oauth2/v2"
 	"google.golang.org/api/sheets/v4"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -507,9 +508,13 @@ func (o *oauth) StartFlow(ctx context.Context, intg string, cid sdktypes.Connect
 }
 
 func (o *oauth) Exchange(ctx context.Context, integration string, cid sdktypes.ConnectionID, code string) (*oauth2.Token, error) {
-	// Convert the received temporary authorization code
-	// into a refresh token / user access token.
-	cfg, opts, err := o.getConfigWithConnection(ctx, integration, cid)
+	// Convert the received temporary authorization code into a refresh token / user access token.
+	// ATTENTION: This method may be called by an UNAUTHENTICATED webhook handler, however we CAN
+	// use the system user (SetAuthnSystemUser) securely, because only the 3rd-party OAuth
+	// provider can provide us a valid "code" parameter related to the connection ID. In other
+	// words, if the "code" is fake, or the CID is valid-but-unrelated to the beginning of the
+	// OAuth flow, the OAuth provider will reject the exchange, so data leakage is not possible.
+	cfg, opts, err := o.getConfigWithConnection(authcontext.SetAuthnSystemUser(ctx), integration, cid)
 	if err != nil {
 		return nil, fmt.Errorf("bad oauth integration name: %w", err)
 	}

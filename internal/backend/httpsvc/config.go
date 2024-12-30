@@ -4,6 +4,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkclient"
 )
 
@@ -55,7 +56,7 @@ type Config struct {
 
 var Configs = configset.Set[Config]{
 	Default: &Config{
-		Addr:                 "0.0.0.0:" + sdkclient.DefaultPort,
+		Addr:                 kittehs.BindingAddress(sdkclient.DefaultPort),
 		ServiceUrl:           sdkclient.DefaultLocalURL,
 		H2C:                  httpH2CConfig{Enable: true},
 		EnableGRPCReflection: true,
