@@ -551,11 +551,15 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []st
 	if epName := entryPoint.Name(); epName != "" {
 		callValue, ok := run.Values()[epName]
 		if !ok {
-			return prints, fmt.Errorf("entry point not found after evaluation")
+			// The user specified an entry point that does not exist.
+			// WrapError so it will be a program error and not considered as an internal error.
+			return prints, sdktypes.WrapError(fmt.Errorf("entry point %q not found after evaluation", epName)).ToError()
 		}
 
 		if !callValue.IsFunction() {
-			return prints, fmt.Errorf("entry point is not a function")
+			// The user specified an entry point that is not a function.
+			// WrapError so it will be a program error and not considered as an internal error.
+			return prints, sdktypes.WrapError(fmt.Errorf("entry point %q is not a function", epName)).ToError()
 		}
 
 		if callValue.GetFunction().ExecutorID().ToRunID() != runID {
