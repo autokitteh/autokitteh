@@ -472,19 +472,37 @@ func (o *oauth) getConfigWithConnection(ctx context.Context, intg string, cid sd
 		return nil, nil, err
 	}
 
-	cfgCopy := *baseCfg
-	cfgCopy.ClientID = vs.GetValueByString("client_id")
-	cfgCopy.ClientSecret = vs.GetValueByString("client_secret")
+	cfgCopy := &oauth2.Config{
+		ClientID:     vs.GetValueByString("client_id"),
+		ClientSecret: vs.GetValueByString("client_secret"),
+		Endpoint: oauth2.Endpoint{
+			AuthURL:       baseCfg.Endpoint.AuthURL,
+			TokenURL:      baseCfg.Endpoint.TokenURL,
+			DeviceAuthURL: baseCfg.Endpoint.DeviceAuthURL,
+			AuthStyle:     baseCfg.Endpoint.AuthStyle,
+		},
+		RedirectURL: baseCfg.RedirectURL,
+		Scopes:      append([]string{}, baseCfg.Scopes...),
+	}
+
+	optsCopy := make(map[string]string, len(opts))
+	for k, v := range opts {
+		optsCopy[k] = v
+	}
 
 	// Special case: Auth0 uses a dynamic domain stored in vars.
 	// TODO(INT-129): Add dynamic domain handling to all OAuth integrations.
 	if intg == "auth0" {
-		cfgCopy.Endpoint.AuthURL = strings.Replace(cfgCopy.Endpoint.AuthURL, "{{AUTH0_DOMAIN}}", vs.GetValueByString("auth0_domain"), 1)
-		cfgCopy.Endpoint.TokenURL = strings.Replace(cfgCopy.Endpoint.TokenURL, "{{AUTH0_DOMAIN}}", vs.GetValueByString("auth0_domain"), 1)
-		opts["audience"] = strings.Replace(opts["audience"], "{{AUTH0_DOMAIN}}", vs.GetValueByString("auth0_domain"), 1)
+		placeholder := "{{AUTH0_DOMAIN}}"
+		domain := vs.GetValueByString("auth0_domain")
+
+		cfgCopy.Endpoint.AuthURL = strings.Replace(cfgCopy.Endpoint.AuthURL, placeholder, domain, 1)
+		cfgCopy.Endpoint.TokenURL = strings.Replace(cfgCopy.Endpoint.TokenURL, placeholder, domain, 1)
+
+		optsCopy["audience"] = strings.Replace(opts["audience"], placeholder, domain, 1)
 	}
 
-	return &cfgCopy, opts, nil
+	return cfgCopy, optsCopy, nil
 }
 
 func (o *oauth) StartFlow(ctx context.Context, intg string, cid sdktypes.ConnectionID, origin string) (string, error) {
