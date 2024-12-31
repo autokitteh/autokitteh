@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/auth/authjwttokens"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens/authtokensjwt"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -30,7 +30,7 @@ var (
 )
 
 func init() {
-	js := kittehs.Must1(authjwttokens.New(authjwttokens.Configs.Test))
+	js := kittehs.Must1(authtokensjwt.New(authtokensjwt.Configs.Test))
 
 	// org name -> org id.
 	orgs := make(map[string]uuid.UUID)

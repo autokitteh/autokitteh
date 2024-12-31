@@ -35,6 +35,8 @@ func getContextCheckFunc(ctx context.Context) CheckFunc {
 
 func CheckContext(ctx context.Context, id sdktypes.ID, action string, opts ...func(*checkCfg)) error {
 	if authcontext.IsAuthnSystemUser(ctx) {
+		// When system user is specified there is usually no authz check in context, so we should
+		// just make it all approved here.
 		return nil
 	}
 
