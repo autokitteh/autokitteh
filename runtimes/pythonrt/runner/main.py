@@ -75,8 +75,8 @@ def result_error(err):
         print(pickle_help, file=io)
 
     exc = "".join(format_exception(err))
-    # Print the error to stderr so it'll show in session logs
-    print(f"error: {err}\n\n{exc}", file=io)
+    message = s if (s := str(err)) else repr(err)
+    print(f"error: {message}\n\n{exc}", file=io)
 
     return io.getvalue()
 
