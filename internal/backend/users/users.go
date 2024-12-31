@@ -19,7 +19,7 @@ import (
 type Config struct {
 	// If set, do not create a personal org for new users. Instead, set this as their default org.
 	// This is useful for single-tenant setups where all users belong to the same org.
-	DefaultOrgID string `json:"default_org_id"`
+	DefaultOrgID string `koanf:"default_org_id"`
 }
 
 func (c *Config) GetDefaultOrgID() (sdktypes.OrgID, error) {
@@ -59,7 +59,7 @@ func (u *users) Create(ctx context.Context, user sdktypes.User) (sdktypes.UserID
 		var oid sdktypes.OrgID
 
 		if !user.DefaultOrgID().IsValid() {
-			// If user has not default org id set, set the one from the config, if specified.
+			// If user has no default org id set, set the one from the config, if specified.
 			if oid, _ = u.cfg.GetDefaultOrgID(); !oid.IsValid() {
 				// ... otherwise create a new personal org for that user.
 				org := sdktypes.NewOrg()
