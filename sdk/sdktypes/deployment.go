@@ -34,6 +34,8 @@ func (DeploymentTraits) StrictValidate(m *DeploymentPB) error {
 	)
 }
 
+func (DeploymentTraits) Mutables() []string { return []string{"state"} }
+
 func DeploymentFromProto(m *DeploymentPB) (Deployment, error) { return FromProto[Deployment](m) }
 func StrictDeploymentFromProto(m *DeploymentPB) (Deployment, error) {
 	return Strict(DeploymentFromProto(m))

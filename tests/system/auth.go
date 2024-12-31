@@ -36,7 +36,8 @@ func init() {
 	orgs := make(map[string]uuid.UUID)
 
 	for _, u := range users {
-		uu := sdktypes.NewUser(fmt.Sprintf("%s@%s", u.name, u.org)).
+		uu := sdktypes.NewUser().
+			WithEmail(fmt.Sprintf("%s@%s", u.name, u.org)).
 			WithDisplayName(u.name).
 			WithID(sdktypes.NewTestUserID(u.name))
 

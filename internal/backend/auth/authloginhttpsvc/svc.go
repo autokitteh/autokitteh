@@ -221,7 +221,7 @@ func (a *svc) newSuccessLoginHandler(ctx context.Context, ld *loginData) http.Ha
 			return newErrHandler("unregistered user", http.StatusForbidden)
 		}
 
-		u := sdktypes.NewUser(ld.Email).WithDisplayName(ld.DisplayName)
+		u := sdktypes.NewUser().WithDisplayName(ld.DisplayName).WithEmail(ld.Email)
 
 		if uid, err = a.Users.Create(authcontext.SetAuthnSystemUser(ctx), u); err != nil {
 			sl.With("err", err).Errorf("failed creating user: %v", err)

@@ -20,7 +20,7 @@ var InvalidValue Value
 
 type ValuePB = valuev1.Value
 
-type ValueTraits struct{}
+type ValueTraits struct{ immutableObjectTrait }
 
 func validateValue(m *ValuePB) error {
 	return errors.Join(

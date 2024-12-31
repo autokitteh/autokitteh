@@ -12,7 +12,7 @@ var InvalidSessionCallAttemptStart SessionCallAttemptStart
 
 type SessionCallAttemptStartPB = sessionv1.Call_Attempt_Start
 
-type SessionCallAttemptStartTraits struct{}
+type SessionCallAttemptStartTraits struct{ immutableObjectTrait }
 
 func (SessionCallAttemptStartTraits) Validate(m *SessionCallAttemptStartPB) error { return nil }
 

@@ -56,9 +56,14 @@ func (u *users) Create(ctx context.Context, user sdktypes.User) (sdktypes.UserID
 	var uid sdktypes.UserID
 
 	err := u.db.Transaction(ctx, func(db db.DB) error {
-		var oid sdktypes.OrgID
+		var err error
+		if uid, err = db.CreateUser(ctx, user.WithNewID()); err != nil {
+			return err
+		}
 
-		if !user.DefaultOrgID().IsValid() {
+		oid := user.DefaultOrgID()
+
+		if !oid.IsValid() {
 			// If user has no default org id set, set the one from the config, if specified.
 			if oid, _ = u.cfg.GetDefaultOrgID(); !oid.IsValid() {
 				// ... otherwise create a new personal org for that user.
@@ -75,15 +80,9 @@ func (u *users) Create(ctx context.Context, user sdktypes.User) (sdktypes.UserID
 			}
 		}
 
-		var err error
-		if uid, err = db.CreateUser(ctx, user.WithNewID().WithDefaultOrgID(oid)); err != nil {
-			return err
-		}
-
-		if oid.IsValid() {
-			if err := orgs.AddMember(ctx, db, oid, uid); err != nil {
-				return fmt.Errorf("add as member to personal org: %w", err)
-			}
+		// We will always have oid set by this point.
+		if err := orgs.AddMember(ctx, db, oid, uid); err != nil {
+			return fmt.Errorf("add as member to personal org: %w", err)
 		}
 
 		return nil
@@ -110,14 +109,18 @@ func (u *users) Get(ctx context.Context, id sdktypes.UserID, email string) (sdkt
 	return u.db.GetUser(ctx, id, email)
 }
 
-func (u *users) Update(ctx context.Context, user sdktypes.User) error {
+func (u *users) Update(ctx context.Context, user sdktypes.User, fieldMask *sdktypes.FieldMask) error {
 	if !user.ID().IsValid() {
 		return sdkerrors.NewInvalidArgumentError("missing user ID")
 	}
 
-	if err := authz.CheckContext(ctx, user.ID(), "update:update", authz.WithData("user", user)); err != nil {
+	if err := user.ValidateUpdateFieldMask(fieldMask); err != nil {
 		return err
 	}
 
-	return u.db.UpdateUser(ctx, user)
+	if err := authz.CheckContext(ctx, user.ID(), "update:update", authz.WithData("user", user), authz.WithFieldMask(fieldMask)); err != nil {
+		return err
+	}
+
+	return u.db.UpdateUser(ctx, user, fieldMask)
 }

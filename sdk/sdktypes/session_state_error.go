@@ -12,7 +12,7 @@ var InvalidSessionStateError SessionStateError
 
 type SessionStateErrorPB = sessionv1.SessionState_Error
 
-type SessionStateErrorTraits struct{}
+type SessionStateErrorTraits struct{ immutableObjectTrait }
 
 func (SessionStateError) isConcreteSessionState() {}
 

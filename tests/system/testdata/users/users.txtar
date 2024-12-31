@@ -1,0 +1,16 @@
+user zumi
+
+ak users get $ZUMI_UID -f
+return code == 0
+output equals_jq .user.display_name zumi
+
+ak users update $ZUMI_UID --display-name zumzum
+return code == 0
+
+ak users get $ZUMI_UID -f
+return code == 0
+output equals_jq .user.display_name zumzum
+
+-- test-config.yaml --
+ak:
+    extra_args: ["-j", "--array_json_list"]

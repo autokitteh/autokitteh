@@ -1,5 +1,6 @@
 from autokitteh_pb.orgs.v1 import org_pb2 as _org_pb2
 from buf.validate import validate_pb2 as _validate_pb2
+from google.protobuf import field_mask_pb2 as _field_mask_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
@@ -31,11 +32,23 @@ class GetResponse(_message.Message):
     org: _org_pb2.Org
     def __init__(self, org: _Optional[_Union[_org_pb2.Org, _Mapping]] = ...) -> None: ...
 
+class DeleteRequest(_message.Message):
+    __slots__ = ["org_id"]
+    ORG_ID_FIELD_NUMBER: _ClassVar[int]
+    org_id: str
+    def __init__(self, org_id: _Optional[str] = ...) -> None: ...
+
+class DeleteResponse(_message.Message):
+    __slots__ = []
+    def __init__(self) -> None: ...
+
 class UpdateRequest(_message.Message):
-    __slots__ = ["org"]
+    __slots__ = ["org", "field_mask"]
     ORG_FIELD_NUMBER: _ClassVar[int]
+    FIELD_MASK_FIELD_NUMBER: _ClassVar[int]
     org: _org_pb2.Org
-    def __init__(self, org: _Optional[_Union[_org_pb2.Org, _Mapping]] = ...) -> None: ...
+    field_mask: _field_mask_pb2.FieldMask
+    def __init__(self, org: _Optional[_Union[_org_pb2.Org, _Mapping]] = ..., field_mask: _Optional[_Union[_field_mask_pb2.FieldMask, _Mapping]] = ...) -> None: ...
 
 class UpdateResponse(_message.Message):
     __slots__ = []

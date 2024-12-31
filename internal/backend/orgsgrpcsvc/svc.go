@@ -84,7 +84,7 @@ func (s *server) Update(ctx context.Context, req *connect.Request[orgsv1.UpdateR
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	if err = s.orgs.Update(ctx, o); err != nil {
+	if err = s.orgs.Update(ctx, o, msg.FieldMask); err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
@@ -113,6 +113,25 @@ func (s *server) AddMember(ctx context.Context, req *connect.Request[orgsv1.AddM
 	}
 
 	return connect.NewResponse(&orgsv1.AddMemberResponse{}), nil
+}
+
+func (s *server) Delete(ctx context.Context, req *connect.Request[orgsv1.DeleteRequest]) (*connect.Response[orgsv1.DeleteResponse], error) {
+	msg := req.Msg
+
+	if err := proto.Validate(msg); err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	oid, err := sdktypes.Strict(sdktypes.ParseOrgID(msg.OrgId))
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	if err := s.orgs.Delete(ctx, oid); err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	return connect.NewResponse(&orgsv1.DeleteResponse{}), nil
 }
 
 func (s *server) RemoveMember(ctx context.Context, req *connect.Request[orgsv1.RemoveMemberRequest]) (*connect.Response[orgsv1.RemoveMemberResponse], error) {

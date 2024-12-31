@@ -81,7 +81,7 @@ func (s *server) Update(ctx context.Context, req *connect.Request[usersv1.Update
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	if err = s.users.Update(ctx, u); err != nil {
+	if err = s.users.Update(ctx, u, msg.FieldMask); err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
 

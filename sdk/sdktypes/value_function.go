@@ -14,7 +14,7 @@ import (
 
 type FunctionValuePB = valuev1.Function
 
-type functionValueTraits struct{}
+type functionValueTraits struct{ immutableObjectTrait }
 
 func (functionValueTraits) Validate(m *FunctionValuePB) error {
 	return errors.Join(

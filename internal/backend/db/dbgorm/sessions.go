@@ -11,6 +11,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/dbtime"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -47,7 +48,7 @@ func (gdb *gormdb) deleteSession(ctx context.Context, sessionID uuid.UUID) error
 }
 
 func (gdb *gormdb) updateSessionState(ctx context.Context, sessionID uuid.UUID, state sdktypes.SessionState) error {
-	sessionStateUpdate := map[string]any{"current_state_type": int(state.Type().ToProto()), "updated_at": time.Now()}
+	sessionStateUpdate := map[string]any{"current_state_type": int(state.Type().ToProto()), "updated_at": dbtime.Now()}
 	logr, err := toSessionLogRecord(sessionID, sdktypes.NewStateSessionLogRecord(state))
 	if err != nil {
 		return err

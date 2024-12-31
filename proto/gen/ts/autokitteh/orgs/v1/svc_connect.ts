@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { AddMemberRequest, AddMemberResponse, CreateRequest, CreateResponse, GetOrgsForUserRequest, GetOrgsForUserResponse, GetRequest, GetResponse, IsMemberRequest, IsMemberResponse, ListMembersRequest, ListMembersResponse, RemoveMemberRequest, RemoveMemberResponse, UpdateRequest, UpdateResponse } from "./svc_pb.js";
+import { AddMemberRequest, AddMemberResponse, CreateRequest, CreateResponse, DeleteRequest, DeleteResponse, GetOrgsForUserRequest, GetOrgsForUserResponse, GetRequest, GetResponse, IsMemberRequest, IsMemberResponse, ListMembersRequest, ListMembersResponse, RemoveMemberRequest, RemoveMemberResponse, UpdateRequest, UpdateResponse } from "./svc_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -37,6 +37,15 @@ export const OrgsService = {
       name: "Update",
       I: UpdateRequest,
       O: UpdateResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc autokitteh.orgs.v1.OrgsService.Delete
+     */
+    delete: {
+      name: "Delete",
+      I: DeleteRequest,
+      O: DeleteResponse,
       kind: MethodKind.Unary,
     },
     /**

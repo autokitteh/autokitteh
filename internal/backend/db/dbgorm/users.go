@@ -63,7 +63,7 @@ func (gdb *gormdb) CreateUser(ctx context.Context, u sdktypes.User) (sdktypes.Us
 	return uid, nil
 }
 
-func (gdb *gormdb) UpdateUser(ctx context.Context, u sdktypes.User) error {
+func (gdb *gormdb) UpdateUser(ctx context.Context, u sdktypes.User, fm *sdktypes.FieldMask) error {
 	if !u.ID().IsValid() {
 		return sdkerrors.NewInvalidArgumentError("missing uid")
 	}
@@ -72,10 +72,10 @@ func (gdb *gormdb) UpdateUser(ctx context.Context, u sdktypes.User) error {
 		return sdkerrors.ErrUnauthorized
 	}
 
-	data := updatedBaseColumns(ctx)
-	data["display_name"] = u.DisplayName()
-	data["disabled"] = u.Disabled()
-	data["default_org_id"] = u.DefaultOrgID().UUIDValue()
+	data, err := updatedFields(ctx, u, fm)
+	if err != nil {
+		return err
+	}
 
 	return translateError(
 		gdb.db.WithContext(ctx).

@@ -14,7 +14,7 @@ type SessionState struct {
 
 type SessionStatePB = sessionv1.SessionState
 
-type SessionStateTraits struct{}
+type SessionStateTraits struct{ immutableObjectTrait }
 
 func (SessionStateTraits) Validate(m *SessionStatePB) error {
 	return errors.Join(

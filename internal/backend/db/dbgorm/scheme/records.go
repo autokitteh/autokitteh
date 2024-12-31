@@ -10,6 +10,7 @@ import (
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/dbtime"
 	"go.autokitteh.dev/autokitteh/internal/backend/types"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	commonv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/common/v1"
@@ -410,7 +411,7 @@ func (Deployment) IDFieldName() string { return "deployment_id" }
 
 func (d *Deployment) BeforeUpdate(tx *gorm.DB) (err error) {
 	if tx.Statement.Changed() { // if any fields changed
-		tx.Statement.SetColumn("UpdatedAt", time.Now())
+		tx.Statement.SetColumn("UpdatedAt", dbtime.Now())
 	}
 	return nil
 }
@@ -538,10 +539,11 @@ type User struct {
 }
 
 func ParseUser(r User) (sdktypes.User, error) {
-	return sdktypes.NewUser(r.Email).
+	return sdktypes.NewUser().
 		WithID(sdktypes.NewIDFromUUID[sdktypes.UserID](r.UserID)).
 		WithDisplayName(r.DisplayName).
 		WithDefaultOrgID(sdktypes.NewIDFromUUID[sdktypes.OrgID](r.DefaultOrgID)).
+		WithEmail(r.Email).
 		WithDisabled(r.Disabled), nil
 }
 

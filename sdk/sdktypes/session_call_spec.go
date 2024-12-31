@@ -15,7 +15,7 @@ var InvalidSessionCallSpec SessionCallSpec
 
 type SessionCallSpecPB = sessionv1.Call_Spec
 
-type SessionCallSpecTraits struct{}
+type SessionCallSpecTraits struct{ immutableObjectTrait }
 
 func (SessionCallSpecTraits) Validate(m *SessionCallSpecPB) error {
 	return errors.Join(

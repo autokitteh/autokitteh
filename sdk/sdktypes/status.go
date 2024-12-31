@@ -15,7 +15,7 @@ var InvalidStatus Status
 
 type StatusPB = commonv1.Status
 
-type StatusTraits struct{}
+type StatusTraits struct{ immutableObjectTrait }
 
 func (StatusTraits) Validate(m *StatusPB) error {
 	return errors.Join(

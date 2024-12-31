@@ -54,9 +54,25 @@ func (c *client) GetByID(ctx context.Context, oid sdktypes.OrgID) (sdktypes.Org,
 	return sdktypes.OrgFromProto(resp.Msg.Org)
 }
 
-func (c *client) Update(ctx context.Context, u sdktypes.Org) error {
+func (c *client) Delete(ctx context.Context, oid sdktypes.OrgID) error {
+	resp, err := c.client.Delete(ctx, connect.NewRequest(&orgsv1.DeleteRequest{
+		OrgId: oid.String(),
+	}))
+	if err != nil {
+		return rpcerrors.ToSDKError(err)
+	}
+
+	if err := internal.Validate(resp.Msg); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *client) Update(ctx context.Context, u sdktypes.Org, fm *sdktypes.FieldMask) error {
 	resp, err := c.client.Update(ctx, connect.NewRequest(&orgsv1.UpdateRequest{
-		Org: u.ToProto(),
+		Org:       u.ToProto(),
+		FieldMask: fm,
 	}))
 	if err != nil {
 		return rpcerrors.ToSDKError(err)

@@ -13,7 +13,7 @@ type Runtime struct {
 
 type RuntimePB = runtimev1.Runtime
 
-type RuntimeTraits struct{}
+type RuntimeTraits struct{ immutableObjectTrait }
 
 func (RuntimeTraits) Validate(m *RuntimePB) error {
 	return nameField("name", m.Name)

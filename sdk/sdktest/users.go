@@ -12,7 +12,7 @@ type TestUsers struct {
 	Users map[sdktypes.UserID]sdktypes.User
 }
 
-func (t *TestUsers) Create(_ context.Context, user sdktypes.User) (sdktypes.UserID, error) {
+func (t *TestUsers) Create(context.Context, sdktypes.User) (sdktypes.UserID, error) {
 	return sdktypes.InvalidUserID, sdkerrors.ErrNotImplemented
 }
 
@@ -24,6 +24,6 @@ func (t *TestUsers) Get(_ context.Context, id sdktypes.UserID, email string) (sd
 	return sdktypes.InvalidUser, sdkerrors.ErrNotFound
 }
 
-func (t *TestUsers) Update(_ context.Context, user sdktypes.User) error {
+func (t *TestUsers) Update(context.Context, sdktypes.User, *sdktypes.FieldMask) error {
 	return sdkerrors.ErrNotImplemented
 }

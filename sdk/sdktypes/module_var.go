@@ -10,7 +10,7 @@ type ModuleVariable struct {
 
 type ModuleVariablePB = modulev1.Variable
 
-type ModuleVariableTraits struct{}
+type ModuleVariableTraits struct{ immutableObjectTrait }
 
 func (ModuleVariableTraits) Validate(m *ModuleVariablePB) error       { return nil }
 func (ModuleVariableTraits) StrictValidate(m *ModuleVariablePB) error { return nil }

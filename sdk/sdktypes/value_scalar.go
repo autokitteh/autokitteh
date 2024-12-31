@@ -41,7 +41,7 @@ func init() {
 
 type SymbolValuePB = valuev1.Symbol
 
-type symbolValueTraits struct{}
+type symbolValueTraits struct{ immutableObjectTrait }
 
 func (symbolValueTraits) Validate(m *SymbolValuePB) error {
 	return symbolTraits{}.Validate(m.Name)

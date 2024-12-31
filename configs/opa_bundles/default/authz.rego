@@ -43,7 +43,23 @@ allow if {
 allow if {
 	authn
 	input.kind == "usr"
-	input.user_id == input.data.user_id
+	input.user_id == input.resource_id
+}
+
+#
+# Orgs
+#
+
+allow if {
+	authn
+	input.kind == "org"
+	is_org_member_of_resource
+}
+
+allow if {
+	authn
+	input.kind == "org"
+	input.action == "create"
 }
 
 #

@@ -24,6 +24,8 @@ func (OrgTraits) Validate(m *OrgPB) error {
 
 func (OrgTraits) StrictValidate(m *OrgPB) error { return nil }
 
+func (OrgTraits) Mutables() []string { return []string{"display_name"} }
+
 func OrgFromProto(m *OrgPB) (Org, error) { return FromProto[Org](m) }
 
 func NewOrg() Org {

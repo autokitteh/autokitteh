@@ -25,7 +25,7 @@ var createCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		u := sdktypes.NewUser(email).WithDisplayName(displayName).WithDisabled(disabled)
+		u := sdktypes.NewUser().WithEmail(email).WithDisplayName(displayName).WithDisabled(disabled)
 
 		id, err := users().Create(ctx, u)
 		if err != nil {
@@ -41,6 +41,6 @@ func init() {
 	createCmd.Flags().StringVarP(&email, "email", "e", "", "user's email")
 	kittehs.Must0(createCmd.MarkFlagRequired("email"))
 
-	createCmd.Flags().StringVarP(&email, "display-name", "t", "", "user's display name")
+	createCmd.Flags().StringVarP(&displayName, "display-name", "t", "", "user's display name")
 	createCmd.Flags().BoolVarP(&disabled, "disabled", "d", false, "is user disabled")
 }

@@ -25,10 +25,16 @@ func (UserTraits) Validate(m *UserPB) error {
 
 func (UserTraits) StrictValidate(m *UserPB) error { return nil }
 
+func (UserTraits) Mutables() []string {
+	// email is not mutable since we do not validate it actually belongs to the user.
+	// a user might change their email to someone's else email.
+	return []string{"display_name", "disabled", "default_org_id"}
+}
+
 func UserFromProto(m *UserPB) (User, error) { return FromProto[User](m) }
 
-func NewUser(email string) User {
-	return kittehs.Must1(UserFromProto(&UserPB{Email: email}))
+func NewUser() User {
+	return kittehs.Must1(UserFromProto(&UserPB{}))
 }
 
 func (u User) WithID(id UserID) User {
@@ -53,4 +59,8 @@ func (u User) WithDisabled(b bool) User {
 
 func (u User) WithDefaultOrgID(oid OrgID) User {
 	return User{u.forceUpdate(func(m *UserPB) { m.DefaultOrgId = oid.String() })}
+}
+
+func (u User) WithEmail(email string) User {
+	return User{u.forceUpdate(func(m *UserPB) { m.Email = email })}
 }
