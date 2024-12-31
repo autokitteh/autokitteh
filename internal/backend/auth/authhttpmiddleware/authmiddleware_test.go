@@ -166,7 +166,7 @@ func TestSessionsMiddleware(t *testing.T) {
 	assertCalledWithoutAuthn(t, check())
 
 	w = httptest.NewRecorder()
-	sessions.Set(w, authsessions.NewSessionData(testUser1.ID()))
+	kittehs.Must0(sessions.Set(w, authsessions.NewSessionData(testUser1.ID())))
 	cookies := w.Result().Cookies()
 
 	w = httptest.NewRecorder()
@@ -204,7 +204,7 @@ func TestNewWithoutDefaultUser(t *testing.T) {
 
 	// correct token, but no such user.
 	w = httptest.NewRecorder()
-	sessions.Set(w, authsessions.NewSessionData(testUser1.ID()))
+	kittehs.Must0(sessions.Set(w, authsessions.NewSessionData(testUser1.ID())))
 	cookies := w.Result().Cookies()
 
 	w = httptest.NewRecorder()
@@ -303,7 +303,7 @@ func TestNewWithDefaultUser(t *testing.T) {
 
 	// correct session, but no such user.
 	w = httptest.NewRecorder()
-	sessions.Set(w, authsessions.NewSessionData(testUser1.ID()))
+	kittehs.Must0(sessions.Set(w, authsessions.NewSessionData(testUser1.ID())))
 	cookies := w.Result().Cookies()
 
 	w = httptest.NewRecorder()
