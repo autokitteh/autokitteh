@@ -27,7 +27,7 @@ var Configs = configset.Set[Config]{
 	Dev:     &Config{UseDefaultUser: true},
 }
 
-// The middlewares passes around internally the authenticated user id,
+// The middleware passes around internally the authenticated user ID,
 // so that we can check only once in the AuthMiddlewareDecorator for
 // the common stuff - if the user exists and if it is not disabled.
 // The AuthMiddlewareDecorator will call eventually the authcontext.SetAuthnUser
