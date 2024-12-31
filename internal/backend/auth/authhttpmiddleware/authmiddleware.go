@@ -29,7 +29,7 @@ var Configs = configset.Set[Config]{
 
 // The middleware passes around internally the authenticated user ID,
 // so that we can check only once in the AuthMiddlewareDecorator for
-// the common stuff - if the user exists and if it is not disabled.
+// the common stuff - that the user exists and that it is not disabled.
 // The AuthMiddlewareDecorator will call eventually the authcontext.SetAuthnUser
 // if the user is deemed worthy of authentication.
 type userIDCtxKey string
