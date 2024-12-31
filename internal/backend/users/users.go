@@ -18,7 +18,7 @@ import (
 
 type Config struct {
 	// If set, do not create a personal org for new users. Instead, set this as their default org.
-	// This is useful for single tenants setups where all users belong to the same org.
+	// This is useful for single-tenant setups where all users belong to the same org.
 	DefaultOrgID string `json:"default_org_id"`
 }
 
