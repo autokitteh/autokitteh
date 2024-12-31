@@ -237,7 +237,6 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 
 			ws.stopped(dwctx, sid)
 		} else {
-
 			ws.errored(dwctx, sid, err, prints)
 
 			if _, ok := sdktypes.FromError(err); ok {
