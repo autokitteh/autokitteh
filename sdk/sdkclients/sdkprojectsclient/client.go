@@ -219,6 +219,10 @@ func (c *client) Lint(ctx context.Context, pid sdktypes.ProjectID, resources map
 		Resources:    resources,
 		ManifestFile: manifestFile,
 	}
+	if err := internal.Validate(&req); err != nil {
+		return nil, err
+	}
+
 	resp, err := c.client.Lint(ctx, connect.NewRequest(&req))
 	if err != nil {
 		return nil, rpcerrors.ToSDKError(err)
