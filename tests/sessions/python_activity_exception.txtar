@@ -1,0 +1,35 @@
+before
+error: division by zero
+
+Traceback (most recent call last):
+  File "runner/main.py", line 314, in _call
+    value = fn(*args, **kw)
+            ^^^^^^^^^^^^^^^
+  File "main.py", line 6, in main
+    step()
+  File "runner/call.py", line 106, in __call__
+    return self.runner.call_in_activity(func, args, kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "runner/main.py", line 282, in call_in_activity
+    return fut.result()
+           ^^^^^^^^^^^^
+  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 456, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+ZeroDivisionError: division by zero
+
+-- main.py:main --
+import autokitteh
+
+
+def main(event):
+	print('before')
+	step()
+	print('after')  # shouldn't get here
+
+
+@autokitteh.activity
+def step():
+	1/0
