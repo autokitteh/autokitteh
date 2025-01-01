@@ -108,6 +108,7 @@ func (c *client) Get(ctx context.Context, id sdktypes.DeploymentID) (sdktypes.De
 // List implements sdkservices.Deployments.
 func (c *client) List(ctx context.Context, filter sdkservices.ListDeploymentsFilter) ([]sdktypes.Deployment, error) {
 	resp, err := c.client.List(ctx, connect.NewRequest(&deploymentsv1.ListRequest{
+		OrgId:               filter.OrgID.String(),
 		ProjectId:           filter.ProjectID.String(),
 		BuildId:             filter.BuildID.String(),
 		State:               filter.State.ToProto(),

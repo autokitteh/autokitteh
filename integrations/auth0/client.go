@@ -9,14 +9,18 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
+	"go.uber.org/zap"
 )
 
 type integration struct{ vars sdkservices.Vars }
 
 var (
-	authType      = sdktypes.NewSymbol("auth_type")
-	domain        = sdktypes.NewSymbol("domain")
 	integrationID = sdktypes.NewIntegrationIDFromName("auth0")
+
+	authType         = sdktypes.NewSymbol("auth_type")
+	clientIDName     = sdktypes.NewSymbol("client_id")
+	clientSecretName = sdktypes.NewSymbol("client_secret")
+	domainName       = sdktypes.NewSymbol("auth0_domain")
 )
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
@@ -54,6 +58,7 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 
 		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
 		if err != nil {
+			zap.L().Error("failed to read connection vars", zap.String("connection_id", cid.String()), zap.Error(err))
 			return sdktypes.InvalidStatus, err
 		}
 
@@ -62,6 +67,10 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 		}
 		if at.Value() == integrations.OAuth {
+			token := vs.GetValueByString("oauth_AccessToken")
+			if token == "" {
+				return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+			}
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using OAuth 2.0"), nil
 		}
 

@@ -45,9 +45,6 @@ const (
 	ProjectsServiceListProcedure = "/autokitteh.projects.v1.ProjectsService/List"
 	// ProjectsServiceBuildProcedure is the fully-qualified name of the ProjectsService's Build RPC.
 	ProjectsServiceBuildProcedure = "/autokitteh.projects.v1.ProjectsService/Build"
-	// ProjectsServiceListForOwnerProcedure is the fully-qualified name of the ProjectsService's
-	// ListForOwner RPC.
-	ProjectsServiceListForOwnerProcedure = "/autokitteh.projects.v1.ProjectsService/ListForOwner"
 	// ProjectsServiceSetResourcesProcedure is the fully-qualified name of the ProjectsService's
 	// SetResources RPC.
 	ProjectsServiceSetResourcesProcedure = "/autokitteh.projects.v1.ProjectsService/SetResources"
@@ -68,8 +65,6 @@ type ProjectsServiceClient interface {
 	Update(context.Context, *connect.Request[v1.UpdateRequest]) (*connect.Response[v1.UpdateResponse], error)
 	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
 	Build(context.Context, *connect.Request[v1.BuildRequest]) (*connect.Response[v1.BuildResponse], error)
-	// DEPRECATED. Use List instead.
-	ListForOwner(context.Context, *connect.Request[v1.ListForOwnerRequest]) (*connect.Response[v1.ListForOwnerResponse], error)
 	SetResources(context.Context, *connect.Request[v1.SetResourcesRequest]) (*connect.Response[v1.SetResourcesResponse], error)
 	DownloadResources(context.Context, *connect.Request[v1.DownloadResourcesRequest]) (*connect.Response[v1.DownloadResourcesResponse], error)
 	Export(context.Context, *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error)
@@ -116,11 +111,6 @@ func NewProjectsServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			baseURL+ProjectsServiceBuildProcedure,
 			opts...,
 		),
-		listForOwner: connect.NewClient[v1.ListForOwnerRequest, v1.ListForOwnerResponse](
-			httpClient,
-			baseURL+ProjectsServiceListForOwnerProcedure,
-			opts...,
-		),
 		setResources: connect.NewClient[v1.SetResourcesRequest, v1.SetResourcesResponse](
 			httpClient,
 			baseURL+ProjectsServiceSetResourcesProcedure,
@@ -152,7 +142,6 @@ type projectsServiceClient struct {
 	update            *connect.Client[v1.UpdateRequest, v1.UpdateResponse]
 	list              *connect.Client[v1.ListRequest, v1.ListResponse]
 	build             *connect.Client[v1.BuildRequest, v1.BuildResponse]
-	listForOwner      *connect.Client[v1.ListForOwnerRequest, v1.ListForOwnerResponse]
 	setResources      *connect.Client[v1.SetResourcesRequest, v1.SetResourcesResponse]
 	downloadResources *connect.Client[v1.DownloadResourcesRequest, v1.DownloadResourcesResponse]
 	export            *connect.Client[v1.ExportRequest, v1.ExportResponse]
@@ -189,11 +178,6 @@ func (c *projectsServiceClient) Build(ctx context.Context, req *connect.Request[
 	return c.build.CallUnary(ctx, req)
 }
 
-// ListForOwner calls autokitteh.projects.v1.ProjectsService.ListForOwner.
-func (c *projectsServiceClient) ListForOwner(ctx context.Context, req *connect.Request[v1.ListForOwnerRequest]) (*connect.Response[v1.ListForOwnerResponse], error) {
-	return c.listForOwner.CallUnary(ctx, req)
-}
-
 // SetResources calls autokitteh.projects.v1.ProjectsService.SetResources.
 func (c *projectsServiceClient) SetResources(ctx context.Context, req *connect.Request[v1.SetResourcesRequest]) (*connect.Response[v1.SetResourcesResponse], error) {
 	return c.setResources.CallUnary(ctx, req)
@@ -223,8 +207,6 @@ type ProjectsServiceHandler interface {
 	Update(context.Context, *connect.Request[v1.UpdateRequest]) (*connect.Response[v1.UpdateResponse], error)
 	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
 	Build(context.Context, *connect.Request[v1.BuildRequest]) (*connect.Response[v1.BuildResponse], error)
-	// DEPRECATED. Use List instead.
-	ListForOwner(context.Context, *connect.Request[v1.ListForOwnerRequest]) (*connect.Response[v1.ListForOwnerResponse], error)
 	SetResources(context.Context, *connect.Request[v1.SetResourcesRequest]) (*connect.Response[v1.SetResourcesResponse], error)
 	DownloadResources(context.Context, *connect.Request[v1.DownloadResourcesRequest]) (*connect.Response[v1.DownloadResourcesResponse], error)
 	Export(context.Context, *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error)
@@ -267,11 +249,6 @@ func NewProjectsServiceHandler(svc ProjectsServiceHandler, opts ...connect.Handl
 		svc.Build,
 		opts...,
 	)
-	projectsServiceListForOwnerHandler := connect.NewUnaryHandler(
-		ProjectsServiceListForOwnerProcedure,
-		svc.ListForOwner,
-		opts...,
-	)
 	projectsServiceSetResourcesHandler := connect.NewUnaryHandler(
 		ProjectsServiceSetResourcesProcedure,
 		svc.SetResources,
@@ -306,8 +283,6 @@ func NewProjectsServiceHandler(svc ProjectsServiceHandler, opts ...connect.Handl
 			projectsServiceListHandler.ServeHTTP(w, r)
 		case ProjectsServiceBuildProcedure:
 			projectsServiceBuildHandler.ServeHTTP(w, r)
-		case ProjectsServiceListForOwnerProcedure:
-			projectsServiceListForOwnerHandler.ServeHTTP(w, r)
 		case ProjectsServiceSetResourcesProcedure:
 			projectsServiceSetResourcesHandler.ServeHTTP(w, r)
 		case ProjectsServiceDownloadResourcesProcedure:
@@ -347,10 +322,6 @@ func (UnimplementedProjectsServiceHandler) List(context.Context, *connect.Reques
 
 func (UnimplementedProjectsServiceHandler) Build(context.Context, *connect.Request[v1.BuildRequest]) (*connect.Response[v1.BuildResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.projects.v1.ProjectsService.Build is not implemented"))
-}
-
-func (UnimplementedProjectsServiceHandler) ListForOwner(context.Context, *connect.Request[v1.ListForOwnerRequest]) (*connect.Response[v1.ListForOwnerResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.projects.v1.ProjectsService.ListForOwner is not implemented"))
 }
 
 func (UnimplementedProjectsServiceHandler) SetResources(context.Context, *connect.Request[v1.SetResourcesRequest]) (*connect.Response[v1.SetResourcesResponse], error) {

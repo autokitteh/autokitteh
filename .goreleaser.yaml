@@ -7,9 +7,9 @@ builds:
     main: ./cmd/ak
     ldflags:
       - -X 'go.autokitteh.dev/autokitteh/internal/version.Version={{ .Version }}'
-      - -X 'go.autokitteh.dev/autokitteh/internal/version.Date={{ .Date }}'
+      - -X 'go.autokitteh.dev/autokitteh/internal/version.Time={{ .Date }}'
       - -X 'go.autokitteh.dev/autokitteh/internal/version.Commit={{ .Commit }}'
-      - -X 'go.autokitteh.dev/autokitteh/internal/version.User=goreleaser'
+      - -X 'go.autokitteh.dev/autokitteh/internal/version.User=GoReleaser'
     env:
       - CGO_ENABLED=0
     goos:
@@ -21,18 +21,27 @@ builds:
 
 brews:
   - name: autokitteh
-    description: "Durable workflow automation made simple"
-    homepage: "https://autokitteh.com"
-    url_template: "https://github.com/autokitteh/autokitteh/releases/download/{{ .Version }}/{{ .ArtifactName }}"
+    description: "Durable workflow automation in just a few lines of code"
+    homepage: "https://autokitteh.com/"
     license: "Apache-2.0"
+
+    url_template: "https://github.com/autokitteh/autokitteh/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
     install: |
       bin.install "ak"
+      generate_completions_from_executable(bin/"ak", "completion")
     test: |
-      system "#{bin}/ak --version"
+      system "#{bin}/ak version"
+
     repository:
       owner: autokitteh
       name: homebrew-tap
       branch: main
+      token: "{{ .Env.GITHUB_TOKEN }}"
+    directory: Formula
+    commit_author:
+      name: goreleaserbot
+      email: bot@goreleaser.com
+    commit_msg_template: "{{ .ProjectName }} {{ .Version }}"
 
 source:
   enabled: false

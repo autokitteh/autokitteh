@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 
 	"go.autokitteh.dev/autokitteh/backend/svc"
-	"go.autokitteh.dev/autokitteh/config"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkclient"
 )
@@ -41,7 +40,7 @@ func ServerURL() *url.URL { return serverURL }
 
 func readServerURL() (ret *url.URL, err error) {
 	u := sdkclient.DefaultLocalURL
-	if _, err = cfg.Get(config.ServiceUrlConfigKey, &u); err != nil {
+	if _, err = cfg.Get("http.service_url", &u); err != nil {
 		return
 	} // if not overridden by config, then url will remain default
 

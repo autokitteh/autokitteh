@@ -1,7 +1,6 @@
 from autokitteh_pb.program.v1 import program_pb2 as _program_pb2
 from autokitteh_pb.projects.v1 import project_pb2 as _project_pb2
 from buf.validate import validate_pb2 as _validate_pb2
-from google.protobuf import field_mask_pb2 as _field_mask_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
 from google.protobuf import descriptor as _descriptor
@@ -33,14 +32,14 @@ class DeleteResponse(_message.Message):
     def __init__(self) -> None: ...
 
 class GetRequest(_message.Message):
-    __slots__ = ["project_id", "name", "owner_id"]
+    __slots__ = ["project_id", "name", "org_id"]
     PROJECT_ID_FIELD_NUMBER: _ClassVar[int]
     NAME_FIELD_NUMBER: _ClassVar[int]
-    OWNER_ID_FIELD_NUMBER: _ClassVar[int]
+    ORG_ID_FIELD_NUMBER: _ClassVar[int]
     project_id: str
     name: str
-    owner_id: str
-    def __init__(self, project_id: _Optional[str] = ..., name: _Optional[str] = ..., owner_id: _Optional[str] = ...) -> None: ...
+    org_id: str
+    def __init__(self, project_id: _Optional[str] = ..., name: _Optional[str] = ..., org_id: _Optional[str] = ...) -> None: ...
 
 class GetResponse(_message.Message):
     __slots__ = ["project"]
@@ -49,34 +48,22 @@ class GetResponse(_message.Message):
     def __init__(self, project: _Optional[_Union[_project_pb2.Project, _Mapping]] = ...) -> None: ...
 
 class UpdateRequest(_message.Message):
-    __slots__ = ["project", "field_mask"]
+    __slots__ = ["project"]
     PROJECT_FIELD_NUMBER: _ClassVar[int]
-    FIELD_MASK_FIELD_NUMBER: _ClassVar[int]
     project: _project_pb2.Project
-    field_mask: _field_mask_pb2.FieldMask
-    def __init__(self, project: _Optional[_Union[_project_pb2.Project, _Mapping]] = ..., field_mask: _Optional[_Union[_field_mask_pb2.FieldMask, _Mapping]] = ...) -> None: ...
+    def __init__(self, project: _Optional[_Union[_project_pb2.Project, _Mapping]] = ...) -> None: ...
 
 class UpdateResponse(_message.Message):
     __slots__ = []
     def __init__(self) -> None: ...
 
 class ListRequest(_message.Message):
-    __slots__ = []
-    def __init__(self) -> None: ...
+    __slots__ = ["org_id"]
+    ORG_ID_FIELD_NUMBER: _ClassVar[int]
+    org_id: str
+    def __init__(self, org_id: _Optional[str] = ...) -> None: ...
 
 class ListResponse(_message.Message):
-    __slots__ = ["projects"]
-    PROJECTS_FIELD_NUMBER: _ClassVar[int]
-    projects: _containers.RepeatedCompositeFieldContainer[_project_pb2.Project]
-    def __init__(self, projects: _Optional[_Iterable[_Union[_project_pb2.Project, _Mapping]]] = ...) -> None: ...
-
-class ListForOwnerRequest(_message.Message):
-    __slots__ = ["owner_id"]
-    OWNER_ID_FIELD_NUMBER: _ClassVar[int]
-    owner_id: str
-    def __init__(self, owner_id: _Optional[str] = ...) -> None: ...
-
-class ListForOwnerResponse(_message.Message):
     __slots__ = ["projects"]
     PROJECTS_FIELD_NUMBER: _ClassVar[int]
     projects: _containers.RepeatedCompositeFieldContainer[_project_pb2.Project]

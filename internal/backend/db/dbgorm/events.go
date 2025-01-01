@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"gorm.io/gorm"
+	"github.com/google/uuid"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -14,31 +14,26 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func (gdb *gormdb) withUserEvents(ctx context.Context) *gorm.DB {
-	return gdb.withUserEntity(ctx, "event")
-}
-
 func (gdb *gormdb) saveEvent(ctx context.Context, event *scheme.Event) error {
-	createFunc := func(tx *gorm.DB, uid string) error { return tx.Create(event).Error }
-	return gdb.createEntityWithOwnership(ctx, createFunc, event, event.ConnectionID)
+	return gdb.db.WithContext(ctx).Create(event).Error
 }
 
-func (gdb *gormdb) deleteEvent(ctx context.Context, eventID sdktypes.UUID) error {
-	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isCtxUserEntity(ctx, eventID); err != nil {
-			return err
-		}
-		return tx.db.Delete(&scheme.Event{}, "event_id = ?", eventID).Error // NOTE: eventID isn't a primary key
-	})
+func (gdb *gormdb) deleteEvent(ctx context.Context, eventID uuid.UUID) error {
+	return gdb.db.WithContext(ctx).Delete(&scheme.Event{}, "event_id = ?", eventID).Error // NOTE: eventID isn't a primary key
 }
 
-func (gdb *gormdb) getEvent(ctx context.Context, eventID sdktypes.UUID) (*scheme.Event, error) {
-	return getOne[scheme.Event](gdb.withUserEvents(ctx), "event_id = ?", eventID)
+func (gdb *gormdb) getEvent(ctx context.Context, eventID uuid.UUID) (*scheme.Event, error) {
+	return getOne[scheme.Event](gdb.db.WithContext(ctx), "event_id = ?", eventID)
 }
 
 func (gdb *gormdb) listEvents(ctx context.Context, filter sdkservices.ListEventsFilter) ([]scheme.Event, error) {
-	q := gdb.withUserEvents(ctx)
+	q := gdb.db.WithContext(ctx)
 
+	q = withProjectOrgID(q, filter.OrgID, "events")
+
+	if filter.ProjectID.IsValid() {
+		q = q.Where("project_id = ?", filter.ProjectID.UUIDValue())
+	}
 	if filter.IntegrationID.IsValid() {
 		q = q.Where("integration_id = ?", filter.IntegrationID.UUIDValue())
 	}
@@ -78,15 +73,21 @@ func (db *gormdb) SaveEvent(ctx context.Context, event sdktypes.Event) error {
 
 	connectionID := event.DestinationID().ToConnectionID()
 
+	pid, err := db.GetProjectIDOf(ctx, event.DestinationID())
+	if err != nil {
+		return fmt.Errorf("get project id: %w", err)
+	}
+
 	e := scheme.Event{
+		Base:          based(ctx),
+		ProjectID:     pid.UUIDValue(),
 		EventID:       event.ID().UUIDValue(),
 		DestinationID: event.DestinationID().UUIDValue(),
-		ConnectionID:  scheme.UUIDOrNil(connectionID.UUIDValue()),
-		TriggerID:     scheme.UUIDOrNil(event.DestinationID().ToTriggerID().UUIDValue()),
+		ConnectionID:  uuidPtrOrNil(connectionID),
+		TriggerID:     uuidPtrOrNil(event.DestinationID().ToTriggerID()),
 		EventType:     event.Type(),
 		Data:          kittehs.Must1(json.Marshal(event.Data())),
 		Memo:          kittehs.Must1(json.Marshal(event.Memo())),
-		CreatedAt:     event.CreatedAt(),
 	}
 
 	if connectionID.IsValid() { // only if exists
@@ -98,6 +99,7 @@ func (db *gormdb) SaveEvent(ctx context.Context, event sdktypes.Event) error {
 		if !conn.IsValid() {
 			return sdkerrors.NewInvalidArgumentError("invalid event connection")
 		}
+
 		integrationID := conn.IntegrationID().UUIDValue()
 		e.IntegrationID = &integrationID
 	}

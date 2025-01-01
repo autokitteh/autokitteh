@@ -19,6 +19,7 @@ import (
 	googleoauth2 "google.golang.org/api/oauth2/v2"
 	"google.golang.org/api/sheets/v4"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -84,11 +85,15 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 		// below (if it uses OAuth). This hard-coding is EXTREMELY TEMPORARY!
 		configs: map[string]*oauth2.Config{
 			"auth0": {
-				ClientID:     os.Getenv("AUTH0_CLIENT_ID"),
-				ClientSecret: os.Getenv("AUTH0_CLIENT_SECRET"),
+				// Auth0 is a special case: environment variables are not supported.
+				// All authentication credentials must be stored in `vars`.
+				ClientID:     "",
+				ClientSecret: "",
 				Endpoint: oauth2.Endpoint{
-					AuthURL:  fmt.Sprintf("https://%s/oauth/authorize", os.Getenv("AUTH0_DOMAIN")),
-					TokenURL: fmt.Sprintf("https://%s/oauth/token", os.Getenv("AUTH0_DOMAIN")),
+					// Each Auth0 app has a unique domain stored in `vars`.
+					// This domain is dynamically replaced during the authentication flow.
+					AuthURL:  "https://{{AUTH0_DOMAIN}}/oauth/authorize",
+					TokenURL: "https://{{AUTH0_DOMAIN}}/oauth/token",
 				},
 				RedirectURL: redirectURL + "auth0",
 				Scopes: []string{
@@ -397,8 +402,8 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 
 		opts: map[string]map[string]string{
 			"auth0": {
-				// TODO: audience URL (from env var).
-				"audience":   fmt.Sprintf("https://%s/api/v2/", os.Getenv("AUTH0_DOMAIN")),
+				// Using template-style placeholder for AUTH0_DOMAIN
+				"audience":   "https://{{AUTH0_DOMAIN}}/api/v2/",
 				"grant_type": "client_credentials",
 			},
 			"gmail": {
@@ -467,11 +472,37 @@ func (o *oauth) getConfigWithConnection(ctx context.Context, intg string, cid sd
 		return nil, nil, err
 	}
 
-	cfgCopy := *baseCfg
-	cfgCopy.ClientID = vs.GetValueByString("client_id")
-	cfgCopy.ClientSecret = vs.GetValueByString("client_secret")
+	cfgCopy := &oauth2.Config{
+		ClientID:     vs.GetValueByString("client_id"),
+		ClientSecret: vs.GetValueByString("client_secret"),
+		Endpoint: oauth2.Endpoint{
+			AuthURL:       baseCfg.Endpoint.AuthURL,
+			TokenURL:      baseCfg.Endpoint.TokenURL,
+			DeviceAuthURL: baseCfg.Endpoint.DeviceAuthURL,
+			AuthStyle:     baseCfg.Endpoint.AuthStyle,
+		},
+		RedirectURL: baseCfg.RedirectURL,
+		Scopes:      append([]string{}, baseCfg.Scopes...),
+	}
 
-	return &cfgCopy, opts, nil
+	optsCopy := make(map[string]string, len(opts))
+	for k, v := range opts {
+		optsCopy[k] = v
+	}
+
+	// Special case: Auth0 uses a dynamic domain stored in vars.
+	// TODO(INT-129): Add dynamic domain handling to all OAuth integrations.
+	if intg == "auth0" {
+		placeholder := "{{AUTH0_DOMAIN}}"
+		domain := vs.GetValueByString("auth0_domain")
+
+		cfgCopy.Endpoint.AuthURL = strings.Replace(cfgCopy.Endpoint.AuthURL, placeholder, domain, 1)
+		cfgCopy.Endpoint.TokenURL = strings.Replace(cfgCopy.Endpoint.TokenURL, placeholder, domain, 1)
+
+		optsCopy["audience"] = strings.Replace(opts["audience"], placeholder, domain, 1)
+	}
+
+	return cfgCopy, optsCopy, nil
 }
 
 func (o *oauth) StartFlow(ctx context.Context, intg string, cid sdktypes.ConnectionID, origin string) (string, error) {
@@ -495,9 +526,13 @@ func (o *oauth) StartFlow(ctx context.Context, intg string, cid sdktypes.Connect
 }
 
 func (o *oauth) Exchange(ctx context.Context, integration string, cid sdktypes.ConnectionID, code string) (*oauth2.Token, error) {
-	// Convert the received temporary authorization code
-	// into a refresh token / user access token.
-	cfg, opts, err := o.getConfigWithConnection(ctx, integration, cid)
+	// Convert the received temporary authorization code into a refresh token / user access token.
+	// ATTENTION: This method may be called by an UNAUTHENTICATED webhook handler, however we CAN
+	// use the system user (SetAuthnSystemUser) securely, because only the 3rd-party OAuth
+	// provider can provide us a valid "code" parameter related to the connection ID. In other
+	// words, if the "code" is fake, or the CID is valid-but-unrelated to the beginning of the
+	// OAuth flow, the OAuth provider will reject the exchange, so data leakage is not possible.
+	cfg, opts, err := o.getConfigWithConnection(authcontext.SetAuthnSystemUser(ctx), integration, cid)
 	if err != nil {
 		return nil, fmt.Errorf("bad oauth integration name: %w", err)
 	}

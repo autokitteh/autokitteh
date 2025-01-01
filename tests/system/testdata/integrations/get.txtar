@@ -8,12 +8,12 @@ return code == 0
 output equals ''
 
 ak integration get foo --fail
-output equals 'Error: integration not found'
-return code == 10
+output equals 'Error: integration: not_found'
+return code == $RC_NOT_FOUND
 
 ak integration get integration_deadbeefdeadbeefdeadbe --fail
-output equals 'Error: integration not found'
-return code == 10
+output equals 'Error: integration: not_found'
+return code == $RC_NOT_FOUND
 
 # Get integration by name.
 ak integration get test

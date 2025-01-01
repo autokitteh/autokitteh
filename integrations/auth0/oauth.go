@@ -5,27 +5,24 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
+	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	"go.uber.org/zap"
 )
 
 type handler struct {
 	logger *zap.Logger
+	vars   sdkservices.Vars
 }
 
-const (
-	domainEnvVarName = "AUTH0_DOMAIN"
-)
-
-func NewHandler(l *zap.Logger) http.Handler {
-	return handler{logger: l}
+func NewHTTPHandler(l *zap.Logger, vars sdkservices.Vars) handler {
+	return handler{logger: l, vars: vars}
 }
 
-func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, desc)
 
 	// Handle errors (e.g. the user didn't authorize us) based on:
@@ -51,20 +48,36 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Test the OAuth token's usability and get authoritative installation details.
-	d := os.Getenv(domainEnvVarName)
-	if d == "" {
-		l.Error("Missing Auth0 domain env var")
-		c.AbortBadRequest("unknown Auth0 domain")
+	cid, err := sdktypes.StrictParseConnectionID(c.ConnectionID)
+	if err != nil {
+		l.Error("Failed to parse connection ID", zap.Error(err))
+		c.AbortBadRequest("invalid connection ID")
+		return
+	}
+	vs, err := h.vars.Get(r.Context(), sdktypes.NewVarScopeID(cid))
+	if err != nil {
+		l.Error("Failed to get Auth0 vars", zap.Error(err))
+		c.AbortServerError("unknown Auth0 domain")
 		return
 	}
 
+	// Test the OAuth token's usability and get authoritative installation details.
+	d := vs.GetValueByString("auth0_domain")
+	if d == "" {
+		l.Error("Missing Auth0 domain in connection vars")
+		c.AbortServerError("unknown Auth0 domain")
+		return
+	}
+
+	// Tests OAuth0's Management API.
 	req, err := http.NewRequest("GET", fmt.Sprintf("https://%s/api/v2/roles", d), nil)
+
 	if err != nil {
 		l.Error("Failed to create HTTP request", zap.Error(err))
 		c.AbortServerError("request creation error")
 		return
 	}
+
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", oauthToken.AccessToken))
 
 	client := &http.Client{}
@@ -93,6 +106,5 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c.Finalize(sdktypes.NewVars(data.ToVars()...).
-		Append(sdktypes.NewVar(domain).SetValue(d)).
 		Append(sdktypes.NewVar(authType).SetValue(integrations.OAuth)))
 }

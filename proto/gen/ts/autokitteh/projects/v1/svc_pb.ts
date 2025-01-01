@@ -4,7 +4,7 @@
 // @ts-nocheck
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
-import { FieldMask, Message, proto3 } from "@bufbuild/protobuf";
+import { Message, proto3 } from "@bufbuild/protobuf";
 import { Project } from "./project_pb.js";
 import { Error } from "../../program/v1/program_pb.js";
 
@@ -168,11 +168,11 @@ export class GetRequest extends Message<GetRequest> {
   name = "";
 
   /**
-   * relevant only when name != "". optional - if not set, auth user is used.
+   * relevant only when name != "". optional.
    *
-   * @generated from field: string owner_id = 3;
+   * @generated from field: string org_id = 3;
    */
-  ownerId = "";
+  orgId = "";
 
   constructor(data?: PartialMessage<GetRequest>) {
     super();
@@ -184,7 +184,7 @@ export class GetRequest extends Message<GetRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "owner_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "org_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetRequest {
@@ -252,11 +252,6 @@ export class UpdateRequest extends Message<UpdateRequest> {
    */
   project?: Project;
 
-  /**
-   * @generated from field: google.protobuf.FieldMask field_mask = 2;
-   */
-  fieldMask?: FieldMask;
-
   constructor(data?: PartialMessage<UpdateRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -266,7 +261,6 @@ export class UpdateRequest extends Message<UpdateRequest> {
   static readonly typeName = "autokitteh.projects.v1.UpdateRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "project", kind: "message", T: Project },
-    { no: 2, name: "field_mask", kind: "message", T: FieldMask },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateRequest {
@@ -321,6 +315,11 @@ export class UpdateResponse extends Message<UpdateResponse> {
  * @generated from message autokitteh.projects.v1.ListRequest
  */
 export class ListRequest extends Message<ListRequest> {
+  /**
+   * @generated from field: string org_id = 1;
+   */
+  orgId = "";
+
   constructor(data?: PartialMessage<ListRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -329,6 +328,7 @@ export class ListRequest extends Message<ListRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "autokitteh.projects.v1.ListRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListRequest {
@@ -382,80 +382,6 @@ export class ListResponse extends Message<ListResponse> {
 
   static equals(a: ListResponse | PlainMessage<ListResponse> | undefined, b: ListResponse | PlainMessage<ListResponse> | undefined): boolean {
     return proto3.util.equals(ListResponse, a, b);
-  }
-}
-
-/**
- * @generated from message autokitteh.projects.v1.ListForOwnerRequest
- */
-export class ListForOwnerRequest extends Message<ListForOwnerRequest> {
-  /**
-   * @generated from field: string owner_id = 1;
-   */
-  ownerId = "";
-
-  constructor(data?: PartialMessage<ListForOwnerRequest>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "autokitteh.projects.v1.ListForOwnerRequest";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "owner_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListForOwnerRequest {
-    return new ListForOwnerRequest().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListForOwnerRequest {
-    return new ListForOwnerRequest().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListForOwnerRequest {
-    return new ListForOwnerRequest().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: ListForOwnerRequest | PlainMessage<ListForOwnerRequest> | undefined, b: ListForOwnerRequest | PlainMessage<ListForOwnerRequest> | undefined): boolean {
-    return proto3.util.equals(ListForOwnerRequest, a, b);
-  }
-}
-
-/**
- * @generated from message autokitteh.projects.v1.ListForOwnerResponse
- */
-export class ListForOwnerResponse extends Message<ListForOwnerResponse> {
-  /**
-   * @generated from field: repeated autokitteh.projects.v1.Project projects = 1;
-   */
-  projects: Project[] = [];
-
-  constructor(data?: PartialMessage<ListForOwnerResponse>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "autokitteh.projects.v1.ListForOwnerResponse";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "projects", kind: "message", T: Project, repeated: true },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListForOwnerResponse {
-    return new ListForOwnerResponse().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListForOwnerResponse {
-    return new ListForOwnerResponse().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListForOwnerResponse {
-    return new ListForOwnerResponse().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: ListForOwnerResponse | PlainMessage<ListForOwnerResponse> | undefined, b: ListForOwnerResponse | PlainMessage<ListForOwnerResponse> | undefined): boolean {
-    return proto3.util.equals(ListForOwnerResponse, a, b);
   }
 }
 

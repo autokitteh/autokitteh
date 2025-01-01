@@ -26,11 +26,11 @@ def hubspot_client(connection: str, **kwargs) -> HubSpot:
 
     refresh_token = os.getenv(connection + "__oauth_RefreshToken")
     if not refresh_token:
-        raise ConnectionInitError("OAuth refresh token is missing")
+        raise ConnectionInitError(connection)
 
     try:
         access_token, _ = refresh_oauth("hubspot", connection)
     except Exception as e:
         raise OAuthRefreshError(connection, str(e)) from e
 
-    return HubSpot(access_token=access_token)
+    return HubSpot(access_token=access_token, **kwargs)

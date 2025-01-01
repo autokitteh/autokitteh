@@ -8,7 +8,7 @@ resp code == 202
 
 wait 5s for session ses_00000000000000000000000007
 
-ak session log --no-timestamps --page-size 1 --order desc -J
+ak session log my_project --no-timestamps --page-size 1 --order desc -J
 return code == 0
 output equals_json file expected_without_path.json
 
@@ -18,7 +18,7 @@ resp code == 202
 
 wait 5s for session ses_0000000000000000000000000a
 
-ak session log --no-timestamps --page-size 1 --order desc -J
+ak session log my_project --no-timestamps --page-size 1 --order desc -J
 return code == 0
 output equals_json file expected_with_path.json
 

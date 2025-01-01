@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { BuildRequest, BuildResponse, CreateRequest, CreateResponse, DeleteRequest, DeleteResponse, DownloadResourcesRequest, DownloadResourcesResponse, ExportRequest, ExportResponse, GetRequest, GetResponse, LintRequest, LintResponse, ListForOwnerRequest, ListForOwnerResponse, ListRequest, ListResponse, SetResourcesRequest, SetResourcesResponse, UpdateRequest, UpdateResponse } from "./svc_pb.js";
+import { BuildRequest, BuildResponse, CreateRequest, CreateResponse, DeleteRequest, DeleteResponse, DownloadResourcesRequest, DownloadResourcesResponse, ExportRequest, ExportResponse, GetRequest, GetResponse, LintRequest, LintResponse, ListRequest, ListResponse, SetResourcesRequest, SetResourcesResponse, UpdateRequest, UpdateResponse } from "./svc_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -64,17 +64,6 @@ export const ProjectsService = {
       name: "Build",
       I: BuildRequest,
       O: BuildResponse,
-      kind: MethodKind.Unary,
-    },
-    /**
-     * DEPRECATED. Use List instead.
-     *
-     * @generated from rpc autokitteh.projects.v1.ProjectsService.ListForOwner
-     */
-    listForOwner: {
-      name: "ListForOwner",
-      I: ListForOwnerRequest,
-      O: ListForOwnerResponse,
       kind: MethodKind.Unary,
     },
     /**
