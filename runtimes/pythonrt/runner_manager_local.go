@@ -11,8 +11,9 @@ import (
 	"sync"
 	"time"
 
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	"go.uber.org/zap"
+
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 type localRunnerManager struct {

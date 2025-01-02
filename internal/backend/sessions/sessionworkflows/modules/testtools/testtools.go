@@ -102,10 +102,9 @@ func freeze(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktyp
 		replaying := workflow.IsReplaying(wctx)
 
 		// This makes sure that the IsReplaying function above will
-		// return true if if the workflow froze the last iteration.
-		// If this wouldn't be here, and the workflow froze the last
-		// replay, there would be nothing to replay and IsReplay would
-		// return false.
+		// return true if the workflow froze the last iteration.
+		// If this wouldn't be here, and the workflow froze the last replay,
+		// there would be nothing to replay and IsReplay would return false.
 		if err := workflow.Sleep(wctx, time.Millisecond); err != nil {
 			return sdktypes.InvalidValue, err
 		}

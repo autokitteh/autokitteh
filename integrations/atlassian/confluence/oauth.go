@@ -94,8 +94,8 @@ type resource struct {
 // https://developer.atlassian.com/cloud/confluence/oauth-2-3lo-apps/#3--make-calls-to-the-api-using-the-access-token
 // https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/#3--make-calls-to-the-api-using-the-access-token
 func accessibleResources(l *zap.Logger, baseURL string, token string) ([]resource, error) {
-	u := fmt.Sprintf("%s/oauth/token/accessible-resources", baseURL)
-	req, err := http.NewRequest("GET", u, nil)
+	u := baseURL + "/oauth/token/accessible-resources"
+	req, err := http.NewRequest(http.MethodGet, u, nil)
 	if err != nil {
 		logWarnIfNotNil(l, "Failed to construct HTTP request for OAuth token test", zap.Error(err))
 		return nil, err

@@ -109,7 +109,7 @@ func newTestID() uuid.UUID {
 	id += 1
 	binary.BigEndian.PutUint64(bytes[8:], uint64(id)) // fill the last 8 bytes, leave the first 8 bytes as zero
 
-	return kittehs.Must1(uuid.FromBytes(bytes[:]))
+	return kittehs.Must1(uuid.FromBytes(bytes))
 }
 
 func idToName(id uuid.UUID, prefix string) string {
@@ -323,8 +323,7 @@ func (f *dbFixture) newBuild(args ...any) scheme.Build {
 		Base:    scheme.Base{CreatedAt: now},
 	}
 	for _, a := range args {
-		switch a := a.(type) {
-		case scheme.Project:
+		if a, ok := a.(scheme.Project); ok {
 			b.ProjectID = a.ProjectID
 		}
 	}
@@ -423,7 +422,7 @@ func (f *dbFixture) newConnection(args ...any) scheme.Connection {
 }
 
 func (f *dbFixture) newEvent(args ...any) scheme.Event {
-	f.eventSequence = f.eventSequence + 1
+	f.eventSequence++
 	e := scheme.Event{
 		EventID: newTestID(),
 		Base:    scheme.Base{CreatedAt: now},
@@ -450,8 +449,7 @@ func (f *dbFixture) newSignal(args ...any) scheme.Signal {
 		CreatedAt: now,
 	}
 	for _, a := range args {
-		switch a := a.(type) {
-		case scheme.Connection:
+		if a, ok := a.(scheme.Connection); ok {
 			s.ConnectionID = &a.ConnectionID
 			s.DestinationID = a.ConnectionID
 		}
@@ -470,7 +468,7 @@ func resetTimes(vs ...any) {
 
 		rv = rv.Elem()
 
-		for i := 0; i < rv.NumField(); i++ {
+		for i := range rv.NumField() {
 			fv := rv.Field(i)
 			if fv.Kind() == reflect.Struct {
 				if fv.Type().Name() == "Time" {

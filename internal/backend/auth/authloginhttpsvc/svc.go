@@ -10,6 +10,9 @@ import (
 	"net/url"
 	"strconv"
 
+	"go.uber.org/fx"
+	"go.uber.org/zap"
+
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authloginhttpsvc/web"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authsessions"
@@ -20,9 +23,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-
-	"go.uber.org/fx"
-	"go.uber.org/zap"
 )
 
 type Deps struct {
@@ -71,7 +71,7 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 
 	if a.Cfg.Descope.Enabled {
 		if a.Cfg.GithubOAuth.Enabled || a.Cfg.GoogleOAuth.Enabled {
-			return fmt.Errorf("cannot enable descope with other providers enabled")
+			return errors.New("cannot enable descope with other providers enabled")
 		}
 
 		if err := registerDescopeRoutes(muxes.NoAuth, a.Cfg.Descope, a.newSuccessLoginHandler); err != nil {
@@ -156,7 +156,7 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 			return
 		}
 
-		http.Redirect(w, r, fmt.Sprintf("vscode://autokitteh.autokitteh/authenticate?token=%s", token), http.StatusFound)
+		http.Redirect(w, r, "vscode://autokitteh.autokitteh/authenticate?token="+token, http.StatusFound)
 	})
 
 	muxes.Auth.HandleFunc("/whoami", func(w http.ResponseWriter, r *http.Request) {

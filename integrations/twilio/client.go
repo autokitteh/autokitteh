@@ -3,6 +3,9 @@ package twilio
 import (
 	"context"
 
+	"github.com/twilio/twilio-go"
+	"go.uber.org/zap"
+
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/twilio/webhooks"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -10,9 +13,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.uber.org/zap"
-
-	"github.com/twilio/twilio-go"
 )
 
 type integration struct{ vars sdkservices.Vars }

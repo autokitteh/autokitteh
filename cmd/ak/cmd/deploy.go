@@ -43,7 +43,7 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 				return err
 			}
 		} else if projectName != "" {
-			return fmt.Errorf("project name provided without manifest")
+			return errors.New("project name provided without manifest")
 		}
 
 		pid, err := r.ProjectNameOrID(ctx, project)
@@ -64,7 +64,7 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 		// Step 2: build the project (see also the "build" and "project" parent commands).
 		if len(dirPaths) == 0 && len(filePaths) == 0 {
 			if manifestPath == "" {
-				return fmt.Errorf("no dir/file paths provided")
+				return errors.New("no dir/file paths provided")
 			}
 			dirPaths = append(dirPaths, filepath.Dir(manifestPath))
 		}

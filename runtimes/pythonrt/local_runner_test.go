@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path"
 	"regexp"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -86,7 +87,7 @@ var envRe = regexp.MustCompile(`([^ ]+)=([^ \n]+)`)
 
 func processEnv(t *testing.T, pid int) map[string]string {
 	var buf bytes.Buffer
-	cmd := exec.Command("ps", "e", "-ww", "-p", fmt.Sprintf("%d", pid))
+	cmd := exec.Command("ps", "e", "-ww", "-p", strconv.Itoa(pid))
 	cmd.Stdout = &buf
 	cmd.Stderr = os.Stderr
 
@@ -183,7 +184,7 @@ func Test_parsePyVersion(t *testing.T) {
 	}
 }
 
-//TODO: What to here
+// TODO: What to here
 // func Test_pyExports(t *testing.T) {
 // 	skipIfNoPython(t)
 

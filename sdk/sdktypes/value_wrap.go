@@ -71,7 +71,7 @@ func (w ValueWrapper) Wrap(v any) (Value, error) {
 		fallthrough
 
 	case reflect.Invalid:
-		return InvalidValue, sdkerrors.ErrInvalidArgument{}
+		return InvalidValue, sdkerrors.InvalidArgumentError{}
 
 	case reflect.Ptr:
 		if !vv.IsNil() {
@@ -135,7 +135,7 @@ func (w ValueWrapper) Wrap(v any) (Value, error) {
 		}
 
 		vs := make([]Value, vv.Len())
-		for i := 0; i < vv.Len(); i++ {
+		for i := range vv.Len() {
 			var err error
 			if vs[i], err = w.Wrap(vv.Index(i).Interface()); err != nil {
 				return InvalidValue, fmt.Errorf("%d: %w", i, err)

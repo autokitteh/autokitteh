@@ -7,7 +7,7 @@ import (
 )
 
 func post(endpoint string, data []byte) error {
-	req, err := http.NewRequest("POST", endpoint, bytes.NewReader(data))
+	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewReader(data))
 	if err != nil {
 		return fmt.Errorf("constructing request: %w", err)
 	}
@@ -20,7 +20,7 @@ func post(endpoint string, data []byte) error {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("invalid status code: %d", resp.StatusCode)
 	}
 

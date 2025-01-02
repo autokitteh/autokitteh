@@ -2,7 +2,6 @@ package dbgorm
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/google/uuid"
 
@@ -43,7 +42,7 @@ func (gdb *gormdb) getRecordProjectOwner(
 
 	err := gdb.db.WithContext(ctx).
 		Model(m).
-		Where(fmt.Sprintf("%s = ?", m.IDFieldName()), id.UUIDValue()).
+		Where(m.IDFieldName()+" = ?", id.UUIDValue()).
 		Preload("Project").
 		Select("project_id").
 		First(&p).
@@ -112,7 +111,7 @@ func (gdb *gormdb) GetProjectIDOf(ctx context.Context, id sdktypes.ID) (sdktypes
 
 	err := gdb.db.WithContext(ctx).
 		Model(m).
-		Where(fmt.Sprintf("%s = ?", m.IDFieldName()), id.UUIDValue()).
+		Where(m.IDFieldName()+" = ?", id.UUIDValue()).
 		Select("project_id").
 		First(&p).
 		Error

@@ -40,7 +40,7 @@ func parse(fds []protoreflect.FileDescriptor) func(proto.Message) error {
 	for _, fd := range fds {
 		msgs := fd.Messages()
 
-		for i := 0; i < msgs.Len(); i++ {
+		for i := range msgs.Len() {
 			descs = append(descs, msgs.Get(i))
 		}
 	}

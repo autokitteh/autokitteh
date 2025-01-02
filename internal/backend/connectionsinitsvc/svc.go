@@ -151,7 +151,7 @@ func (s Svc) refreshConnection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, fmt.Sprintf("/connections/%s", id), http.StatusFound)
+	http.Redirect(w, r, "/connections/"+id, http.StatusFound)
 }
 
 func (s Svc) success(w http.ResponseWriter, _ *http.Request) {

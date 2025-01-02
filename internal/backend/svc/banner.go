@@ -2,8 +2,8 @@ package svc
 
 import (
 	_ "embed"
-	"fmt"
 	"os"
+	"strconv"
 	"text/template"
 
 	"github.com/fatih/color"
@@ -48,9 +48,9 @@ func printBanner(cfg *bannerConfig, opts RunOptions, addr, wpAddr, wpVersion, te
 		temporalUIAddr = "Temporal UI:    " + fieldColor(temporalUIAddr) + " "
 	}
 
-	webAddr := fmt.Sprintf("http://%s", addr)
+	webAddr := "http://" + addr
 	if wpAddr != "" {
-		webAddr = fmt.Sprintf("http://%s", wpAddr)
+		webAddr = "http://" + wpAddr
 	}
 
 	if wpVersion != "" {
@@ -71,7 +71,7 @@ func printBanner(cfg *bannerConfig, opts RunOptions, addr, wpAddr, wpVersion, te
 		Temporal, TemporalUI string
 	}{
 		Version:         fieldColor(version.Version),
-		PID:             fieldColor(fmt.Sprintf("%d", os.Getpid())),
+		PID:             fieldColor(strconv.Itoa(os.Getpid())),
 		Addr:            fieldColor(addr),
 		WebPlatformAddr: fieldColor(wpAddr),
 		WebAddr:         fieldColor(webAddr),

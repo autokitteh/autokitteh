@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authusers"
-
 	"go.autokitteh.dev/autokitteh/sdk/sdklogger"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )

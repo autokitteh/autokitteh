@@ -75,7 +75,7 @@ func newOverallTestHandler(t *testing.T) (http.Handler, func() *sdktypes.UserID)
 }
 
 func newRequest(u sdktypes.User, authHeader string, cookies []*http.Cookie) *http.Request {
-	req := kittehs.Must1(http.NewRequest("GET", "/", nil))
+	req := kittehs.Must1(http.NewRequest(http.MethodGet, "/", nil))
 
 	if u.IsValid() {
 		req = req.WithContext(ctxWithUserID(context.Background(), u.ID()))

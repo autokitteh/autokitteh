@@ -6,11 +6,10 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/pkg/browser"
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
-
-	"github.com/pkg/browser"
 )
 
 var loginCmd = common.StandardCommand(&cobra.Command{

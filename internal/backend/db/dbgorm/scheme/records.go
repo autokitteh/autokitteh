@@ -495,11 +495,12 @@ type Signal struct {
 func ParseSignal(r *Signal) (*types.Signal, error) {
 	var dstID sdktypes.EventDestinationID
 
-	if r.ConnectionID != nil {
+	switch {
+	case r.ConnectionID != nil:
 		dstID = sdktypes.NewEventDestinationID(sdktypes.NewIDFromUUIDPtr[sdktypes.ConnectionID](r.ConnectionID))
-	} else if r.TriggerID != nil {
+	case r.TriggerID != nil:
 		dstID = sdktypes.NewEventDestinationID(sdktypes.NewIDFromUUIDPtr[sdktypes.TriggerID](r.TriggerID))
-	} else {
+	default:
 		return nil, sdkerrors.NewInvalidArgumentError("signal must have a connection or trigger")
 	}
 

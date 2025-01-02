@@ -3,10 +3,11 @@ package jira
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -110,7 +111,7 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 
 	ctx := extrazap.AttachLoggerToContext(l, r.Context())
 	for _, id := range ids {
-		value := fmt.Sprintf("%d", id)
+		value := strconv.Itoa(id)
 		cids, err := h.vars.FindConnectionIDs(ctx, integrationID, webhookID, value)
 		if err != nil {
 			l.Error("Failed to find connection IDs", zap.Error(err))
@@ -159,7 +160,7 @@ func constructEvent(l *zap.Logger, jiraEvent map[string]any) (sdktypes.Event, er
 	eventType, ok := jiraEvent["webhookEvent"].(string)
 	if !ok {
 		l.Error("Invalid event type")
-		return sdktypes.InvalidEvent, fmt.Errorf("invalid event type")
+		return sdktypes.InvalidEvent, errors.New("invalid event type")
 	}
 
 	akEvent, err := sdktypes.EventFromProto(&sdktypes.EventPB{

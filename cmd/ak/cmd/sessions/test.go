@@ -48,12 +48,12 @@ var testCmd = common.StandardCommand(&cobra.Command{
 
 		a := txtar.Parse(bs)
 		if len(a.Files) == 0 {
-			return fmt.Errorf("empty txtar archive")
+			return errors.New("empty txtar archive")
 		}
 
 		if !ep.IsValid() {
 			if len(a.Files) == 0 {
-				return fmt.Errorf("no entrypoint specified and no files found in txtar archive")
+				return errors.New("no entrypoint specified and no files found in txtar archive")
 			}
 
 			if ep, err = sdktypes.StrictParseCodeLocation(a.Files[0].Name); err != nil {

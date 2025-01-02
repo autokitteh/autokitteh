@@ -7,7 +7,6 @@ import (
 
 	usersv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/users/v1"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/users/v1/usersv1connect"
-
 	"go.autokitteh.dev/autokitteh/sdk/internal/rpcerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/internal"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkclient"

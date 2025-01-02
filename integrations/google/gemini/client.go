@@ -3,6 +3,10 @@ package gemini
 import (
 	"context"
 
+	"github.com/google/generative-ai-go/genai"
+	"google.golang.org/api/iterator"
+	"google.golang.org/api/option"
+
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/google/internal/vars"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -10,10 +14,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-
-	"github.com/google/generative-ai-go/genai"
-	"google.golang.org/api/iterator"
-	"google.golang.org/api/option"
 )
 
 var integrationID = sdktypes.NewIntegrationIDFromName("googlegemini")

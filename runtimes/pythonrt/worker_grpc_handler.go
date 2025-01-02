@@ -390,7 +390,7 @@ func (s *workerGRPCHandler) EncodeJWT(ctx context.Context, req *userCode.EncodeJ
 	// GitHub's JWTs must be signed using the RS256 algorithm:
 	// https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-a-json-web-token-jwt-for-a-github-app
 	if req.Algorithm != jwt.SigningMethodRS256.Name {
-		return &userCode.EncodeJWTResponse{Error: fmt.Sprintf("unsupported signing method: %s", req.Algorithm)}, nil
+		return &userCode.EncodeJWTResponse{Error: "unsupported signing method: " + req.Algorithm}, nil
 	}
 
 	claims := jwt.MapClaims{}

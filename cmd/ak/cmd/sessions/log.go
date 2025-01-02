@@ -101,7 +101,7 @@ func printLogs(logs []sdktypes.SessionLogRecord) {
 			} else if state := r.GetState(); state.IsValid() && state.Type() == sdktypes.SessionStateTypeError {
 				if stateErr := state.GetError(); stateErr.IsValid() {
 					pe := stateErr.GetProgramError()
-					msg = fmt.Sprintf("Error: %s", pe.ErrorString())
+					msg = "Error: " + pe.ErrorString()
 				}
 			}
 

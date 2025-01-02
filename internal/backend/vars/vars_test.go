@@ -54,7 +54,7 @@ func TestGetVarNotFound(t *testing.T) {
 	callCounter := 0
 
 	d.GetVarsFunc = func(ctx context.Context, vsi sdktypes.VarScopeID, s []sdktypes.Symbol) (sdktypes.Vars, error) {
-		callCounter = callCounter + 1
+		callCounter++
 		return nil, nil
 	}
 
@@ -77,7 +77,7 @@ func TestGetVarFound(t *testing.T) {
 	vv := sdktypes.NewVar(sdktypes.NewSymbol("efi")).SetValue("value")
 
 	d.GetVarsFunc = func(context.Context, sdktypes.VarScopeID, []sdktypes.Symbol) (sdktypes.Vars, error) {
-		callCounter = callCounter + 1
+		callCounter++
 		return []sdktypes.Var{vv}, nil
 	}
 
@@ -99,7 +99,7 @@ func TestSetVar(t *testing.T) {
 	dbCallCounter := 0
 
 	d.SetVarsFunc = func(ctx context.Context, v []sdktypes.Var) error {
-		dbCallCounter = dbCallCounter + 1
+		dbCallCounter++
 		return nil
 	}
 
@@ -107,7 +107,7 @@ func TestSetVar(t *testing.T) {
 	sCallCounter := 0
 
 	s.SetFunc = func(ctx context.Context, key string, value string) error {
-		sCallCounter = sCallCounter + 1
+		sCallCounter++
 		return nil
 	}
 
@@ -129,7 +129,7 @@ func TestSetSecretVar(t *testing.T) {
 	dbCallCounter := 0
 
 	d.SetVarsFunc = func(ctx context.Context, v []sdktypes.Var) error {
-		dbCallCounter = dbCallCounter + 1
+		dbCallCounter++
 		return nil
 	}
 
@@ -141,7 +141,7 @@ func TestSetSecretVar(t *testing.T) {
 	s.SetFunc = func(ctx context.Context, key string, value string) error {
 		actualSecretKey = key
 		actualSecretValue = value
-		sCallCounter = sCallCounter + 1
+		sCallCounter++
 		return nil
 	}
 
@@ -171,7 +171,7 @@ func TestSetMultipleSecretVar(t *testing.T) {
 		dbVals = kittehs.Transform(v, func(v sdktypes.Var) string {
 			return v.Value()
 		})
-		dbCallCounter = dbCallCounter + 1
+		dbCallCounter++
 		return nil
 	}
 
@@ -183,7 +183,7 @@ func TestSetMultipleSecretVar(t *testing.T) {
 	s.SetFunc = func(ctx context.Context, key string, value string) error {
 		keys = append(keys, key)
 		vals = append(vals, value)
-		sCallCounter = sCallCounter + 1
+		sCallCounter++
 		return nil
 	}
 

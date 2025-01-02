@@ -159,7 +159,7 @@ func NewConstFunctionError(name string, in error) (Value, error) {
 
 func (f FunctionValue) ConstValue() (Value, error) {
 	if !f.HasFlag(ConstFunctionFlag) {
-		return InvalidValue, fmt.Errorf("function is not a const")
+		return InvalidValue, errors.New("function is not a const")
 	}
 
 	bs := f.m.Data

@@ -1,8 +1,9 @@
 package builds
 
 import (
-	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.opentelemetry.io/otel/metric"
+
+	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 )
 
 var buildsCreatedCounter metric.Int64Counter

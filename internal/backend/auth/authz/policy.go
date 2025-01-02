@@ -3,6 +3,7 @@ package authz
 import (
 	"context"
 	_ "embed"
+	"errors"
 	"fmt"
 	"maps"
 	"slices"
@@ -41,7 +42,7 @@ func NewPolicyCheckFunc(l *zap.Logger, db db.DB, decide policy.DecideFunc) Check
 
 		decision, ok := result.(bool)
 		if !ok {
-			return fmt.Errorf("authz opa decision: not a boolean")
+			return errors.New("authz opa decision: not a boolean")
 		}
 
 		l := l.With(zap.Any("input", input), zap.Any("result", result))
