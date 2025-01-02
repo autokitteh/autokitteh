@@ -9,7 +9,7 @@ import (
 )
 
 var getOrgsCmd = common.StandardCommand(&cobra.Command{
-	Use:   "get-orgs [email or id] [--fail]",
+	Use:   "get-orgs [user email or ID] [--fail]",
 	Short: "Get user orgs",
 	Args:  cobra.MaximumNArgs(1),
 
