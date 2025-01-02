@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"context"
+	"crypto/md5"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -69,6 +70,28 @@ func (py *pySvc) Build(ctx context.Context, fsys fs.FS, path string, values []sd
 		}
 
 		compiledData[hdr.Name] = nil
+	}
+
+	if configuredRunnerType == runnerTypeDocker {
+		drm, ok := runnerManager.(*dockerRunnerManager)
+		if !ok {
+			return sdktypes.InvalidBuildArtifact, fmt.Errorf("configured runner type is docker but runner manager is not docker")
+		}
+
+		codePath, err := prepareUserCode(data, false)
+		if err != nil {
+			return sdktypes.InvalidBuildArtifact, fmt.Errorf("prepare user code: %w", err)
+		}
+
+		hash := md5.Sum(data)
+		version := fmt.Sprintf("u%x", hash)
+		imageRef := fmt.Sprintf("localhost:5001/usercode:%s", version)
+
+		if err := drm.client.BuildImage(ctx, imageRef, codePath); err != nil {
+			return sdktypes.InvalidBuildArtifact, fmt.Errorf("build image: %w", err)
+		}
+
+		compiledData[imageKey] = []byte(imageRef)
 	}
 
 	var art sdktypes.BuildArtifact

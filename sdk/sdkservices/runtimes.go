@@ -32,7 +32,6 @@ type Runtime interface {
 
 	// Returns sdktypes.ProgramErrorAsError if not internal error.
 	Build(ctx context.Context, fs fs.FS, path string, symbols []sdktypes.Symbol) (sdktypes.BuildArtifact, error)
-
 	// Returns sdktypes.ProgramErrorAsError if not internal error.
 	Run(
 		ctx context.Context,

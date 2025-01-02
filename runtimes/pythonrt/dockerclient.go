@@ -12,6 +12,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/api/types/network"
+	"github.com/docker/docker/api/types/registry"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/docker/pkg/stdcopy"
@@ -37,23 +38,53 @@ type dockerClient struct {
 	logBuildProcess bool
 	logRunner       bool
 	logger          *zap.Logger
+
+	remoteRegistryAuthDetails string
+	remoteRegistryConfigured  bool
+}
+type RemoteRegistryConfig struct {
+	Address  string
+	Username string
+	Password string
 }
 
-func NewDockerClient(logger *zap.Logger, logRunner, logBuildProcess bool) (*dockerClient, error) {
+type DockerClientOptions struct {
+	LogRunnerCode  bool
+	LogBuildCode   bool
+	RemoteRegistry RemoteRegistryConfig
+}
+
+func NewDockerClient(logger *zap.Logger, cfg DockerClientOptions) (*dockerClient, error) {
 	apiClient, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		return nil, err
 	}
 
+	remoteRegistryAuthDetails := ""
+	if cfg.RemoteRegistry.Address != "" {
+
+		authConfig := registry.AuthConfig{
+			ServerAddress: cfg.RemoteRegistry.Address,
+		}
+
+		encodedAuthConfig, err := registry.EncodeAuthConfig(authConfig)
+		if err != nil {
+			return nil, err
+		}
+		remoteRegistryAuthDetails = encodedAuthConfig
+
+	}
 	dc := &dockerClient{
-		client:          apiClient,
-		mu:              new(sync.Mutex),
-		runnerLabels:    map[string]string{runnersLabel: ""},
-		activeRunnerIDs: map[string]struct{}{},
-		allRunnerIDs:    map[string]struct{}{},
-		logger:          logger,
-		logBuildProcess: logBuildProcess,
-		logRunner:       logRunner,
+		client:                    apiClient,
+		mu:                        new(sync.Mutex),
+		runnerLabels:              map[string]string{runnersLabel: ""},
+		activeRunnerIDs:           map[string]struct{}{},
+		allRunnerIDs:              map[string]struct{}{},
+		logger:                    logger,
+		logBuildProcess:           cfg.LogBuildCode,
+		logRunner:                 cfg.LogRunnerCode,
+		remoteRegistryAuthDetails: remoteRegistryAuthDetails,
+		remoteRegistryConfigured:  cfg.RemoteRegistry.Address != "",
 	}
 
 	if err := dc.SyncCurrentState(); err != nil {
@@ -94,6 +125,21 @@ func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, sess
 	for k, v := range vars {
 		envVars = append(envVars, k+"="+v)
 	}
+
+	if exists, err := d.ImageExists(ctx, runnerImage); err != nil || !exists {
+		if err != nil {
+			return "", "", err
+		}
+		if !exists {
+			if !d.remoteRegistryConfigured {
+				return "", "", errors.New("image doesn't exist and no remote registry is configured")
+			}
+			if err := d.pullImage(ctx, runnerImage); err != nil {
+				return "", "", err
+			}
+		}
+	}
+
 	resp, err := d.client.ContainerCreate(ctx,
 		&container.Config{
 			Image: runnerImage,
@@ -137,6 +183,23 @@ func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, sess
 	return resp.ID, port, nil
 }
 
+func (d *dockerClient) pullImage(ctx context.Context, imageName string) error {
+	resp, err := d.client.ImagePull(ctx, imageName, image.PullOptions{
+		RegistryAuth: d.remoteRegistryAuthDetails,
+	})
+	if err != nil {
+		return err
+	}
+
+	defer resp.Close()
+
+	_, err = io.Copy(os.Stdout, resp)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
 func (d *dockerClient) nextFreePort(ctx context.Context, cid string) (string, error) {
 
 	for range 10 {
@@ -259,15 +322,20 @@ func (d *dockerClient) BuildImage(ctx context.Context, name, directory string) e
 		return err
 	}
 
-	exists, err := d.ImageExists(ctx, name)
-	if err != nil {
-		return err
-	}
+	if d.remoteRegistryConfigured {
+		pushResp, err := d.client.ImagePush(ctx, name, image.PushOptions{
+			RegistryAuth: d.remoteRegistryAuthDetails,
+		})
+		if err != nil {
+			return err
+		}
+		defer pushResp.Close()
 
-	if !exists {
-		return errors.New("failed creating image")
+		if _, err := io.Copy(dest, pushResp); err != nil {
+			d.logger.Error("Error printing push output", zap.Error(err))
+			return err
+		}
 	}
-
 	d.logger.Info("Image built successfully")
 	return nil
 }

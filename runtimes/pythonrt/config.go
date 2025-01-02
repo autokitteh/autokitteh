@@ -13,6 +13,8 @@ type Config struct {
 	LogBuildCode      bool `koanf:"log_build_code"`
 
 	RunnerType string `koanf:"runner_type"`
+
+	RegistryAddress string `koanf:"registry_address"`
 }
 
 var Configs = configset.Set[Config]{
