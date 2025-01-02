@@ -10,7 +10,6 @@ import (
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/dbtime"
 	"go.autokitteh.dev/autokitteh/internal/backend/types"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	commonv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/common/v1"
@@ -411,7 +410,7 @@ func (Deployment) IDFieldName() string { return "deployment_id" }
 
 func (d *Deployment) BeforeUpdate(tx *gorm.DB) (err error) {
 	if tx.Statement.Changed() { // if any fields changed
-		tx.Statement.SetColumn("UpdatedAt", dbtime.Now())
+		tx.Statement.SetColumn("UpdatedAt", kittehs.Now())
 	}
 	return nil
 }

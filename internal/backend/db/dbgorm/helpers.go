@@ -10,7 +10,6 @@ import (
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
-	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/dbtime"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -48,7 +47,7 @@ func withProjectOrgID(q *gorm.DB, oid sdktypes.OrgID, table string) *gorm.DB {
 }
 
 func based(ctx context.Context) scheme.Base {
-	now := dbtime.Now().UTC()
+	now := kittehs.Now().UTC()
 
 	uid := authcontext.GetAuthnUserID(ctx).UUIDValue()
 
@@ -59,7 +58,7 @@ func based(ctx context.Context) scheme.Base {
 }
 
 func updatedBaseColumns(ctx context.Context) map[string]any {
-	m := map[string]any{"updated_at": dbtime.Now().UTC()}
+	m := map[string]any{"updated_at": kittehs.Now().UTC()}
 
 	if uid := authcontext.GetAuthnUserID(ctx); uid.IsValid() {
 		m["updated_by"] = authcontext.GetAuthnUserID(ctx).UUIDValue()

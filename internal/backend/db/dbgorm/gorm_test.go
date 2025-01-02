@@ -23,7 +23,6 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/dbtime"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/backend/gormkitteh"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -65,7 +64,7 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Failed to setup gormdb: %v", err)
 	}
 
-	now = dbtime.Now()
+	now = kittehs.Now()
 	now = now.Truncate(time.Microsecond) // PG default resolution is microseconds
 
 	// PG saves dates in UTC. Gorm converts them back to local TZ on read
@@ -94,7 +93,7 @@ func TestMain(m *testing.M) {
 }
 
 func init() {
-	now = dbtime.Now()
+	now = kittehs.Now()
 	now = now.Truncate(time.Microsecond) // PG default resolution is microseconds
 }
 

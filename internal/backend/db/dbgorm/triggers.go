@@ -7,7 +7,6 @@ import (
 	"github.com/google/uuid"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
-	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/dbtime"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -106,7 +105,7 @@ func (db *gormdb) UpdateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 	r.Schedule = trigger.Schedule()
 	r.Name = trigger.Name().String()
 	r.UniqueName = triggerUniqueName(r.ProjectID.String(), trigger.Name())
-	r.UpdatedAt = dbtime.Now().UTC()
+	r.UpdatedAt = kittehs.Now().UTC()
 	r.UpdatedBy = authcontext.GetAuthnUserID(ctx).UUIDValue()
 
 	return translateError(db.updateTrigger(ctx, r))

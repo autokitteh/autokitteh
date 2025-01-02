@@ -17,7 +17,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authusers"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
-	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/dbtime"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/backend/gormkitteh"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -214,7 +213,7 @@ func (db *gormdb) backfillUsersAndOrgs(ctx context.Context) error {
 			DisplayName: fmt.Sprintf("%s's Personal Org", user.DisplayName),
 			Base: scheme.Base{
 				CreatedBy: authusers.SystemUser.DefaultOrgID().UUIDValue(),
-				CreatedAt: dbtime.Now().UTC(),
+				CreatedAt: kittehs.Now().UTC(),
 			},
 		}
 
@@ -244,7 +243,7 @@ func (db *gormdb) backfillUsersAndOrgs(ctx context.Context) error {
 			UserID: user.UserID,
 			Base: scheme.Base{
 				CreatedBy: authusers.SystemUser.DefaultOrgID().UUIDValue(),
-				CreatedAt: dbtime.Now().UTC(),
+				CreatedAt: kittehs.Now().UTC(),
 			},
 		}).Error; err != nil {
 			return err

@@ -9,14 +9,13 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authusers"
-	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/dbtime"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 func TestUpdatedFields(t *testing.T) {
-	dbtime.Freeze()
+	kittehs.FreezeTimeForTest()
 
 	ctx := context.Background()
 
@@ -29,7 +28,7 @@ func TestUpdatedFields(t *testing.T) {
 			"display_name":   "DISPLAY_NAME",
 			"default_org_id": "",
 			"disabled":       false,
-			"updated_at":     dbtime.Now().UTC(),
+			"updated_at":     kittehs.Now().UTC(),
 		}, m)
 	}
 
@@ -38,7 +37,7 @@ func TestUpdatedFields(t *testing.T) {
 		assert.Equal(t, map[string]any{
 			"disabled":     false,
 			"display_name": "DISPLAY_NAME",
-			"updated_at":   dbtime.Now().UTC(),
+			"updated_at":   kittehs.Now().UTC(),
 		}, m)
 	}
 
@@ -56,7 +55,7 @@ func TestUpdatedFields(t *testing.T) {
 		assert.Equal(t, map[string]any{
 			"display_name": "DISPLAY_NAME",
 			"disabled":     false,
-			"updated_at":   dbtime.Now().UTC(),
+			"updated_at":   kittehs.Now().UTC(),
 			"updated_by":   authusers.DefaultUser.ID().UUIDValue(),
 		}, m)
 	}
