@@ -10,7 +10,7 @@ func TestToString(t *testing.T) {
 	assert.Equal(t, ToString(String("meow")), "meow")
 }
 
-func TestMatchLongetSuffix(t *testing.T) {
+func TestMatchLongestSuffix(t *testing.T) {
 	assert.Equal(t, "", MatchLongestSuffix("", []string{"1", "3"}))
 	assert.Equal(t, "234", MatchLongestSuffix("1234", []string{"4", "234", "34", "23"}))
 }
