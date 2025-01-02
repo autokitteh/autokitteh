@@ -15,7 +15,7 @@ var InvalidSessionCallAttemptResult SessionCallAttemptResult
 
 type SessionCallAttemptResultPB = sessionv1.Call_Attempt_Result
 
-type SessionCallAttemptResultTraits struct{}
+type SessionCallAttemptResultTraits struct{ immutableObjectTrait }
 
 func (SessionCallAttemptResultTraits) Validate(m *SessionCallAttemptResultPB) error {
 	return errors.Join(

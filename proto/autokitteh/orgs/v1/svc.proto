@@ -4,6 +4,7 @@ package autokitteh.orgs.v1;
 
 import "autokitteh/orgs/v1/org.proto";
 import "buf/validate/validate.proto";
+import "google/protobuf/field_mask.proto";
 
 message CreateRequest {
   Org org = 1 [(buf.validate.field).required = true];
@@ -14,15 +15,22 @@ message CreateResponse {
 }
 
 message GetRequest {
-  string org_id = 1;
+  string org_id = 1 [(buf.validate.field).string.min_len = 1];
 }
 
 message GetResponse {
   Org org = 1;
 }
 
+message DeleteRequest {
+  string org_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message DeleteResponse {}
+
 message UpdateRequest {
   Org org = 1 [(buf.validate.field).required = true];
+  google.protobuf.FieldMask field_mask = 2;
 }
 
 message UpdateResponse {}
@@ -50,7 +58,7 @@ message ListMembersResponse {
 }
 
 message IsMemberRequest {
-  string user_id = 1 [(buf.validate.field).string.min_len = 1];
+  string user_id = 1;
   string org_id = 2 [(buf.validate.field).string.min_len = 1];
 }
 
@@ -59,7 +67,7 @@ message IsMemberResponse {
 }
 
 message GetOrgsForUserRequest {
-  string user_id = 1 [(buf.validate.field).string.min_len = 1];
+  string user_id = 1;
 }
 
 message GetOrgsForUserResponse {
@@ -70,6 +78,7 @@ service OrgsService {
   rpc Create(CreateRequest) returns (CreateResponse);
   rpc Get(GetRequest) returns (GetResponse);
   rpc Update(UpdateRequest) returns (UpdateResponse);
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
   // TODO: rpc InviteMember(InviteMemberRequest) returns (InviteMemberResponse);
   rpc AddMember(AddMemberRequest) returns (AddMemberResponse);
   rpc RemoveMember(RemoveMemberRequest) returns (RemoveMemberResponse);

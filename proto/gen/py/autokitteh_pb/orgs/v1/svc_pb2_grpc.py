@@ -29,6 +29,11 @@ class OrgsServiceStub(object):
                 request_serializer=autokitteh_dot_orgs_dot_v1_dot_svc__pb2.UpdateRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_orgs_dot_v1_dot_svc__pb2.UpdateResponse.FromString,
                 )
+        self.Delete = channel.unary_unary(
+                '/autokitteh.orgs.v1.OrgsService/Delete',
+                request_serializer=autokitteh_dot_orgs_dot_v1_dot_svc__pb2.DeleteRequest.SerializeToString,
+                response_deserializer=autokitteh_dot_orgs_dot_v1_dot_svc__pb2.DeleteResponse.FromString,
+                )
         self.AddMember = channel.unary_unary(
                 '/autokitteh.orgs.v1.OrgsService/AddMember',
                 request_serializer=autokitteh_dot_orgs_dot_v1_dot_svc__pb2.AddMemberRequest.SerializeToString,
@@ -72,6 +77,12 @@ class OrgsServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def Update(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Delete(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -125,6 +136,11 @@ def add_OrgsServiceServicer_to_server(servicer, server):
                     servicer.Update,
                     request_deserializer=autokitteh_dot_orgs_dot_v1_dot_svc__pb2.UpdateRequest.FromString,
                     response_serializer=autokitteh_dot_orgs_dot_v1_dot_svc__pb2.UpdateResponse.SerializeToString,
+            ),
+            'Delete': grpc.unary_unary_rpc_method_handler(
+                    servicer.Delete,
+                    request_deserializer=autokitteh_dot_orgs_dot_v1_dot_svc__pb2.DeleteRequest.FromString,
+                    response_serializer=autokitteh_dot_orgs_dot_v1_dot_svc__pb2.DeleteResponse.SerializeToString,
             ),
             'AddMember': grpc.unary_unary_rpc_method_handler(
                     servicer.AddMember,
@@ -209,6 +225,23 @@ class OrgsService(object):
         return grpc.experimental.unary_unary(request, target, '/autokitteh.orgs.v1.OrgsService/Update',
             autokitteh_dot_orgs_dot_v1_dot_svc__pb2.UpdateRequest.SerializeToString,
             autokitteh_dot_orgs_dot_v1_dot_svc__pb2.UpdateResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def Delete(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/autokitteh.orgs.v1.OrgsService/Delete',
+            autokitteh_dot_orgs_dot_v1_dot_svc__pb2.DeleteRequest.SerializeToString,
+            autokitteh_dot_orgs_dot_v1_dot_svc__pb2.DeleteResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 

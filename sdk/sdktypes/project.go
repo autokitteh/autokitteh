@@ -29,6 +29,8 @@ func (ProjectTraits) StrictValidate(m *ProjectPB) error {
 	return mandatory("name", m.Name)
 }
 
+func (ProjectTraits) Mutables() []string { return []string{"name"} }
+
 func ProjectFromProto(m *ProjectPB) (Project, error)       { return FromProto[Project](m) }
 func StrictProjectFromProto(m *ProjectPB) (Project, error) { return Strict(ProjectFromProto(m)) }
 

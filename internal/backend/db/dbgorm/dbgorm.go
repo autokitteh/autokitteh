@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/pressly/goose/v3"
@@ -214,7 +213,7 @@ func (db *gormdb) backfillUsersAndOrgs(ctx context.Context) error {
 			DisplayName: fmt.Sprintf("%s's Personal Org", user.DisplayName),
 			Base: scheme.Base{
 				CreatedBy: authusers.SystemUser.DefaultOrgID().UUIDValue(),
-				CreatedAt: time.Now().UTC(),
+				CreatedAt: kittehs.Now().UTC(),
 			},
 		}
 
@@ -244,7 +243,7 @@ func (db *gormdb) backfillUsersAndOrgs(ctx context.Context) error {
 			UserID: user.UserID,
 			Base: scheme.Base{
 				CreatedBy: authusers.SystemUser.DefaultOrgID().UUIDValue(),
-				CreatedAt: time.Now().UTC(),
+				CreatedAt: kittehs.Now().UTC(),
 			},
 		}).Error; err != nil {
 			return err

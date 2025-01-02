@@ -9,6 +9,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	akproto "go.autokitteh.dev/autokitteh/proto"
@@ -22,6 +23,9 @@ type Object interface {
 	stricter
 
 	isObject()
+
+	IsMutableField(n string) bool
+	Mutables() []string
 }
 
 type objectTraits[M interface{ proto.Message }] interface {
@@ -33,9 +37,16 @@ type objectTraits[M interface{ proto.Message }] interface {
 	// fields are specified. It does not need to call Validate,
 	// the underlying object will do it.
 	StrictValidate(m M) error
+
+	// Mutables return a list of fields that are mutable in the db.
+	Mutables() []string
 }
 
-type nopObjectTraits[M proto.Message] struct{}
+type immutableObjectTrait struct{}
+
+func (immutableObjectTrait) Mutables() []string { return nil }
+
+type nopObjectTraits[M proto.Message] struct{ immutableObjectTrait }
 
 func (nopObjectTraits[M]) Validate(m M) error       { return nil }
 func (nopObjectTraits[M]) StrictValidate(m M) error { return nil }
@@ -124,6 +135,13 @@ func (o *object[M, T]) UnmarshalJSON(b []byte) (err error) {
 	return
 }
 
+func (o object[M, T]) Mutables() []string { var t T; return t.Mutables() }
+
+func (o object[M, T]) IsMutableField(n string) bool {
+	var t T
+	return kittehs.ContainedIn(t.Mutables()...)(n)
+}
+
 func (o object[M, T]) Strict() error {
 	if !o.IsValid() {
 		return sdkerrors.NewInvalidArgumentError("zero object")
@@ -137,6 +155,22 @@ func (o object[M, T]) Hash() string { return hash(o.m) }
 
 func (o object[M, T]) Equal(other interface{ ToProto() M }) bool {
 	return proto.Equal(o.m, other.ToProto())
+}
+
+type FieldMask = fieldmaskpb.FieldMask
+
+func (o object[M, T]) ValidateUpdateFieldMask(fm *FieldMask) error {
+	if !fm.IsValid(o.Message()) {
+		return sdkerrors.NewInvalidArgumentError("invalid field mask")
+	}
+
+	for _, p := range fm.GetPaths() {
+		if !o.IsMutableField(p) {
+			return sdkerrors.NewInvalidArgumentError("field %q cannot be updated", p)
+		}
+	}
+
+	return nil
 }
 
 func strictValidate[M proto.Message, T objectTraits[M]](m M) error {

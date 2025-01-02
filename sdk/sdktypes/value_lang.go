@@ -9,7 +9,7 @@ import (
 
 type StructValuePB = valuev1.Struct
 
-type structValueTraits struct{}
+type structValueTraits struct{ immutableObjectTrait }
 
 func (structValueTraits) Validate(m *StructValuePB) error {
 	return errors.Join(
@@ -58,7 +58,7 @@ func init() {
 
 type ModuleValuePB = valuev1.Module
 
-type moduleValueTraits struct{}
+type moduleValueTraits struct{ immutableObjectTrait }
 
 func (moduleValueTraits) Validate(m *ModuleValuePB) error {
 	return nil

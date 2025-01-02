@@ -47,7 +47,7 @@ func (gdb *gormdb) deleteSession(ctx context.Context, sessionID uuid.UUID) error
 }
 
 func (gdb *gormdb) updateSessionState(ctx context.Context, sessionID uuid.UUID, state sdktypes.SessionState) error {
-	sessionStateUpdate := map[string]any{"current_state_type": int(state.Type().ToProto()), "updated_at": time.Now()}
+	sessionStateUpdate := map[string]any{"current_state_type": int(state.Type().ToProto()), "updated_at": kittehs.Now()}
 	logr, err := toSessionLogRecord(sessionID, sdktypes.NewStateSessionLogRecord(state))
 	if err != nil {
 		return err

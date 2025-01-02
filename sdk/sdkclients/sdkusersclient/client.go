@@ -54,9 +54,10 @@ func (c *client) Get(ctx context.Context, uid sdktypes.UserID, email string) (sd
 	return sdktypes.UserFromProto(resp.Msg.User)
 }
 
-func (c *client) Update(ctx context.Context, u sdktypes.User) error {
+func (c *client) Update(ctx context.Context, u sdktypes.User, fm *sdktypes.FieldMask) error {
 	resp, err := c.client.Update(ctx, connect.NewRequest(&usersv1.UpdateRequest{
-		User: u.ToProto(),
+		User:      u.ToProto(),
+		FieldMask: fm,
 	}))
 	if err != nil {
 		return rpcerrors.ToSDKError(err)

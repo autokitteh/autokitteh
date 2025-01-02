@@ -2,8 +2,8 @@
 
 
 from .org_pb2 import (Org,)
-from .svc_pb2 import (CreateRequest,CreateResponse,GetRequest,GetResponse,UpdateRequest,UpdateResponse,AddMemberRequest,AddMemberResponse,RemoveMemberRequest,RemoveMemberResponse,ListMembersRequest,ListMembersResponse,IsMemberRequest,IsMemberResponse,GetOrgsForUserRequest,GetOrgsForUserResponse,)
+from .svc_pb2 import (CreateRequest,CreateResponse,GetRequest,GetResponse,DeleteRequest,DeleteResponse,UpdateRequest,UpdateResponse,AddMemberRequest,AddMemberResponse,RemoveMemberRequest,RemoveMemberResponse,ListMembersRequest,ListMembersResponse,IsMemberRequest,IsMemberResponse,GetOrgsForUserRequest,GetOrgsForUserResponse,)
 from .svc_pb2_grpc import (OrgsServiceStub,OrgsServiceServicer,OrgsService,)
 
 
-__all__ = ["OrgsServiceStub","OrgsServiceServicer","OrgsService","CreateRequest","CreateResponse","GetRequest","GetResponse","UpdateRequest","UpdateResponse","AddMemberRequest","AddMemberResponse","RemoveMemberRequest","RemoveMemberResponse","ListMembersRequest","ListMembersResponse","IsMemberRequest","IsMemberResponse","GetOrgsForUserRequest","GetOrgsForUserResponse","Org",]
+__all__ = ["OrgsServiceStub","OrgsServiceServicer","OrgsService","CreateRequest","CreateResponse","GetRequest","GetResponse","DeleteRequest","DeleteResponse","UpdateRequest","UpdateResponse","AddMemberRequest","AddMemberResponse","RemoveMemberRequest","RemoveMemberResponse","ListMembersRequest","ListMembersResponse","IsMemberRequest","IsMemberResponse","GetOrgsForUserRequest","GetOrgsForUserResponse","Org",]

@@ -64,7 +64,7 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Failed to setup gormdb: %v", err)
 	}
 
-	now = time.Now()
+	now = kittehs.Now()
 	now = now.Truncate(time.Microsecond) // PG default resolution is microseconds
 
 	// PG saves dates in UTC. Gorm converts them back to local TZ on read
@@ -93,7 +93,7 @@ func TestMain(m *testing.M) {
 }
 
 func init() {
-	now = time.Now()
+	now = kittehs.Now()
 	now = now.Truncate(time.Microsecond) // PG default resolution is microseconds
 }
 

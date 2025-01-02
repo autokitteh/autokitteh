@@ -8,7 +8,7 @@ import (
 )
 
 var getCmd = common.StandardCommand(&cobra.Command{
-	Use:   "get <user name, email or id> [--fail]",
+	Use:   "get <email or id> [--fail]",
 	Short: "Get user details",
 	Args:  cobra.ExactArgs(1),
 

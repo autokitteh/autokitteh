@@ -23,6 +23,14 @@ func WithData(k string, v any) CheckOpt {
 	}
 }
 
+func WithFieldMask(fm *sdktypes.FieldMask) CheckOpt {
+	return func(cfg *checkCfg) {
+		if fm != nil {
+			cfg.data["field_mask"] = fm.Paths
+		}
+	}
+}
+
 // Set `data.associated_<name>_org_id` in the check context.
 // This will cause the checker to automatically deduce what org it belongs
 // to based on the ID.

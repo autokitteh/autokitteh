@@ -36,6 +36,25 @@ func (gdb *gormdb) GetOrg(ctx context.Context, oid sdktypes.OrgID) (sdktypes.Org
 	return scheme.ParseOrg(r)
 }
 
+func (gdb *gormdb) DeleteOrg(ctx context.Context, oid sdktypes.OrgID) error {
+	if oid == authusers.DefaultOrg.ID() {
+		return sdkerrors.ErrUnauthorized
+	}
+
+	if !oid.IsValid() {
+		return sdkerrors.NewInvalidArgumentError("missing id")
+	}
+
+	return translateError(gdb.transaction(ctx, func(tx *tx) error {
+		err := tx.db.Where("org_id = ?", oid.UUIDValue()).Delete(&scheme.OrgMember{}).Error
+		if err != nil {
+			return translateError(err)
+		}
+
+		return tx.db.Where("org_id = ?", oid.UUIDValue()).Delete(&scheme.Org{}).Error
+	}))
+}
+
 func (gdb *gormdb) CreateOrg(ctx context.Context, o sdktypes.Org) (sdktypes.OrgID, error) {
 	oid := o.ID()
 
@@ -62,19 +81,21 @@ func (gdb *gormdb) CreateOrg(ctx context.Context, o sdktypes.Org) (sdktypes.OrgI
 	return oid, nil
 }
 
-func (gdb *gormdb) UpdateOrg(ctx context.Context, o sdktypes.Org) error {
+func (gdb *gormdb) UpdateOrg(ctx context.Context, o sdktypes.Org, fm *sdktypes.FieldMask) error {
 	if o.ID() == authusers.DefaultOrg.ID() {
 		return sdkerrors.ErrUnauthorized
 	}
 
-	data := updatedBaseColumns(ctx)
-	data["display_name"] = o.DisplayName()
+	data, err := updatedFields(ctx, o, fm)
+	if err != nil {
+		return err
+	}
 
 	return translateError(
 		gdb.db.WithContext(ctx).
 			Model(&scheme.Org{}).
-			Updates(data).
 			Where("org_id = ?", o.ID().UUIDValue()).
+			Updates(data).
 			Error,
 	)
 }

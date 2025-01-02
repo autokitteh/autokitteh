@@ -13,7 +13,7 @@ var InvalidVar Var
 
 type VarPB = varsv1.Var
 
-type VarTraits struct{}
+type VarTraits struct{ immutableObjectTrait }
 
 func (VarTraits) Validate(m *VarPB) error {
 	return errors.Join(
