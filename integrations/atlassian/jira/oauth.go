@@ -53,7 +53,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Test the OAuth token's usability and get authoritative installation details.
-	res, err := accessibleResources(l, url, oauthToken.AccessToken)
+	res, err := accessibleOAuth(l, url, oauthToken.AccessToken)
 	if err != nil {
 		c.AbortBadRequest(err.Error())
 		return
@@ -113,10 +113,10 @@ type resource struct {
 	AvatarURL string   `json:"avatarUrl"`
 }
 
-// accessibleResources retrieves the Jira Cloud metadata associated with an
+// accessibleOAuth retrieves the Jira Cloud metadata associated with an
 // OAuth token, which is necessary for API calls and webhook events. Based on:
 // https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/#3--make-calls-to-the-api-using-the-access-token
-func accessibleResources(l *zap.Logger, baseURL string, token string) ([]resource, error) {
+func accessibleOAuth(l *zap.Logger, baseURL string, token string) ([]resource, error) {
 	u := fmt.Sprintf("%s/oauth/token/accessible-resources", baseURL)
 	req, err := http.NewRequest("GET", u, nil)
 	if err != nil {
