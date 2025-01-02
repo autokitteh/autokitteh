@@ -11,10 +11,9 @@ import (
 )
 
 var updateCmd = common.StandardCommand(&cobra.Command{
-	Use:     "update <org-id> [--display-name display-name]",
-	Short:   "Update an org",
-	Aliases: []string{"u"},
-	Args:    cobra.ExactArgs(1),
+	Use:   "update <org-id> [--display-name display-name]",
+	Short: "Update an org",
+	Args:  cobra.ExactArgs(1),
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx, cancel := common.LimitedContext()

@@ -13,10 +13,9 @@ import (
 var enabled bool
 
 var updateCmd = common.StandardCommand(&cobra.Command{
-	Use:     "update [email or id] [--email email] [--display-name display-name] [--disabled] [--enabled]",
-	Short:   "Update a user",
-	Aliases: []string{"u"},
-	Args:    cobra.ExactArgs(1),
+	Use:   "update [email or id] [--display-name display-name] [--disabled] [--enabled]",
+	Short: "Update a user",
+	Args:  cobra.ExactArgs(1),
 
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx, cancel := common.LimitedContext()
@@ -36,11 +35,6 @@ var updateCmd = common.StandardCommand(&cobra.Command{
 		u := sdktypes.NewUser().WithID(uid)
 
 		fm := &sdktypes.FieldMask{}
-
-		if cmd.Flags().Changed("email") {
-			fm.Paths = append(fm.Paths, "email")
-			u = u.WithEmail(email)
-		}
 
 		if cmd.Flags().Changed("display-name") {
 			fm.Paths = append(fm.Paths, "display_name")
@@ -66,7 +60,6 @@ var updateCmd = common.StandardCommand(&cobra.Command{
 })
 
 func init() {
-	updateCmd.Flags().StringVarP(&email, "email", "e", "", "user's email")
 	updateCmd.Flags().StringVarP(&displayName, "display-name", "t", "", "user's display name")
 	updateCmd.Flags().BoolVarP(&disabled, "disabled", "d", false, "is user disabled")
 	updateCmd.Flags().BoolVarP(&enabled, "enabled", "", false, "is user enabled")

@@ -35,6 +35,7 @@ func MarshalProtoMapJSON[K comparable, V proto.Message](xs map[K]V) ([]byte, err
 // ProtoToMap converts a protobuf message to a map, using the provided field mask.
 // If fm is nil, all fields are included.
 // This function deals only with top level fields, nested fields are not supported.
+// IMPORTANT: This currently supports only scalar types as values.
 func ProtoToMap(pb proto.Message, fm *fieldmaskpb.FieldMask) (map[string]interface{}, error) {
 	v := pb.ProtoReflect()
 	fs := v.Descriptor().Fields()
@@ -65,6 +66,8 @@ func ProtoToMap(pb proto.Message, fm *fieldmaskpb.FieldMask) (map[string]interfa
 		switch fd.Kind() {
 		case protoreflect.EnumKind:
 			av = int(fv.Enum())
+		case protoreflect.MessageKind, protoreflect.GroupKind:
+			return nil, fmt.Errorf("unsupported field kind %v", fd.Kind())
 		}
 
 		m[p] = av
