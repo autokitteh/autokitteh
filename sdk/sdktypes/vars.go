@@ -66,7 +66,7 @@ func EncodeVars(in any) (vs Vars) {
 		sdklogger.Panic("invalid type - must be a struct")
 	}
 
-	for i := 0; i < v.NumField(); i++ {
+	for i := range v.NumField() {
 		fv := v.Field(i)
 		ft := t.Field(i)
 
@@ -100,7 +100,7 @@ func (vs Vars) Decode(out any) {
 		sdklogger.Panic("invalid type - must be a struct")
 	}
 
-	for i := 0; i < v.NumField(); i++ {
+	for i := range v.NumField() {
 		fv := v.Field(i)
 		ft := t.Field(i)
 

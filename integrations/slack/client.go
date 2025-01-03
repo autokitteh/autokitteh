@@ -3,6 +3,8 @@ package slack
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/auth"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/bookmarks"
@@ -17,7 +19,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.uber.org/zap"
 )
 
 var integrationID = sdktypes.NewIntegrationIDFromName("slack")

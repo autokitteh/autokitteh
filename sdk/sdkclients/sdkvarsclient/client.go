@@ -7,7 +7,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	varsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/vars/v1"
-
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/vars/v1/varsv1connect"
 	"go.autokitteh.dev/autokitteh/sdk/internal/rpcerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/internal"

@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/fs"
 	"maps"
@@ -36,7 +37,7 @@ func Build(ctx context.Context, fs fs.FS, mainPath string) (sdktypes.BuildArtifa
 	}
 
 	if !compiled.IsDict() && !compiled.IsStruct() && !compiled.IsModule() {
-		return sdktypes.InvalidBuildArtifact, fmt.Errorf("source represents neither a dict, struct or module")
+		return sdktypes.InvalidBuildArtifact, errors.New("source represents neither a dict, struct or module")
 	}
 
 	exports, err := evaluateValue(compiled)

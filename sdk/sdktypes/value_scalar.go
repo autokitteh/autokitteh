@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"golang.org/x/exp/constraints"
-
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -69,7 +68,7 @@ func (v Value) IsSymbol() bool         { return v.read().Symbol != nil }
 func (v Value) GetSymbol() SymbolValue { return forceFromProto[SymbolValue](v.read().Symbol) }
 
 func NewSymbolValue(s Symbol) Value {
-	return forceFromProto[Value](&ValuePB{Symbol: &SymbolValuePB{Name: string(s.String())}})
+	return forceFromProto[Value](&ValuePB{Symbol: &SymbolValuePB{Name: s.String()}})
 }
 
 func init() {

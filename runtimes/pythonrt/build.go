@@ -14,9 +14,10 @@ import (
 	"path"
 	"strings"
 
+	"go.uber.org/zap"
+
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.uber.org/zap"
 )
 
 func isBuildFile(entry fs.DirEntry) bool {

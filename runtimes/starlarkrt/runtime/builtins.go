@@ -32,17 +32,17 @@ var (
 
 func runActivityBuiltinFunc(th *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 	if len(args) == 0 {
-		return nil, fmt.Errorf("missing function argument")
+		return nil, errors.New("missing function argument")
 	}
 
 	tlsContext := tls.Get(th)
 	if tlsContext == nil {
-		return nil, fmt.Errorf("context is not set")
+		return nil, errors.New("context is not set")
 	}
 
 	vctx := values.FromTLS(th)
 	if vctx == nil {
-		return nil, fmt.Errorf("value context is not set")
+		return nil, errors.New("value context is not set")
 	}
 
 	akV, err := vctx.FromStarlarkValue(args[0])
@@ -94,7 +94,7 @@ func catchBuiltinFunc(th *starlark.Thread, _ *starlark.Builtin, args starlark.Tu
 
 	vctx := values.FromTLS(th)
 	if vctx == nil {
-		return nil, fmt.Errorf("value context is not set")
+		return nil, errors.New("value context is not set")
 	}
 
 	value, err := starlark.Call(th, fn, args[1:], kwargs)
@@ -114,11 +114,11 @@ func catchBuiltinFunc(th *starlark.Thread, _ *starlark.Builtin, args starlark.Tu
 func failBuiltinFunc(th *starlark.Thread, bi *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 	vctx := values.FromTLS(th)
 	if vctx == nil {
-		return nil, fmt.Errorf("value context is not set")
+		return nil, errors.New("value context is not set")
 	}
 
 	if len(args) != 0 && len(kwargs) != 0 {
-		return nil, fmt.Errorf("cannot specify both positional and keyword arguments")
+		return nil, errors.New("cannot specify both positional and keyword arguments")
 	}
 
 	if len(args) == 1 {
@@ -178,7 +178,7 @@ func globalsBuiltinFunc(th *starlark.Thread, bi *starlark.Builtin, args starlark
 
 	tlsContext := tls.Get(th)
 	if tlsContext == nil {
-		return nil, fmt.Errorf("context is not set")
+		return nil, errors.New("context is not set")
 	}
 
 	d := starlark.NewDict(len(tlsContext.Globals))

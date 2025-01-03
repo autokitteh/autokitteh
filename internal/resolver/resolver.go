@@ -26,7 +26,7 @@ type NotFoundError struct {
 	Type, Name string
 }
 
-var NotFoundErrorType = new(NotFoundError)
+var ErrNotFound = new(NotFoundError)
 
 func (e NotFoundError) Error() string {
 	name := e.Name

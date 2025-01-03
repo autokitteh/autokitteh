@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -294,11 +295,12 @@ func (gdb *gormdb) getSessionCallAttemptResult(ctx context.Context, sessionID uu
 	if err := gdb.transaction(ctx, func(tx *tx) error {
 		q := tx.db.Where("session_id = ? AND seq = ?", sessionID, seq)
 
-		if attempt == -1 {
+		switch {
+		case attempt == -1:
 			q = q.Order(clause.OrderByColumn{Column: clause.Column{Name: "attempt"}, Desc: true})
-		} else if attempt >= 0 {
+		case attempt >= 0:
 			q = q.Where("attempt = ?", attempt)
-		} else {
+		default:
 			return sdkerrors.NewInvalidArgumentError("attempt must be either -1 or >= 0, got %d", attempt)
 		}
 
@@ -412,7 +414,7 @@ func (db *gormdb) GetSessionLog(ctx context.Context, filter sdkservices.ListSess
 
 	nextPageToken := ""
 	if len(rs) == int(filter.PageSize) && len(rs) > 0 {
-		nextPageToken = fmt.Sprintf("%d", rs[len(rs)-1].Seq)
+		nextPageToken = strconv.FormatUint(rs[len(rs)-1].Seq, 10)
 	}
 
 	return &sdkservices.GetLogResults{Log: log, PaginationResult: sdktypes.PaginationResult{TotalCount: n, NextPageToken: nextPageToken}}, err

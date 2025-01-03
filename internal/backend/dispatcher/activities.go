@@ -168,7 +168,8 @@ func (d *Dispatcher) getEventSessionDataActivity(ctx context.Context, event sdkt
 			}
 
 			if len(activeDeployments)+len(testingDeployments) != 0 {
-				deployments = append(activeDeployments, testingDeployments...)
+				deployments = append(deployments, activeDeployments...)
+				deployments = append(deployments, testingDeployments...)
 
 				if opts.DeploymentID.IsValid() {
 					deployments = kittehs.Filter(deployments, func(deployment sdktypes.Deployment) bool { return opts.DeploymentID == deployment.ID() })

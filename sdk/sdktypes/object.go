@@ -181,7 +181,7 @@ func strictValidate[M proto.Message, T objectTraits[M]](m M) error {
 
 	var t T
 	if err := t.StrictValidate(m); err != nil {
-		return sdkerrors.ErrInvalidArgument{Underlying: err}
+		return sdkerrors.InvalidArgumentError{Underlying: err}
 	}
 
 	return validate[M, T](m)
@@ -194,12 +194,12 @@ func validate[M proto.Message, T objectTraits[M]](m M) error {
 	}
 
 	if err := akproto.Validate(m); err != nil {
-		return sdkerrors.ErrInvalidArgument{Underlying: err}
+		return sdkerrors.InvalidArgumentError{Underlying: err}
 	}
 
 	var t T
 	if err := t.Validate(m); err != nil {
-		return sdkerrors.ErrInvalidArgument{Underlying: err}
+		return sdkerrors.InvalidArgumentError{Underlying: err}
 	}
 
 	return nil

@@ -22,7 +22,7 @@ func ToString[T any](t T) string { return fmt.Sprint(t) }
 // (in Alan I trust: https://github.com/google/starlark-go/blob/f86470692795f8abcf9f837a3c53cf031c5a3d7e/starlark/hashtable.go#L435)
 func HashString32(s string) uint32 {
 	var h uint32 = 2166136261
-	for i := 0; i < len(s); i++ {
+	for i := range len(s) {
 		h ^= uint32(s[i])
 		h *= 16777619
 	}

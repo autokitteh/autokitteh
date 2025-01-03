@@ -217,7 +217,7 @@ func TestUpdateDeploymentStateReturning(t *testing.T) {
 	states := []sdktypes.DeploymentState{
 		sdktypes.DeploymentStateActive, sdktypes.DeploymentStateDraining, sdktypes.DeploymentStateInactive,
 	}
-	for i := 0; i < len(states); i++ {
+	for i := range states {
 		newState := states[i]
 		prevStateFromUpdate, err := f.gormdb.updateDeploymentState(f.ctx, d.DeploymentID, newState)
 		assert.NoError(t, err)

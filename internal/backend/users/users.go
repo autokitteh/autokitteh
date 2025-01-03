@@ -70,7 +70,7 @@ func (u *users) Create(ctx context.Context, user sdktypes.User) (sdktypes.UserID
 				org := sdktypes.NewOrg()
 
 				if user.DisplayName() != "" {
-					org = org.WithDisplayName(fmt.Sprintf("%s's Personal Org", user.DisplayName()))
+					org = org.WithDisplayName(user.DisplayName() + "'s Personal Org")
 				}
 
 				var err error

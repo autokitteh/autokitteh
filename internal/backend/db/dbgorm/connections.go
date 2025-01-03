@@ -2,7 +2,6 @@ package dbgorm
 
 import (
 	"context"
-	"fmt"
 	"maps"
 
 	"github.com/google/uuid"
@@ -37,7 +36,7 @@ func (gdb *gormdb) deleteConnectionsAndVars(ctx context.Context, what string, id
 	var ids []uuid.UUID
 	q := gdb.db.WithContext(ctx).Model(&scheme.Connection{})
 	q = q.Clauses(clause.Returning{Columns: []clause.Column{{Name: "connection_id"}}})
-	if err := q.Delete(&ids, fmt.Sprintf("%s = ?", what), id).Error; err != nil {
+	if err := q.Delete(&ids, what+" = ?", id).Error; err != nil {
 		return err
 		// REVIEW: proceed to vars deletion if there are any?
 	}

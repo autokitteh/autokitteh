@@ -2,6 +2,7 @@ package redis
 
 import (
 	"encoding"
+	"errors"
 	"fmt"
 	"net"
 	"time"
@@ -30,12 +31,12 @@ func unwrap(v sdktypes.Value) (any, error) {
 		// just using unwrapped is fine, no need to modify it.
 	case encoding.BinaryMarshaler:
 		// TODO: figure out how it's used in the redis client.
-		return nil, fmt.Errorf("unhandled type")
+		return nil, errors.New("unhandled type")
 	case net.IP:
 		// TODO: return w.bytes(v)
-		return nil, fmt.Errorf("unhandled type")
+		return nil, errors.New("unhandled type")
 	default:
-		return nil, fmt.Errorf("unhandled type")
+		return nil, errors.New("unhandled type")
 	}
 
 	return u, nil

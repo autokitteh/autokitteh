@@ -8,7 +8,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	orgsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/orgs/v1"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/orgs/v1/orgsv1connect"
-
 	"go.autokitteh.dev/autokitteh/sdk/internal/rpcerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/internal"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkclient"

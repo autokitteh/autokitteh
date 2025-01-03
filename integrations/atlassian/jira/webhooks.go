@@ -83,7 +83,7 @@ type webhookListResponse struct {
 // https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-webhooks/
 func getWebhook(l *zap.Logger, base, token string) (int, bool) {
 	// TODO(ENG-965): Support pagination.
-	req, err := http.NewRequest("GET", base+"/rest/api/3/webhook", nil)
+	req, err := http.NewRequest(http.MethodGet, base+"/rest/api/3/webhook", nil)
 	if err != nil {
 		l.Warn("Failed to construct HTTP request to list Jira webhooks", zap.Error(err))
 		return 0, false
@@ -183,7 +183,7 @@ func registerWebhook(l *zap.Logger, base, token string) (int, bool) {
 	}
 
 	jsonReader := bytes.NewReader(body)
-	req, err := http.NewRequest("POST", base+"/rest/api/3/webhook", jsonReader)
+	req, err := http.NewRequest(http.MethodPost, base+"/rest/api/3/webhook", jsonReader)
 	if err != nil {
 		l.Error("Failed to construct HTTP request to register Jira webhook", zap.Error(err))
 		return 0, false
@@ -243,7 +243,7 @@ type webhookRefreshResponse struct {
 // extendWebhookLife extends the expiration date of the given webhook ID by 30 days.
 func extendWebhookLife(l *zap.Logger, baseURL, oauthToken string, id int) (time.Time, bool) {
 	jsonReader := bytes.NewReader([]byte(fmt.Sprintf(`{"webhookIds": [%d]}`, id)))
-	req, err := http.NewRequest("PUT", baseURL+"/rest/api/3/webhook/refresh", jsonReader)
+	req, err := http.NewRequest(http.MethodPut, baseURL+"/rest/api/3/webhook/refresh", jsonReader)
 	if err != nil {
 		l.Error("Failed to construct HTTP request to refresh Jira webhook", zap.Error(err))
 		return time.Time{}, false

@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
-
 	userv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/users/v1"
 )
 

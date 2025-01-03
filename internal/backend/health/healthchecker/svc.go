@@ -3,10 +3,11 @@ package healthchecker
 import (
 	"errors"
 
+	"go.uber.org/zap"
+
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/health/healthreporter"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
-	"go.uber.org/zap"
 )
 
 type healthChecker struct {

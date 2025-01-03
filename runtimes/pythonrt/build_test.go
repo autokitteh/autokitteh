@@ -9,8 +9,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.uber.org/zap"
+
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )
 
 func TestBuildFiles(t *testing.T) {

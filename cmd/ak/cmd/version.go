@@ -26,16 +26,16 @@ func (v Version) String() string {
 	w.WriteString(v.Version)
 
 	if v.Commit != "" {
-		w.WriteString(fmt.Sprintf(" %s", v.Commit))
+		w.WriteString(" " + v.Commit)
 	}
 	if v.Date != "" {
-		w.WriteString(fmt.Sprintf(" %s", v.Date))
+		w.WriteString(" " + v.Date)
 	}
 	if v.User != "" {
-		w.WriteString(fmt.Sprintf(" by %s", v.User))
+		w.WriteString(" by " + v.User)
 	}
 	if v.Host != "" {
-		w.WriteString(fmt.Sprintf(" on %s", v.Host))
+		w.WriteString(" on " + v.Host)
 	}
 	if v.BuildInfo != nil {
 		w.WriteString(fmt.Sprintf("\n\n%v", v.BuildInfo))

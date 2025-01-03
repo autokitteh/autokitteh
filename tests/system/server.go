@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"maps"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -105,7 +106,7 @@ func queryReadyz(result chan<- string) {
 
 		// For now, the availability of "/readyz" is sufficient,
 		// no need to check the response body yet.
-		if resp.resp.StatusCode == 200 {
+		if resp.resp.StatusCode == http.StatusOK {
 			result <- addr
 			return
 		}

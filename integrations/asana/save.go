@@ -5,10 +5,11 @@ import (
 	"net/http"
 	"strings"
 
+	"go.uber.org/zap"
+
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.uber.org/zap"
 )
 
 const (
@@ -45,7 +46,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Test the PAT's usability
-	req, err := http.NewRequest("GET", "https://app.asana.com/api/1.0/users/me", nil)
+	req, err := http.NewRequest(http.MethodGet, "https://app.asana.com/api/1.0/users/me", nil)
 	if err != nil {
 		l.Error("Failed to create HTTP request", zap.Error(err))
 		c.AbortServerError("request creation error")

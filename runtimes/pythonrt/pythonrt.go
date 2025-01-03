@@ -212,15 +212,15 @@ func loadSyscall(values map[string]sdktypes.Value) (sdktypes.Value, error) {
 	}
 
 	if !ak.IsStruct() {
-		return sdktypes.InvalidValue, fmt.Errorf("`ak` is not a struct")
+		return sdktypes.InvalidValue, errors.New("`ak` is not a struct")
 	}
 
 	syscall, ok := ak.GetStruct().Fields()["syscall"]
 	if !ok {
-		return sdktypes.InvalidValue, fmt.Errorf("`syscall` not found in `ak`")
+		return sdktypes.InvalidValue, errors.New("`syscall` not found in `ak`")
 	}
 	if !syscall.IsFunction() {
-		return sdktypes.InvalidValue, fmt.Errorf("`syscall` is not a function")
+		return sdktypes.InvalidValue, errors.New("`syscall` is not a function")
 	}
 
 	return syscall, nil
@@ -391,7 +391,7 @@ func (py *pySvc) call(ctx context.Context, val sdktypes.Value, args []sdktypes.V
 // We split it from Call since Call is also used to execute activities.
 func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	if len(args) > 0 {
-		return sdktypes.InvalidValue, fmt.Errorf("initial call can't have positional args")
+		return sdktypes.InvalidValue, errors.New("initial call can't have positional args")
 	}
 
 	defer func() {

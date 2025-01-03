@@ -130,10 +130,10 @@ func extractEntityType(l *zap.Logger, atlassianEvent map[string]any, category st
 
 	// Some "attachment_*" and "relation_*" events look a little different.
 	if _, ok := atlassianEvent["attachments"]; ok {
-		return fmt.Sprintf("attachment_%s", category), true
+		return "attachment_" + category, true
 	}
 	if _, ok := atlassianEvent["relationData"]; ok {
-		return fmt.Sprintf("relation_%s", category), true
+		return "relation_" + category, true
 	}
 
 	// Last but not least: "content_*" events.

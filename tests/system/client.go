@@ -116,13 +116,13 @@ func waitForSession(akPath, akAddr, step string) (string, error) {
 	args = append(serviceUrlArg(akAddr), "event", "list", "--integration=http")
 	result, err := runClient(akPath, args)
 	if err == nil {
-		text += fmt.Sprintf("\nEvent list:\n%s", result.output)
+		text += "\nEvent list:\n" + result.output
 	}
 
 	args = append(serviceUrlArg(akAddr), "session", "list", "-J")
 	result, err = runClient(akPath, args)
 	if err == nil {
-		text += fmt.Sprintf("\n---\nSession list:\n%s", result.output)
+		text += "\n---\nSession list:\n" + result.output
 	}
 	return "", errors.New(text)
 }

@@ -2,7 +2,6 @@ package websockets
 
 import (
 	"context"
-	"fmt"
 	"sync"
 
 	"github.com/slack-go/slack"
@@ -73,7 +72,7 @@ func (h handler) OpenSocketModeConnection(appID, botToken, appToken string) {
 }
 
 func (h handler) socketModeHandler(e *socketmode.Event, c *socketmode.Client) {
-	msg := fmt.Sprintf("Slack Socket Mode event: %s", string(e.Type))
+	msg := "Slack Socket Mode event: " + string(e.Type)
 	switch string(e.Type) {
 	// WebSocket connection flow.
 	case "connecting", "connected":

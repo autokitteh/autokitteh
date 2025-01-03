@@ -2,7 +2,7 @@ package storegrpcsvc
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"connectrpc.com/connect"
 
@@ -16,7 +16,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var errNotConfigured = connect.NewError(connect.CodeUnimplemented, fmt.Errorf("store service not configured"))
+var errNotConfigured = connect.NewError(connect.CodeUnimplemented, errors.New("store service not configured"))
 
 type server struct {
 	store sdkservices.Store
