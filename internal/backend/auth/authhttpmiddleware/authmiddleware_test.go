@@ -18,15 +18,8 @@ import (
 )
 
 var (
-	testUser1 = kittehs.Must1(sdktypes.UserFromProto(&sdktypes.UserPB{
-		UserId:      sdktypes.NewUserID().String(),
-		DisplayName: "Test User 1",
-	}))
-
-	testUser2 = kittehs.Must1(sdktypes.UserFromProto(&sdktypes.UserPB{
-		UserId:      sdktypes.NewUserID().String(),
-		DisplayName: "Test User 2",
-	}))
+	testUser1 = sdktypes.NewUser().WithNewID().WithStatus(sdktypes.UserStatusActive).WithDisplayName("Test User 1")
+	testUser2 = sdktypes.NewUser().WithNewID().WithStatus(sdktypes.UserStatusActive).WithDisplayName("Test User 2")
 )
 
 func newTestHandler(t *testing.T, getUser func(context.Context) sdktypes.UserID) (http.Handler, func() *sdktypes.UserID) {
@@ -214,7 +207,7 @@ func TestNewWithoutDefaultUser(t *testing.T) {
 
 	// create a disabled user.
 	users.Users = map[sdktypes.UserID]sdktypes.User{
-		testUser1.ID(): testUser1.WithDisabled(true),
+		testUser1.ID(): testUser1.WithStatus(sdktypes.UserStatusDisabled),
 	}
 
 	// correct token, user is disabled.
@@ -224,6 +217,23 @@ func TestNewWithoutDefaultUser(t *testing.T) {
 	assert.Nil(t, check())
 
 	// correct session, user is disabled.
+	w = httptest.NewRecorder()
+	mw.ServeHTTP(w, newRequest(sdktypes.InvalidUser, "", cookies))
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	assert.Nil(t, check())
+
+	// create a invited user.
+	users.Users = map[sdktypes.UserID]sdktypes.User{
+		testUser1.ID(): testUser1.WithStatus(sdktypes.UserStatusInvited),
+	}
+
+	// correct token, user is invited.
+	w = httptest.NewRecorder()
+	mw.ServeHTTP(w, newRequest(sdktypes.InvalidUser, "Bearer "+tok1, nil))
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	assert.Nil(t, check())
+
+	// correct session, user is invited.
 	w = httptest.NewRecorder()
 	mw.ServeHTTP(w, newRequest(sdktypes.InvalidUser, "", cookies))
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
@@ -263,7 +273,7 @@ func TestNewWithoutDefaultUser(t *testing.T) {
 
 	// token for token user who is disabled, session for other user.
 	// token > session, and is rejected.
-	users.Users[testUser2.ID()] = testUser2.WithDisabled(true)
+	users.Users[testUser2.ID()] = testUser2.WithStatus(sdktypes.UserStatusDisabled)
 	w = httptest.NewRecorder()
 	mw.ServeHTTP(w, newRequest(sdktypes.InvalidUser, "Bearer "+tok2, cookies))
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
@@ -312,7 +322,7 @@ func TestNewWithDefaultUser(t *testing.T) {
 	assert.Nil(t, check())
 
 	// create a disabled user.
-	users.Users[testUser1.ID()] = testUser1.WithDisabled(true)
+	users.Users[testUser1.ID()] = testUser1.WithStatus(sdktypes.UserStatusDisabled)
 
 	// correct token, user is disabled.
 	w = httptest.NewRecorder()
@@ -321,6 +331,21 @@ func TestNewWithDefaultUser(t *testing.T) {
 	assert.Nil(t, check())
 
 	// correct token, user is disabled.
+	w = httptest.NewRecorder()
+	mw.ServeHTTP(w, newRequest(sdktypes.InvalidUser, "", cookies))
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	assert.Nil(t, check())
+
+	// create an invited user.
+	users.Users[testUser1.ID()] = testUser1.WithStatus(sdktypes.UserStatusInvited)
+
+	// correct token, user is invited.
+	w = httptest.NewRecorder()
+	mw.ServeHTTP(w, newRequest(sdktypes.InvalidUser, "Bearer "+tok1, nil))
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	assert.Nil(t, check())
+
+	// correct token, user is invited.
 	w = httptest.NewRecorder()
 	mw.ServeHTTP(w, newRequest(sdktypes.InvalidUser, "", cookies))
 	assert.Equal(t, http.StatusUnauthorized, w.Code)

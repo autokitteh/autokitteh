@@ -3,7 +3,7 @@
 
 from .svc_pb2 import (CreateRequest,CreateResponse,GetRequest,GetResponse,UpdateRequest,UpdateResponse,)
 from .svc_pb2_grpc import (UsersServiceStub,UsersServiceServicer,UsersService,)
-from .user_pb2 import (User,)
+from .user_pb2 import (UserStatus,User,)
 
 
-__all__ = ["User","UsersServiceStub","UsersServiceServicer","UsersService","CreateRequest","CreateResponse","GetRequest","GetResponse","UpdateRequest","UpdateResponse",]
+__all__ = ["UserStatus","User","UsersServiceStub","UsersServiceServicer","UsersService","CreateRequest","CreateResponse","GetRequest","GetResponse","UpdateRequest","UpdateResponse",]

@@ -41,6 +41,14 @@ func (s *server) Create(ctx context.Context, req *connect.Request[usersv1.Create
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
+	if msg.User.Disabled {
+		if u.Status() != sdktypes.UserStatusUnspecified {
+			return nil, sdkerrors.NewInvalidArgumentError("status and disabled are mutually exclusive")
+		}
+
+		u = u.WithStatus(sdktypes.UserStatusDisabled)
+	}
+
 	uid, err := s.users.Create(ctx, u)
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
@@ -66,7 +74,12 @@ func (s *server) Get(ctx context.Context, req *connect.Request[usersv1.GetReques
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	return connect.NewResponse(&usersv1.GetResponse{User: u.ToProto()}), nil
+	pb := u.ToProto()
+	if u.Status() == sdktypes.UserStatusDisabled {
+		pb.Disabled = true
+	}
+
+	return connect.NewResponse(&usersv1.GetResponse{User: pb}), nil
 }
 
 func (s *server) Update(ctx context.Context, req *connect.Request[usersv1.UpdateRequest]) (*connect.Response[usersv1.UpdateResponse], error) {

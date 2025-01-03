@@ -18,7 +18,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authsessions"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authusers"
-	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -31,7 +30,6 @@ type Deps struct {
 	Muxes    *muxes.Muxes
 	L        *zap.Logger
 	Cfg      *Config
-	DB       db.DB
 	Sessions authsessions.Store
 	Tokens   authtokens.Tokens
 	Users    sdkservices.Users
@@ -204,14 +202,32 @@ func (a *svc) newSuccessLoginHandler(ctx context.Context, ld *loginData) http.Ha
 	if u.IsValid() {
 		sl = sl.With("user_id", uid)
 
-		if u.Disabled() {
-			sl.Infof("disabled user: %v", ld.Email)
-			return newErrHandler("user is disabled", http.StatusForbidden)
-		}
+		if u.Status() == sdktypes.UserStatusInvited {
+			// First login after invite - accept invitation.
+			u = u.WithDisplayName(ld.DisplayName).WithStatus(sdktypes.UserStatusActive)
 
-		if authusers.IsInternalUserID(uid) {
-			sl.Errorf("internal user attempting to login: %v", u)
-			return newErrHandler("internal user, cannot login", http.StatusBadRequest)
+			if err := a.Users.Update(
+				authcontext.SetAuthnSystemUser(ctx),
+				u,
+				&sdktypes.FieldMask{Paths: []string{"display_name", "status"}},
+			); err != nil {
+				sl.With("err", err).Errorf("failed updating user: %v", err)
+				return newErrHandler("internal server error", http.StatusInternalServerError)
+			}
+
+			sl.With("username", ld.Email).Infof("updated user %v for %q", uid, ld.Email)
+		} else {
+			// Make sure user is active.
+			if u.Status() != sdktypes.UserStatusActive {
+				sl.Warnf("user is not active: %v", ld.Email)
+				return newErrHandler("user is not active", http.StatusForbidden)
+			}
+
+			// We don't want internal users logging in - doesn't make sense.
+			if authusers.IsInternalUserID(uid) {
+				sl.Errorf("internal user attempting to login: %v", u)
+				return newErrHandler("internal user, cannot login", http.StatusBadRequest)
+			}
 		}
 	} else {
 		// New user.
@@ -221,7 +237,7 @@ func (a *svc) newSuccessLoginHandler(ctx context.Context, ld *loginData) http.Ha
 			return newErrHandler("unregistered user", http.StatusForbidden)
 		}
 
-		u := sdktypes.NewUser().WithDisplayName(ld.DisplayName).WithEmail(ld.Email)
+		u := sdktypes.NewUser().WithDisplayName(ld.DisplayName).WithEmail(ld.Email).WithStatus(sdktypes.UserStatusActive)
 
 		if uid, err = a.Users.Create(authcontext.SetAuthnSystemUser(ctx), u); err != nil {
 			sl.With("err", err).Errorf("failed creating user: %v", err)
@@ -230,7 +246,7 @@ func (a *svc) newSuccessLoginHandler(ctx context.Context, ld *loginData) http.Ha
 
 		sl = sl.With("user_id", uid)
 
-		sl.With("username", ld.Email).Infof("created user %v for %q", uid, ld.Email)
+		sl.Infof("created user %v for %q", uid, ld.Email)
 	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
