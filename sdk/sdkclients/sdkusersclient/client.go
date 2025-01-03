@@ -53,6 +53,21 @@ func (c *client) Get(ctx context.Context, uid sdktypes.UserID, email string) (sd
 	return sdktypes.UserFromProto(resp.Msg.User)
 }
 
+func (c *client) GetID(ctx context.Context, email string) (sdktypes.UserID, error) {
+	resp, err := c.client.GetID(ctx, connect.NewRequest(&usersv1.GetIDRequest{
+		Email: email,
+	}))
+	if err != nil {
+		return sdktypes.InvalidUserID, rpcerrors.ToSDKError(err)
+	}
+
+	if err := internal.Validate(resp.Msg); err != nil {
+		return sdktypes.InvalidUserID, err
+	}
+
+	return sdktypes.ParseUserID(resp.Msg.UserId)
+}
+
 func (c *client) Update(ctx context.Context, u sdktypes.User, fm *sdktypes.FieldMask) error {
 	resp, err := c.client.Update(ctx, connect.NewRequest(&usersv1.UpdateRequest{
 		User:      u.ToProto(),

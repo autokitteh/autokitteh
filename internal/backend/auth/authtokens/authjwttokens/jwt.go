@@ -1,4 +1,4 @@
-package authtokensjwt
+package authjwttokens
 
 import (
 	"encoding/hex"

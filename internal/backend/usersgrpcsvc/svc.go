@@ -14,11 +14,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-type server struct {
-	users sdkservices.Users
-
-	usersv1connect.UnimplementedUsersServiceHandler
-}
+type server struct{ users sdkservices.Users }
 
 var _ usersv1connect.UsersServiceHandler = (*server)(nil)
 
@@ -80,6 +76,21 @@ func (s *server) Get(ctx context.Context, req *connect.Request[usersv1.GetReques
 	}
 
 	return connect.NewResponse(&usersv1.GetResponse{User: pb}), nil
+}
+
+func (s *server) GetID(ctx context.Context, req *connect.Request[usersv1.GetIDRequest]) (*connect.Response[usersv1.GetIDResponse], error) {
+	msg := req.Msg
+
+	if err := proto.Validate(msg); err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	uid, err := s.users.GetID(ctx, msg.Email)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	return connect.NewResponse(&usersv1.GetIDResponse{UserId: uid.String()}), nil
 }
 
 func (s *server) Update(ctx context.Context, req *connect.Request[usersv1.UpdateRequest]) (*connect.Response[usersv1.UpdateResponse], error) {

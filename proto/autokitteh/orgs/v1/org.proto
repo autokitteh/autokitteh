@@ -3,9 +3,21 @@ syntax = "proto3";
 package autokitteh.orgs.v1;
 
 // Org represents an organization.
-// `name` is a globally unique symbol for the organization.
-// `display_name` is a human-readable name for the organization.
 message Org {
   string org_id = 1;
-  string display_name = 2;
+  string display_name = 2; // human readable name.
+}
+
+// OrgMember represents a membership of a user in an organization.
+message OrgMember {
+  string user_id = 1;
+  string org_id = 2;
+  OrgMemberStatus status = 3;
+}
+
+enum OrgMemberStatus {
+  ORG_MEMBER_STATUS_UNSPECIFIED = 0;
+  ORG_MEMBER_STATUS_ACTIVE = 1;
+  ORG_MEMBER_STATUS_INVITED = 2;
+  ORG_MEMBER_STATUS_DECLINED = 3;
 }

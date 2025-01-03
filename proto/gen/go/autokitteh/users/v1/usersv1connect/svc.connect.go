@@ -37,6 +37,8 @@ const (
 	UsersServiceCreateProcedure = "/autokitteh.users.v1.UsersService/Create"
 	// UsersServiceGetProcedure is the fully-qualified name of the UsersService's Get RPC.
 	UsersServiceGetProcedure = "/autokitteh.users.v1.UsersService/Get"
+	// UsersServiceGetIDProcedure is the fully-qualified name of the UsersService's GetID RPC.
+	UsersServiceGetIDProcedure = "/autokitteh.users.v1.UsersService/GetID"
 	// UsersServiceUpdateProcedure is the fully-qualified name of the UsersService's Update RPC.
 	UsersServiceUpdateProcedure = "/autokitteh.users.v1.UsersService/Update"
 )
@@ -45,6 +47,7 @@ const (
 type UsersServiceClient interface {
 	Create(context.Context, *connect.Request[v1.CreateRequest]) (*connect.Response[v1.CreateResponse], error)
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
+	GetID(context.Context, *connect.Request[v1.GetIDRequest]) (*connect.Response[v1.GetIDResponse], error)
 	Update(context.Context, *connect.Request[v1.UpdateRequest]) (*connect.Response[v1.UpdateResponse], error)
 }
 
@@ -68,6 +71,11 @@ func NewUsersServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			baseURL+UsersServiceGetProcedure,
 			opts...,
 		),
+		getID: connect.NewClient[v1.GetIDRequest, v1.GetIDResponse](
+			httpClient,
+			baseURL+UsersServiceGetIDProcedure,
+			opts...,
+		),
 		update: connect.NewClient[v1.UpdateRequest, v1.UpdateResponse](
 			httpClient,
 			baseURL+UsersServiceUpdateProcedure,
@@ -80,6 +88,7 @@ func NewUsersServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 type usersServiceClient struct {
 	create *connect.Client[v1.CreateRequest, v1.CreateResponse]
 	get    *connect.Client[v1.GetRequest, v1.GetResponse]
+	getID  *connect.Client[v1.GetIDRequest, v1.GetIDResponse]
 	update *connect.Client[v1.UpdateRequest, v1.UpdateResponse]
 }
 
@@ -93,6 +102,11 @@ func (c *usersServiceClient) Get(ctx context.Context, req *connect.Request[v1.Ge
 	return c.get.CallUnary(ctx, req)
 }
 
+// GetID calls autokitteh.users.v1.UsersService.GetID.
+func (c *usersServiceClient) GetID(ctx context.Context, req *connect.Request[v1.GetIDRequest]) (*connect.Response[v1.GetIDResponse], error) {
+	return c.getID.CallUnary(ctx, req)
+}
+
 // Update calls autokitteh.users.v1.UsersService.Update.
 func (c *usersServiceClient) Update(ctx context.Context, req *connect.Request[v1.UpdateRequest]) (*connect.Response[v1.UpdateResponse], error) {
 	return c.update.CallUnary(ctx, req)
@@ -102,6 +116,7 @@ func (c *usersServiceClient) Update(ctx context.Context, req *connect.Request[v1
 type UsersServiceHandler interface {
 	Create(context.Context, *connect.Request[v1.CreateRequest]) (*connect.Response[v1.CreateResponse], error)
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
+	GetID(context.Context, *connect.Request[v1.GetIDRequest]) (*connect.Response[v1.GetIDResponse], error)
 	Update(context.Context, *connect.Request[v1.UpdateRequest]) (*connect.Response[v1.UpdateResponse], error)
 }
 
@@ -121,6 +136,11 @@ func NewUsersServiceHandler(svc UsersServiceHandler, opts ...connect.HandlerOpti
 		svc.Get,
 		opts...,
 	)
+	usersServiceGetIDHandler := connect.NewUnaryHandler(
+		UsersServiceGetIDProcedure,
+		svc.GetID,
+		opts...,
+	)
 	usersServiceUpdateHandler := connect.NewUnaryHandler(
 		UsersServiceUpdateProcedure,
 		svc.Update,
@@ -132,6 +152,8 @@ func NewUsersServiceHandler(svc UsersServiceHandler, opts ...connect.HandlerOpti
 			usersServiceCreateHandler.ServeHTTP(w, r)
 		case UsersServiceGetProcedure:
 			usersServiceGetHandler.ServeHTTP(w, r)
+		case UsersServiceGetIDProcedure:
+			usersServiceGetIDHandler.ServeHTTP(w, r)
 		case UsersServiceUpdateProcedure:
 			usersServiceUpdateHandler.ServeHTTP(w, r)
 		default:
@@ -149,6 +171,10 @@ func (UnimplementedUsersServiceHandler) Create(context.Context, *connect.Request
 
 func (UnimplementedUsersServiceHandler) Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.users.v1.UsersService.Get is not implemented"))
+}
+
+func (UnimplementedUsersServiceHandler) GetID(context.Context, *connect.Request[v1.GetIDRequest]) (*connect.Response[v1.GetIDResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.users.v1.UsersService.GetID is not implemented"))
 }
 
 func (UnimplementedUsersServiceHandler) Update(context.Context, *connect.Request[v1.UpdateRequest]) (*connect.Response[v1.UpdateResponse], error) {

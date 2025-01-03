@@ -43,13 +43,16 @@ const (
 	OrgsServiceDeleteProcedure = "/autokitteh.orgs.v1.OrgsService/Delete"
 	// OrgsServiceAddMemberProcedure is the fully-qualified name of the OrgsService's AddMember RPC.
 	OrgsServiceAddMemberProcedure = "/autokitteh.orgs.v1.OrgsService/AddMember"
+	// OrgsServiceUpdateMemberProcedure is the fully-qualified name of the OrgsService's UpdateMember
+	// RPC.
+	OrgsServiceUpdateMemberProcedure = "/autokitteh.orgs.v1.OrgsService/UpdateMember"
 	// OrgsServiceRemoveMemberProcedure is the fully-qualified name of the OrgsService's RemoveMember
 	// RPC.
 	OrgsServiceRemoveMemberProcedure = "/autokitteh.orgs.v1.OrgsService/RemoveMember"
 	// OrgsServiceListMembersProcedure is the fully-qualified name of the OrgsService's ListMembers RPC.
 	OrgsServiceListMembersProcedure = "/autokitteh.orgs.v1.OrgsService/ListMembers"
-	// OrgsServiceIsMemberProcedure is the fully-qualified name of the OrgsService's IsMember RPC.
-	OrgsServiceIsMemberProcedure = "/autokitteh.orgs.v1.OrgsService/IsMember"
+	// OrgsServiceGetMemberProcedure is the fully-qualified name of the OrgsService's GetMember RPC.
+	OrgsServiceGetMemberProcedure = "/autokitteh.orgs.v1.OrgsService/GetMember"
 	// OrgsServiceGetOrgsForUserProcedure is the fully-qualified name of the OrgsService's
 	// GetOrgsForUser RPC.
 	OrgsServiceGetOrgsForUserProcedure = "/autokitteh.orgs.v1.OrgsService/GetOrgsForUser"
@@ -61,11 +64,11 @@ type OrgsServiceClient interface {
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
 	Update(context.Context, *connect.Request[v1.UpdateRequest]) (*connect.Response[v1.UpdateResponse], error)
 	Delete(context.Context, *connect.Request[v1.DeleteRequest]) (*connect.Response[v1.DeleteResponse], error)
-	// TODO: rpc InviteMember(InviteMemberRequest) returns (InviteMemberResponse);
 	AddMember(context.Context, *connect.Request[v1.AddMemberRequest]) (*connect.Response[v1.AddMemberResponse], error)
+	UpdateMember(context.Context, *connect.Request[v1.UpdateMemberRequest]) (*connect.Response[v1.UpdateMemberResponse], error)
 	RemoveMember(context.Context, *connect.Request[v1.RemoveMemberRequest]) (*connect.Response[v1.RemoveMemberResponse], error)
 	ListMembers(context.Context, *connect.Request[v1.ListMembersRequest]) (*connect.Response[v1.ListMembersResponse], error)
-	IsMember(context.Context, *connect.Request[v1.IsMemberRequest]) (*connect.Response[v1.IsMemberResponse], error)
+	GetMember(context.Context, *connect.Request[v1.GetMemberRequest]) (*connect.Response[v1.GetMemberResponse], error)
 	GetOrgsForUser(context.Context, *connect.Request[v1.GetOrgsForUserRequest]) (*connect.Response[v1.GetOrgsForUserResponse], error)
 }
 
@@ -104,6 +107,11 @@ func NewOrgsServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			baseURL+OrgsServiceAddMemberProcedure,
 			opts...,
 		),
+		updateMember: connect.NewClient[v1.UpdateMemberRequest, v1.UpdateMemberResponse](
+			httpClient,
+			baseURL+OrgsServiceUpdateMemberProcedure,
+			opts...,
+		),
 		removeMember: connect.NewClient[v1.RemoveMemberRequest, v1.RemoveMemberResponse](
 			httpClient,
 			baseURL+OrgsServiceRemoveMemberProcedure,
@@ -114,9 +122,9 @@ func NewOrgsServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			baseURL+OrgsServiceListMembersProcedure,
 			opts...,
 		),
-		isMember: connect.NewClient[v1.IsMemberRequest, v1.IsMemberResponse](
+		getMember: connect.NewClient[v1.GetMemberRequest, v1.GetMemberResponse](
 			httpClient,
-			baseURL+OrgsServiceIsMemberProcedure,
+			baseURL+OrgsServiceGetMemberProcedure,
 			opts...,
 		),
 		getOrgsForUser: connect.NewClient[v1.GetOrgsForUserRequest, v1.GetOrgsForUserResponse](
@@ -134,9 +142,10 @@ type orgsServiceClient struct {
 	update         *connect.Client[v1.UpdateRequest, v1.UpdateResponse]
 	delete         *connect.Client[v1.DeleteRequest, v1.DeleteResponse]
 	addMember      *connect.Client[v1.AddMemberRequest, v1.AddMemberResponse]
+	updateMember   *connect.Client[v1.UpdateMemberRequest, v1.UpdateMemberResponse]
 	removeMember   *connect.Client[v1.RemoveMemberRequest, v1.RemoveMemberResponse]
 	listMembers    *connect.Client[v1.ListMembersRequest, v1.ListMembersResponse]
-	isMember       *connect.Client[v1.IsMemberRequest, v1.IsMemberResponse]
+	getMember      *connect.Client[v1.GetMemberRequest, v1.GetMemberResponse]
 	getOrgsForUser *connect.Client[v1.GetOrgsForUserRequest, v1.GetOrgsForUserResponse]
 }
 
@@ -165,6 +174,11 @@ func (c *orgsServiceClient) AddMember(ctx context.Context, req *connect.Request[
 	return c.addMember.CallUnary(ctx, req)
 }
 
+// UpdateMember calls autokitteh.orgs.v1.OrgsService.UpdateMember.
+func (c *orgsServiceClient) UpdateMember(ctx context.Context, req *connect.Request[v1.UpdateMemberRequest]) (*connect.Response[v1.UpdateMemberResponse], error) {
+	return c.updateMember.CallUnary(ctx, req)
+}
+
 // RemoveMember calls autokitteh.orgs.v1.OrgsService.RemoveMember.
 func (c *orgsServiceClient) RemoveMember(ctx context.Context, req *connect.Request[v1.RemoveMemberRequest]) (*connect.Response[v1.RemoveMemberResponse], error) {
 	return c.removeMember.CallUnary(ctx, req)
@@ -175,9 +189,9 @@ func (c *orgsServiceClient) ListMembers(ctx context.Context, req *connect.Reques
 	return c.listMembers.CallUnary(ctx, req)
 }
 
-// IsMember calls autokitteh.orgs.v1.OrgsService.IsMember.
-func (c *orgsServiceClient) IsMember(ctx context.Context, req *connect.Request[v1.IsMemberRequest]) (*connect.Response[v1.IsMemberResponse], error) {
-	return c.isMember.CallUnary(ctx, req)
+// GetMember calls autokitteh.orgs.v1.OrgsService.GetMember.
+func (c *orgsServiceClient) GetMember(ctx context.Context, req *connect.Request[v1.GetMemberRequest]) (*connect.Response[v1.GetMemberResponse], error) {
+	return c.getMember.CallUnary(ctx, req)
 }
 
 // GetOrgsForUser calls autokitteh.orgs.v1.OrgsService.GetOrgsForUser.
@@ -191,11 +205,11 @@ type OrgsServiceHandler interface {
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
 	Update(context.Context, *connect.Request[v1.UpdateRequest]) (*connect.Response[v1.UpdateResponse], error)
 	Delete(context.Context, *connect.Request[v1.DeleteRequest]) (*connect.Response[v1.DeleteResponse], error)
-	// TODO: rpc InviteMember(InviteMemberRequest) returns (InviteMemberResponse);
 	AddMember(context.Context, *connect.Request[v1.AddMemberRequest]) (*connect.Response[v1.AddMemberResponse], error)
+	UpdateMember(context.Context, *connect.Request[v1.UpdateMemberRequest]) (*connect.Response[v1.UpdateMemberResponse], error)
 	RemoveMember(context.Context, *connect.Request[v1.RemoveMemberRequest]) (*connect.Response[v1.RemoveMemberResponse], error)
 	ListMembers(context.Context, *connect.Request[v1.ListMembersRequest]) (*connect.Response[v1.ListMembersResponse], error)
-	IsMember(context.Context, *connect.Request[v1.IsMemberRequest]) (*connect.Response[v1.IsMemberResponse], error)
+	GetMember(context.Context, *connect.Request[v1.GetMemberRequest]) (*connect.Response[v1.GetMemberResponse], error)
 	GetOrgsForUser(context.Context, *connect.Request[v1.GetOrgsForUserRequest]) (*connect.Response[v1.GetOrgsForUserResponse], error)
 }
 
@@ -230,6 +244,11 @@ func NewOrgsServiceHandler(svc OrgsServiceHandler, opts ...connect.HandlerOption
 		svc.AddMember,
 		opts...,
 	)
+	orgsServiceUpdateMemberHandler := connect.NewUnaryHandler(
+		OrgsServiceUpdateMemberProcedure,
+		svc.UpdateMember,
+		opts...,
+	)
 	orgsServiceRemoveMemberHandler := connect.NewUnaryHandler(
 		OrgsServiceRemoveMemberProcedure,
 		svc.RemoveMember,
@@ -240,9 +259,9 @@ func NewOrgsServiceHandler(svc OrgsServiceHandler, opts ...connect.HandlerOption
 		svc.ListMembers,
 		opts...,
 	)
-	orgsServiceIsMemberHandler := connect.NewUnaryHandler(
-		OrgsServiceIsMemberProcedure,
-		svc.IsMember,
+	orgsServiceGetMemberHandler := connect.NewUnaryHandler(
+		OrgsServiceGetMemberProcedure,
+		svc.GetMember,
 		opts...,
 	)
 	orgsServiceGetOrgsForUserHandler := connect.NewUnaryHandler(
@@ -262,12 +281,14 @@ func NewOrgsServiceHandler(svc OrgsServiceHandler, opts ...connect.HandlerOption
 			orgsServiceDeleteHandler.ServeHTTP(w, r)
 		case OrgsServiceAddMemberProcedure:
 			orgsServiceAddMemberHandler.ServeHTTP(w, r)
+		case OrgsServiceUpdateMemberProcedure:
+			orgsServiceUpdateMemberHandler.ServeHTTP(w, r)
 		case OrgsServiceRemoveMemberProcedure:
 			orgsServiceRemoveMemberHandler.ServeHTTP(w, r)
 		case OrgsServiceListMembersProcedure:
 			orgsServiceListMembersHandler.ServeHTTP(w, r)
-		case OrgsServiceIsMemberProcedure:
-			orgsServiceIsMemberHandler.ServeHTTP(w, r)
+		case OrgsServiceGetMemberProcedure:
+			orgsServiceGetMemberHandler.ServeHTTP(w, r)
 		case OrgsServiceGetOrgsForUserProcedure:
 			orgsServiceGetOrgsForUserHandler.ServeHTTP(w, r)
 		default:
@@ -299,6 +320,10 @@ func (UnimplementedOrgsServiceHandler) AddMember(context.Context, *connect.Reque
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.orgs.v1.OrgsService.AddMember is not implemented"))
 }
 
+func (UnimplementedOrgsServiceHandler) UpdateMember(context.Context, *connect.Request[v1.UpdateMemberRequest]) (*connect.Response[v1.UpdateMemberResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.orgs.v1.OrgsService.UpdateMember is not implemented"))
+}
+
 func (UnimplementedOrgsServiceHandler) RemoveMember(context.Context, *connect.Request[v1.RemoveMemberRequest]) (*connect.Response[v1.RemoveMemberResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.orgs.v1.OrgsService.RemoveMember is not implemented"))
 }
@@ -307,8 +332,8 @@ func (UnimplementedOrgsServiceHandler) ListMembers(context.Context, *connect.Req
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.orgs.v1.OrgsService.ListMembers is not implemented"))
 }
 
-func (UnimplementedOrgsServiceHandler) IsMember(context.Context, *connect.Request[v1.IsMemberRequest]) (*connect.Response[v1.IsMemberResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.orgs.v1.OrgsService.IsMember is not implemented"))
+func (UnimplementedOrgsServiceHandler) GetMember(context.Context, *connect.Request[v1.GetMemberRequest]) (*connect.Response[v1.GetMemberResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.orgs.v1.OrgsService.GetMember is not implemented"))
 }
 
 func (UnimplementedOrgsServiceHandler) GetOrgsForUser(context.Context, *connect.Request[v1.GetOrgsForUserRequest]) (*connect.Response[v1.GetOrgsForUserResponse], error) {

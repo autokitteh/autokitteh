@@ -10,7 +10,7 @@ output equals_jq .org.display_name meow
 
 ak orgs list-members $meow_oid
 return code == 0
-output equals_jq . [$ZUMI_UID]
+output equals_jq .[].user_id $ZUMI_UID
 
 ak orgs update $meow_oid --display-name hiss
 return code == 0
@@ -21,7 +21,7 @@ output equals_jq .org.display_name hiss
 
 ak users get-orgs
 return code == 0
-output equals_jq .orgs[].org_id $meow_oid,$CATS_OID,$ZUMI_OID
+output equals_jq .orgs[].org.org_id $ZUMI_OID,$CATS_OID,$meow_oid
 
 ak orgs delete $meow_oid
 return code == 0
@@ -31,8 +31,10 @@ return code == $RC_NOT_FOUND
 
 ak users get-orgs
 return code == 0
-output equals_jq .orgs[].org_id $CATS_OID,$ZUMI_OID
+output equals_jq .orgs[].org.org_id $ZUMI_OID,$CATS_OID
 
+ak users get-orgs $GIZMO_UID
+return code == $RC_NOT_FOUND
 
 -- test-config.yaml --
 ak:

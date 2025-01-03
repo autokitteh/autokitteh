@@ -31,8 +31,17 @@ message UpdateRequest {
 
 message UpdateResponse {}
 
+message GetIDRequest {
+  string email = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message GetIDResponse {
+  string user_id = 1;
+}
+
 service UsersService {
   rpc Create(CreateRequest) returns (CreateResponse);
   rpc Get(GetRequest) returns (GetResponse);
+  rpc GetID(GetIDRequest) returns (GetIDResponse);
   rpc Update(UpdateRequest) returns (UpdateResponse);
 }

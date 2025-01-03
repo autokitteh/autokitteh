@@ -9,10 +9,10 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/resolver"
 )
 
-var removeMemberCmd = common.StandardCommand(&cobra.Command{
-	Use:     "remove-member <org id> <user id>",
-	Short:   "Remove org member",
-	Aliases: []string{"rmm"},
+var getMemberCmd = common.StandardCommand(&cobra.Command{
+	Use:     "get-member <org id> <user id>",
+	Short:   "Get org member",
+	Aliases: []string{"gm"},
 	Args:    cobra.ExactArgs(2),
 
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -31,10 +31,14 @@ var removeMemberCmd = common.StandardCommand(&cobra.Command{
 			return fmt.Errorf("user: %w", err)
 		}
 
-		if err := orgs().RemoveMember(ctx, oid, uid); err != nil {
-			return fmt.Errorf("add member: %w", err)
+		s, err := orgs().GetMemberStatus(ctx, oid, uid)
+		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "member"); err == nil {
+			common.RenderKVIfV("member", s)
 		}
-
-		return nil
+		return err
 	},
 })
+
+func init() {
+	common.AddFailIfNotFoundFlag(getMemberCmd)
+}

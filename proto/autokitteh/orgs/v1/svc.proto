@@ -36,8 +36,7 @@ message UpdateRequest {
 message UpdateResponse {}
 
 message AddMemberRequest {
-  string user_id = 1 [(buf.validate.field).string.min_len = 1];
-  string org_id = 2 [(buf.validate.field).string.min_len = 1];
+  OrgMember member = 3 [(buf.validate.field).required = true];
 }
 
 message AddMemberResponse {}
@@ -49,40 +48,50 @@ message RemoveMemberRequest {
 
 message RemoveMemberResponse {}
 
+message GetMemberRequest {
+  string user_id = 1 [(buf.validate.field).string.min_len = 1];
+  string org_id = 2 [(buf.validate.field).string.min_len = 1];
+}
+
+message GetMemberResponse {
+  OrgMember member = 1;
+}
+
 message ListMembersRequest {
   string org_id = 1 [(buf.validate.field).string.min_len = 1];
 }
 
 message ListMembersResponse {
-  repeated string user_ids = 1 [(buf.validate.field).repeated.items.string.min_len = 1];
-}
-
-message IsMemberRequest {
-  string user_id = 1;
-  string org_id = 2 [(buf.validate.field).string.min_len = 1];
-}
-
-message IsMemberResponse {
-  bool is_member = 1;
+  repeated OrgMember members = 1 [(buf.validate.field).repeated.items.required = true];
 }
 
 message GetOrgsForUserRequest {
   string user_id = 1;
+  bool include_orgs = 2;
 }
 
 message GetOrgsForUserResponse {
-  repeated Org orgs = 1 [(buf.validate.field).repeated.items.required = true];
+  repeated OrgMember members = 1 [(buf.validate.field).repeated.items.required = true];
+  map<string, Org> orgs = 2;
 }
+
+message UpdateMemberRequest {
+  OrgMember member = 3;
+  google.protobuf.FieldMask field_mask = 2;
+}
+
+message UpdateMemberResponse {}
 
 service OrgsService {
   rpc Create(CreateRequest) returns (CreateResponse);
   rpc Get(GetRequest) returns (GetResponse);
   rpc Update(UpdateRequest) returns (UpdateResponse);
   rpc Delete(DeleteRequest) returns (DeleteResponse);
-  // TODO: rpc InviteMember(InviteMemberRequest) returns (InviteMemberResponse);
+
   rpc AddMember(AddMemberRequest) returns (AddMemberResponse);
+  rpc UpdateMember(UpdateMemberRequest) returns (UpdateMemberResponse);
   rpc RemoveMember(RemoveMemberRequest) returns (RemoveMemberResponse);
   rpc ListMembers(ListMembersRequest) returns (ListMembersResponse);
-  rpc IsMember(IsMemberRequest) returns (IsMemberResponse);
+  rpc GetMember(GetMemberRequest) returns (GetMemberResponse);
   rpc GetOrgsForUser(GetOrgsForUserRequest) returns (GetOrgsForUserResponse);
 }

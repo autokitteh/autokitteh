@@ -75,6 +75,16 @@ func (t *TestUsers) Get(_ context.Context, id sdktypes.UserID, email string) (sd
 	return sdktypes.InvalidUser, sdkerrors.ErrNotFound
 }
 
+func (t *TestUsers) GetID(_ context.Context, email string) (sdktypes.UserID, error) {
+	for id, user := range t.Users {
+		if user.Email() == email {
+			return id, nil
+		}
+	}
+
+	return sdktypes.InvalidUserID, sdkerrors.ErrNotFound
+}
+
 // CAUTION: This does no validations.
 func (t *TestUsers) Update(_ context.Context, u sdktypes.User, fm *sdktypes.FieldMask) error {
 	t.UpdateCalledCount++
