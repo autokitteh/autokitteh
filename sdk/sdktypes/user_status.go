@@ -24,7 +24,7 @@ func userStatusFromProto(e usersv1.UserStatus) UserStatus {
 }
 
 var (
-	PossibleUserStatussNames = AllEnumNames[userStatusTraits]()
+	PossibleUserStatusNames = AllEnumNames[userStatusTraits]()
 
 	UserStatusUnspecified = userStatusFromProto(usersv1.UserStatus_USER_STATUS_UNSPECIFIED)
 	UserStatusActive      = userStatusFromProto(usersv1.UserStatus_USER_STATUS_ACTIVE)

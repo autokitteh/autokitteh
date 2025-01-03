@@ -531,7 +531,7 @@ type User struct {
 	UserID       uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
 	Email        string    `gorm:"uniqueIndex;not null"`
 	DisplayName  string
-	Disabled     bool      // deprecated, leave for backward compatability.
+	Disabled     bool      // deprecated, leave for backward compatibility.
 	Status       int32     `gorm:"index"`
 	DefaultOrgID uuid.UUID `gorm:"type:uuid"`
 
