@@ -2,7 +2,7 @@ package kittehs
 
 import "time"
 
-var now = func() time.Time { return time.Now() }
+var now = time.Now
 
 func Now() time.Time { return now() }
 

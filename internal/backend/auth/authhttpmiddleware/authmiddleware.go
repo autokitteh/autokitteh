@@ -144,8 +144,8 @@ func New(deps Deps) AuthMiddlewareDecorator {
 					return
 				}
 
-				if u.Disabled() {
-					http.Error(w, "user is disabled", http.StatusUnauthorized)
+				if u.Status() != sdktypes.UserStatusActive {
+					http.Error(w, "user is not active", http.StatusUnauthorized)
 					return
 				}
 

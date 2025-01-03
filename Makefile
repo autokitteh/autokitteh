@@ -104,7 +104,7 @@ ifneq ($(scripts),)
 endif
 
 .PHONY: test
-test: test-race test-runs test-sessions test-opa
+test:  test-opa test-race test-runs test-sessions
 
 .PHONY: test-opa
 test-opa:

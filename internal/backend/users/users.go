@@ -49,7 +49,13 @@ func (u *users) Create(ctx context.Context, user sdktypes.User) (sdktypes.UserID
 		return sdktypes.InvalidUserID, sdkerrors.NewInvalidArgumentError("user ID must be empty")
 	}
 
-	if err := authz.CheckContext(ctx, sdktypes.InvalidUserID, "create:create", authz.WithData("user", user)); err != nil {
+	if err := authz.CheckContext(
+		ctx,
+		sdktypes.InvalidUserID,
+		"create:create",
+		authz.WithData("user", user),
+		authz.WithData("status", user.Status().String()),
+	); err != nil {
 		return sdktypes.InvalidUserID, err
 	}
 
@@ -118,7 +124,14 @@ func (u *users) Update(ctx context.Context, user sdktypes.User, fieldMask *sdkty
 		return err
 	}
 
-	if err := authz.CheckContext(ctx, user.ID(), "update:update", authz.WithData("user", user), authz.WithFieldMask(fieldMask)); err != nil {
+	if err := authz.CheckContext(
+		ctx,
+		user.ID(),
+		"update:update",
+		authz.WithData("user", user),
+		authz.WithFieldMask(fieldMask),
+		authz.WithData("status", user.Status().String()),
+	); err != nil {
 		return err
 	}
 

@@ -8,6 +8,14 @@ message User {
   string user_id = 1;
   string email = 2; // if email is empty, user cannot login.
   string display_name = 3;
-  bool disabled = 4;
+  bool disabled = 4; // obsolete, use status instead.
   string default_org_id = 5; // org to use for projects, if not otherwise specified.
+  UserStatus status = 6;
+}
+
+enum UserStatus {
+  USER_STATUS_UNSPECIFIED = 0;
+  USER_STATUS_ACTIVE = 1;
+  USER_STATUS_INVITED = 2; // not active yet, just invited.
+  USER_STATUS_DISABLED = 3; // disabled, cannot login.
 }

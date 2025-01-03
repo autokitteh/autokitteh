@@ -531,7 +531,8 @@ type User struct {
 	UserID       uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
 	Email        string    `gorm:"uniqueIndex;not null"`
 	DisplayName  string
-	Disabled     bool
+	Disabled     bool      // deprecated, leave for backward compatability.
+	Status       int32     `gorm:"index"`
 	DefaultOrgID uuid.UUID `gorm:"type:uuid"`
 
 	UpdatedBy uuid.UUID `gorm:"type:uuid"`
@@ -539,12 +540,28 @@ type User struct {
 }
 
 func ParseUser(r User) (sdktypes.User, error) {
+	s := sdktypes.UserStatusActive
+
+	if r.Status == 0 {
+		// legacy.
+		if r.Disabled {
+			s = sdktypes.UserStatusDisabled
+		}
+	} else {
+		var err error
+		s, err = sdktypes.UserStatusFromProto(sdktypes.UserStatusPB(r.Status))
+		if err != nil {
+			return sdktypes.InvalidUser, fmt.Errorf("invalid user status: %w", err)
+		}
+	}
+
 	return sdktypes.NewUser().
-		WithID(sdktypes.NewIDFromUUID[sdktypes.UserID](r.UserID)).
-		WithDisplayName(r.DisplayName).
-		WithDefaultOrgID(sdktypes.NewIDFromUUID[sdktypes.OrgID](r.DefaultOrgID)).
-		WithEmail(r.Email).
-		WithDisabled(r.Disabled), nil
+			WithID(sdktypes.NewIDFromUUID[sdktypes.UserID](r.UserID)).
+			WithDisplayName(r.DisplayName).
+			WithDefaultOrgID(sdktypes.NewIDFromUUID[sdktypes.OrgID](r.DefaultOrgID)).
+			WithEmail(r.Email).
+			WithStatus(s),
+		nil
 }
 
 type Org struct {

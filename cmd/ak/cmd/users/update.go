@@ -10,10 +10,10 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var enabled bool
+var status string
 
 var updateCmd = common.StandardCommand(&cobra.Command{
-	Use:   "update [email or id] [--display-name display-name] [--disabled] [--enabled]",
+	Use:   "update [email or id] [--display-name display-name] [--disabled] [--status status]",
 	Short: "Update a user",
 	Args:  cobra.ExactArgs(1),
 
@@ -41,14 +41,15 @@ var updateCmd = common.StandardCommand(&cobra.Command{
 			u = u.WithDisplayName(displayName)
 		}
 
-		if cmd.Flags().Changed("disabled") {
-			fm.Paths = append(fm.Paths, "disabled")
-			u = u.WithDisabled(true)
-		}
+		if cmd.Flags().Changed("status") {
+			fm.Paths = append(fm.Paths, "status")
 
-		if cmd.Flags().Changed("enabled") {
-			fm.Paths = append(fm.Paths, "disabled")
-			u = u.WithDisabled(false)
+			s, err := sdktypes.ParseUserStatus(status)
+			if err != nil {
+				return fmt.Errorf("parse status: %w", err)
+			}
+
+			u = u.WithStatus(s)
 		}
 
 		if err := users().Update(ctx, u, fm); err != nil {
@@ -61,7 +62,5 @@ var updateCmd = common.StandardCommand(&cobra.Command{
 
 func init() {
 	updateCmd.Flags().StringVarP(&displayName, "display-name", "t", "", "user's display name")
-	updateCmd.Flags().BoolVarP(&disabled, "disabled", "d", false, "is user disabled")
-	updateCmd.Flags().BoolVarP(&enabled, "enabled", "", false, "is user enabled")
-	updateCmd.MarkFlagsMutuallyExclusive("disabled", "enabled")
+	updateCmd.Flags().StringVarP(&status, "status", "", "", "user status")
 }

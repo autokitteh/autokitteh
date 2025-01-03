@@ -12,11 +12,11 @@ import (
 
 var (
 	email, displayName string
-	disabled           bool
+	active             bool
 )
 
 var createCmd = common.StandardCommand(&cobra.Command{
-	Use:     "create --email email [--display-name display-name] [--disabled]",
+	Use:     "create --email email [--display-name display-name] [--active]",
 	Short:   "Create new user",
 	Aliases: []string{"c"},
 	Args:    cobra.NoArgs,
@@ -25,7 +25,12 @@ var createCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		u := sdktypes.NewUser().WithEmail(email).WithDisplayName(displayName).WithDisabled(disabled)
+		s := sdktypes.UserStatusInvited
+		if active {
+			s = sdktypes.UserStatusActive
+		}
+
+		u := sdktypes.NewUser().WithEmail(email).WithDisplayName(displayName).WithStatus(s)
 
 		id, err := users().Create(ctx, u)
 		if err != nil {
@@ -42,5 +47,5 @@ func init() {
 	kittehs.Must0(createCmd.MarkFlagRequired("email"))
 
 	createCmd.Flags().StringVarP(&displayName, "display-name", "t", "", "user's display name")
-	createCmd.Flags().BoolVarP(&disabled, "disabled", "d", false, "is user disabled")
+	createCmd.Flags().BoolVarP(&active, "active", "a", false, "is user active")
 }

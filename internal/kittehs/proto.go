@@ -42,7 +42,7 @@ func ProtoToMap(pb proto.Message, fm *fieldmaskpb.FieldMask) (map[string]interfa
 	m := make(map[string]any, fs.Len())
 
 	if fm == nil {
-		for i := 0; i < fs.Len(); i++ {
+		for i := range fs.Len() {
 			fd := fs.Get(i)
 			m[string(fd.Name())] = v.Get(fd).Interface()
 		}

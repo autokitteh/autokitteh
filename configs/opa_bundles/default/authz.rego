@@ -43,7 +43,26 @@ allow if {
 allow if {
 	authn
 	input.kind == "usr"
+	input.action_type == "read"
 	input.user_id == input.resource_id
+}
+
+# Allow any user to invite other users as long as they
+# specify only the email.
+allow if {
+	authn
+	input.action == "create"
+	input.data.status == "INVITED"
+	not input.data.user.display_name
+	not input.data.user.default_org_id
+}
+
+# do not allow users to change their own status.
+allow if {
+	authn
+	input.action == "update"
+	not "status" in input.data.field_mask
+	input.data.status == "UNSPECIFIED"
 }
 
 #

@@ -28,6 +28,7 @@ func TestUpdatedFields(t *testing.T) {
 			"display_name":   "DISPLAY_NAME",
 			"default_org_id": "",
 			"disabled":       false,
+			"status":         0,
 			"updated_at":     kittehs.Now().UTC(),
 		}, m)
 	}
@@ -43,11 +44,11 @@ func TestUpdatedFields(t *testing.T) {
 
 	// immutable.
 	_, err = updatedFields(ctx, u, kittehs.Must1(fieldmaskpb.New(&sdktypes.UserPB{}, "user_id")))
-	assert.ErrorAs(t, err, &sdkerrors.ErrInvalidArgument{})
+	assert.ErrorAs(t, err, &sdkerrors.InvalidArgumentError{})
 
 	// mutable only by updatedFields, not by the caller.
 	_, err = updatedFields(ctx, u, &fieldmaskpb.FieldMask{Paths: []string{"updated_at"}})
-	assert.ErrorAs(t, err, &sdkerrors.ErrInvalidArgument{})
+	assert.ErrorAs(t, err, &sdkerrors.InvalidArgumentError{})
 
 	ctx = authcontext.SetAuthnUser(ctx, authusers.DefaultUser)
 	m, err = updatedFields(ctx, u, kittehs.Must1(fieldmaskpb.New(&sdktypes.UserPB{}, "disabled", "display_name")))

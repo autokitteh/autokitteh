@@ -38,6 +38,10 @@ func (gdb *gormdb) GetUser(ctx context.Context, id sdktypes.UserID, email string
 }
 
 func (gdb *gormdb) CreateUser(ctx context.Context, u sdktypes.User) (sdktypes.UserID, error) {
+	if u.Status() == sdktypes.UserStatusUnspecified {
+		return sdktypes.InvalidUserID, sdkerrors.NewInvalidArgumentError("missing status")
+	}
+
 	uid := u.ID()
 	if !uid.IsValid() {
 		uid = sdktypes.NewUserID()
@@ -51,8 +55,8 @@ func (gdb *gormdb) CreateUser(ctx context.Context, u sdktypes.User) (sdktypes.Us
 		UserID:       uid.UUIDValue(),
 		Email:        u.Email(),
 		DisplayName:  u.DisplayName(),
-		Disabled:     u.Disabled(),
 		DefaultOrgID: u.DefaultOrgID().UUIDValue(),
+		Status:       int32(u.Status().ToProto()),
 	}
 
 	err := gdb.db.WithContext(ctx).Create(&user).Error
