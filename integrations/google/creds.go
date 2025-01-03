@@ -9,8 +9,12 @@ import (
 	"strings"
 
 	"go.uber.org/zap"
+	"golang.org/x/oauth2/google"
+	googledrivev3 "google.golang.org/api/drive/v3"
+	googleoauth2 "google.golang.org/api/oauth2/v2"
 
 	"go.autokitteh.dev/autokitteh/integrations/google/calendar"
+	"go.autokitteh.dev/autokitteh/integrations/google/drive"
 	"go.autokitteh.dev/autokitteh/integrations/google/forms"
 	"go.autokitteh.dev/autokitteh/integrations/google/gmail"
 	"go.autokitteh.dev/autokitteh/integrations/google/internal/vars"
@@ -81,12 +85,34 @@ func (h handler) handleCreds(w http.ResponseWriter, r *http.Request) {
 	// GCP service-account JSON-key connection? Save the JSON key.
 	case "", "json":
 		ctx := extrazap.AttachLoggerToContext(l, r.Context())
+
+		// Parse the JWT config and set scopes
+		jsonData := []byte(r.PostFormValue("json"))
+		cfg, err := google.JWTConfigFromJSON(jsonData,
+			googleoauth2.OpenIDScope,
+			googleoauth2.UserinfoEmailScope,
+			googleoauth2.UserinfoProfileScope,
+			googledrivev3.DriveFileScope,
+			// googledrivev3.DriveScope,
+		)
+		if err != nil {
+			l.Error("Failed to parse JWT config", zap.Error(err))
+			c.AbortServerError("invalid JSON key")
+			return
+		}
+
+		// Create vars with the JSON and other data
 		vs := sdktypes.EncodeVars(&vars.Vars{
 			JSON:       r.PostFormValue("json"),
 			CalendarID: calID,
 			FormID:     formID,
 		})
-		h.finalize(ctx, c, vs.Set(vars.AuthType, "jsonKey", false))
+
+		// Add the scopes to user_scope like we do in OAuth flow
+		vs = vs.Set(vars.UserScope, strings.Join(cfg.Scopes, " "), false).
+			Set(vars.AuthType, "jsonKey", false)
+
+		h.finalize(ctx, c, vs)
 
 	// User OAuth connect? Redirect to AutoKitteh's OAuth starting point.
 	case "oauth":
@@ -155,6 +181,12 @@ func (h handler) finalize(ctx context.Context, c sdkintegrations.ConnectionInit,
 	if err := calendar.UpdateWatches(ctx, h.vars, cid); err != nil {
 		l.Error("Google Calendar watches creation error", zap.Error(err))
 		c.AbortServerError("calendar watches creation error")
+		return
+	}
+
+	if err := drive.UpdateWatches(ctx, h.vars, cid); err != nil {
+		l.Error("Google Drive watches creation error", zap.Error(err))
+		c.AbortServerError("drive watches creation error")
 		return
 	}
 
