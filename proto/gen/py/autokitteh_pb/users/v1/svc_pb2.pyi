@@ -44,3 +44,15 @@ class UpdateRequest(_message.Message):
 class UpdateResponse(_message.Message):
     __slots__ = []
     def __init__(self) -> None: ...
+
+class GetIDRequest(_message.Message):
+    __slots__ = ["email"]
+    EMAIL_FIELD_NUMBER: _ClassVar[int]
+    email: str
+    def __init__(self, email: _Optional[str] = ...) -> None: ...
+
+class GetIDResponse(_message.Message):
+    __slots__ = ["user_id"]
+    USER_ID_FIELD_NUMBER: _ClassVar[int]
+    user_id: str
+    def __init__(self, user_id: _Optional[str] = ...) -> None: ...

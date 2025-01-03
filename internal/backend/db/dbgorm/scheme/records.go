@@ -585,6 +585,7 @@ type OrgMember struct {
 
 	OrgID  uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
 	UserID uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
+	Status int       `gorm:"index"`
 
 	Org  *Org
 	User *User

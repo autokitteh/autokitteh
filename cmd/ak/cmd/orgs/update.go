@@ -43,5 +43,5 @@ var updateCmd = common.StandardCommand(&cobra.Command{
 })
 
 func init() {
-	updateCmd.Flags().StringVarP(&displayName, "display-name", "t", "", "org's display name")
+	updateCmd.Flags().StringVarP(&displayName, "display-name", "n", "", "org's display name")
 }

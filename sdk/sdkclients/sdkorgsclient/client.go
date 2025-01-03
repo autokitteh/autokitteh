@@ -2,8 +2,10 @@ package sdkorgsclient
 
 import (
 	"context"
+	"fmt"
 
 	"connectrpc.com/connect"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	orgsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/orgs/v1"
@@ -80,7 +82,7 @@ func (c *client) Update(ctx context.Context, u sdktypes.Org, fm *sdktypes.FieldM
 	return internal.Validate(resp.Msg)
 }
 
-func (c *client) ListMembers(ctx context.Context, oid sdktypes.OrgID) ([]sdktypes.UserID, error) {
+func (c *client) ListMembers(ctx context.Context, oid sdktypes.OrgID) ([]*sdkservices.UserIDWithMemberStatus, error) {
 	resp, err := c.client.ListMembers(ctx, connect.NewRequest(&orgsv1.ListMembersRequest{
 		OrgId: oid.String(),
 	}))
@@ -92,13 +94,28 @@ func (c *client) ListMembers(ctx context.Context, oid sdktypes.OrgID) ([]sdktype
 		return nil, err
 	}
 
-	return kittehs.TransformError(resp.Msg.UserIds, sdktypes.StrictParseUserID)
+	return kittehs.TransformError(resp.Msg.Members, func(o *orgsv1.OrgMember) (*sdkservices.UserIDWithMemberStatus, error) {
+		s, err := sdktypes.OrgMemberStatusFromProto(o.Status)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse org member status: %w", err)
+		}
+
+		uid, err := sdktypes.StrictParseUserID(o.UserId)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse user id: %w", err)
+		}
+
+		return &sdkservices.UserIDWithMemberStatus{UserID: uid, Status: s}, nil
+	})
 }
 
-func (c *client) AddMember(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID) error {
+func (c *client) AddMember(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID, status sdktypes.OrgMemberStatus) error {
 	resp, err := c.client.AddMember(ctx, connect.NewRequest(&orgsv1.AddMemberRequest{
-		OrgId:  oid.String(),
-		UserId: uid.String(),
+		Member: &orgsv1.OrgMember{
+			OrgId:  oid.String(),
+			UserId: uid.String(),
+			Status: status.ToProto(),
+		},
 	}))
 	if err != nil {
 		return rpcerrors.ToSDKError(err)
@@ -127,25 +144,26 @@ func (c *client) RemoveMember(ctx context.Context, oid sdktypes.OrgID, uid sdkty
 	return nil
 }
 
-func (c *client) IsMember(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID) (bool, error) {
-	resp, err := c.client.IsMember(ctx, connect.NewRequest(&orgsv1.IsMemberRequest{
+func (c *client) GetMemberStatus(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID) (sdktypes.OrgMemberStatus, error) {
+	resp, err := c.client.GetMember(ctx, connect.NewRequest(&orgsv1.GetMemberRequest{
 		OrgId:  oid.String(),
 		UserId: uid.String(),
 	}))
 	if err != nil {
-		return false, rpcerrors.ToSDKError(err)
+		return sdktypes.OrgMemberStatusUnspecified, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
-		return false, err
+		return sdktypes.OrgMemberStatusUnspecified, err
 	}
 
-	return resp.Msg.IsMember, nil
+	return sdktypes.OrgMemberStatusFromProto(resp.Msg.Member.Status)
 }
 
-func (c *client) GetOrgsForUser(ctx context.Context, uid sdktypes.UserID) ([]sdktypes.Org, error) {
+func (c *client) GetOrgsForUser(ctx context.Context, uid sdktypes.UserID) ([]*sdkservices.OrgWithMemberStatus, error) {
 	resp, err := c.client.GetOrgsForUser(ctx, connect.NewRequest(&orgsv1.GetOrgsForUserRequest{
-		UserId: uid.String(),
+		UserId:      uid.String(),
+		IncludeOrgs: true,
 	}))
 	if err != nil {
 		return nil, rpcerrors.ToSDKError(err)
@@ -155,5 +173,33 @@ func (c *client) GetOrgsForUser(ctx context.Context, uid sdktypes.UserID) ([]sdk
 		return nil, err
 	}
 
-	return kittehs.TransformError(resp.Msg.Orgs, sdktypes.OrgFromProto)
+	return kittehs.TransformError(resp.Msg.Members, func(o *orgsv1.OrgMember) (*sdkservices.OrgWithMemberStatus, error) {
+		s, err := sdktypes.OrgMemberStatusFromProto(o.Status)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse org member status: %w", err)
+		}
+
+		org, err := sdktypes.OrgFromProto(resp.Msg.Orgs[o.OrgId])
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse org: %w", err)
+		}
+
+		return &sdkservices.OrgWithMemberStatus{Org: org, Status: s}, nil
+	})
+}
+
+func (c *client) UpdateMemberStatus(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID, status sdktypes.OrgMemberStatus) error {
+	resp, err := c.client.UpdateMember(ctx, connect.NewRequest(&orgsv1.UpdateMemberRequest{
+		Member: &orgsv1.OrgMember{
+			OrgId:  oid.String(),
+			UserId: uid.String(),
+			Status: status.ToProto(),
+		},
+		FieldMask: kittehs.Must1(fieldmaskpb.New(&orgsv1.OrgMember{}, "status")),
+	}))
+	if err != nil {
+		return rpcerrors.ToSDKError(err)
+	}
+
+	return internal.Validate(resp.Msg)
 }

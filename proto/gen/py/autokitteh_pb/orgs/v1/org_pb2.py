@@ -13,7 +13,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1c\x61utokitteh/orgs/v1/org.proto\x12\x12\x61utokitteh.orgs.v1\"?\n\x03Org\x12\x15\n\x06org_id\x18\x01 \x01(\tR\x05orgId\x12!\n\x0c\x64isplay_name\x18\x02 \x01(\tR\x0b\x64isplayNameB\xd1\x01\n\x16\x63om.autokitteh.orgs.v1B\x08OrgProtoP\x01ZCgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/orgs/v1;orgsv1\xa2\x02\x03\x41OX\xaa\x02\x12\x41utokitteh.Orgs.V1\xca\x02\x12\x41utokitteh\\Orgs\\V1\xe2\x02\x1e\x41utokitteh\\Orgs\\V1\\GPBMetadata\xea\x02\x14\x41utokitteh::Orgs::V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1c\x61utokitteh/orgs/v1/org.proto\x12\x12\x61utokitteh.orgs.v1\"?\n\x03Org\x12\x15\n\x06org_id\x18\x01 \x01(\tR\x05orgId\x12!\n\x0c\x64isplay_name\x18\x02 \x01(\tR\x0b\x64isplayName\"x\n\tOrgMember\x12\x17\n\x07user_id\x18\x01 \x01(\tR\x06userId\x12\x15\n\x06org_id\x18\x02 \x01(\tR\x05orgId\x12;\n\x06status\x18\x03 \x01(\x0e\x32#.autokitteh.orgs.v1.OrgMemberStatusR\x06status*\x91\x01\n\x0fOrgMemberStatus\x12!\n\x1dORG_MEMBER_STATUS_UNSPECIFIED\x10\x00\x12\x1c\n\x18ORG_MEMBER_STATUS_ACTIVE\x10\x01\x12\x1d\n\x19ORG_MEMBER_STATUS_INVITED\x10\x02\x12\x1e\n\x1aORG_MEMBER_STATUS_DECLINED\x10\x03\x42\xd1\x01\n\x16\x63om.autokitteh.orgs.v1B\x08OrgProtoP\x01ZCgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/orgs/v1;orgsv1\xa2\x02\x03\x41OX\xaa\x02\x12\x41utokitteh.Orgs.V1\xca\x02\x12\x41utokitteh\\Orgs\\V1\xe2\x02\x1e\x41utokitteh\\Orgs\\V1\\GPBMetadata\xea\x02\x14\x41utokitteh::Orgs::V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -21,6 +21,10 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'autokitteh.orgs.v1.org_pb2'
 if _descriptor._USE_C_DESCRIPTORS == False:
   DESCRIPTOR._options = None
   DESCRIPTOR._serialized_options = b'\n\026com.autokitteh.orgs.v1B\010OrgProtoP\001ZCgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/orgs/v1;orgsv1\242\002\003AOX\252\002\022Autokitteh.Orgs.V1\312\002\022Autokitteh\\Orgs\\V1\342\002\036Autokitteh\\Orgs\\V1\\GPBMetadata\352\002\024Autokitteh::Orgs::V1'
+  _globals['_ORGMEMBERSTATUS']._serialized_start=240
+  _globals['_ORGMEMBERSTATUS']._serialized_end=385
   _globals['_ORG']._serialized_start=52
   _globals['_ORG']._serialized_end=115
+  _globals['_ORGMEMBER']._serialized_start=117
+  _globals['_ORGMEMBER']._serialized_end=237
 # @@protoc_insertion_point(module_scope)

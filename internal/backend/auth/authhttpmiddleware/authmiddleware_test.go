@@ -10,7 +10,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authsessions"
-	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens/authtokensjwt"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens/authjwttokens"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authusers"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktest"
@@ -121,7 +121,7 @@ func TestDefaultUserMiddleware(t *testing.T) {
 func TestTokensMiddleware(t *testing.T) {
 	h, check := newInternalTestHandler(t)
 
-	tokens := kittehs.Must1(authtokensjwt.New(authtokensjwt.Configs.Dev))
+	tokens := kittehs.Must1(authjwttokens.New(authjwttokens.Configs.Dev))
 
 	mw := newTokensMiddleware(h, tokens)
 
@@ -172,7 +172,7 @@ func TestNewWithoutDefaultUser(t *testing.T) {
 	h, check := newOverallTestHandler(t)
 
 	sessions := kittehs.Must1(authsessions.New(authsessions.Configs.Dev))
-	tokens := kittehs.Must1(authtokensjwt.New(authtokensjwt.Configs.Dev))
+	tokens := kittehs.Must1(authjwttokens.New(authjwttokens.Configs.Dev))
 	users := &sdktest.TestUsers{}
 
 	mw := New(Deps{
@@ -284,7 +284,7 @@ func TestNewWithDefaultUser(t *testing.T) {
 	h, check := newOverallTestHandler(t)
 
 	sessions := kittehs.Must1(authsessions.New(authsessions.Configs.Dev))
-	tokens := kittehs.Must1(authtokensjwt.New(authtokensjwt.Configs.Dev))
+	tokens := kittehs.Must1(authjwttokens.New(authjwttokens.Configs.Dev))
 	users := &sdktest.TestUsers{
 		Users: map[sdktypes.UserID]sdktypes.User{
 			authusers.DefaultUser.ID(): authusers.DefaultUser,

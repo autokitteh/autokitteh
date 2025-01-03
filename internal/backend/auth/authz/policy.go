@@ -14,7 +14,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/policy"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -70,7 +69,12 @@ func buildInput(ctx context.Context, db db.DB, id sdktypes.ID, action string, cf
 		return nil, fmt.Errorf("get orgs for user: %w", err)
 	}
 
-	uoids := kittehs.Transform(uorgs, func(org sdktypes.Org) string { return org.ID().String() })
+	uoids := make([]string, 0, len(uorgs))
+	for _, ows := range uorgs {
+		if ows.Status == sdktypes.OrgMemberStatusActive {
+			uoids = append(uoids, ows.Org.ID().String())
+		}
+	}
 
 	// TODO: Use https://docs.styra.com/opa/rego-by-example/builtins/regex/globs_match to match permissions.
 	actType, act, ok := strings.Cut(action, ":")
@@ -118,7 +122,9 @@ func buildInput(ctx context.Context, db db.DB, id sdktypes.ID, action string, cf
 			return nil, fmt.Errorf("get project org: %w", err)
 		}
 
-		associations[name] = map[string]string{}
+		associations[name] = map[string]string{
+			"id": id.String(),
+		}
 
 		if oid.IsValid() {
 			oidsSet[oid.String()] = true
@@ -139,7 +145,6 @@ func buildInput(ctx context.Context, db db.DB, id sdktypes.ID, action string, cf
 				associations[name]["project_id"] = pid.String()
 			}
 		}
-
 	}
 
 	data := map[string]any{

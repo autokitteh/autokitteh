@@ -22,6 +22,17 @@ return code == $RC_UNAUTHZ
 ak users create --email rat@cats
 return code == 0
 
+ak users get $GIZMO_UID -f
+return code == $RC_NOT_FOUND
+
+ak users get-id zumi@cats -f
+return code == 0
+output equals_jq .user_id $ZUMI_UID
+
+ak users get-id gizmo@cats -f
+return code == 0
+output equals_jq .user_id $GIZMO_UID
+
 -- test-config.yaml --
 ak:
     extra_args: ["-j", "--array_json_list"]

@@ -237,3 +237,77 @@ export class UpdateResponse extends Message<UpdateResponse> {
   }
 }
 
+/**
+ * @generated from message autokitteh.users.v1.GetIDRequest
+ */
+export class GetIDRequest extends Message<GetIDRequest> {
+  /**
+   * @generated from field: string email = 1;
+   */
+  email = "";
+
+  constructor(data?: PartialMessage<GetIDRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.users.v1.GetIDRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetIDRequest {
+    return new GetIDRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetIDRequest {
+    return new GetIDRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetIDRequest {
+    return new GetIDRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetIDRequest | PlainMessage<GetIDRequest> | undefined, b: GetIDRequest | PlainMessage<GetIDRequest> | undefined): boolean {
+    return proto3.util.equals(GetIDRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.users.v1.GetIDResponse
+ */
+export class GetIDResponse extends Message<GetIDResponse> {
+  /**
+   * @generated from field: string user_id = 1;
+   */
+  userId = "";
+
+  constructor(data?: PartialMessage<GetIDResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.users.v1.GetIDResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetIDResponse {
+    return new GetIDResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetIDResponse {
+    return new GetIDResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetIDResponse {
+    return new GetIDResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetIDResponse | PlainMessage<GetIDResponse> | undefined, b: GetIDResponse | PlainMessage<GetIDResponse> | undefined): boolean {
+    return proto3.util.equals(GetIDResponse, a, b);
+  }
+}
+

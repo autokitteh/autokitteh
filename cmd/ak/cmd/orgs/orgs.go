@@ -24,9 +24,11 @@ func init() {
 	orgsCmd.AddCommand(createCmd)
 	orgsCmd.AddCommand(deleteCmd)
 	orgsCmd.AddCommand(getCmd)
+	orgsCmd.AddCommand(getMemberCmd)
 	orgsCmd.AddCommand(listMembersCmd)
 	orgsCmd.AddCommand(removeMemberCmd)
 	orgsCmd.AddCommand(updateCmd)
+	orgsCmd.AddCommand(updateMemberCmd)
 }
 
 func orgs() sdkservices.Orgs { return common.Client().Orgs() }

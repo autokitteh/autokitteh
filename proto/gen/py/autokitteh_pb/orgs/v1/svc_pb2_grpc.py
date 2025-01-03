@@ -39,6 +39,11 @@ class OrgsServiceStub(object):
                 request_serializer=autokitteh_dot_orgs_dot_v1_dot_svc__pb2.AddMemberRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_orgs_dot_v1_dot_svc__pb2.AddMemberResponse.FromString,
                 )
+        self.UpdateMember = channel.unary_unary(
+                '/autokitteh.orgs.v1.OrgsService/UpdateMember',
+                request_serializer=autokitteh_dot_orgs_dot_v1_dot_svc__pb2.UpdateMemberRequest.SerializeToString,
+                response_deserializer=autokitteh_dot_orgs_dot_v1_dot_svc__pb2.UpdateMemberResponse.FromString,
+                )
         self.RemoveMember = channel.unary_unary(
                 '/autokitteh.orgs.v1.OrgsService/RemoveMember',
                 request_serializer=autokitteh_dot_orgs_dot_v1_dot_svc__pb2.RemoveMemberRequest.SerializeToString,
@@ -49,10 +54,10 @@ class OrgsServiceStub(object):
                 request_serializer=autokitteh_dot_orgs_dot_v1_dot_svc__pb2.ListMembersRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_orgs_dot_v1_dot_svc__pb2.ListMembersResponse.FromString,
                 )
-        self.IsMember = channel.unary_unary(
-                '/autokitteh.orgs.v1.OrgsService/IsMember',
-                request_serializer=autokitteh_dot_orgs_dot_v1_dot_svc__pb2.IsMemberRequest.SerializeToString,
-                response_deserializer=autokitteh_dot_orgs_dot_v1_dot_svc__pb2.IsMemberResponse.FromString,
+        self.GetMember = channel.unary_unary(
+                '/autokitteh.orgs.v1.OrgsService/GetMember',
+                request_serializer=autokitteh_dot_orgs_dot_v1_dot_svc__pb2.GetMemberRequest.SerializeToString,
+                response_deserializer=autokitteh_dot_orgs_dot_v1_dot_svc__pb2.GetMemberResponse.FromString,
                 )
         self.GetOrgsForUser = channel.unary_unary(
                 '/autokitteh.orgs.v1.OrgsService/GetOrgsForUser',
@@ -89,8 +94,13 @@ class OrgsServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def AddMember(self, request, context):
-        """TODO: rpc InviteMember(InviteMemberRequest) returns (InviteMemberResponse);
-        """
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def UpdateMember(self, request, context):
+        """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -107,7 +117,7 @@ class OrgsServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def IsMember(self, request, context):
+    def GetMember(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -147,6 +157,11 @@ def add_OrgsServiceServicer_to_server(servicer, server):
                     request_deserializer=autokitteh_dot_orgs_dot_v1_dot_svc__pb2.AddMemberRequest.FromString,
                     response_serializer=autokitteh_dot_orgs_dot_v1_dot_svc__pb2.AddMemberResponse.SerializeToString,
             ),
+            'UpdateMember': grpc.unary_unary_rpc_method_handler(
+                    servicer.UpdateMember,
+                    request_deserializer=autokitteh_dot_orgs_dot_v1_dot_svc__pb2.UpdateMemberRequest.FromString,
+                    response_serializer=autokitteh_dot_orgs_dot_v1_dot_svc__pb2.UpdateMemberResponse.SerializeToString,
+            ),
             'RemoveMember': grpc.unary_unary_rpc_method_handler(
                     servicer.RemoveMember,
                     request_deserializer=autokitteh_dot_orgs_dot_v1_dot_svc__pb2.RemoveMemberRequest.FromString,
@@ -157,10 +172,10 @@ def add_OrgsServiceServicer_to_server(servicer, server):
                     request_deserializer=autokitteh_dot_orgs_dot_v1_dot_svc__pb2.ListMembersRequest.FromString,
                     response_serializer=autokitteh_dot_orgs_dot_v1_dot_svc__pb2.ListMembersResponse.SerializeToString,
             ),
-            'IsMember': grpc.unary_unary_rpc_method_handler(
-                    servicer.IsMember,
-                    request_deserializer=autokitteh_dot_orgs_dot_v1_dot_svc__pb2.IsMemberRequest.FromString,
-                    response_serializer=autokitteh_dot_orgs_dot_v1_dot_svc__pb2.IsMemberResponse.SerializeToString,
+            'GetMember': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetMember,
+                    request_deserializer=autokitteh_dot_orgs_dot_v1_dot_svc__pb2.GetMemberRequest.FromString,
+                    response_serializer=autokitteh_dot_orgs_dot_v1_dot_svc__pb2.GetMemberResponse.SerializeToString,
             ),
             'GetOrgsForUser': grpc.unary_unary_rpc_method_handler(
                     servicer.GetOrgsForUser,
@@ -263,6 +278,23 @@ class OrgsService(object):
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
+    def UpdateMember(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/autokitteh.orgs.v1.OrgsService/UpdateMember',
+            autokitteh_dot_orgs_dot_v1_dot_svc__pb2.UpdateMemberRequest.SerializeToString,
+            autokitteh_dot_orgs_dot_v1_dot_svc__pb2.UpdateMemberResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
     def RemoveMember(request,
             target,
             options=(),
@@ -297,7 +329,7 @@ class OrgsService(object):
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def IsMember(request,
+    def GetMember(request,
             target,
             options=(),
             channel_credentials=None,
@@ -307,9 +339,9 @@ class OrgsService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/autokitteh.orgs.v1.OrgsService/IsMember',
-            autokitteh_dot_orgs_dot_v1_dot_svc__pb2.IsMemberRequest.SerializeToString,
-            autokitteh_dot_orgs_dot_v1_dot_svc__pb2.IsMemberResponse.FromString,
+        return grpc.experimental.unary_unary(request, target, '/autokitteh.orgs.v1.OrgsService/GetMember',
+            autokitteh_dot_orgs_dot_v1_dot_svc__pb2.GetMemberRequest.SerializeToString,
+            autokitteh_dot_orgs_dot_v1_dot_svc__pb2.GetMemberResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 

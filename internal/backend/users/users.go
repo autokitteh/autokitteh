@@ -87,7 +87,7 @@ func (u *users) Create(ctx context.Context, user sdktypes.User) (sdktypes.UserID
 		}
 
 		// We will always have oid set by this point.
-		if err := orgs.AddMember(ctx, db, oid, uid); err != nil {
+		if err := orgs.AddMember(ctx, db, oid, uid, sdktypes.OrgMemberStatusActive); err != nil {
 			return fmt.Errorf("add as member to personal org: %w", err)
 		}
 
@@ -108,11 +108,31 @@ func (u *users) Get(ctx context.Context, id sdktypes.UserID, email string) (sdkt
 		"read:get",
 		authz.WithData("user_id", id.String()),
 		authz.WithData("email", email),
+		authz.WithConvertForbiddenToNotFound,
 	); err != nil {
 		return sdktypes.InvalidUser, err
 	}
 
 	return u.db.GetUser(ctx, id, email)
+}
+
+func (u *users) GetID(ctx context.Context, email string) (sdktypes.UserID, error) {
+	if err := authz.CheckContext(
+		ctx,
+		sdktypes.InvalidUserID,
+		"read:get-id",
+		authz.WithData("email", email),
+		authz.WithConvertForbiddenToNotFound,
+	); err != nil {
+		return sdktypes.InvalidUserID, err
+	}
+
+	r, err := u.db.GetUser(ctx, sdktypes.InvalidUserID, email)
+	if err != nil {
+		return sdktypes.InvalidUserID, err
+	}
+
+	return r.ID(), nil
 }
 
 func (u *users) Update(ctx context.Context, user sdktypes.User, fieldMask *sdktypes.FieldMask) error {

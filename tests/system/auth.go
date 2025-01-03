@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens/authtokensjwt"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens/authjwttokens"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -30,7 +30,7 @@ var (
 )
 
 func init() {
-	js := kittehs.Must1(authtokensjwt.New(authtokensjwt.Configs.Test))
+	js := kittehs.Must1(authjwttokens.New(authjwttokens.Configs.Test))
 
 	// org name -> org id.
 	orgs := make(map[string]uuid.UUID)
@@ -66,9 +66,10 @@ func init() {
 
 		// add user to personal org.
 		seedCommands = append(seedCommands, fmt.Sprintf(
-			`insert into org_members(org_id,user_id,created_by) values (%q,%q,%q)`,
+			`insert into org_members(org_id,user_id,status,created_by) values (%q,%q,%d,%q)`,
 			personalOrgID.UUIDValue(),
 			uu.ID().UUIDValue(),
+			sdktypes.OrgMemberStatusActive.ToProto(),
 			uu.ID().UUIDValue(),
 		))
 
@@ -90,9 +91,10 @@ func init() {
 
 		// add user to shared org.
 		seedCommands = append(seedCommands, fmt.Sprintf(
-			`insert into org_members(org_id,user_id,created_by) values (%q,%q,%q)`,
+			`insert into org_members(org_id,user_id,status,created_by) values (%q,%q,%d,%q)`,
 			oid,
 			uu.ID().UUIDValue(),
+			sdktypes.OrgMemberStatusActive.ToProto(),
 			uu.ID().UUIDValue(),
 		))
 
