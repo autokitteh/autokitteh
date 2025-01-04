@@ -22,6 +22,9 @@ export const SessionsService = {
       kind: MethodKind.Unary,
     },
     /**
+     * Will always try first to gracefuly terminate the session.
+     * Blocks only if `force` and forceDelay > 0`.
+     *
      * @generated from rpc autokitteh.sessions.v1.SessionsService.Stop
      */
     stop: {

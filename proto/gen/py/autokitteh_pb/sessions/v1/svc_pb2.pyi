@@ -1,5 +1,6 @@
 from autokitteh_pb.sessions.v1 import session_pb2 as _session_pb2
 from buf.validate import validate_pb2 as _validate_pb2
+from google.protobuf import duration_pb2 as _duration_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
@@ -29,14 +30,16 @@ class StartResponse(_message.Message):
     def __init__(self, session_id: _Optional[str] = ...) -> None: ...
 
 class StopRequest(_message.Message):
-    __slots__ = ["session_id", "reason", "terminate"]
+    __slots__ = ["session_id", "reason", "terminate", "termination_delay"]
     SESSION_ID_FIELD_NUMBER: _ClassVar[int]
     REASON_FIELD_NUMBER: _ClassVar[int]
     TERMINATE_FIELD_NUMBER: _ClassVar[int]
+    TERMINATION_DELAY_FIELD_NUMBER: _ClassVar[int]
     session_id: str
     reason: str
     terminate: bool
-    def __init__(self, session_id: _Optional[str] = ..., reason: _Optional[str] = ..., terminate: bool = ...) -> None: ...
+    termination_delay: _duration_pb2.Duration
+    def __init__(self, session_id: _Optional[str] = ..., reason: _Optional[str] = ..., terminate: bool = ..., termination_delay: _Optional[_Union[_duration_pb2.Duration, _Mapping]] = ...) -> None: ...
 
 class StopResponse(_message.Message):
     __slots__ = []

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"go.temporal.io/api/serviceerror"
@@ -214,8 +215,29 @@ func (ws *workflows) saveSignalActivity(ctx context.Context, signal *types.Signa
 	return nil
 }
 
-func (ws *workflows) terminateSessionWorkflow(wctx workflow.Context, sid sdktypes.SessionID, reason string) error {
+type terminateSessionWorkflowParams struct {
+	SessionID sdktypes.SessionID
+	Reason    string
+	Delay     time.Duration
+}
+
+func (ws *workflows) legacyTerminateSessionWorkflow(wctx workflow.Context, sid sdktypes.SessionID, reason string) error {
+	return ws.terminateSessionWorkflow(wctx, terminateSessionWorkflowParams{SessionID: sid, Reason: reason})
+}
+
+func (ws *workflows) terminateSessionWorkflow(wctx workflow.Context, params terminateSessionWorkflowParams) error {
+	sid, reason := params.SessionID, params.Reason
+
 	sl := ws.l.Sugar().With("session_id", sid)
+
+	if t := params.Delay; t > 0 {
+		sl.With("delay", t).Infof("waiting %v before terminatiion", t)
+
+		if err := workflow.Sleep(wctx, t); err != nil {
+			sl.With("err", err).Errorf("sleep error: %v", err)
+			return temporalclient.TranslateError(err, "sleep")
+		}
+	}
 
 	sl.Infof("terminating session workflow %s", sid)
 

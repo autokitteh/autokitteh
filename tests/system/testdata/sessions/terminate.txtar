@@ -1,0 +1,40 @@
+# Preconditions: create & build project.
+ak project create --name my_project
+return code == 0
+
+ak project build my_project --file main.star -j
+return code == 0
+capture_jq bid .build_id
+
+# Preconditions: start a slow session, and wait for it to start running.
+ak session start --project my_project --build-id $bid --project my_project --entrypoint main.star:main -j
+return code == 0
+capture_jq sid .session_id
+
+ak session watch $sid --fail --end-state RUNNING --timeout 5s
+return code == 0
+
+# Terminate the session forcefully.
+ak session stop $sid --reason test --force
+return code == 0
+
+# No need to wait for the session to be done - it should
+# already be terminated after the command above.
+
+ak session log $sid --page-size 1 --order desc --no-timestamps -j
+return code == 0
+output equals_json file last_state.json
+
+-- main.star --
+def main():
+  sleep(20)
+  print("finished")
+
+-- last_state.json --
+{
+  "state": {
+    "stopped": {
+      "reason": "test"
+    }
+  }
+}
