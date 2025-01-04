@@ -1,0 +1,36 @@
+# Preconditions: create & build project.
+ak project create --name my_project
+return code == 0
+
+ak project build my_project --file main.star -j
+return code == 0
+capture_jq bid .build_id
+
+ak session start --entrypoint main.star:main
+output equals 'Error: at least one of the flags in the group [deployment-id build-id] is required'
+return code == 1
+
+# Start and watch a session.
+ak session start --project my_project --build-id $bid --entrypoint main.star:main --input a=1 --input b=2.3 --input c="meow" -j
+return code == 0
+capture_jq sid .session_id
+
+ak session watch $sid --timeout 5s
+return code == 0
+
+ak session log $sid --no-timestamps --prints-only
+return code == 0
+output equals file last.txt
+
+-- main.star --
+def main(a, b, c):
+  print(a)
+  print(b)
+  print(c)
+  print("finished")
+
+-- last.txt --
+1
+2.3
+meow
+finished

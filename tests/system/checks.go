@@ -26,6 +26,8 @@ func runCheck(t *testing.T, step string, ak *akResult, resp *httpResponse) error
 		return checkHTTPResponse(step, resp)
 	case "capture_jq":
 		return captureJQ(t, step, ak, resp)
+	case "capture_re":
+		return captureRE(t, step, ak, resp)
 	default:
 		return errors.New("unhandled check")
 	}

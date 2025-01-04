@@ -3,6 +3,7 @@ package sessions
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -82,12 +83,18 @@ func (s *sessions) Get(ctx context.Context, sessionID sdktypes.SessionID) (sdkty
 	return s.svcs.DB.GetSession(ctx, sessionID)
 }
 
-func (s *sessions) Stop(ctx context.Context, sessionID sdktypes.SessionID, reason string, force bool) error {
-	if err := authz.CheckContext(ctx, sessionID, "write:stop", authz.WithData("force", force)); err != nil {
+func (s *sessions) Stop(ctx context.Context, sessionID sdktypes.SessionID, reason string, force bool, cancelTimeout time.Duration) error {
+	if err := authz.CheckContext(
+		ctx,
+		sessionID,
+		"write:stop",
+		authz.WithData("force", force),
+		authz.WithData("cancel_timeout", cancelTimeout),
+	); err != nil {
 		return err
 	}
 
-	return s.workflows.StopWorkflow(ctx, sessionID, reason, force)
+	return s.workflows.StopWorkflow(ctx, sessionID, reason, force, cancelTimeout)
 }
 
 func (s *sessions) List(ctx context.Context, filter sdkservices.ListSessionsFilter) (*sdkservices.ListSessionResult, error) {
