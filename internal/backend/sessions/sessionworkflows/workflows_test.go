@@ -90,6 +90,8 @@ func TestStopWorkflowNotFound(t *testing.T) {
 	db.On("GetSession", sid).Return(sdktypes.InvalidSession, sdkerrors.ErrNotFound).Once()
 
 	assert.ErrorIs(t, ws.StopWorkflow(context.Background(), sid, "test", false, 0), sdkerrors.ErrNotFound)
+
+	mock.AssertExpectationsForObjects(t, db)
 }
 
 func TestStopWorkflowFinal(t *testing.T) {
@@ -98,6 +100,8 @@ func TestStopWorkflowFinal(t *testing.T) {
 	db.On("GetSession", sid).Return(session.WithState(sdktypes.SessionStateTypeStopped), nil).Once()
 
 	assert.ErrorIs(t, ws.StopWorkflow(context.Background(), sid, "test", false, 0), sdkerrors.ErrConflict)
+
+	mock.AssertExpectationsForObjects(t, db)
 }
 
 func TestStopWorkflowSimple(t *testing.T) {
@@ -108,6 +112,8 @@ func TestStopWorkflowSimple(t *testing.T) {
 	tc.On("CancelWorkflow", sid.String(), "").Return(nil).Once()
 
 	assert.NilError(t, ws.StopWorkflow(context.Background(), sid, "test", false, 0))
+
+	mock.AssertExpectationsForObjects(t, db, tc)
 }
 
 func TestStopWorkflowLost(t *testing.T) {
@@ -119,6 +125,8 @@ func TestStopWorkflowLost(t *testing.T) {
 	db.On("UpdateSessionState", sid, sdktypes.NewSessionStateError(errors.New("workflow lost"), nil)).Return(nil).Once()
 
 	assert.NilError(t, ws.StopWorkflow(context.Background(), sid, "test", false, 0))
+
+	mock.AssertExpectationsForObjects(t, db, tc)
 }
 
 func TestStopWorkflowQuick(t *testing.T) {
@@ -130,6 +138,8 @@ func TestStopWorkflowQuick(t *testing.T) {
 	tc.On("CancelWorkflow", sid.String(), "").Return(&serviceerror.NotFound{}).Once()
 
 	assert.NilError(t, ws.StopWorkflow(context.Background(), sid, "test", false, 0))
+
+	mock.AssertExpectationsForObjects(t, db, tc)
 }
 
 func TestStopWorkflowForceImmediate(t *testing.T) {
@@ -149,6 +159,8 @@ func TestStopWorkflowForceImmediate(t *testing.T) {
 	mtwr.On("Get", mock.Anything).Return(nil).Once()
 
 	assert.NilError(t, ws.StopWorkflow(context.Background(), sid, "test", true, 0))
+
+	mock.AssertExpectationsForObjects(t, db, tc, mtwr)
 }
 
 func TestStopWorkflowForceDelayed(t *testing.T) {
@@ -166,7 +178,9 @@ func TestStopWorkflowForceDelayed(t *testing.T) {
 
 	mtwr := &mockTemporalWorkflowRun{}
 	tc.On("ExecuteWorkflow", mock.Anything, "delayed_terminate_session", []any{opts}).Return(mtwr, nil).Once()
-	mtwr.On("Get", mock.Anything).Return(nil).Once()
+	mtwr.AssertNotCalled(t, "Get", mock.Anything)
 
 	assert.NilError(t, ws.StopWorkflow(context.Background(), sid, "test", true, 100*time.Millisecond))
+
+	mock.AssertExpectationsForObjects(t, db, tc, mtwr)
 }
