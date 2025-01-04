@@ -4,6 +4,7 @@ package autokitteh.sessions.v1;
 
 import "autokitteh/sessions/v1/session.proto";
 import "buf/validate/validate.proto";
+import "google/protobuf/duration.proto";
 
 message StartRequest {
   option (buf.validate.message).cel = {
@@ -25,7 +26,14 @@ message StartResponse {
 message StopRequest {
   string session_id = 1 [(buf.validate.field).string.min_len = 1];
   string reason = 2;
-  bool terminate = 3; // non-graceful
+
+  // !terminate:                          gracefully terminate the session.
+  // terminate && termination_delay == 0: gracefully terminate the session and then immediately
+  //                                      forcefully terminate the session.
+  // terminate && termination_delay > 0:  will gracefully termination first and if not stopped
+  //                                      after delay, will forcefully terminate.
+  bool terminate = 3;
+  google.protobuf.Duration termination_delay = 4;
 }
 
 message StopResponse {}
@@ -117,6 +125,8 @@ message DeleteResponse {}
 
 service SessionsService {
   rpc Start(StartRequest) returns (StartResponse);
+  // Will always try first to gracefuly terminate the session.
+  // Blocks only if `force` and forceDelay > 0`.
   rpc Stop(StopRequest) returns (StopResponse);
   // List returns events without their data.
   rpc List(ListRequest) returns (ListResponse);

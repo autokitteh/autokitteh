@@ -29,13 +29,14 @@ const (
 	taskQueueName       = "sessions"
 	sessionWorkflowName = "session"
 
-	terminateSessionWorkflowName = "terminate_session"
+	terminateSessionWorkflowName        = "terminate_session"
+	delayedTerminateSessionWorkflowName = "delayed_terminate_session"
 )
 
 type Workflows interface {
 	StartWorkers(context.Context) error
 	StartWorkflow(ctx context.Context, session sdktypes.Session) error
-	StopWorkflow(ctx context.Context, sessionID sdktypes.SessionID, reason string, force bool) error
+	StopWorkflow(ctx context.Context, sessionID sdktypes.SessionID, reason string, force bool, cancelTimeout time.Duration) error
 }
 
 type sessionWorkflowParams struct {
@@ -76,9 +77,15 @@ func (ws *workflows) StartWorkers(ctx context.Context) error {
 		workflow.RegisterOptions{Name: sessionWorkflowName},
 	)
 
+	// Legacy termination workflow, using explicit parameters instead of a struct.
+	ws.worker.RegisterWorkflowWithOptions(
+		ws.legacyTerminateSessionWorkflow,
+		workflow.RegisterOptions{Name: terminateSessionWorkflowName},
+	)
+
 	ws.worker.RegisterWorkflowWithOptions(
 		ws.terminateSessionWorkflow,
-		workflow.RegisterOptions{Name: terminateSessionWorkflowName},
+		workflow.RegisterOptions{Name: delayedTerminateSessionWorkflowName},
 	)
 
 	ws.registerActivities()
@@ -284,53 +291,95 @@ func (ws *workflows) errored(wctx workflow.Context, sessionID sdktypes.SessionID
 	_ = ws.updateSessionState(wctx, sessionID, sdktypes.NewSessionStateError(err, prints))
 }
 
-func (ws *workflows) StopWorkflow(ctx context.Context, sessionID sdktypes.SessionID, reason string, force bool) error {
-	wid := workflowID(sessionID)
-
-	if force {
-		// run the termination in a separate workflow to avoid having the workflow terminated but not updated in
-		// the db if the caller croaks.
-		r, err := ws.svcs.Temporal().ExecuteWorkflow(
-			ctx,
-			ws.cfg.TerminationWorkflow.ToStartWorkflowOptions(
-				taskQueueName,
-				"terminate_"+wid,
-				fmt.Sprintf("stop %v", sessionID),
-				map[string]string{
-					"process_id":   fixtures.ProcessID(),
-					"session_id":   sessionID.String(),
-					"session_uuid": sessionID.UUIDValue().String(),
-				},
-			),
-			terminateSessionWorkflowName,
-			sessionID,
-			reason,
-		)
-		if err != nil {
-			return fmt.Errorf("execute terminate workflow: %w", err)
-		}
-
-		// wait for the deed to be done, as the termination workflow itself should not block on anything,
-		// this should be quick.
-		return r.Get(ctx, nil)
+func (ws *workflows) StopWorkflow(ctx context.Context, sessionID sdktypes.SessionID, reason string, force bool, forceDelay time.Duration) error {
+	s, err := ws.svcs.DB.GetSession(ctx, sessionID)
+	if err != nil {
+		return fmt.Errorf("get session: %w", err)
 	}
 
-	// In case of non-forceful termination, we log the request politely. This will also
-	// let the workflow know what the reason is.
-	if err := ws.svcs.DB.AddSessionStopRequest(ctx, sessionID, reason); err != nil {
+	if s.State().IsFinal() {
+		return fmt.Errorf("%w: session already in final state", sdkerrors.ErrConflict)
+	}
+
+	// Always log termination request.
+	loggedReason := reason
+	if force {
+		loggedReason = "[forced] " + reason
+	}
+
+	if err := ws.svcs.DB.AddSessionStopRequest(ctx, sessionID, loggedReason); err != nil {
 		return err
 	}
 
-	// Since the cancellation is polite, it is not guaranteed to be successful.
+	wid := workflowID(sessionID)
+
+	// Always first try to terminate politely.
+	//
+	// Since this cancellation is polite, it is not guaranteed to be successful.
 	// We should not be waiting for the cancellation to actually go through, just ask
-	// temporal nicely to do it, unlike the forceful termination done above.
+	// temporal nicely to do it, unlike the forceful termination done below.
+	//
+	// When the workflow is actually stopped, the session state will be updated to stopped by
+	// the workflow itself.
 	if err := ws.svcs.Temporal().CancelWorkflow(ctx, wid, ""); err != nil {
 		var notFound *serviceerror.NotFound
 		if errors.As(err, &notFound) {
-			return sdkerrors.ErrNotFound
+			// workflow might have already ended?
+			s, err := ws.svcs.DB.GetSession(ctx, sessionID)
+			if err != nil {
+				return fmt.Errorf("get session: %w", err)
+			}
+
+			if s.State().IsFinal() {
+				return nil
+			}
+
+			// nope! workflow not found although we still think it's there - we might have lost it?
+			ws.l.Error("workflow lost", zap.String("workflow_id", wid))
+			if err := ws.svcs.DB.UpdateSessionState(ctx, sessionID, sdktypes.NewSessionStateError(errors.New("workflow lost"), nil)); err != nil {
+				return fmt.Errorf("update session state: %w", err)
+			}
+
+			return nil
 		}
 
 		return err
+	}
+
+	if !force {
+		// This is not a forced stop, we do not need to wait for the workflow to actually stop.
+		return nil
+	}
+
+	// run the termination in a separate workflow to avoid having the workflow terminated but not updated in
+	// the db if the caller croaks.
+	r, err := ws.svcs.Temporal().ExecuteWorkflow(
+		ctx,
+		ws.cfg.TerminationWorkflow.ToStartWorkflowOptions(
+			taskQueueName,
+			"terminate_"+wid,
+			fmt.Sprintf("stop %v", sessionID),
+			map[string]string{
+				"process_id":   fixtures.ProcessID(),
+				"session_id":   sessionID.String(),
+				"session_uuid": sessionID.UUIDValue().String(),
+			},
+		),
+		delayedTerminateSessionWorkflowName,
+		&terminateSessionWorkflowParams{
+			SessionID: sessionID,
+			Reason:    reason,
+			Delay:     forceDelay,
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("execute terminate workflow: %w", err)
+	}
+
+	if forceDelay == 0 {
+		// wait for the deed to be done, as the termination workflow itself should not block on anything,
+		// this should be quick.
+		return r.Get(ctx, nil)
 	}
 
 	return nil

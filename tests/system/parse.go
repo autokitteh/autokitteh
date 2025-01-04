@@ -15,7 +15,7 @@ const (
 )
 
 var (
-	steps = regexp.MustCompile(`^(?:(ak|http|output|req|resp|return|wait|setenv|capture_jq|user)\s)|(exit)$`)
+	steps = regexp.MustCompile(`^(?:(ak|http|output|req|resp|return|wait|setenv|capture_jq|capture_re|user)\s)|(exit)$`)
 
 	// ak *
 	// http <get|post> *
@@ -25,6 +25,9 @@ var (
 
 	// capture_jq <name> <jq expression>
 	jqCheck = regexp.MustCompile(`^capture_jq\s+(\w+)\s+(.+)`)
+
+	// capture_re <name> <regexp>
+	reCheck = regexp.MustCompile(`^capture_re\s+(\w+)\s+(.+)`)
 
 	// output <equals|equals_json|contains|regex> [file] *
 	akCheckOutput = regexp.MustCompile(`^output\s+(equals|equals_json|contains|regex|equals_jq)\s+(file\s+)?(.+|'.*')`)
