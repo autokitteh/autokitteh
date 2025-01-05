@@ -162,10 +162,24 @@ func TestSessionsMiddleware(t *testing.T) {
 	kittehs.Must0(sessions.Set(w, authsessions.NewSessionData(testUser1.ID())))
 	cookies := w.Result().Cookies()
 
+	// legit cookies.
 	w = httptest.NewRecorder()
 	mw.ServeHTTP(w, newRequest(sdktypes.InvalidUser, "", cookies))
 	assert.Equal(t, http.StatusOK, w.Code)
 	assertCalledWithUser(t, testUser1.ID(), check())
+
+	// bad cookie - nop.
+	for i := range cookies {
+		w = httptest.NewRecorder()
+
+		badCookies := make([]*http.Cookie, len(cookies))
+		copy(badCookies, cookies)
+		badCookies[i].Value = "hiss"
+
+		mw.ServeHTTP(w, newRequest(sdktypes.InvalidUser, "", badCookies))
+		assert.Equal(t, http.StatusOK, w.Code)
+		assertCalledWithoutAuthn(t, check())
+	}
 }
 
 func TestNewWithoutDefaultUser(t *testing.T) {
