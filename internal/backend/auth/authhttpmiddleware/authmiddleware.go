@@ -105,6 +105,7 @@ func newTokensMiddleware(next http.Handler, tokens authtokens.Tokens) http.Handl
 func newSessionsMiddleware(next http.Handler, sessions authsessions.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		session, err := sessions.Get(r)
+		// Do not fail on error - graceful degradation in case of session structure changes.
 		if err == nil && session != nil {
 			r = r.WithContext(ctxWithUserID(r.Context(), session.UserID))
 		}

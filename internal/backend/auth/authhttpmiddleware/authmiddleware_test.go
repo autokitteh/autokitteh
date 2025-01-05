@@ -169,10 +169,13 @@ func TestSessionsMiddleware(t *testing.T) {
 	assertCalledWithUser(t, testUser1.ID(), check())
 
 	// bad cookie - nop.
-	for i := range len(cookies) {
+	for i := range cookies {
 		w = httptest.NewRecorder()
-		badCookies := cookies[:]
+
+		badCookies := make([]*http.Cookie, len(cookies))
+		copy(badCookies, cookies)
 		badCookies[i].Value = "hiss"
+
 		mw.ServeHTTP(w, newRequest(sdktypes.InvalidUser, "", badCookies))
 		assert.Equal(t, http.StatusOK, w.Code)
 		assertCalledWithoutAuthn(t, check())
