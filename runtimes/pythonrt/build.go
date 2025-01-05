@@ -85,7 +85,7 @@ func (py *pySvc) Build(ctx context.Context, fsys fs.FS, path string, values []sd
 
 		hash := md5.Sum(data)
 		version := fmt.Sprintf("u%x", hash)
-		imageRef := fmt.Sprintf("localhost:5001/usercode:%s", version)
+		imageRef := fmt.Sprintf("usercode:%s", version)
 
 		if err := drm.client.BuildImage(ctx, imageRef, codePath); err != nil {
 			return sdktypes.InvalidBuildArtifact, fmt.Errorf("build image: %w", err)

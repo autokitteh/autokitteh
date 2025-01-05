@@ -3,6 +3,7 @@ package pythonrt
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"sync"
@@ -41,6 +42,7 @@ type dockerClient struct {
 
 	remoteRegistryAuthDetails string
 	remoteRegistryConfigured  bool
+	remoteRegistry            RemoteRegistryConfig
 }
 type RemoteRegistryConfig struct {
 	Address  string
@@ -73,6 +75,16 @@ func NewDockerClient(logger *zap.Logger, cfg DockerClientOptions) (*dockerClient
 		}
 		remoteRegistryAuthDetails = encodedAuthConfig
 
+		body, err := apiClient.RegistryLogin(context.Background(), authConfig)
+		if err != nil {
+			return nil, fmt.Errorf("error logging into remote registry: %w", err)
+		}
+
+		if body.Status != "Login Succeeded" {
+			return nil, fmt.Errorf("error logging into remote registry: %s", body.Status)
+		}
+
+		logger.Info("logged into remote registry successfully")
 	}
 	dc := &dockerClient{
 		client:                    apiClient,
@@ -85,6 +97,7 @@ func NewDockerClient(logger *zap.Logger, cfg DockerClientOptions) (*dockerClient
 		logRunner:                 cfg.LogRunnerCode,
 		remoteRegistryAuthDetails: remoteRegistryAuthDetails,
 		remoteRegistryConfigured:  cfg.RemoteRegistry.Address != "",
+		remoteRegistry:            cfg.RemoteRegistry,
 	}
 
 	if err := dc.SyncCurrentState(); err != nil {
@@ -92,6 +105,13 @@ func NewDockerClient(logger *zap.Logger, cfg DockerClientOptions) (*dockerClient
 	}
 
 	return dc, nil
+}
+
+func (d *dockerClient) fullName(name string) string {
+	if d.remoteRegistryConfigured {
+		return fmt.Sprintf("%s/%s", d.remoteRegistry.Address, name)
+	}
+	return name
 }
 
 func (d *dockerClient) ensureNetwork() (string, error) {
@@ -126,17 +146,19 @@ func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, sess
 		envVars = append(envVars, k+"="+v)
 	}
 
+	runnerImage = d.fullName(runnerImage)
 	if exists, err := d.ImageExists(ctx, runnerImage); err != nil || !exists {
 		if err != nil {
-			return "", "", err
+			return "", "", fmt.Errorf("error checking if image exists: %w", err)
 		}
 		if !exists {
 			if !d.remoteRegistryConfigured {
 				return "", "", errors.New("image doesn't exist and no remote registry is configured")
 			}
 			if err := d.pullImage(ctx, runnerImage); err != nil {
-				return "", "", err
+				return "", "", fmt.Errorf("pull image: %w", err)
 			}
+			d.logger.Debug(fmt.Sprintf("image %s not found on local registry, pulled from remote", runnerImage))
 		}
 	}
 
@@ -282,6 +304,7 @@ func (d *dockerClient) ImageExists(ctx context.Context, imageName string) (bool,
 		return false, err
 	}
 
+	// we don't use fullName since we search for the image locally and not in remote registry
 	for _, img := range images {
 		for _, tag := range img.RepoTags {
 			if tag == imageName {
@@ -299,6 +322,7 @@ func (d *dockerClient) BuildImage(ctx context.Context, name, directory string) e
 		return err
 	}
 
+	name = d.fullName(name)
 	options := types.ImageBuildOptions{
 		Dockerfile: "Dockerfile", // Name of the Dockerfile
 		Tags:       []string{name},
