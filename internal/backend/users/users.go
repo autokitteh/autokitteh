@@ -49,6 +49,10 @@ func (u *users) Create(ctx context.Context, user sdktypes.User) (sdktypes.UserID
 		return sdktypes.InvalidUserID, sdkerrors.NewInvalidArgumentError("user ID must be empty")
 	}
 
+	if user.Status() == sdktypes.UserStatusUnspecified {
+		user = user.WithStatus(sdktypes.UserStatusActive)
+	}
+
 	if err := authz.CheckContext(
 		ctx,
 		sdktypes.InvalidUserID,

@@ -100,10 +100,9 @@ func TestCreateWithDefaultOrgInCfg(t *testing.T) {
 		u := db.users[uid]
 		if assert.True(t, u.IsValid()) {
 			assert.Equal(t, "someone@somewhere", u.Email())
-
 			assert.Equal(t, oid, u.DefaultOrgID())
-
 			assert.Equal(t, sdktypes.OrgMemberStatusActive, db.orgMembers[oid][uid])
+			assert.Equal(t, sdktypes.UserStatusActive, u.Status())
 		}
 	}
 
@@ -127,10 +126,32 @@ func TestCreateWithDefaultOrgInUser(t *testing.T) {
 		u := db.users[uid]
 		if assert.True(t, u.IsValid()) {
 			assert.Equal(t, "someone@somewhere", u.Email())
-
 			assert.Equal(t, oid, u.DefaultOrgID())
-
 			assert.Equal(t, sdktypes.OrgMemberStatusActive, db.orgMembers[oid][uid])
+			assert.Equal(t, sdktypes.UserStatusActive, u.Status())
+		}
+	}
+
+	assert.Len(t, db.orgs, 1)
+}
+
+func TestCreateInvitedUser(t *testing.T) {
+	db := &fakeDB{}
+	ctx := authcontext.SetAuthnSystemUser(context.Background())
+
+	us, err := New(&Config{}, db, zaptest.NewLogger(t))
+	require.NoError(t, err)
+
+	uid, err := us.Create(ctx, sdktypes.NewUser().WithEmail("someone@somewhere").WithStatus(sdktypes.UserStatusInvited))
+	if assert.NoError(t, err) {
+		assert.True(t, uid.IsValid())
+
+		u := db.users[uid]
+		if assert.True(t, u.IsValid()) {
+			assert.Equal(t, "someone@somewhere", u.Email())
+			assert.True(t, u.DefaultOrgID().IsValid())
+			assert.Equal(t, sdktypes.OrgMemberStatusActive, db.orgMembers[u.DefaultOrgID()][uid])
+			assert.Equal(t, sdktypes.UserStatusInvited, u.Status())
 		}
 	}
 
