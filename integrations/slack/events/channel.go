@@ -108,6 +108,7 @@ func ChannelGroupMemberHandler(l *zap.Logger, w http.ResponseWriter, body []byte
 }
 
 // https://api.slack.com/events/channel_rename
+// https://api.slack.com/events/group_rename
 type ChannelRenameEvent struct {
 	Type    string                 `json:"type,omitempty"`
 	Channel *conversations.Channel `json:"channel,omitempty"`
@@ -119,6 +120,7 @@ type channelRenameContainer struct {
 }
 
 // https://api.slack.com/events/channel_rename
+// https://api.slack.com/events/group_rename
 func ChannelRenameHandler(l *zap.Logger, w http.ResponseWriter, body []byte, cb *Callback) any {
 	// Parse the inner event details.
 	j := &channelRenameContainer{}

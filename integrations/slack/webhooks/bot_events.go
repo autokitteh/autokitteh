@@ -32,8 +32,8 @@ var BotEventHandlers = map[string]BotEventHandler{
 
 	"group_archive": events.ChannelGroupMemberHandler,
 	// TODO: group_history_changed
-	"group_open": events.ChannelGroupMemberHandler,
-	// TODO: group_rename
+	"group_open":      events.ChannelGroupMemberHandler,
+	"group_rename":    events.ChannelRenameHandler,
 	"group_unarchive": events.ChannelGroupMemberHandler,
 
 	// TODO: im_history_changed
