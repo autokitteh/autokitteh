@@ -63,13 +63,8 @@ func (u *users) Create(ctx context.Context, user sdktypes.User) (sdktypes.UserID
 
 	err := u.db.Transaction(ctx, func(db db.DB) error {
 		var err error
-		if uid, err = db.CreateUser(ctx, user.WithNewID()); err != nil {
-			return err
-		}
 
-		oid := user.DefaultOrgID()
-
-		if !oid.IsValid() {
+		if oid := user.DefaultOrgID(); !oid.IsValid() {
 			// If user has no default org id set, set the one from the config, if specified.
 			if oid, _ = u.cfg.GetDefaultOrgID(); !oid.IsValid() {
 				// ... otherwise create a new personal org for that user.
@@ -84,10 +79,18 @@ func (u *users) Create(ctx context.Context, user sdktypes.User) (sdktypes.UserID
 					return fmt.Errorf("create personal org: %w", err)
 				}
 			}
+
+			// We will always have oid set by this point.
+			user = user.WithDefaultOrgID(oid)
 		}
 
-		// We will always have oid set by this point.
-		if err := orgs.AddMember(ctx, db, oid, uid, sdktypes.OrgMemberStatusActive); err != nil {
+		// We will always have user.DefaultOrgID set by this point.
+
+		if uid, err = db.CreateUser(ctx, user); err != nil {
+			return err
+		}
+
+		if err := orgs.AddMember(ctx, db, user.DefaultOrgID(), uid, sdktypes.OrgMemberStatusActive); err != nil {
 			return fmt.Errorf("add as member to personal org: %w", err)
 		}
 
