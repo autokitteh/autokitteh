@@ -56,7 +56,7 @@ class SessionsServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def Stop(self, request, context):
-        """Will always try first to gracefuly terminate the session.
+        """Will always try first to gracefully terminate the session.
         Blocks only if `force` and forceDelay > 0`.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)

@@ -41,7 +41,7 @@ type GetLogResults struct {
 
 type Sessions interface {
 	Start(ctx context.Context, session sdktypes.Session) (sdktypes.SessionID, error)
-	// Will always try first to gracefuly terminate the session.
+	// Will always try first to gracefully terminate the session.
 	// Blocks only if `force` and forceDelay > 0`.
 	Stop(ctx context.Context, sessionID sdktypes.SessionID, reason string, force bool, forceDelay time.Duration) error
 	// List returns sessions without their data.

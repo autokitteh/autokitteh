@@ -125,7 +125,7 @@ message DeleteResponse {}
 
 service SessionsService {
   rpc Start(StartRequest) returns (StartResponse);
-  // Will always try first to gracefuly terminate the session.
+  // Will always try first to gracefully terminate the session.
   // Blocks only if `force` and forceDelay > 0`.
   rpc Stop(StopRequest) returns (StopResponse);
   // List returns events without their data.
