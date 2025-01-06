@@ -108,9 +108,16 @@ var testCmd = common.StandardCommand(&cobra.Command{
 		})
 
 		var prints strings.Builder
+
 		for _, r := range rs {
 			if p, ok := r.GetPrint(); ok {
 				p = trimRe.ReplaceAllString(p, "")
+
+				// Remove location specific prefix of Python standard library.
+				i := strings.Index(p, "/lib/python3")
+				if i != -1 {
+					p = p[i:]
+				}
 
 				prints.WriteString(p)
 				prints.WriteRune('\n')
