@@ -93,7 +93,7 @@ def test_activity_reply():
     assert fut.result() == result.value
 
 
-def test_format_error():
+def test_result_error():
     msg = "oops"
 
     def fn_a():
@@ -111,7 +111,8 @@ def test_format_error():
     except ZeroDivisionError as e:
         err = e
 
-    text = main.format_error(err)
+    text = main.result_error(err)
+
     assert msg in text
     for name in ("fn_a", "fn_b", "fn_c"):
         assert name in text

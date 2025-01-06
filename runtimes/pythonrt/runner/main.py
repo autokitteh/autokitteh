@@ -215,10 +215,18 @@ class Runner(pb.runner_rpc.RunnerService):
             context.abort(grpc.StatusCode.INVALID_ARGUMENT, "no pending activity calls")
 
         result = self._call(call.fn, call.args, call.kw)
+        try:
+            data = pickle.dumps(result)
+        except (TypeError, pickle.PickleError) as err:
+            # Print so it'll get to session log
+            print(f"error: cannot pickle result - {err}")
+            print(pickle_help)
+            context.abort(grpc.StatusCode.INTERNAL, f"can't pickle result - {err}")
+
         resp = pb.runner.ExecuteResponse(
             result=pb.values.Value(
                 custom=pb.values.Custom(
-                    data=pickle.dumps(result),
+                    data=data,
                     value=safe_wrap(result.value),
                 ),
             )
@@ -234,9 +242,10 @@ class Runner(pb.runner_rpc.RunnerService):
                 runner_id=self.id,
                 error="activity reply not a Custom value",
             )
-            resp = self.worker.Done(req)
-            if resp.error:
-                log.error("done send error: %r", resp.error)
+            try:
+                self.worker.Done(req)
+            except grpc.RpcError as err:
+                log.error("done send error: %r", err)
 
             return pb.runner.ActivityReplyResponse(error=request.error)
 
@@ -333,12 +342,17 @@ class Runner(pb.runner_rpc.RunnerService):
             tb = pb_traceback(result.traceback)
             req.traceback.extend(tb)
         else:
-            req.result.custom.data = pickle.dumps(result)
-            req.result.custom.value.CopyFrom(safe_wrap(result.value))
+            try:
+                data = pickle.dumps(result)
+                req.result.custom.data = data
+                req.result.custom.value.CopyFrom(safe_wrap(result.value))
+            except (TypeError, pickle.PickleError) as err:
+                req.error = f"can't pickle {result.value} - {err}"
 
-        resp = self.worker.Done(req)
-        if resp.Error:
-            log.error("on_event: done send error: %r", resp.error)
+        try:
+            self.worker.Done(req)
+        except grpc.RpcError as err:
+            log.error("on_event: done send error: %r", err)
 
     def syscall(self, fn, args, kw):
         return self.syscalls.call(fn, args, kw)
