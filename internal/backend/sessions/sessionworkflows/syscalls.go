@@ -26,7 +26,7 @@ const (
 
 func (w *sessionWorkflow) syscall(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	if len(args) == 0 {
-		return sdktypes.InvalidValue, fmt.Errorf("expecting syscall operation name as first argument")
+		return sdktypes.InvalidValue, errors.New("expecting syscall operation name as first argument")
 	}
 
 	var op string
@@ -119,11 +119,12 @@ func (w *sessionWorkflow) subscribe(ctx context.Context, args []sdktypes.Value, 
 
 	var did sdktypes.EventDestinationID
 
-	if connection.IsValid() {
+	switch {
+	case connection.IsValid():
 		did = sdktypes.NewEventDestinationID(connection.ID())
-	} else if trigger.IsValid() {
+	case trigger.IsValid():
 		did = sdktypes.NewEventDestinationID(trigger.ID())
-	} else {
+	default:
 		return sdktypes.InvalidValue, fmt.Errorf("source %q not found", name)
 	}
 

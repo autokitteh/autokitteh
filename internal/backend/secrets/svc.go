@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"go.uber.org/zap"
+
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
-	"go.uber.org/zap"
 )
 
 type Secrets interface {

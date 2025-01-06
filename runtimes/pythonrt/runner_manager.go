@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"time"
 
-	userCode "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/user_code/v1"
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+
+	userCode "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/user_code/v1"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 type RunnerManager interface {

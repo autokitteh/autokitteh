@@ -112,9 +112,9 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 				// https://developer.atlassian.com/cloud/confluence/oauth-2-3lo-apps/
 				// https://auth.atlassian.com/.well-known/openid-configuration
 				Endpoint: oauth2.Endpoint{
-					AuthURL:       fmt.Sprintf("%s/authorize", atlassianBaseURL),
-					TokenURL:      fmt.Sprintf("%s/oauth/token", atlassianBaseURL),
-					DeviceAuthURL: fmt.Sprintf("%s/oauth/device/code", atlassianBaseURL),
+					AuthURL:       atlassianBaseURL + "/authorize",
+					TokenURL:      atlassianBaseURL + "/oauth/token",
+					DeviceAuthURL: atlassianBaseURL + "/oauth/device/code",
 				},
 				RedirectURL: redirectURL + "confluence",
 				// https://developer.atlassian.com/cloud/confluence/scopes-for-oauth-2-3LO-and-forge-apps/
@@ -149,10 +149,10 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 					// https://docs.github.com/en/apps/using-github-apps/installing-a-github-app-from-a-third-party#installing-a-github-app
 					AuthURL: fmt.Sprintf("%s/%s/%s/installations/new", githubBaseURL, appsDir, os.Getenv("GITHUB_APP_NAME")),
 					// https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#device-flow
-					DeviceAuthURL: fmt.Sprintf("%s/login/device/code", githubBaseURL),
+					DeviceAuthURL: githubBaseURL + "/login/device/code",
 					// https://docs.github.com/en/enterprise-server/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#2-users-are-redirected-back-to-your-site-by-github
 					// https://docs.github.com/en/enterprise-server/apps/sharing-github-apps/making-your-github-app-available-for-github-enterprise-server#the-app-code-must-use-the-correct-urls
-					TokenURL: fmt.Sprintf("%s/login/oauth/access_token", githubBaseURL),
+					TokenURL: githubBaseURL + "/login/oauth/access_token",
 					// https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#3-use-the-access-token-to-access-the-api
 					AuthStyle: oauth2.AuthStyleInHeader,
 				},
@@ -337,9 +337,9 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 				// https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/
 				// https://auth.atlassian.com/.well-known/openid-configuration
 				Endpoint: oauth2.Endpoint{
-					AuthURL:       fmt.Sprintf("%s/authorize", atlassianBaseURL),
-					TokenURL:      fmt.Sprintf("%s/oauth/token", atlassianBaseURL),
-					DeviceAuthURL: fmt.Sprintf("%s/oauth/device/code", atlassianBaseURL),
+					AuthURL:       atlassianBaseURL + "/authorize",
+					TokenURL:      atlassianBaseURL + "/oauth/token",
+					DeviceAuthURL: atlassianBaseURL + "/oauth/device/code",
 				},
 				RedirectURL: redirectURL + "jira",
 				// https://developer.atlassian.com/cloud/jira/platform/scopes-for-oauth-2-3LO-and-forge-apps/

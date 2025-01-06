@@ -3,11 +3,10 @@ package reactions
 import (
 	"context"
 
+	"go.autokitteh.dev/autokitteh/integrations/slack/api"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-
-	"go.autokitteh.dev/autokitteh/integrations/slack/api"
 )
 
 type API struct {

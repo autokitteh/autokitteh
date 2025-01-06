@@ -1,6 +1,7 @@
 package values
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -122,7 +123,7 @@ func (vctx *Context) FromStarlarkValue(v starlark.Value) (sdktypes.Value, error)
 		i64, ok := v.Int64()
 		if !ok {
 			// TODO(ENG-61): support big int.
-			return sdktypes.InvalidValue, fmt.Errorf("convert from starlark int")
+			return sdktypes.InvalidValue, errors.New("convert from starlark int")
 		}
 		return sdktypes.NewIntegerValue(i64), nil
 	case starlark.Bytes:
@@ -157,7 +158,7 @@ func (vctx *Context) FromStarlarkValue(v starlark.Value) (sdktypes.Value, error)
 			if err != nil {
 				return sdktypes.InvalidValue, fmt.Errorf("dict value get: %w", err)
 			} else if !found {
-				return sdktypes.InvalidValue, fmt.Errorf("dict value missing")
+				return sdktypes.InvalidValue, errors.New("dict value missing")
 			}
 
 			vv, err := vctx.FromStarlarkValue(v)

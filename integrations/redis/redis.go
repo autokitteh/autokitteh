@@ -2,6 +2,7 @@ package redis
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -115,7 +116,7 @@ func makeOpts(m *module) []sdkmodule.Optfn {
 // This function is not included in the integration when used as an internal client. See `NewModule`.
 func (m *module) do(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	if len(kwargs) != 0 {
-		return sdktypes.InvalidValue, fmt.Errorf("not expecting kwargs")
+		return sdktypes.InvalidValue, errors.New("not expecting kwargs")
 	}
 
 	unwrappedArgs := make([]any, len(args))

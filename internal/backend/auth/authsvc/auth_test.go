@@ -20,7 +20,7 @@ func (tokens) Parse(token string) (sdktypes.User, error) {
 }
 
 func TestCreateToken(t *testing.T) {
-	u := sdktypes.NewUser("").WithNewID()
+	u := sdktypes.NewUser().WithNewID()
 
 	tok, err := New(nil).CreateToken(authcontext.SetAuthnUser(context.Background(), u))
 	assert.ErrorIs(t, err, sdkerrors.ErrNotImplemented)

@@ -2,7 +2,6 @@ package webhooks
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -58,7 +57,7 @@ func TestWebhookCheckRequest(t *testing.T) {
 			name:            "X-Slack-Request-Timestamp_in_the_past",
 			gotContentType:  api.ContentTypeForm,
 			wantContentType: api.ContentTypeForm,
-			timestampHeader: fmt.Sprintf("%d", time.Now().Add(-time.Hour).Unix()),
+			timestampHeader: strconv.FormatInt(time.Now().Add(-time.Hour).Unix(), 10),
 			signatureHeader: "v0=test",
 			r:               nil,
 			want:            nil,

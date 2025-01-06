@@ -39,7 +39,7 @@ func init() {
 
 type ListValuePB = valuev1.List
 
-type listValueTraits struct{}
+type listValueTraits struct{ immutableObjectTrait }
 
 func (listValueTraits) Validate(m *ListValuePB) error       { return valuesSlice(m.Vs) }
 func (listValueTraits) StrictValidate(m *ListValuePB) error { return nil }
@@ -74,7 +74,7 @@ func init() {
 
 type SetValuePB = valuev1.Set
 
-type setValueTraits struct{}
+type setValueTraits struct{ immutableObjectTrait }
 
 func (setValueTraits) Validate(m *SetValuePB) error       { return valuesSlice(m.Vs) }
 func (setValueTraits) StrictValidate(m *SetValuePB) error { return nil }
@@ -117,7 +117,7 @@ type (
 	dictItemPB  = valuev1.Dict_Item
 )
 
-type dictValueTraits struct{}
+type dictValueTraits struct{ immutableObjectTrait }
 
 func (dictValueTraits) Validate(m *DictValuePB) error {
 	keys := make(map[string]*ValuePB, len(m.Items))

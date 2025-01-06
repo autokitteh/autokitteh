@@ -12,7 +12,7 @@ type ModuleFunction struct {
 
 type ModuleFunctionPB = modulev1.Function
 
-type ModuleFunctionTraits struct{}
+type ModuleFunctionTraits struct{ immutableObjectTrait }
 
 var InvalidModuleFunction ModuleFunction
 

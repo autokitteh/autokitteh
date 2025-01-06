@@ -3,7 +3,7 @@ package time
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"time"
 
 	"go.temporal.io/sdk/workflow"
@@ -79,7 +79,7 @@ func newTime(_ context.Context, args []sdktypes.Value, kwargs map[string]sdktype
 		return sdktypes.InvalidValue, err
 	}
 	if len(args) > 0 {
-		return sdktypes.InvalidValue, fmt.Errorf("time: unexpected positional arguments")
+		return sdktypes.InvalidValue, errors.New("time: unexpected positional arguments")
 	}
 	location, err := time.LoadLocation(loc)
 	if err != nil {

@@ -410,7 +410,7 @@ func (Deployment) IDFieldName() string { return "deployment_id" }
 
 func (d *Deployment) BeforeUpdate(tx *gorm.DB) (err error) {
 	if tx.Statement.Changed() { // if any fields changed
-		tx.Statement.SetColumn("UpdatedAt", time.Now())
+		tx.Statement.SetColumn("UpdatedAt", kittehs.Now())
 	}
 	return nil
 }
@@ -495,11 +495,12 @@ type Signal struct {
 func ParseSignal(r *Signal) (*types.Signal, error) {
 	var dstID sdktypes.EventDestinationID
 
-	if r.ConnectionID != nil {
+	switch {
+	case r.ConnectionID != nil:
 		dstID = sdktypes.NewEventDestinationID(sdktypes.NewIDFromUUIDPtr[sdktypes.ConnectionID](r.ConnectionID))
-	} else if r.TriggerID != nil {
+	case r.TriggerID != nil:
 		dstID = sdktypes.NewEventDestinationID(sdktypes.NewIDFromUUIDPtr[sdktypes.TriggerID](r.TriggerID))
-	} else {
+	default:
 		return nil, sdkerrors.NewInvalidArgumentError("signal must have a connection or trigger")
 	}
 
@@ -530,7 +531,8 @@ type User struct {
 	UserID       uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
 	Email        string    `gorm:"uniqueIndex;not null"`
 	DisplayName  string
-	Disabled     bool
+	Disabled     bool      // deprecated, leave for backward compatibility.
+	Status       int32     `gorm:"index"`
 	DefaultOrgID uuid.UUID `gorm:"type:uuid"`
 
 	UpdatedBy uuid.UUID `gorm:"type:uuid"`
@@ -538,11 +540,28 @@ type User struct {
 }
 
 func ParseUser(r User) (sdktypes.User, error) {
-	return sdktypes.NewUser(r.Email).
-		WithID(sdktypes.NewIDFromUUID[sdktypes.UserID](r.UserID)).
-		WithDisplayName(r.DisplayName).
-		WithDefaultOrgID(sdktypes.NewIDFromUUID[sdktypes.OrgID](r.DefaultOrgID)).
-		WithDisabled(r.Disabled), nil
+	s := sdktypes.UserStatusActive
+
+	if r.Status == 0 {
+		// legacy.
+		if r.Disabled {
+			s = sdktypes.UserStatusDisabled
+		}
+	} else {
+		var err error
+		s, err = sdktypes.UserStatusFromProto(sdktypes.UserStatusPB(r.Status))
+		if err != nil {
+			return sdktypes.InvalidUser, fmt.Errorf("invalid user status: %w", err)
+		}
+	}
+
+	return sdktypes.NewUser().
+			WithID(sdktypes.NewIDFromUUID[sdktypes.UserID](r.UserID)).
+			WithDisplayName(r.DisplayName).
+			WithDefaultOrgID(sdktypes.NewIDFromUUID[sdktypes.OrgID](r.DefaultOrgID)).
+			WithEmail(r.Email).
+			WithStatus(s),
+		nil
 }
 
 type Org struct {
@@ -566,6 +585,7 @@ type OrgMember struct {
 
 	OrgID  uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
 	UserID uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
+	Status int       `gorm:"index"`
 
 	Org  *Org
 	User *User

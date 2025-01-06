@@ -140,17 +140,19 @@ type DB interface {
 	// -----------------------------------------------------------------------
 	CreateUser(ctx context.Context, user sdktypes.User) (sdktypes.UserID, error)
 	GetUser(ctx context.Context, uid sdktypes.UserID, email string) (sdktypes.User, error)
-	UpdateUser(ctx context.Context, user sdktypes.User) error
+	UpdateUser(ctx context.Context, user sdktypes.User, fieldMask *sdktypes.FieldMask) error
 
 	// -----------------------------------------------------------------------
 	CreateOrg(ctx context.Context, user sdktypes.Org) (sdktypes.OrgID, error)
 	GetOrg(ctx context.Context, oid sdktypes.OrgID) (sdktypes.Org, error)
-	UpdateOrg(ctx context.Context, org sdktypes.Org) error
-	ListOrgMembers(ctx context.Context, oid sdktypes.OrgID) ([]sdktypes.UserID, error)
-	AddOrgMember(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID) error
+	DeleteOrg(ctx context.Context, oid sdktypes.OrgID) error
+	UpdateOrg(ctx context.Context, org sdktypes.Org, fm *sdktypes.FieldMask) error
+	ListOrgMembers(ctx context.Context, oid sdktypes.OrgID) ([]*sdkservices.UserIDWithMemberStatus, error)
+	AddOrgMember(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID, s sdktypes.OrgMemberStatus) error
+	UpdateOrgMemberStatus(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID, s sdktypes.OrgMemberStatus) error
 	RemoveOrgMember(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID) error
-	IsOrgMember(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID) (bool, error)
-	GetOrgsForUser(ctx context.Context, uid sdktypes.UserID) ([]sdktypes.Org, error)
+	GetOrgMemberStatus(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID) (sdktypes.OrgMemberStatus, error)
+	GetOrgsForUser(ctx context.Context, uid sdktypes.UserID) ([]*sdkservices.OrgWithMemberStatus, error)
 
 	// -----------------------------------------------------------------------
 	SetSecret(ctx context.Context, key string, value string) error

@@ -2,7 +2,6 @@ package applygrpcsvc
 
 import (
 	"context"
-	"fmt"
 
 	"connectrpc.com/connect"
 
@@ -56,14 +55,14 @@ func (s *server) Apply(ctx context.Context, req *connect.Request[applyv1.ApplyRe
 	var logs []string
 
 	actions, err := manifest.Plan(ctx, man, s.client, manifest.WithLogger(func(msg string) {
-		logs = append(logs, fmt.Sprintf("[plan] %s", msg))
+		logs = append(logs, "[plan] "+msg)
 	}), manifest.WithProjectName(msg.ProjectName), manifest.WithOrgID(oid))
 	if err != nil {
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}
 
 	effects, err := manifest.Execute(ctx, actions, s.client, func(msg string) {
-		logs = append(logs, fmt.Sprintf("[exec] %s", msg))
+		logs = append(logs, "[exec] "+msg)
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeUnknown, err)

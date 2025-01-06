@@ -14,7 +14,7 @@ var InvalidSessionStateRunning SessionStateRunning
 
 type SessionStateRunningPB = sessionv1.SessionState_Running
 
-type SessionStateRunningTraits struct{}
+type SessionStateRunningTraits struct{ immutableObjectTrait }
 
 func (SessionStateRunning) isConcreteSessionState() {}
 

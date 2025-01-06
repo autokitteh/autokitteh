@@ -9,7 +9,7 @@ import (
 
 type CustomValuePB = valuev1.Custom
 
-type customValueTraits struct{}
+type customValueTraits struct{ immutableObjectTrait }
 
 func (customValueTraits) Validate(m *CustomValuePB) error {
 	return errors.Join(

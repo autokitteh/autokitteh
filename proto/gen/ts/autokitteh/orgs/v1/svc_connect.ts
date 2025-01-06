@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { AddMemberRequest, AddMemberResponse, CreateRequest, CreateResponse, GetOrgsForUserRequest, GetOrgsForUserResponse, GetRequest, GetResponse, IsMemberRequest, IsMemberResponse, ListMembersRequest, ListMembersResponse, RemoveMemberRequest, RemoveMemberResponse, UpdateRequest, UpdateResponse } from "./svc_pb.js";
+import { AddMemberRequest, AddMemberResponse, CreateRequest, CreateResponse, DeleteRequest, DeleteResponse, GetMemberRequest, GetMemberResponse, GetOrgsForUserRequest, GetOrgsForUserResponse, GetRequest, GetResponse, ListMembersRequest, ListMembersResponse, RemoveMemberRequest, RemoveMemberResponse, UpdateMemberRequest, UpdateMemberResponse, UpdateRequest, UpdateResponse } from "./svc_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -40,14 +40,30 @@ export const OrgsService = {
       kind: MethodKind.Unary,
     },
     /**
-     * TODO: rpc InviteMember(InviteMemberRequest) returns (InviteMemberResponse);
-     *
+     * @generated from rpc autokitteh.orgs.v1.OrgsService.Delete
+     */
+    delete: {
+      name: "Delete",
+      I: DeleteRequest,
+      O: DeleteResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
      * @generated from rpc autokitteh.orgs.v1.OrgsService.AddMember
      */
     addMember: {
       name: "AddMember",
       I: AddMemberRequest,
       O: AddMemberResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc autokitteh.orgs.v1.OrgsService.UpdateMember
+     */
+    updateMember: {
+      name: "UpdateMember",
+      I: UpdateMemberRequest,
+      O: UpdateMemberResponse,
       kind: MethodKind.Unary,
     },
     /**
@@ -69,12 +85,12 @@ export const OrgsService = {
       kind: MethodKind.Unary,
     },
     /**
-     * @generated from rpc autokitteh.orgs.v1.OrgsService.IsMember
+     * @generated from rpc autokitteh.orgs.v1.OrgsService.GetMember
      */
-    isMember: {
-      name: "IsMember",
-      I: IsMemberRequest,
-      O: IsMemberResponse,
+    getMember: {
+      name: "GetMember",
+      I: GetMemberRequest,
+      O: GetMemberResponse,
       kind: MethodKind.Unary,
     },
     /**

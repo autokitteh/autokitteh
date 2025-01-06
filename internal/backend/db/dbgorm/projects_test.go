@@ -210,7 +210,7 @@ func TestUpdateProject(t *testing.T) {
 	f.createProjectsAndAssert(t, p)
 
 	// update project
-	p.Name = p.Name + "_updated"
+	p.Name += "_updated"
 	assert.NoError(t, f.gormdb.updateProject(f.ctx, &p))
 	res := findAndAssertCount[scheme.Project](t, f, 1, "project_id = ?", p.ProjectID)
 	resetTimes(&res[0])

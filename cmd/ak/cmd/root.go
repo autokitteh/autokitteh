@@ -19,6 +19,7 @@ import (
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/experimental"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/integrations"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/manifest"
+	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/orgs"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/projects"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/runtimes"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/server"
@@ -110,6 +111,7 @@ func init() {
 	experimental.AddSubcommands(RootCmd)
 	integrations.AddSubcommands(RootCmd)
 	manifest.AddSubcommands(RootCmd)
+	orgs.AddSubcommands(RootCmd)
 	projects.AddSubcommands(RootCmd)
 	runtimes.AddSubcommands(RootCmd)
 	server.AddSubcommands(RootCmd)

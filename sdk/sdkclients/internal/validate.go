@@ -4,7 +4,6 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	akproto "go.autokitteh.dev/autokitteh/proto"
-
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
 

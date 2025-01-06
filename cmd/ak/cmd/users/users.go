@@ -22,6 +22,10 @@ func init() {
 	// Subcommands.
 	usersCmd.AddCommand(createCmd)
 	usersCmd.AddCommand(getCmd)
+	usersCmd.AddCommand(getIDCmd)
+	usersCmd.AddCommand(getOrgsCmd)
+	usersCmd.AddCommand(updateCmd)
 }
 
 func users() sdkservices.Users { return common.Client().Users() }
+func orgs() sdkservices.Orgs   { return common.Client().Orgs() }

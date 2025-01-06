@@ -39,6 +39,8 @@ func (SessionTraits) StrictValidate(m *SessionPB) error {
 	)
 }
 
+func (SessionTraits) Mutables() []string { return []string{"state"} }
+
 func SessionFromProto(m *SessionPB) (Session, error) { return FromProto[Session](m) }
 func StrictSessionFromProto(m *SessionPB) (Session, error) {
 	return Strict(SessionFromProto(m))

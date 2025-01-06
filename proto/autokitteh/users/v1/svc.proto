@@ -4,6 +4,7 @@ package autokitteh.users.v1;
 
 import "autokitteh/users/v1/user.proto";
 import "buf/validate/validate.proto";
+import "google/protobuf/field_mask.proto";
 
 message CreateRequest {
   User user = 1 [(buf.validate.field).required = true];
@@ -25,12 +26,22 @@ message GetResponse {
 
 message UpdateRequest {
   User user = 1 [(buf.validate.field).required = true];
+  google.protobuf.FieldMask field_mask = 2;
 }
 
 message UpdateResponse {}
 
+message GetIDRequest {
+  string email = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message GetIDResponse {
+  string user_id = 1;
+}
+
 service UsersService {
   rpc Create(CreateRequest) returns (CreateResponse);
   rpc Get(GetRequest) returns (GetResponse);
+  rpc GetID(GetIDRequest) returns (GetIDResponse);
   rpc Update(UpdateRequest) returns (UpdateResponse);
 }

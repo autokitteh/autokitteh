@@ -1,6 +1,7 @@
 package sessioncalls
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -45,7 +46,7 @@ func parseCallSpec(spec sdktypes.SessionCallSpec) (v sdktypes.Value, args []sdkt
 	if vopts.IsValid() && !vopts.IsNothing() {
 		if found {
 			// Already specified in args, gevalt!
-			err = fmt.Errorf("call options found in both args and kwargs")
+			err = errors.New("call options found in both args and kwargs")
 			return
 		}
 

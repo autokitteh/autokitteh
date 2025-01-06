@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CreateRequest, CreateResponse, GetRequest, GetResponse, UpdateRequest, UpdateResponse } from "./svc_pb.js";
+import { CreateRequest, CreateResponse, GetIDRequest, GetIDResponse, GetRequest, GetResponse, UpdateRequest, UpdateResponse } from "./svc_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -28,6 +28,15 @@ export const UsersService = {
       name: "Get",
       I: GetRequest,
       O: GetResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc autokitteh.users.v1.UsersService.GetID
+     */
+    getID: {
+      name: "GetID",
+      I: GetIDRequest,
+      O: GetIDResponse,
       kind: MethodKind.Unary,
     },
     /**

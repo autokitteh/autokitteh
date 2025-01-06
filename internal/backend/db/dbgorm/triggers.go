@@ -3,7 +3,6 @@ package dbgorm
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/google/uuid"
 
@@ -106,7 +105,7 @@ func (db *gormdb) UpdateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 	r.Schedule = trigger.Schedule()
 	r.Name = trigger.Name().String()
 	r.UniqueName = triggerUniqueName(r.ProjectID.String(), trigger.Name())
-	r.UpdatedAt = time.Now().UTC()
+	r.UpdatedAt = kittehs.Now().UTC()
 	r.UpdatedBy = authcontext.GetAuthnUserID(ctx).UUIDValue()
 
 	return translateError(db.updateTrigger(ctx, r))

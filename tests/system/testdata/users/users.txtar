@@ -1,0 +1,38 @@
+user zumi
+
+ak users get $ZUMI_UID -f
+return code == 0
+output equals_jq .user.display_name zumi
+
+ak users update $ZUMI_UID --display-name zumzum
+return code == 0
+
+ak users get $ZUMI_UID -f
+return code == 0
+output equals_jq .user.display_name zumzum
+
+# cannot create an active user.
+ak users create --email rat@cats --active
+return code == $RC_UNAUTHZ
+
+# cannot create an invited user with a display name.
+ak users create --email rat@cats --display-name rat
+return code == $RC_UNAUTHZ
+
+ak users create --email rat@cats
+return code == 0
+
+ak users get $GIZMO_UID -f
+return code == $RC_NOT_FOUND
+
+ak users get-id zumi@cats -f
+return code == 0
+output equals_jq .user_id $ZUMI_UID
+
+ak users get-id gizmo@cats -f
+return code == 0
+output equals_jq .user_id $GIZMO_UID
+
+-- test-config.yaml --
+ak:
+    extra_args: ["-j", "--array_json_list"]

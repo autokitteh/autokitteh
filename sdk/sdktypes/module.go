@@ -13,7 +13,7 @@ type Module struct {
 
 type ModulePB = modulev1.Module
 
-type ModuleTraits struct{}
+type ModuleTraits struct{ immutableObjectTrait }
 
 func (ModuleTraits) Validate(m *ModulePB) error {
 	return errors.Join(

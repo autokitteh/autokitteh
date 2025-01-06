@@ -3,6 +3,7 @@ package dispatcher
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	"go.temporal.io/sdk/workflow"
@@ -70,7 +71,7 @@ func (d *Dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *s
 		"event_uuid":       eid.UUIDValue().String(),
 		"destination_id":   event.DestinationID().String(),
 		"destination_uuid": event.DestinationID().UUIDValue().String(),
-		"seq":              fmt.Sprintf("%d", event.Seq()),
+		"seq":              strconv.FormatUint(event.Seq(), 10),
 		"process_id":       fixtures.ProcessID(),
 	}
 

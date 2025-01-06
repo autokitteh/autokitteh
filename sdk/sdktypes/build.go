@@ -14,7 +14,7 @@ type Build struct{ object[*BuildPB, BuildTraits] }
 
 type BuildPB = buildsv1.Build
 
-type BuildTraits struct{}
+type BuildTraits struct{ immutableObjectTrait }
 
 var InvalidBuild Build
 
