@@ -104,8 +104,13 @@ func New(cfg *Config, l *zap.Logger, getLocalAddr func() string) (*sdkruntimes.R
 			return nil, errors.New("worker address is required for docker runner")
 		}
 		if err := configureDockerRunnerManager(l, DockerRuntimeConfig{
-			LogRunnerCode: cfg.LogRunnerCode,
-			LogBuildCode:  cfg.LogBuildCode,
+			ClientOptions: DockerClientOptions{
+				LogRunnerCode: cfg.LogRunnerCode,
+				LogBuildCode:  cfg.LogBuildCode,
+				RemoteRegistry: RemoteRegistryConfig{
+					Address: cfg.RegistryAddress,
+				},
+			},
 			WorkerAddressProvider: func() string {
 				_, port, _ := net.SplitHostPort(getLocalAddr())
 				return fmt.Sprintf("%s:%s", cfg.WorkerAddress, port)
@@ -168,7 +173,10 @@ func newSvc(cfg *Config, l *zap.Logger) (sdkservices.Runtime, error) {
 
 func (py *pySvc) Get() sdktypes.Runtime { return desc }
 
-const archiveKey = "code.tar"
+const (
+	archiveKey = "code.tar"
+	imageKey   = "imageRef"
+)
 
 // All Python handler function get all event information.
 var pyModuleFunc = kittehs.Must1(sdktypes.ModuleFunctionFromProto(&sdktypes.ModuleFunctionPB{
@@ -272,9 +280,13 @@ func (py *pySvc) Run(
 		return key, value.GetString().Value()
 	})
 
-	tarData := compiled[archiveKey]
-	if tarData == nil {
+	usercode := compiled[archiveKey]
+	if usercode == nil {
 		return nil, fmt.Errorf("%q note found in compiled data", archiveKey)
+	}
+
+	if img, ok := compiled[imageKey]; ok {
+		usercode = img
 	}
 
 	py.syscallFn, err = loadSyscall(values)
@@ -282,7 +294,7 @@ func (py *pySvc) Run(
 		return nil, fmt.Errorf("can't load syscall: %w", err)
 	}
 
-	runnerID, runner, err := runnerManager.Start(ctx, sessionID, tarData, py.envVars)
+	runnerID, runner, err := runnerManager.Start(ctx, sessionID, usercode, py.envVars)
 	if err != nil {
 		return nil, fmt.Errorf("starting runner: %w", err)
 	}
