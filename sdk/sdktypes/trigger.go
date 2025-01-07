@@ -53,8 +53,16 @@ func (TriggerTraits) StrictValidate(m *TriggerPB) error {
 	)
 }
 
+func (TriggerTraits) Mutables() []string {
+	return []string{"filter", "code_location", "name", "source_type"}
+}
+
 func TriggerFromProto(m *TriggerPB) (Trigger, error)       { return FromProto[Trigger](m) }
 func StrictTriggerFromProto(m *TriggerPB) (Trigger, error) { return Strict(TriggerFromProto(m)) }
+
+func NewTrigger(name Symbol) Trigger {
+	return kittehs.Must1(TriggerFromProto(&TriggerPB{Name: name.String()}))
+}
 
 func (p Trigger) ID() TriggerID { return kittehs.Must1(ParseTriggerID(p.read().TriggerId)) }
 

@@ -2,6 +2,7 @@ package sessionworkflows
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"maps"
 	"strings"
@@ -100,8 +101,8 @@ func (w *sessionWorkflow) cleanupSignals(ctx workflow.Context) {
 	goCtx := temporalclient.NewWorkflowContextAsGOContext(ctx)
 	for signalID := range w.lastReadEventSeqForSignal {
 		if err := w.ws.svcs.DB.RemoveSignal(goCtx, signalID); err != nil {
-			// No need to to any handling in case of an error, it won't be used again
-			// at most we would have db garbage we can clear up later with background jobs
+			// No need to any handling in case of an error, it won't be used again at
+			// most we would have db garbage we can clear up later with background jobs.
 			w.l.Sugar().With("signalID", signalID, "err", err).Warnf("failed removing signal %v, err: %v", signalID, err)
 		}
 	}
@@ -451,7 +452,7 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []st
 
 			if run == nil {
 				l.Debug("run not initialized")
-				return sdktypes.InvalidValue, fmt.Errorf("cannot call before the run is initialized")
+				return sdktypes.InvalidValue, errors.New("cannot call before the run is initialized")
 			}
 
 			if xid := v.GetFunction().ExecutorID(); xid.ToRunID() == runID && w.executors.GetCaller(xid) == nil {
@@ -459,12 +460,12 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []st
 
 				// This happens only during initial evaluation (the first run because invoking the entrypoint function),
 				// and the runtime tries to call itself in order to start an activity with its own functions.
-				return sdktypes.InvalidValue, fmt.Errorf("cannot call self during initial evaluation")
+				return sdktypes.InvalidValue, errors.New("cannot call self during initial evaluation")
 			}
 
 			if isActivity {
 				l.Debug("nested activity call")
-				return sdktypes.InvalidValue, fmt.Errorf("nested activities are not supported")
+				return sdktypes.InvalidValue, errors.New("nested activities are not supported")
 			}
 
 			return w.call(wctx, runID, v, args, kwargs)
@@ -551,15 +552,19 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []st
 	if epName := entryPoint.Name(); epName != "" {
 		callValue, ok := run.Values()[epName]
 		if !ok {
-			return prints, fmt.Errorf("entry point not found after evaluation")
+			// The user specified an entry point that does not exist.
+			// WrapError so it will be a program error and not considered as an internal error.
+			return prints, sdktypes.WrapError(fmt.Errorf("entry point %q not found after evaluation", epName)).ToError()
 		}
 
 		if !callValue.IsFunction() {
-			return prints, fmt.Errorf("entry point is not a function")
+			// The user specified an entry point that is not a function.
+			// WrapError so it will be a program error and not considered as an internal error.
+			return prints, sdktypes.WrapError(fmt.Errorf("entry point %q is not a function", epName)).ToError()
 		}
 
 		if callValue.GetFunction().ExecutorID().ToRunID() != runID {
-			return prints, fmt.Errorf("entry point does not belong to main run")
+			return prints, errors.New("entry point does not belong to main run")
 		}
 
 		if err := w.updateState(wctx, sdktypes.NewSessionStateRunning(runID, callValue)); err != nil {

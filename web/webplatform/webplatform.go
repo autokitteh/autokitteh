@@ -11,11 +11,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/psanford/memfs"
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
-
-	"github.com/psanford/memfs"
 )
 
 //go:embed VERSION *.zip

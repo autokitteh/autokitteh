@@ -14,7 +14,7 @@ type Build struct{ object[*BuildPB, BuildTraits] }
 
 type BuildPB = buildsv1.Build
 
-type BuildTraits struct{}
+type BuildTraits struct{ immutableObjectTrait }
 
 var InvalidBuild Build
 
@@ -34,6 +34,10 @@ func NewBuild() Build { return kittehs.Must1(BuildFromProto(&BuildPB{})) }
 func (p Build) ID() (_ BuildID)          { return kittehs.Must1(ParseBuildID(p.read().BuildId)) }
 func (p Build) ProjectID() (_ ProjectID) { return kittehs.Must1(ParseProjectID(p.read().ProjectId)) }
 func (p Build) CreatedAt() time.Time     { return p.read().CreatedAt.AsTime() }
+
+func (p Build) WithID(id BuildID) Build {
+	return Build{p.forceUpdate(func(m *BuildPB) { m.BuildId = id.String() })}
+}
 
 func (p Build) WithNewID() Build {
 	return Build{p.forceUpdate(func(m *BuildPB) { m.BuildId = NewBuildID().String() })}

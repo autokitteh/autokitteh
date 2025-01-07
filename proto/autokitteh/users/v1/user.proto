@@ -2,11 +2,20 @@ syntax = "proto3";
 
 package autokitteh.users.v1;
 
-import "buf/validate/validate.proto";
-
+// `display_name` is a human-readable name for the user.
+// `name` is a globally unique symbol for the user.
 message User {
   string user_id = 1;
-  string email = 2 [(buf.validate.field).string.email = true];
+  string email = 2; // if email is empty, user cannot login.
   string display_name = 3;
-  bool disabled = 4;
+  bool disabled = 4; // obsolete, use status instead.
+  string default_org_id = 5; // org to use for projects, if not otherwise specified.
+  UserStatus status = 6;
+}
+
+enum UserStatus {
+  USER_STATUS_UNSPECIFIED = 0;
+  USER_STATUS_ACTIVE = 1;
+  USER_STATUS_INVITED = 2; // not active yet, just invited.
+  USER_STATUS_DISABLED = 3; // disabled, cannot login.
 }

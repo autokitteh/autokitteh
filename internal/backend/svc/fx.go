@@ -24,7 +24,7 @@ func fxGetConfig[T any](path string, def T) func(c *Config) (*T, error) {
 }
 
 func chooseConfig[T any](set configset.Set[T]) (T, error) {
-	return set.Choose(configset.Mode(fxRunOpts.Mode))
+	return set.Choose(fxRunOpts.Mode)
 }
 
 func Component[T any](name string, set configset.Set[T], opts ...fx.Option) fx.Option {

@@ -29,7 +29,7 @@ func ToSDKError(err error) error {
 	case connect.CodeNotFound:
 		sdkErr = sdkerrors.ErrNotFound
 	case connect.CodeInvalidArgument:
-		sdkErr = sdkerrors.ErrInvalidArgument{Underlying: err}
+		sdkErr = sdkerrors.InvalidArgumentError{Underlying: err}
 	case connect.CodeUnimplemented:
 		sdkErr = sdkerrors.ErrNotImplemented
 	case connect.CodeUnauthenticated:
@@ -50,7 +50,7 @@ func ToSDKError(err error) error {
 
 	// err is a connect error (checked in connect.CodeOf), so we can safely cast it
 	if len(connectErr.Details()) != 0 {
-		errMsg = errMsg + fmt.Sprintf(" (%v)", connectErr.Details())
+		errMsg += fmt.Sprintf(" (%v)", connectErr.Details())
 	}
 	if len(errMsg) != 0 {
 		return fmt.Errorf("%w: %s", sdkErr, errMsg)

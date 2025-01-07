@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"net/http"
 	"sort"
+	"strconv"
 
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -125,7 +126,7 @@ func genListData[T listItem[M], M proto.Message](scope any, xs []T, drops ...str
 					} else if en := fd.Enum(); en != nil {
 						v = fmt.Sprint(en.Values().ByNumber(fv.Enum()).Name())
 					} else if fd.Cardinality() == protoreflect.Repeated {
-						v = fmt.Sprintf("%d", fv.List().Len())
+						v = strconv.Itoa(fv.List().Len())
 					}
 				} else {
 					v = fmt.Sprint(x.ExtraFields()[n])

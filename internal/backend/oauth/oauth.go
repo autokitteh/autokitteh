@@ -19,6 +19,7 @@ import (
 	googleoauth2 "google.golang.org/api/oauth2/v2"
 	"google.golang.org/api/sheets/v4"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -27,6 +28,7 @@ import (
 
 type oauth struct {
 	logger *zap.Logger
+	vars   sdkservices.Vars
 
 	// Configs and opts store registration data together.
 	// If we replace these in-memory maps with persistent
@@ -35,7 +37,7 @@ type oauth struct {
 	opts    map[string]map[string]string
 }
 
-func New(l *zap.Logger) sdkservices.OAuth {
+func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 	// TODO(ENG-112): Remove (see Register below).
 	redirectURL := fmt.Sprintf("https://%s/oauth/redirect/", os.Getenv("WEBHOOK_ADDRESS"))
 
@@ -77,16 +79,21 @@ func New(l *zap.Logger) sdkservices.OAuth {
 
 	return &oauth{
 		logger: l,
+		vars:   vars,
 		// TODO(ENG-112): Construct the following 2 maps with dynamic integration
 		// registrations, where each integration registration will call Register
 		// below (if it uses OAuth). This hard-coding is EXTREMELY TEMPORARY!
 		configs: map[string]*oauth2.Config{
 			"auth0": {
-				ClientID:     os.Getenv("AUTH0_CLIENT_ID"),
-				ClientSecret: os.Getenv("AUTH0_CLIENT_SECRET"),
+				// Auth0 is a special case: environment variables are not supported.
+				// All authentication credentials must be stored in `vars`.
+				ClientID:     "",
+				ClientSecret: "",
 				Endpoint: oauth2.Endpoint{
-					AuthURL:  fmt.Sprintf("https://%s/oauth/authorize", os.Getenv("AUTH0_DOMAIN")),
-					TokenURL: fmt.Sprintf("https://%s/oauth/token", os.Getenv("AUTH0_DOMAIN")),
+					// Each Auth0 app has a unique domain stored in `vars`.
+					// This domain is dynamically replaced during the authentication flow.
+					AuthURL:  "https://{{AUTH0_DOMAIN}}/oauth/authorize",
+					TokenURL: "https://{{AUTH0_DOMAIN}}/oauth/token",
 				},
 				RedirectURL: redirectURL + "auth0",
 				Scopes: []string{
@@ -105,9 +112,9 @@ func New(l *zap.Logger) sdkservices.OAuth {
 				// https://developer.atlassian.com/cloud/confluence/oauth-2-3lo-apps/
 				// https://auth.atlassian.com/.well-known/openid-configuration
 				Endpoint: oauth2.Endpoint{
-					AuthURL:       fmt.Sprintf("%s/authorize", atlassianBaseURL),
-					TokenURL:      fmt.Sprintf("%s/oauth/token", atlassianBaseURL),
-					DeviceAuthURL: fmt.Sprintf("%s/oauth/device/code", atlassianBaseURL),
+					AuthURL:       atlassianBaseURL + "/authorize",
+					TokenURL:      atlassianBaseURL + "/oauth/token",
+					DeviceAuthURL: atlassianBaseURL + "/oauth/device/code",
 				},
 				RedirectURL: redirectURL + "confluence",
 				// https://developer.atlassian.com/cloud/confluence/scopes-for-oauth-2-3LO-and-forge-apps/
@@ -142,10 +149,10 @@ func New(l *zap.Logger) sdkservices.OAuth {
 					// https://docs.github.com/en/apps/using-github-apps/installing-a-github-app-from-a-third-party#installing-a-github-app
 					AuthURL: fmt.Sprintf("%s/%s/%s/installations/new", githubBaseURL, appsDir, os.Getenv("GITHUB_APP_NAME")),
 					// https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#device-flow
-					DeviceAuthURL: fmt.Sprintf("%s/login/device/code", githubBaseURL),
+					DeviceAuthURL: githubBaseURL + "/login/device/code",
 					// https://docs.github.com/en/enterprise-server/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#2-users-are-redirected-back-to-your-site-by-github
 					// https://docs.github.com/en/enterprise-server/apps/sharing-github-apps/making-your-github-app-available-for-github-enterprise-server#the-app-code-must-use-the-correct-urls
-					TokenURL: fmt.Sprintf("%s/login/oauth/access_token", githubBaseURL),
+					TokenURL: githubBaseURL + "/login/oauth/access_token",
 					// https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#3-use-the-access-token-to-access-the-api
 					AuthStyle: oauth2.AuthStyleInHeader,
 				},
@@ -330,9 +337,9 @@ func New(l *zap.Logger) sdkservices.OAuth {
 				// https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/
 				// https://auth.atlassian.com/.well-known/openid-configuration
 				Endpoint: oauth2.Endpoint{
-					AuthURL:       fmt.Sprintf("%s/authorize", atlassianBaseURL),
-					TokenURL:      fmt.Sprintf("%s/oauth/token", atlassianBaseURL),
-					DeviceAuthURL: fmt.Sprintf("%s/oauth/device/code", atlassianBaseURL),
+					AuthURL:       atlassianBaseURL + "/authorize",
+					TokenURL:      atlassianBaseURL + "/oauth/token",
+					DeviceAuthURL: atlassianBaseURL + "/oauth/device/code",
 				},
 				RedirectURL: redirectURL + "jira",
 				// https://developer.atlassian.com/cloud/jira/platform/scopes-for-oauth-2-3LO-and-forge-apps/
@@ -395,8 +402,8 @@ func New(l *zap.Logger) sdkservices.OAuth {
 
 		opts: map[string]map[string]string{
 			"auth0": {
-				// TODO: audience URL (from env var).
-				"audience":   fmt.Sprintf("https://%s/api/v2/", os.Getenv("AUTH0_DOMAIN")),
+				// Using template-style placeholder for AUTH0_DOMAIN
+				"audience":   "https://{{AUTH0_DOMAIN}}/api/v2/",
 				"grant_type": "client_credentials",
 			},
 			"gmail": {
@@ -446,14 +453,62 @@ func (o *oauth) Get(ctx context.Context, intg string) (*oauth2.Config, map[strin
 	return cfg, o.opts[intg], nil
 }
 
-func (o *oauth) StartFlow(ctx context.Context, intg string, cid sdktypes.ConnectionID, origin string) (string, error) {
-	cfg, opts, err := o.Get(ctx, intg)
-	if err != nil {
-		return "", err
+func (o *oauth) getConfigWithConnection(ctx context.Context, intg string, cid sdktypes.ConnectionID) (*oauth2.Config, map[string]string, error) {
+	if !cid.IsValid() {
+		return nil, nil, errors.New("invalid connection ID")
 	}
 
-	if !cid.IsValid() {
-		return "", errors.New("invalid connection ID")
+	baseCfg, opts, err := o.Get(ctx, intg)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if !o.isCustomOAuth(ctx, cid) {
+		return baseCfg, opts, nil
+	}
+
+	vs, err := o.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	cfgCopy := &oauth2.Config{
+		ClientID:     vs.GetValueByString("client_id"),
+		ClientSecret: vs.GetValueByString("client_secret"),
+		Endpoint: oauth2.Endpoint{
+			AuthURL:       baseCfg.Endpoint.AuthURL,
+			TokenURL:      baseCfg.Endpoint.TokenURL,
+			DeviceAuthURL: baseCfg.Endpoint.DeviceAuthURL,
+			AuthStyle:     baseCfg.Endpoint.AuthStyle,
+		},
+		RedirectURL: baseCfg.RedirectURL,
+		Scopes:      append([]string{}, baseCfg.Scopes...),
+	}
+
+	optsCopy := make(map[string]string, len(opts))
+	for k, v := range opts {
+		optsCopy[k] = v
+	}
+
+	// Special case: Auth0 uses a dynamic domain stored in vars.
+	// TODO(INT-129): Add dynamic domain handling to all OAuth integrations.
+	if intg == "auth0" {
+		placeholder := "{{AUTH0_DOMAIN}}"
+		domain := vs.GetValueByString("auth0_domain")
+
+		cfgCopy.Endpoint.AuthURL = strings.Replace(cfgCopy.Endpoint.AuthURL, placeholder, domain, 1)
+		cfgCopy.Endpoint.TokenURL = strings.Replace(cfgCopy.Endpoint.TokenURL, placeholder, domain, 1)
+
+		optsCopy["audience"] = strings.Replace(opts["audience"], placeholder, domain, 1)
+	}
+
+	return cfgCopy, optsCopy, nil
+}
+
+func (o *oauth) StartFlow(ctx context.Context, intg string, cid sdktypes.ConnectionID, origin string) (string, error) {
+	cfg, opts, err := o.getConfigWithConnection(ctx, intg, cid)
+	if err != nil {
+		return "", err
 	}
 
 	if origin == "" {
@@ -463,13 +518,21 @@ func (o *oauth) StartFlow(ctx context.Context, intg string, cid sdktypes.Connect
 	// Identify the relevant connection when we get an OAuth response.
 	state := strings.Replace(cid.String(), "con_", "", 1) + "_" + origin
 
+	if !o.isCustomOAuth(ctx, cid) {
+		return cfg.AuthCodeURL(state, authCode(opts)...), nil
+	}
+
 	return cfg.AuthCodeURL(state, authCode(opts)...), nil
 }
 
-func (o *oauth) Exchange(ctx context.Context, integration, code string) (*oauth2.Token, error) {
-	// Convert the received temporary authorization code
-	// into a refresh token / user access token.
-	cfg, opts, err := o.Get(ctx, integration)
+func (o *oauth) Exchange(ctx context.Context, integration string, cid sdktypes.ConnectionID, code string) (*oauth2.Token, error) {
+	// Convert the received temporary authorization code into a refresh token / user access token.
+	// ATTENTION: This method may be called by an UNAUTHENTICATED webhook handler, however we CAN
+	// use the system user (SetAuthnSystemUser) securely, because only the 3rd-party OAuth
+	// provider can provide us a valid "code" parameter related to the connection ID. In other
+	// words, if the "code" is fake, or the CID is valid-but-unrelated to the beginning of the
+	// OAuth flow, the OAuth provider will reject the exchange, so data leakage is not possible.
+	cfg, opts, err := o.getConfigWithConnection(authcontext.SetAuthnSystemUser(ctx), integration, cid)
 	if err != nil {
 		return nil, fmt.Errorf("bad oauth integration name: %w", err)
 	}
@@ -489,4 +552,14 @@ func authCode(opts map[string]string) []oauth2.AuthCodeOption {
 		acos = append(acos, oauth2.SetAuthURLParam(k, v))
 	}
 	return acos
+}
+
+// Determines if the connection uses custom OAuth based on the presence of a client secret in vars.
+func (o *oauth) isCustomOAuth(ctx context.Context, cid sdktypes.ConnectionID) bool {
+	vs, err := o.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+	if err != nil {
+		return false
+	}
+
+	return vs.GetValueByString("client_secret") != ""
 }

@@ -15,6 +15,7 @@ env "postgres" {
   dev = "docker://postgres/15/dev?search_path=public"
   migration {
     dir = "file://migrations/postgres?format=goose"
+    exclude = ["bases"]
   }
   format {
     migrate {

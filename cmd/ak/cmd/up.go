@@ -3,9 +3,8 @@ package cmd
 import (
 	"fmt"
 
-	"go.uber.org/automaxprocs/maxprocs"
-
 	"github.com/spf13/cobra"
+	"go.uber.org/automaxprocs/maxprocs"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 )

@@ -4,10 +4,11 @@ import (
 	"errors"
 	"net/http"
 
+	"go.uber.org/zap"
+
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.uber.org/zap"
 )
 
 // handler is an autokitteh webhook which implements [http.Handler]
@@ -48,7 +49,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Test the OAuth token's usability and get authoritative installation details.
-	req, err := http.NewRequest("GET", "https://api.hubapi.com/crm/v3/owners/", nil)
+	req, err := http.NewRequest(http.MethodGet, "https://api.hubapi.com/crm/v3/owners/", nil)
 	if err != nil {
 		l.Error("Failed to create HTTP request", zap.Error(err))
 		c.AbortServerError("request creation error")

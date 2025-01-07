@@ -12,7 +12,7 @@ type ModuleFunctionField struct {
 
 type ModuleFunctionFieldPB = modulev1.FunctionField
 
-type ModuleFunctionFieldTraits struct{}
+type ModuleFunctionFieldTraits struct{ immutableObjectTrait }
 
 func (ModuleFunctionFieldTraits) Validate(m *ModuleFunctionFieldPB) error {
 	return nameField("name", strings.TrimRight(strings.TrimLeft(m.Name, "*"), "=?"))

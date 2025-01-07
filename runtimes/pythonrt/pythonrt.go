@@ -212,15 +212,15 @@ func loadSyscall(values map[string]sdktypes.Value) (sdktypes.Value, error) {
 	}
 
 	if !ak.IsStruct() {
-		return sdktypes.InvalidValue, fmt.Errorf("`ak` is not a struct")
+		return sdktypes.InvalidValue, errors.New("`ak` is not a struct")
 	}
 
 	syscall, ok := ak.GetStruct().Fields()["syscall"]
 	if !ok {
-		return sdktypes.InvalidValue, fmt.Errorf("`syscall` not found in `ak`")
+		return sdktypes.InvalidValue, errors.New("`syscall` not found in `ak`")
 	}
 	if !syscall.IsFunction() {
-		return sdktypes.InvalidValue, fmt.Errorf("`syscall` is not a function")
+		return sdktypes.InvalidValue, errors.New("`syscall` is not a function")
 	}
 
 	return syscall, nil
@@ -369,7 +369,7 @@ func (py *pySvc) call(ctx context.Context, val sdktypes.Value, args []sdktypes.V
 	out, err := py.cbs.Call(py.ctx, py.runID, val, args, kw)
 	switch {
 	case err != nil:
-		py.log.Warn("activity reply error", zap.Error(err))
+		py.log.Info("activity reply error", zap.Error(err))
 		req.Error = err.Error()
 	case !out.IsCustom():
 		py.log.Error("activity reply value not Custom", zap.Any("value", out))
@@ -382,43 +382,16 @@ func (py *pySvc) call(ctx context.Context, val sdktypes.Value, args []sdktypes.V
 	ctx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
 
-	reply, err := py.runner.ActivityReply(ctx, &req)
-	if err != nil || reply.Error != "" {
-		var error string
-		if err != nil {
-			error = err.Error()
-		} else {
-			error = reply.Error
-		}
-
-		py.log.Warn("activity reply error", zap.String("reply error", error))
-		// Stop the run
-		req := newDoneFromError(py.runnerID, error)
-		py.channels.done <- req
+	if _, err = py.runner.ActivityReply(ctx, &req); err != nil {
+		py.log.Error("activity reply error", zap.Error(err))
 	}
-}
-
-func newDoneFromError(runnerID string, error string) *pbUserCode.DoneRequest {
-	req := pbUserCode.DoneRequest{
-		RunnerId: runnerID,
-		Result: &pbValues.Value{
-			Custom: &pbValues.Custom{
-				Value: &pbValues.Value{
-					Nothing: &pbValues.Nothing{},
-				},
-				Data: nil,
-			},
-		},
-		Error: error,
-	}
-	return &req
 }
 
 // initialCall handles initial call from autokitteh, it does the message loop with Python.
 // We split it from Call since Call is also used to execute activities.
 func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	if len(args) > 0 {
-		return sdktypes.InvalidValue, fmt.Errorf("initial call can't have positional args")
+		return sdktypes.InvalidValue, errors.New("initial call can't have positional args")
 	}
 
 	defer func() {
@@ -533,18 +506,25 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 				cb.successChannel <- val
 			}
 		case v := <-py.channels.done:
+			py.log.Info("done signal", zap.String("error", v.Error))
 			pCtx, cancel := context.WithTimeout(ctx, time.Second)
 			defer cancel()
 			py.drainPrints(pCtx)
 
 			done = v
 			if done.Error != "" {
+				py.log.Info("done error", zap.String("error", done.Error))
 				perr := sdktypes.NewProgramError(
 					sdktypes.NewStringValue(done.Error),
 					py.tracebackToLocation(done.Traceback),
 					map[string]string{"raw": done.Error},
 				)
 				return sdktypes.InvalidValue, perr.ToError()
+			}
+
+			if done.Result == nil {
+				py.log.Error("done: nil result")
+				return sdktypes.InvalidValue, errors.New("done result is nil")
 			}
 
 			done.Result.Custom.ExecutorId = py.xid.String()

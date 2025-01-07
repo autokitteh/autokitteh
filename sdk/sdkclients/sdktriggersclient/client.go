@@ -1,4 +1,4 @@
-package sdktriggerclient
+package sdktriggersclient
 
 import (
 	"context"
@@ -88,6 +88,7 @@ func (c *client) Get(ctx context.Context, triggerID sdktypes.TriggerID) (sdktype
 func (c *client) List(ctx context.Context, filter sdkservices.ListTriggersFilter) ([]sdktypes.Trigger, error) {
 	resp, err := c.client.List(ctx, connect.NewRequest(
 		&triggersv1.ListRequest{
+			OrgId:        filter.OrgID.String(),
 			ConnectionId: filter.ConnectionID.String(),
 			ProjectId:    filter.ProjectID.String(),
 			SourceType:   filter.SourceType.ToProto(),

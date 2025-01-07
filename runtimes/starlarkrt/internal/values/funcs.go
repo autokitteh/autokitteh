@@ -2,6 +2,7 @@ package values
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.starlark.net/starlark"
@@ -55,7 +56,7 @@ func (vctx *Context) functionToStarlark(v sdktypes.Value) (starlark.Value, error
 			akkwargs := make(map[string]sdktypes.Value, len(kwargs))
 			for _, kwarg := range kwargs {
 				if len(kwarg) != 2 {
-					return nil, fmt.Errorf("invalid kwarg")
+					return nil, errors.New("invalid kwarg")
 				}
 
 				kstr, ok := starlark.AsString(kwarg[0])
@@ -120,7 +121,7 @@ func (vctx *Context) fromStarlarkFunction(v *starlark.Function) (sdktypes.Value,
 	vctx.internalFuncs[sig] = v
 
 	argNames := make([]string, v.NumParams())
-	for i := 0; i < v.NumParams(); i++ {
+	for i := range v.NumParams() {
 		argNames[i], _ = v.Param(i)
 	}
 

@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"maps"
@@ -33,7 +34,7 @@ func write(tw *tar.Writer, name string, size int64, r io.Reader) error {
 	if err := tw.WriteHeader(&tar.Header{
 		Name: name,
 		Mode: 0o600, // rw- --- ---
-		Size: int64(size),
+		Size: size,
 	}); err != nil {
 		return fmt.Errorf("%q: write_header: %w", name, err)
 	}
@@ -122,7 +123,7 @@ func (bf *BuildFile) Write(w io.Writer) error {
 		name := rt.Info.Name
 
 		if names[name.String()] {
-			return fmt.Errorf("multiple runtimes with the same name not allowed")
+			return errors.New("multiple runtimes with the same name not allowed")
 		}
 
 		names[name.String()] = true

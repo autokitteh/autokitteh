@@ -16,7 +16,7 @@ var InvalidBuildRequirement BuildRequirement
 
 type BuildRequirementPB = runtimesv1.Requirement
 
-type BuildRequirementTraits struct{}
+type BuildRequirementTraits struct{ immutableObjectTrait }
 
 func (BuildRequirementTraits) Validate(m *BuildRequirementPB) error {
 	return errors.Join(

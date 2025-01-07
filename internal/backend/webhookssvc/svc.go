@@ -13,6 +13,7 @@ import (
 	"go.jetify.com/typeid"
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -24,13 +25,13 @@ import (
 const WebhooksPathPrefix = "/webhooks/"
 
 type Service struct {
-	logger     *zap.Logger
-	dispatcher sdkservices.Dispatcher
-	db         db.DB
+	logger   *zap.Logger
+	dispatch sdkservices.DispatchFunc
+	db       db.DB
 }
 
-func New(l *zap.Logger, db db.DB, dispatcher sdkservices.Dispatcher) *Service {
-	return &Service{logger: l, db: db, dispatcher: dispatcher}
+func New(l *zap.Logger, db db.DB, dispatch sdkservices.DispatchFunc) *Service {
+	return &Service{logger: l, db: db, dispatch: dispatch}
 }
 
 func (s *Service) Start(muxes *muxes.Muxes) {
@@ -68,7 +69,7 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
-
+	sl.Infof("webhook request: method=%s, trigger_event_type=%s", r.Method, t.EventType())
 	data, err := requestToData(r)
 	if err != nil {
 		sl.Errorw("failed to convert request to data", "err", err)
@@ -94,7 +95,7 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	eid, err := s.dispatcher.Dispatch(ctx, event, nil)
+	eid, err := s.dispatch(authcontext.SetAuthnSystemUser(ctx), event, nil)
 	if err != nil {
 		sl.Errorw("dispatch failed", "event", event, "err", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)

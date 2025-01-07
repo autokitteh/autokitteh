@@ -146,6 +146,7 @@ func (s *workerGRPCHandler) Print(ctx context.Context, req *userCode.PrintReques
 }
 
 func (s *workerGRPCHandler) Done(ctx context.Context, req *userCode.DoneRequest) (*userCode.DoneResponse, error) {
+	s.log.Info("Done request", zap.String("error", req.Error))
 	w.mu.Lock()
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
 	w.mu.Unlock()
@@ -155,6 +156,7 @@ func (s *workerGRPCHandler) Done(ctx context.Context, req *userCode.DoneRequest)
 	}
 
 	runner.channels.done <- req
+	close(runner.channels.done)
 	return &userCode.DoneResponse{}, nil
 }
 
@@ -388,7 +390,7 @@ func (s *workerGRPCHandler) EncodeJWT(ctx context.Context, req *userCode.EncodeJ
 	// GitHub's JWTs must be signed using the RS256 algorithm:
 	// https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-a-json-web-token-jwt-for-a-github-app
 	if req.Algorithm != jwt.SigningMethodRS256.Name {
-		return &userCode.EncodeJWTResponse{Error: fmt.Sprintf("unsupported signing method: %s", req.Algorithm)}, nil
+		return &userCode.EncodeJWTResponse{Error: "unsupported signing method: " + req.Algorithm}, nil
 	}
 
 	claims := jwt.MapClaims{}
@@ -425,7 +427,8 @@ func (s *workerGRPCHandler) RefreshOAuthToken(ctx context.Context, req *userCode
 	}
 
 	// Get the integration's OAuth configuration.
-	cfg, _, err := oauth.New(runner.log).Get(ctx, req.Integration)
+	// TODO(INT-46): pass vars service instead of nil
+	cfg, _, err := oauth.New(runner.log, nil).Get(ctx, req.Integration)
 	if err != nil {
 		return &userCode.RefreshResponse{Error: err.Error()}, nil
 	}

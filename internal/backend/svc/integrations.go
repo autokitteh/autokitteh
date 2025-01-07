@@ -26,11 +26,13 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/redis"
 	"go.autokitteh.dev/autokitteh/integrations/slack"
 	"go.autokitteh.dev/autokitteh/integrations/twilio"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/backend/integrations"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 type integrationsConfig struct {
@@ -51,8 +53,35 @@ func integration[T any](name string, cfg configset.Set[T], init any) fx.Option {
 	))
 }
 
+type sysVars struct{ vs sdkservices.Vars }
+
+func (vs sysVars) Set(ctx context.Context, v ...sdktypes.Var) error {
+	return vs.vs.Set(authcontext.SetAuthnSystemUser(ctx), v...)
+}
+
+func (vs sysVars) Delete(ctx context.Context, sid sdktypes.VarScopeID, names ...sdktypes.Symbol) error {
+	return vs.vs.Delete(authcontext.SetAuthnSystemUser(ctx), sid, names...)
+}
+
+func (vs sysVars) Get(ctx context.Context, sid sdktypes.VarScopeID, names ...sdktypes.Symbol) (sdktypes.Vars, error) {
+	return vs.vs.Get(authcontext.SetAuthnSystemUser(ctx), sid, names...)
+}
+
+func (vs sysVars) FindConnectionIDs(ctx context.Context, iid sdktypes.IntegrationID, name sdktypes.Symbol, value string) ([]sdktypes.ConnectionID, error) {
+	return vs.vs.FindConnectionIDs(authcontext.SetAuthnSystemUser(ctx), iid, name, value)
+}
+
 func integrationsFXOption() fx.Option {
-	return fx.Options(
+	return fx.Module(
+		"integrations",
+
+		fx.Decorate(func(vs sdkservices.Vars) sdkservices.Vars { return sysVars{vs} }),
+		fx.Decorate(func(dispatch sdkservices.DispatchFunc) sdkservices.DispatchFunc {
+			return func(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) (sdktypes.EventID, error) {
+				return dispatch(authcontext.SetAuthnSystemUser(ctx), event, opts)
+			}
+		}),
+
 		integration("asana", configset.Empty, asana.New),
 		integration("auth0", configset.Empty, auth0.New),
 		integration("aws", configset.Empty, aws.New),
@@ -73,21 +102,21 @@ func integrationsFXOption() fx.Option {
 		integration("sheets", configset.Empty, sheets.New),
 		integration("slack", configset.Empty, slack.New),
 		integration("twilio", configset.Empty, twilio.New),
-		fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, muxes *muxes.Muxes, svcs sdkservices.Services) {
+		fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, muxes *muxes.Muxes, vars sdkservices.Vars, dispatch sdkservices.DispatchFunc, oauth sdkservices.OAuth) {
 			HookOnStart(lc, func(ctx context.Context) error {
 				asana.Start(l, muxes)
-				auth0.Start(l, muxes)
+				auth0.Start(l, muxes, vars)
 				aws.Start(l, muxes)
 				chatgpt.Start(l, muxes)
-				confluence.Start(l, muxes, svcs.Vars(), svcs.OAuth(), svcs.Dispatcher())
-				discord.Start(l, muxes, svcs.Vars(), svcs.Dispatcher())
-				github.Start(l, muxes, svcs.Vars(), svcs.OAuth(), svcs.Dispatcher())
+				confluence.Start(l, muxes, vars, oauth, dispatch)
+				discord.Start(l, muxes, vars, dispatch)
 				gemini.Start(l, muxes)
-				google.Start(l, muxes, svcs.Vars(), svcs.OAuth(), svcs.Dispatcher())
-				hubspot.Start(l, svcs.OAuth(), muxes)
-				jira.Start(l, muxes, svcs.Vars(), svcs.OAuth(), svcs.Dispatcher())
-				slack.Start(l, muxes, svcs.Vars(), svcs.Dispatcher())
-				twilio.Start(l, muxes, svcs.Vars(), svcs.Dispatcher())
+				github.Start(l, muxes, vars, oauth, dispatch)
+				google.Start(l, muxes, vars, oauth, dispatch)
+				hubspot.Start(l, muxes, oauth)
+				jira.Start(l, muxes, vars, oauth, dispatch)
+				slack.Start(l, muxes, vars, dispatch)
+				twilio.Start(l, muxes, vars, dispatch)
 				return nil
 			})
 		}),

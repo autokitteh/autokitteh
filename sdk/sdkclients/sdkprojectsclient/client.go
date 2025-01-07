@@ -89,7 +89,7 @@ func (c *client) GetByID(ctx context.Context, pid sdktypes.ProjectID) (sdktypes.
 	project, err := sdktypes.StrictProjectFromProto(resp.Msg.Project)
 	if err != nil {
 		// FIXME: ENG-626: why we check and override errInvalid for project only?
-		var errInvalid sdkerrors.ErrInvalidArgument
+		var errInvalid sdkerrors.InvalidArgumentError
 		if err.Error() == "zero object" && errors.As(err, &errInvalid) {
 			return sdktypes.InvalidProject, nil
 		}
@@ -99,10 +99,11 @@ func (c *client) GetByID(ctx context.Context, pid sdktypes.ProjectID) (sdktypes.
 	return project, nil
 }
 
-func (c *client) GetByName(ctx context.Context, n sdktypes.Symbol) (sdktypes.Project, error) {
+func (c *client) GetByName(ctx context.Context, oid sdktypes.OrgID, n sdktypes.Symbol) (sdktypes.Project, error) {
 	resp, err := c.client.Get(ctx, connect.NewRequest(
 		&projectsv1.GetRequest{
-			Name: n.String(),
+			Name:  n.String(),
+			OrgId: oid.String(),
 		},
 	))
 	if err != nil {
@@ -125,8 +126,8 @@ func (c *client) GetByName(ctx context.Context, n sdktypes.Symbol) (sdktypes.Pro
 	return project, nil
 }
 
-func (c *client) List(ctx context.Context) ([]sdktypes.Project, error) {
-	resp, err := c.client.List(ctx, connect.NewRequest(&projectsv1.ListRequest{}))
+func (c *client) List(ctx context.Context, oid sdktypes.OrgID) ([]sdktypes.Project, error) {
+	resp, err := c.client.List(ctx, connect.NewRequest(&projectsv1.ListRequest{OrgId: oid.String()}))
 	if err != nil {
 		return nil, rpcerrors.ToSDKError(err)
 	}

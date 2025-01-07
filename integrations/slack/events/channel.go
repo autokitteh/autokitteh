@@ -61,7 +61,8 @@ func (b *BoolOrInt) UnmarshalJSON(data []byte) error {
 // https://api.slack.com/events/group_open
 // https://api.slack.com/events/group_unarchive
 // https://api.slack.com/events/member_joined_channel
-type ChannelGroupEvent struct {
+// https://api.slack.com/events/member_left_channel
+type ChannelGroupMemberEvent struct {
 	Type        string    `json:"type,omitempty"`
 	Channel     string    `json:"channel,omitempty"`
 	ChannelType string    `json:"channel_type,omitempty"`
@@ -69,10 +70,12 @@ type ChannelGroupEvent struct {
 	Inviter     string    `json:"inviter,omitempty"`
 	IsMoved     BoolOrInt `json:"is_moved,omitempty"`
 	EventTS     string    `json:"event_ts,omitempty"`
+	Team        string    `json:"team,omitempty"`
+	Enterprise  string    `json:"enterprise,omitempty"`
 }
 
-type channelGroupContainer struct {
-	Event *ChannelGroupEvent `json:"event"`
+type channelGroupMemberContainer struct {
+	Event *ChannelGroupMemberEvent `json:"event"`
 }
 
 // https://api.slack.com/events/channel_archive
@@ -81,7 +84,8 @@ type channelGroupContainer struct {
 // https://api.slack.com/events/group_open
 // https://api.slack.com/events/group_unarchive
 // https://api.slack.com/events/member_joined_channel
-func ChannelGroupHandler(l *zap.Logger, w http.ResponseWriter, body []byte, cb *Callback) any {
+// https://api.slack.com/events/member_left_channel
+func ChannelGroupMemberHandler(l *zap.Logger, w http.ResponseWriter, body []byte, cb *Callback) any {
 	// Ignore self-triggered events.
 	for _, a := range cb.Authorizations {
 		if cb.Event.Inviter != "" && a.UserID == cb.Event.Inviter {
@@ -95,7 +99,7 @@ func ChannelGroupHandler(l *zap.Logger, w http.ResponseWriter, body []byte, cb *
 	}
 
 	// Parse and return the inner event details.
-	j := &channelGroupContainer{}
+	j := &channelGroupMemberContainer{}
 	if err := json.Unmarshal(body, j); err != nil {
 		invalidEventError(l, w, body, err)
 		return nil

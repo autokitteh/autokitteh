@@ -14,7 +14,7 @@ jobs:
   build-and-test:
     name: Build + unit tests
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -54,9 +54,23 @@ jobs:
         with:
           # Keep the same version in "/Makefile"!
           # See: https://github.com/golangci/golangci-lint
-          version: v1.60.3
+          version: v1.63.1
           # https://github.com/golangci/golangci-lint-action/issues/308
           args: --timeout=5m
+
+  test-opa:
+    name: Run OPA tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Setup OPA
+        uses: open-policy-agent/setup-opa@v2
+        with:
+          version: latest
+      - name: Run tests
+        run: make test-opa
 
   test-runs:
     name: Run tests

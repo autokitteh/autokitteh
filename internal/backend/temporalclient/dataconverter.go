@@ -58,7 +58,7 @@ func NewDataConverter(l *zap.Logger, cfg *DataConverterConfig, parent converter.
 			n, v = strings.TrimSpace(n), strings.TrimSpace(v)
 
 			if len(n) == 0 {
-				return nil, fmt.Errorf("empty key name")
+				return nil, errors.New("empty key name")
 			}
 
 			if codec.main == "" {

@@ -1,11 +1,7 @@
 # Negative tests: deploy nonexistent project, by name/ID.
 ak project deploy bad_project --file program.star
 output equals 'Error: project: not_found'
-return code == 10
-
-ak project deploy prj_000000000000000bad0bad0bad --file program.star
-output equals 'Error: project: not_found'
-return code == 10
+return code == $RC_NOT_FOUND
 
 # Preconditions: create project and environment.
 ak project create --name my_project
@@ -20,11 +16,11 @@ return code == 1
 # Negative test: deploy project with nonexistent files and directories.
 ak project deploy my_project --file bad_filename
 output equals 'Error: stat bad_filename: no such file or directory'
-return code == 10
+return code == $RC_NOT_FOUND
 
 ak project deploy my_project --dir bad_dir_name
 output equals 'Error: stat bad_dir_name: no such file or directory'
-return code == 10
+return code == $RC_NOT_FOUND
 
 # Deploy project from a single file.
 ak project deploy my_project --file single_file.star
@@ -44,8 +40,7 @@ return code == 0
 output contains 'build_id: bld_00000000000000000000000006'
 output contains 'deployment_id: dep_00000000000000000000000007'
 
-# Deploy project to default environment, by name/ID.
-ak project deploy my_project --file single_file.star --env default
+ak project deploy my_project --file single_file.star
 return code == 0
 output contains 'build_id: bld_00000000000000000000000008'
 output contains 'deployment_id: dep_00000000000000000000000009'
@@ -54,11 +49,6 @@ ak project deploy my_project --file single_file.star
 return code == 0
 output contains 'build_id: bld_0000000000000000000000000a'
 output contains 'deployment_id: dep_0000000000000000000000000b'
-
-ak project deploy my_project --file single_file.star
-return code == 0
-output contains 'build_id: bld_0000000000000000000000000c'
-output contains 'deployment_id: dep_0000000000000000000000000d'
 
 -- single_file.star --
 print("single_file.star")

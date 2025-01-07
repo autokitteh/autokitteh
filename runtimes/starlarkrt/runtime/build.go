@@ -136,7 +136,7 @@ func Build(ctx context.Context, fs fs.FS, path string, symbols []sdktypes.Symbol
 		data[path] = modBuf.Bytes()
 		dir := filepath.Dir(path)
 
-		for i := 0; i < mod.NumLoads(); i++ {
+		for i := range mod.NumLoads() {
 			lpath, pos := mod.Load(i)
 
 			if lpath == "" {

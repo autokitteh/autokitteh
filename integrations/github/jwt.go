@@ -5,6 +5,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -37,7 +38,7 @@ func newClientWithInstallJWT(data sdktypes.Vars) (*github.Client, error) {
 	// Initialize and return a GitHub client with a JWT.
 	s := data.GetValue(vars.AppID)
 	if s == "" {
-		return nil, fmt.Errorf("app ID not found")
+		return nil, errors.New("app ID not found")
 	}
 	aid, err := strconv.ParseInt(s, 10, 64)
 	if err != nil {
@@ -46,7 +47,7 @@ func newClientWithInstallJWT(data sdktypes.Vars) (*github.Client, error) {
 
 	s = data.GetValue(vars.InstallID)
 	if s == "" {
-		return nil, fmt.Errorf("install ID not found")
+		return nil, errors.New("install ID not found")
 	}
 	iid, err := strconv.ParseInt(s, 10, 64)
 	if err != nil {

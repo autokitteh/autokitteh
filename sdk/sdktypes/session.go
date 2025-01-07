@@ -39,6 +39,8 @@ func (SessionTraits) StrictValidate(m *SessionPB) error {
 	)
 }
 
+func (SessionTraits) Mutables() []string { return []string{"state"} }
+
 func SessionFromProto(m *SessionPB) (Session, error) { return FromProto[Session](m) }
 func StrictSessionFromProto(m *SessionPB) (Session, error) {
 	return Strict(SessionFromProto(m))
@@ -113,6 +115,6 @@ func (s Session) WithEndpoint(ep CodeLocation) Session {
 	return Session{s.forceUpdate(func(pb *SessionPB) { pb.Entrypoint = ToProto(ep) })}
 }
 
-func (s Session) WithInptus(inputs map[string]Value) Session {
-	return Session{s.forceUpdate(func(pb *SessionPB) { pb.Inputs = kittehs.TransformMapValues(inputs, ToProto) })}
+func (s Session) WithID(id SessionID) Session {
+	return Session{s.forceUpdate(func(pb *SessionPB) { pb.SessionId = id.String() })}
 }

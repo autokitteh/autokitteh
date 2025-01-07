@@ -14,7 +14,7 @@ var InvalidSessionStateCreated SessionStateCreated
 
 type SessionStateCreatedPB = sessionv1.SessionState_Created
 
-type SessionStateCreatedTraits struct{}
+type SessionStateCreatedTraits struct{ immutableObjectTrait }
 
 func (SessionStateCreatedTraits) Validate(m *SessionStateCreatedPB) error       { return nil }
 func (SessionStateCreatedTraits) StrictValidate(m *SessionStateCreatedPB) error { return nil }

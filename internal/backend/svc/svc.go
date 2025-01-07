@@ -20,11 +20,11 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/applygrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authhttpmiddleware"
-	"go.autokitteh.dev/autokitteh/internal/backend/auth/authjwttokens"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authloginhttpsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authsessions"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authsvc"
-	"go.autokitteh.dev/autokitteh/internal/backend/auth/authusers"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens/authjwttokens"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/builds"
 	"go.autokitteh.dev/autokitteh/internal/backend/buildsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
@@ -48,6 +48,9 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/logger"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/internal/backend/oauth"
+	"go.autokitteh.dev/autokitteh/internal/backend/orgs"
+	"go.autokitteh.dev/autokitteh/internal/backend/orgsgrpcsvc"
+	"go.autokitteh.dev/autokitteh/internal/backend/policy/opapolicy"
 	"go.autokitteh.dev/autokitteh/internal/backend/projects"
 	"go.autokitteh.dev/autokitteh/internal/backend/projectsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/scheduler"
@@ -60,6 +63,8 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/backend/triggers"
 	"go.autokitteh.dev/autokitteh/internal/backend/triggersgrpcsvc"
+	"go.autokitteh.dev/autokitteh/internal/backend/users"
+	"go.autokitteh.dev/autokitteh/internal/backend/usersgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/vars"
 	"go.autokitteh.dev/autokitteh/internal/backend/varsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/webhookssvc"
@@ -67,7 +72,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/webtools"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/version"
-	"go.autokitteh.dev/autokitteh/proto"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimessvc"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -142,7 +146,10 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			fx.Provide(authhttpmiddleware.New),
 			fx.Provide(authhttpmiddleware.AuthorizationHeaderExtractor),
 		),
-		Component("authusers", configset.Empty, fx.Provide(authusers.New)),
+		Component("orgs", configset.Empty, fx.Provide(orgs.New)),
+		Component("users", users.Configs, fx.Provide(users.New)),
+		Component("opapolicy", opapolicy.Configs, fx.Provide(opapolicy.New)),
+		Component("authz", configset.Empty, fx.Provide(authz.NewPolicyCheckFunc)),
 
 		Component(
 			"temporalclient",
@@ -214,10 +221,10 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component(
 			"dispatcher",
 			dispatcher.Configs,
-			fx.Provide(func(lc fx.Lifecycle, l *zap.Logger, cfg *dispatcher.Config, svcs dispatcher.Svcs) sdkservices.Dispatcher {
+			fx.Provide(func(lc fx.Lifecycle, l *zap.Logger, cfg *dispatcher.Config, svcs dispatcher.Svcs) (sdkservices.Dispatcher, sdkservices.DispatchFunc) {
 				d := dispatcher.New(l, cfg, svcs)
 				HookOnStart(lc, d.Start)
-				return d
+				return d, d.Dispatch
 			}),
 		),
 		Component(
@@ -246,6 +253,8 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		fx.Invoke(deploymentsgrpcsvc.Init),
 		fx.Invoke(dispatchergrpcsvc.Init),
 		fx.Invoke(eventsgrpcsvc.Init),
+		fx.Invoke(usersgrpcsvc.Init),
+		fx.Invoke(orgsgrpcsvc.Init),
 		fx.Invoke(integrationsgrpcsvc.Init),
 		fx.Invoke(oauth.Init),
 		fx.Invoke(projectsgrpcsvc.Init),
@@ -261,12 +270,13 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			"http",
 			httpsvc.Configs,
 			fx.Provide(func(lc fx.Lifecycle, z *zap.Logger, cfg *httpsvc.Config,
+				authzCheckFunc authz.CheckFunc,
 				wrapAuth authhttpmiddleware.AuthMiddlewareDecorator,
 				authHdrExtractor authhttpmiddleware.AuthHeaderExtractor, telemetry *telemetry.Telemetry,
 			) (svc httpsvc.Svc, all *muxes.Muxes, err error) {
 				svc, err = httpsvc.New(
 					lc, z, cfg,
-					proto.ServiceNames,
+					authzCheckFunc,
 					[]httpsvc.RequestLogExtractor{
 						// Note: auth middleware will be connected after interceptor, so in httpsvc and interceptor handler
 						// there is (still) no parsed user in the httpRequest context. So in order to log the user in the

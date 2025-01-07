@@ -67,7 +67,7 @@ func UnpackArgs(args []sdktypes.Value, kwargs map[string]sdktypes.Value, dsts ..
 			return fmt.Errorf("dst %d must be a pointer to a struct", i)
 		}
 
-		for j := 0; j < tt.NumField(); j++ {
+		for j := range tt.NumField() {
 			ttf := tt.Field(j)
 
 			name := ttf.Name

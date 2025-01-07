@@ -1,6 +1,8 @@
 package sdktypes
 
 import (
+	"errors"
+
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	varsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/vars/v1"
 )
@@ -11,9 +13,15 @@ var InvalidVar Var
 
 type VarPB = varsv1.Var
 
-type VarTraits struct{}
+type VarTraits struct{ immutableObjectTrait }
 
-func (VarTraits) Validate(m *VarPB) error       { return nameField("name", m.Name) }
+func (VarTraits) Validate(m *VarPB) error {
+	return errors.Join(
+		nameField("name", m.Name),
+		varScopeIDField(m.ScopeId),
+	)
+}
+
 func (VarTraits) StrictValidate(m *VarPB) error { return mandatory("name", m.Name) }
 
 func VarFromProto(m *VarPB) (Var, error)       { return FromProto[Var](m) }

@@ -19,20 +19,22 @@ import (
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/experimental"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/integrations"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/manifest"
+	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/orgs"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/projects"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/runtimes"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/server"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/sessions"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/triggers"
+	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/users"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/vars"
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
 )
 
 var (
-	configs        []string
-	json, niceJSON bool
-	token          string
+	configs                       []string
+	json, niceJSON, arrayJSONList bool
+	token                         string
 )
 
 var RootCmd = common.StandardCommand(&cobra.Command{
@@ -43,7 +45,12 @@ var RootCmd = common.StandardCommand(&cobra.Command{
 		// Set the output renderer based on global flags.
 		if json {
 			common.SetRenderer(common.JSONRenderer)
+
+			if arrayJSONList {
+				common.SetArrayJSONList(true)
+			}
 		}
+
 		if niceJSON {
 			common.SetRenderer(common.NiceJSONRenderer)
 		}
@@ -74,12 +81,7 @@ var RootCmd = common.StandardCommand(&cobra.Command{
 // This is called only once by [main.main].
 func Execute() {
 	if err := RootCmd.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		var ecerr common.ExitCodeError
-		if errors.As(err, &ecerr) {
-			os.Exit(ecerr.Code)
-		}
-		os.Exit(1)
+		common.Exit(err)
 	}
 }
 
@@ -89,6 +91,7 @@ func init() {
 
 	RootCmd.PersistentFlags().BoolVarP(&json, "json", "j", false, "print output in compact JSON format")
 	RootCmd.PersistentFlags().BoolVarP(&niceJSON, "nice_json", "J", false, "print output in readable JSON format")
+	RootCmd.PersistentFlags().BoolVar(&arrayJSONList, "array_json_list", false, "if output is json list, render as an array")
 	RootCmd.MarkFlagsMutuallyExclusive("json", "nice_json")
 	RootCmd.PersistentFlags().StringVar(&token, "token", "", "auth token")
 
@@ -108,11 +111,13 @@ func init() {
 	experimental.AddSubcommands(RootCmd)
 	integrations.AddSubcommands(RootCmd)
 	manifest.AddSubcommands(RootCmd)
+	orgs.AddSubcommands(RootCmd)
 	projects.AddSubcommands(RootCmd)
 	runtimes.AddSubcommands(RootCmd)
 	server.AddSubcommands(RootCmd)
 	sessions.AddSubcommands(RootCmd)
 	triggers.AddSubcommands(RootCmd)
+	users.AddSubcommands(RootCmd)
 	vars.AddSubcommands(RootCmd)
 }
 
