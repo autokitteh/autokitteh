@@ -42,7 +42,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	signingSecret := r.FormValue("signing_secret")
 
 	if err := h.saveClientIDAndSecrets(r.Context(), c, clientID, clientSecret, signingSecret); err != nil {
-		l.Warn("Failed to save client ID and secret", zap.Error(err))
+		l.Warn("Failed to save Slack custom OAuth details", zap.Error(err))
 		c.AbortBadRequest("failed to save OAuth configuration")
 		return
 	}
