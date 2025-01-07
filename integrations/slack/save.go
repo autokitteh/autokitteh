@@ -18,6 +18,8 @@ const (
 	contentTypeForm   = "application/x-www-form-urlencoded"
 )
 
+// handleSave acts as a passthrough for the OAuth connection mode,
+// to save OAuth details (custom client ID & secrets).
 func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, desc)
 
