@@ -388,6 +388,11 @@ func (py *pySvc) call(ctx context.Context, val sdktypes.Value, args []sdktypes.V
 
 	if _, err = py.runner.ActivityReply(ctx, &req); err != nil {
 		py.log.Error("activity reply error", zap.Error(err))
+		req := pbUserCode.DoneRequest{
+			RunnerId: py.runnerID,
+			Error:    err.Error(),
+		}
+		py.channels.done <- &req
 	}
 }
 

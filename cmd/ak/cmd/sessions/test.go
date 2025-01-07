@@ -21,7 +21,31 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var trimRe = regexp.MustCompile(`\/.*\/ak-(user|runner)-.*?\/`)
+var (
+	/*
+		/tmp/ak-runner-380204239/runner/main.py:323.1,_call
+		/tmp/ak-user-2767870919/main.py:6.1,main
+	*/
+	trimRe = regexp.MustCompile(`\/.*\/ak-(user|runner)-.*?\/`)
+	//  File "runner/main.py", line 323, in _call
+	mainRe = regexp.MustCompile(`runner/main.py, line \d+, in`)
+)
+
+func normalizePath(p string) string {
+	// Remove ak-runner and ak-user.
+	p = trimRe.ReplaceAllString(p, "")
+
+	// Remove location specific prefix of Python standard library.
+	i := strings.Index(p, "/lib/python3")
+	if i != -1 {
+		p = p[i:]
+	}
+
+	// Remove lines in runner/main.py.
+	p = mainRe.ReplaceAllString(p, "runner/main.py, line ***, in")
+
+	return p
+}
 
 var testCmd = common.StandardCommand(&cobra.Command{
 	Use:   "test <txtar-file> [--build-id=...] [--project project] [--deployment-id=...] [--entrypoint=...] [--quiet] [--timeout DURATION] [--poll-interval DURATION] [--no-timestamps]",
@@ -111,13 +135,7 @@ var testCmd = common.StandardCommand(&cobra.Command{
 
 		for _, r := range rs {
 			if p, ok := r.GetPrint(); ok {
-				p = trimRe.ReplaceAllString(p, "")
-
-				// Remove location specific prefix of Python standard library.
-				i := strings.Index(p, "/lib/python3")
-				if i != -1 {
-					p = p[i:]
-				}
+				p = normalizePath(p)
 
 				prints.WriteString(p)
 				prints.WriteRune('\n')

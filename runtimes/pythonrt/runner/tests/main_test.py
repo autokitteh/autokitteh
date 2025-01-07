@@ -116,3 +116,20 @@ def test_result_error():
     assert msg in text
     for name in ("fn_a", "fn_b", "fn_c"):
         assert name in text
+
+
+class SlackError(Exception):
+    def __init__(self, message, response):
+        self.response = response
+        super().__init__(message)
+
+
+def test_pickle_exception():
+    def fn():
+        raise SlackError("cannot connect", response={"error": "bad token"})
+
+    runner = main.Runner("r1", None, "/tmp", None)
+    result = runner._call(fn, [], {})
+    data = pickle.dumps(result)
+    result2 = pickle.loads(data)
+    assert isinstance(result2.error, SlackError)

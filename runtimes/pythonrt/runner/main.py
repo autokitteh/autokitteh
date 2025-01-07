@@ -1,4 +1,5 @@
 import builtins
+import inspect
 import json
 import os
 import pickle
@@ -99,18 +100,35 @@ def fix_http_body(event):
             pass
 
 
-def killIfStartWasntCalled(runner):
-    if not runner.did_start:
-        print("Start was not called, killing self")
-        os._exit(1)
-
-
 def abort_with_exception(context, status, err):
     io = StringIO()
     for line in format_exception(err):
         io.write(line)
     text = io.getvalue()
     context.abort(status, text)
+
+
+def set_exception_args(err):
+    """Make it possible to unpickle an error.
+
+    See https://stackoverflow.com/questions/41808912/cannot-unpickle-exception-subclass
+    """
+    init_args = inspect.getargs(err.__init__.__code__).args
+    if not init_args:
+        return
+
+    if init_args[0] == "self":
+        init_args = init_args[1:]
+
+    err_args = getattr(err, "args")
+    if len(err_args) == len(init_args):
+        return
+
+    extra = []
+    for name in init_args[len(err_args) :]:
+        extra.append(getattr(err, name, None))
+
+    err.args += tuple(extra)
 
 
 Call = namedtuple("Call", "fn args kw fut")
@@ -212,7 +230,7 @@ class Runner(pb.runner_rpc.RunnerService):
             call: Call = self.activity_call
 
         if call is None:
-            context.abort(grpc.StatusCode.INVALID_ARGUMENT, "no pending activity calls")
+            context.abort(grpc.StatusCode.INTERNAL, "no pending activity calls")
 
         result = self._call(call.fn, call.args, call.kw)
         try:
@@ -271,7 +289,6 @@ class Runner(pb.runner_rpc.RunnerService):
             )
 
         if result.error:
-            # TODO: Restore exception traceback
             call.fut.set_exception(result.error)
         else:
             call.fut.set_result(result.value)
@@ -321,10 +338,13 @@ class Runner(pb.runner_rpc.RunnerService):
         value = error = tb = None
         try:
             value = fn(*args, **kw)
+            if isinstance(value, Exception):
+                set_exception_args(value)
         except Exception as err:
             log.error("%s raised: %s", func_name, err)
             tb = TracebackException.from_exception(err)
             error = err
+            set_exception_args(error)
 
         return Result(value, error, tb)
 
