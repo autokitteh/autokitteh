@@ -20,7 +20,7 @@ func (f *dbFixture) createTriggersAndAssert(t *testing.T, triggers ...scheme.Tri
 
 func (f *dbFixture) assertTriggersDeleted(t *testing.T, triggers ...scheme.Trigger) {
 	for _, trigger := range triggers {
-		assertSoftDeleted(t, f, trigger)
+		assertDeleted(t, f, trigger)
 	}
 }
 
@@ -109,8 +109,9 @@ func TestDeleteTriggerForeignKeys(t *testing.T) {
 	f.createEventsAndAssert(t, evt)
 
 	// trigger could be deleted, even if it refenced by non-deleted event
-	findAndAssertOne(t, f, evt, "trigger_id = ?", trg.TriggerID)    // non-deleted event
-	assert.NoError(t, f.gormdb.deleteTrigger(f.ctx, trg.TriggerID)) // deleted trigger
+	findAndAssertOne(t, f, evt, "trigger_id = ?", trg.TriggerID) // non-deleted event
+	err := f.gormdb.deleteTrigger(f.ctx, trg.TriggerID)
+	assert.NoError(t, err) // deleted trigger
 }
 
 func TestListTriggers(t *testing.T) {

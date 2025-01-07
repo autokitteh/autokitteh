@@ -251,19 +251,6 @@ func findAndAssertOne[T any](t *testing.T, f *dbFixture, schemaObj T, where stri
 }
 
 // check obj is soft-deleted in gorm
-func assertSoftDeleted[T any](t *testing.T, f *dbFixture, m T) {
-	res := f.db.First(&m)
-	require.ErrorIs(t, res.Error, gorm.ErrRecordNotFound)
-
-	// check that object is marked as deleted
-	res = f.db.Unscoped().First(&m)
-	require.NoError(t, res.Error)
-	require.Equal(t, int64(1), res.RowsAffected)
-
-	deletedAtField := reflect.ValueOf(&m).Elem().FieldByName("DeletedAt")
-	require.NotNil(t, deletedAtField.Interface())
-}
-
 // check obj is soft-deleted in gorm
 func assertDeleted[T any](t *testing.T, f *dbFixture, m T) {
 	// check that object is not found both scoped and unscoped

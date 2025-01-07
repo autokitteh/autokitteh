@@ -56,7 +56,7 @@ func listDeploymentsWithStatsAndAssert(t *testing.T, f *dbFixture, expected int)
 
 func (f *dbFixture) assertDeploymentsDeleted(t *testing.T, deployments ...scheme.Deployment) {
 	for _, deployment := range deployments {
-		assertSoftDeleted(t, f, deployment)
+		assertDeleted(t, f, deployment)
 	}
 }
 

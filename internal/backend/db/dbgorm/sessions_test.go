@@ -38,7 +38,7 @@ func (f *dbFixture) listSessionsAndAssert(t *testing.T, expected int64) []scheme
 
 func (f *dbFixture) assertSessionsDeleted(t *testing.T, sessions ...scheme.Session) {
 	for _, session := range sessions {
-		assertSoftDeleted(t, f, session)
+		assertDeleted(t, f, session)
 	}
 }
 

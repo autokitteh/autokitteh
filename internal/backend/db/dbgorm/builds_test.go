@@ -19,7 +19,7 @@ func (f *dbFixture) saveBuildsAndAssert(t *testing.T, builds ...scheme.Build) {
 }
 
 func (f *dbFixture) assertBuildDeleted(t *testing.T, buildID uuid.UUID) {
-	assertSoftDeleted(t, f, scheme.Build{BuildID: buildID})
+	assertDeleted(t, f, scheme.Build{BuildID: buildID})
 }
 
 func preBuildTest(t *testing.T) (*dbFixture, scheme.Project) {

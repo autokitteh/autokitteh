@@ -21,7 +21,7 @@ func (f *dbFixture) createEventsAndAssert(t *testing.T, events ...scheme.Event) 
 
 func (f *dbFixture) assertEventsDeleted(t *testing.T, events ...scheme.Event) {
 	for _, event := range events {
-		assertSoftDeleted(t, f, scheme.Event{EventID: event.EventID})
+		assertDeleted(t, f, scheme.Event{EventID: event.EventID})
 	}
 }
 

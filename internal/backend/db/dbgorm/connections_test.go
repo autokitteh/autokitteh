@@ -20,7 +20,7 @@ func (f *dbFixture) createConnectionsAndAssert(t *testing.T, connections ...sche
 
 func (f *dbFixture) assertConnectionDeleted(t *testing.T, connections ...scheme.Connection) {
 	for _, connection := range connections {
-		assertSoftDeleted(t, f, connection)
+		assertDeleted(t, f, connection)
 	}
 }
 
