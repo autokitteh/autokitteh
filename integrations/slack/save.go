@@ -41,6 +41,11 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	clientSecret := r.FormValue("client_secret")
 	signingSecret := r.FormValue("signing_secret")
 
+	if clientID == "" || clientSecret == "" || signingSecret == "" {
+		c.AbortBadRequest("missing required fields")
+		return
+	}
+
 	if err := h.saveClientIDAndSecrets(r.Context(), c, clientID, clientSecret, signingSecret); err != nil {
 		l.Warn("Failed to save Slack custom OAuth details", zap.Error(err))
 		c.AbortBadRequest("failed to save OAuth configuration")
