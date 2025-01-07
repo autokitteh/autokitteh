@@ -258,7 +258,7 @@ func (h handler) extractIDs(body []byte, wantContentType string, l *zap.Logger) 
 		return "", "", "", err
 	}
 
-	// Check if this is an interaction payload
+	// Check if this is an interaction payload.
 	if payload := kv.Get("payload"); payload != "" {
 		var p BlockActionsPayload
 		if err := json.Unmarshal([]byte(payload), &p); err != nil {
