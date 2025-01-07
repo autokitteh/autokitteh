@@ -146,6 +146,10 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Log
 		return nil
 	}
 	signingSecret := secret.GetValue(vars.SigningSecret)
+
+	// If a custom OAuth signing key wasn't found, try to use
+	// the default one. If the request is fake, verifying its
+	// signature would still fail, so there's no security risk.
 	if signingSecret == "" {
 		signingSecret = os.Getenv(signingSecretEnvVar)
 	}
