@@ -11,18 +11,22 @@ import (
 )
 
 // https://api.slack.com/events/channel_created
-type ChannelCreatedEvent struct {
+// https://api.slack.com/events/channel_rename
+// https://api.slack.com/events/group_rename
+type ChannelCreatedRenameEvent struct {
 	Type    string                 `json:"type,omitempty"`
 	Channel *conversations.Channel `json:"channel,omitempty"`
 	EventTS string                 `json:"event_ts,omitempty"`
 }
 
 type channelCreatedContainer struct {
-	Event *ChannelCreatedEvent `json:"event"`
+	Event *ChannelCreatedRenameEvent `json:"event"`
 }
 
 // https://api.slack.com/events/channel_created
-func ChannelCreatedHandler(l *zap.Logger, w http.ResponseWriter, body []byte, cb *Callback) any {
+// https://api.slack.com/events/channel_rename
+// https://api.slack.com/events/group_rename
+func ChannelCreatedRenameHandler(l *zap.Logger, w http.ResponseWriter, body []byte, cb *Callback) any {
 	// Parse the inner event details.
 	j := &channelCreatedContainer{}
 	if err := json.Unmarshal(body, j); err != nil {
@@ -104,31 +108,5 @@ func ChannelGroupMemberHandler(l *zap.Logger, w http.ResponseWriter, body []byte
 		invalidEventError(l, w, body, err)
 		return nil
 	}
-	return j.Event
-}
-
-// https://api.slack.com/events/channel_rename
-// https://api.slack.com/events/group_rename
-type ChannelRenameEvent struct {
-	Type    string                 `json:"type,omitempty"`
-	Channel *conversations.Channel `json:"channel,omitempty"`
-	EventTS string                 `json:"event_ts,omitempty"`
-}
-
-type channelRenameContainer struct {
-	Event *ChannelRenameEvent `json:"event"`
-}
-
-// https://api.slack.com/events/channel_rename
-// https://api.slack.com/events/group_rename
-func ChannelRenameHandler(l *zap.Logger, w http.ResponseWriter, body []byte, cb *Callback) any {
-	// Parse the inner event details.
-	j := &channelRenameContainer{}
-	if err := json.Unmarshal(body, j); err != nil {
-		invalidEventError(l, w, body, err)
-		return nil
-	}
-
-	// Return the inner event details.
 	return j.Event
 }

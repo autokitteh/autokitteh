@@ -24,16 +24,16 @@ var BotEventHandlers = map[string]BotEventHandler{
 	// TODO: app_uninstalled
 
 	"channel_archive": events.ChannelGroupMemberHandler,
-	"channel_created": events.ChannelCreatedHandler,
+	"channel_created": events.ChannelCreatedRenameHandler,
 	// TODO: channel_history_changed
 	// TODO: channel_id_changed
-	"channel_rename":    events.ChannelRenameHandler,
+	"channel_rename":    events.ChannelCreatedRenameHandler,
 	"channel_unarchive": events.ChannelGroupMemberHandler,
 
 	"group_archive": events.ChannelGroupMemberHandler,
 	// TODO: group_history_changed
 	"group_open":      events.ChannelGroupMemberHandler,
-	"group_rename":    events.ChannelRenameHandler,
+	"group_rename":    events.ChannelCreatedRenameHandler,
 	"group_unarchive": events.ChannelGroupMemberHandler,
 
 	// TODO: im_history_changed
