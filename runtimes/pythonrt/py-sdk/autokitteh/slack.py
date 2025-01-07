@@ -30,6 +30,9 @@ def slack_client(connection: str, **kwargs) -> WebClient:
     """
     check_connection_name(connection)
 
+    if os.getenv("AUTOKITTEH_UNIT_TEST"):
+        return WebClient("dummy_bot_token", **kwargs)
+
     bot_token = os.getenv(connection + "__oauth_AccessToken")  # OAuth v2
     if not bot_token:
         bot_token = os.getenv(connection + "__BotToken")  # Socket Mode

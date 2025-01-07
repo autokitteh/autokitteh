@@ -27,6 +27,9 @@ def github_client(connection: str, **kwargs) -> Github:
     """
     check_connection_name(connection)
 
+    if os.getenv("AUTOKITTEH_UNIT_TEST"):
+        return Github(auth=Auth.Token("dummy_pat"), **kwargs)
+
     # Optional: GitHub Enterprise Server
     base_url = os.getenv("GITHUB_ENTERPRISE_URL")
     if base_url:
