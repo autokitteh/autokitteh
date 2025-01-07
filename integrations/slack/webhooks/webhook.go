@@ -275,6 +275,6 @@ func (h handler) extractIDs(body []byte, wantContentType string, l *zap.Logger) 
 		return p.APIAppID, p.Team.ID, "", nil
 	}
 
-	// Regular form data (slash commands)
+	// Regular form data (bot events and slash commands).
 	return kv.Get("api_app_id"), kv.Get("team_id"), "", nil
 }
