@@ -248,7 +248,7 @@ func (h handler) extractIDs(body []byte, wantContentType string, l *zap.Logger) 
 		return cb.APIAppID, cb.TeamID, "", nil
 	}
 
-	// Handle form data
+	// Option 2: URL-encoded web form payloads.
 	kv, err := url.ParseQuery(string(body))
 	if err != nil {
 		l.Error("Failed to parse URL-encoded form",
