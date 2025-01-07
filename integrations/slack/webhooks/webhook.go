@@ -236,6 +236,7 @@ func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, cids []sd
 }
 
 func (h handler) extractIDs(body []byte, wantContentType string, l *zap.Logger) (appID, teamID, enterpriseID string, err error) {
+	// Option 1: JSON payloads.
 	if wantContentType == "application/json" {
 		var cb events.Callback
 		if err := json.Unmarshal(body, &cb); err != nil {
