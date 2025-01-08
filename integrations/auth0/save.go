@@ -57,11 +57,8 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Redirect to AutoKitteh's OAuth starting point.
-	http.Redirect(w, r, oauthURL(c), http.StatusFound)
-}
-
-func oauthURL(c sdkintegrations.ConnectionInit) string {
-	return fmt.Sprintf("/oauth/start/auth0?cid=%s&origin=%s", c.ConnectionID, c.Origin)
+	redirectURL := fmt.Sprintf("/oauth/start/auth0?cid=%s&origin=%s", c.ConnectionID, c.Origin)
+	http.Redirect(w, r, redirectURL, http.StatusFound)
 }
 
 func (h handler) saveAuthCredentials(ctx context.Context, c sdkintegrations.ConnectionInit, vs sdktypes.Vars) error {
