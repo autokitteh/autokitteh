@@ -112,7 +112,11 @@ def set_exception_args(err):
 
     See https://stackoverflow.com/questions/41808912/cannot-unpickle-exception-subclass
     """
-    init_args = inspect.getargs(err.__init__.__code__).args
+    code = getattr(err.__init__, "__code__", None)
+    if code is None:  # Built-in
+        return
+
+    init_args = inspect.getargs(code).args
     if not init_args:
         return
 

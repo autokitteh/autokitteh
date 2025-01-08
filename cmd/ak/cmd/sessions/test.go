@@ -22,29 +22,30 @@ import (
 )
 
 var (
-	/*
-		/tmp/ak-runner-380204239/runner/main.py:323.1,_call
-		/tmp/ak-user-2767870919/main.py:6.1,main
-	*/
+	// /tmp/ak-user-2767870919/main.py:6.1,main
 	trimRe = regexp.MustCompile(`\/.*\/ak-(user|runner)-.*?\/`)
 	//  File "runner/main.py", line 323, in _call
-	mainRe = regexp.MustCompile(`runner/main.py, line \d+, in`)
+	runnerRe = regexp.MustCompile(`(ak-)?runner(-\d+)?/.*py`)
 )
 
 func normalizePath(p string) string {
-	// Remove ak-runner and ak-user.
-	p = trimRe.ReplaceAllString(p, "")
 
 	// Remove location specific prefix of Python standard library.
-	i := strings.Index(p, "/lib/python3")
+	const pyLibPrefix = "/lib/python"
+	i := strings.Index(p, pyLibPrefix)
 	if i != -1 {
-		p = p[i:]
+		p = p[i+len(pyLibPrefix):]
+
+		j := strings.Index(p, "/")
+		if j > 0 {
+			p = "py/" + p[j+1:]
+		}
+
+		return p
 	}
 
-	// Remove lines in runner/main.py.
-	p = mainRe.ReplaceAllString(p, "runner/main.py, line ***, in")
-
-	return p
+	// Remove ak-runner and ak-user.
+	return trimRe.ReplaceAllString(p, "")
 }
 
 var testCmd = common.StandardCommand(&cobra.Command{
