@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -120,46 +121,23 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Log
 		return nil
 	}
 
-	appID, teamID, enterpriseID, err := h.extractIDs(body, wantContentType, l)
-	if err != nil {
-		l.Error("Failed to extract IDs", zap.Error(err))
-		http.Error(w, "Bad Request", http.StatusBadRequest)
-		return nil
-	}
-
-	// Get signing secret.
-	cids, err := h.listConnectionIDs(r.Context(), appID, enterpriseID, teamID)
-	if err != nil {
-		l.Error("Failed to list connection IDs", zap.Error(err))
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return nil
-	}
-	// No connections = respond to Slack with 200 OK, but don't process the request.
-	if len(cids) == 0 {
-		return nil
-	}
-	// All connections for the same app/enterprise/workspace share the same signing secret.
-	secret, err := h.vars.Get(r.Context(), sdktypes.NewVarScopeID(cids[0]))
+	signingSecret, err := h.getCustomOAuthSigningSecret(r.Context(), body, wantContentType, l)
 	if err != nil {
 		l.Error("Failed to get signing secret", zap.Error(err))
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return nil
 	}
-	signingSecret := secret.GetValue(vars.SigningSecret)
 
-	// If a custom OAuth signing key wasn't found, try to use
-	// the default one. If the request is fake, verifying its
-	// signature would still fail, so there's no security risk.
 	if signingSecret == "" {
+		// If a custom OAuth signing key wasn't found, try to use
+		// the default one. If the request is fake, verifying its
+		// signature would still fail, so there's no security risk.
 		signingSecret = os.Getenv(signingSecretEnvVar)
 	}
 
 	// Verify signature.
 	if !verifySignature(signingSecret, ts, sig, body) {
-		l.Error("Signature verification failed",
-			zap.String("app_id", appID),
-			zap.String("team_id", teamID),
-		)
+		l.Error("Signature verification failed")
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return nil
 	}
@@ -239,9 +217,9 @@ func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, cids []sd
 	}
 }
 
-func (h handler) extractIDs(body []byte, wantContentType string, l *zap.Logger) (appID, teamID, enterpriseID string, err error) {
+func (h handler) extractIDs(body []byte, wantContentType string, l *zap.Logger) (string, string, string, error) {
 	// Option 1: JSON payloads.
-	if wantContentType == "application/json" {
+	if strings.HasPrefix(wantContentType, "application/json") {
 		var cb events.Callback
 		if err := json.Unmarshal(body, &cb); err != nil {
 			l.Error("Failed to parse JSON for app/team IDs",
@@ -262,23 +240,47 @@ func (h handler) extractIDs(body []byte, wantContentType string, l *zap.Logger) 
 		return "", "", "", err
 	}
 
-	// Check if this is an interaction payload.
-	if payload := kv.Get("payload"); payload != "" {
-		var p BlockActionsPayload
-		if err := json.Unmarshal([]byte(payload), &p); err != nil {
-			l.Error("Failed to parse interaction payload",
-				zap.String("payload", payload),
-				zap.Error(err),
-			)
-			return "", "", "", err
-		}
-
-		if p.IsEnterpriseInstall && p.Enterprise != nil {
-			return p.APIAppID, p.Team.ID, p.Enterprise.ID, nil
-		}
-		return p.APIAppID, p.Team.ID, "", nil
+	payload := kv.Get("payload")
+	// Regular form data (bot events and slash commands).
+	if payload == "" {
+		return kv.Get("api_app_id"), kv.Get("team_id"), "", nil
 	}
 
-	// Regular form data (bot events and slash commands).
-	return kv.Get("api_app_id"), kv.Get("team_id"), "", nil
+	// Interaction payloads.
+	var p BlockActionsPayload
+	if err := json.Unmarshal([]byte(payload), &p); err != nil {
+		l.Error("Failed to parse interaction payload",
+			zap.String("payload", payload),
+			zap.Error(err),
+		)
+		return "", "", "", err
+	}
+
+	// TODO: add Enterprise support.
+	return p.APIAppID, p.Team.ID, "", nil
+}
+
+// getCustomOAuthSigningSecret gets the signing secret from the connection's
+// variables for Custom OAuth.
+func (h handler) getCustomOAuthSigningSecret(ctx context.Context, body []byte, wantContentType string, l *zap.Logger) (string, error) {
+	appID, teamID, _, err := h.extractIDs(body, wantContentType, l)
+	if err != nil {
+		return "", fmt.Errorf("failed to extract IDs: %w", err)
+	}
+
+	// TODO: add Enterprise support.
+	cids, err := h.listConnectionIDs(ctx, appID, "", teamID)
+	if err != nil {
+		return "", fmt.Errorf("failed to list connection IDs: %w", err)
+	}
+	if len(cids) == 0 {
+		return "", nil
+	}
+
+	secret, err := h.vars.Get(ctx, sdktypes.NewVarScopeID(cids[0]))
+	if err != nil {
+		return "", fmt.Errorf("failed to get signing secret: %w", err)
+	}
+
+	return secret.GetValue(vars.SigningSecret), nil
 }

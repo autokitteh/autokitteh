@@ -13,7 +13,7 @@ type Vars struct {
 }
 
 var (
-	AuthType = sdktypes.NewSymbol("auth_type")
+	AuthType = sdktypes.NewSymbol("authType")
 
 	// Custom OAuth
 	ClientID      = sdktypes.NewSymbol("client_id")

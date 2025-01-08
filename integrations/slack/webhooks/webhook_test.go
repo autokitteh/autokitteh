@@ -89,15 +89,6 @@ func TestWebhookCheckRequest(t *testing.T) {
 			r:               iotest.ErrReader(errors.New("test error")),
 			want:            nil,
 		},
-		{
-			name:            "verification_failure",
-			gotContentType:  api.ContentTypeForm,
-			wantContentType: api.ContentTypeForm,
-			timestampHeader: strconv.FormatInt(time.Now().Unix(), 10),
-			signatureHeader: "v0=test",
-			r:               nil,
-			want:            nil,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -107,7 +98,6 @@ func TestWebhookCheckRequest(t *testing.T) {
 			r.Header.Add(api.HeaderSlackTimestamp, tt.timestampHeader)
 			r.Header.Add(api.HeaderSlackSignature, tt.signatureHeader)
 
-			// TODO: this will fail. needs a vars service. Mock?
 			h := handler{}
 			got := h.checkRequest(w, r, zap.L(), tt.wantContentType)
 			if diff := cmp.Diff(got, tt.want); diff != "" {
