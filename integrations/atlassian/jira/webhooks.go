@@ -78,12 +78,12 @@ type webhookListResponse struct {
 
 // getWebhook checks whether the given Jira domain already has a
 // registered dynamic webhook for this AutoKitteh server. Based on:
-// https://developer.atlassian.com/cloud/jira/platform/webhooks/
+// https://developer.atlassian.com/cloud/jira/platform/webhooks/#using-the-rest-api--fetching-registered-webhooks
+// https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-webhooks/#api-rest-api-3-webhook-get
 // https://developer.atlassian.com/server/jira/platform/webhooks/
-// https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-webhooks/
-func getWebhook(l *zap.Logger, base, token string) (int, bool) {
+func getWebhook(l *zap.Logger, baseURL, token string) (int, bool) {
 	// TODO(ENG-965): Support pagination.
-	req, err := http.NewRequest(http.MethodGet, base+"/rest/api/3/webhook", nil)
+	req, err := http.NewRequest(http.MethodGet, baseURL+"/rest/api/3/webhook", nil)
 	if err != nil {
 		l.Warn("Failed to construct HTTP request to list Jira webhooks", zap.Error(err))
 		return 0, false
@@ -126,14 +126,64 @@ func getWebhook(l *zap.Logger, base, token string) (int, bool) {
 	// we use a trick: we specify the AutoKitteh server address in the
 	// JQL filter, without affecting the actual event filtering).
 	webhookBase := os.Getenv("WEBHOOK_ADDRESS")
+	id := 0
 	for _, v := range list.Values {
-		if strings.HasSuffix(v.JQLFilter, webhookBase) {
-			return v.ID, true
+		if strings.Contains(v.JQLFilter, webhookBase) {
+			if id == 0 {
+				id = v.ID
+			} else {
+				// Already found a webhook for this AutoKitteh server.
+				// Delete duplicates and return the first one's ID.
+				deleteWebhook(l, baseURL, token, v.ID)
+			}
 		}
 	}
 
-	// No webhook found for this AutoKitteh server.
-	return 0, false
+	return id, id != 0
+}
+
+// deleteWebhook removes the dynamic webhook with the given ID from the Jira domain. Based on:
+// https://developer.atlassian.com/cloud/jira/platform/webhooks/#using-the-rest-api--deleting-registered-webhooks
+// https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-webhooks/#api-rest-api-3-webhook-delete
+// https://developer.atlassian.com/server/jira/platform/webhooks/
+// This function logs errors but doesn't return them, because the only caller is [getWebhook],
+// which uses this function to clean up duplicates and doesn't need to know about the errors.
+func deleteWebhook(l *zap.Logger, baseURL, oauthToken string, id int) {
+	jsonReader := bytes.NewReader([]byte(fmt.Sprintf(`{"webhookIds": [%d]}`, id)))
+	req, err := http.NewRequest(http.MethodDelete, baseURL+"/rest/api/3/webhook", jsonReader)
+	if err != nil {
+		l.Error("Failed to construct HTTP request to delete Jira webhook",
+			zap.Int("id", id),
+			zap.Error(err),
+		)
+		return
+	}
+
+	req.Header.Set("Authorization", "Bearer "+oauthToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		l.Error("Failed to delete Jira webhook",
+			zap.Int("id", id),
+			zap.Error(err),
+		)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusAccepted {
+		l.Error("Unexpected response to Jira webhook delete request",
+			zap.Int("id", id),
+			zap.Int("status", resp.StatusCode),
+		)
+		return
+	}
+
+	l.Debug("Deleted a duplicate Jira webhook",
+		zap.String("base_url", baseURL),
+		zap.Int("id", id),
+	)
 }
 
 type webhookRegisterRequest struct {
@@ -152,10 +202,10 @@ type webhookRegistrationResult struct {
 
 // registerWebhook creates a new dynamic webhook,
 // for 30 days, in the given Jira domain. Based on:
-// https://developer.atlassian.com/cloud/jira/platform/webhooks/
+// https://developer.atlassian.com/cloud/jira/platform/webhooks/#using-the-rest-api--registration
+// https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-webhooks/#api-rest-api-3-webhook-post
 // https://developer.atlassian.com/server/jira/platform/webhooks/
-// https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-webhooks/
-func registerWebhook(l *zap.Logger, base, token string) (int, bool) {
+func registerWebhook(l *zap.Logger, baseURL, token string) (int, bool) {
 	webhookBase := os.Getenv("WEBHOOK_ADDRESS")
 	r := webhookRegisterRequest{
 		URL: fmt.Sprintf("https://%s/jira/webhook", webhookBase),
@@ -169,7 +219,7 @@ func registerWebhook(l *zap.Logger, base, token string) (int, bool) {
 				// "GET .../webhook" doesn't show webhook URLs in the response,
 				// so we use a trick: we specify the AutoKitteh server address in
 				// the JQL filter, without affecting the actual event filtering.
-				JQLFilter: fmt.Sprintf("project != %s_jira", webhookBase),
+				JQLFilter: "project != " + webhookBase,
 			},
 		},
 	}
@@ -183,7 +233,7 @@ func registerWebhook(l *zap.Logger, base, token string) (int, bool) {
 	}
 
 	jsonReader := bytes.NewReader(body)
-	req, err := http.NewRequest(http.MethodPost, base+"/rest/api/3/webhook", jsonReader)
+	req, err := http.NewRequest(http.MethodPost, baseURL+"/rest/api/3/webhook", jsonReader)
 	if err != nil {
 		l.Error("Failed to construct HTTP request to register Jira webhook", zap.Error(err))
 		return 0, false
@@ -233,6 +283,10 @@ func registerWebhook(l *zap.Logger, base, token string) (int, bool) {
 	}
 
 	// Success.
+	l.Info("Registered a new Jira webhook",
+		zap.String("base_url", baseURL),
+		zap.Int("id", reg.Result[0].CreatedWebhookID),
+	)
 	return reg.Result[0].CreatedWebhookID, true
 }
 
@@ -240,7 +294,10 @@ type webhookRefreshResponse struct {
 	ExpirationDate string `json:"expirationDate,omitempty"`
 }
 
-// extendWebhookLife extends the expiration date of the given webhook ID by 30 days.
+// extendWebhookLife extends the expiration date of the given webhook ID by 30 days. Based on:
+// https://developer.atlassian.com/cloud/jira/platform/webhooks/#using-the-rest-api--refreshing-registered-webhooks
+// https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-webhooks/#api-rest-api-3-webhook-refresh-put
+// https://developer.atlassian.com/server/jira/platform/webhooks/
 func extendWebhookLife(l *zap.Logger, baseURL, oauthToken string, id int) (time.Time, bool) {
 	jsonReader := bytes.NewReader([]byte(fmt.Sprintf(`{"webhookIds": [%d]}`, id)))
 	req, err := http.NewRequest(http.MethodPut, baseURL+"/rest/api/3/webhook/refresh", jsonReader)
@@ -289,6 +346,12 @@ func extendWebhookLife(l *zap.Logger, baseURL, oauthToken string, id int) (time.
 		)
 		return utc30Days(), true
 	}
+
+	l.Info("Refreshed Jira webhook for new connection",
+		zap.String("base_url", baseURL),
+		zap.Int("id", id),
+		zap.Time("expiration", t),
+	)
 	return t, true
 }
 
