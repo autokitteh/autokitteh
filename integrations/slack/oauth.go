@@ -84,5 +84,4 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Set(vars.KeyName, key, false).
 		Set(vars.OAuthDataName, raw, true).
 		Append(data.ToVars()...))
-
 }
