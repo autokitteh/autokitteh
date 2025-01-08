@@ -395,7 +395,7 @@ type Deployment struct {
 	ProjectID    uuid.UUID `gorm:"index;type:uuid;not null"`
 	DeploymentID uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
 	BuildID      uuid.UUID `gorm:"type:uuid;not null"`
-	State        int32
+	State        int32     `gorm:"index"`
 
 	UpdatedBy uuid.UUID `gorm:"type:uuid"`
 	UpdatedAt time.Time

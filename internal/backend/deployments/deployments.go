@@ -3,11 +3,14 @@ package deployments
 import (
 	"context"
 	"fmt"
+	"math/rand/v2"
+	"time"
 
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
+	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -15,14 +18,61 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-type deployments struct {
-	z  *zap.Logger
-	db db.DB
+// Draining will happen each interval + rand(jitter).
+// Jitter is to prevent all instances from deactivating at the same time.
+// Note that deactivation will happen if these are not set, as these are more
+// to safeguard from a deployment being stuck in draining state.
+type Config struct {
+	AutoDrainingDeactivationInterval time.Duration `koanf:"draining_deactivation_interval"`
+	AutoDrainingDeactivationJitter   time.Duration `koanf:"draining_deactivation_jitter"`
 }
 
-func New(z *zap.Logger, db db.DB, telemetry *telemetry.Telemetry) sdkservices.Deployments {
+var Configs = configset.Set[Config]{
+	Default: &Config{
+		AutoDrainingDeactivationInterval: 5 * time.Minute,
+		AutoDrainingDeactivationJitter:   1 * time.Minute,
+	},
+}
+
+type deployments struct {
+	l   *zap.Logger
+	db  db.DB
+	cfg *Config
+}
+
+func New(l *zap.Logger, cfg *Config, db db.DB, telemetry *telemetry.Telemetry) sdkservices.Deployments {
 	initMetrics(telemetry)
-	return &deployments{z: z, db: db}
+
+	ds := &deployments{l: l, db: db, cfg: cfg}
+
+	if cfg.AutoDrainingDeactivationInterval > 0 || cfg.AutoDrainingDeactivationJitter > 0 {
+		go ds.Autodrain()
+	}
+
+	return ds
+}
+
+func (d *deployments) Autodrain() {
+	d.l.
+		With(zap.Duration("interval", d.cfg.AutoDrainingDeactivationInterval),
+			zap.Duration("jitter", d.cfg.AutoDrainingDeactivationJitter)).
+		Info("periodically autoinactivating drained deployments")
+
+	for {
+		t := d.cfg.AutoDrainingDeactivationInterval + time.Duration(rand.Float32()*float32(d.cfg.AutoDrainingDeactivationJitter))
+
+		d.l.Debug("waiting before next autodeactivation", zap.Duration("duration", t))
+
+		time.Sleep(t)
+
+		n, err := d.db.DeactivateAllDrainedDeployments(context.Background())
+		if err != nil {
+			d.l.Error("autodeactivation failed", zap.Error(err))
+			continue
+		}
+
+		d.l.Sugar().Infof("autodeactivated drained %d deployments", n)
+	}
 }
 
 func (d *deployments) Activate(ctx context.Context, id sdktypes.DeploymentID) error {
@@ -30,7 +80,7 @@ func (d *deployments) Activate(ctx context.Context, id sdktypes.DeploymentID) er
 		return err
 	}
 
-	l := d.z.With(zap.String("deployment_id", id.String()))
+	l := d.l.With(zap.String("deployment_id", id.String()))
 	err := d.db.Transaction(ctx, func(tx db.DB) error {
 		deployment, err := tx.GetDeployment(ctx, id)
 		if err != nil {

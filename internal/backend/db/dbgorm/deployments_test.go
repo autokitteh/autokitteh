@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
@@ -224,5 +225,91 @@ func TestUpdateDeploymentStateReturning(t *testing.T) {
 		f.assertDeploymentState(t, d.DeploymentID, int32(newState.ToProto()))
 		assert.Equal(t, prevState, prevStateFromUpdate)
 		prevState = newState
+	}
+}
+
+func setupDrainingTests(t *testing.T) (*dbFixture, []sdktypes.DeploymentID) {
+	f := newDBFixture()
+
+	ps := []scheme.Project{f.newProject(), f.newProject(), f.newProject()}
+	ds := make([]scheme.Deployment, 3)
+	bs := make([]scheme.Build, 3)
+
+	bs[0], ds[0] = createBuildAndDeployment(t, f, ps[0])
+	f.createSessionsAndAssert(t, f.newSession(sdktypes.SessionStateTypeCompleted, ds[0], ps[0], bs[0]))
+	f.createSessionsAndAssert(t, f.newSession(sdktypes.SessionStateTypeCompleted, ds[0], ps[0], bs[0]))
+	f.createSessionsAndAssert(t, f.newSession(sdktypes.SessionStateTypeCompleted, ds[0], ps[0], bs[0]))
+
+	_, err := f.gormdb.updateDeploymentState(f.ctx, ds[0].DeploymentID, sdktypes.DeploymentStateDraining)
+	require.NoError(t, err)
+
+	bs[1], ds[1] = createBuildAndDeployment(t, f, ps[1])
+	f.createSessionsAndAssert(t, f.newSession(sdktypes.SessionStateTypeCompleted, ds[1], ps[1], bs[1]))
+	f.createSessionsAndAssert(t, f.newSession(sdktypes.SessionStateTypeRunning, ds[1], ps[1], bs[1]))
+	f.createSessionsAndAssert(t, f.newSession(sdktypes.SessionStateTypeCompleted, ds[1], ps[1], bs[1]))
+
+	_, err = f.gormdb.updateDeploymentState(f.ctx, ds[1].DeploymentID, sdktypes.DeploymentStateDraining)
+	require.NoError(t, err)
+
+	bs[2], ds[2] = createBuildAndDeployment(t, f, ps[2])
+	f.createSessionsAndAssert(t, f.newSession(sdktypes.SessionStateTypeCompleted, ds[2], ps[2], bs[2]))
+	f.createSessionsAndAssert(t, f.newSession(sdktypes.SessionStateTypeError, ds[2], ps[2], bs[2]))
+	f.createSessionsAndAssert(t, f.newSession(sdktypes.SessionStateTypeCompleted, ds[2], ps[2], bs[2]))
+
+	_, err = f.gormdb.updateDeploymentState(f.ctx, ds[2].DeploymentID, sdktypes.DeploymentStateActive)
+	require.NoError(t, err)
+
+	deps, err := f.gormdb.listDeployments(f.ctx, sdkservices.ListDeploymentsFilter{})
+	require.NoError(t, err)
+	require.Equal(t, int32(sdktypes.DeploymentStateDraining.ToProto()), deps[2].State)
+	require.Equal(t, int32(sdktypes.DeploymentStateDraining.ToProto()), deps[1].State)
+	require.Equal(t, int32(sdktypes.DeploymentStateActive.ToProto()), deps[0].State)
+
+	return f, []sdktypes.DeploymentID{
+		sdktypes.NewIDFromUUID[sdktypes.DeploymentID](ds[0].DeploymentID),
+		sdktypes.NewIDFromUUID[sdktypes.DeploymentID](ds[1].DeploymentID),
+		sdktypes.NewIDFromUUID[sdktypes.DeploymentID](ds[2].DeploymentID),
+	}
+}
+
+func TestDeactivateAllDrainedDeployments(t *testing.T) {
+	f, _ := setupDrainingTests(t)
+
+	n, err := f.gormdb.DeactivateAllDrainedDeployments(f.ctx)
+	if assert.NoError(t, err) {
+		assert.Equal(t, 1, n)
+	}
+
+	deps, err := f.gormdb.listDeployments(f.ctx, sdkservices.ListDeploymentsFilter{})
+	if assert.NoError(t, err) {
+		assert.Equal(t, int32(sdktypes.DeploymentStateInactive.ToProto()), deps[2].State)
+		assert.Equal(t, int32(sdktypes.DeploymentStateDraining.ToProto()), deps[1].State)
+		assert.Equal(t, int32(sdktypes.DeploymentStateActive.ToProto()), deps[0].State)
+	}
+}
+
+func TestDeactivateDrainedDeployments(t *testing.T) {
+	f, ds := setupDrainingTests(t)
+
+	wasDrained, err := f.gormdb.DeactivateDrainedDeployment(f.ctx, ds[0])
+	if assert.NoError(t, err) {
+		assert.True(t, wasDrained)
+	}
+
+	wasDrained, err = f.gormdb.DeactivateDrainedDeployment(f.ctx, ds[1])
+	if assert.NoError(t, err) {
+		assert.False(t, wasDrained)
+	}
+
+	wasDrained, err = f.gormdb.DeactivateDrainedDeployment(f.ctx, ds[2])
+	if assert.NoError(t, err) {
+		assert.False(t, wasDrained)
+	}
+
+	deps, err := f.gormdb.listDeployments(f.ctx, sdkservices.ListDeploymentsFilter{})
+	if assert.NoError(t, err) {
+		assert.Equal(t, int32(sdktypes.DeploymentStateInactive.ToProto()), deps[2].State)
+		assert.Equal(t, int32(sdktypes.DeploymentStateDraining.ToProto()), deps[1].State)
+		assert.Equal(t, int32(sdktypes.DeploymentStateActive.ToProto()), deps[0].State)
 	}
 }

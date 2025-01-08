@@ -3,8 +3,10 @@ package sdksessionsclient
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"connectrpc.com/connect"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	sessionsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1"
@@ -44,11 +46,12 @@ func (c *client) Start(ctx context.Context, session sdktypes.Session) (sdktypes.
 	return pid, nil
 }
 
-func (c *client) Stop(ctx context.Context, sessionID sdktypes.SessionID, reason string, force bool) error {
+func (c *client) Stop(ctx context.Context, sessionID sdktypes.SessionID, reason string, force bool, forceTimeout time.Duration) error {
 	resp, err := c.client.Stop(ctx, connect.NewRequest(&sessionsv1.StopRequest{
-		SessionId: sessionID.String(),
-		Reason:    reason,
-		Terminate: force,
+		SessionId:        sessionID.String(),
+		Reason:           reason,
+		Terminate:        force,
+		TerminationDelay: durationpb.New(forceTimeout),
 	}))
 	if err != nil {
 		return rpcerrors.ToSDKError(err)

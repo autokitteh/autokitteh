@@ -151,7 +151,7 @@ func (s *svc) stopSession(w http.ResponseWriter, r *http.Request) {
 	reason := r.URL.Query().Get("reason")
 	force := getQueryBool(r, "force", false)
 
-	if err := s.Sessions().Stop(r.Context(), sid, reason, force); err != nil {
+	if err := s.Sessions().Stop(r.Context(), sid, reason, force, 0); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
