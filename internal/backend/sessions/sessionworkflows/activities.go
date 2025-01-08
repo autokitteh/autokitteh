@@ -3,7 +3,6 @@ package sessionworkflows
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -12,7 +11,6 @@ import (
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/backend/types"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -100,34 +98,16 @@ func (ws *workflows) getLatestEventSequenceActivity(ctx context.Context) (uint64
 func (ws *workflows) deactivateDrainedDeploymentActivity(ctx context.Context, did sdktypes.DeploymentID) error {
 	sl := ws.l.Sugar().With("deployment_id", did)
 
-	return temporalclient.TranslateError(ws.svcs.DB.Transaction(ctx, func(tx db.DB) error {
-		d, err := tx.GetDeployment(ctx, did)
-		if err != nil {
-			return fmt.Errorf("get: %w", err)
-		}
+	drained, err := ws.svcs.DB.DeactivateDrainedDeployment(ctx, did)
+	if err != nil {
+		return temporalclient.TranslateError(err, "deactivate drained deployments")
+	}
 
-		if d.State() != sdktypes.DeploymentStateDraining {
-			return nil
-		}
+	if drained {
+		sl.Infof("deactivated drained deployment")
+	}
 
-		active, err := tx.DeploymentHasActiveSessions(ctx, did)
-		if err != nil {
-			return fmt.Errorf("check active sessions: %w", err)
-		}
-
-		if active {
-			sl.Infof("deployment %v is draining, but still has active sessions", did)
-			return nil
-		}
-
-		if _, err := tx.UpdateDeploymentState(ctx, did, sdktypes.DeploymentStateInactive); err != nil {
-			return fmt.Errorf("update: %w", err)
-		}
-
-		sl.Info("deactivated drained deployment %v", did)
-
-		return nil
-	}), "%v: deactivate drained deployment", did)
+	return nil
 }
 
 func (ws *workflows) getSignalEventActivity(ctx context.Context, sigid uuid.UUID, minSeq uint64) (sdktypes.Event, error) {

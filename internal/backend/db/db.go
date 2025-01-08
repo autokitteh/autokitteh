@@ -111,6 +111,10 @@ type DB interface {
 	CreateDeployment(ctx context.Context, deployment sdktypes.Deployment) error
 	DeleteDeployment(ctx context.Context, deploymentID sdktypes.DeploymentID) error
 	DeploymentHasActiveSessions(ctx context.Context, deploymentID sdktypes.DeploymentID) (bool, error)
+	// Returns number of deployments affected.
+	DeactivateAllDrainedDeployments(ctx context.Context) (int, error)
+	// Returns true if the deployment was deactivated.
+	DeactivateDrainedDeployment(ctx context.Context, did sdktypes.DeploymentID) (bool, error)
 
 	// -----------------------------------------------------------------------
 	CreateSession(ctx context.Context, session sdktypes.Session) error
