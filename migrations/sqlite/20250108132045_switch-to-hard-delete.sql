@@ -120,8 +120,6 @@ INSERT INTO `new_triggers` (`created_by`, `created_at`, `project_id`, `trigger_i
 DROP TABLE `triggers`;
 -- rename temporary table "new_triggers" to "triggers"
 ALTER TABLE `new_triggers` RENAME TO `triggers`;
--- create index "idx_triggers_unique_name" to table: "triggers"
-CREATE UNIQUE INDEX `idx_triggers_unique_name` ON `triggers` (`unique_name`);
 -- create index "idx_triggers_source_type" to table: "triggers"
 CREATE INDEX `idx_triggers_source_type` ON `triggers` (`source_type`);
 -- create index "idx_triggers_connection_id" to table: "triggers"
@@ -130,6 +128,8 @@ CREATE INDEX `idx_triggers_connection_id` ON `triggers` (`connection_id`);
 CREATE INDEX `idx_triggers_project_id` ON `triggers` (`project_id`);
 -- create index "idx_triggers_webhook_slug" to table: "triggers"
 CREATE INDEX `idx_triggers_webhook_slug` ON `triggers` (`webhook_slug`);
+-- create index "idx_triggers_unique_name" to table: "triggers"
+CREATE UNIQUE INDEX `idx_triggers_unique_name` ON `triggers` (`unique_name`);
 -- create "new_builds" table
 CREATE TABLE `new_builds` (
   `created_by` uuid NULL,
@@ -199,14 +199,6 @@ INSERT INTO `new_events` (`created_by`, `created_at`, `project_id`, `event_id`, 
 DROP TABLE `events`;
 -- rename temporary table "new_events" to "events"
 ALTER TABLE `new_events` RENAME TO `events`;
--- create index "idx_events_project_id" to table: "events"
-CREATE INDEX `idx_events_project_id` ON `events` (`project_id`);
--- create index "idx_event_type" to table: "events"
-CREATE INDEX `idx_event_type` ON `events` (`event_type`);
--- create index "idx_event_type_seq" to table: "events"
-CREATE INDEX `idx_event_type_seq` ON `events` (`event_type`);
--- create index "idx_events_trigger_id" to table: "events"
-CREATE INDEX `idx_events_trigger_id` ON `events` (`trigger_id`);
 -- create index "idx_events_connection_id" to table: "events"
 CREATE INDEX `idx_events_connection_id` ON `events` (`connection_id`);
 -- create index "idx_events_integration_id" to table: "events"
@@ -215,6 +207,14 @@ CREATE INDEX `idx_events_integration_id` ON `events` (`integration_id`);
 CREATE INDEX `idx_events_destination_id` ON `events` (`destination_id`);
 -- create index "idx_events_event_id" to table: "events"
 CREATE UNIQUE INDEX `idx_events_event_id` ON `events` (`event_id`);
+-- create index "idx_events_project_id" to table: "events"
+CREATE INDEX `idx_events_project_id` ON `events` (`project_id`);
+-- create index "idx_event_type" to table: "events"
+CREATE INDEX `idx_event_type` ON `events` (`event_type`);
+-- create index "idx_event_type_seq" to table: "events"
+CREATE INDEX `idx_event_type_seq` ON `events` (`event_type`);
+-- create index "idx_events_trigger_id" to table: "events"
+CREATE INDEX `idx_events_trigger_id` ON `events` (`trigger_id`);
 -- create "new_values" table
 CREATE TABLE `new_values` (
   `created_by` uuid NULL,
@@ -251,10 +251,10 @@ CREATE TABLE `new_sessions` (
   `updated_by` uuid NULL,
   `updated_at` datetime NULL,
   PRIMARY KEY (`session_id`),
-  CONSTRAINT `fk_sessions_event` FOREIGN KEY (`event_id`) REFERENCES `events` (`event_id`) ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT `fk_sessions_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`project_id`) ON UPDATE NO ACTION ON DELETE CASCADE,
   CONSTRAINT `fk_sessions_deployment` FOREIGN KEY (`deployment_id`) REFERENCES `deployments` (`deployment_id`) ON UPDATE NO ACTION ON DELETE CASCADE,
-  CONSTRAINT `fk_sessions_build` FOREIGN KEY (`build_id`) REFERENCES `builds` (`build_id`) ON UPDATE NO ACTION ON DELETE CASCADE
+  CONSTRAINT `fk_sessions_build` FOREIGN KEY (`build_id`) REFERENCES `builds` (`build_id`) ON UPDATE NO ACTION ON DELETE CASCADE,
+  CONSTRAINT `fk_sessions_event` FOREIGN KEY (`event_id`) REFERENCES `events` (`event_id`) ON UPDATE NO ACTION ON DELETE CASCADE,
+  CONSTRAINT `fk_sessions_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`project_id`) ON UPDATE NO ACTION ON DELETE CASCADE
 );
 -- copy rows from old table "sessions" to new temporary table "new_sessions"
 INSERT INTO `new_sessions` (`created_by`, `created_at`, `project_id`, `session_id`, `build_id`, `deployment_id`, `event_id`, `current_state_type`, `entrypoint`, `inputs`, `memo`, `updated_by`, `updated_at`) SELECT `created_by`, `created_at`, `project_id`, `session_id`, `build_id`, `deployment_id`, `event_id`, `current_state_type`, `entrypoint`, `inputs`, `memo`, `updated_by`, `updated_at` FROM `sessions`;
@@ -262,16 +262,16 @@ INSERT INTO `new_sessions` (`created_by`, `created_at`, `project_id`, `session_i
 DROP TABLE `sessions`;
 -- rename temporary table "new_sessions" to "sessions"
 ALTER TABLE `new_sessions` RENAME TO `sessions`;
--- create index "idx_sessions_build_id" to table: "sessions"
-CREATE INDEX `idx_sessions_build_id` ON `sessions` (`build_id`);
--- create index "idx_sessions_project_id" to table: "sessions"
-CREATE INDEX `idx_sessions_project_id` ON `sessions` (`project_id`);
 -- create index "idx_sessions_current_state_type" to table: "sessions"
 CREATE INDEX `idx_sessions_current_state_type` ON `sessions` (`current_state_type`);
 -- create index "idx_sessions_event_id" to table: "sessions"
 CREATE INDEX `idx_sessions_event_id` ON `sessions` (`event_id`);
 -- create index "idx_sessions_deployment_id" to table: "sessions"
 CREATE INDEX `idx_sessions_deployment_id` ON `sessions` (`deployment_id`);
+-- create index "idx_sessions_build_id" to table: "sessions"
+CREATE INDEX `idx_sessions_build_id` ON `sessions` (`build_id`);
+-- create index "idx_sessions_project_id" to table: "sessions"
+CREATE INDEX `idx_sessions_project_id` ON `sessions` (`project_id`);
 -- create "new_deployments" table
 CREATE TABLE `new_deployments` (
   `created_by` uuid NULL,
@@ -292,6 +292,8 @@ INSERT INTO `new_deployments` (`created_by`, `created_at`, `project_id`, `deploy
 DROP TABLE `deployments`;
 -- rename temporary table "new_deployments" to "deployments"
 ALTER TABLE `new_deployments` RENAME TO `deployments`;
+-- create index "idx_deployments_state" to table: "deployments"
+CREATE INDEX `idx_deployments_state` ON `deployments` (`state`);
 -- create index "idx_deployments_project_id" to table: "deployments"
 CREATE INDEX `idx_deployments_project_id` ON `deployments` (`project_id`);
 -- enable back the enforcement of foreign-keys constraints
@@ -300,32 +302,26 @@ PRAGMA foreign_keys = on;
 -- +goose Down
 -- reverse: create index "idx_deployments_project_id" to table: "deployments"
 DROP INDEX `idx_deployments_project_id`;
+-- reverse: create index "idx_deployments_state" to table: "deployments"
+DROP INDEX `idx_deployments_state`;
 -- reverse: create "new_deployments" table
 DROP TABLE `new_deployments`;
+-- reverse: create index "idx_sessions_project_id" to table: "sessions"
+DROP INDEX `idx_sessions_project_id`;
+-- reverse: create index "idx_sessions_build_id" to table: "sessions"
+DROP INDEX `idx_sessions_build_id`;
 -- reverse: create index "idx_sessions_deployment_id" to table: "sessions"
 DROP INDEX `idx_sessions_deployment_id`;
 -- reverse: create index "idx_sessions_event_id" to table: "sessions"
 DROP INDEX `idx_sessions_event_id`;
 -- reverse: create index "idx_sessions_current_state_type" to table: "sessions"
 DROP INDEX `idx_sessions_current_state_type`;
--- reverse: create index "idx_sessions_project_id" to table: "sessions"
-DROP INDEX `idx_sessions_project_id`;
--- reverse: create index "idx_sessions_build_id" to table: "sessions"
-DROP INDEX `idx_sessions_build_id`;
 -- reverse: create "new_sessions" table
 DROP TABLE `new_sessions`;
 -- reverse: create index "idx_values_project_id" to table: "values"
 DROP INDEX `idx_values_project_id`;
 -- reverse: create "new_values" table
 DROP TABLE `new_values`;
--- reverse: create index "idx_events_event_id" to table: "events"
-DROP INDEX `idx_events_event_id`;
--- reverse: create index "idx_events_destination_id" to table: "events"
-DROP INDEX `idx_events_destination_id`;
--- reverse: create index "idx_events_integration_id" to table: "events"
-DROP INDEX `idx_events_integration_id`;
--- reverse: create index "idx_events_connection_id" to table: "events"
-DROP INDEX `idx_events_connection_id`;
 -- reverse: create index "idx_events_trigger_id" to table: "events"
 DROP INDEX `idx_events_trigger_id`;
 -- reverse: create index "idx_event_type_seq" to table: "events"
@@ -334,6 +330,14 @@ DROP INDEX `idx_event_type_seq`;
 DROP INDEX `idx_event_type`;
 -- reverse: create index "idx_events_project_id" to table: "events"
 DROP INDEX `idx_events_project_id`;
+-- reverse: create index "idx_events_event_id" to table: "events"
+DROP INDEX `idx_events_event_id`;
+-- reverse: create index "idx_events_destination_id" to table: "events"
+DROP INDEX `idx_events_destination_id`;
+-- reverse: create index "idx_events_integration_id" to table: "events"
+DROP INDEX `idx_events_integration_id`;
+-- reverse: create index "idx_events_connection_id" to table: "events"
+DROP INDEX `idx_events_connection_id`;
 -- reverse: create "new_events" table
 DROP TABLE `new_events`;
 -- reverse: create index "idx_connections_project_id" to table: "connections"
@@ -348,6 +352,8 @@ DROP TABLE `new_connections`;
 DROP INDEX `idx_builds_project_id`;
 -- reverse: create "new_builds" table
 DROP TABLE `new_builds`;
+-- reverse: create index "idx_triggers_unique_name" to table: "triggers"
+DROP INDEX `idx_triggers_unique_name`;
 -- reverse: create index "idx_triggers_webhook_slug" to table: "triggers"
 DROP INDEX `idx_triggers_webhook_slug`;
 -- reverse: create index "idx_triggers_project_id" to table: "triggers"
@@ -356,8 +362,6 @@ DROP INDEX `idx_triggers_project_id`;
 DROP INDEX `idx_triggers_connection_id`;
 -- reverse: create index "idx_triggers_source_type" to table: "triggers"
 DROP INDEX `idx_triggers_source_type`;
--- reverse: create index "idx_triggers_unique_name" to table: "triggers"
-DROP INDEX `idx_triggers_unique_name`;
 -- reverse: create "new_triggers" table
 DROP TABLE `new_triggers`;
 -- reverse: create index "idx_signals_destination_id" to table: "signals"
