@@ -56,7 +56,7 @@ func New(vs sdkservices.Vars) sdkservices.Integration {
 func connStatus(cvars sdkservices.Vars) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
 		if !cid.IsValid() {
-			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required1"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 		}
 
 		vs, err := cvars.Get(ctx, sdktypes.NewVarScopeID(cid))
