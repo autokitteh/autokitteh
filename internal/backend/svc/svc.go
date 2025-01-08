@@ -190,7 +190,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component("store", store.Configs, fx.Provide(store.New)),
 		Component("builds", configset.Empty, fx.Provide(builds.New)),
 		Component("connections", configset.Empty, fx.Provide(connections.New)),
-		Component("deployments", configset.Empty, fx.Provide(deployments.New)),
+		Component("deployments", deployments.Configs, fx.Provide(deployments.New)),
 		Component("projects", configset.Empty, fx.Provide(projects.New)),
 		Component("projectsgrpcsvc", projectsgrpcsvc.Configs, fx.Provide(projectsgrpcsvc.New)),
 		Component(
