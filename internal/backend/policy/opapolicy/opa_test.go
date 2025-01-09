@@ -65,9 +65,11 @@ func TestPassthrough(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		v, err := d(context.Background(), "policy/"+test.name, test.in)
-		if assert.NoError(t, err) {
-			assert.Equal(t, test.expected, v)
-		}
+		t.Run(test.name, func(t *testing.T) {
+			v, err := d(context.Background(), "policy/"+test.name, test.in)
+			if assert.NoError(t, err) {
+				assert.Equal(t, test.expected, v)
+			}
+		})
 	}
 }
