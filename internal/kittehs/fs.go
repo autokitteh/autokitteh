@@ -57,6 +57,8 @@ func MapToMemFS(in map[string][]byte) (fs.FS, error) {
 	return memfs, nil
 }
 
+func TxtarStringToFS(s string) (fs.FS, error) { a := txtar.Parse([]byte(s)); return TxtarToFS(a) }
+
 func TxtarToFS(a *txtar.Archive) (fs.FS, error) {
 	m := make(map[string][]byte, len(a.Files))
 
