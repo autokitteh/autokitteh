@@ -52,16 +52,6 @@ func assertCalledWithUser(t *testing.T, expected sdktypes.UserID, given *sdktype
 	}
 }
 
-func assertCalledWithoutAuthn(t *testing.T, given *sdktypes.UserID) {
-	if assert.NotNil(t, given) {
-		assert.False(t, given.IsValid())
-	}
-}
-
-func newOverallTestHandler(t *testing.T) (http.Handler, func() *sdktypes.UserID) {
-	return newTestHandler(t, authcontext.GetAuthnUserID)
-}
-
 func newRequest(authHeader string, cookies []*http.Cookie) *http.Request {
 	req := kittehs.Must1(http.NewRequest(http.MethodGet, "/", nil))
 
@@ -152,7 +142,7 @@ type harness struct {
 }
 
 func newTestHarness(t *testing.T, useDefaultUser bool) *harness {
-	h, check := newOverallTestHandler(t)
+	h, check := newTestHandler(t, authcontext.GetAuthnUserID)
 
 	sessions := kittehs.Must1(authsessions.New(authsessions.Configs.Dev))
 	tokens := kittehs.Must1(authjwttokens.New(authjwttokens.Configs.Dev))
