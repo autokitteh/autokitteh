@@ -65,3 +65,22 @@ func AppMentionHandler(l *zap.Logger, w http.ResponseWriter, body []byte, cb *Ca
 	}
 	return j.Event
 }
+
+// https://api.slack.com/events/app_uninstalled
+func AppUninstalledHandler(l *zap.Logger, w http.ResponseWriter, body []byte, cb *Callback) any {
+	// Parse and return the inner event details.
+	var event map[string]any
+	if err := json.Unmarshal(body, &event); err != nil {
+		invalidEventError(l, w, body, err)
+		return nil
+	}
+
+	innerEvent, ok := event["event"]
+	if !ok {
+		l.Warn("Event field not found in the Slack event app_uninstalled",
+			zap.ByteString("json_body", body))
+		return nil
+	}
+
+	return innerEvent
+}
