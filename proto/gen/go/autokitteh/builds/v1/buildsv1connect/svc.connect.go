@@ -45,16 +45,25 @@ const (
 	BuildsServiceDownloadProcedure = "/autokitteh.builds.v1.BuildsService/Download"
 	// BuildsServiceDescribeProcedure is the fully-qualified name of the BuildsService's Describe RPC.
 	BuildsServiceDescribeProcedure = "/autokitteh.builds.v1.BuildsService/Describe"
+	// BuildsServiceCreateProcedure is the fully-qualified name of the BuildsService's Create RPC.
+	BuildsServiceCreateProcedure = "/autokitteh.builds.v1.BuildsService/Create"
+	// BuildsServiceUpdateBuildProcedure is the fully-qualified name of the BuildsService's UpdateBuild
+	// RPC.
+	BuildsServiceUpdateBuildProcedure = "/autokitteh.builds.v1.BuildsService/UpdateBuild"
 )
 
 // BuildsServiceClient is a client for the autokitteh.builds.v1.BuildsService service.
 type BuildsServiceClient interface {
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
 	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
+	// (legacy) Create a new build and updates its status to READY.
 	Save(context.Context, *connect.Request[v1.SaveRequest]) (*connect.Response[v1.SaveResponse], error)
 	Delete(context.Context, *connect.Request[v1.DeleteRequest]) (*connect.Response[v1.DeleteResponse], error)
 	Download(context.Context, *connect.Request[v1.DownloadRequest]) (*connect.Response[v1.DownloadResponse], error)
 	Describe(context.Context, *connect.Request[v1.DescribeRequest]) (*connect.Response[v1.DescribeResponse], error)
+	// Create a build in status PENDING.
+	Create(context.Context, *connect.Request[v1.CreateRequest]) (*connect.Response[v1.CreateResponse], error)
+	UpdateBuild(context.Context, *connect.Request[v1.UpdateBuildRequest]) (*connect.Response[v1.UpdateBuildResponse], error)
 }
 
 // NewBuildsServiceClient constructs a client for the autokitteh.builds.v1.BuildsService service. By
@@ -97,17 +106,29 @@ func NewBuildsServiceClient(httpClient connect.HTTPClient, baseURL string, opts 
 			baseURL+BuildsServiceDescribeProcedure,
 			opts...,
 		),
+		create: connect.NewClient[v1.CreateRequest, v1.CreateResponse](
+			httpClient,
+			baseURL+BuildsServiceCreateProcedure,
+			opts...,
+		),
+		updateBuild: connect.NewClient[v1.UpdateBuildRequest, v1.UpdateBuildResponse](
+			httpClient,
+			baseURL+BuildsServiceUpdateBuildProcedure,
+			opts...,
+		),
 	}
 }
 
 // buildsServiceClient implements BuildsServiceClient.
 type buildsServiceClient struct {
-	get      *connect.Client[v1.GetRequest, v1.GetResponse]
-	list     *connect.Client[v1.ListRequest, v1.ListResponse]
-	save     *connect.Client[v1.SaveRequest, v1.SaveResponse]
-	delete   *connect.Client[v1.DeleteRequest, v1.DeleteResponse]
-	download *connect.Client[v1.DownloadRequest, v1.DownloadResponse]
-	describe *connect.Client[v1.DescribeRequest, v1.DescribeResponse]
+	get         *connect.Client[v1.GetRequest, v1.GetResponse]
+	list        *connect.Client[v1.ListRequest, v1.ListResponse]
+	save        *connect.Client[v1.SaveRequest, v1.SaveResponse]
+	delete      *connect.Client[v1.DeleteRequest, v1.DeleteResponse]
+	download    *connect.Client[v1.DownloadRequest, v1.DownloadResponse]
+	describe    *connect.Client[v1.DescribeRequest, v1.DescribeResponse]
+	create      *connect.Client[v1.CreateRequest, v1.CreateResponse]
+	updateBuild *connect.Client[v1.UpdateBuildRequest, v1.UpdateBuildResponse]
 }
 
 // Get calls autokitteh.builds.v1.BuildsService.Get.
@@ -140,14 +161,28 @@ func (c *buildsServiceClient) Describe(ctx context.Context, req *connect.Request
 	return c.describe.CallUnary(ctx, req)
 }
 
+// Create calls autokitteh.builds.v1.BuildsService.Create.
+func (c *buildsServiceClient) Create(ctx context.Context, req *connect.Request[v1.CreateRequest]) (*connect.Response[v1.CreateResponse], error) {
+	return c.create.CallUnary(ctx, req)
+}
+
+// UpdateBuild calls autokitteh.builds.v1.BuildsService.UpdateBuild.
+func (c *buildsServiceClient) UpdateBuild(ctx context.Context, req *connect.Request[v1.UpdateBuildRequest]) (*connect.Response[v1.UpdateBuildResponse], error) {
+	return c.updateBuild.CallUnary(ctx, req)
+}
+
 // BuildsServiceHandler is an implementation of the autokitteh.builds.v1.BuildsService service.
 type BuildsServiceHandler interface {
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
 	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
+	// (legacy) Create a new build and updates its status to READY.
 	Save(context.Context, *connect.Request[v1.SaveRequest]) (*connect.Response[v1.SaveResponse], error)
 	Delete(context.Context, *connect.Request[v1.DeleteRequest]) (*connect.Response[v1.DeleteResponse], error)
 	Download(context.Context, *connect.Request[v1.DownloadRequest]) (*connect.Response[v1.DownloadResponse], error)
 	Describe(context.Context, *connect.Request[v1.DescribeRequest]) (*connect.Response[v1.DescribeResponse], error)
+	// Create a build in status PENDING.
+	Create(context.Context, *connect.Request[v1.CreateRequest]) (*connect.Response[v1.CreateResponse], error)
+	UpdateBuild(context.Context, *connect.Request[v1.UpdateBuildRequest]) (*connect.Response[v1.UpdateBuildResponse], error)
 }
 
 // NewBuildsServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -186,6 +221,16 @@ func NewBuildsServiceHandler(svc BuildsServiceHandler, opts ...connect.HandlerOp
 		svc.Describe,
 		opts...,
 	)
+	buildsServiceCreateHandler := connect.NewUnaryHandler(
+		BuildsServiceCreateProcedure,
+		svc.Create,
+		opts...,
+	)
+	buildsServiceUpdateBuildHandler := connect.NewUnaryHandler(
+		BuildsServiceUpdateBuildProcedure,
+		svc.UpdateBuild,
+		opts...,
+	)
 	return "/autokitteh.builds.v1.BuildsService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case BuildsServiceGetProcedure:
@@ -200,6 +245,10 @@ func NewBuildsServiceHandler(svc BuildsServiceHandler, opts ...connect.HandlerOp
 			buildsServiceDownloadHandler.ServeHTTP(w, r)
 		case BuildsServiceDescribeProcedure:
 			buildsServiceDescribeHandler.ServeHTTP(w, r)
+		case BuildsServiceCreateProcedure:
+			buildsServiceCreateHandler.ServeHTTP(w, r)
+		case BuildsServiceUpdateBuildProcedure:
+			buildsServiceUpdateBuildHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -231,4 +280,12 @@ func (UnimplementedBuildsServiceHandler) Download(context.Context, *connect.Requ
 
 func (UnimplementedBuildsServiceHandler) Describe(context.Context, *connect.Request[v1.DescribeRequest]) (*connect.Response[v1.DescribeResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.builds.v1.BuildsService.Describe is not implemented"))
+}
+
+func (UnimplementedBuildsServiceHandler) Create(context.Context, *connect.Request[v1.CreateRequest]) (*connect.Response[v1.CreateResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.builds.v1.BuildsService.Create is not implemented"))
+}
+
+func (UnimplementedBuildsServiceHandler) UpdateBuild(context.Context, *connect.Request[v1.UpdateBuildRequest]) (*connect.Response[v1.UpdateBuildResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.builds.v1.BuildsService.UpdateBuild is not implemented"))
 }

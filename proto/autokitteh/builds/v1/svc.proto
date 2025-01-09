@@ -3,6 +3,7 @@ syntax = "proto3";
 package autokitteh.builds.v1;
 
 import "autokitteh/builds/v1/build.proto";
+import "autokitteh/program/v1/program.proto";
 import "buf/validate/validate.proto";
 
 message GetRequest {
@@ -16,6 +17,7 @@ message GetResponse {
 message ListRequest {
   uint32 limit = 1;
   string project_id = 2;
+  BuildStatus status = 3;
 }
 
 message ListResponse {
@@ -61,11 +63,44 @@ message DescribeResponse {
   string description_json = 1;
 }
 
+message CreateRequest {
+  option (buf.validate.message).cel = {
+    id: "builds.build_id_must_be_empty"
+    message: "build_id must not be specified"
+    expression: "has(this.build) && this.build.build_id == ''"
+  };
+
+  Build build = 1 [(buf.validate.field).required = true];
+}
+
+message CreateResponse {
+  string build_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message UpdateBuildRequest {
+  string build_id = 1 [(buf.validate.field).string.min_len = 1];
+
+  BuildStatus status = 2;
+
+  // Relevant only if the status is READY.
+  bytes data = 3;
+
+  // Relevant only if the status is ERROR.
+  program.v1.Error error = 4;
+}
+
+message UpdateBuildResponse {}
+
 service BuildsService {
   rpc Get(GetRequest) returns (GetResponse);
   rpc List(ListRequest) returns (ListResponse);
+  // (legacy) Create a new build and updates its status to READY.
   rpc Save(SaveRequest) returns (SaveResponse);
   rpc Delete(DeleteRequest) returns (DeleteResponse);
   rpc Download(DownloadRequest) returns (DownloadResponse);
   rpc Describe(DescribeRequest) returns (DescribeResponse);
+
+  // Create a build in status PENDING.
+  rpc Create(CreateRequest) returns (CreateResponse);
+  rpc UpdateBuild(UpdateBuildRequest) returns (UpdateBuildResponse);
 }

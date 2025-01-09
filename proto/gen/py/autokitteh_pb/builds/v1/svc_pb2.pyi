@@ -1,4 +1,5 @@
 from autokitteh_pb.builds.v1 import build_pb2 as _build_pb2
+from autokitteh_pb.program.v1 import program_pb2 as _program_pb2
 from buf.validate import validate_pb2 as _validate_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf import descriptor as _descriptor
@@ -20,12 +21,14 @@ class GetResponse(_message.Message):
     def __init__(self, build: _Optional[_Union[_build_pb2.Build, _Mapping]] = ...) -> None: ...
 
 class ListRequest(_message.Message):
-    __slots__ = ["limit", "project_id"]
+    __slots__ = ["limit", "project_id", "status"]
     LIMIT_FIELD_NUMBER: _ClassVar[int]
     PROJECT_ID_FIELD_NUMBER: _ClassVar[int]
+    STATUS_FIELD_NUMBER: _ClassVar[int]
     limit: int
     project_id: str
-    def __init__(self, limit: _Optional[int] = ..., project_id: _Optional[str] = ...) -> None: ...
+    status: _build_pb2.BuildStatus
+    def __init__(self, limit: _Optional[int] = ..., project_id: _Optional[str] = ..., status: _Optional[_Union[_build_pb2.BuildStatus, str]] = ...) -> None: ...
 
 class ListResponse(_message.Message):
     __slots__ = ["builds"]
@@ -80,3 +83,31 @@ class DescribeResponse(_message.Message):
     DESCRIPTION_JSON_FIELD_NUMBER: _ClassVar[int]
     description_json: str
     def __init__(self, description_json: _Optional[str] = ...) -> None: ...
+
+class CreateRequest(_message.Message):
+    __slots__ = ["build"]
+    BUILD_FIELD_NUMBER: _ClassVar[int]
+    build: _build_pb2.Build
+    def __init__(self, build: _Optional[_Union[_build_pb2.Build, _Mapping]] = ...) -> None: ...
+
+class CreateResponse(_message.Message):
+    __slots__ = ["build_id"]
+    BUILD_ID_FIELD_NUMBER: _ClassVar[int]
+    build_id: str
+    def __init__(self, build_id: _Optional[str] = ...) -> None: ...
+
+class UpdateBuildRequest(_message.Message):
+    __slots__ = ["build_id", "status", "data", "error"]
+    BUILD_ID_FIELD_NUMBER: _ClassVar[int]
+    STATUS_FIELD_NUMBER: _ClassVar[int]
+    DATA_FIELD_NUMBER: _ClassVar[int]
+    ERROR_FIELD_NUMBER: _ClassVar[int]
+    build_id: str
+    status: _build_pb2.BuildStatus
+    data: bytes
+    error: _program_pb2.Error
+    def __init__(self, build_id: _Optional[str] = ..., status: _Optional[_Union[_build_pb2.BuildStatus, str]] = ..., data: _Optional[bytes] = ..., error: _Optional[_Union[_program_pb2.Error, _Mapping]] = ...) -> None: ...
+
+class UpdateBuildResponse(_message.Message):
+    __slots__ = []
+    def __init__(self) -> None: ...

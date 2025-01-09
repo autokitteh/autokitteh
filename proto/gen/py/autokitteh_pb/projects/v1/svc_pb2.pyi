@@ -71,8 +71,9 @@ class ListResponse(_message.Message):
 class BuildRequest(_message.Message):
     __slots__ = ["project_id"]
     PROJECT_ID_FIELD_NUMBER: _ClassVar[int]
+    ASYNC_FIELD_NUMBER: _ClassVar[int]
     project_id: str
-    def __init__(self, project_id: _Optional[str] = ...) -> None: ...
+    def __init__(self, project_id: _Optional[str] = ..., **kwargs) -> None: ...
 
 class BuildResponse(_message.Message):
     __slots__ = ["build_id", "error"]

@@ -394,6 +394,14 @@ export class BuildRequest extends Message<BuildRequest> {
    */
   projectId = "";
 
+  /**
+   * if set to true, just create the build and return.
+   * the build will be processed asynchronously.
+   *
+   * @generated from field: bool async = 2;
+   */
+  async = false;
+
   constructor(data?: PartialMessage<BuildRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -403,6 +411,7 @@ export class BuildRequest extends Message<BuildRequest> {
   static readonly typeName = "autokitteh.projects.v1.BuildRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "async", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BuildRequest {
@@ -432,6 +441,8 @@ export class BuildResponse extends Message<BuildResponse> {
   buildId = "";
 
   /**
+   * if async, this will be empty.
+   *
    * @generated from field: autokitteh.program.v1.Error error = 2;
    */
   error?: Error;
