@@ -2,6 +2,8 @@ package jira
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 
 	"go.uber.org/zap"
 
@@ -90,18 +92,72 @@ func connTest(i *integration) sdkintegrations.OptFn {
 			return sdktypes.InvalidStatus, err
 		}
 
-		baseURL, err := apiBaseURL()
-		if err != nil {
-			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
+		at := vs.Get(authType)
+		if !at.IsValid() || at.Value() == "" {
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 		}
 
-		token := vs.GetValueByString("oauth_AccessToken")
+		switch at.Value() {
+		case integrations.OAuth:
+			err := oauthConnTest(vs)
+			if err != nil {
+				return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
+			}
+		case integrations.APIToken:
+			err := apiTokenConnTest(nil, vs)
+			if err != nil {
+				return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
+			}
 
-		res, err := accessibleResources(nil, baseURL, token)
-		print(res)
-		if err != nil {
-			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 		}
+
 		return sdktypes.NewStatus(sdktypes.StatusCodeOK, ""), nil
 	})
+}
+
+// oauthConnTest verifies the connection for OAuth authentication.
+// It checks the accessible resources using the OAuth access token.
+func oauthConnTest(vs sdktypes.Vars) error {
+	baseURL, err := apiBaseURL()
+	if err != nil {
+		return err
+	}
+
+	token := vs.GetValueByString("oauth_AccessToken")
+	_, err = accessibleResources(nil, baseURL, token)
+
+	return err
+}
+
+// apiTokenConnTest verifies the connection for API key authentication.
+// It sends a request to the API to confirm credentials and access.
+// https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-myself/#api-group-myself
+func apiTokenConnTest(l *zap.Logger, vs sdktypes.Vars) error {
+	baseURL := vs.Get(baseURL).Value()
+	email := vs.Get(email).Value()
+	token := vs.Get(token).Value()
+
+	u := baseURL + "/rest/api/3/myself"
+	req, err := http.NewRequest(http.MethodGet, u, nil)
+	if err != nil {
+		logWarnIfNotNil(l, "Failed to construct HTTP request for PAT test", zap.Error(err))
+		return err
+	}
+
+	req.SetBasicAuth(email, token)
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		logWarnIfNotNil(l, "Failed to request accessible resources for PAT token", zap.Error(err))
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		logWarnIfNotNil(l, "Unexpected response on accessible resources", zap.Int("status", resp.StatusCode))
+		return fmt.Errorf("accessible resources: unexpected status code %d", resp.StatusCode)
+	}
+
+	return nil
 }
