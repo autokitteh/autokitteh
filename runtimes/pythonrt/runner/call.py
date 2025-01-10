@@ -85,6 +85,10 @@ class AKCall:
             file, lnum = caller_info()
             raise ValueError(f"{func!r} is not callable (user bug at {file}:{lnum}?)")
 
+        # if no __name__, it is a functor.
+        if not hasattr(func, "__name__"):
+            func = func.__call__
+
         log.info("__call__: %s", full_func_name(func))
         if func in AK_FUNCS:
             if self.in_activity and func is sleep:

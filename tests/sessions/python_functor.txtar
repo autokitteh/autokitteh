@@ -1,0 +1,10 @@
+meow
+
+-- main.py:main --
+def main(event):
+    class F:
+        def __call__(self, x):
+            print(x)
+
+    f = F()
+    f("meow")

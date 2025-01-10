@@ -1,0 +1,34 @@
+foo: meow
+__call__: woof
+bar: rawr
+baz: moo
+
+-- main.py:main --
+import autokitteh
+
+class C:
+    @autokitteh.activity
+    def __call__(self, x):
+        print(f"__call__: {x}")
+
+    @autokitteh.activity
+    def foo(self, x):
+        print(f"foo: {x}")
+
+    @staticmethod
+    @autokitteh.activity
+    def bar(x):
+        print(f"bar: {x}")
+
+    @classmethod
+    @autokitteh.activity
+    def baz(cls, x):
+        print(f"baz: {x}")
+
+def main(event):
+    c = C()
+    c.foo("meow")
+    c("woof")
+    C.bar("rawr")
+    C.baz("moo")
+
