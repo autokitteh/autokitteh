@@ -8,7 +8,7 @@ import (
 )
 
 var deleteCmd = common.StandardCommand(&cobra.Command{
-	Use:   "delete <id>",
+	Use:   "delete <id or name>",
 	Short: "Delete org",
 	Args:  cobra.ExactArgs(1),
 

@@ -2,12 +2,14 @@ package orgs
 
 import (
 	"context"
+	"strings"
 
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
+	"go.autokitteh.dev/autokitteh/internal/catnames"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -30,6 +32,11 @@ func Create(ctx context.Context, db db.DB, org sdktypes.Org) (sdktypes.OrgID, er
 	}
 
 	org = org.WithNewID()
+
+	if !org.Name().IsValid() {
+		n := strings.ReplaceAll(catnames.Generate(), " ", "_") + "_Org"
+		org = org.WithName(sdktypes.NewSymbol(n))
+	}
 
 	if err := authz.CheckContext(ctx, sdktypes.InvalidOrgID, "create:create", authz.WithData("org", org)); err != nil {
 		return sdktypes.InvalidOrgID, err
@@ -62,7 +69,20 @@ func (o *orgs) GetByID(ctx context.Context, id sdktypes.OrgID) (sdktypes.Org, er
 		return sdktypes.InvalidOrg, err
 	}
 
-	return o.db.GetOrg(ctx, id)
+	return o.db.GetOrg(ctx, id, sdktypes.InvalidSymbol)
+}
+
+func (o *orgs) GetByName(ctx context.Context, n sdktypes.Symbol) (sdktypes.Org, error) {
+	org, err := o.db.GetOrg(ctx, sdktypes.InvalidOrgID, n)
+	if err != nil {
+		return sdktypes.InvalidOrg, err
+	}
+
+	if err := authz.CheckContext(ctx, org.ID(), "read:get", authz.WithConvertForbiddenToNotFound); err != nil {
+		return sdktypes.InvalidOrg, err
+	}
+
+	return org, nil
 }
 
 func (o *orgs) Delete(ctx context.Context, id sdktypes.OrgID) error {

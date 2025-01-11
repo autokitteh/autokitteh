@@ -15,7 +15,8 @@ message CreateResponse {
 }
 
 message GetRequest {
-  string org_id = 1 [(buf.validate.field).string.min_len = 1];
+  string org_id = 1;
+  string name = 2;
 }
 
 message GetResponse {

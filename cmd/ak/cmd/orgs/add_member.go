@@ -13,7 +13,7 @@ import (
 var active bool
 
 var addMemberCmd = common.StandardCommand(&cobra.Command{
-	Use:     "add-member <org id> <user id> [--active]",
+	Use:     "add-member <org id or name> <user id> [--active]",
 	Short:   "Add org member",
 	Aliases: []string{"am"},
 	Args:    cobra.ExactArgs(2),
