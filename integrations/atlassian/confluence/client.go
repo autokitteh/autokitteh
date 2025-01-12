@@ -110,7 +110,6 @@ func connTest(i *integration) sdkintegrations.OptFn {
 			}
 		default:
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil
-
 		}
 
 		return sdktypes.NewStatus(sdktypes.StatusCodeOK, ""), nil
