@@ -108,7 +108,8 @@ func connTest(i *integration) sdkintegrations.OptFn {
 			if err != nil {
 				return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 			}
-
+		default:
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil
 		}
 
 		return sdktypes.NewStatus(sdktypes.StatusCodeOK, ""), nil
@@ -123,6 +124,7 @@ func oauthConnTest(vs sdktypes.Vars) error {
 		return err
 	}
 
+	// TODO(INT-173): Create & use a new access token using the refresh token.
 	token := vs.GetValueByString("oauth_AccessToken")
 	_, err = accessibleResources(nil, baseURL, token)
 
@@ -140,7 +142,7 @@ func apiTokenConnTest(l *zap.Logger, vs sdktypes.Vars) error {
 	u := baseURL + "/rest/api/3/myself"
 	req, err := http.NewRequest(http.MethodGet, u, nil)
 	if err != nil {
-		logWarnIfNotNil(l, "Failed to construct HTTP request for PAT test", zap.Error(err))
+		logWarnIfNotNil(l, "Failed to construct HTTP request for Jira API token test", zap.Error(err))
 		return err
 	}
 
@@ -149,14 +151,14 @@ func apiTokenConnTest(l *zap.Logger, vs sdktypes.Vars) error {
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		logWarnIfNotNil(l, "Failed to request accessible resources for PAT token", zap.Error(err))
+		logWarnIfNotNil(l, "Failed to request current user info for Jira API token", zap.Error(err))
 		return err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		logWarnIfNotNil(l, "Unexpected response on accessible resources", zap.Int("status", resp.StatusCode))
-		return fmt.Errorf("accessible resources: unexpected status code %d", resp.StatusCode)
+		logWarnIfNotNil(l, "Unexpected response on current user info", zap.Int("status", resp.StatusCode))
+		return fmt.Errorf("current user info: unexpected status code %d", resp.StatusCode)
 	}
 
 	return nil
