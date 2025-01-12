@@ -52,6 +52,42 @@ func TestDeleteBuild(t *testing.T) {
 	f.assertBuildDeleted(t, b.BuildID)
 }
 
+func TestDeleteProjectDeleteBuild(t *testing.T) {
+	f, p := preBuildTest(t)
+	b := f.newBuild(p)
+	f.saveBuildsAndAssert(t, b)
+
+	// test deleteProject
+	assert.NoError(t, f.gormdb.deleteProject(f.ctx, p.ProjectID))
+	f.assertBuildDeleted(t, b.BuildID)
+}
+
+func TestDeleteBuildDeleteDeployment(t *testing.T) {
+	f, p := preBuildTest(t)
+	b := f.newBuild(p)
+	f.saveBuildsAndAssert(t, b)
+
+	d := f.newDeployment(b, p)
+	f.createDeploymentsAndAssert(t, d)
+
+	// test deleteBuild
+	assert.NoError(t, f.gormdb.deleteBuild(f.ctx, b.BuildID))
+	f.assertDeploymentsDeleted(t, d)
+}
+
+func TestDeleteBuildDeleteSession(t *testing.T) {
+	f, p := preBuildTest(t)
+	b := f.newBuild(p)
+	f.saveBuildsAndAssert(t, b)
+
+	s := f.newSession(b, p)
+	f.createSessionsAndAssert(t, s)
+
+	// test deleteBuild
+	assert.NoError(t, f.gormdb.deleteBuild(f.ctx, b.BuildID))
+	f.assertSessionsDeleted(t, s)
+}
+
 func TestGetBuild(t *testing.T) {
 	f, p := preBuildTest(t)
 

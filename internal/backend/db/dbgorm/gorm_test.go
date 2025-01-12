@@ -188,7 +188,7 @@ func TeardownDB(gormdb *gormdb, ctx context.Context) error {
 func CleanupDB(gormdb *gormdb, ctx context.Context) error {
 	foreignKeys(gormdb, false) // disable foreign keys
 
-	db := gormdb.db.WithContext(ctx).Unscoped().Session(&gorm.Session{AllowGlobalUpdate: true})
+	db := gormdb.db.WithContext(ctx).Session(&gorm.Session{AllowGlobalUpdate: true})
 	for _, model := range scheme.Tables {
 		modelType := reflect.TypeOf(model)
 		model := reflect.New(modelType).Interface()
@@ -253,12 +253,11 @@ func findAndAssertOne[T any](t *testing.T, f *dbFixture, schemaObj T, where stri
 // check obj is soft-deleted in gorm
 // check obj is soft-deleted in gorm
 func assertDeleted[T any](t *testing.T, f *dbFixture, m T) {
-	// check that object is not found both scoped and unscoped
 	res := f.db.First(&m)
 	require.ErrorIs(t, res.Error, gorm.ErrRecordNotFound)
 
 	// check that object is marked as deleted
-	res = f.db.Unscoped().First(&m)
+	res = f.db.First(&m)
 	require.ErrorIs(t, res.Error, gorm.ErrRecordNotFound)
 }
 
@@ -297,9 +296,21 @@ func (f *dbFixture) newSession(args ...any) scheme.Session {
 	return s
 }
 
-func (f *dbFixture) newSessionLogRecord() scheme.SessionLogRecord {
+func (f *dbFixture) newSessionLogRecord(sid uuid.UUID) scheme.SessionLogRecord {
 	return scheme.SessionLogRecord{
-		SessionID: testDummyID,
+		SessionID: sid,
+	}
+}
+
+func (f *dbFixture) newSessionCallAttempt(sid uuid.UUID) scheme.SessionCallAttempt {
+	return scheme.SessionCallAttempt{
+		SessionID: sid,
+	}
+}
+
+func (f *dbFixture) newSessionCallSpec(sid uuid.UUID) scheme.SessionCallSpec {
+	return scheme.SessionCallSpec{
+		SessionID: sid,
 	}
 }
 
@@ -421,10 +432,13 @@ func (f *dbFixture) newEvent(args ...any) scheme.Event {
 		switch a := a.(type) {
 		case scheme.Connection:
 			e.ConnectionID = &a.ConnectionID
+			e.DestinationID = a.ConnectionID
 		case scheme.Trigger:
 			e.TriggerID = &a.TriggerID
+			e.DestinationID = a.TriggerID
 		case scheme.Project:
 			e.ProjectID = a.ProjectID
+			e.DestinationID = a.ProjectID
 		}
 	}
 	return e
@@ -439,6 +453,10 @@ func (f *dbFixture) newSignal(args ...any) scheme.Signal {
 		if a, ok := a.(scheme.Connection); ok {
 			s.ConnectionID = &a.ConnectionID
 			s.DestinationID = a.ConnectionID
+		}
+		if a, ok := a.(scheme.Trigger); ok {
+			s.TriggerID = &a.TriggerID
+			s.DestinationID = a.TriggerID
 		}
 	}
 	return s
