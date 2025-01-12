@@ -157,8 +157,8 @@ func apiTokenConnTest(l *zap.Logger, vs sdktypes.Vars) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		logWarnIfNotNil(l, "Unexpected response on accessible resources", zap.Int("status", resp.StatusCode))
-		return fmt.Errorf("accessible resources: unexpected status code %d", resp.StatusCode)
+		logWarnIfNotNil(l, "Unexpected response on current user info", zap.Int("status", resp.StatusCode))
+		return fmt.Errorf("current user info: unexpected status code %d", resp.StatusCode)
 	}
 
 	return nil
