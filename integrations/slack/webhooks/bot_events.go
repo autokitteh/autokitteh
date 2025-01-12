@@ -46,7 +46,7 @@ var BotEventHandlers = map[string]BotEventHandler{
 	"reaction_added":   events.ReactionHandler,
 	"reaction_removed": events.ReactionHandler,
 
-	// TODO: tokens_revoked
+	"tokens_revoked": events.TokensRevokedHandler,
 
 	"url_verification": events.URLVerificationHandler,
 }

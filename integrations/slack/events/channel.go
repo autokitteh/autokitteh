@@ -110,3 +110,30 @@ func ChannelGroupMemberHandler(l *zap.Logger, w http.ResponseWriter, body []byte
 	}
 	return j.Event
 }
+
+// https://api.slack.com/events/tokens_revoked
+type TokensRevokedEvent struct {
+	Type    string `json:"type,omitempty"`
+	Tokens  Tokens `json:"tokens,omitempty"`
+	EventTS string `json:"event_ts,omitempty"`
+}
+
+type Tokens struct {
+	OAuth []string `json:"oauth,omitempty"`
+	Bot   []string `json:"bot,omitempty"`
+}
+
+type tokensRevokedContainer struct {
+	Event *TokensRevokedEvent `json:"event"`
+}
+
+// https://api.slack.com/events/tokens_revoked
+func TokensRevokedHandler(l *zap.Logger, w http.ResponseWriter, body []byte, cb *Callback) any {
+	// Parse and return the inner event details.
+	j := &tokensRevokedContainer{}
+	if err := json.Unmarshal(body, j); err != nil {
+		invalidEventError(l, w, body, err)
+		return nil
+	}
+	return j.Event
+}
