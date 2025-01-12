@@ -142,7 +142,7 @@ func apiTokenConnTest(l *zap.Logger, vs sdktypes.Vars) error {
 	u := baseURL + "/wiki/rest/api/user/current"
 	req, err := http.NewRequest(http.MethodGet, u, nil)
 	if err != nil {
-		logWarnIfNotNil(l, "Failed to construct HTTP request for Confluence PAT test", zap.Error(err))
+		logWarnIfNotNil(l, "Failed to construct HTTP request for Confluence API token test", zap.Error(err))
 		return err
 	}
 
