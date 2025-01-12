@@ -60,18 +60,17 @@ func (d *deployments) Autodrain() {
 	l.Info("periodically auto-deactivating drained deployments")
 
 	for {
-		t := d.cfg.AutoDrainingDeactivationInterval
-		t += time.Duration(rand.Float32() * float32(d.cfg.AutoDrainingDeactivationJitter))
-		time.Sleep(t)
+		jitter := rand.Float32() * float32(d.cfg.AutoDrainingDeactivationJitter)
+		time.Sleep(d.cfg.AutoDrainingDeactivationInterval + time.Duration(jitter))
 
 		n, err := d.db.DeactivateAllDrainedDeployments(context.Background())
 		if err != nil {
-			d.l.Error("auto-deactivation failed", zap.Error(err))
+			l.Error("auto-deactivation failed", zap.Error(err))
 			continue
 		}
 
 		if n > 0 {
-			d.l.Sugar().Infof("auto-deactivated %d drained deployments", n)
+			l.Sugar().Infof("auto-deactivated %d drained deployments", n)
 		}
 	}
 }
