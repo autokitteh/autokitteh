@@ -124,6 +124,7 @@ func oauthConnTest(vs sdktypes.Vars) error {
 		return err
 	}
 
+	// TODO(INT-173): Create & use a new access token using the refresh token.
 	token := vs.GetValueByString("oauth_AccessToken")
 	_, err = accessibleResources(nil, baseURL, token)
 
