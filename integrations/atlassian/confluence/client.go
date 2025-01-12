@@ -151,7 +151,7 @@ func apiTokenConnTest(l *zap.Logger, vs sdktypes.Vars) error {
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		logWarnIfNotNil(l, "Failed to request accessible resources for Confluence PAT token", zap.Error(err))
+		logWarnIfNotNil(l, "Failed to request current user info for Confluence API token", zap.Error(err))
 		return err
 	}
 	defer resp.Body.Close()
