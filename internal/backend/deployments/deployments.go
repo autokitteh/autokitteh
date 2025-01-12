@@ -53,11 +53,10 @@ func New(l *zap.Logger, cfg *Config, db db.DB, telemetry *telemetry.Telemetry) s
 }
 
 func (d *deployments) Autodrain() {
-	l := d.l.With(
+	d.l.Info("periodically auto-deactivating drained deployments",
 		zap.Duration("auto_drain_interval", d.cfg.AutoDrainingDeactivationInterval),
 		zap.Duration("auto_drain_jitter", d.cfg.AutoDrainingDeactivationJitter),
 	)
-	l.Info("periodically auto-deactivating drained deployments")
 
 	for {
 		jitter := rand.Float32() * float32(d.cfg.AutoDrainingDeactivationJitter)
@@ -65,12 +64,12 @@ func (d *deployments) Autodrain() {
 
 		n, err := d.db.DeactivateAllDrainedDeployments(context.Background())
 		if err != nil {
-			l.Error("auto-deactivation failed", zap.Error(err))
+			d.l.Error("auto-deactivation failed", zap.Error(err))
 			continue
 		}
 
 		if n > 0 {
-			l.Sugar().Infof("auto-deactivated %d drained deployments", n)
+			d.l.Sugar().Infof("auto-deactivated %d drained deployments", n)
 		}
 	}
 }
