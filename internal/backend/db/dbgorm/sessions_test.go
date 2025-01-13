@@ -291,12 +291,6 @@ func TestDeleteSessionCallAttempt(t *testing.T) {
 	assert.Equal(t, n, int64(0))
 }
 
-/*
-func TestDeleteSessionForeignKeys(t *testing.T) {
-    // session is soft-deleted, so no need to check foreign keys meanwhile
-}
-*/
-
 func TestAddSessionLogRecordUnexistingSession(t *testing.T) {
 	f, p, b := preSessionTest(t)
 
