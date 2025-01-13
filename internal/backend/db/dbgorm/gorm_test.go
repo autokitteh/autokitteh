@@ -302,18 +302,6 @@ func (f *dbFixture) newSessionLogRecord(sid uuid.UUID) scheme.SessionLogRecord {
 	}
 }
 
-func (f *dbFixture) newSessionCallAttempt(sid uuid.UUID) scheme.SessionCallAttempt {
-	return scheme.SessionCallAttempt{
-		SessionID: sid,
-	}
-}
-
-func (f *dbFixture) newSessionCallSpec(sid uuid.UUID) scheme.SessionCallSpec {
-	return scheme.SessionCallSpec{
-		SessionID: sid,
-	}
-}
-
 func (f *dbFixture) newBuild(args ...any) scheme.Build {
 	b := scheme.Build{
 		BuildID: newTestID(),
