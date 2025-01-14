@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
+	"golang.org/x/tools/txtar"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -23,9 +24,10 @@ import rego.v1
 passthrough := input.passthrough
 `
 
-	testfs = kittehs.Must1(kittehs.TxtarStringToFS(policyContent))
+	testfs = kittehs.Must1(kittehs.TxtarToFS(txtar.Parse([]byte(policyContent))))
 )
 
+// Test various passthrough scenarios - ensure that the various fields are passed through as expected.
 func TestPassthrough(t *testing.T) {
 	d, err := New(&Config{fs: testfs}, zaptest.NewLogger(t))
 	require.NoError(t, err)

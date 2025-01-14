@@ -28,15 +28,17 @@ type Config struct {
 	MinLogLevel        string `koanf:"log_level"`         // log level threshold to emit. if empty: "warn".
 	MinConsoleLogLevel string `koanf:"console_log_level"` // console log level threshold to emit. if empty: "warn".
 
-	fs fs.FS // for testing	only.
+	// for testing	only, to test alternate embedded policies.
+	fs fs.FS
 }
 
 var Configs = configset.Set[Config]{
 	Default: &Config{},
 }
 
-func startBundleServer(bfs fs.FS, path string) (*sdktest.Server, error) {
-	des, err := fs.ReadDir(bfs, path)
+// Start an OPA bundle server with bundles configurations stored in bundleFS.
+func startBundleServer(bundleFS fs.FS, path string) (*sdktest.Server, error) {
+	des, err := fs.ReadDir(bundleFS, path)
 	if err != nil {
 		return nil, fmt.Errorf("read dir: %w", err)
 	}
@@ -48,7 +50,7 @@ func startBundleServer(bfs fs.FS, path string) (*sdktest.Server, error) {
 			continue
 		}
 
-		bs, err := fs.ReadFile(bfs, filepath.Join(path, de.Name()))
+		bs, err := fs.ReadFile(bundleFS, filepath.Join(path, de.Name()))
 		if err != nil {
 			return nil, fmt.Errorf("read file: %w", err)
 		}
@@ -59,12 +61,12 @@ func startBundleServer(bfs fs.FS, path string) (*sdktest.Server, error) {
 	return sdktest.NewServer(sdktest.MockBundle("/bundles/"+path+".tar.gz", files))
 }
 
-func startEmbeddedConfig(l *zap.Logger, bfs fs.FS, name string) ([]byte, error) {
+func startEmbeddedConfig(l *zap.Logger, bundleFS fs.FS, name string) ([]byte, error) {
 	if name == "" {
 		name = embeddedDefaultConfigPath
 	}
 
-	srv, err := startBundleServer(bfs, name)
+	srv, err := startBundleServer(bundleFS, name)
 	if err != nil {
 		return nil, fmt.Errorf("start bundle server: %w", err)
 	}
