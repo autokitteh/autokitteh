@@ -2,8 +2,9 @@ package hubspot
 
 import (
 	"context"
-	"fmt"
 	"net/http"
+
+	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -11,7 +12,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.uber.org/zap"
 )
 
 type integration struct{ vars sdkservices.Vars }
@@ -93,8 +93,8 @@ func connTest(i *integration) sdkintegrations.OptFn {
 		}
 
 		token := vs.GetValueByString("oauth_RefreshToken")
-		url := fmt.Sprintf("https://api.hubapi.com/oauth/v1/refresh-tokens/%s", token)
-		req, err := http.NewRequest("GET", url, nil)
+		url := "https://api.hubapi.com/oauth/v1/refresh-tokens/" + token
+		req, err := http.NewRequest(http.MethodGet, url, nil)
 		if err != nil {
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 		}

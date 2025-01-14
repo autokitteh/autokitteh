@@ -4,8 +4,8 @@
 // @ts-nocheck
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
-import { Message, proto3 } from "@bufbuild/protobuf";
-import { Org } from "./org_pb.js";
+import { FieldMask, Message, proto3 } from "@bufbuild/protobuf";
+import { Org, OrgMember } from "./org_pb.js";
 
 /**
  * @generated from message autokitteh.orgs.v1.CreateRequest
@@ -156,6 +156,74 @@ export class GetResponse extends Message<GetResponse> {
 }
 
 /**
+ * @generated from message autokitteh.orgs.v1.DeleteRequest
+ */
+export class DeleteRequest extends Message<DeleteRequest> {
+  /**
+   * @generated from field: string org_id = 1;
+   */
+  orgId = "";
+
+  constructor(data?: PartialMessage<DeleteRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.orgs.v1.DeleteRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteRequest {
+    return new DeleteRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteRequest {
+    return new DeleteRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteRequest {
+    return new DeleteRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeleteRequest | PlainMessage<DeleteRequest> | undefined, b: DeleteRequest | PlainMessage<DeleteRequest> | undefined): boolean {
+    return proto3.util.equals(DeleteRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.orgs.v1.DeleteResponse
+ */
+export class DeleteResponse extends Message<DeleteResponse> {
+  constructor(data?: PartialMessage<DeleteResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.orgs.v1.DeleteResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteResponse {
+    return new DeleteResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteResponse {
+    return new DeleteResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteResponse {
+    return new DeleteResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeleteResponse | PlainMessage<DeleteResponse> | undefined, b: DeleteResponse | PlainMessage<DeleteResponse> | undefined): boolean {
+    return proto3.util.equals(DeleteResponse, a, b);
+  }
+}
+
+/**
  * @generated from message autokitteh.orgs.v1.UpdateRequest
  */
 export class UpdateRequest extends Message<UpdateRequest> {
@@ -163,6 +231,11 @@ export class UpdateRequest extends Message<UpdateRequest> {
    * @generated from field: autokitteh.orgs.v1.Org org = 1;
    */
   org?: Org;
+
+  /**
+   * @generated from field: google.protobuf.FieldMask field_mask = 2;
+   */
+  fieldMask?: FieldMask;
 
   constructor(data?: PartialMessage<UpdateRequest>) {
     super();
@@ -173,6 +246,7 @@ export class UpdateRequest extends Message<UpdateRequest> {
   static readonly typeName = "autokitteh.orgs.v1.UpdateRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "org", kind: "message", T: Org },
+    { no: 2, name: "field_mask", kind: "message", T: FieldMask },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateRequest {
@@ -228,14 +302,9 @@ export class UpdateResponse extends Message<UpdateResponse> {
  */
 export class AddMemberRequest extends Message<AddMemberRequest> {
   /**
-   * @generated from field: string user_id = 1;
+   * @generated from field: autokitteh.orgs.v1.OrgMember member = 3;
    */
-  userId = "";
-
-  /**
-   * @generated from field: string org_id = 2;
-   */
-  orgId = "";
+  member?: OrgMember;
 
   constructor(data?: PartialMessage<AddMemberRequest>) {
     super();
@@ -245,8 +314,7 @@ export class AddMemberRequest extends Message<AddMemberRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "autokitteh.orgs.v1.AddMemberRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "org_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "member", kind: "message", T: OrgMember },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AddMemberRequest {
@@ -372,6 +440,86 @@ export class RemoveMemberResponse extends Message<RemoveMemberResponse> {
 }
 
 /**
+ * @generated from message autokitteh.orgs.v1.GetMemberRequest
+ */
+export class GetMemberRequest extends Message<GetMemberRequest> {
+  /**
+   * @generated from field: string user_id = 1;
+   */
+  userId = "";
+
+  /**
+   * @generated from field: string org_id = 2;
+   */
+  orgId = "";
+
+  constructor(data?: PartialMessage<GetMemberRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.orgs.v1.GetMemberRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "org_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetMemberRequest {
+    return new GetMemberRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetMemberRequest {
+    return new GetMemberRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetMemberRequest {
+    return new GetMemberRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetMemberRequest | PlainMessage<GetMemberRequest> | undefined, b: GetMemberRequest | PlainMessage<GetMemberRequest> | undefined): boolean {
+    return proto3.util.equals(GetMemberRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.orgs.v1.GetMemberResponse
+ */
+export class GetMemberResponse extends Message<GetMemberResponse> {
+  /**
+   * @generated from field: autokitteh.orgs.v1.OrgMember member = 1;
+   */
+  member?: OrgMember;
+
+  constructor(data?: PartialMessage<GetMemberResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.orgs.v1.GetMemberResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "member", kind: "message", T: OrgMember },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetMemberResponse {
+    return new GetMemberResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetMemberResponse {
+    return new GetMemberResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetMemberResponse {
+    return new GetMemberResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetMemberResponse | PlainMessage<GetMemberResponse> | undefined, b: GetMemberResponse | PlainMessage<GetMemberResponse> | undefined): boolean {
+    return proto3.util.equals(GetMemberResponse, a, b);
+  }
+}
+
+/**
  * @generated from message autokitteh.orgs.v1.ListMembersRequest
  */
 export class ListMembersRequest extends Message<ListMembersRequest> {
@@ -413,9 +561,9 @@ export class ListMembersRequest extends Message<ListMembersRequest> {
  */
 export class ListMembersResponse extends Message<ListMembersResponse> {
   /**
-   * @generated from field: repeated string user_ids = 1;
+   * @generated from field: repeated autokitteh.orgs.v1.OrgMember members = 1;
    */
-  userIds: string[] = [];
+  members: OrgMember[] = [];
 
   constructor(data?: PartialMessage<ListMembersResponse>) {
     super();
@@ -425,7 +573,7 @@ export class ListMembersResponse extends Message<ListMembersResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "autokitteh.orgs.v1.ListMembersResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "user_ids", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 1, name: "members", kind: "message", T: OrgMember, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListMembersResponse {
@@ -446,86 +594,6 @@ export class ListMembersResponse extends Message<ListMembersResponse> {
 }
 
 /**
- * @generated from message autokitteh.orgs.v1.IsMemberRequest
- */
-export class IsMemberRequest extends Message<IsMemberRequest> {
-  /**
-   * @generated from field: string user_id = 1;
-   */
-  userId = "";
-
-  /**
-   * @generated from field: string org_id = 2;
-   */
-  orgId = "";
-
-  constructor(data?: PartialMessage<IsMemberRequest>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "autokitteh.orgs.v1.IsMemberRequest";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "org_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): IsMemberRequest {
-    return new IsMemberRequest().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): IsMemberRequest {
-    return new IsMemberRequest().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): IsMemberRequest {
-    return new IsMemberRequest().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: IsMemberRequest | PlainMessage<IsMemberRequest> | undefined, b: IsMemberRequest | PlainMessage<IsMemberRequest> | undefined): boolean {
-    return proto3.util.equals(IsMemberRequest, a, b);
-  }
-}
-
-/**
- * @generated from message autokitteh.orgs.v1.IsMemberResponse
- */
-export class IsMemberResponse extends Message<IsMemberResponse> {
-  /**
-   * @generated from field: bool is_member = 1;
-   */
-  isMember = false;
-
-  constructor(data?: PartialMessage<IsMemberResponse>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "autokitteh.orgs.v1.IsMemberResponse";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "is_member", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): IsMemberResponse {
-    return new IsMemberResponse().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): IsMemberResponse {
-    return new IsMemberResponse().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): IsMemberResponse {
-    return new IsMemberResponse().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: IsMemberResponse | PlainMessage<IsMemberResponse> | undefined, b: IsMemberResponse | PlainMessage<IsMemberResponse> | undefined): boolean {
-    return proto3.util.equals(IsMemberResponse, a, b);
-  }
-}
-
-/**
  * @generated from message autokitteh.orgs.v1.GetOrgsForUserRequest
  */
 export class GetOrgsForUserRequest extends Message<GetOrgsForUserRequest> {
@@ -533,6 +601,11 @@ export class GetOrgsForUserRequest extends Message<GetOrgsForUserRequest> {
    * @generated from field: string user_id = 1;
    */
   userId = "";
+
+  /**
+   * @generated from field: bool include_orgs = 2;
+   */
+  includeOrgs = false;
 
   constructor(data?: PartialMessage<GetOrgsForUserRequest>) {
     super();
@@ -543,6 +616,7 @@ export class GetOrgsForUserRequest extends Message<GetOrgsForUserRequest> {
   static readonly typeName = "autokitteh.orgs.v1.GetOrgsForUserRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "include_orgs", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetOrgsForUserRequest {
@@ -567,9 +641,14 @@ export class GetOrgsForUserRequest extends Message<GetOrgsForUserRequest> {
  */
 export class GetOrgsForUserResponse extends Message<GetOrgsForUserResponse> {
   /**
-   * @generated from field: repeated autokitteh.orgs.v1.Org orgs = 1;
+   * @generated from field: repeated autokitteh.orgs.v1.OrgMember members = 1;
    */
-  orgs: Org[] = [];
+  members: OrgMember[] = [];
+
+  /**
+   * @generated from field: map<string, autokitteh.orgs.v1.Org> orgs = 2;
+   */
+  orgs: { [key: string]: Org } = {};
 
   constructor(data?: PartialMessage<GetOrgsForUserResponse>) {
     super();
@@ -579,7 +658,8 @@ export class GetOrgsForUserResponse extends Message<GetOrgsForUserResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "autokitteh.orgs.v1.GetOrgsForUserResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "orgs", kind: "message", T: Org, repeated: true },
+    { no: 1, name: "members", kind: "message", T: OrgMember, repeated: true },
+    { no: 2, name: "orgs", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Org} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetOrgsForUserResponse {
@@ -596,6 +676,80 @@ export class GetOrgsForUserResponse extends Message<GetOrgsForUserResponse> {
 
   static equals(a: GetOrgsForUserResponse | PlainMessage<GetOrgsForUserResponse> | undefined, b: GetOrgsForUserResponse | PlainMessage<GetOrgsForUserResponse> | undefined): boolean {
     return proto3.util.equals(GetOrgsForUserResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.orgs.v1.UpdateMemberRequest
+ */
+export class UpdateMemberRequest extends Message<UpdateMemberRequest> {
+  /**
+   * @generated from field: autokitteh.orgs.v1.OrgMember member = 3;
+   */
+  member?: OrgMember;
+
+  /**
+   * @generated from field: google.protobuf.FieldMask field_mask = 2;
+   */
+  fieldMask?: FieldMask;
+
+  constructor(data?: PartialMessage<UpdateMemberRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.orgs.v1.UpdateMemberRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 3, name: "member", kind: "message", T: OrgMember },
+    { no: 2, name: "field_mask", kind: "message", T: FieldMask },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateMemberRequest {
+    return new UpdateMemberRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateMemberRequest {
+    return new UpdateMemberRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateMemberRequest {
+    return new UpdateMemberRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UpdateMemberRequest | PlainMessage<UpdateMemberRequest> | undefined, b: UpdateMemberRequest | PlainMessage<UpdateMemberRequest> | undefined): boolean {
+    return proto3.util.equals(UpdateMemberRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.orgs.v1.UpdateMemberResponse
+ */
+export class UpdateMemberResponse extends Message<UpdateMemberResponse> {
+  constructor(data?: PartialMessage<UpdateMemberResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.orgs.v1.UpdateMemberResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateMemberResponse {
+    return new UpdateMemberResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateMemberResponse {
+    return new UpdateMemberResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateMemberResponse {
+    return new UpdateMemberResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UpdateMemberResponse | PlainMessage<UpdateMemberResponse> | undefined, b: UpdateMemberResponse | PlainMessage<UpdateMemberResponse> | undefined): boolean {
+    return proto3.util.equals(UpdateMemberResponse, a, b);
   }
 }
 

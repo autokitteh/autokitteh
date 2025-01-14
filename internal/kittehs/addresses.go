@@ -1,7 +1,6 @@
 package kittehs
 
 import (
-	"fmt"
 	"net"
 )
 
@@ -10,7 +9,7 @@ import (
 // because using "localhost" or "127.0.0.1" will bind the port to the loopback
 // interface, making it inaccessible from outside the container.
 func BindingAddress(port string) string {
-	return fmt.Sprintf("0.0.0.0:%s", port)
+	return net.JoinHostPort("0.0.0.0", port)
 }
 
 // DisplayAddress returns a human-readable address for the given binding address.
@@ -23,7 +22,7 @@ func DisplayAddress(bindingAddress string) string {
 	}
 
 	if ip := net.ParseIP(host); ip != nil && ip.IsUnspecified() {
-		return fmt.Sprintf("localhost:%s", port)
+		return net.JoinHostPort("localhost", port)
 	}
 
 	return bindingAddress

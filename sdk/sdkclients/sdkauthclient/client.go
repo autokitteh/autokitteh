@@ -8,7 +8,6 @@ import (
 
 	authv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/auth/v1"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/auth/v1/authv1connect"
-
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/internal"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"

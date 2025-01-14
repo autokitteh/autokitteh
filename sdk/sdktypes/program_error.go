@@ -17,7 +17,7 @@ type ProgramError struct {
 
 type ProgramErrorPB = programv1.Error
 
-type ProgramErrorTraits struct{}
+type ProgramErrorTraits struct{ immutableObjectTrait }
 
 func (ProgramErrorTraits) Validate(m *ProgramErrorPB) error {
 	return errors.Join(

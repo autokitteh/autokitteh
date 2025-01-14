@@ -89,7 +89,7 @@ func (c *client) GetByID(ctx context.Context, pid sdktypes.ProjectID) (sdktypes.
 	project, err := sdktypes.StrictProjectFromProto(resp.Msg.Project)
 	if err != nil {
 		// FIXME: ENG-626: why we check and override errInvalid for project only?
-		var errInvalid sdkerrors.ErrInvalidArgument
+		var errInvalid sdkerrors.InvalidArgumentError
 		if err.Error() == "zero object" && errors.As(err, &errInvalid) {
 			return sdktypes.InvalidProject, nil
 		}

@@ -5,13 +5,14 @@ import (
 	"io"
 	"net/http"
 
+	"go.uber.org/zap"
+
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.uber.org/zap"
 )
 
 type integration struct{ vars sdkservices.Vars }
@@ -95,7 +96,7 @@ func connTest(i *integration) sdkintegrations.OptFn {
 			return sdktypes.InvalidStatus, err
 		}
 
-		req, err := http.NewRequest("GET", "https://app.asana.com/api/1.0/users/me", nil)
+		req, err := http.NewRequest(http.MethodGet, "https://app.asana.com/api/1.0/users/me", nil)
 		if err != nil {
 			return sdktypes.InvalidStatus, err
 		}

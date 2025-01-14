@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
-
 	orgv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/orgs/v1"
 )
 
@@ -23,6 +22,8 @@ func (OrgTraits) Validate(m *OrgPB) error {
 }
 
 func (OrgTraits) StrictValidate(m *OrgPB) error { return nil }
+
+func (OrgTraits) Mutables() []string { return []string{"display_name"} }
 
 func OrgFromProto(m *OrgPB) (Org, error) { return FromProto[Org](m) }
 

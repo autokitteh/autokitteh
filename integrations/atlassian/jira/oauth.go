@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 
 	"go.uber.org/zap"
 
@@ -91,7 +92,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c.Finalize(sdktypes.NewVars(data.ToVars()...).Append(res[0].toVars()...).
-		Set(webhookID, fmt.Sprintf("%d", id), false).
+		Set(webhookID, strconv.Itoa(id), false).
 		Set(webhookExpiration, t.String(), false))
 }
 
@@ -117,8 +118,8 @@ type resource struct {
 // OAuth token, which is necessary for API calls and webhook events. Based on:
 // https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/#3--make-calls-to-the-api-using-the-access-token
 func accessibleResources(l *zap.Logger, baseURL string, token string) ([]resource, error) {
-	u := fmt.Sprintf("%s/oauth/token/accessible-resources", baseURL)
-	req, err := http.NewRequest("GET", u, nil)
+	u := baseURL + "/oauth/token/accessible-resources"
+	req, err := http.NewRequest(http.MethodGet, u, nil)
 	if err != nil {
 		logWarnIfNotNil(l, "Failed to construct HTTP request for OAuth token test", zap.Error(err))
 		return nil, err

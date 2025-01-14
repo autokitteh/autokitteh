@@ -1,7 +1,6 @@
 package authsessions
 
 import (
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -25,7 +24,7 @@ func newStore(t *testing.T) Store {
 func newRequestWithLoggedInCookie(value string) http.Request {
 	return http.Request{
 		Header: http.Header{
-			"Cookie": []string{fmt.Sprintf("ak_logged_in=%s", value)},
+			"Cookie": []string{"ak_logged_in=" + value},
 		},
 	}
 }

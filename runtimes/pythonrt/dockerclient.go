@@ -16,9 +16,10 @@ import (
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/docker/go-connections/nat"
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapio"
+
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 const (
@@ -138,7 +139,7 @@ func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, sess
 
 func (d *dockerClient) nextFreePort(ctx context.Context, cid string) (string, error) {
 
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		inspect, err := d.client.ContainerInspect(ctx, cid)
 		if err != nil {
 			return "", err

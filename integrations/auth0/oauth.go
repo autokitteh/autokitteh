@@ -6,11 +6,12 @@ import (
 	"io"
 	"net/http"
 
+	"go.uber.org/zap"
+
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.uber.org/zap"
 )
 
 type handler struct {
@@ -70,7 +71,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Tests OAuth0's Management API.
-	req, err := http.NewRequest("GET", fmt.Sprintf("https://%s/api/v2/roles", d), nil)
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://%s/api/v2/roles", d), nil)
 
 	if err != nil {
 		l.Error("Failed to create HTTP request", zap.Error(err))
@@ -78,7 +79,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", oauthToken.AccessToken))
+	req.Header.Set("Authorization", "Bearer "+oauthToken.AccessToken)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)

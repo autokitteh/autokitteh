@@ -57,7 +57,7 @@ func (v *Vars) Set(ctx context.Context, vs ...sdktypes.Var) error {
 			ctx,
 			va.ScopeID(),
 			"write:set-var",
-			authz.WithData("var", va),
+			authz.WithData("var", va.SetValue("")),
 		); err != nil {
 			return err
 		}

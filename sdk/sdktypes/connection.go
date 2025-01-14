@@ -35,6 +35,8 @@ func (ConnectionTraits) StrictValidate(m *ConnectionPB) error {
 	)
 }
 
+func (ConnectionTraits) Mutables() []string { return []string{"name", "integration_id"} }
+
 func ConnectionFromProto(m *ConnectionPB) (Connection, error) { return FromProto[Connection](m) }
 func StrictConnectionFromProto(m *ConnectionPB) (Connection, error) {
 	return Strict(ConnectionFromProto(m))

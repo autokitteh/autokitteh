@@ -1,0 +1,44 @@
+ak deploy --manifest test.yaml --file test.star
+return code == 0
+capture_re did dep_[0-9a-z]+
+
+ak session start --deployment-id $did --entrypoint test.star:test -j
+return code == 0
+capture_jq sid .session_id
+
+ak session watch $sid --no-timestamps --end-state RUNNING --timeout 7s
+return code == 0
+
+ak session stop $sid --reason test --force
+return code == 0
+
+ak session log $sid --no-timestamps -j
+return code == 0
+output equals file test.txt
+
+-- test.yaml --
+version: v1
+
+project:
+  name: test
+  connections:
+    - name: mytest
+      integration: test
+
+-- test.star --
+load("@test", "mytest")
+
+def test():
+  print("started")
+  mytest.freeze(10, True)
+  print("finished")
+
+-- test.txt --
+{"state":{"created":{}}}
+{"state":{"running":{"run_id":"run_00000000000000000000000006"}}}
+{"state":{"running":{"run_id":"run_00000000000000000000000006","call":{"function":{"executor_id":"run_00000000000000000000000006","name":"test","desc":{},"data":"dGVzdCMx"}}}}}
+{"print":{"text":"started"}}
+{"call_spec":{"function":{"function":{"executor_id":"int_3kth00testaf9d33c5697341f0","name":"freeze","desc":{"input":[{"name":"duration","optional":true},{"name":"allow_cancel","optional":true}]},"data":"Y29uXzAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAy"}},"args":[{"integer":{"v":"10"}},{"boolean":{"v":true}}],"seq":1}}
+{"call_attempt_start":{}}
+{"stop_request":{"reason":"[forced] test"}}
+{"state":{"stopped":{"reason":"test"}}}

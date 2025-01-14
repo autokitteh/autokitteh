@@ -153,7 +153,7 @@ func TestValueWrapper(t *testing.T) {
 }
 
 func TestWrapReader(t *testing.T) {
-	buf := bytes.NewBuffer([]byte("meow"))
+	buf := bytes.NewBufferString("meow")
 	v, err := w.Wrap(buf)
 	if assert.NoError(t, err) {
 		assert.Equal(t, []byte("meow"), v.GetBytes().Value())
@@ -161,14 +161,14 @@ func TestWrapReader(t *testing.T) {
 
 	ww := w
 	ww.WrapReaderAsString = true
-	buf = bytes.NewBuffer([]byte("meow"))
+	buf = bytes.NewBufferString("meow")
 	v, err = ww.Wrap(buf)
 	if assert.NoError(t, err) {
 		assert.Equal(t, "meow", v.GetString().Value())
 	}
 
 	ww.IgnoreReader = true
-	buf = bytes.NewBuffer([]byte("meow"))
+	buf = bytes.NewBufferString("meow")
 	v, err = ww.Wrap(buf)
 	if assert.NoError(t, err) {
 		assert.True(t, v.IsNothing())
@@ -188,7 +188,7 @@ func TestUnwrapIntoScalars(t *testing.T) {
 
 	var s string
 	if assert.NoError(t, w.UnwrapInto(&s, iv)) {
-		// yeah yeah don't blame me, blame reflect for doing this.
+		// Yeah don't blame me, blame reflect for doing this.
 		assert.Equal(t, "*" /* ASCII 42 */, s)
 	}
 

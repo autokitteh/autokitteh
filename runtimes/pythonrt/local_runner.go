@@ -13,13 +13,15 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	"go.jetify.com/typeid"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapio"
+
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 var (
@@ -145,7 +147,7 @@ func (r *LocalPython) Start(pyExe string, tarData []byte, env map[string]string,
 	cmd := exec.Command(
 		pyExe, "-u", mainPy,
 		"--worker-address", workerAddr,
-		"--port", fmt.Sprintf("%d", r.port),
+		"--port", strconv.Itoa(r.port),
 		"--runner-id", r.id,
 		"--code-dir", r.userDir,
 	)
@@ -336,7 +338,7 @@ func adjustPythonPath(env []string, runnerPath string) []string {
 		}
 	}
 
-	return append(env, fmt.Sprintf("PYTHONPATH=%s", runnerPath))
+	return append(env, "PYTHONPATH="+runnerPath)
 }
 
 func overrideEnv(envMap map[string]string, runnerPath string) []string {

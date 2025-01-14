@@ -1,7 +1,7 @@
 package parsers
 
 import (
-	"fmt"
+	"errors"
 	"strings"
 
 	"go.starlark.net/starlark"
@@ -27,7 +27,7 @@ func parse(thread *starlark.Thread, bi *starlark.Builtin, args starlark.Tuple, k
 
 	parse := parsers.Parsers[ext]
 	if parse == nil {
-		return nil, fmt.Errorf("no such parser")
+		return nil, errors.New("no such parser")
 	}
 
 	v, err := parse(strings.NewReader(text))

@@ -98,7 +98,7 @@ func (db *testDB) ListSessions(_ context.Context, f sdkservices.ListSessionsFilt
 
 func newTestDeployments(deps map[sdktypes.DeploymentID]*testDeployment) *deployments {
 	return &deployments{
-		z:  zap.NewNop(),
+		l:  zap.NewNop(),
 		db: &testDB{deployments: deps},
 	}
 }

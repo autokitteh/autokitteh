@@ -61,11 +61,12 @@ func New(cfg *Config, l *zap.Logger) (Client, LazyTemporalClient, error) {
 	if cfg.TLS.Enabled {
 		var cert tls.Certificate
 		var err error
-		if cfg.TLS.Certificate != "" && cfg.TLS.Key != "" {
+		switch {
+		case cfg.TLS.Certificate != "" && cfg.TLS.Key != "":
 			cert, err = tls.X509KeyPair([]byte(cfg.TLS.Certificate), []byte(cfg.TLS.Key))
-		} else if cfg.TLS.CertFilePath != "" && cfg.TLS.KeyFilePath != "" {
+		case cfg.TLS.CertFilePath != "" && cfg.TLS.KeyFilePath != "":
 			cert, err = tls.LoadX509KeyPair(cfg.TLS.CertFilePath, cfg.TLS.KeyFilePath)
-		} else {
+		default:
 			return nil, nil, errors.New("tls enabled without certificate or key")
 		}
 
@@ -190,7 +191,7 @@ func (c *impl) TemporalAddr() (frontend, ui string) {
 		// temporal's default is frontend+1000 for dev server.
 		nport += 1000
 
-		ui = fmt.Sprintf("http://%s:%d", host, nport)
+		ui = "http://" + net.JoinHostPort(host, strconv.Itoa(nport))
 	}
 
 	return

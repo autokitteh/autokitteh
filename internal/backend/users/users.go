@@ -49,23 +49,33 @@ func (u *users) Create(ctx context.Context, user sdktypes.User) (sdktypes.UserID
 		return sdktypes.InvalidUserID, sdkerrors.NewInvalidArgumentError("user ID must be empty")
 	}
 
-	if err := authz.CheckContext(ctx, sdktypes.InvalidUserID, "create:create", authz.WithData("user", user)); err != nil {
+	if user.Status() == sdktypes.UserStatusUnspecified {
+		user = user.WithStatus(sdktypes.UserStatusActive)
+	}
+
+	if err := authz.CheckContext(
+		ctx,
+		sdktypes.InvalidUserID,
+		"create:create",
+		authz.WithData("user", user),
+		authz.WithData("status", user.Status().String()),
+	); err != nil {
 		return sdktypes.InvalidUserID, err
 	}
 
 	var uid sdktypes.UserID
 
 	err := u.db.Transaction(ctx, func(db db.DB) error {
-		var oid sdktypes.OrgID
+		var err error
 
-		if !user.DefaultOrgID().IsValid() {
+		if oid := user.DefaultOrgID(); !oid.IsValid() {
 			// If user has no default org id set, set the one from the config, if specified.
 			if oid, _ = u.cfg.GetDefaultOrgID(); !oid.IsValid() {
 				// ... otherwise create a new personal org for that user.
 				org := sdktypes.NewOrg()
 
 				if user.DisplayName() != "" {
-					org = org.WithDisplayName(fmt.Sprintf("%s's Personal Org", user.DisplayName()))
+					org = org.WithDisplayName(user.DisplayName() + "'s Personal Org")
 				}
 
 				var err error
@@ -73,17 +83,19 @@ func (u *users) Create(ctx context.Context, user sdktypes.User) (sdktypes.UserID
 					return fmt.Errorf("create personal org: %w", err)
 				}
 			}
+
+			// We will always have oid set by this point.
+			user = user.WithDefaultOrgID(oid)
 		}
 
-		var err error
-		if uid, err = db.CreateUser(ctx, user.WithNewID().WithDefaultOrgID(oid)); err != nil {
+		// We will always have user.DefaultOrgID set by this point.
+
+		if uid, err = db.CreateUser(ctx, user); err != nil {
 			return err
 		}
 
-		if oid.IsValid() {
-			if err := orgs.AddMember(ctx, db, oid, uid); err != nil {
-				return fmt.Errorf("add as member to personal org: %w", err)
-			}
+		if err := orgs.AddMember(ctx, db, user.DefaultOrgID(), uid, sdktypes.OrgMemberStatusActive); err != nil {
+			return fmt.Errorf("add as member to personal org: %w", err)
 		}
 
 		return nil
@@ -103,6 +115,7 @@ func (u *users) Get(ctx context.Context, id sdktypes.UserID, email string) (sdkt
 		"read:get",
 		authz.WithData("user_id", id.String()),
 		authz.WithData("email", email),
+		authz.WithConvertForbiddenToNotFound,
 	); err != nil {
 		return sdktypes.InvalidUser, err
 	}
@@ -110,14 +123,44 @@ func (u *users) Get(ctx context.Context, id sdktypes.UserID, email string) (sdkt
 	return u.db.GetUser(ctx, id, email)
 }
 
-func (u *users) Update(ctx context.Context, user sdktypes.User) error {
+func (u *users) GetID(ctx context.Context, email string) (sdktypes.UserID, error) {
+	if err := authz.CheckContext(
+		ctx,
+		sdktypes.InvalidUserID,
+		"read:get-id",
+		authz.WithData("email", email),
+		authz.WithConvertForbiddenToNotFound,
+	); err != nil {
+		return sdktypes.InvalidUserID, err
+	}
+
+	r, err := u.db.GetUser(ctx, sdktypes.InvalidUserID, email)
+	if err != nil {
+		return sdktypes.InvalidUserID, err
+	}
+
+	return r.ID(), nil
+}
+
+func (u *users) Update(ctx context.Context, user sdktypes.User, fieldMask *sdktypes.FieldMask) error {
 	if !user.ID().IsValid() {
 		return sdkerrors.NewInvalidArgumentError("missing user ID")
 	}
 
-	if err := authz.CheckContext(ctx, user.ID(), "update:update", authz.WithData("user", user)); err != nil {
+	if err := user.ValidateUpdateFieldMask(fieldMask); err != nil {
 		return err
 	}
 
-	return u.db.UpdateUser(ctx, user)
+	if err := authz.CheckContext(
+		ctx,
+		user.ID(),
+		"update:update",
+		authz.WithData("user", user),
+		authz.WithFieldMask(fieldMask),
+		authz.WithData("status", user.Status().String()),
+	); err != nil {
+		return err
+	}
+
+	return u.db.UpdateUser(ctx, user, fieldMask)
 }

@@ -144,7 +144,7 @@ func (s *Server) Get(ctx context.Context, req *connect.Request[projectsv1.GetReq
 	if !n.IsValid() {
 		// essentially should never happen since we validate existence of name xor uid
 		// in proto. Hence Unknown error.
-		return nil, sdkerrors.AsConnectError(fmt.Errorf("missing name"))
+		return nil, sdkerrors.AsConnectError(errors.New("missing name"))
 	}
 
 	return toResponse(s.projects.GetByName(ctx, oid, n))

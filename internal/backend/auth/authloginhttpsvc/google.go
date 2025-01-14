@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/dghubble/gologin/v2/google"
-
 	"golang.org/x/oauth2"
 	googleOAuth2 "golang.org/x/oauth2/google"
 )

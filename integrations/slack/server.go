@@ -16,9 +16,13 @@ import (
 )
 
 const (
-	// oauthPath is the URL path for our handler to save
-	// new OAuth-based connections.
-	oauthPath = "/slack/oauth"
+	// defaultOauthPath is the URL path for our handler to save
+	// new OAuth-based connections using the server's default app.
+	defaultOauthPath = "/slack/oauth"
+
+	// customOAuthPath is the URL path for our handler to save
+	// new custom OAuth-based connections.
+	customOAuthPath = "/slack/custom-oauth"
 
 	// savePath is the URL path for our handler to save new Socket Mode
 	// connections, after users submit them via a web form.
@@ -36,7 +40,10 @@ func Start(l *zap.Logger, muxes *muxes.Muxes, v sdkservices.Vars, d sdkservices.
 	// to have an authenticated user context, so the DB layer won't reject them.
 	// For this purpose, init webhooks are managed by the "auth" mux, which passes
 	// through AutoKitteh's auth middleware to extract the user ID from a cookie.
-	muxes.Auth.Handle("GET "+oauthPath, NewHandler(l))
+	h := NewHandler(l, v)
+	muxes.Auth.Handle("GET "+defaultOauthPath, h)
+	muxes.Auth.HandleFunc("GET "+customOAuthPath, h.handleSave)  // Web UI passthrough for OAuth.
+	muxes.Auth.HandleFunc("POST "+customOAuthPath, h.handleSave) // Internal UI passthrough for OAuth.
 
 	wsh := websockets.NewHandler(l, v, d, desc)
 	muxes.Auth.HandleFunc("POST "+savePath, wsh.HandleForm)

@@ -14,11 +14,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-type server struct {
-	users sdkservices.Users
-
-	usersv1connect.UnimplementedUsersServiceHandler
-}
+type server struct{ users sdkservices.Users }
 
 var _ usersv1connect.UsersServiceHandler = (*server)(nil)
 
@@ -39,6 +35,14 @@ func (s *server) Create(ctx context.Context, req *connect.Request[usersv1.Create
 	u, err := sdktypes.Strict(sdktypes.UserFromProto(msg.User))
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	if msg.User.Disabled {
+		if u.Status() != sdktypes.UserStatusUnspecified {
+			return nil, sdkerrors.NewInvalidArgumentError("status and disabled are mutually exclusive")
+		}
+
+		u = u.WithStatus(sdktypes.UserStatusDisabled)
 	}
 
 	uid, err := s.users.Create(ctx, u)
@@ -66,7 +70,27 @@ func (s *server) Get(ctx context.Context, req *connect.Request[usersv1.GetReques
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	return connect.NewResponse(&usersv1.GetResponse{User: u.ToProto()}), nil
+	pb := u.ToProto()
+	if u.Status() == sdktypes.UserStatusDisabled {
+		pb.Disabled = true
+	}
+
+	return connect.NewResponse(&usersv1.GetResponse{User: pb}), nil
+}
+
+func (s *server) GetID(ctx context.Context, req *connect.Request[usersv1.GetIDRequest]) (*connect.Response[usersv1.GetIDResponse], error) {
+	msg := req.Msg
+
+	if err := proto.Validate(msg); err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	uid, err := s.users.GetID(ctx, msg.Email)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	return connect.NewResponse(&usersv1.GetIDResponse{UserId: uid.String()}), nil
 }
 
 func (s *server) Update(ctx context.Context, req *connect.Request[usersv1.UpdateRequest]) (*connect.Response[usersv1.UpdateResponse], error) {
@@ -81,7 +105,7 @@ func (s *server) Update(ctx context.Context, req *connect.Request[usersv1.Update
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	if err = s.users.Update(ctx, u); err != nil {
+	if err = s.users.Update(ctx, u, msg.FieldMask); err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
 

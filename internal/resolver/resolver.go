@@ -26,7 +26,7 @@ type NotFoundError struct {
 	Type, Name string
 }
 
-var NotFoundErrorType = new(NotFoundError)
+var ErrNotFound = new(NotFoundError)
 
 func (e NotFoundError) Error() string {
 	name := e.Name
@@ -366,28 +366,41 @@ func (r Resolver) SessionID(ctx context.Context, id string) (s sdktypes.Session,
 	return
 }
 
-// User returns a user, based on the given name, email or ID supplied by nameEmailOrID.
-func (r Resolver) User(ctx context.Context, nameEmailOrID string) (u sdktypes.User, uid sdktypes.UserID, err error) {
-	if nameEmailOrID == "" {
+func (r Resolver) UserID(ctx context.Context, emailOrID string) (uid sdktypes.UserID, err error) {
+	if emailOrID == "" {
+		return
+	}
+
+	if sdktypes.IsUserID(emailOrID) {
+		return sdktypes.StrictParseUserID(emailOrID)
+	}
+
+	uid, err = r.Client.Users().GetID(ctx, emailOrID)
+	return
+}
+
+// User returns a user, based on the given email address or user ID.
+func (r Resolver) User(ctx context.Context, emailOrID string) (u sdktypes.User, uid sdktypes.UserID, err error) {
+	if emailOrID == "" {
 		return
 	}
 
 	var email string
 
-	if sdktypes.IsUserID(nameEmailOrID) {
-		if uid, err = sdktypes.StrictParseUserID(nameEmailOrID); err != nil {
-			err = fmt.Errorf("invalid user ID %q: %w", nameEmailOrID, err)
+	if sdktypes.IsUserID(emailOrID) {
+		if uid, err = sdktypes.StrictParseUserID(emailOrID); err != nil {
+			err = fmt.Errorf("invalid user ID %q: %w", emailOrID, err)
 			return
 		}
-	} else if strings.Contains(nameEmailOrID, "@") {
-		email = nameEmailOrID
+	} else if strings.Contains(emailOrID, "@") {
+		email = emailOrID
 	}
 
 	u, err = r.Client.Users().Get(ctx, uid, email)
 	if u.IsValid() {
 		uid = u.ID()
 	}
-	err = translateError(err, u, "user", nameEmailOrID)
+	err = translateError(err, u, "user", emailOrID)
 	return
 }
 

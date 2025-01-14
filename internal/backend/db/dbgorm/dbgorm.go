@@ -6,15 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-	"time"
 
+	_ "ariga.io/atlas-provider-gorm/gormschema"
 	"github.com/google/uuid"
 	"github.com/pressly/goose/v3"
 	"go.jetify.com/typeid"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
-
-	_ "ariga.io/atlas-provider-gorm/gormschema"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authusers"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
@@ -63,7 +61,7 @@ func New(z *zap.Logger, cfg *Config) (db.DB, error) {
 
 func (db *gormdb) GormDB() *gorm.DB { return db.db }
 
-func connect(ctx context.Context, z *zap.Logger, cfg *Config) (*gorm.DB, error) {
+func connect(_ context.Context, z *zap.Logger, cfg *Config) (*gorm.DB, error) {
 	client, err := gormkitteh.OpenZ(z, cfg, func(cfg *gorm.Config) {
 		cfg.SkipDefaultTransaction = true
 	})
@@ -211,10 +209,10 @@ func (db *gormdb) backfillUsersAndOrgs(ctx context.Context) error {
 		// Prepare a personal org for each user.
 		org := scheme.Org{
 			OrgID:       kittehs.Must1(uuid.NewV7()),
-			DisplayName: fmt.Sprintf("%s's Personal Org", user.DisplayName),
+			DisplayName: user.DisplayName + "'s Personal Org",
 			Base: scheme.Base{
 				CreatedBy: authusers.SystemUser.DefaultOrgID().UUIDValue(),
-				CreatedAt: time.Now().UTC(),
+				CreatedAt: kittehs.Now().UTC(),
 			},
 		}
 
@@ -244,7 +242,7 @@ func (db *gormdb) backfillUsersAndOrgs(ctx context.Context) error {
 			UserID: user.UserID,
 			Base: scheme.Base{
 				CreatedBy: authusers.SystemUser.DefaultOrgID().UUIDValue(),
-				CreatedAt: time.Now().UTC(),
+				CreatedAt: kittehs.Now().UTC(),
 			},
 		}).Error; err != nil {
 			return err

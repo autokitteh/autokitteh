@@ -23,7 +23,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authloginhttpsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authsessions"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authsvc"
-	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens/authtokensjwt"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens/authjwttokens"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/builds"
 	"go.autokitteh.dev/autokitteh/internal/backend/buildsgrpcsvc"
@@ -138,7 +138,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		DBFxOpt(),
 
 		Component("auth", configset.Empty, fx.Provide(authsvc.New)),
-		Component("authtokensjwt", authtokensjwt.Configs, fx.Provide(authtokensjwt.New)),
+		Component("authjwttokens", authjwttokens.Configs, fx.Provide(authjwttokens.New)),
 		Component("authsessions", authsessions.Configs, fx.Provide(authsessions.New)),
 		Component(
 			"authhttpmiddleware",
@@ -190,7 +190,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component("store", store.Configs, fx.Provide(store.New)),
 		Component("builds", configset.Empty, fx.Provide(builds.New)),
 		Component("connections", configset.Empty, fx.Provide(connections.New)),
-		Component("deployments", configset.Empty, fx.Provide(deployments.New)),
+		Component("deployments", deployments.Configs, fx.Provide(deployments.New)),
 		Component("projects", configset.Empty, fx.Provide(projects.New)),
 		Component("projectsgrpcsvc", projectsgrpcsvc.Configs, fx.Provide(projectsgrpcsvc.New)),
 		Component(

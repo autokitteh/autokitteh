@@ -40,8 +40,6 @@ func ParseSessionStateType(raw string) (SessionStateType, error) {
 	return ParseEnum[SessionStateType](raw)
 }
 
-func (e SessionStateType) IsFinal() bool {
-	return e.v == sessionsv1.SessionStateType_SESSION_STATE_TYPE_ERROR ||
-		e.v == sessionsv1.SessionStateType_SESSION_STATE_TYPE_COMPLETED ||
-		e.v == sessionsv1.SessionStateType_SESSION_STATE_TYPE_STOPPED
-}
+var FinalSessionStateTypes = []SessionStateType{SessionStateTypeError, SessionStateTypeCompleted, SessionStateTypeStopped}
+
+func (e SessionStateType) IsFinal() bool { return kittehs.ContainedIn(FinalSessionStateTypes...)(e) }

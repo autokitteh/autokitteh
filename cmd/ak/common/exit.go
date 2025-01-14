@@ -60,7 +60,7 @@ func ToExitCode(err error) (code int) {
 		code = UnauthenticatedExitCode
 	case errors.Is(err, sdkerrors.ErrNotFound):
 		code = NotFoundExitCode
-	case errors.As(err, resolver.NotFoundErrorType):
+	case errors.As(err, resolver.ErrNotFound):
 		code = NotFoundExitCode
 	case errors.Is(err, sdkerrors.ErrFailedPrecondition):
 		code = FailedPreconditionExitCode
@@ -82,7 +82,7 @@ func WrapError(err error, whats ...string) error {
 	case errors.Is(err, sdkerrors.ErrNotFound):
 		// Replace "not found" with "<whats> not found".
 		return fmt.Errorf("%s: %w", strings.Join(whats, " "), sdkerrors.ErrNotFound)
-	case errors.As(err, resolver.NotFoundErrorType):
+	case errors.As(err, resolver.ErrNotFound):
 		// Replace "<type> [name] not found" with "<whats> not found".
 		return fmt.Errorf("%s: %w", strings.Join(whats, " "), sdkerrors.ErrNotFound)
 	case errors.Is(err, sdkerrors.ErrFailedPrecondition):

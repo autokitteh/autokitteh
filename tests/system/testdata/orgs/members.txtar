@@ -1,0 +1,79 @@
+user zumi
+
+ak orgs create --display-name meow
+return code == 0
+capture_jq meow_oid .org_id
+
+ak orgs get-member $meow_oid $ZUMI_UID -f
+return code == 0
+output equals_jq .member ACTIVE
+
+ak orgs add-member $meow_oid $GIZMO_UID
+return code == 0
+
+ak orgs get-member $meow_oid $GIZMO_UID -f
+return code == 0
+output equals_jq .member INVITED
+
+ak orgs update-member $meow_oid $GIZMO_UID --status ACTIVE
+return code == $RC_UNAUTHZ
+
+user shoogy
+
+ak orgs remove-member $meow_oid $GIZMO_UID
+return code == $RC_UNAUTHZ
+
+ak users get-orgs $GIZMO_UID
+return code == $RC_NOT_FOUND
+
+user gizmo
+
+ak users get-orgs $ZUMI_UID
+return code == $RC_NOT_FOUND
+
+ak users get-orgs
+return code == 0
+output equals_jq .orgs[].org.org_id $GIZMO_OID,$CATS_OID,$meow_oid
+output equals_jq .orgs[].status ACTIVE,ACTIVE,INVITED
+
+ak orgs update-member $meow_oid $GIZMO_UID --status ACTIVE
+return code == 0
+
+ak orgs get-member $meow_oid $GIZMO_UID -f
+return code == 0
+output equals_jq .member ACTIVE
+
+ak users get-orgs
+return code == 0
+output equals_jq .orgs[].org.org_id $GIZMO_OID,$CATS_OID,$meow_oid
+output equals_jq .orgs[].status ACTIVE,ACTIVE,ACTIVE
+
+ak orgs add-member $meow_oid $SHOOGY_UID
+return code == 0
+
+user shoogy
+
+ak orgs update-member $meow_oid $SHOOGY_UID --status DECLINED
+return code == 0
+
+ak users get-orgs
+return code == 0
+output equals_jq .orgs[].org.org_id $SHOOGY_OID,$DOGS_OID,$meow_oid
+output equals_jq .orgs[].status ACTIVE,ACTIVE,DECLINED
+
+user gizmo
+
+ak orgs remove-member $meow_oid $GIZMO_UID
+return code == 0
+
+ak users get-orgs
+return code == 0
+output equals_jq .orgs[].org.org_id $GIZMO_OID,$CATS_OID
+output equals_jq .orgs[].status ACTIVE,ACTIVE
+
+ak orgs get-member $meow_oid $GIZMO_UID -f
+return code == $RC_NOT_FOUND
+
+-- test-config.yaml --
+ak:
+    extra_args: ["-j", "--array_json_list"]

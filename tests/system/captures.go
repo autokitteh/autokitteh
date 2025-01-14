@@ -3,6 +3,7 @@ package systest
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"testing"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authusers"
@@ -36,6 +37,24 @@ func captureJQ(t *testing.T, step string, ak *akResult, _ *httpResponse) error {
 	if err != nil {
 		return fmt.Errorf("%w. input: %s", err, ak.output)
 	}
+
+	t.Logf("captured %q into %q", v, name)
+
+	captures[name] = v
+
+	return nil
+}
+
+func captureRE(t *testing.T, step string, ak *akResult, _ *httpResponse) error {
+	match := reCheck.FindStringSubmatch(step)
+	name, query := match[1], match[2]
+
+	re, err := regexp.Compile(query)
+	if err != nil {
+		return fmt.Errorf("failed to compile regexp %q: %w", query, err)
+	}
+
+	v := re.FindString(ak.output)
 
 	t.Logf("captured %q into %q", v, name)
 

@@ -21,19 +21,19 @@ var BotEventHandlers = map[string]BotEventHandler{
 	"app_home_opened": events.AppHomeOpenedHandler,
 	"app_mention":     events.AppMentionHandler,
 	// TODO: app_rate_limit
-	// TODO: app_uninstalled
+	"app_uninstalled": events.AppUninstalledTokensRevokedHandler,
 
 	"channel_archive": events.ChannelGroupMemberHandler,
-	"channel_created": events.ChannelCreatedHandler,
+	"channel_created": events.ChannelCreatedRenameHandler,
 	// TODO: channel_history_changed
 	// TODO: channel_id_changed
-	// TODO: channel_rename
+	"channel_rename":    events.ChannelCreatedRenameHandler,
 	"channel_unarchive": events.ChannelGroupMemberHandler,
 
 	"group_archive": events.ChannelGroupMemberHandler,
 	// TODO: group_history_changed
-	"group_open": events.ChannelGroupMemberHandler,
-	// TODO: group_rename
+	"group_open":      events.ChannelGroupMemberHandler,
+	"group_rename":    events.ChannelCreatedRenameHandler,
 	"group_unarchive": events.ChannelGroupMemberHandler,
 
 	// TODO: im_history_changed
@@ -46,7 +46,7 @@ var BotEventHandlers = map[string]BotEventHandler{
 	"reaction_added":   events.ReactionHandler,
 	"reaction_removed": events.ReactionHandler,
 
-	// TODO: tokens_revoked
+	"tokens_revoked": events.AppUninstalledTokensRevokedHandler,
 
 	"url_verification": events.URLVerificationHandler,
 }
@@ -59,7 +59,7 @@ func (h handler) HandleBotEvent(w http.ResponseWriter, r *http.Request) {
 	l := h.logger.With(zap.String("urlPath", BotEventPath))
 
 	// Validate and parse the inbound request.
-	body := checkRequest(w, r, l, api.ContentTypeJSON)
+	body := h.checkRequest(w, r, l, api.ContentTypeJSON)
 	if body == nil {
 		return
 	}

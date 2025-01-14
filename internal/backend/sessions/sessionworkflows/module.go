@@ -2,7 +2,7 @@ package sessionworkflows
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
@@ -33,7 +33,7 @@ func (w *sessionWorkflow) newModule() sdkexecutor.Executor {
 
 func callopts(_ context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	if len(args) > 0 {
-		return sdktypes.InvalidValue, fmt.Errorf("expecting only key value arguments")
+		return sdktypes.InvalidValue, errors.New("expecting only key value arguments")
 	}
 
 	return sdktypes.NewStructValue(sdktypes.NewSymbolValue(fixtures.CallOptsCtorSymbol), kwargs)

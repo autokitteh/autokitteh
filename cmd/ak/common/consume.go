@@ -1,6 +1,7 @@
 package common
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -20,7 +21,7 @@ func Consume(args []string) (data []byte, path string, err error) {
 			err = NewExitCodeError(NotFoundExitCode, err)
 		}
 	default:
-		return nil, "", fmt.Errorf("too many arguments")
+		return nil, "", errors.New("too many arguments")
 	}
 
 	return

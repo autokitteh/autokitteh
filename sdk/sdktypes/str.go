@@ -25,7 +25,7 @@ func (s validatedString[T]) Hash() string {
 func parseValidatedString[T validatedStringTraits](v string) (s validatedString[T], err error) {
 	var t T
 	if err = t.Validate(v); err != nil {
-		err = sdkerrors.ErrInvalidArgument{Underlying: err}
+		err = sdkerrors.InvalidArgumentError{Underlying: err}
 		return
 	}
 

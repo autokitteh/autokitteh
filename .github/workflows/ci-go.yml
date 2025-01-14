@@ -54,7 +54,7 @@ jobs:
         with:
           # Keep the same version in "/Makefile"!
           # See: https://github.com/golangci/golangci-lint
-          version: v1.60.3
+          version: v1.63.1
           # https://github.com/golangci/golangci-lint-action/issues/308
           args: --timeout=5m
 

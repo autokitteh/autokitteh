@@ -50,6 +50,8 @@ const (
 // SessionsServiceClient is a client for the autokitteh.sessions.v1.SessionsService service.
 type SessionsServiceClient interface {
 	Start(context.Context, *connect.Request[v1.StartRequest]) (*connect.Response[v1.StartResponse], error)
+	// Will always try first to gracefully terminate the session.
+	// Blocks only if `force` and forceDelay > 0`.
 	Stop(context.Context, *connect.Request[v1.StopRequest]) (*connect.Response[v1.StopResponse], error)
 	// List returns events without their data.
 	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
@@ -145,6 +147,8 @@ func (c *sessionsServiceClient) Delete(ctx context.Context, req *connect.Request
 // service.
 type SessionsServiceHandler interface {
 	Start(context.Context, *connect.Request[v1.StartRequest]) (*connect.Response[v1.StartResponse], error)
+	// Will always try first to gracefully terminate the session.
+	// Blocks only if `force` and forceDelay > 0`.
 	Stop(context.Context, *connect.Request[v1.StopRequest]) (*connect.Response[v1.StopResponse], error)
 	// List returns events without their data.
 	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)

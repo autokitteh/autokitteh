@@ -33,7 +33,7 @@ func renderObject[M proto.Message](w http.ResponseWriter, r *http.Request, title
 		Extra   any
 	}{
 		Title: title,
-		JSON:  template.HTML(json),
+		JSON:  json,
 	}); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}

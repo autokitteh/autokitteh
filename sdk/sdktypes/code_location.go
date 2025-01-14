@@ -20,7 +20,7 @@ type CodeLocation struct {
 
 type CodeLocationPB = programv1.CodeLocation
 
-type CodeLocationTraits struct{}
+type CodeLocationTraits struct{ immutableObjectTrait }
 
 func (CodeLocationTraits) Validate(m *CodeLocationPB) error         { return nil }
 func (t CodeLocationTraits) StrictValidate(m *CodeLocationPB) error { return nonzeroMessage(m) }

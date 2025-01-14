@@ -36,8 +36,11 @@ func (SessionTraits) StrictValidate(m *SessionPB) error {
 	return errors.Join(
 		mandatory("entrypoint", m.Entrypoint),
 		mandatory("build_id", m.BuildId),
+		mandatory("project_id", m.ProjectId),
 	)
 }
+
+func (SessionTraits) Mutables() []string { return []string{"state"} }
 
 func SessionFromProto(m *SessionPB) (Session, error) { return FromProto[Session](m) }
 func StrictSessionFromProto(m *SessionPB) (Session, error) {
@@ -115,4 +118,8 @@ func (s Session) WithEndpoint(ep CodeLocation) Session {
 
 func (s Session) WithID(id SessionID) Session {
 	return Session{s.forceUpdate(func(pb *SessionPB) { pb.SessionId = id.String() })}
+}
+
+func (s Session) WithState(state SessionStateType) Session {
+	return Session{s.forceUpdate(func(pb *SessionPB) { pb.State = state.ToProto() })}
 }

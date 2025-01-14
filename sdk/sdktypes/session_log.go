@@ -13,7 +13,7 @@ var InvalidSessionLog SessionLog
 
 type SessionLogPB = sessionv1.SessionLog
 
-type SessionLogTraits struct{}
+type SessionLogTraits struct{ immutableObjectTrait }
 
 func (SessionLogTraits) Validate(m *SessionLogPB) error {
 	return objectsSlice[SessionLogRecord](m.Records)

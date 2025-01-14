@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"connectrpc.com/connect"
 
@@ -117,7 +118,12 @@ func (s *server) Stop(ctx context.Context, req *connect.Request[sessionsv1.StopR
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	if err := s.sessions.Stop(ctx, sessionID, msg.Reason, msg.Terminate); err != nil {
+	var forceTimeout time.Duration
+	if msg.TerminationDelay != nil {
+		forceTimeout = msg.TerminationDelay.AsDuration()
+	}
+
+	if err := s.sessions.Stop(ctx, sessionID, msg.Reason, msg.Terminate, forceTimeout); err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
 

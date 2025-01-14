@@ -86,7 +86,7 @@ golangci_lint=$(shell which golangci-lint)
 $(OUTDIR)/tools/golangci-lint:
 	mkdir -p $(OUTDIR)/tools
 ifeq ($(golangci_lint),)
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "$(OUTDIR)/tools" v1.60.3
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "$(OUTDIR)/tools" v1.63.1
 else
 	ln -fs $(golangci_lint) $(OUTDIR)/tools/golangci-lint
 endif
@@ -104,7 +104,7 @@ ifneq ($(scripts),)
 endif
 
 .PHONY: test
-test: test-race test-runs test-sessions test-opa
+test: test-opa test-race test-runs test-sessions
 
 .PHONY: test-opa
 test-opa:
