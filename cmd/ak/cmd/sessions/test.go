@@ -23,11 +23,12 @@ import (
 
 var (
 	// /tmp/ak-user-2767870919/main.py:6.1,main
-	trimRe = regexp.MustCompile(`\/.*\/ak-(user|runner)-.*?\/`)
+	trimRe = regexp.MustCompile(`\/.*\/ak-user-.*?\/`)
+	// runner/main.py:6.1,main, in _call
+	runnerRe = regexp.MustCompile(`.*runner.*/.*\.py`)
 )
 
 func normalizePath(p string) string {
-
 	// Remove location specific prefix of Python standard library.
 	const pyLibPrefix = "/lib/python"
 	i := strings.Index(p, pyLibPrefix)
@@ -40,6 +41,10 @@ func normalizePath(p string) string {
 		}
 
 		return p
+	}
+
+	if runnerRe.MatchString(p) {
+		return ""
 	}
 
 	// Remove ak-runner and ak-user.
