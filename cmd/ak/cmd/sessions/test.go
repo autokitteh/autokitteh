@@ -24,8 +24,6 @@ import (
 var (
 	// /tmp/ak-user-2767870919/main.py:6.1,main
 	trimRe = regexp.MustCompile(`\/.*\/ak-(user|runner)-.*?\/`)
-	//  File "runner/main.py", line 323, in _call
-	runnerRe = regexp.MustCompile(`(ak-)?runner(-\d+)?/.*py`)
 )
 
 func normalizePath(p string) string {
