@@ -60,8 +60,12 @@ func (b *BoolOrInt) UnmarshalJSON(data []byte) error {
 }
 
 // https://api.slack.com/events/channel_archive
+// https://api.slack.com/events/channel_left
 // https://api.slack.com/events/channel_unarchive
 // https://api.slack.com/events/group_archive
+// https://api.slack.com/events/group_close
+// https://api.slack.com/events/group_deleted
+// https://api.slack.com/events/group_left
 // https://api.slack.com/events/group_open
 // https://api.slack.com/events/group_unarchive
 // https://api.slack.com/events/member_joined_channel
@@ -83,8 +87,12 @@ type channelGroupMemberContainer struct {
 }
 
 // https://api.slack.com/events/channel_archive
+// https://api.slack.com/events/channel_left
 // https://api.slack.com/events/channel_unarchive
 // https://api.slack.com/events/group_archive
+// https://api.slack.com/events/group_close
+// https://api.slack.com/events/group_deleted
+// https://api.slack.com/events/group_left
 // https://api.slack.com/events/group_open
 // https://api.slack.com/events/group_unarchive
 // https://api.slack.com/events/member_joined_channel
