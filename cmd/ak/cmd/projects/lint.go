@@ -2,6 +2,7 @@ package projects
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -9,13 +10,13 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/manifest"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
+	projectsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/projects/v1"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-
-	projectsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/projects/v1"
 )
 
 var (
@@ -81,7 +82,7 @@ func findProjectNameOrID(projectNameOrID string, projectDir string, m *manifest.
 		return m.Project.Name, nil
 	}
 
-	return "", fmt.Errorf("can't determine project name or ID")
+	return "", errors.New("can't determine project name or ID")
 }
 
 // We can't use common.Render since it's a different text representation
@@ -189,7 +190,7 @@ func runLint(cmd *cobra.Command, args []string) error {
 	}
 
 	if !ok {
-		return fmt.Errorf("lint errors")
+		return errors.New("lint errors")
 	}
 
 	return nil
