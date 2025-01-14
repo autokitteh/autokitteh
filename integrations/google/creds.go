@@ -11,6 +11,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations/google/calendar"
+	"go.autokitteh.dev/autokitteh/integrations/google/drive"
 	"go.autokitteh.dev/autokitteh/integrations/google/forms"
 	"go.autokitteh.dev/autokitteh/integrations/google/gmail"
 	"go.autokitteh.dev/autokitteh/integrations/google/internal/vars"
@@ -155,6 +156,12 @@ func (h handler) finalize(ctx context.Context, c sdkintegrations.ConnectionInit,
 	if err := calendar.UpdateWatches(ctx, h.vars, cid); err != nil {
 		l.Error("Google Calendar watches creation error", zap.Error(err))
 		c.AbortServerError("calendar watches creation error")
+		return
+	}
+
+	if err := drive.UpdateWatches(ctx, h.vars, cid); err != nil {
+		l.Error("Google Drive watches creation error", zap.Error(err))
+		c.AbortServerError("drive watches creation error")
 		return
 	}
 

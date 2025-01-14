@@ -27,6 +27,11 @@ var (
 	CalendarEventsWatchExp   = sdktypes.NewSymbol("CalendarEventsWatchExp")
 	CalendarEventsSyncToken  = sdktypes.NewSymbol("CalendarEventsSyncToken")
 
+	DriveChangesStartPageToken = sdktypes.NewSymbol("DriveChangesStartPageToken")
+	DriveEventsWatchExp        = sdktypes.NewSymbol("DriveEventsWatchExp")
+	DriveEventsWatchID         = sdktypes.NewSymbol("DriveEventsWatchID")
+	DriveEventsWatchResID      = sdktypes.NewSymbol("DriveEventsWatchResID")
+
 	FormID               = sdktypes.NewSymbol("FormID")
 	FormResponsesWatchID = sdktypes.NewSymbol("FormResponsesWatchID")
 	FormSchemaWatchID    = sdktypes.NewSymbol("FormSchemaWatchID")
