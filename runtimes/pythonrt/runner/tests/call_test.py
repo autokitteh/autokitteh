@@ -4,11 +4,12 @@ from time import sleep
 from types import ModuleType
 from unittest.mock import MagicMock
 
-import call
-import loader
 import pytest
 from autokitteh import activity
-from conftest import workflows, clear_module_cache
+from conftest import clear_module_cache, workflows
+
+import call
+import loader
 
 
 def test_sleep():
@@ -87,3 +88,30 @@ def test_is_module_func(monkeypatch: pytest.MonkeyPatch):
     assert ak_call.is_module_func(mod.on_event)  # Same handler file
     assert ak_call.is_module_func(mod.hlog.info)  # Same directory
     assert not ak_call.is_module_func(mod.json.dump)
+
+
+def named_fn():
+    pass
+
+
+class Inc:
+    def __init__(self, n):
+        self._n = n
+
+    def __call__(self, v):
+        return v + self._n
+
+    def n(self):
+        return self._n
+
+
+name_cases = [
+    (named_fn, "call_test.named_fn"),
+    (Inc(3), "call_test.Inc"),
+    (Inc(3).n, "call_test.Inc.n"),
+]
+
+
+@pytest.mark.parametrize("fn, name", name_cases)
+def test_full_func_name(fn, name):
+    assert call.full_func_name(fn) == name
