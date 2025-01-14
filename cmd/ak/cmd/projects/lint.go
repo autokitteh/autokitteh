@@ -154,7 +154,7 @@ func runLint(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	_, projectID, err := r.ProjectNameOrID(ctx, projectNameOrID)
+	projectID, err := r.ProjectNameOrID(ctx, projectNameOrID)
 	switch err {
 	case sdkerrors.ErrNotFound: // new project
 		// no need to check

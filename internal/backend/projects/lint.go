@@ -200,6 +200,8 @@ func checkTriggerNames(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string]
 	return vs
 }
 
+// parseCall parses a call string like "handler.py:on_event" and return file name and function name.
+
 func checkHandlers(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[string][]byte) []*sdktypes.CheckViolation {
 	var vs []*sdktypes.CheckViolation
 
@@ -209,7 +211,7 @@ func checkHandlers(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[str
 			continue
 		}
 
-		_, err := sdktypes.ParseCodeLocation(t.Call)
+		loc, err := sdktypes.StrictParseCodeLocation(t.Call)
 		if err != nil {
 			vs = append(vs, &sdktypes.CheckViolation{
 				FileName: manifestFilePath,
@@ -220,6 +222,7 @@ func checkHandlers(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[str
 			continue
 		}
 
+		fileName := loc.Path()
 		data, ok := resources[fileName]
 		if !ok {
 			vs = append(vs, &sdktypes.CheckViolation{
@@ -242,6 +245,7 @@ func checkHandlers(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[str
 			continue
 		}
 
+		handler := loc.Name()
 		if exports != nil && !slices.Contains(exports, handler) {
 			vs = append(vs, &sdktypes.CheckViolation{
 				FileName: manifestFilePath,
