@@ -2,7 +2,7 @@
 	Project linting
 
 We don't want to run a Python/NodeJS process on every call to lint, so we're using regular expression.
-This means we won't be right every time but close enought for now.
+This means we won't be right every time but close enough for now.
 Later we can think of running a lint/lsp server for these calls.
 */
 package projects
@@ -54,7 +54,7 @@ func Validate(projectID sdktypes.ProjectID, manifest *manifest.Manifest, resourc
 	return vs
 }
 
-var Rules = map[string]string{ // ID -> Descrption
+var Rules = map[string]string{ // ID -> Description
 	"E1":  "No triggers defined",
 	"E2":  "Project size too large",
 	"E3":  "Duplicate connection name",
