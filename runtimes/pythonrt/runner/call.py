@@ -4,8 +4,9 @@ from pathlib import Path
 from time import sleep
 
 import autokitteh
-import log
 from autokitteh import decorators
+
+import log
 from deterministic import is_deterministic
 
 # Functions that are called back to ak
@@ -23,12 +24,25 @@ def is_marked_activity(fn):
     return getattr(fn, decorators.ACTIVITY_ATTR, False)
 
 
+def callable_name(fn):
+    for attr in ("__qualname__", "__name__"):
+        name = getattr(fn, attr, None)
+        if name:
+            return name
+
+    if hasattr(fn, "__class__"):
+        return fn.__class__.__name__
+
+    return repr(fn)  # last resort
+
+
 def full_func_name(fn):
+    name = callable_name(fn)
     module = getattr(fn, "__module__", None)
     if module:
-        return f"{module}.{fn.__name__}"
+        return f"{module}.{name}"
 
-    return fn.__name__
+    return name
 
 
 def caller_info():

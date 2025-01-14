@@ -217,6 +217,8 @@ func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, cids []sd
 	}
 }
 
+// extractIDs extracts the app ID, team ID, and enterprise ID from the given
+// request body.
 func (h handler) extractIDs(body []byte, wantContentType string, l *zap.Logger) (string, string, string, error) {
 	// Option 1: JSON payloads.
 	if strings.HasPrefix(wantContentType, "application/json") {

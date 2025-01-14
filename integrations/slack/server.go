@@ -42,7 +42,8 @@ func Start(l *zap.Logger, muxes *muxes.Muxes, v sdkservices.Vars, d sdkservices.
 	// through AutoKitteh's auth middleware to extract the user ID from a cookie.
 	h := NewHandler(l, v)
 	muxes.Auth.Handle("GET "+defaultOauthPath, h)
-	muxes.Auth.HandleFunc("POST "+customOAuthPath, h.handleSave)
+	muxes.Auth.HandleFunc("GET "+customOAuthPath, h.handleSave)  // Web UI passthrough for OAuth.
+	muxes.Auth.HandleFunc("POST "+customOAuthPath, h.handleSave) // Internal UI passthrough for OAuth.
 
 	wsh := websockets.NewHandler(l, v, d, desc)
 	muxes.Auth.HandleFunc("POST "+savePath, wsh.HandleForm)
