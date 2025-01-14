@@ -21,7 +21,7 @@ var BotEventHandlers = map[string]BotEventHandler{
 	"app_home_opened": events.AppHomeOpenedHandler,
 	"app_mention":     events.AppMentionHandler,
 	// TODO: app_rate_limit
-	// TODO: app_uninstalled
+	"app_uninstalled": events.AppUninstalledTokensRevokedHandler,
 
 	"channel_archive": events.ChannelGroupMemberHandler,
 	"channel_created": events.ChannelCreatedRenameHandler,
@@ -46,7 +46,7 @@ var BotEventHandlers = map[string]BotEventHandler{
 	"reaction_added":   events.ReactionHandler,
 	"reaction_removed": events.ReactionHandler,
 
-	// TODO: tokens_revoked
+	"tokens_revoked": events.AppUninstalledTokensRevokedHandler,
 
 	"url_verification": events.URLVerificationHandler,
 }
