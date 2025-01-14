@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
 	"go.autokitteh.dev/autokitteh/internal/backend/projectsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/manifest"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
