@@ -22,26 +22,23 @@ func (gdb *gormdb) setVar(ctx context.Context, vr *scheme.Var) error {
 	return gdb.transaction(ctx, func(tx *tx) error {
 		db := tx.db
 
-		var (
-			tableName, idField string
-			deletedAt          gorm.DeletedAt
-		)
-
+		var count int64
 		if vr.IntegrationID == uuid.Nil {
-			tableName, idField = "projects", "project_id"
+			if err := db.Model(&scheme.Project{}).Where("project_id = ?", vr.ScopeID).Count(&count).Error; err != nil {
+				return err
+			}
 		} else {
-			tableName, idField = "connections", "connection_id"
+			if err := db.Model(&scheme.Connection{}).Where("connection_id = ?", vr.ScopeID).Count(&count).Error; err != nil {
+				return err
+			}
 		}
 
-		query := fmt.Sprintf("SELECT deleted_at FROM %s where %s = ? LIMIT 1", tableName, idField)
-		if err := db.Raw(query, vr.ScopeID).Scan(&deletedAt).Error; err != nil {
-			return err
-		}
-		if deletedAt.Valid { // entity (either connection or project) was deleted
-			return gorm.ErrForeignKeyViolated // emulate foreign keys check (#2)
+		if count == 0 {
+			return gorm.ErrForeignKeyViolated
 		}
 
 		return db.Clauses(clause.OnConflict{UpdateAll: true}).Create(&vr).Error
+
 	})
 }
 

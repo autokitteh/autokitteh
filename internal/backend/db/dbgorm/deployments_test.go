@@ -56,7 +56,7 @@ func listDeploymentsWithStatsAndAssert(t *testing.T, f *dbFixture, expected int)
 
 func (f *dbFixture) assertDeploymentsDeleted(t *testing.T, deployments ...scheme.Deployment) {
 	for _, deployment := range deployments {
-		assertSoftDeleted(t, f, deployment)
+		assertDeleted(t, f, deployment)
 	}
 }
 
@@ -191,7 +191,6 @@ func TestDeleteDeployment(t *testing.T) {
 	resetTimes(&deployments[0])
 	assert.Equal(t, dWS, deployments[0])
 
-	// delete deployment. Ensure deployment sessions are marked as deleted as well
 	assert.NoError(t, f.gormdb.deleteDeployment(f.ctx, d.DeploymentID))
 	f.assertDeploymentsDeleted(t, d)
 
@@ -200,12 +199,6 @@ func TestDeleteDeployment(t *testing.T) {
 
 	// TODO: meanwhile builds are not deleted when deployment is deleted
 }
-
-/*
-func TestDeleteDeploymentForeignKeys(t *testing.T) {
-	// deployment is soft-deleted, so no need to check foreign keys meanwhile
-}
-*/
 
 func TestUpdateDeploymentStateReturning(t *testing.T) {
 	f := preDeploymentTest(t)
