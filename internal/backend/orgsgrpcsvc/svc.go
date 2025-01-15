@@ -69,13 +69,11 @@ func (s *server) Get(ctx context.Context, req *connect.Request[orgsv1.GetRequest
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	if oid.IsValid() && n.IsValid() {
-		return nil, sdkerrors.NewInvalidArgumentError("only one of org id or name must be provided")
-	}
-
 	var o sdktypes.Org
 
-	if oid.IsValid() {
+	if oid.IsValid() && n.IsValid() {
+		err = sdkerrors.NewInvalidArgumentError("only one of org id or name must be provided")
+	} else if oid.IsValid() {
 		o, err = s.orgs.GetByID(ctx, oid)
 	} else {
 		o, err = s.orgs.GetByName(ctx, n)
