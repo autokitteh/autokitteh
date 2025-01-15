@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"strings"
 
-	"go.uber.org/zap"
 	"google.golang.org/api/drive/v3"
 
 	"go.autokitteh.dev/autokitteh/integrations/google/internal/vars"
@@ -56,16 +55,23 @@ func UpdateWatches(ctx context.Context, v sdkservices.Vars, connID sdktypes.Conn
 	return nil
 }
 
-func gotDriveScope(ctx context.Context, v sdkservices.Vars, cid sdktypes.ConnectionID) bool {
-	l := extrazap.ExtractLoggerFromContext(ctx)
-
-	vs, err := v.Get(ctx, sdktypes.NewVarScopeID(cid), vars.UserScope)
+func gotDriveScope(ctx context.Context, v sdkservices.Vars, connID sdktypes.ConnectionID) bool {
+	vs, err := v.Get(ctx, sdktypes.NewVarScopeID(connID))
 	if err != nil {
-		l.Error("Failed to get Google OAuth scopes", zap.Error(err))
 		return false
 	}
 
-	return strings.Contains(vs.GetValue(vars.UserScope), "https://www.googleapis.com/auth/drive")
+	// If using OAuth, check for scope
+	if userScope := vs.GetValue(vars.UserScope); userScope != "" {
+		return strings.Contains(userScope, "https://www.googleapis.com/auth/drive")
+	}
+
+	// If using service account (JSON), assume it has the necessary scope
+	if jsonCreds := vs.GetValue(vars.JSON); jsonCreds != "" {
+		return true
+	}
+
+	return false
 }
 
 func (a api) saveWatchChannel(ctx context.Context, cid sdktypes.ConnectionID, wc *drive.Channel) error {

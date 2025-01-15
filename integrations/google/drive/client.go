@@ -67,9 +67,9 @@ func (a api) driveClient(ctx context.Context) (*drive.Service, error) {
 	var src oauth2.TokenSource
 	if data.OAuthData != "" {
 		src, err = oauthTokenSource(ctx, data.OAuthData)
-	} // else {
-	// 	src, err = jwtTokenSource(ctx, data.JSON)
-	// }
+	} else {
+		src, err = jwtTokenSource(ctx, data.JSON)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -88,6 +88,17 @@ func oauthTokenSource(ctx context.Context, data string) (oauth2.TokenSource, err
 	}
 
 	return oauthConfig().TokenSource(ctx, d.Token), nil
+}
+
+func jwtTokenSource(ctx context.Context, data string) (oauth2.TokenSource, error) {
+	scopes := oauthConfig().Scopes
+
+	cfg, err := google.JWTConfigFromJSON([]byte(data), scopes...)
+	if err != nil {
+		return nil, err
+	}
+
+	return cfg.TokenSource(ctx), nil
 }
 
 func oauthConfig() *oauth2.Config {
