@@ -9,11 +9,12 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbfactory"
+	"go.autokitteh.dev/autokitteh/internal/backend/gormkitteh"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 func NewTestDB(t *testing.T, objs ...sdktypes.Object) db.DB {
-	tdb, err := dbfactory.New(zaptest.NewLogger(t), dbfactory.Configs.Test)
+	tdb, err := dbfactory.New(zaptest.NewLogger(t), &gormkitteh.Config{DSN: "sqlite::memory:" /* not shared! */})
 	require.NoError(t, err)
 
 	ctx := context.Background()

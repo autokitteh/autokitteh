@@ -7,10 +7,10 @@ import (
 )
 
 type ListConnectionsFilter struct {
-	IntegrationID sdktypes.IntegrationID
-	OrgID         sdktypes.OrgID
-	ProjectID     sdktypes.ProjectID
-	StatusCode    sdktypes.StatusCode
+	IntegrationID sdktypes.IntegrationID `json:"integration_id"`
+	OrgID         sdktypes.OrgID         `json:"org_id"`
+	ProjectID     sdktypes.ProjectID     `json:"project_id"`
+	StatusCode    sdktypes.StatusCode    `json:"status_code"`
 }
 
 func (f ListConnectionsFilter) AnyIDSpecified() bool {

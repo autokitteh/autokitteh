@@ -23,7 +23,10 @@ ak users create --email rat@cats
 return code == 0
 
 ak users get $GIZMO_UID -f
-return code == $RC_NOT_FOUND
+return code == 0
+
+ak users get $SHOOGY_UID -f
+return code == 0
 
 ak users get-id zumi@cats -f
 return code == 0
