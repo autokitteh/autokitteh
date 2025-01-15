@@ -311,3 +311,77 @@ export class GetIDResponse extends Message<GetIDResponse> {
   }
 }
 
+/**
+ * @generated from message autokitteh.users.v1.BatchGetRequest
+ */
+export class BatchGetRequest extends Message<BatchGetRequest> {
+  /**
+   * @generated from field: repeated string user_ids = 1;
+   */
+  userIds: string[] = [];
+
+  constructor(data?: PartialMessage<BatchGetRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.users.v1.BatchGetRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "user_ids", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BatchGetRequest {
+    return new BatchGetRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BatchGetRequest {
+    return new BatchGetRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BatchGetRequest {
+    return new BatchGetRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: BatchGetRequest | PlainMessage<BatchGetRequest> | undefined, b: BatchGetRequest | PlainMessage<BatchGetRequest> | undefined): boolean {
+    return proto3.util.equals(BatchGetRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.users.v1.BatchGetResponse
+ */
+export class BatchGetResponse extends Message<BatchGetResponse> {
+  /**
+   * @generated from field: repeated autokitteh.users.v1.User users = 1;
+   */
+  users: User[] = [];
+
+  constructor(data?: PartialMessage<BatchGetResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.users.v1.BatchGetResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "users", kind: "message", T: User, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BatchGetResponse {
+    return new BatchGetResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BatchGetResponse {
+    return new BatchGetResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BatchGetResponse {
+    return new BatchGetResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: BatchGetResponse | PlainMessage<BatchGetResponse> | undefined, b: BatchGetResponse | PlainMessage<BatchGetResponse> | undefined): boolean {
+    return proto3.util.equals(BatchGetResponse, a, b);
+  }
+}
+

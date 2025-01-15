@@ -29,6 +29,11 @@ class UsersServiceStub(object):
                 request_serializer=autokitteh_dot_users_dot_v1_dot_svc__pb2.GetIDRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_users_dot_v1_dot_svc__pb2.GetIDResponse.FromString,
                 )
+        self.BatchGet = channel.unary_unary(
+                '/autokitteh.users.v1.UsersService/BatchGet',
+                request_serializer=autokitteh_dot_users_dot_v1_dot_svc__pb2.BatchGetRequest.SerializeToString,
+                response_deserializer=autokitteh_dot_users_dot_v1_dot_svc__pb2.BatchGetResponse.FromString,
+                )
         self.Update = channel.unary_unary(
                 '/autokitteh.users.v1.UsersService/Update',
                 request_serializer=autokitteh_dot_users_dot_v1_dot_svc__pb2.UpdateRequest.SerializeToString,
@@ -57,6 +62,13 @@ class UsersServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def BatchGet(self, request, context):
+        """BatchGet returns a list of users for the given org_ids, if the org user not exist, it will not be returned.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def Update(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -80,6 +92,11 @@ def add_UsersServiceServicer_to_server(servicer, server):
                     servicer.GetID,
                     request_deserializer=autokitteh_dot_users_dot_v1_dot_svc__pb2.GetIDRequest.FromString,
                     response_serializer=autokitteh_dot_users_dot_v1_dot_svc__pb2.GetIDResponse.SerializeToString,
+            ),
+            'BatchGet': grpc.unary_unary_rpc_method_handler(
+                    servicer.BatchGet,
+                    request_deserializer=autokitteh_dot_users_dot_v1_dot_svc__pb2.BatchGetRequest.FromString,
+                    response_serializer=autokitteh_dot_users_dot_v1_dot_svc__pb2.BatchGetResponse.SerializeToString,
             ),
             'Update': grpc.unary_unary_rpc_method_handler(
                     servicer.Update,
@@ -144,6 +161,23 @@ class UsersService(object):
         return grpc.experimental.unary_unary(request, target, '/autokitteh.users.v1.UsersService/GetID',
             autokitteh_dot_users_dot_v1_dot_svc__pb2.GetIDRequest.SerializeToString,
             autokitteh_dot_users_dot_v1_dot_svc__pb2.GetIDResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def BatchGet(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/autokitteh.users.v1.UsersService/BatchGet',
+            autokitteh_dot_users_dot_v1_dot_svc__pb2.BatchGetRequest.SerializeToString,
+            autokitteh_dot_users_dot_v1_dot_svc__pb2.BatchGetResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 

@@ -12,11 +12,12 @@ _sym_db = _symbol_database.Default()
 
 
 from autokitteh_pb.orgs.v1 import org_pb2 as autokitteh_dot_orgs_dot_v1_dot_org__pb2
+from autokitteh_pb.users.v1 import user_pb2 as autokitteh_dot_users_dot_v1_dot_user__pb2
 from buf.validate import validate_pb2 as buf_dot_validate_dot_validate__pb2
 from google.protobuf import field_mask_pb2 as google_dot_protobuf_dot_field__mask__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1c\x61utokitteh/orgs/v1/svc.proto\x12\x12\x61utokitteh.orgs.v1\x1a\x1c\x61utokitteh/orgs/v1/org.proto\x1a\x1b\x62uf/validate/validate.proto\x1a google/protobuf/field_mask.proto\"C\n\rCreateRequest\x12\x32\n\x03org\x18\x01 \x01(\x0b\x32\x17.autokitteh.orgs.v1.OrgB\x07\xfa\xf7\x18\x03\xc8\x01\x01R\x03org\"1\n\x0e\x43reateResponse\x12\x1f\n\x06org_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x05orgId\"7\n\nGetRequest\x12\x15\n\x06org_id\x18\x01 \x01(\tR\x05orgId\x12\x12\n\x04name\x18\x02 \x01(\tR\x04name\"8\n\x0bGetResponse\x12)\n\x03org\x18\x01 \x01(\x0b\x32\x17.autokitteh.orgs.v1.OrgR\x03org\"0\n\rDeleteRequest\x12\x1f\n\x06org_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x05orgId\"\x10\n\x0e\x44\x65leteResponse\"~\n\rUpdateRequest\x12\x32\n\x03org\x18\x01 \x01(\x0b\x32\x17.autokitteh.orgs.v1.OrgB\x07\xfa\xf7\x18\x03\xc8\x01\x01R\x03org\x12\x39\n\nfield_mask\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.FieldMaskR\tfieldMask\"\x10\n\x0eUpdateResponse\"R\n\x10\x41\x64\x64MemberRequest\x12>\n\x06member\x18\x03 \x01(\x0b\x32\x1d.autokitteh.orgs.v1.OrgMemberB\x07\xfa\xf7\x18\x03\xc8\x01\x01R\x06member\"\x13\n\x11\x41\x64\x64MemberResponse\"Y\n\x13RemoveMemberRequest\x12!\n\x07user_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x06userId\x12\x1f\n\x06org_id\x18\x02 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x05orgId\"\x16\n\x14RemoveMemberResponse\"V\n\x10GetMemberRequest\x12!\n\x07user_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x06userId\x12\x1f\n\x06org_id\x18\x02 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x05orgId\"J\n\x11GetMemberResponse\x12\x35\n\x06member\x18\x01 \x01(\x0b\x32\x1d.autokitteh.orgs.v1.OrgMemberR\x06member\"5\n\x12ListMembersRequest\x12\x1f\n\x06org_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x05orgId\"\\\n\x13ListMembersResponse\x12\x45\n\x07members\x18\x01 \x03(\x0b\x32\x1d.autokitteh.orgs.v1.OrgMemberB\x0c\xfa\xf7\x18\x08\x92\x01\x05\"\x03\xc8\x01\x01R\x07members\"S\n\x15GetOrgsForUserRequest\x12\x17\n\x07user_id\x18\x01 \x01(\tR\x06userId\x12!\n\x0cinclude_orgs\x18\x02 \x01(\x08R\x0bincludeOrgs\"\xfb\x01\n\x16GetOrgsForUserResponse\x12\x45\n\x07members\x18\x01 \x03(\x0b\x32\x1d.autokitteh.orgs.v1.OrgMemberB\x0c\xfa\xf7\x18\x08\x92\x01\x05\"\x03\xc8\x01\x01R\x07members\x12H\n\x04orgs\x18\x02 \x03(\x0b\x32\x34.autokitteh.orgs.v1.GetOrgsForUserResponse.OrgsEntryR\x04orgs\x1aP\n\tOrgsEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12-\n\x05value\x18\x02 \x01(\x0b\x32\x17.autokitteh.orgs.v1.OrgR\x05value:\x02\x38\x01\"\x87\x01\n\x13UpdateMemberRequest\x12\x35\n\x06member\x18\x03 \x01(\x0b\x32\x1d.autokitteh.orgs.v1.OrgMemberR\x06member\x12\x39\n\nfield_mask\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.FieldMaskR\tfieldMask\"\x16\n\x14UpdateMemberResponse2\x8b\x07\n\x0bOrgsService\x12O\n\x06\x43reate\x12!.autokitteh.orgs.v1.CreateRequest\x1a\".autokitteh.orgs.v1.CreateResponse\x12\x46\n\x03Get\x12\x1e.autokitteh.orgs.v1.GetRequest\x1a\x1f.autokitteh.orgs.v1.GetResponse\x12O\n\x06Update\x12!.autokitteh.orgs.v1.UpdateRequest\x1a\".autokitteh.orgs.v1.UpdateResponse\x12O\n\x06\x44\x65lete\x12!.autokitteh.orgs.v1.DeleteRequest\x1a\".autokitteh.orgs.v1.DeleteResponse\x12X\n\tAddMember\x12$.autokitteh.orgs.v1.AddMemberRequest\x1a%.autokitteh.orgs.v1.AddMemberResponse\x12\x61\n\x0cUpdateMember\x12\'.autokitteh.orgs.v1.UpdateMemberRequest\x1a(.autokitteh.orgs.v1.UpdateMemberResponse\x12\x61\n\x0cRemoveMember\x12\'.autokitteh.orgs.v1.RemoveMemberRequest\x1a(.autokitteh.orgs.v1.RemoveMemberResponse\x12^\n\x0bListMembers\x12&.autokitteh.orgs.v1.ListMembersRequest\x1a\'.autokitteh.orgs.v1.ListMembersResponse\x12X\n\tGetMember\x12$.autokitteh.orgs.v1.GetMemberRequest\x1a%.autokitteh.orgs.v1.GetMemberResponse\x12g\n\x0eGetOrgsForUser\x12).autokitteh.orgs.v1.GetOrgsForUserRequest\x1a*.autokitteh.orgs.v1.GetOrgsForUserResponseB\xd1\x01\n\x16\x63om.autokitteh.orgs.v1B\x08SvcProtoP\x01ZCgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/orgs/v1;orgsv1\xa2\x02\x03\x41OX\xaa\x02\x12\x41utokitteh.Orgs.V1\xca\x02\x12\x41utokitteh\\Orgs\\V1\xe2\x02\x1e\x41utokitteh\\Orgs\\V1\\GPBMetadata\xea\x02\x14\x41utokitteh::Orgs::V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1c\x61utokitteh/orgs/v1/svc.proto\x12\x12\x61utokitteh.orgs.v1\x1a\x1c\x61utokitteh/orgs/v1/org.proto\x1a\x1e\x61utokitteh/users/v1/user.proto\x1a\x1b\x62uf/validate/validate.proto\x1a google/protobuf/field_mask.proto\"C\n\rCreateRequest\x12\x32\n\x03org\x18\x01 \x01(\x0b\x32\x17.autokitteh.orgs.v1.OrgB\x07\xfa\xf7\x18\x03\xc8\x01\x01R\x03org\"1\n\x0e\x43reateResponse\x12\x1f\n\x06org_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x05orgId\"7\n\nGetRequest\x12\x15\n\x06org_id\x18\x01 \x01(\tR\x05orgId\x12\x12\n\x04name\x18\x02 \x01(\tR\x04name\"8\n\x0bGetResponse\x12)\n\x03org\x18\x01 \x01(\x0b\x32\x17.autokitteh.orgs.v1.OrgR\x03org\"9\n\x0f\x42\x61tchGetRequest\x12&\n\x07org_ids\x18\x01 \x03(\tB\r\xfa\xf7\x18\t\x92\x01\x06\"\x04r\x02\x10\x01R\x06orgIds\"M\n\x10\x42\x61tchGetResponse\x12\x39\n\x04orgs\x18\x01 \x03(\x0b\x32\x17.autokitteh.orgs.v1.OrgB\x0c\xfa\xf7\x18\x08\x92\x01\x05\"\x03\xc8\x01\x01R\x04orgs\"0\n\rDeleteRequest\x12\x1f\n\x06org_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x05orgId\"\x10\n\x0e\x44\x65leteResponse\"~\n\rUpdateRequest\x12\x32\n\x03org\x18\x01 \x01(\x0b\x32\x17.autokitteh.orgs.v1.OrgB\x07\xfa\xf7\x18\x03\xc8\x01\x01R\x03org\x12\x39\n\nfield_mask\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.FieldMaskR\tfieldMask\"\x10\n\x0eUpdateResponse\"R\n\x10\x41\x64\x64MemberRequest\x12>\n\x06member\x18\x03 \x01(\x0b\x32\x1d.autokitteh.orgs.v1.OrgMemberB\x07\xfa\xf7\x18\x03\xc8\x01\x01R\x06member\"\x13\n\x11\x41\x64\x64MemberResponse\"Y\n\x13RemoveMemberRequest\x12!\n\x07user_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x06userId\x12\x1f\n\x06org_id\x18\x02 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x05orgId\"\x16\n\x14RemoveMemberResponse\"V\n\x10GetMemberRequest\x12!\n\x07user_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x06userId\x12\x1f\n\x06org_id\x18\x02 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x05orgId\"J\n\x11GetMemberResponse\x12\x35\n\x06member\x18\x01 \x01(\x0b\x32\x1d.autokitteh.orgs.v1.OrgMemberR\x06member\"Z\n\x12ListMembersRequest\x12\x1f\n\x06org_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x05orgId\x12#\n\rinclude_users\x18\x02 \x01(\x08R\x0cincludeUsers\"\xfb\x01\n\x13ListMembersResponse\x12\x45\n\x07members\x18\x01 \x03(\x0b\x32\x1d.autokitteh.orgs.v1.OrgMemberB\x0c\xfa\xf7\x18\x08\x92\x01\x05\"\x03\xc8\x01\x01R\x07members\x12H\n\x05users\x18\x02 \x03(\x0b\x32\x32.autokitteh.orgs.v1.ListMembersResponse.UsersEntryR\x05users\x1aS\n\nUsersEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12/\n\x05value\x18\x02 \x01(\x0b\x32\x19.autokitteh.users.v1.UserR\x05value:\x02\x38\x01\"S\n\x15GetOrgsForUserRequest\x12\x17\n\x07user_id\x18\x01 \x01(\tR\x06userId\x12!\n\x0cinclude_orgs\x18\x02 \x01(\x08R\x0bincludeOrgs\"\xfb\x01\n\x16GetOrgsForUserResponse\x12\x45\n\x07members\x18\x01 \x03(\x0b\x32\x1d.autokitteh.orgs.v1.OrgMemberB\x0c\xfa\xf7\x18\x08\x92\x01\x05\"\x03\xc8\x01\x01R\x07members\x12H\n\x04orgs\x18\x02 \x03(\x0b\x32\x34.autokitteh.orgs.v1.GetOrgsForUserResponse.OrgsEntryR\x04orgs\x1aP\n\tOrgsEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12-\n\x05value\x18\x02 \x01(\x0b\x32\x17.autokitteh.orgs.v1.OrgR\x05value:\x02\x38\x01\"\x87\x01\n\x13UpdateMemberRequest\x12\x35\n\x06member\x18\x03 \x01(\x0b\x32\x1d.autokitteh.orgs.v1.OrgMemberR\x06member\x12\x39\n\nfield_mask\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.FieldMaskR\tfieldMask\"\x16\n\x14UpdateMemberResponse2\xe2\x07\n\x0bOrgsService\x12O\n\x06\x43reate\x12!.autokitteh.orgs.v1.CreateRequest\x1a\".autokitteh.orgs.v1.CreateResponse\x12\x46\n\x03Get\x12\x1e.autokitteh.orgs.v1.GetRequest\x1a\x1f.autokitteh.orgs.v1.GetResponse\x12U\n\x08\x42\x61tchGet\x12#.autokitteh.orgs.v1.BatchGetRequest\x1a$.autokitteh.orgs.v1.BatchGetResponse\x12O\n\x06Update\x12!.autokitteh.orgs.v1.UpdateRequest\x1a\".autokitteh.orgs.v1.UpdateResponse\x12O\n\x06\x44\x65lete\x12!.autokitteh.orgs.v1.DeleteRequest\x1a\".autokitteh.orgs.v1.DeleteResponse\x12X\n\tAddMember\x12$.autokitteh.orgs.v1.AddMemberRequest\x1a%.autokitteh.orgs.v1.AddMemberResponse\x12\x61\n\x0cUpdateMember\x12\'.autokitteh.orgs.v1.UpdateMemberRequest\x1a(.autokitteh.orgs.v1.UpdateMemberResponse\x12\x61\n\x0cRemoveMember\x12\'.autokitteh.orgs.v1.RemoveMemberRequest\x1a(.autokitteh.orgs.v1.RemoveMemberResponse\x12^\n\x0bListMembers\x12&.autokitteh.orgs.v1.ListMembersRequest\x1a\'.autokitteh.orgs.v1.ListMembersResponse\x12X\n\tGetMember\x12$.autokitteh.orgs.v1.GetMemberRequest\x1a%.autokitteh.orgs.v1.GetMemberResponse\x12g\n\x0eGetOrgsForUser\x12).autokitteh.orgs.v1.GetOrgsForUserRequest\x1a*.autokitteh.orgs.v1.GetOrgsForUserResponseB\xd1\x01\n\x16\x63om.autokitteh.orgs.v1B\x08SvcProtoP\x01ZCgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/orgs/v1;orgsv1\xa2\x02\x03\x41OX\xaa\x02\x12\x41utokitteh.Orgs.V1\xca\x02\x12\x41utokitteh\\Orgs\\V1\xe2\x02\x1e\x41utokitteh\\Orgs\\V1\\GPBMetadata\xea\x02\x14\x41utokitteh::Orgs::V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -28,6 +29,10 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _CREATEREQUEST.fields_by_name['org']._serialized_options = b'\372\367\030\003\310\001\001'
   _CREATERESPONSE.fields_by_name['org_id']._options = None
   _CREATERESPONSE.fields_by_name['org_id']._serialized_options = b'\372\367\030\004r\002\020\001'
+  _BATCHGETREQUEST.fields_by_name['org_ids']._options = None
+  _BATCHGETREQUEST.fields_by_name['org_ids']._serialized_options = b'\372\367\030\t\222\001\006\"\004r\002\020\001'
+  _BATCHGETRESPONSE.fields_by_name['orgs']._options = None
+  _BATCHGETRESPONSE.fields_by_name['orgs']._serialized_options = b'\372\367\030\010\222\001\005\"\003\310\001\001'
   _DELETEREQUEST.fields_by_name['org_id']._options = None
   _DELETEREQUEST.fields_by_name['org_id']._serialized_options = b'\372\367\030\004r\002\020\001'
   _UPDATEREQUEST.fields_by_name['org']._options = None
@@ -44,54 +49,62 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _GETMEMBERREQUEST.fields_by_name['org_id']._serialized_options = b'\372\367\030\004r\002\020\001'
   _LISTMEMBERSREQUEST.fields_by_name['org_id']._options = None
   _LISTMEMBERSREQUEST.fields_by_name['org_id']._serialized_options = b'\372\367\030\004r\002\020\001'
+  _LISTMEMBERSRESPONSE_USERSENTRY._options = None
+  _LISTMEMBERSRESPONSE_USERSENTRY._serialized_options = b'8\001'
   _LISTMEMBERSRESPONSE.fields_by_name['members']._options = None
   _LISTMEMBERSRESPONSE.fields_by_name['members']._serialized_options = b'\372\367\030\010\222\001\005\"\003\310\001\001'
   _GETORGSFORUSERRESPONSE_ORGSENTRY._options = None
   _GETORGSFORUSERRESPONSE_ORGSENTRY._serialized_options = b'8\001'
   _GETORGSFORUSERRESPONSE.fields_by_name['members']._options = None
   _GETORGSFORUSERRESPONSE.fields_by_name['members']._serialized_options = b'\372\367\030\010\222\001\005\"\003\310\001\001'
-  _globals['_CREATEREQUEST']._serialized_start=145
-  _globals['_CREATEREQUEST']._serialized_end=212
-  _globals['_CREATERESPONSE']._serialized_start=214
-  _globals['_CREATERESPONSE']._serialized_end=263
-  _globals['_GETREQUEST']._serialized_start=265
-  _globals['_GETREQUEST']._serialized_end=320
-  _globals['_GETRESPONSE']._serialized_start=322
-  _globals['_GETRESPONSE']._serialized_end=378
-  _globals['_DELETEREQUEST']._serialized_start=380
-  _globals['_DELETEREQUEST']._serialized_end=428
-  _globals['_DELETERESPONSE']._serialized_start=430
-  _globals['_DELETERESPONSE']._serialized_end=446
-  _globals['_UPDATEREQUEST']._serialized_start=448
-  _globals['_UPDATEREQUEST']._serialized_end=574
-  _globals['_UPDATERESPONSE']._serialized_start=576
-  _globals['_UPDATERESPONSE']._serialized_end=592
-  _globals['_ADDMEMBERREQUEST']._serialized_start=594
-  _globals['_ADDMEMBERREQUEST']._serialized_end=676
-  _globals['_ADDMEMBERRESPONSE']._serialized_start=678
-  _globals['_ADDMEMBERRESPONSE']._serialized_end=697
-  _globals['_REMOVEMEMBERREQUEST']._serialized_start=699
-  _globals['_REMOVEMEMBERREQUEST']._serialized_end=788
-  _globals['_REMOVEMEMBERRESPONSE']._serialized_start=790
-  _globals['_REMOVEMEMBERRESPONSE']._serialized_end=812
-  _globals['_GETMEMBERREQUEST']._serialized_start=814
-  _globals['_GETMEMBERREQUEST']._serialized_end=900
-  _globals['_GETMEMBERRESPONSE']._serialized_start=902
-  _globals['_GETMEMBERRESPONSE']._serialized_end=976
-  _globals['_LISTMEMBERSREQUEST']._serialized_start=978
-  _globals['_LISTMEMBERSREQUEST']._serialized_end=1031
-  _globals['_LISTMEMBERSRESPONSE']._serialized_start=1033
-  _globals['_LISTMEMBERSRESPONSE']._serialized_end=1125
-  _globals['_GETORGSFORUSERREQUEST']._serialized_start=1127
-  _globals['_GETORGSFORUSERREQUEST']._serialized_end=1210
-  _globals['_GETORGSFORUSERRESPONSE']._serialized_start=1213
-  _globals['_GETORGSFORUSERRESPONSE']._serialized_end=1464
-  _globals['_GETORGSFORUSERRESPONSE_ORGSENTRY']._serialized_start=1384
-  _globals['_GETORGSFORUSERRESPONSE_ORGSENTRY']._serialized_end=1464
-  _globals['_UPDATEMEMBERREQUEST']._serialized_start=1467
-  _globals['_UPDATEMEMBERREQUEST']._serialized_end=1602
-  _globals['_UPDATEMEMBERRESPONSE']._serialized_start=1604
-  _globals['_UPDATEMEMBERRESPONSE']._serialized_end=1626
-  _globals['_ORGSSERVICE']._serialized_start=1629
-  _globals['_ORGSSERVICE']._serialized_end=2536
+  _globals['_CREATEREQUEST']._serialized_start=177
+  _globals['_CREATEREQUEST']._serialized_end=244
+  _globals['_CREATERESPONSE']._serialized_start=246
+  _globals['_CREATERESPONSE']._serialized_end=295
+  _globals['_GETREQUEST']._serialized_start=297
+  _globals['_GETREQUEST']._serialized_end=352
+  _globals['_GETRESPONSE']._serialized_start=354
+  _globals['_GETRESPONSE']._serialized_end=410
+  _globals['_BATCHGETREQUEST']._serialized_start=412
+  _globals['_BATCHGETREQUEST']._serialized_end=469
+  _globals['_BATCHGETRESPONSE']._serialized_start=471
+  _globals['_BATCHGETRESPONSE']._serialized_end=548
+  _globals['_DELETEREQUEST']._serialized_start=550
+  _globals['_DELETEREQUEST']._serialized_end=598
+  _globals['_DELETERESPONSE']._serialized_start=600
+  _globals['_DELETERESPONSE']._serialized_end=616
+  _globals['_UPDATEREQUEST']._serialized_start=618
+  _globals['_UPDATEREQUEST']._serialized_end=744
+  _globals['_UPDATERESPONSE']._serialized_start=746
+  _globals['_UPDATERESPONSE']._serialized_end=762
+  _globals['_ADDMEMBERREQUEST']._serialized_start=764
+  _globals['_ADDMEMBERREQUEST']._serialized_end=846
+  _globals['_ADDMEMBERRESPONSE']._serialized_start=848
+  _globals['_ADDMEMBERRESPONSE']._serialized_end=867
+  _globals['_REMOVEMEMBERREQUEST']._serialized_start=869
+  _globals['_REMOVEMEMBERREQUEST']._serialized_end=958
+  _globals['_REMOVEMEMBERRESPONSE']._serialized_start=960
+  _globals['_REMOVEMEMBERRESPONSE']._serialized_end=982
+  _globals['_GETMEMBERREQUEST']._serialized_start=984
+  _globals['_GETMEMBERREQUEST']._serialized_end=1070
+  _globals['_GETMEMBERRESPONSE']._serialized_start=1072
+  _globals['_GETMEMBERRESPONSE']._serialized_end=1146
+  _globals['_LISTMEMBERSREQUEST']._serialized_start=1148
+  _globals['_LISTMEMBERSREQUEST']._serialized_end=1238
+  _globals['_LISTMEMBERSRESPONSE']._serialized_start=1241
+  _globals['_LISTMEMBERSRESPONSE']._serialized_end=1492
+  _globals['_LISTMEMBERSRESPONSE_USERSENTRY']._serialized_start=1409
+  _globals['_LISTMEMBERSRESPONSE_USERSENTRY']._serialized_end=1492
+  _globals['_GETORGSFORUSERREQUEST']._serialized_start=1494
+  _globals['_GETORGSFORUSERREQUEST']._serialized_end=1577
+  _globals['_GETORGSFORUSERRESPONSE']._serialized_start=1580
+  _globals['_GETORGSFORUSERRESPONSE']._serialized_end=1831
+  _globals['_GETORGSFORUSERRESPONSE_ORGSENTRY']._serialized_start=1751
+  _globals['_GETORGSFORUSERRESPONSE_ORGSENTRY']._serialized_end=1831
+  _globals['_UPDATEMEMBERREQUEST']._serialized_start=1834
+  _globals['_UPDATEMEMBERREQUEST']._serialized_end=1969
+  _globals['_UPDATEMEMBERRESPONSE']._serialized_start=1971
+  _globals['_UPDATEMEMBERRESPONSE']._serialized_end=1993
+  _globals['_ORGSSERVICE']._serialized_start=1996
+  _globals['_ORGSSERVICE']._serialized_end=2990
 # @@protoc_insertion_point(module_scope)

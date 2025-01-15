@@ -24,7 +24,7 @@ var getOrgsCmd = common.StandardCommand(&cobra.Command{
 		)
 
 		if len(args) > 0 {
-			_, uid, err = r.User(ctx, args[0])
+			uid, err = r.UserID(ctx, args[0])
 			err = common.AddNotFoundErrIfCond(err, uid.IsValid())
 		}
 

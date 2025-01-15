@@ -2,9 +2,13 @@ package dbgorm
 
 import (
 	"context"
+	"fmt"
+
+	"github.com/google/uuid"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authusers"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -88,4 +92,25 @@ func (gdb *gormdb) UpdateUser(ctx context.Context, u sdktypes.User, fm *sdktypes
 			Updates(data).
 			Error,
 	)
+}
+
+func (gdb *gormdb) BatchGetUsers(ctx context.Context, uids []sdktypes.UserID) ([]sdktypes.User, error) {
+	q := gdb.db.WithContext(ctx).Where("user_id in ?", kittehs.Transform(uids, func(uid sdktypes.UserID) uuid.UUID { return uid.UUIDValue() }))
+
+	var rs []scheme.User
+	err := q.Find(&rs).Error
+	if err != nil {
+		return nil, translateError(err)
+	}
+
+	users, err := kittehs.TransformError(rs, scheme.ParseUser)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse users: %w", err)
+	}
+
+	if kittehs.ContainedIn(uids...)(authusers.DefaultUser.ID()) {
+		users = append(users, authusers.DefaultUser)
+	}
+
+	return users, err
 }
