@@ -44,6 +44,16 @@ class BuildsServiceStub(object):
                 request_serializer=autokitteh_dot_builds_dot_v1_dot_svc__pb2.DescribeRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_builds_dot_v1_dot_svc__pb2.DescribeResponse.FromString,
                 )
+        self.Create = channel.unary_unary(
+                '/autokitteh.builds.v1.BuildsService/Create',
+                request_serializer=autokitteh_dot_builds_dot_v1_dot_svc__pb2.CreateRequest.SerializeToString,
+                response_deserializer=autokitteh_dot_builds_dot_v1_dot_svc__pb2.CreateResponse.FromString,
+                )
+        self.UpdateBuild = channel.unary_unary(
+                '/autokitteh.builds.v1.BuildsService/UpdateBuild',
+                request_serializer=autokitteh_dot_builds_dot_v1_dot_svc__pb2.UpdateBuildRequest.SerializeToString,
+                response_deserializer=autokitteh_dot_builds_dot_v1_dot_svc__pb2.UpdateBuildResponse.FromString,
+                )
 
 
 class BuildsServiceServicer(object):
@@ -62,7 +72,8 @@ class BuildsServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def Save(self, request, context):
-        """Missing associated documentation comment in .proto file."""
+        """(legacy) Create a new build and updates its status to READY.
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -80,6 +91,19 @@ class BuildsServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def Describe(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Create(self, request, context):
+        """Create a build in status PENDING.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def UpdateBuild(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -117,6 +141,16 @@ def add_BuildsServiceServicer_to_server(servicer, server):
                     servicer.Describe,
                     request_deserializer=autokitteh_dot_builds_dot_v1_dot_svc__pb2.DescribeRequest.FromString,
                     response_serializer=autokitteh_dot_builds_dot_v1_dot_svc__pb2.DescribeResponse.SerializeToString,
+            ),
+            'Create': grpc.unary_unary_rpc_method_handler(
+                    servicer.Create,
+                    request_deserializer=autokitteh_dot_builds_dot_v1_dot_svc__pb2.CreateRequest.FromString,
+                    response_serializer=autokitteh_dot_builds_dot_v1_dot_svc__pb2.CreateResponse.SerializeToString,
+            ),
+            'UpdateBuild': grpc.unary_unary_rpc_method_handler(
+                    servicer.UpdateBuild,
+                    request_deserializer=autokitteh_dot_builds_dot_v1_dot_svc__pb2.UpdateBuildRequest.FromString,
+                    response_serializer=autokitteh_dot_builds_dot_v1_dot_svc__pb2.UpdateBuildResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -227,5 +261,39 @@ class BuildsService(object):
         return grpc.experimental.unary_unary(request, target, '/autokitteh.builds.v1.BuildsService/Describe',
             autokitteh_dot_builds_dot_v1_dot_svc__pb2.DescribeRequest.SerializeToString,
             autokitteh_dot_builds_dot_v1_dot_svc__pb2.DescribeResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def Create(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/autokitteh.builds.v1.BuildsService/Create',
+            autokitteh_dot_builds_dot_v1_dot_svc__pb2.CreateRequest.SerializeToString,
+            autokitteh_dot_builds_dot_v1_dot_svc__pb2.CreateResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def UpdateBuild(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/autokitteh.builds.v1.BuildsService/UpdateBuild',
+            autokitteh_dot_builds_dot_v1_dot_svc__pb2.UpdateBuildRequest.SerializeToString,
+            autokitteh_dot_builds_dot_v1_dot_svc__pb2.UpdateBuildResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

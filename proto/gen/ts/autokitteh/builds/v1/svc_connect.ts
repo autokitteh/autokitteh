@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { DeleteRequest, DeleteResponse, DescribeRequest, DescribeResponse, DownloadRequest, DownloadResponse, GetRequest, GetResponse, ListRequest, ListResponse, SaveRequest, SaveResponse } from "./svc_pb.js";
+import { CreateRequest, CreateResponse, DeleteRequest, DeleteResponse, DescribeRequest, DescribeResponse, DownloadRequest, DownloadResponse, GetRequest, GetResponse, ListRequest, ListResponse, SaveRequest, SaveResponse, UpdateBuildRequest, UpdateBuildResponse } from "./svc_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -31,6 +31,8 @@ export const BuildsService = {
       kind: MethodKind.Unary,
     },
     /**
+     * (legacy) Create a new build and updates its status to READY.
+     *
      * @generated from rpc autokitteh.builds.v1.BuildsService.Save
      */
     save: {
@@ -64,6 +66,26 @@ export const BuildsService = {
       name: "Describe",
       I: DescribeRequest,
       O: DescribeResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * Create a build in status PENDING.
+     *
+     * @generated from rpc autokitteh.builds.v1.BuildsService.Create
+     */
+    create: {
+      name: "Create",
+      I: CreateRequest,
+      O: CreateResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc autokitteh.builds.v1.BuildsService.UpdateBuild
+     */
+    updateBuild: {
+      name: "UpdateBuild",
+      I: UpdateBuildRequest,
+      O: UpdateBuildResponse,
       kind: MethodKind.Unary,
     },
   }
