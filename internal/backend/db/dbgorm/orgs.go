@@ -23,9 +23,13 @@ func (gdb *gormdb) GetOrg(ctx context.Context, oid sdktypes.OrgID, n sdktypes.Sy
 
 	if !oid.IsValid() && !n.IsValid() {
 		return sdktypes.InvalidOrg, sdkerrors.NewInvalidArgumentError("missing id or name")
-	} else if oid.IsValid() {
+	}
+
+	if oid.IsValid() {
 		q = q.Where("org_id = ?", oid.UUIDValue())
-	} else {
+	}
+
+	if n.IsValid() {
 		q = q.Where("name = ?", n.String())
 	}
 
