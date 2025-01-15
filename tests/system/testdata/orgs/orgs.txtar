@@ -1,23 +1,30 @@
 user zumi
 
-ak orgs create --display-name meow
+ak orgs create --display-name meow --name moo
 return code == 0
 capture_jq meow_oid .org_id
 
 ak orgs get $meow_oid -f
 return code == 0
 output equals_jq .org.display_name meow
+output equals_jq .org.name moo
+
+ak orgs get moo -f
+return code == 0
+output equals_jq .org.display_name meow
+output equals_jq .org.name moo
 
 ak orgs list-members $meow_oid
 return code == 0
 output equals_jq .[].user_id $ZUMI_UID
 
-ak orgs update $meow_oid --display-name hiss
+ak orgs update $meow_oid --display-name hiss --name woof
 return code == 0
 
-ak orgs get $meow_oid -f
+ak orgs get woof -f
 return code == 0
 output equals_jq .org.display_name hiss
+output equals_jq .org.name woof
 
 ak users get-orgs
 return code == 0

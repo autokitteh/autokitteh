@@ -414,6 +414,15 @@ func (r Resolver) Org(ctx context.Context, org string) (oid sdktypes.OrgID, err 
 		return sdktypes.ParseOrgID(org)
 	}
 
-	err = sdkerrors.ErrNotFound
+	n, err := sdktypes.ParseSymbol(org)
+	if err != nil {
+		return sdktypes.InvalidOrgID, fmt.Errorf("invalid org name %q: %w", org, err)
+	}
+
+	o, err := r.Client.Orgs().GetByName(ctx, n)
+	if o.IsValid() {
+		oid = o.ID()
+	}
+	err = translateError(err, o, "org", org)
 	return
 }

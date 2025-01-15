@@ -21,10 +21,12 @@ class CreateResponse(_message.Message):
     def __init__(self, org_id: _Optional[str] = ...) -> None: ...
 
 class GetRequest(_message.Message):
-    __slots__ = ["org_id"]
+    __slots__ = ["org_id", "name"]
     ORG_ID_FIELD_NUMBER: _ClassVar[int]
+    NAME_FIELD_NUMBER: _ClassVar[int]
     org_id: str
-    def __init__(self, org_id: _Optional[str] = ...) -> None: ...
+    name: str
+    def __init__(self, org_id: _Optional[str] = ..., name: _Optional[str] = ...) -> None: ...
 
 class GetResponse(_message.Message):
     __slots__ = ["org"]

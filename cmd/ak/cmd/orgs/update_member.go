@@ -14,7 +14,7 @@ import (
 var status string
 
 var updateMemberCmd = common.StandardCommand(&cobra.Command{
-	Use:     "update-member <org id> <user id> [--status status]",
+	Use:     "update-member <org id or name> <user id> [--status status]",
 	Short:   "Update org member",
 	Aliases: []string{"um"},
 	Args:    cobra.ExactArgs(2),

@@ -10,7 +10,7 @@ import (
 )
 
 var getMemberCmd = common.StandardCommand(&cobra.Command{
-	Use:     "get-member <org id> <user id>",
+	Use:     "get-member <org id or name> <user id>",
 	Short:   "Get org member",
 	Aliases: []string{"gm"},
 	Args:    cobra.ExactArgs(2),

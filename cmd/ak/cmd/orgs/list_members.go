@@ -10,7 +10,7 @@ import (
 )
 
 var listMembersCmd = common.StandardCommand(&cobra.Command{
-	Use:     "list-members <org id>",
+	Use:     "list-members <org id or name>",
 	Short:   "List members in an org",
 	Aliases: []string{"lsm"},
 	Args:    cobra.ExactArgs(1),

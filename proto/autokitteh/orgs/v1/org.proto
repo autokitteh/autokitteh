@@ -6,6 +6,7 @@ package autokitteh.orgs.v1;
 message Org {
   string org_id = 1;
   string display_name = 2; // human readable name.
+  string name = 3; // unique system wide name.
 }
 
 // OrgMember represents a membership of a user in an organization.
