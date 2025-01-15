@@ -11,7 +11,7 @@ import (
 )
 
 var updateCmd = common.StandardCommand(&cobra.Command{
-	Use:   "update <org-id> [--display-name display-name]",
+	Use:   "update <org-id or name> [--display-name display-name] [--name name]",
 	Short: "Update an org",
 	Args:  cobra.ExactArgs(1),
 
@@ -34,6 +34,16 @@ var updateCmd = common.StandardCommand(&cobra.Command{
 			o = o.WithDisplayName(displayName)
 		}
 
+		if cmd.Flags().Changed("name") {
+			name, err := sdktypes.ParseSymbol(name)
+			if err != nil {
+				return fmt.Errorf("invalid name: %w", err)
+			}
+
+			fm.Paths = append(fm.Paths, "name")
+			o = o.WithName(name)
+		}
+
 		if err := orgs().Update(ctx, o, fm); err != nil {
 			return fmt.Errorf("update org: %w", err)
 		}
@@ -43,5 +53,6 @@ var updateCmd = common.StandardCommand(&cobra.Command{
 })
 
 func init() {
-	updateCmd.Flags().StringVarP(&displayName, "display-name", "n", "", "org's display name")
+	updateCmd.Flags().StringVarP(&displayName, "display-name", "t", "", "org's display name")
+	updateCmd.Flags().StringVarP(&name, "name", "n", "", "org's name")
 }

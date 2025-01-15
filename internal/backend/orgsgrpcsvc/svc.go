@@ -55,8 +55,8 @@ func (s *server) Get(ctx context.Context, req *connect.Request[orgsv1.GetRequest
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	if req.Msg.OrgId == "" {
-		return nil, sdkerrors.NewInvalidArgumentError("org id must be provided")
+	if req.Msg.OrgId == "" && req.Msg.Name == "" {
+		return nil, sdkerrors.NewInvalidArgumentError("either org id or name must be provided")
 	}
 
 	oid, err := sdktypes.ParseOrgID(msg.OrgId)
@@ -64,7 +64,22 @@ func (s *server) Get(ctx context.Context, req *connect.Request[orgsv1.GetRequest
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	o, err := s.orgs.GetByID(ctx, oid)
+	n, err := sdktypes.ParseSymbol(msg.Name)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	var o sdktypes.Org
+
+	switch {
+	case oid.IsValid() && n.IsValid():
+		err = sdkerrors.NewInvalidArgumentError("only one of org id or name must be provided")
+	case oid.IsValid():
+		o, err = s.orgs.GetByID(ctx, oid)
+	default:
+		o, err = s.orgs.GetByName(ctx, n)
+	}
+
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}

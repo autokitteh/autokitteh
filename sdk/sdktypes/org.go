@@ -18,12 +18,13 @@ type OrgTraits struct{}
 func (OrgTraits) Validate(m *OrgPB) error {
 	return errors.Join(
 		idField[OrgID]("org_id", m.OrgId),
+		symbolField("name", m.Name),
 	)
 }
 
 func (OrgTraits) StrictValidate(m *OrgPB) error { return nil }
 
-func (OrgTraits) Mutables() []string { return []string{"display_name"} }
+func (OrgTraits) Mutables() []string { return []string{"display_name", "name"} }
 
 func OrgFromProto(m *OrgPB) (Org, error) { return FromProto[Org](m) }
 
@@ -39,7 +40,12 @@ func (u Org) WithNewID() Org { return u.WithID(NewOrgID()) }
 
 func (u Org) ID() OrgID           { return kittehs.Must1(ParseOrgID(u.read().OrgId)) }
 func (u Org) DisplayName() string { return u.read().DisplayName }
+func (u Org) Name() Symbol        { return NewSymbol(u.read().Name) }
 
 func (u Org) WithDisplayName(n string) Org {
 	return Org{u.forceUpdate(func(m *OrgPB) { m.DisplayName = n })}
+}
+
+func (u Org) WithName(n Symbol) Org {
+	return Org{u.forceUpdate(func(m *OrgPB) { m.Name = n.String() })}
 }
