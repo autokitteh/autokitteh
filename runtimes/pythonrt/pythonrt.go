@@ -387,7 +387,7 @@ func (py *pySvc) call(ctx context.Context, val sdktypes.Value, args []sdktypes.V
 	}
 }
 
-func (py *pySvc) setupCallbackChannels(ctx context.Context) chan (error) {
+func (py *pySvc) setupCallbacksListeningLoop(ctx context.Context) chan (error) {
 	callbackErrChan := make(chan error, 1)
 	go func() {
 		for {
@@ -433,6 +433,9 @@ func (py *pySvc) setupCallbackChannels(ctx context.Context) chan (error) {
 				} else {
 					cb.successChannel <- val
 				}
+			case <-ctx.Done():
+				py.log.Debug("stopping callback handling loop")
+				return
 			}
 		}
 	}()
@@ -518,7 +521,7 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 
 	cancellableCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	callbackErrChan := py.setupCallbackChannels(cancellableCtx)
+	callbackErrChan := py.setupCallbacksListeningLoop(cancellableCtx)
 
 	if err := py.startRequest(ctx, funcName, eventData); err != nil {
 		return sdktypes.InvalidValue, fmt.Errorf("start request: %w", err)
