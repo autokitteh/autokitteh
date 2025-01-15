@@ -1,0 +1,16 @@
+7
+done
+
+-- main.py:main --
+def main(event):
+    inc3 = Inc(3)
+    print(inc3(4))
+    print("done")
+
+
+class Inc:
+    def __init__(self, n):
+        self.n = n
+
+    def __call__(self, v):
+        return self.n + v

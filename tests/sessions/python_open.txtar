@@ -1,0 +1,8 @@
+data=''
+
+-- main.py:main --
+
+def main(event):
+    with open("/dev/null") as fp:
+        data = fp.read()
+    print(f"{data=}")

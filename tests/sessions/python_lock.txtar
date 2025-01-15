@@ -1,0 +1,11 @@
+-- main.py:main --
+from threading import Lock
+
+def main(event):
+    lock = Lock()
+    with lock:
+        print('locked')
+    print('unlocked')
+
+# This should fail, which is OK since you can't pickle Lock objects
+# For now there's no output, we'll fix it later

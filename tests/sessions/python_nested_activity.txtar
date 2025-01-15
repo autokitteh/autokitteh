@@ -1,0 +1,26 @@
+main start
+outer start
+inner
+outer end
+main end
+
+-- main.py:main --
+import autokitteh
+
+
+def main(event):
+    print("main start")
+    outer(event)
+    print("main end")
+
+
+@autokitteh.activity
+def outer(event):
+    print("outer start")
+    inner(event)
+    print("outer end")
+
+
+@autokitteh.activity
+def inner(event):
+    print("inner")
