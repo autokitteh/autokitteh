@@ -26,10 +26,6 @@ func ConstructEvents(ctx context.Context, vars sdkservices.Vars, cids []sdktypes
 		return nil, err
 	}
 
-	if len(changes) == 0 {
-		return nil, nil
-	}
-
 	var events []sdktypes.Event
 	for _, change := range changes {
 		event, err := constructSingleEvent(a, change)
