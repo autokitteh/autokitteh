@@ -53,6 +53,8 @@ const (
 	ProjectsServiceDownloadResourcesProcedure = "/autokitteh.projects.v1.ProjectsService/DownloadResources"
 	// ProjectsServiceExportProcedure is the fully-qualified name of the ProjectsService's Export RPC.
 	ProjectsServiceExportProcedure = "/autokitteh.projects.v1.ProjectsService/Export"
+	// ProjectsServiceLintProcedure is the fully-qualified name of the ProjectsService's Lint RPC.
+	ProjectsServiceLintProcedure = "/autokitteh.projects.v1.ProjectsService/Lint"
 )
 
 // ProjectsServiceClient is a client for the autokitteh.projects.v1.ProjectsService service.
@@ -66,6 +68,7 @@ type ProjectsServiceClient interface {
 	SetResources(context.Context, *connect.Request[v1.SetResourcesRequest]) (*connect.Response[v1.SetResourcesResponse], error)
 	DownloadResources(context.Context, *connect.Request[v1.DownloadResourcesRequest]) (*connect.Response[v1.DownloadResourcesResponse], error)
 	Export(context.Context, *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error)
+	Lint(context.Context, *connect.Request[v1.LintRequest]) (*connect.Response[v1.LintResponse], error)
 }
 
 // NewProjectsServiceClient constructs a client for the autokitteh.projects.v1.ProjectsService
@@ -123,6 +126,11 @@ func NewProjectsServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			baseURL+ProjectsServiceExportProcedure,
 			opts...,
 		),
+		lint: connect.NewClient[v1.LintRequest, v1.LintResponse](
+			httpClient,
+			baseURL+ProjectsServiceLintProcedure,
+			opts...,
+		),
 	}
 }
 
@@ -137,6 +145,7 @@ type projectsServiceClient struct {
 	setResources      *connect.Client[v1.SetResourcesRequest, v1.SetResourcesResponse]
 	downloadResources *connect.Client[v1.DownloadResourcesRequest, v1.DownloadResourcesResponse]
 	export            *connect.Client[v1.ExportRequest, v1.ExportResponse]
+	lint              *connect.Client[v1.LintRequest, v1.LintResponse]
 }
 
 // Create calls autokitteh.projects.v1.ProjectsService.Create.
@@ -184,6 +193,11 @@ func (c *projectsServiceClient) Export(ctx context.Context, req *connect.Request
 	return c.export.CallUnary(ctx, req)
 }
 
+// Lint calls autokitteh.projects.v1.ProjectsService.Lint.
+func (c *projectsServiceClient) Lint(ctx context.Context, req *connect.Request[v1.LintRequest]) (*connect.Response[v1.LintResponse], error) {
+	return c.lint.CallUnary(ctx, req)
+}
+
 // ProjectsServiceHandler is an implementation of the autokitteh.projects.v1.ProjectsService
 // service.
 type ProjectsServiceHandler interface {
@@ -196,6 +210,7 @@ type ProjectsServiceHandler interface {
 	SetResources(context.Context, *connect.Request[v1.SetResourcesRequest]) (*connect.Response[v1.SetResourcesResponse], error)
 	DownloadResources(context.Context, *connect.Request[v1.DownloadResourcesRequest]) (*connect.Response[v1.DownloadResourcesResponse], error)
 	Export(context.Context, *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error)
+	Lint(context.Context, *connect.Request[v1.LintRequest]) (*connect.Response[v1.LintResponse], error)
 }
 
 // NewProjectsServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -249,6 +264,11 @@ func NewProjectsServiceHandler(svc ProjectsServiceHandler, opts ...connect.Handl
 		svc.Export,
 		opts...,
 	)
+	projectsServiceLintHandler := connect.NewUnaryHandler(
+		ProjectsServiceLintProcedure,
+		svc.Lint,
+		opts...,
+	)
 	return "/autokitteh.projects.v1.ProjectsService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ProjectsServiceCreateProcedure:
@@ -269,6 +289,8 @@ func NewProjectsServiceHandler(svc ProjectsServiceHandler, opts ...connect.Handl
 			projectsServiceDownloadResourcesHandler.ServeHTTP(w, r)
 		case ProjectsServiceExportProcedure:
 			projectsServiceExportHandler.ServeHTTP(w, r)
+		case ProjectsServiceLintProcedure:
+			projectsServiceLintHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -312,4 +334,8 @@ func (UnimplementedProjectsServiceHandler) DownloadResources(context.Context, *c
 
 func (UnimplementedProjectsServiceHandler) Export(context.Context, *connect.Request[v1.ExportRequest]) (*connect.Response[v1.ExportResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.projects.v1.ProjectsService.Export is not implemented"))
+}
+
+func (UnimplementedProjectsServiceHandler) Lint(context.Context, *connect.Request[v1.LintRequest]) (*connect.Response[v1.LintResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.projects.v1.ProjectsService.Lint is not implemented"))
 }

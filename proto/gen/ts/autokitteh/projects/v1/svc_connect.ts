@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { BuildRequest, BuildResponse, CreateRequest, CreateResponse, DeleteRequest, DeleteResponse, DownloadResourcesRequest, DownloadResourcesResponse, ExportRequest, ExportResponse, GetRequest, GetResponse, ListRequest, ListResponse, SetResourcesRequest, SetResourcesResponse, UpdateRequest, UpdateResponse } from "./svc_pb.js";
+import { BuildRequest, BuildResponse, CreateRequest, CreateResponse, DeleteRequest, DeleteResponse, DownloadResourcesRequest, DownloadResourcesResponse, ExportRequest, ExportResponse, GetRequest, GetResponse, LintRequest, LintResponse, ListRequest, ListResponse, SetResourcesRequest, SetResourcesResponse, UpdateRequest, UpdateResponse } from "./svc_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -91,6 +91,15 @@ export const ProjectsService = {
       name: "Export",
       I: ExportRequest,
       O: ExportResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc autokitteh.projects.v1.ProjectsService.Lint
+     */
+    lint: {
+      name: "Lint",
+      I: LintRequest,
+      O: LintResponse,
       kind: MethodKind.Unary,
     },
   }
