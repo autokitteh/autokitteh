@@ -31,9 +31,9 @@ var getMemberCmd = common.StandardCommand(&cobra.Command{
 			return fmt.Errorf("user: %w", err)
 		}
 
-		s, err := orgs().GetMemberStatus(ctx, oid, uid)
+		m, err := orgs().GetMember(ctx, oid, uid)
 		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "member"); err == nil {
-			common.RenderKVIfV("member", s)
+			common.RenderKVIfV("member", m)
 		}
 		return err
 	},

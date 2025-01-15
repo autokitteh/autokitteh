@@ -15,7 +15,7 @@ func OpenZ(z *zap.Logger, cfg *Config, f func(*gorm.Config)) (*gorm.DB, error) {
 	return Open(cfg, func(c *gorm.Config) {
 		l := &zapgorm2.Logger{
 			ZapLogger:                 z,
-			LogLevel:                  logger.Warn,            // prevent logging SQL queries by default
+			LogLevel:                  logger.Info,
 			SlowThreshold:             cfg.SlowQueryThreshold, // slow queries will be reported if !0
 			IgnoreRecordNotFoundError: true,
 		}
@@ -24,6 +24,7 @@ func OpenZ(z *zap.Logger, cfg *Config, f func(*gorm.Config)) (*gorm.DB, error) {
 			f(c)
 		}
 		c.Logger = l
+
 		// TODO(ENG-1590): maybe we could clone the core with the same encoder and writer, but with different/lower level?
 		// (we cannon lower level with zap.IncreaseLevel(), unfortunately or extract encoder and writer from the original core)
 		// so, if explicit debug is requested - switch to default gorm logger (which will log to stdout)

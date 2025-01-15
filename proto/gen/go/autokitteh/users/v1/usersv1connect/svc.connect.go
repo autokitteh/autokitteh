@@ -39,6 +39,8 @@ const (
 	UsersServiceGetProcedure = "/autokitteh.users.v1.UsersService/Get"
 	// UsersServiceGetIDProcedure is the fully-qualified name of the UsersService's GetID RPC.
 	UsersServiceGetIDProcedure = "/autokitteh.users.v1.UsersService/GetID"
+	// UsersServiceBatchGetProcedure is the fully-qualified name of the UsersService's BatchGet RPC.
+	UsersServiceBatchGetProcedure = "/autokitteh.users.v1.UsersService/BatchGet"
 	// UsersServiceUpdateProcedure is the fully-qualified name of the UsersService's Update RPC.
 	UsersServiceUpdateProcedure = "/autokitteh.users.v1.UsersService/Update"
 )
@@ -48,6 +50,8 @@ type UsersServiceClient interface {
 	Create(context.Context, *connect.Request[v1.CreateRequest]) (*connect.Response[v1.CreateResponse], error)
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
 	GetID(context.Context, *connect.Request[v1.GetIDRequest]) (*connect.Response[v1.GetIDResponse], error)
+	// BatchGet returns a list of users for the given org_ids, if the org user not exist, it will not be returned.
+	BatchGet(context.Context, *connect.Request[v1.BatchGetRequest]) (*connect.Response[v1.BatchGetResponse], error)
 	Update(context.Context, *connect.Request[v1.UpdateRequest]) (*connect.Response[v1.UpdateResponse], error)
 }
 
@@ -76,6 +80,11 @@ func NewUsersServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			baseURL+UsersServiceGetIDProcedure,
 			opts...,
 		),
+		batchGet: connect.NewClient[v1.BatchGetRequest, v1.BatchGetResponse](
+			httpClient,
+			baseURL+UsersServiceBatchGetProcedure,
+			opts...,
+		),
 		update: connect.NewClient[v1.UpdateRequest, v1.UpdateResponse](
 			httpClient,
 			baseURL+UsersServiceUpdateProcedure,
@@ -86,10 +95,11 @@ func NewUsersServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 
 // usersServiceClient implements UsersServiceClient.
 type usersServiceClient struct {
-	create *connect.Client[v1.CreateRequest, v1.CreateResponse]
-	get    *connect.Client[v1.GetRequest, v1.GetResponse]
-	getID  *connect.Client[v1.GetIDRequest, v1.GetIDResponse]
-	update *connect.Client[v1.UpdateRequest, v1.UpdateResponse]
+	create   *connect.Client[v1.CreateRequest, v1.CreateResponse]
+	get      *connect.Client[v1.GetRequest, v1.GetResponse]
+	getID    *connect.Client[v1.GetIDRequest, v1.GetIDResponse]
+	batchGet *connect.Client[v1.BatchGetRequest, v1.BatchGetResponse]
+	update   *connect.Client[v1.UpdateRequest, v1.UpdateResponse]
 }
 
 // Create calls autokitteh.users.v1.UsersService.Create.
@@ -107,6 +117,11 @@ func (c *usersServiceClient) GetID(ctx context.Context, req *connect.Request[v1.
 	return c.getID.CallUnary(ctx, req)
 }
 
+// BatchGet calls autokitteh.users.v1.UsersService.BatchGet.
+func (c *usersServiceClient) BatchGet(ctx context.Context, req *connect.Request[v1.BatchGetRequest]) (*connect.Response[v1.BatchGetResponse], error) {
+	return c.batchGet.CallUnary(ctx, req)
+}
+
 // Update calls autokitteh.users.v1.UsersService.Update.
 func (c *usersServiceClient) Update(ctx context.Context, req *connect.Request[v1.UpdateRequest]) (*connect.Response[v1.UpdateResponse], error) {
 	return c.update.CallUnary(ctx, req)
@@ -117,6 +132,8 @@ type UsersServiceHandler interface {
 	Create(context.Context, *connect.Request[v1.CreateRequest]) (*connect.Response[v1.CreateResponse], error)
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
 	GetID(context.Context, *connect.Request[v1.GetIDRequest]) (*connect.Response[v1.GetIDResponse], error)
+	// BatchGet returns a list of users for the given org_ids, if the org user not exist, it will not be returned.
+	BatchGet(context.Context, *connect.Request[v1.BatchGetRequest]) (*connect.Response[v1.BatchGetResponse], error)
 	Update(context.Context, *connect.Request[v1.UpdateRequest]) (*connect.Response[v1.UpdateResponse], error)
 }
 
@@ -141,6 +158,11 @@ func NewUsersServiceHandler(svc UsersServiceHandler, opts ...connect.HandlerOpti
 		svc.GetID,
 		opts...,
 	)
+	usersServiceBatchGetHandler := connect.NewUnaryHandler(
+		UsersServiceBatchGetProcedure,
+		svc.BatchGet,
+		opts...,
+	)
 	usersServiceUpdateHandler := connect.NewUnaryHandler(
 		UsersServiceUpdateProcedure,
 		svc.Update,
@@ -154,6 +176,8 @@ func NewUsersServiceHandler(svc UsersServiceHandler, opts ...connect.HandlerOpti
 			usersServiceGetHandler.ServeHTTP(w, r)
 		case UsersServiceGetIDProcedure:
 			usersServiceGetIDHandler.ServeHTTP(w, r)
+		case UsersServiceBatchGetProcedure:
+			usersServiceBatchGetHandler.ServeHTTP(w, r)
 		case UsersServiceUpdateProcedure:
 			usersServiceUpdateHandler.ServeHTTP(w, r)
 		default:
@@ -175,6 +199,10 @@ func (UnimplementedUsersServiceHandler) Get(context.Context, *connect.Request[v1
 
 func (UnimplementedUsersServiceHandler) GetID(context.Context, *connect.Request[v1.GetIDRequest]) (*connect.Response[v1.GetIDResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.users.v1.UsersService.GetID is not implemented"))
+}
+
+func (UnimplementedUsersServiceHandler) BatchGet(context.Context, *connect.Request[v1.BatchGetRequest]) (*connect.Response[v1.BatchGetResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.users.v1.UsersService.BatchGet is not implemented"))
 }
 
 func (UnimplementedUsersServiceHandler) Update(context.Context, *connect.Request[v1.UpdateRequest]) (*connect.Response[v1.UpdateResponse], error) {

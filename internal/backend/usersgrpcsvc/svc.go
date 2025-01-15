@@ -6,6 +6,7 @@ import (
 	"connectrpc.com/connect"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/proto"
 	usersv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/users/v1"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/users/v1/usersv1connect"
@@ -76,6 +77,26 @@ func (s *server) Get(ctx context.Context, req *connect.Request[usersv1.GetReques
 	}
 
 	return connect.NewResponse(&usersv1.GetResponse{User: pb}), nil
+}
+
+func (s *server) BatchGet(ctx context.Context, req *connect.Request[usersv1.BatchGetRequest]) (*connect.Response[usersv1.BatchGetResponse], error) {
+	msg := req.Msg
+
+	if err := proto.Validate(msg); err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	oids, err := kittehs.TransformError(msg.UserIds, sdktypes.StrictParseUserID)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	users, err := s.users.BatchGetByIDs(ctx, oids)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	return connect.NewResponse(&usersv1.BatchGetResponse{Users: kittehs.Transform(users, sdktypes.ToProto)}), nil
 }
 
 func (s *server) GetID(ctx context.Context, req *connect.Request[usersv1.GetIDRequest]) (*connect.Response[usersv1.GetIDResponse], error) {

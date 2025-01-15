@@ -35,6 +35,7 @@ func startAKServer(t *testing.T, ctx context.Context, akPath string, userCfg map
 		"db.type": "sqlite",
 		"db.dsn":  "file:autokitteh.sqlite", // In the test's temporary directory.
 
+		"pprof.enable":                        "false",
 		"http.addr":                           ":0",
 		"http.addr_filename":                  serverHTTPAddrFile, // In the test's temporary directory.
 		"authhttpmiddleware.use_default_user": "false",

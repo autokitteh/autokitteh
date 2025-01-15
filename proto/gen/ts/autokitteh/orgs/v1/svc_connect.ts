@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { AddMemberRequest, AddMemberResponse, CreateRequest, CreateResponse, DeleteRequest, DeleteResponse, GetMemberRequest, GetMemberResponse, GetOrgsForUserRequest, GetOrgsForUserResponse, GetRequest, GetResponse, ListMembersRequest, ListMembersResponse, RemoveMemberRequest, RemoveMemberResponse, UpdateMemberRequest, UpdateMemberResponse, UpdateRequest, UpdateResponse } from "./svc_pb.js";
+import { AddMemberRequest, AddMemberResponse, BatchGetRequest, BatchGetResponse, CreateRequest, CreateResponse, DeleteRequest, DeleteResponse, GetMemberRequest, GetMemberResponse, GetOrgsForUserRequest, GetOrgsForUserResponse, GetRequest, GetResponse, ListMembersRequest, ListMembersResponse, RemoveMemberRequest, RemoveMemberResponse, UpdateMemberRequest, UpdateMemberResponse, UpdateRequest, UpdateResponse } from "./svc_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -28,6 +28,17 @@ export const OrgsService = {
       name: "Get",
       I: GetRequest,
       O: GetResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * BatchGet returns a list of orgs for the given org_ids, if the org does not exist, it will not be returned.
+     *
+     * @generated from rpc autokitteh.orgs.v1.OrgsService.BatchGet
+     */
+    batchGet: {
+      name: "BatchGet",
+      I: BatchGetRequest,
+      O: BatchGetResponse,
       kind: MethodKind.Unary,
     },
     /**

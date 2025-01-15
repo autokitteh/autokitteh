@@ -17,6 +17,8 @@ output equals_jq .org.name moo
 ak orgs list-members $meow_oid
 return code == 0
 output equals_jq .[].user_id $ZUMI_UID
+output equals_jq .[].status ORG_MEMBER_STATUS_ACTIVE
+output equals_jq .[].roles [admin]
 
 ak orgs update $meow_oid --display-name hiss --name woof
 return code == 0
@@ -28,7 +30,7 @@ output equals_jq .org.name woof
 
 ak users get-orgs
 return code == 0
-output equals_jq .orgs[].org.org_id $ZUMI_OID,$CATS_OID,$meow_oid
+output equals_jq .orgs[].org_id $ZUMI_OID,$CATS_OID,$meow_oid
 
 ak orgs delete $meow_oid
 return code == 0
@@ -38,7 +40,7 @@ return code == $RC_NOT_FOUND
 
 ak users get-orgs
 return code == 0
-output equals_jq .orgs[].org.org_id $ZUMI_OID,$CATS_OID
+output equals_jq .orgs[].org_id $ZUMI_OID,$CATS_OID
 
 ak users get-orgs $GIZMO_UID
 return code == $RC_NOT_FOUND

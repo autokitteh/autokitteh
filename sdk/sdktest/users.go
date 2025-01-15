@@ -75,6 +75,18 @@ func (t *TestUsers) Get(_ context.Context, id sdktypes.UserID, email string) (sd
 	return sdktypes.InvalidUser, sdkerrors.ErrNotFound
 }
 
+func (t *TestUsers) BatchGetByIDs(_ context.Context, ids []sdktypes.UserID) ([]sdktypes.User, error) {
+	users := make([]sdktypes.User, 0, len(ids))
+
+	for _, id := range ids {
+		if user, ok := t.Users[id]; ok {
+			users = append(users, user)
+		}
+	}
+
+	return users, nil
+}
+
 func (t *TestUsers) GetID(_ context.Context, email string) (sdktypes.UserID, error) {
 	for id, user := range t.Users {
 		if user.Email() == email {
