@@ -55,7 +55,6 @@ func Validate(projectID sdktypes.ProjectID, manifest *manifest.Manifest, resourc
 }
 
 var Rules = map[string]string{ // ID -> Description
-	"E1":  "No triggers defined",
 	"E2":  "Project size too large",
 	"E3":  "Duplicate connection name",
 	"E4":  "Duplicate trigger name",
@@ -67,6 +66,7 @@ var Rules = map[string]string{ // ID -> Description
 	"E10": "Malformed name",
 
 	"W1": "Empty variable",
+	"W2": "No triggers defined",
 }
 
 func checkNoTriggers(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string][]byte) []*sdktypes.CheckViolation {
@@ -74,9 +74,9 @@ func checkNoTriggers(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string][]
 		return []*sdktypes.CheckViolation{
 			{
 				FileName: manifestFilePath,
-				Level:    sdktypes.ViolationError,
+				Level:    sdktypes.ViolationWarning,
 				Message:  "no triggers",
-				RuleId:   "E1",
+				RuleId:   "W2",
 			},
 		}
 	}
