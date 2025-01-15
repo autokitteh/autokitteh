@@ -55,15 +55,15 @@ func Validate(projectID sdktypes.ProjectID, manifest *manifest.Manifest, resourc
 }
 
 var Rules = map[string]string{ // ID -> Description
-	"E2":  "Project size too large",
-	"E3":  "Duplicate connection name",
-	"E4":  "Duplicate trigger name",
-	"E5":  "Bad `call` format",
-	"E6":  "File not found",
-	"E7":  "Syntax error",
-	"E8":  "Missing handler",
-	"E9":  "Nonexisting connection",
-	"E10": "Malformed name",
+	"E1": "Project size too large",
+	"E2": "Duplicate connection name",
+	"E3": "Duplicate trigger name",
+	"E4": "Bad `call` format",
+	"E5": "File not found",
+	"E6": "Syntax error",
+	"E7": "Missing handler",
+	"E8": "Nonexisting connection",
+	"E9": "Malformed name",
 
 	"W1": "Empty variable",
 	"W2": "No triggers defined",
