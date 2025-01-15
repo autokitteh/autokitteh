@@ -7,17 +7,11 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
-	"go.autokitteh.dev/autokitteh/internal/backend/db/dbtest"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 func TestBuildInputUser(t *testing.T) {
-	u1 := sdktypes.NewUser().WithStatus(sdktypes.UserStatusActive).WithEmail("zumi@cats").WithNewID()
-	u2 := sdktypes.NewUser().WithStatus(sdktypes.UserStatusActive).WithEmail("gizmo@cats").WithNewID()
-	o := sdktypes.NewOrg().WithNewID()
-	m := sdktypes.NewOrgMember(o.ID(), u1.ID()).WithStatus(sdktypes.OrgMemberStatusActive).WithRoles(sdktypes.NewSymbol("admin"))
-	p := sdktypes.NewProject().WithNewID().WithName(sdktypes.NewSymbol("project")).WithOrgID(o.ID())
-	db := dbtest.NewTestDB(t, u1, u2, o, m, p)
+	db := setupDB(t)
 
 	tests := []struct {
 		name     string
@@ -28,88 +22,206 @@ func TestBuildInputUser(t *testing.T) {
 		expected map[string]any
 	}{
 		{
+			name:   "empty id",
+			authn:  gizmo,
+			id:     sdktypes.InvalidProjectID,
+			action: "action_type:action",
+			opts: []CheckOpt{
+				WithData("project", p),
+			},
+			expected: map[string]any{
+				"action": map[string]any{
+					"name": "action",
+					"type": "action_type",
+					"full": "action_type:action",
+				},
+				"associations": map[string]map[string]any{
+					"resource": {
+						"kind": "prj",
+					},
+				},
+				"data": map[string]any{
+					"project": p,
+				},
+				"resource": map[string]any{
+					"kind": "prj",
+				},
+				"authn_user": map[string]any{
+					"id":              gizmo.ID().String(),
+					"kind":            "usr",
+					"email":           "gizmo@cats",
+					"org_memberships": map[string]any{},
+					"status":          "ACTIVE",
+				},
+			},
+		},
+		{
 			name:   "associations",
-			authn:  u2,
+			authn:  gizmo,
 			id:     p.ID(),
 			action: "action_type:action",
 			opts: []CheckOpt{
 				WithAssociationWithID("project", p.ID()),
-				WithAssociationWithID("user", u2.ID()),
-				WithAssociationWithID("org", o.ID()),
+				WithAssociationWithID("user", gizmo.ID()),
+				WithAssociationWithID("org", cats.ID()),
 			},
 			expected: map[string]any{
-				"action":                 "action",
-				"action_type":            "action_type",
-				"associated_org_ids":     []string{o.ID().String()},
-				"associated_project_ids": []string{p.ID().String()},
+				"action": map[string]any{
+					"name": "action",
+					"type": "action_type",
+					"full": "action_type:action",
+				},
 				"associations": map[string]map[string]any{
+					"resource": {
+						"kind":   "prj",
+						"id":     p.ID().String(),
+						"org_id": cats.ID().String(),
+					},
 					"user": {
-						"id": u2.ID().String(),
+						"id":              gizmo.ID().String(),
+						"kind":            "usr",
+						"email":           "gizmo@cats",
+						"org_memberships": map[string]any{},
+						"status":          "ACTIVE",
 					},
 					"project": {
-						"id":         p.ID().String(),
-						"org_id":     o.ID().String(),
-						"project_id": p.ID().String(),
+						"id":     p.ID().String(),
+						"org_id": cats.ID().String(),
+						"kind":   "prj",
 					},
 					"org": {
-						"id":     o.ID().String(),
-						"org_id": o.ID().String(),
+						"id":     cats.ID().String(),
+						"org_id": cats.ID().String(),
+						"kind":   "org",
 					},
 				},
-				"data":                map[string]any(nil),
-				"kind":                "prj",
-				"resource_id":         p.ID().String(),
-				"resource_project_id": p.ID().String(),
-				"resource_org_id":     o.ID().String(),
-				"authn_user_id":       u2.ID().String(),
-				"authn_user":          u2,
-				"authn_user_orgs":     map[string]any{},
+				"data": map[string]any{},
+				"resource": map[string]any{
+					"kind":   "prj",
+					"id":     p.ID().String(),
+					"org_id": cats.ID().String(),
+				},
+				"authn_user": map[string]any{
+					"id":              gizmo.ID().String(),
+					"kind":            "usr",
+					"email":           "gizmo@cats",
+					"org_memberships": map[string]any{},
+					"status":          "ACTIVE",
+				},
 			},
 		},
 		{
 			name:   "project",
-			authn:  u2,
+			authn:  gizmo,
 			id:     p.ID(),
 			action: "action_type:action",
 			expected: map[string]any{
-				"action":                 "action",
-				"action_type":            "action_type",
-				"associated_org_ids":     []string{o.ID().String()},
-				"associated_project_ids": []string{p.ID().String()},
-				"associations":           map[string]map[string]any{},
-				"data":                   map[string]any(nil),
-				"kind":                   "prj",
-				"resource_id":            p.ID().String(),
-				"resource_project_id":    p.ID().String(),
-				"resource_org_id":        o.ID().String(),
-				"authn_user_id":          u2.ID().String(),
-				"authn_user":             u2,
-				"authn_user_orgs":        map[string]any{},
+				"action": map[string]any{
+					"name": "action",
+					"type": "action_type",
+					"full": "action_type:action",
+				},
+				"associations": map[string]map[string]any{
+					"resource": {
+						"kind":   "prj",
+						"id":     p.ID().String(),
+						"org_id": cats.ID().String(),
+					},
+				},
+				"data": map[string]any{},
+				"resource": map[string]any{
+					"kind":   "prj",
+					"id":     p.ID().String(),
+					"org_id": cats.ID().String(),
+				},
+				"authn_user": map[string]any{
+					"id":              gizmo.ID().String(),
+					"kind":            "usr",
+					"email":           "gizmo@cats",
+					"org_memberships": map[string]any{},
+					"status":          "ACTIVE",
+				},
 			},
 		},
 		{
 			name:   "user",
-			authn:  u1,
-			id:     u2.ID(),
+			authn:  zumi,
+			id:     gizmo.ID(),
 			action: "action_type:action",
 			expected: map[string]any{
-				"action":                 "action",
-				"action_type":            "action_type",
-				"associated_org_ids":     []string(nil),
-				"associated_project_ids": []string(nil),
-				"associations":           map[string]map[string]any{},
-				"data":                   map[string]any(nil),
-				"kind":                   "usr",
-				"resource_id":            u2.ID().String(),
-				"resource_project_id":    "",
-				"resource_org_id":        "",
-				"authn_user_id":          u1.ID().String(),
-				"authn_user":             u1,
-				"authn_user_orgs": map[string]any{
-					o.ID().String(): map[string]any{
-						"roles":  []string{"admin"},
-						"status": "ACTIVE",
+				"action": map[string]any{
+					"name": "action",
+					"type": "action_type",
+					"full": "action_type:action",
+				},
+				"data": map[string]any{},
+				"resource": map[string]any{
+					"kind":            "usr",
+					"id":              gizmo.ID().String(),
+					"email":           "gizmo@cats",
+					"org_memberships": map[string]any{},
+					"status":          "ACTIVE",
+				},
+				"associations": map[string]map[string]any{
+					"resource": {
+						"kind":            "usr",
+						"id":              gizmo.ID().String(),
+						"email":           "gizmo@cats",
+						"org_memberships": map[string]any{},
+						"status":          "ACTIVE",
 					},
+				},
+				"authn_user": map[string]any{
+					"id":    zumi.ID().String(),
+					"kind":  "usr",
+					"email": "zumi@cats",
+					"org_memberships": map[string]any{
+						cats.ID().String(): map[string]any{
+							"roles":  []string{"admin"},
+							"status": "ACTIVE",
+						},
+					},
+					"status": "ACTIVE",
+				},
+			},
+		},
+		{
+			name:   "trigger",
+			authn:  gizmo,
+			id:     tr.ID(),
+			action: "action_type:action",
+			opts: []CheckOpt{
+				WithData("cat", "meow"),
+			},
+			expected: map[string]any{
+				"action": map[string]any{
+					"name": "action",
+					"type": "action_type",
+					"full": "action_type:action",
+				},
+				"associations": map[string]map[string]any{
+					"resource": {
+						"kind":       "trg",
+						"id":         tr.ID().String(),
+						"org_id":     cats.ID().String(),
+						"project_id": p.ID().String(),
+					},
+				},
+				"resource": map[string]any{
+					"kind":       "trg",
+					"id":         tr.ID().String(),
+					"org_id":     cats.ID().String(),
+					"project_id": p.ID().String(),
+				},
+				"data": map[string]any{
+					"cat": "meow",
+				},
+				"authn_user": map[string]any{
+					"id":              gizmo.ID().String(),
+					"kind":            "usr",
+					"email":           "gizmo@cats",
+					"org_memberships": map[string]any{},
+					"status":          "ACTIVE",
 				},
 			},
 		},
@@ -123,12 +235,7 @@ func TestBuildInputUser(t *testing.T) {
 				ctx = authcontext.SetAuthnUser(context.Background(), test.authn)
 			}
 
-			var cfg checkCfg
-			for _, opt := range test.opts {
-				opt(&cfg)
-			}
-
-			inputs, err := buildInput(ctx, db, test.id, test.action, cfg)
+			inputs, err := buildInput(ctx, db, test.id, test.action, configure(test.opts))
 			if assert.NoError(t, err) {
 				assert.Equal(t, test.expected, inputs)
 			}

@@ -19,11 +19,8 @@ import (
 //   - "some_action_name"             -> {"action": "some_action_name", "action_type": ""}
 //   - "action_type:some_action_name" -> {"action": "some_action_name", "action_type": "action_type"}
 func NewPolicyCheckFunc(l *zap.Logger, db db.DB, decide policy.DecideFunc) CheckFunc {
-	return func(ctx context.Context, id sdktypes.ID, action string, opts ...func(*checkCfg)) error {
-		var cfg checkCfg
-		for _, opt := range opts {
-			opt(&cfg)
-		}
+	return func(ctx context.Context, id sdktypes.ID, action string, opts ...CheckOpt) error {
+		cfg := configure(opts)
 
 		input, err := buildInput(ctx, db, id, action, cfg)
 		if err != nil {
