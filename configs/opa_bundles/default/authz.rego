@@ -84,14 +84,10 @@ allow if {
 	input.action.name = "get-id"
 }
 
-# A user can get another user only if they share an active org.
+# A user can get any another user.
 allow if {
 	input.resource.kind == "usr"
 	input.action.name == "get"
-
-	some oid
-	input.resource.org_memberships[oid].status == "ACTIVE"
-	input.authn_user.org_memberships[oid].status == "ACTIVE"
 }
 
 #

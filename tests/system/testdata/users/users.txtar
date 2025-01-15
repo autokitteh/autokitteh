@@ -25,9 +25,8 @@ return code == 0
 ak users get $GIZMO_UID -f
 return code == 0
 
-# cannot get a user who is not sharing an org.
 ak users get $SHOOGY_UID -f
-return code == $RC_NOT_FOUND
+return code == 0
 
 ak users get-id zumi@cats -f
 return code == 0

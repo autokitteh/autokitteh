@@ -52,25 +52,22 @@ func TestDefaultPolicy(t *testing.T) {
 			err:    sdkerrors.ErrUnauthorized, // shoogy is not a member of cats.
 		},
 		{
-			name:   "deny get user",
+			name:   "allow get user",
 			authn:  shoogy,
 			id:     zumi.ID(),
 			action: "read:get",
-			err:    sdkerrors.ErrUnauthorized, // no shared orgs.
-		},
-		{
-			name:   "deny get user",
-			authn:  zumi,
-			id:     sufi.ID(),
-			action: "read:get",
-			err:    sdkerrors.ErrUnauthorized, // invited.
 		},
 		{
 			name:   "allow get user",
 			authn:  zumi,
+			id:     sufi.ID(),
+			action: "read:get",
+		},
+		{
+			name:   "allow self get user",
+			authn:  zumi,
 			id:     zumi.ID(),
 			action: "read:get",
-			err:    nil,
 		},
 	}
 
