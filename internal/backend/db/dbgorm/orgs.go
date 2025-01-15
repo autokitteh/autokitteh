@@ -14,19 +14,23 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func (gdb *gormdb) GetOrg(ctx context.Context, oid sdktypes.OrgID) (sdktypes.Org, error) {
+func (gdb *gormdb) GetOrg(ctx context.Context, oid sdktypes.OrgID, n sdktypes.Symbol) (sdktypes.Org, error) {
 	if oid == authusers.DefaultOrg.ID() {
 		return authusers.DefaultOrg, nil
 	}
 
 	q := gdb.db.WithContext(ctx)
 
-	if !oid.IsValid() {
-		return sdktypes.InvalidOrg, sdkerrors.NewInvalidArgumentError("missing id")
+	if !oid.IsValid() && !n.IsValid() {
+		return sdktypes.InvalidOrg, sdkerrors.NewInvalidArgumentError("missing id or name")
 	}
 
 	if oid.IsValid() {
 		q = q.Where("org_id = ?", oid.UUIDValue())
+	}
+
+	if n.IsValid() {
+		q = q.Where("name = ?", n.String())
 	}
 
 	var r scheme.Org
@@ -73,6 +77,7 @@ func (gdb *gormdb) CreateOrg(ctx context.Context, o sdktypes.Org) (sdktypes.OrgI
 
 		OrgID:       oid.UUIDValue(),
 		DisplayName: o.DisplayName(),
+		Name:        o.Name().String(),
 	}
 
 	err := gdb.db.WithContext(ctx).Create(&org).Error

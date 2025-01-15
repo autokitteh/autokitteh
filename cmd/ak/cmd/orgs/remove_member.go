@@ -10,7 +10,7 @@ import (
 )
 
 var removeMemberCmd = common.StandardCommand(&cobra.Command{
-	Use:     "remove-member <org id> <user id>",
+	Use:     "remove-member <org id or name> <user id>",
 	Short:   "Remove org member",
 	Aliases: []string{"rmm"},
 	Args:    cobra.ExactArgs(2),

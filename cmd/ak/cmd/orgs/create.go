@@ -9,10 +9,10 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var displayName string
+var name, displayName string
 
 var createCmd = common.StandardCommand(&cobra.Command{
-	Use:     "create [--display-name display-name]",
+	Use:     "create [--name name] [--display-name display-name]",
 	Short:   "Create new org",
 	Aliases: []string{"c"},
 	Args:    cobra.NoArgs,
@@ -21,7 +21,12 @@ var createCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		o := sdktypes.NewOrg().WithDisplayName(displayName)
+		name, err := sdktypes.ParseSymbol(name)
+		if err != nil {
+			return fmt.Errorf("parse name: %w", err)
+		}
+
+		o := sdktypes.NewOrg().WithDisplayName(displayName).WithName(name)
 
 		id, err := orgs().Create(ctx, o)
 		if err != nil {
@@ -35,4 +40,5 @@ var createCmd = common.StandardCommand(&cobra.Command{
 
 func init() {
 	createCmd.Flags().StringVarP(&displayName, "display-name", "t", "", "org's display name")
+	createCmd.Flags().StringVarP(&name, "name", "n", "", "org's name")
 }

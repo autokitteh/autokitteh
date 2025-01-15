@@ -569,15 +569,23 @@ type Org struct {
 
 	OrgID       uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
 	DisplayName string
+	Name        string `gorm:"uniqueIndex"`
 
 	UpdatedBy uuid.UUID `gorm:"type:uuid"`
 	UpdatedAt time.Time
 }
 
 func ParseOrg(r Org) (sdktypes.Org, error) {
+	n, err := sdktypes.ParseSymbol(r.Name)
+	if err != nil {
+		return sdktypes.InvalidOrg, fmt.Errorf("invalid org name: %w", err)
+	}
+
 	return sdktypes.NewOrg().
-		WithID(sdktypes.NewIDFromUUID[sdktypes.OrgID](r.OrgID)).
-		WithDisplayName(r.DisplayName), nil
+			WithID(sdktypes.NewIDFromUUID[sdktypes.OrgID](r.OrgID)).
+			WithDisplayName(r.DisplayName).
+			WithName(n),
+		nil
 }
 
 type OrgMember struct {

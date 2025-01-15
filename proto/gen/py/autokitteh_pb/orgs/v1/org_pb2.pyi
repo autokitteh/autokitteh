@@ -17,12 +17,14 @@ ORG_MEMBER_STATUS_INVITED: OrgMemberStatus
 ORG_MEMBER_STATUS_DECLINED: OrgMemberStatus
 
 class Org(_message.Message):
-    __slots__ = ["org_id", "display_name"]
+    __slots__ = ["org_id", "display_name", "name"]
     ORG_ID_FIELD_NUMBER: _ClassVar[int]
     DISPLAY_NAME_FIELD_NUMBER: _ClassVar[int]
+    NAME_FIELD_NUMBER: _ClassVar[int]
     org_id: str
     display_name: str
-    def __init__(self, org_id: _Optional[str] = ..., display_name: _Optional[str] = ...) -> None: ...
+    name: str
+    def __init__(self, org_id: _Optional[str] = ..., display_name: _Optional[str] = ..., name: _Optional[str] = ...) -> None: ...
 
 class OrgMember(_message.Message):
     __slots__ = ["user_id", "org_id", "status"]
