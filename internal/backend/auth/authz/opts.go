@@ -8,7 +8,16 @@ type checkCfg struct {
 	convertForbiddenToNotFound bool
 }
 
-type CheckOpt func(*checkCfg)
+func configure(opts []CheckOpt) checkCfg {
+	cfg := checkCfg{data: make(map[string]any) /* prevent nil */}
+	for _, c := range opts {
+		c(&cfg)
+	}
+
+	return cfg
+}
+
+type CheckOpt = func(*checkCfg)
 
 func WithNop(*checkCfg) {}
 
@@ -36,6 +45,10 @@ func WithFieldMask(fm *sdktypes.FieldMask) CheckOpt {
 // to based on the ID.
 func WithAssociationWithID(name string, id sdktypes.ID) CheckOpt {
 	return func(cfg *checkCfg) {
+		if id == nil || !id.IsValid() {
+			return
+		}
+
 		if cfg.associations == nil {
 			cfg.associations = make(map[string]sdktypes.ID)
 		}

@@ -54,7 +54,6 @@ func (ps *Projects) Create(ctx context.Context, project sdktypes.Project) (sdkty
 		sdktypes.InvalidProjectID,
 		"create:create",
 		authz.WithData("project", project),
-		authz.WithAssociationWithID("org", project.OrgID()),
 	); err != nil {
 		return sdktypes.InvalidProjectID, err
 	}
