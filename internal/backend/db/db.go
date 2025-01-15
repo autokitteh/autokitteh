@@ -145,18 +145,20 @@ type DB interface {
 	CreateUser(ctx context.Context, user sdktypes.User) (sdktypes.UserID, error)
 	GetUser(ctx context.Context, uid sdktypes.UserID, email string) (sdktypes.User, error)
 	UpdateUser(ctx context.Context, user sdktypes.User, fieldMask *sdktypes.FieldMask) error
+	BatchGetUsers(ctx context.Context, uids []sdktypes.UserID) ([]sdktypes.User, error)
 
 	// -----------------------------------------------------------------------
 	CreateOrg(ctx context.Context, user sdktypes.Org) (sdktypes.OrgID, error)
 	GetOrg(ctx context.Context, oid sdktypes.OrgID, n sdktypes.Symbol) (sdktypes.Org, error)
+	BatchGetOrgs(ctx context.Context, oids []sdktypes.OrgID) ([]sdktypes.Org, error)
 	DeleteOrg(ctx context.Context, oid sdktypes.OrgID) error
 	UpdateOrg(ctx context.Context, org sdktypes.Org, fm *sdktypes.FieldMask) error
-	ListOrgMembers(ctx context.Context, oid sdktypes.OrgID) ([]*sdkservices.UserIDWithMemberStatus, error)
-	AddOrgMember(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID, s sdktypes.OrgMemberStatus) error
-	UpdateOrgMemberStatus(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID, s sdktypes.OrgMemberStatus) error
+	ListOrgMembers(ctx context.Context, oid sdktypes.OrgID) ([]sdktypes.OrgMember, error)
+	AddOrgMember(ctx context.Context, m sdktypes.OrgMember) error
+	UpdateOrgMember(ctx context.Context, m sdktypes.OrgMember, fm *sdktypes.FieldMask) error
 	RemoveOrgMember(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID) error
-	GetOrgMemberStatus(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID) (sdktypes.OrgMemberStatus, error)
-	GetOrgsForUser(ctx context.Context, uid sdktypes.UserID) ([]*sdkservices.OrgWithMemberStatus, error)
+	GetOrgMember(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID) (sdktypes.OrgMember, error)
+	GetOrgsForUser(ctx context.Context, uid sdktypes.UserID) ([]sdktypes.OrgMember, error)
 
 	// -----------------------------------------------------------------------
 	SetSecret(ctx context.Context, key string, value string) error

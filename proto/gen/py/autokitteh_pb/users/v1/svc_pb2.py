@@ -16,7 +16,7 @@ from buf.validate import validate_pb2 as buf_dot_validate_dot_validate__pb2
 from google.protobuf import field_mask_pb2 as google_dot_protobuf_dot_field__mask__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1d\x61utokitteh/users/v1/svc.proto\x12\x13\x61utokitteh.users.v1\x1a\x1e\x61utokitteh/users/v1/user.proto\x1a\x1b\x62uf/validate/validate.proto\x1a google/protobuf/field_mask.proto\"G\n\rCreateRequest\x12\x36\n\x04user\x18\x01 \x01(\x0b\x32\x19.autokitteh.users.v1.UserB\x07\xfa\xf7\x18\x03\xc8\x01\x01R\x04user\"3\n\x0e\x43reateResponse\x12!\n\x07user_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x06userId\";\n\nGetRequest\x12\x17\n\x07user_id\x18\x01 \x01(\tR\x06userId\x12\x14\n\x05\x65mail\x18\x02 \x01(\tR\x05\x65mail\"<\n\x0bGetResponse\x12-\n\x04user\x18\x01 \x01(\x0b\x32\x19.autokitteh.users.v1.UserR\x04user\"\x82\x01\n\rUpdateRequest\x12\x36\n\x04user\x18\x01 \x01(\x0b\x32\x19.autokitteh.users.v1.UserB\x07\xfa\xf7\x18\x03\xc8\x01\x01R\x04user\x12\x39\n\nfield_mask\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.FieldMaskR\tfieldMask\"\x10\n\x0eUpdateResponse\".\n\x0cGetIDRequest\x12\x1e\n\x05\x65mail\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x05\x65mail\"(\n\rGetIDResponse\x12\x17\n\x07user_id\x18\x01 \x01(\tR\x06userId2\xce\x02\n\x0cUsersService\x12Q\n\x06\x43reate\x12\".autokitteh.users.v1.CreateRequest\x1a#.autokitteh.users.v1.CreateResponse\x12H\n\x03Get\x12\x1f.autokitteh.users.v1.GetRequest\x1a .autokitteh.users.v1.GetResponse\x12N\n\x05GetID\x12!.autokitteh.users.v1.GetIDRequest\x1a\".autokitteh.users.v1.GetIDResponse\x12Q\n\x06Update\x12\".autokitteh.users.v1.UpdateRequest\x1a#.autokitteh.users.v1.UpdateResponseB\xd8\x01\n\x17\x63om.autokitteh.users.v1B\x08SvcProtoP\x01ZEgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/users/v1;usersv1\xa2\x02\x03\x41UX\xaa\x02\x13\x41utokitteh.Users.V1\xca\x02\x13\x41utokitteh\\Users\\V1\xe2\x02\x1f\x41utokitteh\\Users\\V1\\GPBMetadata\xea\x02\x15\x41utokitteh::Users::V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1d\x61utokitteh/users/v1/svc.proto\x12\x13\x61utokitteh.users.v1\x1a\x1e\x61utokitteh/users/v1/user.proto\x1a\x1b\x62uf/validate/validate.proto\x1a google/protobuf/field_mask.proto\"G\n\rCreateRequest\x12\x36\n\x04user\x18\x01 \x01(\x0b\x32\x19.autokitteh.users.v1.UserB\x07\xfa\xf7\x18\x03\xc8\x01\x01R\x04user\"3\n\x0e\x43reateResponse\x12!\n\x07user_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x06userId\";\n\nGetRequest\x12\x17\n\x07user_id\x18\x01 \x01(\tR\x06userId\x12\x14\n\x05\x65mail\x18\x02 \x01(\tR\x05\x65mail\"<\n\x0bGetResponse\x12-\n\x04user\x18\x01 \x01(\x0b\x32\x19.autokitteh.users.v1.UserR\x04user\"\x82\x01\n\rUpdateRequest\x12\x36\n\x04user\x18\x01 \x01(\x0b\x32\x19.autokitteh.users.v1.UserB\x07\xfa\xf7\x18\x03\xc8\x01\x01R\x04user\x12\x39\n\nfield_mask\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.FieldMaskR\tfieldMask\"\x10\n\x0eUpdateResponse\".\n\x0cGetIDRequest\x12\x1e\n\x05\x65mail\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x05\x65mail\"(\n\rGetIDResponse\x12\x17\n\x07user_id\x18\x01 \x01(\tR\x06userId\";\n\x0f\x42\x61tchGetRequest\x12(\n\x08user_ids\x18\x01 \x03(\tB\r\xfa\xf7\x18\t\x92\x01\x06\"\x04r\x02\x10\x01R\x07userIds\"Q\n\x10\x42\x61tchGetResponse\x12=\n\x05users\x18\x01 \x03(\x0b\x32\x19.autokitteh.users.v1.UserB\x0c\xfa\xf7\x18\x08\x92\x01\x05\"\x03\xc8\x01\x01R\x05users2\xa7\x03\n\x0cUsersService\x12Q\n\x06\x43reate\x12\".autokitteh.users.v1.CreateRequest\x1a#.autokitteh.users.v1.CreateResponse\x12H\n\x03Get\x12\x1f.autokitteh.users.v1.GetRequest\x1a .autokitteh.users.v1.GetResponse\x12N\n\x05GetID\x12!.autokitteh.users.v1.GetIDRequest\x1a\".autokitteh.users.v1.GetIDResponse\x12W\n\x08\x42\x61tchGet\x12$.autokitteh.users.v1.BatchGetRequest\x1a%.autokitteh.users.v1.BatchGetResponse\x12Q\n\x06Update\x12\".autokitteh.users.v1.UpdateRequest\x1a#.autokitteh.users.v1.UpdateResponseB\xd8\x01\n\x17\x63om.autokitteh.users.v1B\x08SvcProtoP\x01ZEgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/users/v1;usersv1\xa2\x02\x03\x41UX\xaa\x02\x13\x41utokitteh.Users.V1\xca\x02\x13\x41utokitteh\\Users\\V1\xe2\x02\x1f\x41utokitteh\\Users\\V1\\GPBMetadata\xea\x02\x15\x41utokitteh::Users::V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -32,6 +32,10 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _UPDATEREQUEST.fields_by_name['user']._serialized_options = b'\372\367\030\003\310\001\001'
   _GETIDREQUEST.fields_by_name['email']._options = None
   _GETIDREQUEST.fields_by_name['email']._serialized_options = b'\372\367\030\004r\002\020\001'
+  _BATCHGETREQUEST.fields_by_name['user_ids']._options = None
+  _BATCHGETREQUEST.fields_by_name['user_ids']._serialized_options = b'\372\367\030\t\222\001\006\"\004r\002\020\001'
+  _BATCHGETRESPONSE.fields_by_name['users']._options = None
+  _BATCHGETRESPONSE.fields_by_name['users']._serialized_options = b'\372\367\030\010\222\001\005\"\003\310\001\001'
   _globals['_CREATEREQUEST']._serialized_start=149
   _globals['_CREATEREQUEST']._serialized_end=220
   _globals['_CREATERESPONSE']._serialized_start=222
@@ -48,6 +52,10 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _globals['_GETIDREQUEST']._serialized_end=595
   _globals['_GETIDRESPONSE']._serialized_start=597
   _globals['_GETIDRESPONSE']._serialized_end=637
-  _globals['_USERSSERVICE']._serialized_start=640
-  _globals['_USERSSERVICE']._serialized_end=974
+  _globals['_BATCHGETREQUEST']._serialized_start=639
+  _globals['_BATCHGETREQUEST']._serialized_end=698
+  _globals['_BATCHGETRESPONSE']._serialized_start=700
+  _globals['_BATCHGETRESPONSE']._serialized_end=781
+  _globals['_USERSSERVICE']._serialized_start=784
+  _globals['_USERSSERVICE']._serialized_end=1207
 # @@protoc_insertion_point(module_scope)

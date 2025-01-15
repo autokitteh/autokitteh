@@ -6,6 +6,7 @@
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { FieldMask, Message, proto3 } from "@bufbuild/protobuf";
 import { Org, OrgMember } from "./org_pb.js";
+import { User } from "../../users/v1/user_pb.js";
 
 /**
  * @generated from message autokitteh.orgs.v1.CreateRequest
@@ -158,6 +159,80 @@ export class GetResponse extends Message<GetResponse> {
 
   static equals(a: GetResponse | PlainMessage<GetResponse> | undefined, b: GetResponse | PlainMessage<GetResponse> | undefined): boolean {
     return proto3.util.equals(GetResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.orgs.v1.BatchGetRequest
+ */
+export class BatchGetRequest extends Message<BatchGetRequest> {
+  /**
+   * @generated from field: repeated string org_ids = 1;
+   */
+  orgIds: string[] = [];
+
+  constructor(data?: PartialMessage<BatchGetRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.orgs.v1.BatchGetRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org_ids", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BatchGetRequest {
+    return new BatchGetRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BatchGetRequest {
+    return new BatchGetRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BatchGetRequest {
+    return new BatchGetRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: BatchGetRequest | PlainMessage<BatchGetRequest> | undefined, b: BatchGetRequest | PlainMessage<BatchGetRequest> | undefined): boolean {
+    return proto3.util.equals(BatchGetRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.orgs.v1.BatchGetResponse
+ */
+export class BatchGetResponse extends Message<BatchGetResponse> {
+  /**
+   * @generated from field: repeated autokitteh.orgs.v1.Org orgs = 1;
+   */
+  orgs: Org[] = [];
+
+  constructor(data?: PartialMessage<BatchGetResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.orgs.v1.BatchGetResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "orgs", kind: "message", T: Org, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BatchGetResponse {
+    return new BatchGetResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BatchGetResponse {
+    return new BatchGetResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BatchGetResponse {
+    return new BatchGetResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: BatchGetResponse | PlainMessage<BatchGetResponse> | undefined, b: BatchGetResponse | PlainMessage<BatchGetResponse> | undefined): boolean {
+    return proto3.util.equals(BatchGetResponse, a, b);
   }
 }
 
@@ -534,6 +609,11 @@ export class ListMembersRequest extends Message<ListMembersRequest> {
    */
   orgId = "";
 
+  /**
+   * @generated from field: bool include_users = 2;
+   */
+  includeUsers = false;
+
   constructor(data?: PartialMessage<ListMembersRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -543,6 +623,7 @@ export class ListMembersRequest extends Message<ListMembersRequest> {
   static readonly typeName = "autokitteh.orgs.v1.ListMembersRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "org_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "include_users", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListMembersRequest {
@@ -571,6 +652,11 @@ export class ListMembersResponse extends Message<ListMembersResponse> {
    */
   members: OrgMember[] = [];
 
+  /**
+   * @generated from field: map<string, autokitteh.users.v1.User> users = 2;
+   */
+  users: { [key: string]: User } = {};
+
   constructor(data?: PartialMessage<ListMembersResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -580,6 +666,7 @@ export class ListMembersResponse extends Message<ListMembersResponse> {
   static readonly typeName = "autokitteh.orgs.v1.ListMembersResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "members", kind: "message", T: OrgMember, repeated: true },
+    { no: 2, name: "users", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: User} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListMembersResponse {

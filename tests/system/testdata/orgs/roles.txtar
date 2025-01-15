@@ -1,0 +1,78 @@
+user zumi
+
+ak orgs create --display-name meow
+return code == 0
+capture_jq meow_oid .org_id
+
+ak orgs get-member $meow_oid $ZUMI_UID -f
+return code == 0
+output equals_jq .member.roles [admin]
+
+ak orgs add-member $meow_oid $GIZMO_UID
+return code == 0
+
+ak orgs get-member $meow_oid $GIZMO_UID -f
+return code == 0
+output equals_jq .member.status ORG_MEMBER_STATUS_INVITED
+output equals_jq .member.roles <nil>
+
+# admin can change role of a member, even if they are just invited.
+ak orgs update-member $meow_oid $GIZMO_UID --role moo
+return code == 0
+
+ak orgs get-member $meow_oid $GIZMO_UID -f
+return code == 0
+output equals_jq .member.status ORG_MEMBER_STATUS_INVITED
+output equals_jq .member.roles [moo]
+
+user gizmo
+
+# invitee cannot change role.
+ak orgs update-member $meow_oid $GIZMO_UID --role admin
+return code == $RC_UNAUTHZ
+
+ak orgs remove-member $meow_oid $ZUMI_UID
+return code == $RC_UNAUTHZ
+
+ak orgs update-member $meow_oid $GIZMO_UID --status ACTIVE
+return code == 0
+
+ak orgs get-member $meow_oid $GIZMO_UID -f
+return code == 0
+output equals_jq .member.status ORG_MEMBER_STATUS_ACTIVE
+output equals_jq .member.roles [moo]
+
+ak orgs remove-member $meow_oid $ZUMI_UID
+return code == $RC_UNAUTHZ
+
+user zumi
+
+ak orgs update-member $meow_oid $GIZMO_UID --role admin --role moo
+return code == 0
+
+ak orgs get-member $meow_oid $GIZMO_UID -f
+return code == 0
+output equals_jq .member.status ORG_MEMBER_STATUS_ACTIVE
+output equals_jq .member.roles [admin moo]
+
+user gizmo
+
+ak orgs list-members $meow_oid
+return code == 0
+output equals_jq .[].org_id $meow_oid,$meow_oid
+output equals_jq .[].user_id $ZUMI_UID,$GIZMO_UID
+output equals_jq .[].status ORG_MEMBER_STATUS_ACTIVE,ORG_MEMBER_STATUS_ACTIVE
+
+ak orgs remove-member $meow_oid $ZUMI_UID
+return code == 0
+
+ak orgs list-members $meow_oid
+return code == 0
+output equals_jq .[].org_id $meow_oid
+output equals_jq .[].user_id $GIZMO_UID
+output equals_jq .[].status ORG_MEMBER_STATUS_ACTIVE
+
+
+-- test-config.yaml --
+ak:
+    extra_args: ["-j", "--array_json_list"]

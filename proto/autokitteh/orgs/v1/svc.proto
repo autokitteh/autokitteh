@@ -3,6 +3,7 @@ syntax = "proto3";
 package autokitteh.orgs.v1;
 
 import "autokitteh/orgs/v1/org.proto";
+import "autokitteh/users/v1/user.proto";
 import "buf/validate/validate.proto";
 import "google/protobuf/field_mask.proto";
 
@@ -21,6 +22,14 @@ message GetRequest {
 
 message GetResponse {
   Org org = 1;
+}
+
+message BatchGetRequest {
+  repeated string org_ids = 1 [(buf.validate.field).repeated.items.string.min_len = 1];
+}
+
+message BatchGetResponse {
+  repeated Org orgs = 1 [(buf.validate.field).repeated.items.required = true];
 }
 
 message DeleteRequest {
@@ -60,10 +69,12 @@ message GetMemberResponse {
 
 message ListMembersRequest {
   string org_id = 1 [(buf.validate.field).string.min_len = 1];
+  bool include_users = 2;
 }
 
 message ListMembersResponse {
   repeated OrgMember members = 1 [(buf.validate.field).repeated.items.required = true];
+  map<string, users.v1.User> users = 2;
 }
 
 message GetOrgsForUserRequest {
@@ -86,6 +97,8 @@ message UpdateMemberResponse {}
 service OrgsService {
   rpc Create(CreateRequest) returns (CreateResponse);
   rpc Get(GetRequest) returns (GetResponse);
+  // BatchGet returns a list of orgs for the given org_ids, if the org does not exist, it will not be returned.
+  rpc BatchGet(BatchGetRequest) returns (BatchGetResponse);
   rpc Update(UpdateRequest) returns (UpdateResponse);
   rpc Delete(DeleteRequest) returns (DeleteResponse);
 
