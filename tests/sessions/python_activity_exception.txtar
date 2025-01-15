@@ -1,0 +1,20 @@
+before
+py/concurrent/futures/_base.py", line 456, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+ZeroDivisionError: division by zero
+-- main.py:main --
+import autokitteh
+
+
+def main(event):
+	print('before')
+	step()
+	print('after')  # shouldn't get here
+
+
+@autokitteh.activity
+def step():
+	1/0

@@ -14,6 +14,7 @@ class JsonFormatter(logging.Formatter):
             "message": record.getMessage(),
             "filename": record.filename,
             "lineno": record.lineno,
+            "function": record.funcName,
         }
         return json.dumps(record_dict)
 
