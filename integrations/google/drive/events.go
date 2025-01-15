@@ -22,7 +22,7 @@ func ConstructEvents(ctx context.Context, vars sdkservices.Vars, cids []sdktypes
 	a := api{logger: l, vars: vars, cid: cids[0]}
 	changes, err := a.listChanges(ctx)
 	if err != nil {
-		l.Error("Failed to list events", zap.Error(err))
+		l.Error("Failed to list Google Drive events", zap.Error(err))
 		return nil, err
 	}
 
