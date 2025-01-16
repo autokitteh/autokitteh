@@ -28,7 +28,7 @@ type Config struct {
 	MinLogLevel        string `koanf:"log_level"`         // log level threshold to emit. if empty: "warn".
 	MinConsoleLogLevel string `koanf:"console_log_level"` // console log level threshold to emit. if empty: "warn".
 
-	// for testing	only, to test alternate embedded policies.
+	// for testing only, to test alternate embedded policies.
 	fs fs.FS
 }
 
