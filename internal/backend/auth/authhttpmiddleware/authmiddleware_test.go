@@ -155,7 +155,7 @@ func newTestHarness(t *testing.T, useDefaultUser bool) *harness {
 	}
 
 	mw := New(Deps{
-		L:        zaptest.NewLogger(t),
+		Logger:   zaptest.NewLogger(t),
 		Sessions: sessions,
 		Tokens:   tokens,
 		Users:    users,

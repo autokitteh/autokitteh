@@ -33,7 +33,7 @@ type AuthMiddlewareDecorator func(http.Handler) http.Handler
 type Deps struct {
 	fx.In
 
-	L        *zap.Logger
+	Logger   *zap.Logger
 	Cfg      *Config
 	Users    sdkservices.Users
 	Sessions authsessions.Store `optional:"true"`
@@ -42,14 +42,15 @@ type Deps struct {
 
 type middlewareError struct {
 	code int
-	msg  string
+	msg  string // must never contain sensitive data.
 }
 
 func (m *middlewareError) apply(w http.ResponseWriter) { http.Error(w, m.msg, m.code) }
 
-func newMiddlewareError(code int, msg string) *middlewareError {
-	return &middlewareError{code: code, msg: msg}
-}
+var (
+	invalidAuthHeaderErr = &middlewareError{http.StatusUnauthorized, "invalid authorization header"}
+	invalidTokenErr      = &middlewareError{http.StatusUnauthorized, "invalid token"}
+)
 
 // middlewareFn is a function that extracts a user ID from a request.
 // It returns the user ID and an error if the request is invalid.
@@ -65,12 +66,12 @@ func newTokensMiddleware(tokens authtokens.Tokens) middlewareFn {
 		kind, payload, _ := strings.Cut(authHdr, " ")
 
 		if kind != "Bearer" {
-			return sdktypes.InvalidUserID, newMiddlewareError(http.StatusUnauthorized, "invalid authorization header")
+			return sdktypes.InvalidUserID, invalidAuthHeaderErr
 		}
 
 		u, err := tokens.Parse(payload)
 		if err != nil {
-			return sdktypes.InvalidUserID, newMiddlewareError(http.StatusUnauthorized, "invalid token")
+			return sdktypes.InvalidUserID, invalidTokenErr
 		}
 
 		return u.ID(), nil
@@ -125,7 +126,7 @@ func New(deps Deps) AuthMiddlewareDecorator {
 				}
 			}
 
-			l := deps.L
+			l := deps.Logger
 
 			if mwErr != nil {
 				l.Info("auth middleware error", zap.Error(errors.New(mwErr.msg)))
