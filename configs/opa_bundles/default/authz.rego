@@ -101,10 +101,10 @@ allow if {
 	input.authn_user.org_memberships[input.resource.id].status in ["ACTIVE", "INVITED"]
 }
 
-# Org admins can perform delete, updates on it and remove members.
+# Org admins can delete and update an org.
 allow if {
 	input.resource.kind == "org"
-	input.action.name in ["delete", "update", "remove-member"]
+	input.action.name in ["delete", "update"]
 	is_resource_org_admin
 }
 
@@ -120,13 +120,6 @@ allow if {
 	input.action.name == "add-member"
 	input.data.org_member.status == "ORG_MEMBER_STATUS_INVITED"
 	not input.data.org_member.roles
-	is_resource_org_admin
-}
-
-# Org admins can perform delete, updates on it and remove members.
-allow if {
-	input.kind == "org"
-	input.action in ["delete", "update", "remove-member"]
 	is_resource_org_admin
 }
 
@@ -149,13 +142,30 @@ allow if {
 	input.data.field_mask == ["status"]
 }
 
-# Org admin can update any member, as long as they don't change the status.
+# Org admins can update any member other than themselves, as long as they don't change the status.
 allow if {
 	input.resource.kind == "org"
 	input.action.name == "update-member"
 	is_resource_org_admin
 	not "status" in input.data.field_mask
 	input.data.new_status == "UNSPECIFIED"
+	input.associations.user.id != input.authn_user.id
+}
+
+# Org admins can remove any member other than themselves.
+allow if {
+	input.resource.kind == "org"
+	input.action.name == "remove-member"
+	is_resource_org_admin
+	input.associations.user.id != input.authn_user.id
+}
+
+# Non-org admins can remove themselves.
+allow if {
+	input.resource.kind == "org"
+	input.action.name == "remove-member"
+	not is_resource_org_admin
+	input.associations.user.id == input.authn_user.id
 }
 
 # Users of a specific org can see all other users who are active
