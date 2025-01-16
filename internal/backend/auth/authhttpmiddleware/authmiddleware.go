@@ -1,11 +1,12 @@
 package authhttpmiddleware
 
 import (
-	"context"
+	"errors"
 	"net/http"
 	"strings"
 
 	"go.uber.org/fx"
+	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authsessions"
@@ -27,145 +28,142 @@ var Configs = configset.Set[Config]{
 	Dev:     &Config{UseDefaultUser: true},
 }
 
-// The middleware passes around internally the authenticated user ID,
-// so that we can check only once in the AuthMiddlewareDecorator for
-// the common stuff - that the user exists and that it is not disabled.
-// The AuthMiddlewareDecorator will call eventually the authcontext.SetAuthnUser
-// if the user is deemed worthy of authentication.
-type userIDCtxKey string
-
-var userIDContextKey = userIDCtxKey("authn_user_id")
-
-func ctxWithUserID(ctx context.Context, id sdktypes.UserID) context.Context {
-	return context.WithValue(ctx, userIDContextKey, id)
-}
-
-func getCtxUserID(ctx context.Context) sdktypes.UserID {
-	v := ctx.Value(userIDContextKey)
-	if v == nil {
-		return sdktypes.InvalidUserID
-	}
-
-	return v.(sdktypes.UserID)
-}
-
 type AuthMiddlewareDecorator func(http.Handler) http.Handler
 
 type Deps struct {
 	fx.In
 
+	Logger   *zap.Logger
 	Cfg      *Config
 	Users    sdkservices.Users
 	Sessions authsessions.Store `optional:"true"`
 	Tokens   authtokens.Tokens  `optional:"true"`
 }
 
-// ifAuthenticated is a middleware that checks if the user is authenticated.
-// If the user is authenticated, it calls the `yes` handler, otherwise it calls the `no` handler.
-func ifAuthenticated(yes, no http.Handler) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		next := no
-
-		if getCtxUserID(r.Context()).IsValid() {
-			next = yes
-		}
-
-		next.ServeHTTP(w, r)
-	})
+type middlewareError struct {
+	code int
+	msg  string // must never contain sensitive data.
 }
 
-func newTokensMiddleware(next http.Handler, tokens authtokens.Tokens) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (m *middlewareError) apply(w http.ResponseWriter) { http.Error(w, m.msg, m.code) }
+
+var (
+	invalidAuthHeaderErr = &middlewareError{http.StatusUnauthorized, "invalid authorization header"}
+	invalidTokenErr      = &middlewareError{http.StatusUnauthorized, "invalid token"}
+)
+
+// middlewareFn is a function that extracts a user ID from a request.
+// It returns the user ID and an error if the request is invalid.
+type middlewareFn func(*http.Request) (sdktypes.UserID, *middlewareError)
+
+func newTokensMiddleware(tokens authtokens.Tokens) middlewareFn {
+	return func(r *http.Request) (sdktypes.UserID, *middlewareError) {
 		authHdr := r.Header.Get("Authorization")
-
 		if authHdr == "" {
-			next.ServeHTTP(w, r)
-			return
+			return sdktypes.InvalidUserID, nil
 		}
-
-		ctx := r.Context()
 
 		kind, payload, _ := strings.Cut(authHdr, " ")
 
 		if kind != "Bearer" {
-			http.Error(w, "invalid authorization header", http.StatusUnauthorized)
-			return
+			return sdktypes.InvalidUserID, invalidAuthHeaderErr
 		}
 
 		u, err := tokens.Parse(payload)
 		if err != nil {
-			http.Error(w, "invalid token", http.StatusUnauthorized)
-			return
+			return sdktypes.InvalidUserID, invalidTokenErr
 		}
 
-		next.ServeHTTP(w, r.WithContext(ctxWithUserID(ctx, u.ID())))
+		return u.ID(), nil
 	}
 }
 
-func newSessionsMiddleware(next http.Handler, sessions authsessions.Store) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func newSessionsMiddleware(sessions authsessions.Store) middlewareFn {
+	return func(r *http.Request) (sdktypes.UserID, *middlewareError) {
 		session, err := sessions.Get(r)
 		// Do not fail on error - graceful degradation in case of session structure changes.
 		if err == nil && session != nil {
-			r = r.WithContext(ctxWithUserID(r.Context(), session.UserID))
+			return session.UserID, nil
 		}
 
-		next.ServeHTTP(w, r)
+		return sdktypes.InvalidUserID, nil
 	}
 }
 
-func newSetDefaultUserMiddleware(next http.Handler) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		next.ServeHTTP(w, r.WithContext(ctxWithUserID(r.Context(), authusers.DefaultUser.ID())))
-	})
+func setDefaultUserMiddleware(r *http.Request) (sdktypes.UserID, *middlewareError) {
+	return authusers.DefaultUser.ID(), nil
 }
 
 func New(deps Deps) AuthMiddlewareDecorator {
 	sessions, users, tokens := deps.Sessions, deps.Users, deps.Tokens
 
-	return func(next http.Handler) http.Handler {
-		// Order matters here!
+	var mws []middlewareFn
 
-		// Evaluated last.
-		f := ifAuthenticated(
-			/* authenticated: */ http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				// make sure the user exists.
-				ctx := r.Context()
+	if tokens != nil {
+		mws = append(mws, newTokensMiddleware(tokens))
+	}
 
-				uid := getCtxUserID(ctx)
+	if sessions != nil {
+		mws = append(mws, newSessionsMiddleware(sessions))
+	}
 
-				u, err := users.Get(authcontext.SetAuthnSystemUser(ctx), uid, "")
-				if err != nil {
-					http.Error(w, "unknown user", http.StatusUnauthorized)
-					return
+	if deps.Cfg.UseDefaultUser {
+		mws = append(mws, setDefaultUserMiddleware)
+	}
+
+	return func(next http.Handler) http.Handler { // = AuthMiddlewareDecorator
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Process all middlewares.
+			var (
+				uid   sdktypes.UserID
+				mwErr *middlewareError
+			)
+
+			for _, mw := range mws {
+				// Stop processing middlewares if a valid user ID is found or there is an error.
+				if uid, mwErr = mw(r); uid.IsValid() || mwErr != nil {
+					break
 				}
+			}
 
-				if u.Status() != sdktypes.UserStatusActive {
-					http.Error(w, "user is not active", http.StatusUnauthorized)
-					return
-				}
+			l := deps.Logger
 
-				next.ServeHTTP(w, r.WithContext(authcontext.SetAuthnUser(ctx, u)))
-			}),
-			/* not authenticated: */ http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if mwErr != nil {
+				l.Info("auth middleware error", zap.Error(errors.New(mwErr.msg)))
+				mwErr.apply(w)
+				return
+			}
+
+			// Check if authenticated.
+			if !uid.IsValid() {
+				l.Info("not authenticated")
 				http.Error(w, "unauthenticated", http.StatusUnauthorized)
-			}),
-		)
+				return
+			}
 
-		if deps.Cfg.UseDefaultUser {
-			f = ifAuthenticated(f, newSetDefaultUserMiddleware(f))
-		}
+			// Hydrate user and check if it's active.
+			l = l.With(zap.String("user_id", uid.String()))
 
-		if sessions != nil {
-			f = ifAuthenticated(f, newSessionsMiddleware(f, sessions))
-		}
+			ctx := r.Context()
 
-		// Evaluated first.
-		if tokens != nil {
-			f = ifAuthenticated(f, newTokensMiddleware(f, tokens))
-		}
+			u, err := users.Get(authcontext.SetAuthnSystemUser(ctx), uid, "")
+			if err != nil {
+				l.Warn("failed to get user", zap.Error(err))
+				http.Error(w, "unknown user", http.StatusUnauthorized)
+				return
+			}
 
-		return f
+			if u.Status() != sdktypes.UserStatusActive {
+				l.Info("user is not active")
+				http.Error(w, "user is not active", http.StatusUnauthorized)
+				return
+			}
+
+			ctx = authcontext.SetAuthnUser(ctx, u)
+
+			// Propagate the request to the next handler.
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
 	}
 }
 
