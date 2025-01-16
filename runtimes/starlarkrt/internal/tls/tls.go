@@ -12,7 +12,7 @@ import (
 type Context struct {
 	GoCtx     context.Context
 	RunID     sdktypes.RunID
-	Callbacks *sdkservices.RunCallbacks
+	Callbacks sdkservices.RunCallbacks
 	Globals   starlark.StringDict
 }
 

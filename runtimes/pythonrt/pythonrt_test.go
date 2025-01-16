@@ -140,25 +140,26 @@ func newValues(t *testing.T, runID sdktypes.RunID) (sdktypes.ModuleFunction, map
 	return mod, map[string]sdktypes.Value{"ak": ak}
 }
 
-func newCallbacks(svc *pySvc) *sdkservices.RunCallbacks {
-	cbs := sdkservices.RunCallbacks{
-		Call: func(
-			ctx context.Context,
-			rid sdktypes.RunID,
-			v sdktypes.Value,
-			args []sdktypes.Value,
-			kwargs map[string]sdktypes.Value,
-		) (sdktypes.Value, error) {
-			return svc.Call(ctx, v, args, kwargs)
-		},
-		Load: func(ctx context.Context, rid sdktypes.RunID, path string) (map[string]sdktypes.Value, error) {
-			return map[string]sdktypes.Value{}, nil
-		},
-		Print: func(ctx context.Context, rid sdktypes.RunID, msg string) {},
-	}
-
-	return &cbs
+type runCallbacks struct {
+	sdkservices.NopRunCallbacks
+	svc *pySvc
 }
+
+func (c runCallbacks) Load(ctx context.Context, rid sdktypes.RunID, path string) (map[string]sdktypes.Value, error) {
+	return map[string]sdktypes.Value{}, nil
+}
+
+func (c runCallbacks) Call(
+	ctx context.Context,
+	rid sdktypes.RunID,
+	v sdktypes.Value,
+	args []sdktypes.Value,
+	kwargs map[string]sdktypes.Value,
+) (sdktypes.Value, error) {
+	return c.svc.Call(ctx, v, args, kwargs)
+}
+
+func newCallbacks(svc *pySvc) sdkservices.RunCallbacks { return runCallbacks{svc: svc} }
 
 func setupServer(l *zap.Logger) (net.Listener, error) {
 	mux := &http.ServeMux{}

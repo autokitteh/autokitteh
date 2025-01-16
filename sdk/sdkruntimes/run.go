@@ -21,6 +21,53 @@ type RunParams struct {
 	EntryPointPath       string
 }
 
+type runCallbacks struct {
+	sdkservices.NopRunCallbacks
+	params RunParams
+	group  *group
+	cache  map[string]map[string]sdktypes.Value
+}
+
+func (cbs runCallbacks) Call(ctx context.Context, rid sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+	if xid := v.GetFunction().ExecutorID(); xid.IsValid() || cbs.group.runs[xid] == nil {
+		return cbs.params.FallthroughCallbacks.Call(ctx, rid, v, args, kwargs)
+	}
+
+	return cbs.group.Call(ctx, v, args, kwargs)
+}
+
+func (cbs runCallbacks) Load(ctx context.Context, rid sdktypes.RunID, path string) (map[string]sdktypes.Value, error) {
+	exports, ok := cbs.cache[path]
+	if ok {
+		return exports, nil
+	}
+
+	loadRunID := cbs.params.FallthroughCallbacks.NewRunID()
+
+	runParams := cbs.params
+	runParams.Globals = nil // TODO: globals: figure out which values to pass here.
+	runParams.RunID = loadRunID
+	runParams.FallthroughCallbacks = cbs
+	runParams.SessionID = cbs.params.SessionID
+
+	r, err := run(ctx, runParams, path)
+	if err != nil {
+		if errors.Is(err, sdkerrors.ErrNotFound) {
+			return cbs.params.FallthroughCallbacks.Load(ctx, rid, path)
+		}
+
+		return nil, err
+	}
+
+	cbs.group.runs[sdktypes.NewExecutorID(loadRunID)] = r
+
+	cbs.cache[path] = r.Values()
+
+	return r.Values(), err
+}
+
+func (runCallbacks) NewRunID() sdktypes.RunID { return sdktypes.NewRunID() }
+
 // Run executes a build file and manages it across multiple runtimes.
 // fallthourghCallbacks.{Load,Call} are called only for dynamic modules
 // (modules that are supplied from integrations).
@@ -30,52 +77,12 @@ func Run(ctx context.Context, params RunParams) (sdkservices.Run, error) {
 		runs:   make(map[sdktypes.ExecutorID]sdkservices.Run),
 	}
 
-	cbs := sdkservices.RunCallbacks{
-		Print: params.FallthroughCallbacks.SafePrint,
-		Call: func(ctx context.Context, runID sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
-			if xid := v.GetFunction().ExecutorID(); xid.IsValid() || group.runs[xid] == nil {
-				return params.FallthroughCallbacks.SafeCall(ctx, runID, v, args, kwargs)
-			}
-
-			return group.Call(ctx, v, args, kwargs)
-		},
-		NewRunID: params.FallthroughCallbacks.NewRunID,
-	}
-
-	cache := make(map[string]map[string]sdktypes.Value)
-
-	cbs.Load = func(ctx context.Context, rid sdktypes.RunID, path string) (map[string]sdktypes.Value, error) {
-		exports, ok := cache[path]
-		if ok {
-			return exports, nil
-		}
-
-		loadRunID := params.FallthroughCallbacks.SafeNewRunID()
-
-		runParams := params
-		runParams.Globals = nil // TODO: globals: figure out which values to pass here.
-		runParams.RunID = loadRunID
-		runParams.FallthroughCallbacks = cbs
-		runParams.SessionID = params.SessionID
-
-		r, err := run(ctx, runParams, path)
-		if err != nil {
-			if errors.Is(err, sdkerrors.ErrNotFound) {
-				return params.FallthroughCallbacks.SafeLoad(ctx, rid, path)
-			}
-
-			return nil, err
-		}
-
-		group.runs[sdktypes.NewExecutorID(loadRunID)] = r
-
-		cache[path] = r.Values()
-
-		return r.Values(), err
-	}
-
 	runParams := params
-	runParams.FallthroughCallbacks = cbs
+	runParams.FallthroughCallbacks = runCallbacks{
+		params: params,
+		group:  group,
+		cache:  make(map[string]map[string]sdktypes.Value),
+	}
 
 	r, err := run(ctx, runParams, params.EntryPointPath)
 	if r != nil {
@@ -125,6 +132,6 @@ func run(ctx context.Context, params RunParams, path string) (sdkservices.Run, e
 		path,
 		brt.Artifact.CompiledData(),
 		params.Globals,
-		&params.FallthroughCallbacks,
+		params.FallthroughCallbacks,
 	)
 }

@@ -65,7 +65,7 @@ type pySvc struct {
 	xid       sdktypes.ExecutorID
 	runID     sdktypes.RunID
 	sessionID sdktypes.SessionID
-	cbs       *sdkservices.RunCallbacks
+	cbs       sdkservices.RunCallbacks
 	exports   map[string]sdktypes.Value
 	fileName  string // main user code file name (entry point)
 	envVars   map[string]string
@@ -251,7 +251,7 @@ func (py *pySvc) Run(
 	mainPath string,
 	compiled map[string][]byte,
 	values map[string]sdktypes.Value,
-	cbs *sdkservices.RunCallbacks,
+	cbs sdkservices.RunCallbacks,
 ) (sdkservices.Run, error) {
 	runnerOK := false
 	py.ctx = ctx

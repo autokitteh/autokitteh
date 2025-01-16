@@ -23,7 +23,7 @@ type Runtimes interface {
 		path string,
 		build *sdkbuildfile.BuildFile,
 		globals map[string]sdktypes.Value,
-		cbs *RunCallbacks,
+		cbs RunCallbacks,
 	) (Run, error)
 }
 
@@ -41,27 +41,8 @@ type Runtime interface {
 		path string, // where to start running from.
 		compiled map[string][]byte,
 		values map[string]sdktypes.Value,
-		cbs *RunCallbacks,
+		cbs RunCallbacks,
 	) (Run, error)
-}
-
-type (
-	RunLoadFunc  = func(ctx context.Context, rid sdktypes.RunID, path string) (map[string]sdktypes.Value, error)
-	RunCallFunc  = func(ctx context.Context, rid sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error)
-	RunPrintFunc = func(ctx context.Context, rid sdktypes.RunID, text string)
-	NewRunIDFunc = func() sdktypes.RunID
-)
-
-type RunCallbacks struct {
-	// Returns sdktypes.ProgramErrorAsError if not internal error.
-	Load RunLoadFunc
-
-	// Returns sdktypes.ProgramErrorAsError if not internal error.
-	Call RunCallFunc
-
-	Print RunPrintFunc
-
-	NewRunID NewRunIDFunc
 }
 
 type Run interface {
@@ -71,29 +52,23 @@ type Run interface {
 
 	sdkexecutor.Executor
 }
-
-func (rc *RunCallbacks) SafeLoad(ctx context.Context, rid sdktypes.RunID, path string) (map[string]sdktypes.Value, error) {
-	if rc == nil || rc.Load == nil {
-		return nil, nil
-	}
-
-	return rc.Load(ctx, rid, path)
+type RunCallbacks interface {
+	Load(ctx context.Context, rid sdktypes.RunID, path string) (map[string]sdktypes.Value, error)
+	Call(ctx context.Context, rid sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error)
+	Print(ctx context.Context, rid sdktypes.RunID, text string)
+	NewRunID() sdktypes.RunID
 }
 
-func (rc *RunCallbacks) SafeCall(ctx context.Context, rid sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
-	if rc == nil || rc.Call == nil {
-		return sdktypes.InvalidValue, sdkerrors.ErrNotImplemented
-	}
+type NopRunCallbacks struct{}
 
-	return rc.Call(ctx, rid, v, args, kwargs)
+func (NopRunCallbacks) Load(context.Context, sdktypes.RunID, string) (map[string]sdktypes.Value, error) {
+	return nil, sdkerrors.ErrNotFound
 }
 
-func (rc *RunCallbacks) SafePrint(ctx context.Context, rid sdktypes.RunID, text string) {
-	if rc == nil || rc.Print == nil {
-		return
-	}
-
-	rc.Print(ctx, rid, text)
+func (NopRunCallbacks) Call(context.Context, sdktypes.RunID, sdktypes.Value, []sdktypes.Value, map[string]sdktypes.Value) (sdktypes.Value, error) {
+	return sdktypes.InvalidValue, sdkerrors.ErrNotFound
 }
 
-func (rc *RunCallbacks) SafeNewRunID() sdktypes.RunID { return sdktypes.NewRunID() }
+func (NopRunCallbacks) Print(context.Context, sdktypes.RunID, string) {}
+
+func (NopRunCallbacks) NewRunID() sdktypes.RunID { return sdktypes.NewRunID() }

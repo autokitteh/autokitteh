@@ -34,7 +34,7 @@ func (c *client) Run(
 	path string,
 	build *sdkbuildfile.BuildFile,
 	globals map[string]sdktypes.Value,
-	cbs *sdkservices.RunCallbacks,
+	cbs sdkservices.RunCallbacks,
 ) (sdkservices.Run, error) {
 	var a bytes.Buffer
 	if err := build.Write(&a); err != nil {

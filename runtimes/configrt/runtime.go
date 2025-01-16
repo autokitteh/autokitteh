@@ -32,7 +32,7 @@ func (svc) Run(
 	mainPath string,
 	compiled map[string][]byte,
 	_ map[string]sdktypes.Value,
-	_ *sdkservices.RunCallbacks,
+	_ sdkservices.RunCallbacks,
 ) (sdkservices.Run, error) {
 	return runtime.Run(runID, mainPath, compiled)
 }

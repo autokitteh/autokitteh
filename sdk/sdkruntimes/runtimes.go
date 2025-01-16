@@ -46,10 +46,10 @@ func (s runtimes) Run(
 	path string,
 	build *sdkbuildfile.BuildFile,
 	globals map[string]sdktypes.Value,
-	cbs *sdkservices.RunCallbacks,
+	cbs sdkservices.RunCallbacks,
 ) (sdkservices.Run, error) {
 	if cbs == nil {
-		cbs = &sdkservices.RunCallbacks{}
+		cbs = sdkservices.NopRunCallbacks{}
 	}
 
 	return Run(ctx, RunParams{
@@ -59,7 +59,7 @@ func (s runtimes) Run(
 		EntryPointPath:       path,
 		BuildFile:            build,
 		Globals:              globals,
-		FallthroughCallbacks: *cbs,
+		FallthroughCallbacks: cbs,
 	})
 }
 

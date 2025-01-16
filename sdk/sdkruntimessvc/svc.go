@@ -116,6 +116,18 @@ func (s *svc) Build(ctx context.Context, req *connect.Request[runtimesv1.BuildRe
 	}), nil
 }
 
+type streamCallbacks struct {
+	sdkservices.NopRunCallbacks
+	*connect.ServerStream[runtimesv1.RunResponse]
+	*zap.Logger
+}
+
+func (c streamCallbacks) Print(_ context.Context, _ sdktypes.RunID, msg string) {
+	if err := c.Send(&runtimesv1.RunResponse{Print: msg}); err != nil {
+		c.Logger.Error("failed to send print message", zap.Error(err))
+	}
+}
+
 func (s *svc) Run(ctx context.Context, req *connect.Request[runtimesv1.RunRequest], stream *connect.ServerStream[runtimesv1.RunResponse]) error {
 	msg := req.Msg
 
@@ -138,13 +150,7 @@ func (s *svc) Run(ctx context.Context, req *connect.Request[runtimesv1.RunReques
 		return connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("artifact: %w", err))
 	}
 
-	cbs := &sdkservices.RunCallbacks{
-		Print: func(_ context.Context, _ sdktypes.RunID, msg string) {
-			if err := stream.Send(&runtimesv1.RunResponse{Print: msg}); err != nil {
-				s.z.Error("failed to send print message", zap.Error(err))
-			}
-		},
-	}
+	cbs := streamCallbacks{ServerStream: stream, Logger: s.z}
 
 	run, err := s.runtimes.Run(ctx, rid, sdktypes.InvalidSessionID, msg.Path, bf, gs, cbs)
 	if err != nil {

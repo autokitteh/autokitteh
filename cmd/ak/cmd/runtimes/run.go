@@ -117,17 +117,21 @@ func init() {
 	runCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "do not print anything but errors")
 }
 
-func run(ctx context.Context, b *sdkbuildfile.BuildFile, path string) (map[string]sdktypes.Value, []string, error) {
-	var prints []string
+type runCallbacks struct {
+	sdkservices.NopRunCallbacks
+	prints []string
+}
 
-	cbs := &sdkservices.RunCallbacks{
-		Print: func(_ context.Context, _ sdktypes.RunID, msg string) {
-			if !quiet {
-				fmt.Println(msg)
-			}
-			prints = append(prints, msg)
-		},
+func (cb *runCallbacks) Print(_ context.Context, _ sdktypes.RunID, msg string) {
+	if !quiet {
+		fmt.Println(msg)
 	}
+
+	cb.prints = append(cb.prints, msg)
+}
+
+func run(ctx context.Context, b *sdkbuildfile.BuildFile, path string) (map[string]sdktypes.Value, []string, error) {
+	var cbs runCallbacks
 
 	if tmo > 0 {
 		var cancel context.CancelFunc
@@ -135,14 +139,14 @@ func run(ctx context.Context, b *sdkbuildfile.BuildFile, path string) (map[strin
 		defer cancel()
 	}
 
-	run, err := runtimes().Run(ctx, sdktypes.NewRunID(), sdktypes.InvalidSessionID, path, b, nil, cbs)
+	run, err := runtimes().Run(ctx, sdktypes.NewRunID(), sdktypes.InvalidSessionID, path, b, nil, &cbs)
 	if err != nil {
 		return nil, nil, fmt.Errorf("run build: %w", err)
 	}
 
 	run.Close()
 
-	return run.Values(), prints, nil
+	return run.Values(), cbs.prints, nil
 }
 
 func isBuildFile(f *os.File) (bool, error) {
