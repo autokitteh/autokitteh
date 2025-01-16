@@ -7,9 +7,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap/zaptest"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authsessions"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens/authjwttokens"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authusers"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -50,29 +52,8 @@ func assertCalledWithUser(t *testing.T, expected sdktypes.UserID, given *sdktype
 	}
 }
 
-func assertCalledWithoutAuthn(t *testing.T, given *sdktypes.UserID) {
-	if assert.NotNil(t, given) {
-		assert.False(t, given.IsValid())
-	}
-}
-
-// Returns a handler and a function that returns the authenticated user.
-// If the handle was not called, the function will return nil.
-// That function also resets the user and called states when its called.
-func newInternalTestHandler(t *testing.T) (http.Handler, func() *sdktypes.UserID) {
-	return newTestHandler(t, getCtxUserID)
-}
-
-func newOverallTestHandler(t *testing.T) (http.Handler, func() *sdktypes.UserID) {
-	return newTestHandler(t, authcontext.GetAuthnUserID)
-}
-
-func newRequest(u sdktypes.User, authHeader string, cookies []*http.Cookie) *http.Request {
+func newRequest(authHeader string, cookies []*http.Cookie) *http.Request {
 	req := kittehs.Must1(http.NewRequest(http.MethodGet, "/", nil))
-
-	if u.IsValid() {
-		req = req.WithContext(ctxWithUserID(context.Background(), u.ID()))
-	}
 
 	if authHeader != "" {
 		req.Header.Set("Authorization", authHeader)
@@ -85,300 +66,293 @@ func newRequest(u sdktypes.User, authHeader string, cookies []*http.Cookie) *htt
 	return req
 }
 
-func TestIfAuthenticated(t *testing.T) {
-	yup, yupped := newInternalTestHandler(t)
-	nope, noped := newInternalTestHandler(t)
-
-	mw := ifAuthenticated(yup, nope)
-
-	mw.ServeHTTP(nil, newRequest(sdktypes.InvalidUser, "", nil))
-	assertCalledWithoutAuthn(t, noped())
-	assert.Nil(t, yupped())
-
-	mw.ServeHTTP(nil, newRequest(testUser1, "", nil))
-	assert.Nil(t, noped())
-	assertCalledWithUser(t, testUser1.ID(), yupped())
-}
-
 func TestDefaultUserMiddleware(t *testing.T) {
-	h, check := newInternalTestHandler(t)
-
-	mw := ifAuthenticated(h, newSetDefaultUserMiddleware(h))
-
-	// When no other auth in context, should use default user.
-	w := httptest.NewRecorder()
-	mw.ServeHTTP(nil, newRequest(sdktypes.InvalidUser, "", nil))
-	assert.Equal(t, http.StatusOK, w.Code)
-	assertCalledWithUser(t, authusers.DefaultUser.ID(), check())
-
-	// When other auth in context, use that authn user.
-	w = httptest.NewRecorder()
-	mw.ServeHTTP(nil, newRequest(testUser1, "", nil))
-	assert.Equal(t, http.StatusOK, w.Code)
-	assertCalledWithUser(t, testUser1.ID(), check())
+	uid, mwErr := setDefaultUserMiddleware(newRequest("", nil))
+	if assert.Nil(t, mwErr) {
+		assert.Equal(t, authusers.DefaultUser.ID(), uid)
+	}
 }
 
 func TestTokensMiddleware(t *testing.T) {
-	h, check := newInternalTestHandler(t)
-
 	tokens := kittehs.Must1(authjwttokens.New(authjwttokens.Configs.Dev))
 
-	mw := newTokensMiddleware(h, tokens)
+	mw := newTokensMiddleware(tokens)
 
 	// no header - should be nop.
-	w := httptest.NewRecorder()
-	mw.ServeHTTP(w, newRequest(sdktypes.InvalidUser, "", nil))
-	assert.Equal(t, http.StatusOK, w.Code)
-	assertCalledWithoutAuthn(t, check())
+	uid, mwErr := mw(newRequest("", nil))
+	if assert.Nil(t, mwErr) {
+		assert.False(t, uid.IsValid())
+	}
 
 	// correct token.
 	tok := kittehs.Must1(tokens.Create(testUser1))
-	w = httptest.NewRecorder()
-	mw.ServeHTTP(w, newRequest(sdktypes.InvalidUser, "Bearer "+tok, nil))
-	assert.Equal(t, http.StatusOK, w.Code)
-	assertCalledWithUser(t, testUser1.ID(), check())
+	uid, mwErr = mw(newRequest("Bearer "+tok, nil))
+	if assert.Nil(t, mwErr) {
+		assert.True(t, uid.IsValid())
+	}
 
 	// bad token.
-	w = httptest.NewRecorder()
-	mw.ServeHTTP(w, newRequest(sdktypes.InvalidUser, "meow", nil))
-	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.Nil(t, check())
+	uid, mwErr = mw(newRequest("hiss", nil))
+	if assert.NotNil(t, mwErr) {
+		assert.Equal(t, http.StatusUnauthorized, mwErr.code)
+	}
+	assert.False(t, uid.IsValid())
 }
 
 func TestSessionsMiddleware(t *testing.T) {
-	h, check := newInternalTestHandler(t)
-
 	sessions := kittehs.Must1(authsessions.New(authsessions.Configs.Dev))
 
-	mw := newSessionsMiddleware(h, sessions)
+	mw := newSessionsMiddleware(sessions)
 
 	// no session - should be nop.
-	w := httptest.NewRecorder()
-	mw.ServeHTTP(w, newRequest(sdktypes.InvalidUser, "", nil))
-	assert.Equal(t, http.StatusOK, w.Code)
-	assertCalledWithoutAuthn(t, check())
+	uid, mwErr := mw(newRequest("", nil))
+	if assert.Nil(t, mwErr) {
+		assert.False(t, uid.IsValid())
+	}
 
-	w = httptest.NewRecorder()
+	w := httptest.NewRecorder()
 	kittehs.Must0(sessions.Set(w, authsessions.NewSessionData(testUser1.ID())))
 	cookies := w.Result().Cookies()
 
 	// legit cookies.
-	w = httptest.NewRecorder()
-	mw.ServeHTTP(w, newRequest(sdktypes.InvalidUser, "", cookies))
-	assert.Equal(t, http.StatusOK, w.Code)
-	assertCalledWithUser(t, testUser1.ID(), check())
+	uid, mwErr = mw(newRequest("", cookies))
+	if assert.Nil(t, mwErr) {
+		assert.True(t, uid.IsValid())
+	}
 
-	// bad cookie - nop.
+	// bad cookie - nop (a bad cookie should not fail the middleware).
 	for i := range cookies {
-		w = httptest.NewRecorder()
-
 		badCookies := make([]*http.Cookie, len(cookies))
 		copy(badCookies, cookies)
 		badCookies[i].Value = "hiss"
 
-		mw.ServeHTTP(w, newRequest(sdktypes.InvalidUser, "", badCookies))
-		assert.Equal(t, http.StatusOK, w.Code)
-		assertCalledWithoutAuthn(t, check())
+		uid, mwErr = mw(newRequest("", badCookies))
+		if assert.Nil(t, mwErr) {
+			assert.False(t, uid.IsValid())
+		}
 	}
 }
 
-func TestNewWithoutDefaultUser(t *testing.T) {
-	h, check := newOverallTestHandler(t)
+type harness struct {
+	mw       http.Handler
+	check    func() *sdktypes.UserID
+	sessions authsessions.Store
+	tokens   authtokens.Tokens
+	users    *sdktest.TestUsers
+}
+
+func newTestHarness(t *testing.T, useDefaultUser bool) *harness {
+	h, check := newTestHandler(t, authcontext.GetAuthnUserID)
 
 	sessions := kittehs.Must1(authsessions.New(authsessions.Configs.Dev))
 	tokens := kittehs.Must1(authjwttokens.New(authjwttokens.Configs.Dev))
 	users := &sdktest.TestUsers{}
 
+	if useDefaultUser {
+		users.Users = map[sdktypes.UserID]sdktypes.User{
+			authusers.DefaultUser.ID(): authusers.DefaultUser,
+		}
+	}
+
 	mw := New(Deps{
+		Logger:   zaptest.NewLogger(t),
 		Sessions: sessions,
 		Tokens:   tokens,
 		Users:    users,
-		Cfg:      &Config{UseDefaultUser: false},
+		Cfg:      &Config{UseDefaultUser: useDefaultUser},
 	})(h)
+
+	return &harness{
+		mw:       mw,
+		check:    check,
+		sessions: sessions,
+		tokens:   tokens,
+		users:    users,
+	}
+}
+
+func TestMiddlewareError(t *testing.T) {
+	h := newTestHarness(t, false)
+
+	w := httptest.NewRecorder()
+	h.mw.ServeHTTP(w, newRequest("Bearer hisss", nil))
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	assert.Nil(t, h.check())
+
+	assert.Equal(t, "invalid token\n", w.Body.String())
+}
+
+func TestNewWithoutDefaultUser(t *testing.T) {
+	h := newTestHarness(t, false)
 
 	// no auth - reject.
 	w := httptest.NewRecorder()
-	mw.ServeHTTP(w, newRequest(sdktypes.InvalidUser, "", nil))
+	h.mw.ServeHTTP(w, newRequest("", nil))
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.Nil(t, check())
+	assert.Nil(t, h.check())
 
 	// correct token, but no such user.
-	tok1 := kittehs.Must1(tokens.Create(testUser1))
+	tok1 := kittehs.Must1(h.tokens.Create(testUser1))
 	w = httptest.NewRecorder()
-	mw.ServeHTTP(w, newRequest(sdktypes.InvalidUser, "Bearer "+tok1, nil))
+	h.mw.ServeHTTP(w, newRequest("Bearer "+tok1, nil))
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.Nil(t, check())
+	assert.Nil(t, h.check())
 
 	// correct token, but no such user.
 	w = httptest.NewRecorder()
-	kittehs.Must0(sessions.Set(w, authsessions.NewSessionData(testUser1.ID())))
+	kittehs.Must0(h.sessions.Set(w, authsessions.NewSessionData(testUser1.ID())))
 	cookies := w.Result().Cookies()
 
 	w = httptest.NewRecorder()
-	mw.ServeHTTP(w, newRequest(sdktypes.InvalidUser, "", cookies))
+	h.mw.ServeHTTP(w, newRequest("", cookies))
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.Nil(t, check())
+	assert.Nil(t, h.check())
 
 	// create a disabled user.
-	users.Users = map[sdktypes.UserID]sdktypes.User{
+	h.users.Users = map[sdktypes.UserID]sdktypes.User{
 		testUser1.ID(): testUser1.WithStatus(sdktypes.UserStatusDisabled),
 	}
 
 	// correct token, user is disabled.
 	w = httptest.NewRecorder()
-	mw.ServeHTTP(w, newRequest(sdktypes.InvalidUser, "Bearer "+tok1, nil))
+	h.mw.ServeHTTP(w, newRequest("Bearer "+tok1, nil))
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.Nil(t, check())
+	assert.Nil(t, h.check())
 
 	// correct session, user is disabled.
 	w = httptest.NewRecorder()
-	mw.ServeHTTP(w, newRequest(sdktypes.InvalidUser, "", cookies))
+	h.mw.ServeHTTP(w, newRequest("", cookies))
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.Nil(t, check())
+	assert.Nil(t, h.check())
 
 	// create a invited user.
-	users.Users = map[sdktypes.UserID]sdktypes.User{
+	h.users.Users = map[sdktypes.UserID]sdktypes.User{
 		testUser1.ID(): testUser1.WithStatus(sdktypes.UserStatusInvited),
 	}
 
 	// correct token, user is invited.
 	w = httptest.NewRecorder()
-	mw.ServeHTTP(w, newRequest(sdktypes.InvalidUser, "Bearer "+tok1, nil))
+	h.mw.ServeHTTP(w, newRequest("Bearer "+tok1, nil))
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.Nil(t, check())
+	assert.Nil(t, h.check())
 
 	// correct session, user is invited.
 	w = httptest.NewRecorder()
-	mw.ServeHTTP(w, newRequest(sdktypes.InvalidUser, "", cookies))
+	h.mw.ServeHTTP(w, newRequest("", cookies))
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.Nil(t, check())
+	assert.Nil(t, h.check())
 
 	// enable the user.
-	users.Users = map[sdktypes.UserID]sdktypes.User{
+	h.users.Users = map[sdktypes.UserID]sdktypes.User{
 		testUser1.ID(): testUser1,
 	}
 
 	// correct token, user is ok.
 	w = httptest.NewRecorder()
-	mw.ServeHTTP(w, newRequest(sdktypes.InvalidUser, "Bearer "+tok1, nil))
+	h.mw.ServeHTTP(w, newRequest("Bearer "+tok1, nil))
 	assert.Equal(t, http.StatusOK, w.Code)
-	assertCalledWithUser(t, testUser1.ID(), check())
+	assertCalledWithUser(t, testUser1.ID(), h.check())
 
 	// correct session, user is ok.
 	w = httptest.NewRecorder()
-	mw.ServeHTTP(w, newRequest(sdktypes.InvalidUser, "", cookies))
+	h.mw.ServeHTTP(w, newRequest("", cookies))
 	assert.Equal(t, http.StatusOK, w.Code)
-	assertCalledWithUser(t, testUser1.ID(), check())
+	assertCalledWithUser(t, testUser1.ID(), h.check())
 
 	// both token and session for same user.
 	w = httptest.NewRecorder()
-	mw.ServeHTTP(w, newRequest(sdktypes.InvalidUser, "Bearer "+tok1, cookies))
+	h.mw.ServeHTTP(w, newRequest("Bearer "+tok1, cookies))
 	assert.Equal(t, http.StatusOK, w.Code)
-	assertCalledWithUser(t, testUser1.ID(), check())
+	assertCalledWithUser(t, testUser1.ID(), h.check())
 
 	// token for token user, session for other user.
 	// token > session.
-	users.Users[testUser2.ID()] = testUser2
+	h.users.Users[testUser2.ID()] = testUser2
 	w = httptest.NewRecorder()
-	tok2 := kittehs.Must1(tokens.Create(testUser2))
-	mw.ServeHTTP(w, newRequest(sdktypes.InvalidUser, "Bearer "+tok2, cookies))
+	tok2 := kittehs.Must1(h.tokens.Create(testUser2))
+	h.mw.ServeHTTP(w, newRequest("Bearer "+tok2, cookies))
 	assert.Equal(t, http.StatusOK, w.Code)
-	assertCalledWithUser(t, testUser2.ID(), check())
+	assertCalledWithUser(t, testUser2.ID(), h.check())
 
 	// token for token user who is disabled, session for other user.
 	// token > session, and is rejected.
-	users.Users[testUser2.ID()] = testUser2.WithStatus(sdktypes.UserStatusDisabled)
+	h.users.Users[testUser2.ID()] = testUser2.WithStatus(sdktypes.UserStatusDisabled)
 	w = httptest.NewRecorder()
-	mw.ServeHTTP(w, newRequest(sdktypes.InvalidUser, "Bearer "+tok2, cookies))
+	h.mw.ServeHTTP(w, newRequest("Bearer "+tok2, cookies))
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.Nil(t, check())
+	assert.Nil(t, h.check())
 }
 
 func TestNewWithDefaultUser(t *testing.T) {
-	h, check := newOverallTestHandler(t)
-
-	sessions := kittehs.Must1(authsessions.New(authsessions.Configs.Dev))
-	tokens := kittehs.Must1(authjwttokens.New(authjwttokens.Configs.Dev))
-	users := &sdktest.TestUsers{
-		Users: map[sdktypes.UserID]sdktypes.User{
-			authusers.DefaultUser.ID(): authusers.DefaultUser,
-		},
-	}
-
-	mw := New(Deps{
-		Sessions: sessions,
-		Tokens:   tokens,
-		Users:    users,
-		Cfg:      &Config{UseDefaultUser: true},
-	})(h)
+	h := newTestHarness(t, true)
 
 	// no auth.
 	w := httptest.NewRecorder()
-	mw.ServeHTTP(w, newRequest(sdktypes.InvalidUser, "", nil))
+	h.mw.ServeHTTP(w, newRequest("", nil))
 	assert.Equal(t, http.StatusOK, w.Code)
-	assertCalledWithUser(t, authusers.DefaultUser.ID(), check())
+	assertCalledWithUser(t, authusers.DefaultUser.ID(), h.check())
 
 	// correct token, but no such user.
-	tok1 := kittehs.Must1(tokens.Create(testUser1))
+	tok1 := kittehs.Must1(h.tokens.Create(testUser1))
 	w = httptest.NewRecorder()
-	mw.ServeHTTP(w, newRequest(sdktypes.InvalidUser, "Bearer "+tok1, nil))
+	h.mw.ServeHTTP(w, newRequest("Bearer "+tok1, nil))
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.Nil(t, check())
+	assert.Nil(t, h.check())
 
 	// correct session, but no such user.
 	w = httptest.NewRecorder()
-	kittehs.Must0(sessions.Set(w, authsessions.NewSessionData(testUser1.ID())))
+	kittehs.Must0(h.sessions.Set(w, authsessions.NewSessionData(testUser1.ID())))
 	cookies := w.Result().Cookies()
 
 	w = httptest.NewRecorder()
-	mw.ServeHTTP(w, newRequest(sdktypes.InvalidUser, "", cookies))
+	h.mw.ServeHTTP(w, newRequest("", cookies))
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.Nil(t, check())
+	assert.Nil(t, h.check())
 
 	// create a disabled user.
-	users.Users[testUser1.ID()] = testUser1.WithStatus(sdktypes.UserStatusDisabled)
+	h.users.Users[testUser1.ID()] = testUser1.WithStatus(sdktypes.UserStatusDisabled)
 
 	// correct token, user is disabled.
 	w = httptest.NewRecorder()
-	mw.ServeHTTP(w, newRequest(sdktypes.InvalidUser, "Bearer "+tok1, nil))
+	h.mw.ServeHTTP(w, newRequest("Bearer "+tok1, nil))
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.Nil(t, check())
+	assert.Nil(t, h.check())
 
 	// correct token, user is disabled.
 	w = httptest.NewRecorder()
-	mw.ServeHTTP(w, newRequest(sdktypes.InvalidUser, "", cookies))
+	h.mw.ServeHTTP(w, newRequest("", cookies))
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.Nil(t, check())
+	assert.Nil(t, h.check())
 
 	// create an invited user.
-	users.Users[testUser1.ID()] = testUser1.WithStatus(sdktypes.UserStatusInvited)
+	h.users.Users[testUser1.ID()] = testUser1.WithStatus(sdktypes.UserStatusInvited)
 
 	// correct token, user is invited.
 	w = httptest.NewRecorder()
-	mw.ServeHTTP(w, newRequest(sdktypes.InvalidUser, "Bearer "+tok1, nil))
+	h.mw.ServeHTTP(w, newRequest("Bearer "+tok1, nil))
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.Nil(t, check())
+	assert.Nil(t, h.check())
 
 	// correct token, user is invited.
 	w = httptest.NewRecorder()
-	mw.ServeHTTP(w, newRequest(sdktypes.InvalidUser, "", cookies))
+	h.mw.ServeHTTP(w, newRequest("", cookies))
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.Nil(t, check())
+	assert.Nil(t, h.check())
 
 	// enable the user.
-	users.Users = map[sdktypes.UserID]sdktypes.User{
+	h.users.Users = map[sdktypes.UserID]sdktypes.User{
 		testUser1.ID(): testUser1,
 	}
 
 	// correct token, user is ok.
 	w = httptest.NewRecorder()
-	mw.ServeHTTP(w, newRequest(sdktypes.InvalidUser, "Bearer "+tok1, nil))
+	h.mw.ServeHTTP(w, newRequest("Bearer "+tok1, nil))
 	assert.Equal(t, http.StatusOK, w.Code)
-	assertCalledWithUser(t, testUser1.ID(), check())
+	assertCalledWithUser(t, testUser1.ID(), h.check())
 
 	// correct session, user is ok.
 	w = httptest.NewRecorder()
-	mw.ServeHTTP(w, newRequest(sdktypes.InvalidUser, "", cookies))
+	h.mw.ServeHTTP(w, newRequest("", cookies))
 	assert.Equal(t, http.StatusOK, w.Code)
-	assertCalledWithUser(t, testUser1.ID(), check())
+	assertCalledWithUser(t, testUser1.ID(), h.check())
 }
