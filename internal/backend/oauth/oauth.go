@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
+
+	// "strconv"
 	"strings"
 
 	"go.uber.org/zap"
@@ -19,8 +22,11 @@ import (
 	googleoauth2 "google.golang.org/api/oauth2/v2"
 	"google.golang.org/api/sheets/v4"
 
+	"go.autokitteh.dev/autokitteh/integrations/github"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+
+	// "go.autokitteh.dev/autokitteh/integrations/github"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -59,6 +65,7 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 	l.Debug("Atlassian base URL for OAuth", zap.String("url", atlassianBaseURL))
 
 	// Determine GitHub base URL (to support GitHub Enterprise Server, i.e. on-prem).
+	// TODO: Add support for custom OAuth.
 	githubBaseURL := os.Getenv("GITHUB_ENTERPRISE_URL")
 	if githubBaseURL == "" {
 		githubBaseURL = "https://github.com"
@@ -147,7 +154,7 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 				ClientSecret: os.Getenv("GITHUB_CLIENT_SECRET"),
 				Endpoint: oauth2.Endpoint{
 					// https://docs.github.com/en/apps/using-github-apps/installing-a-github-app-from-a-third-party#installing-a-github-app
-					AuthURL: fmt.Sprintf("%s/%s/%s/installations/new", githubBaseURL, appsDir, os.Getenv("GITHUB_APP_NAME")),
+					AuthURL: fmt.Sprintf("%s/%s/{{GITHUB_APP_NAME}}/installations/new", githubBaseURL, appsDir),
 					// https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#device-flow
 					DeviceAuthURL: githubBaseURL + "/login/device/code",
 					// https://docs.github.com/en/enterprise-server/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#2-users-are-redirected-back-to-your-site-by-github
@@ -500,6 +507,30 @@ func (o *oauth) getConfigWithConnection(ctx context.Context, intg string, cid sd
 		cfgCopy.Endpoint.TokenURL = strings.Replace(cfgCopy.Endpoint.TokenURL, placeholder, domain, 1)
 
 		optsCopy["audience"] = strings.Replace(opts["audience"], placeholder, domain, 1)
+	}
+
+	if intg == "github" {
+		placeholder := "{{GITHUB_APP_NAME}}"
+		// TODO: Do the lookup for both oauth and custom oauth and remove the env var?
+		appName := os.Getenv("GITHUB_APP_NAME")
+		if o.isCustomOAuth(ctx, cid) {
+			// Get app name using appID
+			appID := vs.GetValueByString("app_id")
+			aid, err := strconv.ParseInt(appID, 10, 64)
+			if err != nil {
+				return nil, nil, err
+			}
+			gh, err := github.NewClientFromGitHubAppID(aid, vs)
+			if err != nil {
+				return nil, nil, err
+			}
+			app, _, err := gh.Apps.Get(ctx, "")
+			if err != nil {
+				return nil, nil, err
+			}
+			appName = *app.Slug
+		}
+		cfgCopy.Endpoint.AuthURL = strings.Replace(cfgCopy.Endpoint.AuthURL, placeholder, appName, 1)
 	}
 
 	return cfgCopy, optsCopy, nil
