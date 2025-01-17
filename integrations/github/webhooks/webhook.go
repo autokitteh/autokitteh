@@ -61,30 +61,12 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if strings.HasSuffix(r.URL.Path, "/github/webhook") {
 		// Validate that the inbound HTTP request has a valid content type
 		// and a valid signature header, and if so parse the received event.
-		s := os.Getenv(webhookSecretEnvVar)
-		appID := r.Header.Get(githubAppIDHeader)
-		cids, err := h.vars.FindConnectionIDs(r.Context(), h.integrationID, vars.AppID, appID)
+		whs, err := h.getWebHookSecret(w, r)
 		if err != nil {
-			l.Error("Failed to find connection IDs", zap.Error(err))
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
-		}
-		if len(cids) == 0 {
-			l.Warn("Received GitHub event from app webhook, but no relevant connection found")
-			return
-		}
-		cid := cids[0]
-		if h.isCustomOAuth(r.Context(), cid) {
-			vs, err := h.vars.Get(r.Context(), sdktypes.NewVarScopeID(cid))
-			if err != nil {
-				l.Warn("Failed to get GitHub app ID", zap.Error(err))
-				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-				return
-			}
-			s = vs.GetValueByString("webhook_secret")
 		}
 
-		payload, err = github.ValidatePayload(r, []byte(s))
+		payload, err = github.ValidatePayload(r, []byte(whs))
 		if err != nil {
 			l.Warn("Received invalid app event payload", zap.Error(err))
 			http.Error(w, "Bad Request", http.StatusBadRequest)
@@ -213,6 +195,34 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.dispatchAsyncEventsToConnections(ctx, cids, akEvent)
 
 	// Returning immediately without an error = acknowledgement of receipt.
+}
+
+func (h handler) getWebHookSecret(w http.ResponseWriter, r *http.Request) (string, error) {
+	l := extrazap.ExtractLoggerFromContext(r.Context())
+
+	s := os.Getenv(webhookSecretEnvVar)
+	appID := r.Header.Get(githubAppIDHeader)
+	cids, err := h.vars.FindConnectionIDs(r.Context(), h.integrationID, vars.AppID, appID)
+	if err != nil {
+		l.Error("Failed to find connection IDs", zap.Error(err))
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return "", err
+	}
+	if len(cids) == 0 {
+		l.Warn("Received GitHub event from app webhook, but no relevant connection found")
+		return "", nil
+	}
+	cid := cids[0]
+	if h.isCustomOAuth(r.Context(), cid) {
+		vs, err := h.vars.Get(r.Context(), sdktypes.NewVarScopeID(cid))
+		if err != nil {
+			l.Warn("Failed to get GitHub app ID", zap.Error(err))
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return "", err
+		}
+		s = vs.GetValueByString("webhook_secret")
+	}
+	return s, nil
 }
 
 func extractInstallationID(event any) (inst string, err error) {
