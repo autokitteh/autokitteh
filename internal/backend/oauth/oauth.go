@@ -511,7 +511,6 @@ func (o *oauth) getConfigWithConnection(ctx context.Context, intg string, cid sd
 
 	if intg == "github" {
 		placeholder := "{{GITHUB_APP_NAME}}"
-		// TODO: Do the lookup for both oauth and custom oauth and remove the env var?
 		appName := os.Getenv("GITHUB_APP_NAME")
 		if o.isCustomOAuth(ctx, cid) {
 			// Get app name using appID
