@@ -56,7 +56,9 @@ func (o *orgs) Create(ctx context.Context, org sdktypes.Org) (sdktypes.OrgID, er
 			return
 		}
 
-		m := sdktypes.NewOrgMember(oid, authcontext.GetAuthnUserID(ctx)).WithStatus(sdktypes.OrgMemberStatusActive).WithRoles(OrgAdminRoleName)
+		m := sdktypes.NewOrgMember(oid, authcontext.GetAuthnUserID(ctx)).
+			WithStatus(sdktypes.OrgMemberStatusActive).
+			WithRoles(OrgAdminRoleName)
 
 		if err = AddMember(ctx, tx, m); err != nil {
 			return

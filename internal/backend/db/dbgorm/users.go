@@ -95,6 +95,10 @@ func (gdb *gormdb) UpdateUser(ctx context.Context, u sdktypes.User, fm *sdktypes
 }
 
 func (gdb *gormdb) BatchGetUsers(ctx context.Context, uids []sdktypes.UserID) ([]sdktypes.User, error) {
+	if len(uids) > maxBatchSize {
+		return nil, sdkerrors.NewInvalidArgumentError("too many users = %d > %d", len(uids), maxBatchSize)
+	}
+
 	q := gdb.db.WithContext(ctx).Where("user_id in ?", kittehs.Transform(uids, func(uid sdktypes.UserID) uuid.UUID { return uid.UUIDValue() }))
 
 	var rs []scheme.User

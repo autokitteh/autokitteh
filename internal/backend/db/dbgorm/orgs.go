@@ -47,6 +47,10 @@ func (gdb *gormdb) GetOrg(ctx context.Context, oid sdktypes.OrgID, n sdktypes.Sy
 }
 
 func (gdb *gormdb) BatchGetOrgs(ctx context.Context, oids []sdktypes.OrgID) ([]sdktypes.Org, error) {
+	if len(oids) > maxBatchSize {
+		return nil, sdkerrors.NewInvalidArgumentError("too many orgs = %d > %d", len(oids), maxBatchSize)
+	}
+
 	q := gdb.db.WithContext(ctx).Where("org_id in ?", kittehs.Transform(oids, func(oid sdktypes.OrgID) uuid.UUID { return oid.UUIDValue() }))
 
 	var rs []scheme.Org

@@ -47,14 +47,14 @@ allow if {
 # Users
 #
 
-# A user can read its own user object.
+# Users can read their own user object.
 allow if {
 	input.kind == "usr"
 	input.action_type == "read"
 	input.authn_user_id == input.resource_id
 }
 
-# A user can update anything of its own user object except status.
+# Users can update anything of their own user object except status.
 allow if {
 	input.kind == "usr"
 	input.action == "update"

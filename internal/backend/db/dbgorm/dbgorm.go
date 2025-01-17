@@ -23,6 +23,8 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
 
+const maxBatchSize = 128
+
 type Config = gormkitteh.Config
 
 type gormdb struct {
