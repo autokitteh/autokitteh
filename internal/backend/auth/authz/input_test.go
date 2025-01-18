@@ -16,7 +16,7 @@ func TestBuildInputUser(t *testing.T) {
 	tests := []struct {
 		name     string
 		authn    sdktypes.User // authenticated user
-		id       sdktypes.ID   // resource id
+		id       sdktypes.ID   // subject id
 		action   string
 		opts     []CheckOpt
 		expected map[string]any
@@ -36,14 +36,14 @@ func TestBuildInputUser(t *testing.T) {
 					"full": "action_type:action",
 				},
 				"associations": map[string]map[string]any{
-					"resource": {
+					"subject": {
 						"kind": "prj",
 					},
 				},
 				"data": map[string]any{
 					"project": p,
 				},
-				"resource": map[string]any{
+				"subject": map[string]any{
 					"kind": "prj",
 				},
 				"authn_user": map[string]any{
@@ -72,7 +72,7 @@ func TestBuildInputUser(t *testing.T) {
 					"full": "action_type:action",
 				},
 				"associations": map[string]map[string]any{
-					"resource": {
+					"subject": {
 						"kind":   "prj",
 						"id":     p.ID().String(),
 						"org_id": cats.ID().String(),
@@ -96,7 +96,7 @@ func TestBuildInputUser(t *testing.T) {
 					},
 				},
 				"data": map[string]any{},
-				"resource": map[string]any{
+				"subject": map[string]any{
 					"kind":   "prj",
 					"id":     p.ID().String(),
 					"org_id": cats.ID().String(),
@@ -122,14 +122,14 @@ func TestBuildInputUser(t *testing.T) {
 					"full": "action_type:action",
 				},
 				"associations": map[string]map[string]any{
-					"resource": {
+					"subject": {
 						"kind":   "prj",
 						"id":     p.ID().String(),
 						"org_id": cats.ID().String(),
 					},
 				},
 				"data": map[string]any{},
-				"resource": map[string]any{
+				"subject": map[string]any{
 					"kind":   "prj",
 					"id":     p.ID().String(),
 					"org_id": cats.ID().String(),
@@ -155,7 +155,7 @@ func TestBuildInputUser(t *testing.T) {
 					"full": "action_type:action",
 				},
 				"data": map[string]any{},
-				"resource": map[string]any{
+				"subject": map[string]any{
 					"kind":            "usr",
 					"id":              gizmo.ID().String(),
 					"email":           "gizmo@cats",
@@ -163,7 +163,7 @@ func TestBuildInputUser(t *testing.T) {
 					"status":          "ACTIVE",
 				},
 				"associations": map[string]map[string]any{
-					"resource": {
+					"subject": {
 						"kind":            "usr",
 						"id":              gizmo.ID().String(),
 						"email":           "gizmo@cats",
@@ -200,14 +200,14 @@ func TestBuildInputUser(t *testing.T) {
 					"full": "action_type:action",
 				},
 				"associations": map[string]map[string]any{
-					"resource": {
+					"subject": {
 						"kind":       "trg",
 						"id":         tr.ID().String(),
 						"org_id":     cats.ID().String(),
 						"project_id": p.ID().String(),
 					},
 				},
-				"resource": map[string]any{
+				"subject": map[string]any{
 					"kind":       "trg",
 					"id":         tr.ID().String(),
 					"org_id":     cats.ID().String(),

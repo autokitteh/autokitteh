@@ -28,7 +28,7 @@ func hydrate(ctx context.Context, db db.DB, id sdktypes.ID, obj sdktypes.Object)
 
 	switch id.Kind() {
 	case sdktypes.UserIDKind:
-		ms, _, err := db.GetOrgsForUser(ctx, id.(sdktypes.UserID))
+		ms, _, err := db.GetOrgsForUser(ctx, id.(sdktypes.UserID), false)
 		if err != nil {
 			return nil, fmt.Errorf("get orgs for user: %w", err)
 		}
@@ -102,10 +102,10 @@ func buildInput(ctx context.Context, db db.DB, id sdktypes.ID, action string, cf
 
 	associations := make(map[string]map[string]any, len(cfg.associations)+1)
 
-	associations["resource"] = rsc
+	associations["subject"] = rsc
 
 	for name, id := range cfg.associations {
-		// In case the resource is associated with a something, we need to get that thing's org.
+		// In case the subject is associated with a something, we need to get that thing's org.
 		// This is relevant, for example, with new builds or sessions, where they are explicitly owned
 		// but can be associated with a project. The policy needs to decide if to allow it.
 
@@ -133,7 +133,7 @@ func buildInput(ctx context.Context, db db.DB, id sdktypes.ID, action string, cf
 
 		"data":         cfg.data,     // aux data supplied by the caller.
 		"authn_user":   m,            // hydrated authenticated user.
-		"resource":     rsc,          // hydrated resource.
+		"subject":      rsc,          // hydrated subject.
 		"associations": associations, // hydrated associations.
 	}, nil
 }

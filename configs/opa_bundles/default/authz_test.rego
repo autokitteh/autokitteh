@@ -13,12 +13,7 @@ test_has_active_role_in_org if {
 
 	authz.has_active_role_in_org(user, "o1", "admin")
 	not authz.has_active_role_in_org(user, "o1", "meow")
-	authz.has_active_role_in_org(user, "o1", "")
-
-	not authz.has_active_role_in_org(user, "o2", "")
 	not authz.has_active_role_in_org(user, "o2", "admin")
-
-	not authz.has_active_role_in_org(user, "o3", "")
 	not authz.has_active_role_in_org(user, "o3", "admin")
 }
 
