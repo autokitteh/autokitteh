@@ -20,7 +20,7 @@ func buildInput(ctx context.Context, db db.DB, id sdktypes.ID, action string, cf
 		return nil, sdkerrors.ErrUnauthenticated
 	}
 
-	memberships, err := db.GetOrgsForUser(ctx, authnUser.ID())
+	memberships, _, err := db.GetOrgsForUser(ctx, authnUser.ID(), false)
 	if err != nil {
 		return nil, fmt.Errorf("get orgs for user: %w", err)
 	}

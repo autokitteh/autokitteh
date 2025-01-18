@@ -150,16 +150,6 @@ func (u *users) GetID(ctx context.Context, email string) (sdktypes.UserID, error
 	return r.ID(), nil
 }
 
-func (u *users) BatchGetByIDs(ctx context.Context, ids []sdktypes.UserID) ([]sdktypes.User, error) {
-	for _, id := range ids {
-		if err := authz.CheckContext(ctx, id, "read:get", authz.WithConvertForbiddenToNotFound); err != nil {
-			return nil, err
-		}
-	}
-
-	return u.db.BatchGetUsers(ctx, ids)
-}
-
 func (u *users) Update(ctx context.Context, user sdktypes.User, fieldMask *sdktypes.FieldMask) error {
 	if !user.ID().IsValid() {
 		return sdkerrors.NewInvalidArgumentError("missing user ID")

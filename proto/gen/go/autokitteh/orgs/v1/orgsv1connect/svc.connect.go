@@ -37,8 +37,6 @@ const (
 	OrgsServiceCreateProcedure = "/autokitteh.orgs.v1.OrgsService/Create"
 	// OrgsServiceGetProcedure is the fully-qualified name of the OrgsService's Get RPC.
 	OrgsServiceGetProcedure = "/autokitteh.orgs.v1.OrgsService/Get"
-	// OrgsServiceBatchGetProcedure is the fully-qualified name of the OrgsService's BatchGet RPC.
-	OrgsServiceBatchGetProcedure = "/autokitteh.orgs.v1.OrgsService/BatchGet"
 	// OrgsServiceUpdateProcedure is the fully-qualified name of the OrgsService's Update RPC.
 	OrgsServiceUpdateProcedure = "/autokitteh.orgs.v1.OrgsService/Update"
 	// OrgsServiceDeleteProcedure is the fully-qualified name of the OrgsService's Delete RPC.
@@ -64,8 +62,6 @@ const (
 type OrgsServiceClient interface {
 	Create(context.Context, *connect.Request[v1.CreateRequest]) (*connect.Response[v1.CreateResponse], error)
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
-	// BatchGet returns a list of orgs for the given org_ids, if the org does not exist, it will not be returned.
-	BatchGet(context.Context, *connect.Request[v1.BatchGetRequest]) (*connect.Response[v1.BatchGetResponse], error)
 	Update(context.Context, *connect.Request[v1.UpdateRequest]) (*connect.Response[v1.UpdateResponse], error)
 	Delete(context.Context, *connect.Request[v1.DeleteRequest]) (*connect.Response[v1.DeleteResponse], error)
 	AddMember(context.Context, *connect.Request[v1.AddMemberRequest]) (*connect.Response[v1.AddMemberResponse], error)
@@ -94,11 +90,6 @@ func NewOrgsServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 		get: connect.NewClient[v1.GetRequest, v1.GetResponse](
 			httpClient,
 			baseURL+OrgsServiceGetProcedure,
-			opts...,
-		),
-		batchGet: connect.NewClient[v1.BatchGetRequest, v1.BatchGetResponse](
-			httpClient,
-			baseURL+OrgsServiceBatchGetProcedure,
 			opts...,
 		),
 		update: connect.NewClient[v1.UpdateRequest, v1.UpdateResponse](
@@ -148,7 +139,6 @@ func NewOrgsServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 type orgsServiceClient struct {
 	create         *connect.Client[v1.CreateRequest, v1.CreateResponse]
 	get            *connect.Client[v1.GetRequest, v1.GetResponse]
-	batchGet       *connect.Client[v1.BatchGetRequest, v1.BatchGetResponse]
 	update         *connect.Client[v1.UpdateRequest, v1.UpdateResponse]
 	delete         *connect.Client[v1.DeleteRequest, v1.DeleteResponse]
 	addMember      *connect.Client[v1.AddMemberRequest, v1.AddMemberResponse]
@@ -167,11 +157,6 @@ func (c *orgsServiceClient) Create(ctx context.Context, req *connect.Request[v1.
 // Get calls autokitteh.orgs.v1.OrgsService.Get.
 func (c *orgsServiceClient) Get(ctx context.Context, req *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error) {
 	return c.get.CallUnary(ctx, req)
-}
-
-// BatchGet calls autokitteh.orgs.v1.OrgsService.BatchGet.
-func (c *orgsServiceClient) BatchGet(ctx context.Context, req *connect.Request[v1.BatchGetRequest]) (*connect.Response[v1.BatchGetResponse], error) {
-	return c.batchGet.CallUnary(ctx, req)
 }
 
 // Update calls autokitteh.orgs.v1.OrgsService.Update.
@@ -218,8 +203,6 @@ func (c *orgsServiceClient) GetOrgsForUser(ctx context.Context, req *connect.Req
 type OrgsServiceHandler interface {
 	Create(context.Context, *connect.Request[v1.CreateRequest]) (*connect.Response[v1.CreateResponse], error)
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
-	// BatchGet returns a list of orgs for the given org_ids, if the org does not exist, it will not be returned.
-	BatchGet(context.Context, *connect.Request[v1.BatchGetRequest]) (*connect.Response[v1.BatchGetResponse], error)
 	Update(context.Context, *connect.Request[v1.UpdateRequest]) (*connect.Response[v1.UpdateResponse], error)
 	Delete(context.Context, *connect.Request[v1.DeleteRequest]) (*connect.Response[v1.DeleteResponse], error)
 	AddMember(context.Context, *connect.Request[v1.AddMemberRequest]) (*connect.Response[v1.AddMemberResponse], error)
@@ -244,11 +227,6 @@ func NewOrgsServiceHandler(svc OrgsServiceHandler, opts ...connect.HandlerOption
 	orgsServiceGetHandler := connect.NewUnaryHandler(
 		OrgsServiceGetProcedure,
 		svc.Get,
-		opts...,
-	)
-	orgsServiceBatchGetHandler := connect.NewUnaryHandler(
-		OrgsServiceBatchGetProcedure,
-		svc.BatchGet,
 		opts...,
 	)
 	orgsServiceUpdateHandler := connect.NewUnaryHandler(
@@ -297,8 +275,6 @@ func NewOrgsServiceHandler(svc OrgsServiceHandler, opts ...connect.HandlerOption
 			orgsServiceCreateHandler.ServeHTTP(w, r)
 		case OrgsServiceGetProcedure:
 			orgsServiceGetHandler.ServeHTTP(w, r)
-		case OrgsServiceBatchGetProcedure:
-			orgsServiceBatchGetHandler.ServeHTTP(w, r)
 		case OrgsServiceUpdateProcedure:
 			orgsServiceUpdateHandler.ServeHTTP(w, r)
 		case OrgsServiceDeleteProcedure:
@@ -330,10 +306,6 @@ func (UnimplementedOrgsServiceHandler) Create(context.Context, *connect.Request[
 
 func (UnimplementedOrgsServiceHandler) Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.orgs.v1.OrgsService.Get is not implemented"))
-}
-
-func (UnimplementedOrgsServiceHandler) BatchGet(context.Context, *connect.Request[v1.BatchGetRequest]) (*connect.Response[v1.BatchGetResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.orgs.v1.OrgsService.BatchGet is not implemented"))
 }
 
 func (UnimplementedOrgsServiceHandler) Update(context.Context, *connect.Request[v1.UpdateRequest]) (*connect.Response[v1.UpdateResponse], error) {

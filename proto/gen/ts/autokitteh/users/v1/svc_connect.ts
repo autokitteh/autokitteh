@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { BatchGetRequest, BatchGetResponse, CreateRequest, CreateResponse, GetIDRequest, GetIDResponse, GetRequest, GetResponse, UpdateRequest, UpdateResponse } from "./svc_pb.js";
+import { CreateRequest, CreateResponse, GetIDRequest, GetIDResponse, GetRequest, GetResponse, UpdateRequest, UpdateResponse } from "./svc_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -37,17 +37,6 @@ export const UsersService = {
       name: "GetID",
       I: GetIDRequest,
       O: GetIDResponse,
-      kind: MethodKind.Unary,
-    },
-    /**
-     * BatchGet returns a list of users for the given org_ids, if the org user not exist, it will not be returned.
-     *
-     * @generated from rpc autokitteh.users.v1.UsersService.BatchGet
-     */
-    batchGet: {
-      name: "BatchGet",
-      I: BatchGetRequest,
-      O: BatchGetResponse,
       kind: MethodKind.Unary,
     },
     /**

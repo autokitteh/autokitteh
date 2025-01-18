@@ -46,31 +46,6 @@ func (gdb *gormdb) GetOrg(ctx context.Context, oid sdktypes.OrgID, n sdktypes.Sy
 	return scheme.ParseOrg(r)
 }
 
-func (gdb *gormdb) BatchGetOrgs(ctx context.Context, oids []sdktypes.OrgID) ([]sdktypes.Org, error) {
-	if len(oids) > maxBatchSize {
-		return nil, sdkerrors.NewInvalidArgumentError("too many orgs = %d > %d", len(oids), maxBatchSize)
-	}
-
-	q := gdb.db.WithContext(ctx).Where("org_id in ?", kittehs.Transform(oids, func(oid sdktypes.OrgID) uuid.UUID { return oid.UUIDValue() }))
-
-	var rs []scheme.Org
-	err := q.Find(&rs).Error
-	if err != nil {
-		return nil, translateError(err)
-	}
-
-	orgs, err := kittehs.TransformError(rs, scheme.ParseOrg)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse orgs: %w", err)
-	}
-
-	if kittehs.ContainedIn(oids...)(authusers.DefaultOrg.ID()) {
-		orgs = append(orgs, authusers.DefaultOrg)
-	}
-
-	return orgs, err
-}
-
 func (gdb *gormdb) DeleteOrg(ctx context.Context, oid sdktypes.OrgID) error {
 	if oid == authusers.DefaultOrg.ID() {
 		return sdkerrors.ErrUnauthorized
@@ -136,21 +111,43 @@ func (gdb *gormdb) UpdateOrg(ctx context.Context, o sdktypes.Org, fm *sdktypes.F
 	)
 }
 
-func (gdb *gormdb) ListOrgMembers(ctx context.Context, oid sdktypes.OrgID) ([]sdktypes.OrgMember, error) {
+func (gdb *gormdb) ListOrgMembers(ctx context.Context, oid sdktypes.OrgID, includeUsers bool) ([]sdktypes.OrgMember, []sdktypes.User, error) {
 	if oid == authusers.DefaultOrg.ID() {
-		return []sdktypes.OrgMember{defaultUserMembership}, nil
+		return []sdktypes.OrgMember{defaultUserMembership}, nil, nil
 	}
 
-	var ms []scheme.OrgMember
+	var mrs []scheme.OrgMember
 	err := gdb.db.WithContext(ctx).
 		Where("org_id = ?", oid.UUIDValue()).
-		Order("created_at ASC").Find(&ms).
+		Order("created_at ASC").Find(&mrs).
 		Error
 	if err != nil {
-		return nil, translateError(err)
+		return nil, nil, translateError(err)
 	}
 
-	return kittehs.TransformError(ms, scheme.ParseOrgMember)
+	var urs []scheme.User
+
+	if includeUsers {
+		err = gdb.db.WithContext(ctx).
+			Where("user_id in ?", kittehs.Transform(mrs, func(r scheme.OrgMember) uuid.UUID { return r.UserID })).
+			Find(&urs).
+			Error
+		if err != nil {
+			return nil, nil, translateError(err)
+		}
+	}
+
+	ms, err := kittehs.TransformError(mrs, scheme.ParseOrgMember)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to parse org members: %w", err)
+	}
+
+	us, err := kittehs.TransformError(urs, scheme.ParseUser)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to parse users: %w", err)
+	}
+
+	return ms, us, nil
 }
 
 func (gdb *gormdb) AddOrgMember(ctx context.Context, m sdktypes.OrgMember) error {
@@ -239,21 +236,42 @@ func (gdb *gormdb) GetOrgMember(ctx context.Context, oid sdktypes.OrgID, uid sdk
 	return scheme.ParseOrgMember(om)
 }
 
-func (gdb *gormdb) GetOrgsForUser(ctx context.Context, uid sdktypes.UserID) ([]sdktypes.OrgMember, error) {
+func (gdb *gormdb) GetOrgsForUser(ctx context.Context, uid sdktypes.UserID, includeOrgs bool) ([]sdktypes.OrgMember, []sdktypes.Org, error) {
 	if uid == authusers.DefaultUser.ID() {
-		return []sdktypes.OrgMember{defaultUserMembership}, nil
+		return []sdktypes.OrgMember{defaultUserMembership}, nil, nil
 	}
 
-	var oms []scheme.OrgMember
-
+	var rms []scheme.OrgMember
 	err := gdb.db.WithContext(ctx).
 		Where("user_id = ?", uid.UUIDValue()).
 		Order("created_at ASC").
-		Find(&oms).
+		Find(&rms).
 		Error
 	if err != nil {
-		return nil, translateError(err)
+		return nil, nil, translateError(err)
 	}
 
-	return kittehs.TransformError(oms, scheme.ParseOrgMember)
+	var ors []scheme.Org
+
+	if includeOrgs {
+		err = gdb.db.WithContext(ctx).
+			Where("org_id in ?", kittehs.Transform(rms, func(r scheme.OrgMember) uuid.UUID { return r.OrgID })).
+			Find(&ors).
+			Error
+		if err != nil {
+			return nil, nil, translateError(err)
+		}
+	}
+
+	ms, err := kittehs.TransformError(rms, scheme.ParseOrgMember)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to parse org members: %w", err)
+	}
+
+	os, err := kittehs.TransformError(ors, scheme.ParseOrg)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to parse orgs: %w", err)
+	}
+
+	return ms, os, nil
 }

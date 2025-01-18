@@ -1,10 +1,9 @@
 from autokitteh_pb.users.v1 import user_pb2 as _user_pb2
 from buf.validate import validate_pb2 as _validate_pb2
 from google.protobuf import field_mask_pb2 as _field_mask_pb2
-from google.protobuf.internal import containers as _containers
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
-from typing import ClassVar as _ClassVar, Iterable as _Iterable, Mapping as _Mapping, Optional as _Optional, Union as _Union
+from typing import ClassVar as _ClassVar, Mapping as _Mapping, Optional as _Optional, Union as _Union
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
@@ -57,15 +56,3 @@ class GetIDResponse(_message.Message):
     USER_ID_FIELD_NUMBER: _ClassVar[int]
     user_id: str
     def __init__(self, user_id: _Optional[str] = ...) -> None: ...
-
-class BatchGetRequest(_message.Message):
-    __slots__ = ["user_ids"]
-    USER_IDS_FIELD_NUMBER: _ClassVar[int]
-    user_ids: _containers.RepeatedScalarFieldContainer[str]
-    def __init__(self, user_ids: _Optional[_Iterable[str]] = ...) -> None: ...
-
-class BatchGetResponse(_message.Message):
-    __slots__ = ["users"]
-    USERS_FIELD_NUMBER: _ClassVar[int]
-    users: _containers.RepeatedCompositeFieldContainer[_user_pb2.User]
-    def __init__(self, users: _Optional[_Iterable[_Union[_user_pb2.User, _Mapping]]] = ...) -> None: ...

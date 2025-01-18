@@ -39,19 +39,9 @@ message GetIDResponse {
   string user_id = 1;
 }
 
-message BatchGetRequest {
-  repeated string user_ids = 1 [(buf.validate.field).repeated.items.string.min_len = 1];
-}
-
-message BatchGetResponse {
-  repeated User users = 1 [(buf.validate.field).repeated.items.required = true];
-}
-
 service UsersService {
   rpc Create(CreateRequest) returns (CreateResponse);
   rpc Get(GetRequest) returns (GetResponse);
   rpc GetID(GetIDRequest) returns (GetIDResponse);
-  // BatchGet returns a list of users for the given org_ids, if the org user not exist, it will not be returned.
-  rpc BatchGet(BatchGetRequest) returns (BatchGetResponse);
   rpc Update(UpdateRequest) returns (UpdateResponse);
 }

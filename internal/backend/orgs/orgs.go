@@ -91,16 +91,6 @@ func (o *orgs) GetByName(ctx context.Context, n sdktypes.Symbol) (sdktypes.Org, 
 	return org, nil
 }
 
-func (o *orgs) BatchGetByIDs(ctx context.Context, ids []sdktypes.OrgID) ([]sdktypes.Org, error) {
-	for _, id := range ids {
-		if err := authz.CheckContext(ctx, id, "read:get", authz.WithConvertForbiddenToNotFound); err != nil {
-			return nil, err
-		}
-	}
-
-	return o.db.BatchGetOrgs(ctx, ids)
-}
-
 func (o *orgs) Delete(ctx context.Context, id sdktypes.OrgID) error {
 	if err := authz.CheckContext(ctx, id, "delete:delete", authz.WithConvertForbiddenToNotFound); err != nil {
 		return err
@@ -125,12 +115,12 @@ func (o *orgs) Update(ctx context.Context, org sdktypes.Org, fieldMask *sdktypes
 	return o.db.UpdateOrg(ctx, org, fieldMask)
 }
 
-func (o *orgs) ListMembers(ctx context.Context, id sdktypes.OrgID) ([]sdktypes.OrgMember, error) {
+func (o *orgs) ListMembers(ctx context.Context, id sdktypes.OrgID) ([]sdktypes.OrgMember, []sdktypes.User, error) {
 	if err := authz.CheckContext(ctx, id, "read:list-members"); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return o.db.ListOrgMembers(ctx, id)
+	return o.db.ListOrgMembers(ctx, id, true)
 }
 
 // This is meant to be called from a transaction.
@@ -197,16 +187,16 @@ func (o *orgs) GetMember(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.U
 	return m, err
 }
 
-func (o *orgs) GetOrgsForUser(ctx context.Context, uid sdktypes.UserID) ([]sdktypes.OrgMember, error) {
+func (o *orgs) GetOrgsForUser(ctx context.Context, uid sdktypes.UserID) ([]sdktypes.OrgMember, []sdktypes.Org, error) {
 	if !uid.IsValid() {
 		uid = authcontext.GetAuthnUserID(ctx)
 	}
 
 	if err := authz.CheckContext(ctx, uid, "read:get-orgs", authz.WithConvertForbiddenToNotFound); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return o.db.GetOrgsForUser(ctx, uid)
+	return o.db.GetOrgsForUser(ctx, uid, true)
 }
 
 func (o *orgs) UpdateMember(ctx context.Context, m sdktypes.OrgMember, fm *sdktypes.FieldMask) error {

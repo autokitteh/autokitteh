@@ -35,18 +35,6 @@ class GetResponse(_message.Message):
     org: _org_pb2.Org
     def __init__(self, org: _Optional[_Union[_org_pb2.Org, _Mapping]] = ...) -> None: ...
 
-class BatchGetRequest(_message.Message):
-    __slots__ = ["org_ids"]
-    ORG_IDS_FIELD_NUMBER: _ClassVar[int]
-    org_ids: _containers.RepeatedScalarFieldContainer[str]
-    def __init__(self, org_ids: _Optional[_Iterable[str]] = ...) -> None: ...
-
-class BatchGetResponse(_message.Message):
-    __slots__ = ["orgs"]
-    ORGS_FIELD_NUMBER: _ClassVar[int]
-    orgs: _containers.RepeatedCompositeFieldContainer[_org_pb2.Org]
-    def __init__(self, orgs: _Optional[_Iterable[_Union[_org_pb2.Org, _Mapping]]] = ...) -> None: ...
-
 class DeleteRequest(_message.Message):
     __slots__ = ["org_id"]
     ORG_ID_FIELD_NUMBER: _ClassVar[int]
@@ -106,50 +94,32 @@ class GetMemberResponse(_message.Message):
     def __init__(self, member: _Optional[_Union[_org_pb2.OrgMember, _Mapping]] = ...) -> None: ...
 
 class ListMembersRequest(_message.Message):
-    __slots__ = ["org_id", "include_users"]
+    __slots__ = ["org_id"]
     ORG_ID_FIELD_NUMBER: _ClassVar[int]
-    INCLUDE_USERS_FIELD_NUMBER: _ClassVar[int]
     org_id: str
-    include_users: bool
-    def __init__(self, org_id: _Optional[str] = ..., include_users: bool = ...) -> None: ...
+    def __init__(self, org_id: _Optional[str] = ...) -> None: ...
 
 class ListMembersResponse(_message.Message):
     __slots__ = ["members", "users"]
-    class UsersEntry(_message.Message):
-        __slots__ = ["key", "value"]
-        KEY_FIELD_NUMBER: _ClassVar[int]
-        VALUE_FIELD_NUMBER: _ClassVar[int]
-        key: str
-        value: _user_pb2.User
-        def __init__(self, key: _Optional[str] = ..., value: _Optional[_Union[_user_pb2.User, _Mapping]] = ...) -> None: ...
     MEMBERS_FIELD_NUMBER: _ClassVar[int]
     USERS_FIELD_NUMBER: _ClassVar[int]
     members: _containers.RepeatedCompositeFieldContainer[_org_pb2.OrgMember]
-    users: _containers.MessageMap[str, _user_pb2.User]
-    def __init__(self, members: _Optional[_Iterable[_Union[_org_pb2.OrgMember, _Mapping]]] = ..., users: _Optional[_Mapping[str, _user_pb2.User]] = ...) -> None: ...
+    users: _containers.RepeatedCompositeFieldContainer[_user_pb2.User]
+    def __init__(self, members: _Optional[_Iterable[_Union[_org_pb2.OrgMember, _Mapping]]] = ..., users: _Optional[_Iterable[_Union[_user_pb2.User, _Mapping]]] = ...) -> None: ...
 
 class GetOrgsForUserRequest(_message.Message):
-    __slots__ = ["user_id", "include_orgs"]
+    __slots__ = ["user_id"]
     USER_ID_FIELD_NUMBER: _ClassVar[int]
-    INCLUDE_ORGS_FIELD_NUMBER: _ClassVar[int]
     user_id: str
-    include_orgs: bool
-    def __init__(self, user_id: _Optional[str] = ..., include_orgs: bool = ...) -> None: ...
+    def __init__(self, user_id: _Optional[str] = ...) -> None: ...
 
 class GetOrgsForUserResponse(_message.Message):
     __slots__ = ["members", "orgs"]
-    class OrgsEntry(_message.Message):
-        __slots__ = ["key", "value"]
-        KEY_FIELD_NUMBER: _ClassVar[int]
-        VALUE_FIELD_NUMBER: _ClassVar[int]
-        key: str
-        value: _org_pb2.Org
-        def __init__(self, key: _Optional[str] = ..., value: _Optional[_Union[_org_pb2.Org, _Mapping]] = ...) -> None: ...
     MEMBERS_FIELD_NUMBER: _ClassVar[int]
     ORGS_FIELD_NUMBER: _ClassVar[int]
     members: _containers.RepeatedCompositeFieldContainer[_org_pb2.OrgMember]
-    orgs: _containers.MessageMap[str, _org_pb2.Org]
-    def __init__(self, members: _Optional[_Iterable[_Union[_org_pb2.OrgMember, _Mapping]]] = ..., orgs: _Optional[_Mapping[str, _org_pb2.Org]] = ...) -> None: ...
+    orgs: _containers.RepeatedCompositeFieldContainer[_org_pb2.Org]
+    def __init__(self, members: _Optional[_Iterable[_Union[_org_pb2.OrgMember, _Mapping]]] = ..., orgs: _Optional[_Iterable[_Union[_org_pb2.Org, _Mapping]]] = ...) -> None: ...
 
 class UpdateMemberRequest(_message.Message):
     __slots__ = ["member", "field_mask"]

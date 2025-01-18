@@ -29,7 +29,7 @@ var getOrgsCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "user"); err == nil {
-			orgs, err := orgs().GetOrgsForUser(ctx, uid)
+			orgs, _, err := orgs().GetOrgsForUser(ctx, uid)
 			if err != nil {
 				return err
 			}

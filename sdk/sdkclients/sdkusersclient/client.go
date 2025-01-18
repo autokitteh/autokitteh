@@ -5,7 +5,6 @@ import (
 
 	"connectrpc.com/connect"
 
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	usersv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/users/v1"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/users/v1/usersv1connect"
 	"go.autokitteh.dev/autokitteh/sdk/internal/rpcerrors"
@@ -52,21 +51,6 @@ func (c *client) Get(ctx context.Context, uid sdktypes.UserID, email string) (sd
 	}
 
 	return sdktypes.UserFromProto(resp.Msg.User)
-}
-
-func (c *client) BatchGetByIDs(ctx context.Context, uids []sdktypes.UserID) ([]sdktypes.User, error) {
-	resp, err := c.client.BatchGet(ctx, connect.NewRequest(&usersv1.BatchGetRequest{
-		UserIds: kittehs.TransformToStrings(uids),
-	}))
-	if err != nil {
-		return nil, rpcerrors.ToSDKError(err)
-	}
-
-	if err := internal.Validate(resp.Msg); err != nil {
-		return nil, err
-	}
-
-	return kittehs.TransformError(resp.Msg.Users, sdktypes.UserFromProto)
 }
 
 func (c *client) GetID(ctx context.Context, email string) (sdktypes.UserID, error) {

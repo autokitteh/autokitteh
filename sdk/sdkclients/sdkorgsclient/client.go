@@ -68,21 +68,6 @@ func (c *client) GetByName(ctx context.Context, n sdktypes.Symbol) (sdktypes.Org
 	return sdktypes.OrgFromProto(resp.Msg.Org)
 }
 
-func (c *client) BatchGetByIDs(ctx context.Context, oids []sdktypes.OrgID) ([]sdktypes.Org, error) {
-	resp, err := c.client.BatchGet(ctx, connect.NewRequest(&orgsv1.BatchGetRequest{
-		OrgIds: kittehs.TransformToStrings(oids),
-	}))
-	if err != nil {
-		return nil, rpcerrors.ToSDKError(err)
-	}
-
-	if err := internal.Validate(resp.Msg); err != nil {
-		return nil, err
-	}
-
-	return kittehs.TransformError(resp.Msg.Orgs, sdktypes.OrgFromProto)
-}
-
 func (c *client) Delete(ctx context.Context, oid sdktypes.OrgID) error {
 	resp, err := c.client.Delete(ctx, connect.NewRequest(&orgsv1.DeleteRequest{
 		OrgId: oid.String(),
@@ -110,19 +95,29 @@ func (c *client) Update(ctx context.Context, u sdktypes.Org, fm *sdktypes.FieldM
 	return internal.Validate(resp.Msg)
 }
 
-func (c *client) ListMembers(ctx context.Context, oid sdktypes.OrgID) ([]sdktypes.OrgMember, error) {
+func (c *client) ListMembers(ctx context.Context, oid sdktypes.OrgID) ([]sdktypes.OrgMember, []sdktypes.User, error) {
 	resp, err := c.client.ListMembers(ctx, connect.NewRequest(&orgsv1.ListMembersRequest{
 		OrgId: oid.String(),
 	}))
 	if err != nil {
-		return nil, rpcerrors.ToSDKError(err)
+		return nil, nil, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return kittehs.TransformError(resp.Msg.Members, sdktypes.OrgMemberFromProto)
+	ms, err := kittehs.TransformError(resp.Msg.Members, sdktypes.OrgMemberFromProto)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	us, err := kittehs.TransformError(resp.Msg.Users, sdktypes.UserFromProto)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return ms, us, err
 }
 
 func (c *client) AddMember(ctx context.Context, m sdktypes.OrgMember) error {
@@ -172,19 +167,29 @@ func (c *client) GetMember(ctx context.Context, oid sdktypes.OrgID, uid sdktypes
 	return sdktypes.OrgMemberFromProto(resp.Msg.Member)
 }
 
-func (c *client) GetOrgsForUser(ctx context.Context, uid sdktypes.UserID) ([]sdktypes.OrgMember, error) {
+func (c *client) GetOrgsForUser(ctx context.Context, uid sdktypes.UserID) ([]sdktypes.OrgMember, []sdktypes.Org, error) {
 	resp, err := c.client.GetOrgsForUser(ctx, connect.NewRequest(&orgsv1.GetOrgsForUserRequest{
 		UserId: uid.String(),
 	}))
 	if err != nil {
-		return nil, rpcerrors.ToSDKError(err)
+		return nil, nil, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return kittehs.TransformError(resp.Msg.Members, sdktypes.OrgMemberFromProto)
+	ms, err := kittehs.TransformError(resp.Msg.Members, sdktypes.OrgMemberFromProto)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	os, err := kittehs.TransformError(resp.Msg.Orgs, sdktypes.OrgFromProto)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return ms, os, err
 }
 
 func (c *client) UpdateMember(ctx context.Context, m sdktypes.OrgMember, fm *sdktypes.FieldMask) error {
