@@ -29,7 +29,7 @@ func writeSeedObjects(t *testing.T) (string, error) {
 		t.Logf("seed object: %s", sobj)
 	}
 
-	path := filepath.Join("/tmp" /*t.TempDir()*/, "autokitteh_seed_objects.json")
+	path := filepath.Join(t.TempDir(), "autokitteh_seed_objects.json")
 
 	bs, err := json.Marshal(kittehs.Transform(seedObjects, sdktypes.NewAnyObject))
 	if err != nil {
