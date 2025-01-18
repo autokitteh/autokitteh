@@ -3,6 +3,7 @@ package users
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"go.uber.org/zap"
 
@@ -77,9 +78,12 @@ func (u *users) Create(ctx context.Context, user sdktypes.User) (sdktypes.UserID
 				// ... otherwise create a new personal org for that user.
 				org := sdktypes.NewOrg()
 
-				if user.DisplayName() != "" {
-					org = org.WithDisplayName(user.DisplayName() + "'s Personal Org")
+				orgNamePrefix := user.DisplayName()
+				if orgNamePrefix == "" {
+					orgNamePrefix = strings.SplitN(user.Email(), "@", 2)[0]
 				}
+
+				org = org.WithDisplayName(orgNamePrefix + "'s Personal Org")
 
 				var err error
 				if oid, err = orgs.Create(ctx, db, org); err != nil {
