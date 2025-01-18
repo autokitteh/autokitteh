@@ -27,7 +27,7 @@ var (
 	ErrUnauthenticated    = newTypedError("unauthenticated")
 	ErrUnknown            = NewRetryableErrorf("unknown")
 	ErrFailedPrecondition = newTypedError("failed_precondition")
-	ErrLimitExceeded      = NewRetryableErrorf("limit_exceeded")
+	ErrResourceExhausted  = NewRetryableErrorf("resource_exhausted")
 	ErrProgram            = newTypedError("program_error")
 )
 

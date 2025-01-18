@@ -10,6 +10,8 @@ type BuildExport struct {
 	object[*BuildExportPB, BuildExportTraits]
 }
 
+func init() { registerObject[BuildExport]() }
+
 var InvalidBuildExport BuildExport
 
 type BuildExportPB = runtimesv1.Export

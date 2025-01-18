@@ -28,7 +28,7 @@ func TestUpdatedFields(t *testing.T) {
 			"display_name":   "DISPLAY_NAME",
 			"default_org_id": "",
 			"disabled":       false,
-			"status":         0,
+			"status":         sdktypes.UserStatusPB(0),
 			"updated_at":     kittehs.Now().UTC(),
 		}, m)
 	}

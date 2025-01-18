@@ -8,6 +8,8 @@ type SessionStateCreated struct {
 	object[*SessionStateCreatedPB, SessionStateCreatedTraits]
 }
 
+func init() { registerObject[SessionStateCreated]() }
+
 func (SessionStateCreated) isConcreteSessionState() {}
 
 var InvalidSessionStateCreated SessionStateCreated

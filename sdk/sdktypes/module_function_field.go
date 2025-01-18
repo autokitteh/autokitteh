@@ -10,6 +10,8 @@ type ModuleFunctionField struct {
 	object[*ModuleFunctionFieldPB, ModuleFunctionFieldTraits]
 }
 
+func init() { registerObject[ModuleFunctionField]() }
+
 type ModuleFunctionFieldPB = modulev1.FunctionField
 
 type ModuleFunctionFieldTraits struct{ immutableObjectTrait }

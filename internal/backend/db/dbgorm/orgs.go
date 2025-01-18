@@ -2,6 +2,7 @@ package dbgorm
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -10,9 +11,12 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
-	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
+
+var defaultUserMembership = sdktypes.NewOrgMember(authusers.DefaultOrg.ID(), authusers.DefaultUser.ID()).
+	WithStatus(sdktypes.OrgMemberStatusActive).
+	WithRoles(sdktypes.NewSymbol("admin"))
 
 func (gdb *gormdb) GetOrg(ctx context.Context, oid sdktypes.OrgID, n sdktypes.Symbol) (sdktypes.Org, error) {
 	if oid == authusers.DefaultOrg.ID() {
@@ -107,62 +111,86 @@ func (gdb *gormdb) UpdateOrg(ctx context.Context, o sdktypes.Org, fm *sdktypes.F
 	)
 }
 
-func (gdb *gormdb) ListOrgMembers(ctx context.Context, oid sdktypes.OrgID) ([]*sdkservices.UserIDWithMemberStatus, error) {
+func (gdb *gormdb) ListOrgMembers(ctx context.Context, oid sdktypes.OrgID, includeUsers bool) ([]sdktypes.OrgMember, []sdktypes.User, error) {
 	if oid == authusers.DefaultOrg.ID() {
-		return []*sdkservices.UserIDWithMemberStatus{
-			{
-				UserID: authusers.DefaultUser.ID(),
-				Status: sdktypes.OrgMemberStatusActive,
-			},
-		}, nil
+		return []sdktypes.OrgMember{defaultUserMembership}, nil, nil
 	}
 
-	var ous []scheme.OrgMember
+	var mrs []scheme.OrgMember
 	err := gdb.db.WithContext(ctx).
 		Where("org_id = ?", oid.UUIDValue()).
-		Order("created_at ASC").Find(&ous).
+		Order("created_at ASC").Find(&mrs).
 		Error
 	if err != nil {
-		return nil, translateError(err)
+		return nil, nil, translateError(err)
 	}
 
-	return kittehs.TransformError(ous, func(ou scheme.OrgMember) (*sdkservices.UserIDWithMemberStatus, error) {
-		s, err := sdktypes.OrgMemberStatusFromProto(sdktypes.OrgMemberStatusPB(ou.Status))
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse org member status %q: %w", ou.Status, err)
-		}
+	var urs []scheme.User
 
-		return &sdkservices.UserIDWithMemberStatus{
-			UserID: sdktypes.NewIDFromUUID[sdktypes.UserID](ou.UserID),
-			Status: s,
-		}, nil
-	})
+	if includeUsers {
+		err = gdb.db.WithContext(ctx).
+			Where("user_id in ?", kittehs.Transform(mrs, func(r scheme.OrgMember) uuid.UUID { return r.UserID })).
+			Find(&urs).
+			Error
+		if err != nil {
+			return nil, nil, translateError(err)
+		}
+	}
+
+	ms, err := kittehs.TransformError(mrs, scheme.ParseOrgMember)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to parse org members: %w", err)
+	}
+
+	us, err := kittehs.TransformError(urs, scheme.ParseUser)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to parse users: %w", err)
+	}
+
+	return ms, us, nil
 }
 
-func (gdb *gormdb) AddOrgMember(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID, status sdktypes.OrgMemberStatus) error {
-	if oid == authusers.DefaultOrg.ID() {
+func (gdb *gormdb) AddOrgMember(ctx context.Context, m sdktypes.OrgMember) error {
+	if m.OrgID() == authusers.DefaultOrg.ID() {
 		return sdkerrors.ErrUnauthorized
 	}
 
+	roles, err := json.Marshal(m.Roles())
+	if err != nil {
+		return fmt.Errorf("failed to marshal roles: %w", err)
+	}
+
 	ou := scheme.OrgMember{
-		OrgID:  oid.UUIDValue(),
-		UserID: uid.UUIDValue(),
-		Status: int(status.ToProto()),
+		OrgID:  m.OrgID().UUIDValue(),
+		UserID: m.UserID().UUIDValue(),
+		Status: int(m.Status().ToProto()),
+		Roles:  roles,
 	}
 
 	return translateError(gdb.db.WithContext(ctx).Create(&ou).Error)
 }
 
-func (gdb *gormdb) UpdateOrgMemberStatus(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID, s sdktypes.OrgMemberStatus) error {
-	if oid == authusers.DefaultOrg.ID() {
+func (gdb *gormdb) UpdateOrgMember(ctx context.Context, m sdktypes.OrgMember, fm *sdktypes.FieldMask) error {
+	if m.OrgID() == authusers.DefaultOrg.ID() {
 		return sdkerrors.ErrUnauthorized
+	}
+
+	data, err := updatedFields(ctx, m, fm)
+	if err != nil {
+		return err
+	}
+
+	if roles, ok := data["roles"]; ok {
+		if data["roles"], err = json.Marshal(roles); err != nil {
+			return fmt.Errorf("failed to marshal roles: %w", err)
+		}
 	}
 
 	return translateError(
 		gdb.db.WithContext(ctx).
 			Model(&scheme.OrgMember{}).
-			Where("org_id = ? AND user_id = ?", oid.UUIDValue(), uid.UUIDValue()).
-			Update("status", int(s.ToProto())).
+			Where("org_id = ? AND user_id = ?", m.OrgID().UUIDValue(), m.UserID().UUIDValue()).
+			Updates(data).
 			Error,
 	)
 }
@@ -180,13 +208,13 @@ func (gdb *gormdb) RemoveOrgMember(ctx context.Context, oid sdktypes.OrgID, uid 
 	)
 }
 
-func (gdb *gormdb) GetOrgMemberStatus(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID) (sdktypes.OrgMemberStatus, error) {
+func (gdb *gormdb) GetOrgMember(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID) (sdktypes.OrgMember, error) {
 	if oid == authusers.DefaultOrg.ID() {
 		if uid == authusers.DefaultUser.ID() {
-			return sdktypes.OrgMemberStatusActive, nil
+			return defaultUserMembership, nil
 		}
 
-		return sdktypes.OrgMemberStatusUnspecified, nil
+		return sdktypes.InvalidOrgMember, sdkerrors.ErrNotFound
 	}
 
 	var om scheme.OrgMember
@@ -194,11 +222,10 @@ func (gdb *gormdb) GetOrgMemberStatus(ctx context.Context, oid sdktypes.OrgID, u
 	err := gdb.db.WithContext(ctx).
 		Model(&scheme.OrgMember{}).
 		Where("org_id = ? AND user_id = ?", oid.UUIDValue(), uid.UUIDValue()).
-		Select("status").
 		First(&om).
 		Error
 	if err != nil {
-		return sdktypes.OrgMemberStatusUnspecified, translateError(err)
+		return sdktypes.InvalidOrgMember, translateError(err)
 	}
 
 	// Backward compatibility from prior to having a status.
@@ -206,58 +233,45 @@ func (gdb *gormdb) GetOrgMemberStatus(ctx context.Context, oid sdktypes.OrgID, u
 		om.Status = int(sdktypes.OrgMemberStatusActive.ToProto())
 	}
 
-	return sdktypes.OrgMemberStatusFromProto(sdktypes.OrgMemberStatusPB(om.Status))
+	return scheme.ParseOrgMember(om)
 }
 
-func (gdb *gormdb) GetOrgsForUser(ctx context.Context, uid sdktypes.UserID) ([]*sdkservices.OrgWithMemberStatus, error) {
+func (gdb *gormdb) GetOrgsForUser(ctx context.Context, uid sdktypes.UserID, includeOrgs bool) ([]sdktypes.OrgMember, []sdktypes.Org, error) {
 	if uid == authusers.DefaultUser.ID() {
-		return []*sdkservices.OrgWithMemberStatus{
-			{
-				Org:    authusers.DefaultOrg,
-				Status: sdktypes.OrgMemberStatusActive,
-			},
-		}, nil
+		return []sdktypes.OrgMember{defaultUserMembership}, nil, nil
 	}
 
-	var oms []scheme.OrgMember
-
+	var rms []scheme.OrgMember
 	err := gdb.db.WithContext(ctx).
 		Where("user_id = ?", uid.UUIDValue()).
 		Order("created_at ASC").
-		Find(&oms).
+		Find(&rms).
 		Error
 	if err != nil {
-		return nil, translateError(err)
+		return nil, nil, translateError(err)
 	}
 
-	oids := kittehs.Transform(oms, func(om scheme.OrgMember) uuid.UUID { return om.OrgID })
+	var ors []scheme.Org
 
-	var orgs []scheme.Org
-
-	err = gdb.db.WithContext(ctx).
-		Where("org_id IN ?", oids).
-		Find(&orgs).
-		Error
-	if err != nil {
-		return nil, translateError(err)
-	}
-
-	orgsMap := make(map[uuid.UUID]sdktypes.Org, len(orgs))
-	for _, o := range orgs {
-		if orgsMap[o.OrgID], err = scheme.ParseOrg(o); err != nil {
-			return nil, fmt.Errorf("failed to parse org %q: %w", o.OrgID, err)
-		}
-	}
-
-	ows := make([]*sdkservices.OrgWithMemberStatus, len(oms))
-	for i, om := range oms {
-		s, err := sdktypes.OrgMemberStatusFromProto(sdktypes.OrgMemberStatusPB(om.Status))
+	if includeOrgs {
+		err = gdb.db.WithContext(ctx).
+			Where("org_id in ?", kittehs.Transform(rms, func(r scheme.OrgMember) uuid.UUID { return r.OrgID })).
+			Find(&ors).
+			Error
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse org member status %q: %w", om.Status, err)
+			return nil, nil, translateError(err)
 		}
-
-		ows[i] = &sdkservices.OrgWithMemberStatus{Org: orgsMap[om.OrgID], Status: s}
 	}
 
-	return ows, nil
+	ms, err := kittehs.TransformError(rms, scheme.ParseOrgMember)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to parse org members: %w", err)
+	}
+
+	os, err := kittehs.TransformError(ors, scheme.ParseOrg)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to parse orgs: %w", err)
+	}
+
+	return ms, os, nil
 }

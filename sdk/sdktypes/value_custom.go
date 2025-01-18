@@ -30,6 +30,8 @@ type CustomValue struct {
 	object[*CustomValuePB, customValueTraits]
 }
 
+func init() { registerObject[CustomValue]() }
+
 func (CustomValue) isConcreteValue() {}
 
 func (f CustomValue) ExecutorID() ExecutorID {

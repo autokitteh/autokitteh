@@ -24,12 +24,12 @@ var getOrgsCmd = common.StandardCommand(&cobra.Command{
 		)
 
 		if len(args) > 0 {
-			_, uid, err = r.User(ctx, args[0])
+			uid, err = r.UserID(ctx, args[0])
 			err = common.AddNotFoundErrIfCond(err, uid.IsValid())
 		}
 
 		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "user"); err == nil {
-			orgs, err := orgs().GetOrgsForUser(ctx, uid)
+			orgs, _, err := orgs().GetOrgsForUser(ctx, uid)
 			if err != nil {
 				return err
 			}

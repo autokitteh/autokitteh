@@ -37,6 +37,8 @@ type FunctionValue struct {
 	object[*FunctionValuePB, functionValueTraits]
 }
 
+func init() { registerObject[FunctionValue]() }
+
 func (FunctionValue) isConcreteValue() {}
 
 func (f FunctionValue) ExecutorID() ExecutorID {

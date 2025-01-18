@@ -2,10 +2,8 @@ package sdkorgsclient
 
 import (
 	"context"
-	"fmt"
 
 	"connectrpc.com/connect"
-	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	orgsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/orgs/v1"
@@ -97,40 +95,34 @@ func (c *client) Update(ctx context.Context, u sdktypes.Org, fm *sdktypes.FieldM
 	return internal.Validate(resp.Msg)
 }
 
-func (c *client) ListMembers(ctx context.Context, oid sdktypes.OrgID) ([]*sdkservices.UserIDWithMemberStatus, error) {
+func (c *client) ListMembers(ctx context.Context, oid sdktypes.OrgID) ([]sdktypes.OrgMember, []sdktypes.User, error) {
 	resp, err := c.client.ListMembers(ctx, connect.NewRequest(&orgsv1.ListMembersRequest{
 		OrgId: oid.String(),
 	}))
 	if err != nil {
-		return nil, rpcerrors.ToSDKError(err)
+		return nil, nil, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return kittehs.TransformError(resp.Msg.Members, func(o *orgsv1.OrgMember) (*sdkservices.UserIDWithMemberStatus, error) {
-		s, err := sdktypes.OrgMemberStatusFromProto(o.Status)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse org member status: %w", err)
-		}
+	ms, err := kittehs.TransformError(resp.Msg.Members, sdktypes.OrgMemberFromProto)
+	if err != nil {
+		return nil, nil, err
+	}
 
-		uid, err := sdktypes.StrictParseUserID(o.UserId)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse user id: %w", err)
-		}
+	us, err := kittehs.TransformError(resp.Msg.Users, sdktypes.UserFromProto)
+	if err != nil {
+		return nil, nil, err
+	}
 
-		return &sdkservices.UserIDWithMemberStatus{UserID: uid, Status: s}, nil
-	})
+	return ms, us, err
 }
 
-func (c *client) AddMember(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID, status sdktypes.OrgMemberStatus) error {
+func (c *client) AddMember(ctx context.Context, m sdktypes.OrgMember) error {
 	resp, err := c.client.AddMember(ctx, connect.NewRequest(&orgsv1.AddMemberRequest{
-		Member: &orgsv1.OrgMember{
-			OrgId:  oid.String(),
-			UserId: uid.String(),
-			Status: status.ToProto(),
-		},
+		Member: m.ToProto(),
 	}))
 	if err != nil {
 		return rpcerrors.ToSDKError(err)
@@ -159,58 +151,51 @@ func (c *client) RemoveMember(ctx context.Context, oid sdktypes.OrgID, uid sdkty
 	return nil
 }
 
-func (c *client) GetMemberStatus(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID) (sdktypes.OrgMemberStatus, error) {
+func (c *client) GetMember(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID) (sdktypes.OrgMember, error) {
 	resp, err := c.client.GetMember(ctx, connect.NewRequest(&orgsv1.GetMemberRequest{
 		OrgId:  oid.String(),
 		UserId: uid.String(),
 	}))
 	if err != nil {
-		return sdktypes.OrgMemberStatusUnspecified, rpcerrors.ToSDKError(err)
+		return sdktypes.InvalidOrgMember, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
-		return sdktypes.OrgMemberStatusUnspecified, err
+		return sdktypes.InvalidOrgMember, err
 	}
 
-	return sdktypes.OrgMemberStatusFromProto(resp.Msg.Member.Status)
+	return sdktypes.OrgMemberFromProto(resp.Msg.Member)
 }
 
-func (c *client) GetOrgsForUser(ctx context.Context, uid sdktypes.UserID) ([]*sdkservices.OrgWithMemberStatus, error) {
+func (c *client) GetOrgsForUser(ctx context.Context, uid sdktypes.UserID) ([]sdktypes.OrgMember, []sdktypes.Org, error) {
 	resp, err := c.client.GetOrgsForUser(ctx, connect.NewRequest(&orgsv1.GetOrgsForUserRequest{
-		UserId:      uid.String(),
-		IncludeOrgs: true,
+		UserId: uid.String(),
 	}))
 	if err != nil {
-		return nil, rpcerrors.ToSDKError(err)
+		return nil, nil, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return kittehs.TransformError(resp.Msg.Members, func(o *orgsv1.OrgMember) (*sdkservices.OrgWithMemberStatus, error) {
-		s, err := sdktypes.OrgMemberStatusFromProto(o.Status)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse org member status: %w", err)
-		}
+	ms, err := kittehs.TransformError(resp.Msg.Members, sdktypes.OrgMemberFromProto)
+	if err != nil {
+		return nil, nil, err
+	}
 
-		org, err := sdktypes.OrgFromProto(resp.Msg.Orgs[o.OrgId])
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse org: %w", err)
-		}
+	os, err := kittehs.TransformError(resp.Msg.Orgs, sdktypes.OrgFromProto)
+	if err != nil {
+		return nil, nil, err
+	}
 
-		return &sdkservices.OrgWithMemberStatus{Org: org, Status: s}, nil
-	})
+	return ms, os, err
 }
 
-func (c *client) UpdateMemberStatus(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID, status sdktypes.OrgMemberStatus) error {
+func (c *client) UpdateMember(ctx context.Context, m sdktypes.OrgMember, fm *sdktypes.FieldMask) error {
 	resp, err := c.client.UpdateMember(ctx, connect.NewRequest(&orgsv1.UpdateMemberRequest{
-		Member: &orgsv1.OrgMember{
-			OrgId:  oid.String(),
-			UserId: uid.String(),
-			Status: status.ToProto(),
-		},
-		FieldMask: kittehs.Must1(fieldmaskpb.New(&orgsv1.OrgMember{}, "status")),
+		Member:    m.ToProto(),
+		FieldMask: fm,
 	}))
 	if err != nil {
 		return rpcerrors.ToSDKError(err)

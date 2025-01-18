@@ -10,6 +10,8 @@ type SessionStateRunning struct {
 	object[*SessionStateRunningPB, SessionStateRunningTraits]
 }
 
+func init() { registerObject[SessionStateRunning]() }
+
 var InvalidSessionStateRunning SessionStateRunning
 
 type SessionStateRunningPB = sessionv1.SessionState_Running

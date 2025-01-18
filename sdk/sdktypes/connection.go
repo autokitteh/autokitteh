@@ -11,6 +11,8 @@ type Connection struct {
 	object[*ConnectionPB, ConnectionTraits]
 }
 
+func init() { registerObject[Connection]() }
+
 var InvalidConnection Connection
 
 type ConnectionPB = connectionv1.Connection

@@ -26,7 +26,7 @@ var listMembersCmd = common.StandardCommand(&cobra.Command{
 			return fmt.Errorf("org: %w", err)
 		}
 
-		members, err := orgs().ListMembers(ctx, oid)
+		members, _, err := orgs().ListMembers(ctx, oid)
 
 		err = common.AddNotFoundErrIfCond(err, len(members) > 0)
 		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "members"); err == nil {
