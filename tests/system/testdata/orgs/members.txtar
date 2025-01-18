@@ -20,6 +20,10 @@ output equals_jq .member.roles <nil>
 ak orgs update-member $meow_oid $GIZMO_UID --status ACTIVE
 return code == $RC_UNAUTHZ
 
+# cannot remove self if admin.
+ak orgs remove-member $meow_oid $ZUMI_UID
+return code == $RC_UNAUTHZ
+
 user shoogy
 
 ak orgs remove-member $meow_oid $GIZMO_UID
@@ -68,10 +72,12 @@ return code == 0
 output equals_jq .orgs[].org_id $SHOOGY_OID,$DOGS_OID,$meow_oid
 output equals_jq .orgs[].status ORG_MEMBER_STATUS_ACTIVE,ORG_MEMBER_STATUS_ACTIVE,ORG_MEMBER_STATUS_DECLINED
 
-user gizmo
-
 ak orgs remove-member $meow_oid $GIZMO_UID
 return code == $RC_UNAUTHZ
+
+# can remove self.
+ak orgs remove-member $meow_oid $SHOOGY_UID
+return code == 0
 
 user zumi
 
