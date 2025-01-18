@@ -7,8 +7,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-
-	// "strconv"
 	"strings"
 
 	"go.uber.org/zap"
@@ -25,8 +23,6 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/github"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
-
-	// "go.autokitteh.dev/autokitteh/integrations/github"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
