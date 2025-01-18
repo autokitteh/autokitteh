@@ -191,7 +191,7 @@ allow if {
 
 allow if {
 	input.subject.kind == "prj"
-	input.action.name in ["set-subjects", "build", "delete", "update"]
+	input.action.name in ["set-resources", "build", "delete", "update"]
 	is_active_member_of_subject_org
 }
 
