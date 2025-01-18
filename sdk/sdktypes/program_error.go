@@ -15,6 +15,8 @@ type ProgramError struct {
 	object[*ProgramErrorPB, ProgramErrorTraits]
 }
 
+func init() { registerObject[ProgramError]() }
+
 type ProgramErrorPB = programv1.Error
 
 type ProgramErrorTraits struct{ immutableObjectTrait }

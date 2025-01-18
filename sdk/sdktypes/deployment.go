@@ -11,6 +11,8 @@ type Deployment struct {
 	object[*DeploymentPB, DeploymentTraits]
 }
 
+func init() { registerObject[Deployment]() }
+
 var InvalidDeployment Deployment
 
 type DeploymentPB = deploymentv1.Deployment

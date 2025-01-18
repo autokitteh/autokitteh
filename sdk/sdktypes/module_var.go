@@ -8,6 +8,8 @@ type ModuleVariable struct {
 	object[*ModuleVariablePB, ModuleVariableTraits]
 }
 
+func init() { registerObject[ModuleVariable]() }
+
 type ModuleVariablePB = modulev1.Variable
 
 type ModuleVariableTraits struct{ immutableObjectTrait }

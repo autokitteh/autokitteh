@@ -1,7 +1,6 @@
 package systest
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -11,52 +10,25 @@ import (
 )
 
 var (
+	adminRole = sdktypes.NewSymbol("admin")
+
 	users = []struct {
 		name  string
 		org   string
-		roles []string
+		roles []sdktypes.Symbol
 	}{
-		{"zumi", "cats", []string{"admin"}}, // <-- first user is used by default by the test.
+		{"zumi", "cats", []sdktypes.Symbol{adminRole}}, // <-- first user is used by default by the test.
 		{"gizmo", "cats", nil},
-		{"shoogy", "dogs", []string{"admin"}},
+		{"shoogy", "dogs", []sdktypes.Symbol{adminRole}},
 		{"bonny", "dogs", nil},
 	}
 
-	seedCommands []string
+	seedObjects []sdktypes.Object
 
 	tokens = make(map[string]string, len(users))
 
 	token = "INVALID_TOKEN"
 )
-
-func addUser(u sdktypes.User) string {
-	return fmt.Sprintf(
-		`insert into users(user_id,email,display_name,created_by,default_org_id) values (%q,%q,%q,%q,%q)`,
-		u.ID().UUIDValue(),
-		u.Email(),
-		u.DisplayName(),
-		u.ID().UUIDValue(),
-		u.DefaultOrgID().UUIDValue(),
-	)
-}
-
-func addOrg(oid sdktypes.OrgID) string {
-	return fmt.Sprintf(`insert into orgs(org_id) values (%q)`, oid.UUIDValue())
-}
-
-func addOrgMember(oid sdktypes.OrgID, uid sdktypes.UserID, roles ...string) string {
-	if roles == nil {
-		roles = []string{}
-	}
-
-	return fmt.Sprintf(
-		`insert into org_members(org_id,user_id,status,roles) values (%q,%q,%d,'%s')`,
-		oid.UUIDValue(),
-		uid.UUIDValue(),
-		sdktypes.OrgMemberStatusActive.ToProto(),
-		kittehs.Must1(json.Marshal(roles)),
-	)
-}
 
 func init() {
 	js := kittehs.Must1(authjwttokens.New(authjwttokens.Configs.Test))
@@ -68,22 +40,28 @@ func init() {
 		uu := sdktypes.NewUser().
 			WithEmail(fmt.Sprintf("%s@%s", u.name, u.org)).
 			WithDisplayName(u.name).
-			WithID(sdktypes.NewTestUserID(u.name))
+			WithID(sdktypes.NewTestUserID(u.name)).
+			WithStatus(sdktypes.UserStatusActive)
 
 		consts[strings.ToUpper(u.name+"_uid")] = uu.ID().String()
 
 		personalOrgID := sdktypes.NewTestOrgID(u.name + "org")
 
 		// seed user.
-		seedCommands = append(seedCommands, addUser(uu.WithDefaultOrgID(personalOrgID)))
+		seedObjects = append(seedObjects, uu.WithDefaultOrgID(personalOrgID))
 
 		consts[strings.ToUpper(u.name+"_oid")] = personalOrgID.String()
 
 		// seed personal org.
-		seedCommands = append(seedCommands, addOrg(personalOrgID))
+		seedObjects = append(seedObjects, sdktypes.NewOrg().WithID(personalOrgID).WithName(sdktypes.NewSymbol(u.name+"_org")))
 
 		// add user to personal org.
-		seedCommands = append(seedCommands, addOrgMember(personalOrgID, uu.ID(), "admin"))
+		seedObjects = append(
+			seedObjects,
+			sdktypes.NewOrgMember(personalOrgID, uu.ID()).
+				WithStatus(sdktypes.OrgMemberStatusActive).
+				WithRoles(adminRole),
+		)
 
 		oid, ok := orgs[u.org]
 		if !ok {
@@ -93,11 +71,16 @@ func init() {
 			consts[strings.ToUpper(u.org+"_oid")] = oid.String()
 
 			// seed shared org.
-			seedCommands = append(seedCommands, addOrg(oid))
+			seedObjects = append(seedObjects, sdktypes.NewOrg().WithID(oid).WithName(sdktypes.NewSymbol(u.org)))
 		}
 
 		// add user to shared org.
-		seedCommands = append(seedCommands, addOrgMember(oid, uu.ID(), u.roles...))
+		seedObjects = append(
+			seedObjects,
+			sdktypes.NewOrgMember(oid, uu.ID()).
+				WithStatus(sdktypes.OrgMemberStatusActive).
+				WithRoles(u.roles...),
+		)
 
 		tokens[u.name] = kittehs.Must1(js.Create(uu))
 	}

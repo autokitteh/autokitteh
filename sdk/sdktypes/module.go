@@ -11,6 +11,8 @@ type Module struct {
 	object[*ModulePB, ModuleTraits]
 }
 
+func init() { registerObject[Module]() }
+
 type ModulePB = modulev1.Module
 
 type ModuleTraits struct{ immutableObjectTrait }

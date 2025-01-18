@@ -11,6 +11,8 @@ type SessionCallAttemptResult struct {
 	object[*SessionCallAttemptResultPB, SessionCallAttemptResultTraits]
 }
 
+func init() { registerObject[SessionCallAttemptResult]() }
+
 var InvalidSessionCallAttemptResult SessionCallAttemptResult
 
 type SessionCallAttemptResultPB = sessionv1.Call_Attempt_Result

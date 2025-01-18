@@ -10,6 +10,8 @@ type SessionCall struct {
 	object[*SessionCallPB, SessionCallTraits]
 }
 
+func init() { registerObject[SessionCall]() }
+
 var InvalidSessionCall SessionCall
 
 type SessionCallPB = sessionv1.Call

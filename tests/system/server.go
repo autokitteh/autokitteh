@@ -2,10 +2,12 @@ package systest
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"maps"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -13,6 +15,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/backend/svc"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	"go.autokitteh.dev/autokitteh/tests/internal/svcproc"
 )
 
@@ -21,12 +24,32 @@ const (
 	serverReadyTimeout = 20 * time.Second
 )
 
+func writeSeedObjects(t *testing.T) (string, error) {
+	for _, sobj := range seedObjects {
+		t.Logf("seed object: %s", sobj)
+	}
+
+	path := filepath.Join("/tmp" /*t.TempDir()*/, "autokitteh_seed_objects.json")
+
+	bs, err := json.Marshal(kittehs.Transform(seedObjects, sdktypes.NewAnyObject))
+	if err != nil {
+		return "", fmt.Errorf("marshal seed objects: %w", err)
+	}
+
+	if err := os.WriteFile(path, bs, 0o644); err != nil {
+		return "", fmt.Errorf("write seed objects: %w", err)
+	}
+
+	return path, nil
+}
+
 // Start the AK server, as an in-process goroutine rather than a separate
 // subprocess (to support breakpoint debugging, and measure test coverage),
 // unless the environment variable AK_SYSTEST_USE_PROC_SVC is set to "true".
 func startAKServer(t *testing.T, ctx context.Context, akPath string, userCfg map[string]any) (svc.Service, string, error) {
-	for _, sc := range seedCommands {
-		t.Logf("seed command: %s", sc)
+	seedObjectsPath, err := writeSeedObjects(t)
+	if err != nil {
+		return nil, "", fmt.Errorf("write seed objects: %w", err)
 	}
 
 	runOpts := svc.RunOptions{Mode: "test"}
@@ -39,16 +62,13 @@ func startAKServer(t *testing.T, ctx context.Context, akPath string, userCfg map
 		"http.addr":                           ":0",
 		"http.addr_filename":                  serverHTTPAddrFile, // In the test's temporary directory.
 		"authhttpmiddleware.use_default_user": "false",
-		"db.seed_commands":                    strings.Join(seedCommands, ";") + ";",
+		"svc.seed_objects_path":               seedObjectsPath,
 	}
 
 	maps.Copy(cfgMap, userCfg)
 
 	// Instantiate the server, either as a subprocess or in-process.
-	var (
-		server svc.Service
-		err    error
-	)
+	var server svc.Service
 
 	if subproc, _ := strconv.ParseBool(os.Getenv("AK_SYSTEST_USE_PROC_SVC")); subproc {
 		server, err = svcproc.NewSvcProc(akPath, cfgMap, runOpts)

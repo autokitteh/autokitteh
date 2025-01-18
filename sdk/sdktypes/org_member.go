@@ -11,6 +11,8 @@ type OrgMember struct {
 	object[*OrgMemberPB, OrgMemberTraits]
 }
 
+func init() { registerObject[OrgMember]() }
+
 var InvalidOrgMember OrgMember
 
 type OrgMemberPB = orgv1.OrgMember

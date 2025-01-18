@@ -12,6 +12,8 @@ type SessionState struct {
 	object[*SessionStatePB, SessionStateTraits]
 }
 
+func init() { registerObject[SessionState]() }
+
 type SessionStatePB = sessionv1.SessionState
 
 type SessionStateTraits struct{ immutableObjectTrait }

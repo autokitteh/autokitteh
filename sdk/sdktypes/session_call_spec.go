@@ -11,6 +11,8 @@ type SessionCallSpec struct {
 	object[*SessionCallSpecPB, SessionCallSpecTraits]
 }
 
+func init() { registerObject[SessionCallSpec]() }
+
 var InvalidSessionCallSpec SessionCallSpec
 
 type SessionCallSpecPB = sessionv1.Call_Spec

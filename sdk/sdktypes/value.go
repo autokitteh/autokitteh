@@ -17,6 +17,8 @@ import (
 
 type Value struct{ object[*ValuePB, ValueTraits] }
 
+func init() { registerObject[Value]() }
+
 var InvalidValue Value
 
 type ValuePB = valuev1.Value

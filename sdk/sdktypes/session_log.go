@@ -9,6 +9,8 @@ type SessionLog struct {
 	object[*SessionLogPB, SessionLogTraits]
 }
 
+func init() { registerObject[SessionLog]() }
+
 var InvalidSessionLog SessionLog
 
 type SessionLogPB = sessionv1.SessionLog

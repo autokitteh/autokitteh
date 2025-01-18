@@ -11,6 +11,8 @@ type SessionStateCompleted struct {
 	object[*SessionStateCompletedPB, SessionStateCompletedTraits]
 }
 
+func init() { registerObject[SessionStateCompleted]() }
+
 var InvalidSessionStateCompleted SessionStateCompleted
 
 type SessionStateCompletedPB = sessionv1.SessionState_Completed

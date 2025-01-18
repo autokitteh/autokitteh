@@ -14,6 +14,8 @@ type SessionCallAttemptComplete struct {
 	object[*SessionCallAttemptCompletePB, SessionCallAttemptCompleteTraits]
 }
 
+func init() { registerObject[SessionCallAttemptComplete]() }
+
 var InvalidSessionCallAttemptComplete SessionCallAttemptComplete
 
 type SessionCallAttemptCompletePB = sessionv1.Call_Attempt_Complete
