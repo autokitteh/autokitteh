@@ -24,7 +24,7 @@ var (
 	clientIDName     = sdktypes.NewSymbol("client_id")
 	clientSecretName = sdktypes.NewSymbol("client_secret")
 	domainName       = sdktypes.NewSymbol("auth0_domain")
-	authTokenName        = sdktypes.NewSymbol("oauth_AccessToken")
+	authTokenName    = sdktypes.NewSymbol("oauth_AccessToken")
 )
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
@@ -84,8 +84,7 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 
 // connTest is an optional connection test provided by the integration
 // to AutoKitteh. It is used to verify that the connection is working
-// as expected. The possible results are "OK" and "error.
-// https://auth0.com/docs/api/management/v2/stats/get-active-users
+// as expected. The possible results are "OK" and "error".
 func connTest(i *integration) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
 		if !cid.IsValid() {
@@ -97,8 +96,9 @@ func connTest(i *integration) sdkintegrations.OptFn {
 			return sdktypes.InvalidStatus, err
 		}
 
-		token := vs.Get(authToken).Value()
+		token := vs.Get(authTokenName).Value()
 		domain := vs.Get(domainName).Value()
+		// https://auth0.com/docs/api/management/v2/stats/get-active-users
 		url := fmt.Sprintf("https://%s/api/v2/stats/active-users", domain)
 
 		req, err := http.NewRequest(http.MethodGet, url, nil)
