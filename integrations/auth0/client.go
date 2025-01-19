@@ -84,7 +84,7 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 
 // connTest is an optional connection test provided by the integration
 // to AutoKitteh. It is used to verify that the connection is working
-// as expected. The possible results are "OK" and "error
+// as expected. The possible results are "OK" and "error.
 // https://auth0.com/docs/api/management/v2/stats/get-active-users
 func connTest(i *integration) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
