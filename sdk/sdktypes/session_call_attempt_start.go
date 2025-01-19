@@ -8,6 +8,8 @@ type SessionCallAttemptStart struct {
 	object[*SessionCallAttemptStartPB, SessionCallAttemptStartTraits]
 }
 
+func init() { registerObject[SessionCallAttemptStart]() }
+
 var InvalidSessionCallAttemptStart SessionCallAttemptStart
 
 type SessionCallAttemptStartPB = sessionv1.Call_Attempt_Start

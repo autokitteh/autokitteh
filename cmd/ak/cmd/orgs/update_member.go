@@ -14,7 +14,7 @@ import (
 var status string
 
 var updateMemberCmd = common.StandardCommand(&cobra.Command{
-	Use:     "update-member <org id or name> <user id> [--status status]",
+	Use:     "update-member <org id or name> <user id> [--status status] [--role role]",
 	Short:   "Update org member",
 	Aliases: []string{"um"},
 	Args:    cobra.ExactArgs(2),
@@ -35,12 +35,33 @@ var updateMemberCmd = common.StandardCommand(&cobra.Command{
 			return fmt.Errorf("user: %w", err)
 		}
 
-		s, err := sdktypes.ParseOrgMemberStatus(status)
-		if err != nil {
-			return fmt.Errorf("status: %w", err)
+		fm := &sdktypes.FieldMask{}
+
+		m := sdktypes.NewOrgMember(oid, uid)
+
+		if cmd.Flags().Changed("status") {
+			fm.Paths = append(fm.Paths, "status")
+
+			s, err := sdktypes.ParseOrgMemberStatus(status)
+			if err != nil {
+				return fmt.Errorf("status: %w", err)
+			}
+
+			m = m.WithStatus(s)
 		}
 
-		if err := orgs().UpdateMemberStatus(ctx, oid, uid, s); err != nil {
+		if cmd.Flags().Changed("role") {
+			fm.Paths = append(fm.Paths, "roles")
+
+			rs, err := kittehs.TransformError(roles, sdktypes.ParseSymbol)
+			if err != nil {
+				return fmt.Errorf("roles: %w", err)
+			}
+
+			m = m.WithRoles(rs...)
+		}
+
+		if err := orgs().UpdateMember(ctx, m, fm); err != nil {
 			return fmt.Errorf("update member: %w", err)
 		}
 
@@ -49,6 +70,6 @@ var updateMemberCmd = common.StandardCommand(&cobra.Command{
 })
 
 func init() {
-	updateMemberCmd.Flags().StringVarP(&status, "status", "s", "", "new member status")
-	kittehs.Must0(updateMemberCmd.MarkFlagRequired("status"))
+	updateMemberCmd.Flags().StringVarP(&status, "status", "s", "", "member status")
+	updateMemberCmd.Flags().StringSliceVarP(&roles, "role", "r", nil, "member role")
 }

@@ -15,6 +15,8 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+var OrgAdminRoleName = sdktypes.NewSymbol("admin")
+
 type orgs struct {
 	db db.DB
 	l  *zap.Logger
@@ -45,7 +47,7 @@ func Create(ctx context.Context, db db.DB, org sdktypes.Org) (sdktypes.OrgID, er
 	return db.CreateOrg(ctx, org)
 }
 
-// This is called by the user, and will also add the user to the org.
+// This is called by the user, and will also add the user to the org as its admin.
 func (o *orgs) Create(ctx context.Context, org sdktypes.Org) (sdktypes.OrgID, error) {
 	var oid sdktypes.OrgID
 
@@ -54,7 +56,11 @@ func (o *orgs) Create(ctx context.Context, org sdktypes.Org) (sdktypes.OrgID, er
 			return
 		}
 
-		if err = AddMember(ctx, tx, oid, authcontext.GetAuthnUserID(ctx), sdktypes.OrgMemberStatusActive); err != nil {
+		m := sdktypes.NewOrgMember(oid, authcontext.GetAuthnUserID(ctx)).
+			WithStatus(sdktypes.OrgMemberStatusActive).
+			WithRoles(OrgAdminRoleName)
+
+		if err = AddMember(ctx, tx, m); err != nil {
 			return
 		}
 
@@ -109,40 +115,40 @@ func (o *orgs) Update(ctx context.Context, org sdktypes.Org, fieldMask *sdktypes
 	return o.db.UpdateOrg(ctx, org, fieldMask)
 }
 
-func (o *orgs) ListMembers(ctx context.Context, id sdktypes.OrgID) ([]*sdkservices.UserIDWithMemberStatus, error) {
+func (o *orgs) ListMembers(ctx context.Context, id sdktypes.OrgID) ([]sdktypes.OrgMember, []sdktypes.User, error) {
 	if err := authz.CheckContext(ctx, id, "read:list-members"); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return o.db.ListOrgMembers(ctx, id)
+	return o.db.ListOrgMembers(ctx, id, true)
 }
 
 // This is meant to be called from a transaction.
 // This function does not require authentication! It is used by the user service to add a user to an org.
-func AddMember(ctx context.Context, db db.DB, oid sdktypes.OrgID, uid sdktypes.UserID, s sdktypes.OrgMemberStatus) error {
-	return db.AddOrgMember(ctx, oid, uid, s)
+func AddMember(ctx context.Context, db db.DB, m sdktypes.OrgMember) error {
+	return db.AddOrgMember(ctx, m)
 }
 
-func (o *orgs) AddMember(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID, s sdktypes.OrgMemberStatus) error {
-	if !uid.IsValid() {
-		uid = authcontext.GetAuthnUserID(ctx)
+func (o *orgs) AddMember(ctx context.Context, m sdktypes.OrgMember) error {
+	if uid := m.UserID(); !uid.IsValid() {
+		m = m.WithUserID(authcontext.GetAuthnUserID(ctx))
 	}
 
-	if s == sdktypes.OrgMemberStatusUnspecified {
-		s = sdktypes.OrgMemberStatusInvited
+	if s := m.Status(); s == sdktypes.OrgMemberStatusUnspecified {
+		m = m.WithStatus(sdktypes.OrgMemberStatusInvited)
 	}
 
 	if err := authz.CheckContext(
 		ctx,
-		oid,
+		m.OrgID(),
 		"write:add-member",
-		authz.WithAssociationWithID("user", uid),
-		authz.WithData("status", s.String()),
+		authz.WithData("org_member", m),
+		authz.WithAssociationWithID("user", m.UserID()),
 	); err != nil {
 		return err
 	}
 
-	return AddMember(ctx, o.db, oid, uid, s)
+	return AddMember(ctx, o.db, m)
 }
 
 func (o *orgs) RemoveMember(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID) error {
@@ -157,43 +163,51 @@ func (o *orgs) RemoveMember(ctx context.Context, oid sdktypes.OrgID, uid sdktype
 	return o.db.RemoveOrgMember(ctx, oid, uid)
 }
 
-func (o *orgs) GetMemberStatus(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID) (sdktypes.OrgMemberStatus, error) {
+func (o *orgs) GetMember(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID) (sdktypes.OrgMember, error) {
 	if !uid.IsValid() {
 		uid = authcontext.GetAuthnUserID(ctx)
 	}
 
-	if err := authz.CheckContext(
-		ctx,
-		uid,
-		"read:get-org-member-status",
-		authz.WithAssociationWithID("org", oid),
-		authz.WithConvertForbiddenToNotFound,
-	); err != nil {
-		return sdktypes.OrgMemberStatusUnspecified, err
+	m, err := o.db.GetOrgMember(ctx, oid, uid)
+	if err != nil {
+		return sdktypes.InvalidOrgMember, err
 	}
 
-	return o.db.GetOrgMemberStatus(ctx, oid, uid)
+	if err := authz.CheckContext(
+		ctx,
+		oid,
+		"read:get-member",
+		authz.WithAssociationWithID("user", uid),
+		authz.WithData("member_status", m.Status().String()),
+		authz.WithConvertForbiddenToNotFound,
+	); err != nil {
+		return sdktypes.InvalidOrgMember, err
+	}
+
+	return m, err
 }
 
-func (o *orgs) GetOrgsForUser(ctx context.Context, uid sdktypes.UserID) ([]*sdkservices.OrgWithMemberStatus, error) {
+func (o *orgs) GetOrgsForUser(ctx context.Context, uid sdktypes.UserID) ([]sdktypes.OrgMember, []sdktypes.Org, error) {
 	if !uid.IsValid() {
 		uid = authcontext.GetAuthnUserID(ctx)
 	}
 
 	if err := authz.CheckContext(ctx, uid, "read:get-orgs", authz.WithConvertForbiddenToNotFound); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return o.db.GetOrgsForUser(ctx, uid)
+	return o.db.GetOrgsForUser(ctx, uid, true)
 }
 
-func (o *orgs) UpdateMemberStatus(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID, status sdktypes.OrgMemberStatus) error {
-	if !uid.IsValid() {
-		uid = authcontext.GetAuthnUserID(ctx)
+func (o *orgs) UpdateMember(ctx context.Context, m sdktypes.OrgMember, fm *sdktypes.FieldMask) error {
+	if uid := m.UserID(); !uid.IsValid() {
+		m = m.WithUserID(authcontext.GetAuthnUserID(ctx))
 	}
 
+	oid, uid := m.OrgID(), m.UserID()
+
 	return o.db.Transaction(ctx, func(tx db.DB) error {
-		curr, err := tx.GetOrgMemberStatus(ctx, oid, uid)
+		curr, err := tx.GetOrgMember(ctx, oid, uid)
 		if err != nil {
 			return err
 		}
@@ -201,14 +215,17 @@ func (o *orgs) UpdateMemberStatus(ctx context.Context, oid sdktypes.OrgID, uid s
 		if err := authz.CheckContext(
 			ctx,
 			oid,
-			"write:update-member-status",
+			"write:update-member",
 			authz.WithAssociationWithID("user", uid),
-			authz.WithData("new_status", status.String()),
-			authz.WithData("current_status", curr.String()),
+			authz.WithData("new_roles", m.Roles()),
+			authz.WithData("new_status", m.Status().String()),
+			authz.WithData("current_status", curr.Status().String()),
+			authz.WithData("current_roles", curr.Roles()),
+			authz.WithFieldMask(fm),
 		); err != nil {
 			return err
 		}
 
-		return tx.UpdateOrgMemberStatus(ctx, oid, uid, status)
+		return tx.UpdateOrgMember(ctx, m, fm)
 	})
 }

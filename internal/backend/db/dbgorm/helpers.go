@@ -6,6 +6,8 @@ import (
 	"maps"
 
 	"github.com/google/uuid"
+	"github.com/iancoleman/strcase"
+	fieldmask_utils "github.com/mennanov/fieldmask-utils"
 	"google.golang.org/protobuf/proto"
 	"gorm.io/gorm"
 
@@ -87,14 +89,23 @@ func updatedFields[M proto.Message](
 		fm = &sdktypes.FieldMask{Paths: m.Mutables()}
 	}
 
-	// Normalize a copy of the field mask so not to mutate the original.
-	fm = &sdktypes.FieldMask{Paths: fm.Paths}
-	fm.Normalize()
-
-	data, err = kittehs.ProtoToMap(m.ToProto(), fm)
-	if err != nil {
+	if !fm.IsValid(m.ToProto()) {
 		return nil, sdkerrors.NewInvalidArgumentError("invalid field mask")
 	}
+
+	mask, err := fieldmask_utils.MaskFromProtoFieldMask(fm, strcase.ToCamel)
+	if err != nil {
+		return
+	}
+
+	data = make(map[string]any)
+	if err := fieldmask_utils.StructToMap(mask, m.ToProto(), data); err != nil {
+		return nil, sdkerrors.NewInvalidArgumentError("unable to convert struct to map: %w", err)
+	}
+
+	data = kittehs.TransformMap(data, func(k string, v any) (string, any) {
+		return strcase.ToSnake(k), v
+	})
 
 	for k := range data {
 		if !m.IsMutableField(k) {

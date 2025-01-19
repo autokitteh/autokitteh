@@ -9,6 +9,8 @@ import (
 
 type Var struct{ object[*VarPB, VarTraits] }
 
+func init() { registerObject[Var]() }
+
 var InvalidVar Var
 
 type VarPB = varsv1.Var

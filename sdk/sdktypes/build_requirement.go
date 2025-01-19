@@ -12,6 +12,8 @@ type BuildRequirement struct {
 	object[*BuildRequirementPB, BuildRequirementTraits]
 }
 
+func init() { registerObject[BuildRequirement]() }
+
 var InvalidBuildRequirement BuildRequirement
 
 type BuildRequirementPB = runtimesv1.Requirement

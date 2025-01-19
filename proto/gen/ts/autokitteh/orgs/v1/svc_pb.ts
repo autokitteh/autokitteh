@@ -6,6 +6,7 @@
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { FieldMask, Message, proto3 } from "@bufbuild/protobuf";
 import { Org, OrgMember } from "./org_pb.js";
+import { User } from "../../users/v1/user_pb.js";
 
 /**
  * @generated from message autokitteh.orgs.v1.CreateRequest
@@ -571,6 +572,11 @@ export class ListMembersResponse extends Message<ListMembersResponse> {
    */
   members: OrgMember[] = [];
 
+  /**
+   * @generated from field: repeated autokitteh.users.v1.User users = 2;
+   */
+  users: User[] = [];
+
   constructor(data?: PartialMessage<ListMembersResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -580,6 +586,7 @@ export class ListMembersResponse extends Message<ListMembersResponse> {
   static readonly typeName = "autokitteh.orgs.v1.ListMembersResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "members", kind: "message", T: OrgMember, repeated: true },
+    { no: 2, name: "users", kind: "message", T: User, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListMembersResponse {
@@ -608,11 +615,6 @@ export class GetOrgsForUserRequest extends Message<GetOrgsForUserRequest> {
    */
   userId = "";
 
-  /**
-   * @generated from field: bool include_orgs = 2;
-   */
-  includeOrgs = false;
-
   constructor(data?: PartialMessage<GetOrgsForUserRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -622,7 +624,6 @@ export class GetOrgsForUserRequest extends Message<GetOrgsForUserRequest> {
   static readonly typeName = "autokitteh.orgs.v1.GetOrgsForUserRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "include_orgs", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetOrgsForUserRequest {
@@ -652,9 +653,9 @@ export class GetOrgsForUserResponse extends Message<GetOrgsForUserResponse> {
   members: OrgMember[] = [];
 
   /**
-   * @generated from field: map<string, autokitteh.orgs.v1.Org> orgs = 2;
+   * @generated from field: repeated autokitteh.orgs.v1.Org orgs = 2;
    */
-  orgs: { [key: string]: Org } = {};
+  orgs: Org[] = [];
 
   constructor(data?: PartialMessage<GetOrgsForUserResponse>) {
     super();
@@ -665,7 +666,7 @@ export class GetOrgsForUserResponse extends Message<GetOrgsForUserResponse> {
   static readonly typeName = "autokitteh.orgs.v1.GetOrgsForUserResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "members", kind: "message", T: OrgMember, repeated: true },
-    { no: 2, name: "orgs", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Org} },
+    { no: 2, name: "orgs", kind: "message", T: Org, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetOrgsForUserResponse {

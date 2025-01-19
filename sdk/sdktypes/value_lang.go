@@ -28,6 +28,8 @@ type StructValue struct {
 	object[*StructValuePB, structValueTraits]
 }
 
+func init() { registerObject[StructValue]() }
+
 func (StructValue) isConcreteValue() {}
 
 func (s StructValue) Ctor() Value { return forceFromProto[Value](s.read().Ctor) }
@@ -73,6 +75,8 @@ var _ objectTraits[*ModuleValuePB] = moduleValueTraits{}
 type ModuleValue struct {
 	object[*ModuleValuePB, moduleValueTraits]
 }
+
+func init() { registerObject[ModuleValue]() }
 
 func (ModuleValue) isConcreteValue() {}
 

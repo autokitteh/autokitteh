@@ -37,7 +37,7 @@ func ToSDKError(err error) error {
 	case connect.CodePermissionDenied:
 		sdkErr = sdkerrors.ErrUnauthorized
 	case connect.CodeResourceExhausted:
-		sdkErr = sdkerrors.ErrLimitExceeded
+		sdkErr = sdkerrors.ErrResourceExhausted
 		errMsg = connectErr.Message()
 	case connect.CodeFailedPrecondition:
 		sdkErr = sdkerrors.ErrFailedPrecondition

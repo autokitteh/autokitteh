@@ -8,6 +8,8 @@ type ConnectionCapabilities struct {
 	object[*ConnectionCapabilitiesPB, ConnectionCapabilitiesTraits]
 }
 
+func init() { registerObject[ConnectionCapabilities]() }
+
 var InvalidConnectionCapabilities ConnectionCapabilities
 
 type ConnectionCapabilitiesPB = connectionsv1.Capabilities

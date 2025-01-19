@@ -72,7 +72,11 @@ class AKCall:
         if not mod:
             return False
 
-        mod_dir = Path(mod.__file__).resolve()
+        file_name = getattr(mod, "__file__", None)
+        if file_name is None:
+            return False
+
+        mod_dir = Path(file_name).resolve()
         return mod_dir.is_relative_to(self.code_dir)
 
     def should_run_as_activity(self, fn):

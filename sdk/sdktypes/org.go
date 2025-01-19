@@ -9,6 +9,8 @@ import (
 
 type Org struct{ object[*OrgPB, OrgTraits] }
 
+func init() { registerObject[Org]() }
+
 var InvalidOrg Org
 
 type OrgPB = orgv1.Org

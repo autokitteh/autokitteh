@@ -12,6 +12,8 @@ type Integration struct {
 	object[*IntegrationPB, IntegrationTraits]
 }
 
+func init() { registerObject[Integration]() }
+
 var InvalidIntegration Integration
 
 type IntegrationPB = integrationv1.Integration

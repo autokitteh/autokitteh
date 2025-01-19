@@ -12,6 +12,8 @@ type Session struct {
 	object[*SessionPB, SessionTraits]
 }
 
+func init() { registerObject[Session]() }
+
 var InvalidSession Session
 
 type SessionPB = sessionv1.Session

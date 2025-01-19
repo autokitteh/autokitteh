@@ -3,6 +3,7 @@ package users
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"go.uber.org/zap"
 
@@ -66,7 +67,10 @@ func (u *users) Create(ctx context.Context, user sdktypes.User) (sdktypes.UserID
 	var uid sdktypes.UserID
 
 	err := u.db.Transaction(ctx, func(db db.DB) error {
-		var err error
+		var (
+			err   error
+			roles []sdktypes.Symbol
+		)
 
 		if oid := user.DefaultOrgID(); !oid.IsValid() {
 			// If user has no default org id set, set the one from the config, if specified.
@@ -74,14 +78,20 @@ func (u *users) Create(ctx context.Context, user sdktypes.User) (sdktypes.UserID
 				// ... otherwise create a new personal org for that user.
 				org := sdktypes.NewOrg()
 
-				if user.DisplayName() != "" {
-					org = org.WithDisplayName(user.DisplayName() + "'s Personal Org")
+				orgNamePrefix := user.DisplayName()
+				if orgNamePrefix == "" {
+					orgNamePrefix = strings.SplitN(user.Email(), "@", 2)[0]
 				}
+
+				org = org.WithDisplayName(orgNamePrefix + "'s Personal Org")
 
 				var err error
 				if oid, err = orgs.Create(ctx, db, org); err != nil {
 					return fmt.Errorf("create personal org: %w", err)
 				}
+
+				// This is a new personal org, so the user is an admin.
+				roles = []sdktypes.Symbol{orgs.OrgAdminRoleName}
 			}
 
 			// We will always have oid set by this point.
@@ -94,7 +104,9 @@ func (u *users) Create(ctx context.Context, user sdktypes.User) (sdktypes.UserID
 			return err
 		}
 
-		if err := orgs.AddMember(ctx, db, user.DefaultOrgID(), uid, sdktypes.OrgMemberStatusActive); err != nil {
+		m := sdktypes.NewOrgMember(user.DefaultOrgID(), uid).WithStatus(sdktypes.OrgMemberStatusActive).WithRoles(roles...)
+
+		if err := orgs.AddMember(ctx, db, m); err != nil {
 			return fmt.Errorf("add as member to personal org: %w", err)
 		}
 
