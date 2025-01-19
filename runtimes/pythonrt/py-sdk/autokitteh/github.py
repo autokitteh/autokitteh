@@ -47,7 +47,13 @@ def github_client(connection: str, **kwargs) -> Github:
     if not install_id:
         raise ConnectionInitError(connection)
 
-    app = GithubIntegration(auth=AppAuth(int(app_id), connection), **kwargs)
+    app = None
+    private_key = os.getenv(f"{connection}__private_key")
+    if private_key:
+        # Exposing the private key is fine here as it's a custom OAuth and stored in connection variables.
+        app = GithubIntegration(auth=Auth.AppAuth(int(app_id), private_key), **kwargs)
+    else:
+        app = GithubIntegration(auth=AppAuth(int(app_id), connection), **kwargs)
     return app.get_github_for_installation(int(install_id))
 
 

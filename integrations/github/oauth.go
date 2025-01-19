@@ -12,6 +12,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/github/internal/vars"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -23,10 +24,11 @@ import (
 type handler struct {
 	logger *zap.Logger
 	oauth  sdkservices.OAuth
+	vars   sdkservices.Vars
 }
 
-func NewHandler(l *zap.Logger, o sdkservices.OAuth) handler {
-	return handler{logger: l, oauth: o}
+func NewHandler(l *zap.Logger, o sdkservices.OAuth, v sdkservices.Vars) handler {
+	return handler{logger: l, oauth: o, vars: v}
 }
 
 // handleOAuth receives an inbound redirect request from autokitteh's OAuth
@@ -83,7 +85,23 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get authoritative installation details.
+	cid, err := sdktypes.StrictParseConnectionID(c.ConnectionID)
+	if err != nil {
+		l.Warn("invalid connection ID", zap.Error(err))
+		c.AbortBadRequest("invalid connection ID")
+		return
+	}
+
 	appID := os.Getenv("GITHUB_APP_ID")
+	if h.isCustomOAuth(r.Context(), cid) {
+		vs, err := h.vars.Get(r.Context(), sdktypes.NewVarScopeID(cid))
+		if err != nil {
+			l.Warn("failed to get GitHub app ID", zap.Error(err))
+			c.AbortBadRequest("failed to get GitHub app ID")
+			return
+		}
+		appID = vs.GetValueByString("app_id")
+	}
 
 	aid, err := strconv.ParseInt(appID, 10, 64)
 	if err != nil {
@@ -92,7 +110,14 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	gh, err := newClientFromGitHubAppID(aid)
+	vs, err := h.vars.Get(r.Context(), sdktypes.NewVarScopeID(cid))
+	if err != nil {
+		l.Warn("failed to get vars", zap.Error(err))
+		c.AbortServerError("failed to get vars")
+		return
+	}
+
+	gh, err := NewClientFromGitHubAppID(aid, vs)
 	if err != nil {
 		l.Warn("failed to initialize GitHub app client", zap.Error(err))
 		c.AbortBadRequest("failed to initialize GitHub app client")
@@ -133,6 +158,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	c.Finalize(sdktypes.NewVars().
 		Set(vars.AppID, appID, false).
 		Set(vars.AppName, *i.AppSlug, false).
+		Set(vars.AuthType, integrations.OAuth, false).
 		Set(vars.InstallID, installID, false).
 		Set(vars.TargetID, strconv.FormatInt(*i.TargetID, 10), false).
 		Set(vars.TargetName, name, false).

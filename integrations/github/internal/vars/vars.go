@@ -28,6 +28,13 @@ var (
 	PATSecret = sdktypes.NewSymbol("pat_secret")
 	PAT       = sdktypes.NewSymbol("pat")
 	PATUser   = sdktypes.NewSymbol("pat_user")
+
+	// Custom OAuth
+	ClientID      = sdktypes.NewSymbol("client_id")
+	ClientSecret  = sdktypes.NewSymbol("client_secret")
+	WebhookSecret = sdktypes.NewSymbol("webhook_secret")
+	EnterpriseURL = sdktypes.NewSymbol("enterprise_url")
+	PrivateKey    = sdktypes.NewSymbol("private_key")
 )
 
 func InstallKey(appID, installID string) sdktypes.Symbol {
