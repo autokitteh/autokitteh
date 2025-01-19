@@ -233,7 +233,7 @@ func (s *workerGRPCHandler) StartSession(ctx context.Context, req *userCode.Star
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
 	w.mu.Unlock()
 	if !ok {
-		w.log.Error("unknown runner ID", zap.String("id", req.RunnerId))
+		s.log.Error("unknown runner ID", zap.String("id", req.RunnerId))
 		return &userCode.StartSessionResponse{
 			Error: "Unknown runner id",
 		}, nil
@@ -241,16 +241,19 @@ func (s *workerGRPCHandler) StartSession(ctx context.Context, req *userCode.Star
 
 	var data map[string]any
 	if err := json.Unmarshal(req.Data, &data); err != nil {
+		s.log.Error("unmarshal Data", zap.Error(err))
 		return nil, status.Errorf(codes.InvalidArgument, "can't unmarshal data: %s", err)
 	}
 
 	var memo map[string]string
 	if err := json.Unmarshal(req.Memo, &memo); err != nil {
+		s.log.Error("marshal Memo", zap.Error(err))
 		return nil, status.Errorf(codes.InvalidArgument, "can't unmarshal memo: %s", err)
 	}
 
 	vdata, err := kittehs.TransformMapValuesError(data, sdktypes.DefaultValueWrapper.Wrap)
 	if err != nil {
+		s.log.Error("wrapping values", zap.Error(err))
 		return nil, status.Errorf(codes.InvalidArgument, "can't wrap data: %s", err)
 	}
 
@@ -261,13 +264,17 @@ func (s *workerGRPCHandler) StartSession(ctx context.Context, req *userCode.Star
 		sdktypes.NewDictValueFromStringMap(kittehs.TransformMapValues(memo, sdktypes.NewStringValue)),
 	}
 	msg := makeCallbackMessage(args, nil)
+	s.log.Info("start:sending")
 	runner.channels.callback <- msg
+	s.log.Info("start:sent")
 
 	select {
 	case err := <-msg.errorChannel:
+		s.log.Error("start reply", zap.Error(err))
 		err = status.Errorf(codes.Internal, "start(%s) -> %s", req.Loc, err)
 		return &userCode.StartSessionResponse{Error: err.Error()}, nil
 	case val := <-msg.successChannel:
+		s.log.Info("start reply", zap.Any("value", "val"))
 		return &userCode.StartSessionResponse{SessionId: val.GetString().Value()}, nil
 	}
 }
