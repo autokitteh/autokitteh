@@ -1,6 +1,3 @@
-# Must be first import
-import filter_warnings  # noqa: F401
-
 import builtins
 import json
 import os
@@ -188,7 +185,7 @@ class Runner(pb.runner_rpc.RunnerService):
             return pb.runner.StartResponse(error="start already called")
 
         self._start_called = True
-        log.info("start request: %r", request)
+        log.info("start request: %r", request.entry_point)
 
         self.syscalls = SysCalls(self.id, self.worker, log)
         mod_name, fn_name = parse_entry_point(request.entry_point)
@@ -228,11 +225,13 @@ class Runner(pb.runner_rpc.RunnerService):
         if call is None:
             context.abort(grpc.StatusCode.INVALID_ARGUMENT, "no pending activity calls")
 
-        log.info("calling %s", full_func_name(call.fn))
+        func_name = full_func_name(call.fn)
+        log.info("calling %s", func_name)
         result = err = None
         try:
             result = call.fn(*call.args, **call.kw)
         except Exception as e:
+            log.error("%s failed: %s", func_name, e)
             display_err(call.fn, e)
             err = e
 
@@ -300,6 +299,7 @@ class Runner(pb.runner_rpc.RunnerService):
         return pb.runner.RunnerHealthResponse()
 
     def call_in_activity(self, fn, args, kw):
+        log.info("call_in_activity: %s", full_func_name(fn))
         fut = self.start_activity(fn, args, kw)
         return fut.result()
 
@@ -336,16 +336,19 @@ class Runner(pb.runner_rpc.RunnerService):
             display_err(fn, e)
             err = e
 
-        log.info("on_event: end: err=%r", err)
+        self.signal_done(result, err)
+
+    def signal_done(self, result, error=None):
+        log.info("on_event: end: error=%r", error)
         req = pb.handler.DoneRequest(
             runner_id=self.id,
         )
 
-        if err:
+        if error:
             # req.error must not be empty, otherwise the server would not know
             # that there was an error.
-            req.error = str(err) or "exception"
-            tb = exc_traceback(err)
+            req.error = str(error) or "exception"
+            tb = exc_traceback(error)
             req.traceback.extend(tb)
         else:
             req.result.custom.data = pickle.dumps(result, protocol=0)
@@ -479,6 +482,6 @@ if __name__ == "__main__":
 
     if not args.skip_check_worker:
         Thread(target=runner.should_keep_running, daemon=True).start()
-    log.info("setup should keep running thread")
+        log.info("started 'should_keep_running' thread")
 
     server.wait_for_termination()

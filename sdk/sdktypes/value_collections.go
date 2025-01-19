@@ -15,6 +15,8 @@ type BytesValue struct {
 	object[*BytesValuePB, nopObjectTraits[*BytesValuePB]]
 }
 
+func init() { registerObject[BytesValue]() }
+
 func (BytesValue) isConcreteValue() {}
 
 func (s BytesValue) Value() []byte { return clone(s.m).V }
@@ -39,7 +41,7 @@ func init() {
 
 type ListValuePB = valuev1.List
 
-type listValueTraits struct{}
+type listValueTraits struct{ immutableObjectTrait }
 
 func (listValueTraits) Validate(m *ListValuePB) error       { return valuesSlice(m.Vs) }
 func (listValueTraits) StrictValidate(m *ListValuePB) error { return nil }
@@ -49,6 +51,8 @@ var _ objectTraits[*ListValuePB] = listValueTraits{}
 type ListValue struct {
 	object[*ListValuePB, listValueTraits]
 }
+
+func init() { registerObject[ListValue]() }
 
 func (ListValue) isConcreteValue() {}
 
@@ -74,7 +78,7 @@ func init() {
 
 type SetValuePB = valuev1.Set
 
-type setValueTraits struct{}
+type setValueTraits struct{ immutableObjectTrait }
 
 func (setValueTraits) Validate(m *SetValuePB) error       { return valuesSlice(m.Vs) }
 func (setValueTraits) StrictValidate(m *SetValuePB) error { return nil }
@@ -84,6 +88,8 @@ var _ objectTraits[*SetValuePB] = setValueTraits{}
 type SetValue struct {
 	object[*SetValuePB, setValueTraits]
 }
+
+func init() { registerObject[SetValue]() }
 
 func (SetValue) isConcreteValue() {}
 
@@ -117,7 +123,7 @@ type (
 	dictItemPB  = valuev1.Dict_Item
 )
 
-type dictValueTraits struct{}
+type dictValueTraits struct{ immutableObjectTrait }
 
 func (dictValueTraits) Validate(m *DictValuePB) error {
 	keys := make(map[string]*ValuePB, len(m.Items))
@@ -150,6 +156,8 @@ var _ objectTraits[*DictValuePB] = dictValueTraits{}
 type DictValue struct {
 	object[*DictValuePB, dictValueTraits]
 }
+
+func init() { registerObject[DictValue]() }
 
 type DictItem struct{ K, V Value }
 

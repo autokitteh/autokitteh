@@ -27,7 +27,7 @@ var (
 	ErrUnauthenticated    = newTypedError("unauthenticated")
 	ErrUnknown            = NewRetryableErrorf("unknown")
 	ErrFailedPrecondition = newTypedError("failed_precondition")
-	ErrLimitExceeded      = NewRetryableErrorf("limit_exceeded")
+	ErrResourceExhausted  = NewRetryableErrorf("resource_exhausted")
 	ErrProgram            = newTypedError("program_error")
 )
 
@@ -60,28 +60,28 @@ func IsRetryableError(err error) bool {
 	return errors.As(err, &r)
 }
 
-type ErrInvalidArgument struct {
+type InvalidArgumentError struct {
 	Underlying error
 }
 
-func (e ErrInvalidArgument) Error() string {
+func (e InvalidArgumentError) Error() string {
 	if e.Underlying != nil {
 		return e.Underlying.Error()
 	}
 	return "invalid argument"
 }
 
-func (e ErrInvalidArgument) ErrorType() string { return "invalid_argument" }
+func (e InvalidArgumentError) ErrorType() string { return "invalid_argument" }
 
-func (e ErrInvalidArgument) Unwrap() error { return e.Underlying }
+func (e InvalidArgumentError) Unwrap() error { return e.Underlying }
 
 func IsInvalidArgumentError(err error) bool {
-	var invalidArg ErrInvalidArgument
+	var invalidArg InvalidArgumentError
 	return errors.As(err, &invalidArg)
 }
 
 func NewInvalidArgumentError(f string, vs ...any) error {
-	return ErrInvalidArgument{Underlying: fmt.Errorf(f, vs...)}
+	return InvalidArgumentError{Underlying: fmt.Errorf(f, vs...)}
 }
 
 // re-wrap sdk as connect error
@@ -92,7 +92,7 @@ func AsConnectError(err error) error {
 		return connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	var invalidArg ErrInvalidArgument
+	var invalidArg InvalidArgumentError
 
 	switch {
 	case errors.Is(err, ErrNotFound):

@@ -5,6 +5,8 @@ import (
 	"io"
 	"net/http"
 
+	"go.uber.org/zap"
+
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
@@ -16,9 +18,10 @@ import (
 type integration struct{ vars sdkservices.Vars }
 
 var (
-	pat           = sdktypes.NewSymbol("pat")
-	authType      = sdktypes.NewSymbol("authType")
 	integrationID = sdktypes.NewIntegrationIDFromName("asana")
+
+	pat      = sdktypes.NewSymbol("pat")
+	authType = sdktypes.NewSymbol("authType")
 )
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
@@ -58,6 +61,7 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 
 		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
 		if err != nil {
+			zap.L().Error("failed to read connection vars", zap.String("connection_id", cid.String()), zap.Error(err))
 			return sdktypes.InvalidStatus, err
 		}
 
@@ -88,10 +92,11 @@ func connTest(i *integration) sdkintegrations.OptFn {
 
 		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
 		if err != nil {
+			zap.L().Error("failed to read connection vars", zap.String("connection_id", cid.String()), zap.Error(err))
 			return sdktypes.InvalidStatus, err
 		}
 
-		req, err := http.NewRequest("GET", "https://app.asana.com/api/1.0/users/me", nil)
+		req, err := http.NewRequest(http.MethodGet, "https://app.asana.com/api/1.0/users/me", nil)
 		if err != nil {
 			return sdktypes.InvalidStatus, err
 		}

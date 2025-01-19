@@ -9,6 +9,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	akproto "go.autokitteh.dev/autokitteh/proto"
@@ -17,11 +18,23 @@ import (
 
 type Object interface {
 	json.Marshaler
+
 	fmt.Stringer
 	isValider
 	stricter
 
 	isObject()
+
+	// If no message set, returns nil.
+	ProtoMessage() proto.Message
+
+	// Always returns a new message, even if the object is invalid.
+	ProtoMessageName() string
+
+	IsMutableField(n string) bool
+	Mutables() []string
+
+	NewFromJSON([]byte) (Object, error)
 }
 
 type objectTraits[M interface{ proto.Message }] interface {
@@ -33,9 +46,16 @@ type objectTraits[M interface{ proto.Message }] interface {
 	// fields are specified. It does not need to call Validate,
 	// the underlying object will do it.
 	StrictValidate(m M) error
+
+	// Mutables return a list of fields that are mutable in the db.
+	Mutables() []string
 }
 
-type nopObjectTraits[M proto.Message] struct{}
+type immutableObjectTrait struct{}
+
+func (immutableObjectTrait) Mutables() []string { return nil }
+
+type nopObjectTraits[M proto.Message] struct{ immutableObjectTrait }
 
 func (nopObjectTraits[M]) Validate(m M) error       { return nil }
 func (nopObjectTraits[M]) StrictValidate(m M) error { return nil }
@@ -57,11 +77,36 @@ func (o object[M, T]) ProtoSize() int { return proto.Size(o.m) }
 
 func clone[M proto.Message](m M) M { return proto.Clone(m).(M) }
 
-func (o object[T, M]) isObject()              {}
-func (o object[M, T]) IsValid() bool          { var zero M; return o.m != zero }
-func (o object[M, T]) ToProto() M             { return clone(o.m) }
-func (o object[M, T]) Message() proto.Message { return o.ToProto() }
-func (o object[M, T]) IsZero() bool           { return proto.Size(o.m) == 0 }
+func (o object[T, M]) isObject()                   {}
+func (o object[M, T]) IsValid() bool               { var zero M; return o.m != zero }
+func (o object[M, T]) ToProto() M                  { return clone(o.m) }
+func (o object[M, T]) ProtoMessage() proto.Message { return o.ToProto() }
+func (o object[M, T]) ProtoMessageName() string    { return string(proto.MessageName(o.read())) }
+func (o object[M, T]) IsZero() bool                { return proto.Size(o.m) == 0 }
+
+func (object[M, T]) NewFromJSON(bs []byte) (Object, error) {
+	// The object can be marshalled as a pointer, so if it's null, we reset the object.
+	// (ie. we got an invalid/nil object)
+	if string(bs) == "null" {
+		return nil, nil
+	}
+
+	m := zero[M]()
+
+	if err := protojson.Unmarshal(bs, m); err != nil {
+		return nil, err
+	}
+
+	if err := validate[M, T](m); err != nil {
+		return nil, err
+	}
+
+	return object[M, T]{m: m}, nil
+}
+
+func zero[M proto.Message]() (m M) {
+	return reflect.New(reflect.TypeOf(m).Elem()).Interface().(M)
+}
 
 // the returned message will not always be the message stored in the object.
 func (o *object[M, T]) read() M {
@@ -69,7 +114,7 @@ func (o *object[M, T]) read() M {
 		return o.m
 	}
 
-	return reflect.New(reflect.TypeOf(o.m).Elem()).Interface().(M)
+	return zero[M]()
 }
 
 // sets the message is nil. this mutates the object.
@@ -102,6 +147,7 @@ func (o object[M, T]) MarshalJSON() ([]byte, error) {
 	return protoMarshal(o.m)
 }
 
+// This makes sense only when working on a concrete object, where you not the Object interface.
 func (o *object[M, T]) UnmarshalJSON(b []byte) (err error) {
 	// The object can be marshalled as a pointer, so if it's null, we reset the object.
 	// (ie. we got an invalid/nil object)
@@ -124,6 +170,13 @@ func (o *object[M, T]) UnmarshalJSON(b []byte) (err error) {
 	return
 }
 
+func (o object[M, T]) Mutables() []string { var t T; return t.Mutables() }
+
+func (o object[M, T]) IsMutableField(n string) bool {
+	var t T
+	return kittehs.ContainedIn(t.Mutables()...)(n)
+}
+
 func (o object[M, T]) Strict() error {
 	if !o.IsValid() {
 		return sdkerrors.NewInvalidArgumentError("zero object")
@@ -139,6 +192,22 @@ func (o object[M, T]) Equal(other interface{ ToProto() M }) bool {
 	return proto.Equal(o.m, other.ToProto())
 }
 
+type FieldMask = fieldmaskpb.FieldMask
+
+func (o object[M, T]) ValidateUpdateFieldMask(fm *FieldMask) error {
+	if !fm.IsValid(o.ProtoMessage()) {
+		return sdkerrors.NewInvalidArgumentError("invalid field mask")
+	}
+
+	for _, p := range fm.GetPaths() {
+		if !o.IsMutableField(p) {
+			return sdkerrors.NewInvalidArgumentError("field %q cannot be updated", p)
+		}
+	}
+
+	return nil
+}
+
 func strictValidate[M proto.Message, T objectTraits[M]](m M) error {
 	var zero M
 	if proto.Equal(zero, m) {
@@ -147,7 +216,7 @@ func strictValidate[M proto.Message, T objectTraits[M]](m M) error {
 
 	var t T
 	if err := t.StrictValidate(m); err != nil {
-		return sdkerrors.ErrInvalidArgument{Underlying: err}
+		return sdkerrors.InvalidArgumentError{Underlying: err}
 	}
 
 	return validate[M, T](m)
@@ -160,12 +229,12 @@ func validate[M proto.Message, T objectTraits[M]](m M) error {
 	}
 
 	if err := akproto.Validate(m); err != nil {
-		return sdkerrors.ErrInvalidArgument{Underlying: err}
+		return sdkerrors.InvalidArgumentError{Underlying: err}
 	}
 
 	var t T
 	if err := t.Validate(m); err != nil {
-		return sdkerrors.ErrInvalidArgument{Underlying: err}
+		return sdkerrors.InvalidArgumentError{Underlying: err}
 	}
 
 	return nil

@@ -32,7 +32,7 @@ type Manifest struct {
 }
 
 type Project struct {
-	Name        string        `yaml:"name" json:"name"`
+	Name        string        `yaml:"name,omitempty" json:"name,omitempty"`
 	Connections []*Connection `yaml:"connections,omitempty" json:"connections,omitempty"`
 	Triggers    []*Trigger    `yaml:"triggers,omitempty" json:"triggers,omitempty"`
 	Vars        []*Var        `yaml:"vars,omitempty" json:"vars,omitempty"`
@@ -84,11 +84,12 @@ func (t Trigger) GetKey() string {
 
 	what := ""
 
-	if t.Schedule != nil {
+	switch {
+	case t.Schedule != nil:
 		what = "schedule:" + *t.Schedule
-	} else if t.Webhook != nil {
+	case t.Webhook != nil:
 		what = "webhook"
-	} else if t.ConnectionKey != nil {
+	case t.ConnectionKey != nil:
 		what = "connection:" + *t.ConnectionKey
 	}
 

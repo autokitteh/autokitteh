@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package autokitteh.orgs.v1;
+
+// Org represents an organization.
+message Org {
+  string org_id = 1;
+  string display_name = 2; // human readable name.
+  string name = 3; // unique system wide name.
+}
+
+// OrgMember represents a membership of a user in an organization.
+message OrgMember {
+  string user_id = 1;
+  string org_id = 2;
+  OrgMemberStatus status = 3;
+  repeated string roles = 4;
+}
+
+enum OrgMemberStatus {
+  ORG_MEMBER_STATUS_UNSPECIFIED = 0;
+  ORG_MEMBER_STATUS_ACTIVE = 1;
+  ORG_MEMBER_STATUS_INVITED = 2;
+  ORG_MEMBER_STATUS_DECLINED = 3;
+}

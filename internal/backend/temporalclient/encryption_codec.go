@@ -3,6 +3,7 @@ package temporalclient
 import (
 	"crypto/cipher"
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"io"
 
@@ -65,7 +66,7 @@ func (c encryptionCodec) Decode(payloads []*commonpb.Payload) ([]*commonpb.Paylo
 
 		keyName, ok := p.Metadata[metadataEncryptionKeyID]
 		if !ok {
-			return payloads, fmt.Errorf("no encryption key id")
+			return payloads, errors.New("no encryption key id")
 		}
 
 		cipher := c.ciphers[string(keyName)]

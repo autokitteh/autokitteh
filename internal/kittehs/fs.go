@@ -1,6 +1,7 @@
 package kittehs
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	"path/filepath"
@@ -77,7 +78,7 @@ type FilterFS struct {
 // `nil` pred assumes to always return true.
 func NewFilterFS(fsys fs.FS, pred func(fs.DirEntry) bool) (*FilterFS, error) {
 	if fsys == nil {
-		return nil, fmt.Errorf("fsys is nil")
+		return nil, errors.New("fsys is nil")
 	}
 
 	ffs := FilterFS{

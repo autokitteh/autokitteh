@@ -10,9 +10,11 @@ type CallFrame struct {
 	object[*CallFramePB, CallFrameTraits]
 }
 
+func init() { registerObject[CallFrame]() }
+
 type CallFramePB = programv1.CallFrame
 
-type CallFrameTraits struct{}
+type CallFrameTraits struct{ immutableObjectTrait }
 
 func (CallFrameTraits) Validate(m *CallFramePB) error {
 	// No need to validate name, as it is a freeform string.

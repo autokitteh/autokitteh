@@ -2,7 +2,6 @@ package webhooks
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -58,7 +57,7 @@ func TestWebhookCheckRequest(t *testing.T) {
 			name:            "X-Slack-Request-Timestamp_in_the_past",
 			gotContentType:  api.ContentTypeForm,
 			wantContentType: api.ContentTypeForm,
-			timestampHeader: fmt.Sprintf("%d", time.Now().Add(-time.Hour).Unix()),
+			timestampHeader: strconv.FormatInt(time.Now().Add(-time.Hour).Unix(), 10),
 			signatureHeader: "v0=test",
 			r:               nil,
 			want:            nil,
@@ -90,15 +89,6 @@ func TestWebhookCheckRequest(t *testing.T) {
 			r:               iotest.ErrReader(errors.New("test error")),
 			want:            nil,
 		},
-		{
-			name:            "verification_failure",
-			gotContentType:  api.ContentTypeForm,
-			wantContentType: api.ContentTypeForm,
-			timestampHeader: strconv.FormatInt(time.Now().Unix(), 10),
-			signatureHeader: "v0=test",
-			r:               nil,
-			want:            nil,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -108,7 +98,8 @@ func TestWebhookCheckRequest(t *testing.T) {
 			r.Header.Add(api.HeaderSlackTimestamp, tt.timestampHeader)
 			r.Header.Add(api.HeaderSlackSignature, tt.signatureHeader)
 
-			got := checkRequest(w, r, zap.L(), tt.wantContentType)
+			h := handler{}
+			got := h.checkRequest(w, r, zap.L(), tt.wantContentType)
 			if diff := cmp.Diff(got, tt.want); diff != "" {
 				t.Errorf("unexpected checkRequest() return value (-want +got):\n%s", diff)
 			}

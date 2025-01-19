@@ -15,7 +15,7 @@ var InvalidSymbol Symbol
 
 type symbolTraits struct{}
 
-var symbolRE = kittehs.Must1(regexp.Compile(`^[a-zA-Z_][\w]*$`))
+var symbolRE = regexp.MustCompile(`^[a-zA-Z_][\w]*$`)
 
 func (symbolTraits) Validate(s string) error {
 	if s != "" && !symbolRE.MatchString(s) {
@@ -45,5 +45,5 @@ func NewRandomSymbol() Symbol {
 func NewSymbol(s string) Symbol { return forceValidatedString[Symbol](s) }
 
 func NewSymbols(s ...string) []Symbol {
-	return kittehs.Transform(s, func(s string) Symbol { return NewSymbol(s) })
+	return kittehs.Transform(s, NewSymbol)
 }

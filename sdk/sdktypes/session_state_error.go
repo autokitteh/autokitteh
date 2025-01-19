@@ -8,11 +8,13 @@ type SessionStateError struct {
 	object[*SessionStateErrorPB, SessionStateErrorTraits]
 }
 
+func init() { registerObject[SessionStateError]() }
+
 var InvalidSessionStateError SessionStateError
 
 type SessionStateErrorPB = sessionv1.SessionState_Error
 
-type SessionStateErrorTraits struct{}
+type SessionStateErrorTraits struct{ immutableObjectTrait }
 
 func (SessionStateError) isConcreteSessionState() {}
 

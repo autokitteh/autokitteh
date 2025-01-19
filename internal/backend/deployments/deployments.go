@@ -3,9 +3,14 @@ package deployments
 import (
 	"context"
 	"fmt"
+	"math/rand/v2"
+	"time"
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
+	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -13,18 +18,68 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-type deployments struct {
-	z  *zap.Logger
-	db db.DB
+// Draining will happen each interval + rand(jitter).
+// Jitter is to prevent all instances from deactivating at the same time.
+// Note that deactivation will happen if these are not set, as these are more
+// to safeguard from a deployment being stuck in draining state.
+type Config struct {
+	AutoDrainingDeactivationInterval time.Duration `koanf:"draining_deactivation_interval"`
+	AutoDrainingDeactivationJitter   time.Duration `koanf:"draining_deactivation_jitter"`
 }
 
-func New(z *zap.Logger, db db.DB, telemetry *telemetry.Telemetry) sdkservices.Deployments {
+var Configs = configset.Set[Config]{
+	Default: &Config{
+		AutoDrainingDeactivationInterval: 5 * time.Minute,
+		AutoDrainingDeactivationJitter:   1 * time.Minute,
+	},
+}
+
+type deployments struct {
+	l   *zap.Logger
+	db  db.DB
+	cfg *Config
+}
+
+func New(l *zap.Logger, cfg *Config, db db.DB, telemetry *telemetry.Telemetry) sdkservices.Deployments {
 	initMetrics(telemetry)
-	return &deployments{z: z, db: db}
+
+	ds := &deployments{l: l, db: db, cfg: cfg}
+
+	if cfg.AutoDrainingDeactivationInterval > 0 || cfg.AutoDrainingDeactivationJitter > 0 {
+		go ds.Autodrain()
+	}
+
+	return ds
+}
+
+func (d *deployments) Autodrain() {
+	d.l.Info("periodically auto-deactivating drained deployments",
+		zap.Duration("auto_drain_interval", d.cfg.AutoDrainingDeactivationInterval),
+		zap.Duration("auto_drain_jitter", d.cfg.AutoDrainingDeactivationJitter),
+	)
+
+	for {
+		jitter := rand.Float32() * float32(d.cfg.AutoDrainingDeactivationJitter)
+		time.Sleep(d.cfg.AutoDrainingDeactivationInterval + time.Duration(jitter))
+
+		n, err := d.db.DeactivateAllDrainedDeployments(context.Background())
+		if err != nil {
+			d.l.Error("auto-deactivation failed", zap.Error(err))
+			continue
+		}
+
+		if n > 0 {
+			d.l.Sugar().Infof("auto-deactivated %d drained deployments", n)
+		}
+	}
 }
 
 func (d *deployments) Activate(ctx context.Context, id sdktypes.DeploymentID) error {
-	l := d.z.With(zap.String("deployment_id", id.String()))
+	if err := authz.CheckContext(ctx, id, "write:activate"); err != nil {
+		return err
+	}
+
+	l := d.l.With(zap.String("deployment_id", id.String()))
 	err := d.db.Transaction(ctx, func(tx db.DB) error {
 		deployment, err := tx.GetDeployment(ctx, id)
 		if err != nil {
@@ -67,6 +122,10 @@ func (d *deployments) Activate(ctx context.Context, id sdktypes.DeploymentID) er
 }
 
 func (d *deployments) Test(ctx context.Context, id sdktypes.DeploymentID) error {
+	if err := authz.CheckContext(ctx, id, "write:test"); err != nil {
+		return err
+	}
+
 	return d.db.Transaction(ctx, func(tx db.DB) error {
 		deployment, err := tx.GetDeployment(ctx, id)
 		if err != nil {
@@ -86,6 +145,17 @@ func (d *deployments) Test(ctx context.Context, id sdktypes.DeploymentID) error 
 }
 
 func (d *deployments) Create(ctx context.Context, deployment sdktypes.Deployment) (sdktypes.DeploymentID, error) {
+	if err := authz.CheckContext(
+		ctx,
+		sdktypes.InvalidDeploymentID,
+		"write:create",
+		authz.WithData("deployment", deployment),
+		authz.WithAssociationWithID("project", deployment.ProjectID()),
+		authz.WithAssociationWithID("build", deployment.BuildID()),
+	); err != nil {
+		return sdktypes.InvalidDeploymentID, err
+	}
+
 	deployment = deployment.WithNewID().WithState(sdktypes.DeploymentStateInactive)
 
 	if err := d.db.CreateDeployment(ctx, deployment); err != nil {
@@ -97,6 +167,10 @@ func (d *deployments) Create(ctx context.Context, deployment sdktypes.Deployment
 }
 
 func (d *deployments) Deactivate(ctx context.Context, id sdktypes.DeploymentID) error {
+	if err := authz.CheckContext(ctx, id, "write:deactivate"); err != nil {
+		return err
+	}
+
 	return d.db.Transaction(ctx, func(tx db.DB) error { return deactivate(ctx, tx, id) })
 }
 
@@ -138,6 +212,10 @@ func updateDeploymentState(ctx context.Context, db db.DB, id sdktypes.Deployment
 }
 
 func (d *deployments) Delete(ctx context.Context, id sdktypes.DeploymentID) error {
+	if err := authz.CheckContext(ctx, id, "delete:delete"); err != nil {
+		return err
+	}
+
 	dep, err := d.db.GetDeployment(ctx, id)
 	if err != nil {
 		return err
@@ -151,9 +229,28 @@ func (d *deployments) Delete(ctx context.Context, id sdktypes.DeploymentID) erro
 }
 
 func (d *deployments) List(ctx context.Context, filter sdkservices.ListDeploymentsFilter) ([]sdktypes.Deployment, error) {
+	if !filter.AnyIDSpecified() {
+		filter.OrgID = authcontext.GetAuthnInferredOrgID(ctx)
+	}
+
+	if err := authz.CheckContext(
+		ctx,
+		sdktypes.InvalidDeploymentID, "read:list",
+		authz.WithData("filter", filter),
+		authz.WithAssociationWithID("project", filter.ProjectID),
+		authz.WithAssociationWithID("build", filter.BuildID),
+		authz.WithAssociationWithID("org", filter.OrgID),
+	); err != nil {
+		return nil, err
+	}
+
 	return d.db.ListDeployments(ctx, filter)
 }
 
 func (d *deployments) Get(ctx context.Context, id sdktypes.DeploymentID) (sdktypes.Deployment, error) {
+	if err := authz.CheckContext(ctx, id, "read:get"); err != nil {
+		return sdktypes.InvalidDeployment, err
+	}
+
 	return d.db.GetDeployment(ctx, id)
 }

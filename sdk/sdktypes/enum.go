@@ -34,6 +34,8 @@ func (e enum[T, E]) Prefix() string { var t T; return t.Prefix() }
 
 func (e enum[T, E]) ToProto() E { return e.v }
 
+func (e enum[T, E]) ToInt() int { return int(e.v) }
+
 func (e enum[T, E]) Strict() error {
 	if e.v == 0 {
 		return sdkerrors.NewInvalidArgumentError("unspecified")

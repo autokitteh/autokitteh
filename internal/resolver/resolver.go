@@ -26,7 +26,7 @@ type NotFoundError struct {
 	Type, Name string
 }
 
-var NotFoundErrorType = new(NotFoundError)
+var ErrNotFound = new(NotFoundError)
 
 func (e NotFoundError) Error() string {
 	name := e.Name
@@ -165,11 +165,11 @@ func (r Resolver) connectionByID(ctx context.Context, id string) (c sdktypes.Con
 
 // TODO: add type and maybe id to sdkerrors.ErrNotFound and replace NotFoundError below
 func (r Resolver) connectionByFullName(ctx context.Context, projNameOrID, connName, fullName string) (sdktypes.Connection, sdktypes.ConnectionID, error) {
-	p, pid, err := r.ProjectNameOrID(ctx, projNameOrID)
+	pid, err := r.ProjectNameOrID(ctx, projNameOrID)
 	if err != nil {
 		return sdktypes.InvalidConnection, sdktypes.InvalidConnectionID, err
 	}
-	if !p.IsValid() {
+	if !pid.IsValid() {
 		return sdktypes.InvalidConnection, sdktypes.InvalidConnectionID, NotFoundError{Type: "project", Name: projNameOrID}
 	}
 
@@ -190,11 +190,11 @@ func (r Resolver) connectionByFullName(ctx context.Context, projNameOrID, connNa
 
 // TODO: add type and maybe id to sdkerrors.ErrNotFound and replace NotFoundError below
 func (r Resolver) triggerByFullName(ctx context.Context, projNameOrID, triggerName, fullName string) (sdktypes.Trigger, sdktypes.TriggerID, error) {
-	p, pid, err := r.ProjectNameOrID(ctx, projNameOrID)
+	pid, err := r.ProjectNameOrID(ctx, projNameOrID)
 	if err != nil {
 		return sdktypes.InvalidTrigger, sdktypes.InvalidTriggerID, err
 	}
-	if !p.IsValid() {
+	if !pid.IsValid() {
 		return sdktypes.InvalidTrigger, sdktypes.InvalidTriggerID, NotFoundError{Type: "project", Name: projNameOrID}
 	}
 
@@ -303,37 +303,46 @@ func (r Resolver) TriggerID(ctx context.Context, id string) (t sdktypes.Trigger,
 
 // ProjectNameOrID returns a project, based on the given name or ID.
 // If the input is empty, we return nil but not an error.
-func (r Resolver) ProjectNameOrID(ctx context.Context, nameOrID string) (sdktypes.Project, sdktypes.ProjectID, error) {
+func (r Resolver) ProjectNameOrID(ctx context.Context, nameOrID string) (sdktypes.ProjectID, error) {
 	if nameOrID == "" {
-		return sdktypes.InvalidProject, sdktypes.InvalidProjectID, nil
+		return sdktypes.InvalidProjectID, nil
 	}
 
 	if sdktypes.IsProjectID(nameOrID) {
-		return r.projectByID(ctx, nameOrID)
+		return r.projectByID(nameOrID)
 	}
 
 	return r.projectByName(ctx, nameOrID)
 }
 
-func (r Resolver) projectByID(ctx context.Context, id string) (p sdktypes.Project, pid sdktypes.ProjectID, err error) {
+func (r Resolver) projectByID(id string) (pid sdktypes.ProjectID, err error) {
 	if pid, err = sdktypes.StrictParseProjectID(id); err != nil {
 		err = fmt.Errorf("invalid project ID %q: %w", id, err)
 		return
 	}
-	p, err = r.Client.Projects().GetByID(ctx, pid)
-	err = translateError(err, p, "project", id)
 
 	return
 }
 
-func (r Resolver) projectByName(ctx context.Context, name string) (p sdktypes.Project, pid sdktypes.ProjectID, err error) {
+func (r Resolver) projectByName(ctx context.Context, name string) (pid sdktypes.ProjectID, err error) {
+	org, proj, ok := strings.Cut(name, ".")
+	if !ok {
+		org, proj = "", name
+	}
+
 	var n sdktypes.Symbol
-	if n, err = sdktypes.Strict(sdktypes.ParseSymbol(name)); err != nil {
+	if n, err = sdktypes.Strict(sdktypes.ParseSymbol(proj)); err != nil {
 		err = fmt.Errorf("invalid project name %q: %w", name, err)
 		return
 	}
 
-	p, err = r.Client.Projects().GetByName(ctx, n)
+	var oid sdktypes.OrgID
+	oid, err = r.Org(ctx, org)
+	if err != nil {
+		return
+	}
+
+	p, err := r.Client.Projects().GetByName(ctx, oid, n)
 	err = translateError(err, p, "project", name)
 	pid = p.ID()
 	return
@@ -354,5 +363,66 @@ func (r Resolver) SessionID(ctx context.Context, id string) (s sdktypes.Session,
 
 	s, err = r.Client.Sessions().Get(ctx, sid)
 	err = translateError(err, s, "session", id)
+	return
+}
+
+func (r Resolver) UserID(ctx context.Context, emailOrID string) (uid sdktypes.UserID, err error) {
+	if emailOrID == "" {
+		return
+	}
+
+	if sdktypes.IsUserID(emailOrID) {
+		return sdktypes.StrictParseUserID(emailOrID)
+	}
+
+	uid, err = r.Client.Users().GetID(ctx, emailOrID)
+	return
+}
+
+// User returns a user, based on the given email address or user ID.
+func (r Resolver) User(ctx context.Context, emailOrID string) (u sdktypes.User, uid sdktypes.UserID, err error) {
+	if emailOrID == "" {
+		return
+	}
+
+	var email string
+
+	if sdktypes.IsUserID(emailOrID) {
+		if uid, err = sdktypes.StrictParseUserID(emailOrID); err != nil {
+			err = fmt.Errorf("invalid user ID %q: %w", emailOrID, err)
+			return
+		}
+	} else if strings.Contains(emailOrID, "@") {
+		email = emailOrID
+	}
+
+	u, err = r.Client.Users().Get(ctx, uid, email)
+	if u.IsValid() {
+		uid = u.ID()
+	}
+	err = translateError(err, u, "user", emailOrID)
+	return
+}
+
+// Org returns an org, based on the or ID supplied by org.
+func (r Resolver) Org(ctx context.Context, org string) (oid sdktypes.OrgID, err error) {
+	if org == "" {
+		return
+	}
+
+	if sdktypes.IsID(org) {
+		return sdktypes.ParseOrgID(org)
+	}
+
+	n, err := sdktypes.ParseSymbol(org)
+	if err != nil {
+		return sdktypes.InvalidOrgID, fmt.Errorf("invalid org name %q: %w", org, err)
+	}
+
+	o, err := r.Client.Orgs().GetByName(ctx, n)
+	if o.IsValid() {
+		oid = o.ID()
+	}
+	err = translateError(err, o, "org", org)
 	return
 }

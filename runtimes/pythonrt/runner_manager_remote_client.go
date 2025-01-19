@@ -48,7 +48,7 @@ func configureRemoteRunnerManager(cfg RemoteRuntimeConfig) error {
 
 		resp, err := runner.Health(context.Background(), connect.NewRequest(&rmv1.HealthRequest{}))
 		if err != nil {
-			return fmt.Errorf("could not verify runner manager health")
+			return errors.New("could not verify runner manager health")
 		}
 
 		if resp.Msg.Error != "" {

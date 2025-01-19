@@ -17,6 +17,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations/google/calendar"
+	"go.autokitteh.dev/autokitteh/integrations/google/drive"
 	"go.autokitteh.dev/autokitteh/integrations/google/forms"
 	"go.autokitteh.dev/autokitteh/integrations/google/gmail"
 	"go.autokitteh.dev/autokitteh/integrations/google/internal/vars"
@@ -64,6 +65,55 @@ func (h handler) handleCalNotification(w http.ResponseWriter, r *http.Request) {
 	if err := h.dispatchAsyncEventsToConnections(ctx, cids, akEvent); err != nil {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
+	}
+
+	// Returning immediately without an error = acknowledgement of receipt.
+}
+
+// handleDriveNotification receives and dispatches asynchronous Google Drive
+// notifications.
+func (h handler) handleDriveNotification(w http.ResponseWriter, r *http.Request) {
+	// Parse event details from the request headers
+	channelID := r.Header.Get("X-Goog-Channel-Id")
+	resState := r.Header.Get("X-Goog-Resource-State")
+
+	l := h.logger.With(
+		zap.String("urlPath", r.URL.Path),
+		zap.String("channelID", channelID),
+		zap.String("channelToken", r.Header.Get("X-Goog-Channel-Token")),
+		zap.String("resourceID", r.Header.Get("X-Goog-Resource-Id")),
+		zap.String("resourceState", resState),
+		zap.String("messageNumber", r.Header.Get("X-Goog-Message-Number")),
+	)
+
+	if resState == "sync" {
+		l.Info("Ignoring Google Drive watch creation notification")
+		return
+	}
+	l.Info("Received Google Drive notification")
+
+	// Find all the connection IDs associated with the watch ID.
+	ctx := extrazap.AttachLoggerToContext(l, r.Context())
+	name := vars.DriveEventsWatchID
+	cids, err := h.vars.FindConnectionIDs(ctx, drive.IntegrationID, name, channelID)
+	if err != nil {
+		l.Error("Failed to find connection IDs", zap.Error(err))
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	events, err := drive.ConstructEvents(ctx, h.vars, cids)
+	l.Warn("Constructed events", zap.Int("events", len(events)))
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	for _, event := range events {
+		if err := h.dispatchAsyncEventsToConnections(ctx, cids, event); err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
 	}
 
 	// Returning immediately without an error = acknowledgement of receipt.
@@ -201,7 +251,7 @@ func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, cids []sd
 	l := extrazap.ExtractLoggerFromContext(ctx)
 
 	for _, cid := range cids {
-		eid, err := h.dispatcher.Dispatch(ctx, e.WithConnectionDestinationID(cid), nil)
+		eid, err := h.dispatch(ctx, e.WithConnectionDestinationID(cid), nil)
 		l := l.With(
 			zap.String("connectionID", cid.String()),
 			zap.String("eventID", eid.String()),

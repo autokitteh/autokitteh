@@ -8,11 +8,13 @@ type ConnectionCapabilities struct {
 	object[*ConnectionCapabilitiesPB, ConnectionCapabilitiesTraits]
 }
 
+func init() { registerObject[ConnectionCapabilities]() }
+
 var InvalidConnectionCapabilities ConnectionCapabilities
 
 type ConnectionCapabilitiesPB = connectionsv1.Capabilities
 
-type ConnectionCapabilitiesTraits struct{}
+type ConnectionCapabilitiesTraits struct{ immutableObjectTrait }
 
 func (ConnectionCapabilitiesTraits) Validate(m *ConnectionCapabilitiesPB) error       { return nil }
 func (ConnectionCapabilitiesTraits) StrictValidate(m *ConnectionCapabilitiesPB) error { return nil }

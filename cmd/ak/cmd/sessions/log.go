@@ -1,14 +1,12 @@
 package sessions
 
 import (
-	"context"
 	"fmt"
 	"slices"
 
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
-	"go.autokitteh.dev/autokitteh/internal/resolver"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -20,25 +18,13 @@ var (
 )
 
 var logCmd = common.StandardCommand(&cobra.Command{
-	Use:   "log [sessions ID] [--fail] [--skip <N>] [--no-timestamps] [--prints-only]",
+	Use:   "log [sessions ID | project] [--fail] [--skip <N>] [--no-timestamps] [--prints-only]",
 	Short: "Get session runtime logs (prints, calls, errors, state changes)",
-	Args:  cobra.MaximumNArgs(1),
+	Args:  cobra.ExactArgs(1),
 
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) == 0 {
-			id, err := latestSessionID()
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-
-		r := resolver.Resolver{Client: common.Client()}
-		ctx, cancel := common.LimitedContext()
-		defer cancel()
-
-		s, sid, err := r.SessionID(ctx, args[0])
-		if err = common.AddNotFoundErrIfCond(err, s.IsValid()); err != nil {
+		sid, err := acquireSessionID(args[0])
+		if err = common.AddNotFoundErrIfCond(err, sid.IsValid()); err != nil {
 			return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "session")
 		}
 
@@ -60,7 +46,7 @@ var logCmd = common.StandardCommand(&cobra.Command{
 			f.Ascending = false
 		}
 
-		return sessionLog(ctx, f)
+		return sessionLog(f)
 	},
 })
 
@@ -79,7 +65,10 @@ func init() {
 
 // skip >= 0: skip first records
 // skip < 0: skip all up to last |skip| records.
-func sessionLog(ctx context.Context, filter sdkservices.ListSessionLogRecordsFilter) error {
+func sessionLog(filter sdkservices.ListSessionLogRecordsFilter) error {
+	ctx, done := common.LimitedContext()
+	defer done()
+
 	l, err := sessions().GetLog(ctx, filter)
 	if err != nil {
 		return fmt.Errorf("get log: %w", err)
@@ -112,7 +101,7 @@ func printLogs(logs []sdktypes.SessionLogRecord) {
 			} else if state := r.GetState(); state.IsValid() && state.Type() == sdktypes.SessionStateTypeError {
 				if stateErr := state.GetError(); stateErr.IsValid() {
 					pe := stateErr.GetProgramError()
-					msg = fmt.Sprintf("Error: %s", pe.ErrorString())
+					msg = "Error: " + pe.ErrorString()
 				}
 			}
 

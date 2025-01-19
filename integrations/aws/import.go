@@ -2,6 +2,7 @@ package aws
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 
@@ -19,15 +20,15 @@ func importServiceMethods(vars sdkservices.Vars, moduleName string, connect any)
 		return nil, sdklogger.DPanicOrReturn("connect method must return only the client")
 	}
 
-	clientt := connectt.Out(0)
-	if clientt.Kind() != reflect.Ptr || clientt.Elem().Kind() != reflect.Struct {
+	client := connectt.Out(0)
+	if client.Kind() != reflect.Ptr || client.Elem().Kind() != reflect.Struct {
 		return nil, sdklogger.DPanicOrReturn("client is not a pointer to a struct")
 	}
 
-	opts := make([]sdkmodule.Optfn, 0, clientt.NumMethod()+1)
+	opts := make([]sdkmodule.Optfn, 0, client.NumMethod()+1)
 
-	for mi := 0; mi < clientt.NumMethod(); mi++ {
-		m := clientt.Method(mi)
+	for mi := range client.NumMethod() {
+		m := client.Method(mi)
 
 		// Ignore this method since it's non-standard and might reveal secrets.
 		if m.Name == "Options" {
@@ -63,12 +64,12 @@ func importServiceMethods(vars sdkservices.Vars, moduleName string, connect any)
 			}
 
 			if cfg == nil {
-				return sdktypes.InvalidValue, fmt.Errorf("no config specified")
+				return sdktypes.InvalidValue, errors.New("no config specified")
 			}
 
 			connectrets := connectv.Call([]reflect.Value{reflect.ValueOf(*cfg)})
 			if len(connectrets) != 1 {
-				return sdktypes.InvalidValue, fmt.Errorf("new client returned invalid values")
+				return sdktypes.InvalidValue, errors.New("new client returned invalid values")
 			}
 
 			method := connectrets[0].MethodByName(m.Name) // must be original name.
@@ -89,7 +90,7 @@ func importServiceMethods(vars sdkservices.Vars, moduleName string, connect any)
 					return sdktypes.InvalidValue, err
 				}
 
-				return sdktypes.InvalidValue, fmt.Errorf("invalid error return")
+				return sdktypes.InvalidValue, errors.New("invalid error return")
 			}
 
 			out, err := sdktypes.WrapValue(outv.Interface())

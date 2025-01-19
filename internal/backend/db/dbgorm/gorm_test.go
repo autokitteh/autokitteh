@@ -23,7 +23,6 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/backend/gormkitteh"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -35,6 +34,8 @@ var (
 	dbType string
 	gormDB gormdb
 	id     int64 // running testID
+
+	testIntegrationID = sdktypes.NewIntegrationIDFromName("test").UUIDValue()
 )
 
 func TestMain(m *testing.M) {
@@ -54,18 +55,16 @@ func TestMain(m *testing.M) {
 	// setup test bench - gorm, schemas, migrations, etc
 	cfg := &gormkitteh.Config{Type: dbType, DSN: ""} // "" for in-memory, or specify a file
 	cfg, _ = cfg.Explicit()
-	cfg.Ownership = "users"
 	db := setupDB(cfg)
 	z := kittehs.Must1(zap.NewDevelopment())
 	gormDB = gormdb{db: db, cfg: cfg, mu: nil, z: z}
-	gormDB.setupOwnershipChecker(z)
 
 	ctx := context.Background()
 	if err := gormDB.Setup(ctx); err != nil { // ensure migration/schemas
 		log.Fatalf("Failed to setup gormdb: %v", err)
 	}
 
-	now = time.Now()
+	now = kittehs.Now()
 	now = now.Truncate(time.Microsecond) // PG default resolution is microseconds
 
 	// PG saves dates in UTC. Gorm converts them back to local TZ on read
@@ -94,7 +93,7 @@ func TestMain(m *testing.M) {
 }
 
 func init() {
-	now = time.Now()
+	now = kittehs.Now()
 	now = now.Truncate(time.Microsecond) // PG default resolution is microseconds
 }
 
@@ -105,15 +104,15 @@ type dbFixture struct {
 	eventSequence int
 }
 
-func newTestID() sdktypes.UUID {
+func newTestID() uuid.UUID {
 	bytes := make([]byte, 16)
 	id += 1
 	binary.BigEndian.PutUint64(bytes[8:], uint64(id)) // fill the last 8 bytes, leave the first 8 bytes as zero
 
-	return kittehs.Must1(uuid.FromBytes(bytes[:]))
+	return kittehs.Must1(uuid.FromBytes(bytes))
 }
 
-func idToName(id sdktypes.UUID, prefix string) string {
+func idToName(id uuid.UUID, prefix string) string {
 	idStr := id.String()
 	if len(idStr) > 10 {
 		idStr = idStr[len(idStr)-10:]
@@ -214,11 +213,6 @@ func newDBFixture() *dbFixture {
 	return &f
 }
 
-func (f *dbFixture) withUser(user sdktypes.User) *dbFixture {
-	f.ctx = authcontext.SetAuthnUser(f.ctx, user)
-	return f
-}
-
 func (f *dbFixture) WithForeignKeysDisabled(fn func()) {
 	foreignKeys(f.gormdb, false) // disable
 	fn()
@@ -252,12 +246,12 @@ func findAndAssertCount[T any](t *testing.T, f *dbFixture, expected int, where s
 
 func findAndAssertOne[T any](t *testing.T, f *dbFixture, schemaObj T, where string, args ...any) {
 	res := findAndAssertCount[T](t, f, 1, where, args...)
+	resetTimes(&res[0], &schemaObj)
 	require.Equal(t, schemaObj, res[0])
 }
 
 // check obj is soft-deleted in gorm
 func assertSoftDeleted[T any](t *testing.T, f *dbFixture, m T) {
-	// check that object is not found without unscoped (due to deleted_at)
 	res := f.db.First(&m)
 	require.ErrorIs(t, res.Error, gorm.ErrRecordNotFound)
 
@@ -292,23 +286,27 @@ func (f *dbFixture) newSession(args ...any) scheme.Session {
 		// CurrentStateType: int(st.ToProto()),
 		Inputs:     datatypes.JSON([]byte("{}")),
 		Entrypoint: "loc",
-		CreatedAt:  now,
-		UpdatedAt:  now,
+		Base: scheme.Base{
+			CreatedAt: now,
+		},
 	}
 	for _, a := range args {
 		switch a := a.(type) {
 		case sdktypes.SessionStateType:
 			s.CurrentStateType = int(a.ToProto())
 		case scheme.Build:
-			s.BuildID = &a.BuildID
+			s.BuildID = a.BuildID
 		case scheme.Deployment:
 			s.DeploymentID = &a.DeploymentID
 		case scheme.Project:
-			s.ProjectID = &a.ProjectID
+			s.ProjectID = a.ProjectID
 		case scheme.Event:
 			s.EventID = &a.EventID
 		}
 	}
+
+	resetTimes(&s)
+
 	return s
 }
 
@@ -320,14 +318,13 @@ func (f *dbFixture) newSessionLogRecord() scheme.SessionLogRecord {
 
 func (f *dbFixture) newBuild(args ...any) scheme.Build {
 	b := scheme.Build{
-		BuildID:   newTestID(),
-		Data:      []byte{},
-		CreatedAt: now,
+		BuildID: newTestID(),
+		Data:    []byte{},
+		Base:    scheme.Base{CreatedAt: now},
 	}
 	for _, a := range args {
-		switch a := a.(type) {
-		case scheme.Project:
-			b.ProjectID = &a.ProjectID
+		if a, ok := a.(scheme.Project); ok {
+			b.ProjectID = a.ProjectID
 		}
 	}
 	return b
@@ -337,17 +334,18 @@ func (f *dbFixture) newDeployment(args ...any) scheme.Deployment {
 	d := scheme.Deployment{
 		DeploymentID: newTestID(),
 		State:        int32(sdktypes.DeploymentStateUnspecified.ToProto()),
-		CreatedAt:    now,
-		UpdatedAt:    now,
+		Base:         scheme.Base{CreatedAt: now},
 	}
 	for _, a := range args {
 		switch a := a.(type) {
 		case scheme.Build:
 			d.BuildID = a.BuildID
 		case scheme.Project:
-			d.ProjectID = &a.ProjectID
+			d.ProjectID = a.ProjectID
 		}
 	}
+
+	resetTimes(&d)
 	return d
 }
 
@@ -373,7 +371,7 @@ func (f *dbFixture) newVar(name string, val string, args ...any) scheme.Var {
 			v.IntegrationID = *a.IntegrationID
 		case scheme.Project:
 			v.ScopeID = a.ProjectID
-		case sdktypes.UUID:
+		case uuid.UUID:
 			v.ScopeID = a
 		}
 	}
@@ -415,7 +413,7 @@ func (f *dbFixture) newConnection(args ...any) scheme.Connection {
 	for _, a := range args {
 		switch a := a.(type) {
 		case scheme.Project:
-			c.ProjectID = &a.ProjectID
+			c.ProjectID = a.ProjectID
 		case string:
 			c.Name = a
 		}
@@ -424,13 +422,13 @@ func (f *dbFixture) newConnection(args ...any) scheme.Connection {
 }
 
 func (f *dbFixture) newEvent(args ...any) scheme.Event {
-	f.eventSequence = f.eventSequence + 1
+	f.eventSequence++
 	e := scheme.Event{
-		EventID:   newTestID(),
-		CreatedAt: now,
-		Seq:       uint64(f.eventSequence),
-		Data:      kittehs.Must1(json.Marshal(struct{}{})),
-		Memo:      kittehs.Must1(json.Marshal(struct{}{})),
+		EventID: newTestID(),
+		Base:    scheme.Base{CreatedAt: now},
+		Seq:     uint64(f.eventSequence),
+		Data:    kittehs.Must1(json.Marshal(struct{}{})),
+		Memo:    kittehs.Must1(json.Marshal(struct{}{})),
 	}
 	for _, a := range args {
 		switch a := a.(type) {
@@ -438,6 +436,8 @@ func (f *dbFixture) newEvent(args ...any) scheme.Event {
 			e.ConnectionID = &a.ConnectionID
 		case scheme.Trigger:
 			e.TriggerID = &a.TriggerID
+		case scheme.Project:
+			e.ProjectID = a.ProjectID
 		}
 	}
 	return e
@@ -449,11 +449,48 @@ func (f *dbFixture) newSignal(args ...any) scheme.Signal {
 		CreatedAt: now,
 	}
 	for _, a := range args {
-		switch a := a.(type) {
-		case scheme.Connection:
+		if a, ok := a.(scheme.Connection); ok {
 			s.ConnectionID = &a.ConnectionID
 			s.DestinationID = a.ConnectionID
 		}
 	}
 	return s
+}
+
+// Reset all time.Time fields to zero. This is needed to compare objects with time fields.
+// Each v in vs must be a pointer to a struct.
+func resetTimes(vs ...any) {
+	for _, v := range vs {
+		rv := reflect.ValueOf(v)
+		if rv.Kind() != reflect.Ptr {
+			panic("expected a pointer")
+		}
+
+		rv = rv.Elem()
+
+		for i := range rv.NumField() {
+			fv := rv.Field(i)
+			if fv.Kind() == reflect.Struct {
+				if fv.Type().Name() == "Time" {
+					fv.Set(reflect.ValueOf(time.Time{}))
+				} else {
+					resetTimes(fv.Addr().Interface())
+				}
+			}
+		}
+	}
+}
+
+func TestResetTimes(t *testing.T) {
+	type X struct {
+		Time time.Time
+	}
+	type T struct {
+		Time time.Time
+		X    X
+	}
+	t1 := T{Time: time.Now(), X: X{Time: time.Now()}}
+	resetTimes(&t1)
+	require.Equal(t, time.Time{}, t1.Time)
+	require.Equal(t, time.Time{}, t1.X.Time)
 }

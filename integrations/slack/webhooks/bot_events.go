@@ -21,35 +21,31 @@ var BotEventHandlers = map[string]BotEventHandler{
 	"app_home_opened": events.AppHomeOpenedHandler,
 	"app_mention":     events.AppMentionHandler,
 	// TODO: app_rate_limit
-	// TODO: app_uninstalled
+	"app_uninstalled": events.AppUninstalledTokensRevokedHandler,
 
-	"channel_archive": events.ChannelGroupHandler,
-	"channel_created": events.ChannelCreatedHandler,
-	// TODO: channel_deleted
-	// TODO: channel_history_changed
-	// TODO: channel_id_changed
-	// TODO: channel_left
-	// TODO: channel_rename
-	"channel_unarchive": events.ChannelGroupHandler,
+	"channel_archive":   events.ChannelGroupMemberHandler,
+	"channel_created":   events.ChannelCreatedRenameHandler,
+	"channel_left":      events.ChannelGroupMemberHandler,
+	"channel_rename":    events.ChannelCreatedRenameHandler,
+	"channel_unarchive": events.ChannelGroupMemberHandler,
 
-	"group_archive": events.ChannelGroupHandler,
-	// TODO: group_deleted
-	// TODO: group_history_changed
-	// TODO: group_left
-	"group_open": events.ChannelGroupHandler,
-	// TODO: group_rename
-	"group_unarchive": events.ChannelGroupHandler,
+	"group_archive":   events.ChannelGroupMemberHandler,
+	"group_close":     events.ChannelGroupMemberHandler,
+	"group_deleted":   events.ChannelGroupMemberHandler,
+	"group_left":      events.ChannelGroupMemberHandler,
+	"group_open":      events.ChannelGroupMemberHandler,
+	"group_rename":    events.ChannelCreatedRenameHandler,
+	"group_unarchive": events.ChannelGroupMemberHandler,
 
-	// TODO: im_history_changed
-
-	"member_joined_channel": events.ChannelGroupHandler,
+	"member_joined_channel": events.ChannelGroupMemberHandler,
+	"member_left_channel":   events.ChannelGroupMemberHandler,
 
 	"message": events.MessageHandler,
 
 	"reaction_added":   events.ReactionHandler,
 	"reaction_removed": events.ReactionHandler,
 
-	// TODO: tokens_revoked
+	"tokens_revoked": events.AppUninstalledTokensRevokedHandler,
 
 	"url_verification": events.URLVerificationHandler,
 }
@@ -62,7 +58,7 @@ func (h handler) HandleBotEvent(w http.ResponseWriter, r *http.Request) {
 	l := h.logger.With(zap.String("urlPath", BotEventPath))
 
 	// Validate and parse the inbound request.
-	body := checkRequest(w, r, l, api.ContentTypeJSON)
+	body := h.checkRequest(w, r, l, api.ContentTypeJSON)
 	if body == nil {
 		return
 	}

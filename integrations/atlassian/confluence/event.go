@@ -29,14 +29,14 @@ var httpClient = http.Client{Timeout: 3 * time.Second}
 // handler is an autokitteh webhook which implements [http.Handler]
 // to receive and dispatch asynchronous event notifications.
 type handler struct {
-	logger     *zap.Logger
-	oauth      sdkservices.OAuth
-	vars       sdkservices.Vars
-	dispatcher sdkservices.Dispatcher
+	logger   *zap.Logger
+	oauth    sdkservices.OAuth
+	vars     sdkservices.Vars
+	dispatch sdkservices.DispatchFunc
 }
 
-func NewHTTPHandler(l *zap.Logger, o sdkservices.OAuth, v sdkservices.Vars, d sdkservices.Dispatcher) handler {
-	return handler{logger: l, oauth: o, vars: v, dispatcher: d}
+func NewHTTPHandler(l *zap.Logger, o sdkservices.OAuth, v sdkservices.Vars, d sdkservices.DispatchFunc) handler {
+	return handler{logger: l, oauth: o, vars: v, dispatch: d}
 }
 
 // handleEvent receives from Atlassian asynchronous events,
@@ -130,10 +130,10 @@ func extractEntityType(l *zap.Logger, atlassianEvent map[string]any, category st
 
 	// Some "attachment_*" and "relation_*" events look a little different.
 	if _, ok := atlassianEvent["attachments"]; ok {
-		return fmt.Sprintf("attachment_%s", category), true
+		return "attachment_" + category, true
 	}
 	if _, ok := atlassianEvent["relationData"]; ok {
-		return fmt.Sprintf("relation_%s", category), true
+		return "relation_" + category, true
 	}
 
 	// Last but not least: "content_*" events.
@@ -203,7 +203,7 @@ func constructEvent(l *zap.Logger, atlassianEvent map[string]any, eventType stri
 func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, cids []sdktypes.ConnectionID, e sdktypes.Event) {
 	l := extrazap.ExtractLoggerFromContext(ctx)
 	for _, cid := range cids {
-		eid, err := h.dispatcher.Dispatch(ctx, e.WithConnectionDestinationID(cid), nil)
+		eid, err := h.dispatch(ctx, e.WithConnectionDestinationID(cid), nil)
 		l := l.With(
 			zap.String("connectionID", cid.String()),
 			zap.String("eventID", eid.String()),

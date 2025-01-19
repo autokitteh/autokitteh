@@ -10,11 +10,13 @@ type BuildExport struct {
 	object[*BuildExportPB, BuildExportTraits]
 }
 
+func init() { registerObject[BuildExport]() }
+
 var InvalidBuildExport BuildExport
 
 type BuildExportPB = runtimesv1.Export
 
-type BuildExportTraits struct{}
+type BuildExportTraits struct{ immutableObjectTrait }
 
 func (BuildExportTraits) Validate(m *BuildExportPB) error {
 	return errors.Join(

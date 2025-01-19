@@ -14,11 +14,13 @@ type SessionCallAttemptComplete struct {
 	object[*SessionCallAttemptCompletePB, SessionCallAttemptCompleteTraits]
 }
 
+func init() { registerObject[SessionCallAttemptComplete]() }
+
 var InvalidSessionCallAttemptComplete SessionCallAttemptComplete
 
 type SessionCallAttemptCompletePB = sessionv1.Call_Attempt_Complete
 
-type SessionCallAttemptCompleteTraits struct{}
+type SessionCallAttemptCompleteTraits struct{ immutableObjectTrait }
 
 func (SessionCallAttemptCompleteTraits) Validate(m *SessionCallAttemptCompletePB) error {
 	return objectField[SessionCallAttemptResult]("result", m.Result)

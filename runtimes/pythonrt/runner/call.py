@@ -5,6 +5,8 @@ from pathlib import Path
 
 import log
 from autokitteh import decorators
+
+import log
 from deterministic import is_deterministic
 
 
@@ -13,12 +15,33 @@ def is_marked_activity(fn):
     return getattr(fn, decorators.ACTIVITY_ATTR, False)
 
 
+def callable_name(fn):
+    for attr in ("__qualname__", "__name__"):
+        name = getattr(fn, attr, None)
+        if name:
+            return name
+
+    if hasattr(fn, "__class__"):
+        return fn.__class__.__name__
+
+    return repr(fn)  # last resort
+
+
 def full_func_name(fn):
+    name = callable_name(fn)
     module = getattr(fn, "__module__", None)
     if module:
-        return f"{module}.{fn.__name__}"
+        return f"{module}.{name}"
 
-    return fn.__name__
+    return name
+
+
+def caller_info():
+    frames = inspect.stack()
+    if len(frames) > 2:
+        return Path(frames[2].filename).name, frames[2].lineno
+    else:
+        return "<unknown>", 0
 
 
 class AKCall:
@@ -40,7 +63,11 @@ class AKCall:
         if not mod:
             return False
 
-        mod_dir = Path(mod.__file__).resolve()
+        file_name = getattr(mod, "__file__", None)
+        if file_name is None:
+            return False
+
+        mod_dir = Path(file_name).resolve()
         return mod_dir.is_relative_to(self.code_dir)
 
     def should_run_as_activity(self, fn):
@@ -64,12 +91,7 @@ class AKCall:
 
     def __call__(self, func, *args, **kw):
         if not callable(func):
-            frames = inspect.stack()
-            if len(frames) > 1:
-                file, lnum = Path(frames[1].filename).name, frames[1].lineno
-            else:
-                file, lnum = "<unknown>", 0
-
+            file, lnum = caller_info()
             raise ValueError(f"{func!r} is not callable (user bug at {file}:{lnum}?)")
 
         if func is time.sleep:

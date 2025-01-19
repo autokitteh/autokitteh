@@ -24,7 +24,7 @@ var (
 )
 
 var deployCmd = common.StandardCommand(&cobra.Command{
-	Use:   "deploy {--manifest <file> [--project-name <name>]|--project <name or ID>} [--dir <path> [...]] [--file <path> [...]] [--env <name or ID>]",
+	Use:   "deploy {--manifest <file> [--project-name <name>]|--project <name or ID>} [--dir <path> [...]] [--file <path> [...]] ",
 	Short: "Create, configure, build, deploy, and activate project",
 	Long:  `Create, configure, build, deploy, and activate project - see also the "manifest", "build", "deployment", and "project" parent commands`,
 	Args:  cobra.NoArgs,
@@ -43,10 +43,10 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 				return err
 			}
 		} else if projectName != "" {
-			return fmt.Errorf("project name provided without manifest")
+			return errors.New("project name provided without manifest")
 		}
 
-		p, pid, err := r.ProjectNameOrID(ctx, project)
+		pid, err := r.ProjectNameOrID(ctx, project)
 		if err != nil {
 			err = fmt.Errorf("project: %w", err)
 
@@ -57,14 +57,14 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 			return err
 		}
 
-		if p.IsValid() {
+		if pid.IsValid() {
 			logFunc(cmd, "plan")(fmt.Sprintf("project %q: found, id=%q", project, pid))
 		}
 
 		// Step 2: build the project (see also the "build" and "project" parent commands).
 		if len(dirPaths) == 0 && len(filePaths) == 0 {
 			if manifestPath == "" {
-				return fmt.Errorf("no dir/file paths provided")
+				return errors.New("no dir/file paths provided")
 			}
 			dirPaths = append(dirPaths, filepath.Dir(manifestPath))
 		}

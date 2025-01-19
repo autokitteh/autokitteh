@@ -1,5 +1,6 @@
 from autokitteh_pb.sessions.v1 import session_pb2 as _session_pb2
 from buf.validate import validate_pb2 as _validate_pb2
+from google.protobuf import duration_pb2 as _duration_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
@@ -29,26 +30,29 @@ class StartResponse(_message.Message):
     def __init__(self, session_id: _Optional[str] = ...) -> None: ...
 
 class StopRequest(_message.Message):
-    __slots__ = ["session_id", "reason", "terminate"]
+    __slots__ = ["session_id", "reason", "terminate", "termination_delay"]
     SESSION_ID_FIELD_NUMBER: _ClassVar[int]
     REASON_FIELD_NUMBER: _ClassVar[int]
     TERMINATE_FIELD_NUMBER: _ClassVar[int]
+    TERMINATION_DELAY_FIELD_NUMBER: _ClassVar[int]
     session_id: str
     reason: str
     terminate: bool
-    def __init__(self, session_id: _Optional[str] = ..., reason: _Optional[str] = ..., terminate: bool = ...) -> None: ...
+    termination_delay: _duration_pb2.Duration
+    def __init__(self, session_id: _Optional[str] = ..., reason: _Optional[str] = ..., terminate: bool = ..., termination_delay: _Optional[_Union[_duration_pb2.Duration, _Mapping]] = ...) -> None: ...
 
 class StopResponse(_message.Message):
     __slots__ = []
     def __init__(self) -> None: ...
 
 class ListRequest(_message.Message):
-    __slots__ = ["deployment_id", "project_id", "event_id", "build_id", "state_type", "count_only", "page_size", "skip", "page_token"]
+    __slots__ = ["deployment_id", "project_id", "event_id", "build_id", "state_type", "org_id", "count_only", "page_size", "skip", "page_token"]
     DEPLOYMENT_ID_FIELD_NUMBER: _ClassVar[int]
     PROJECT_ID_FIELD_NUMBER: _ClassVar[int]
     EVENT_ID_FIELD_NUMBER: _ClassVar[int]
     BUILD_ID_FIELD_NUMBER: _ClassVar[int]
     STATE_TYPE_FIELD_NUMBER: _ClassVar[int]
+    ORG_ID_FIELD_NUMBER: _ClassVar[int]
     COUNT_ONLY_FIELD_NUMBER: _ClassVar[int]
     PAGE_SIZE_FIELD_NUMBER: _ClassVar[int]
     SKIP_FIELD_NUMBER: _ClassVar[int]
@@ -58,11 +62,12 @@ class ListRequest(_message.Message):
     event_id: str
     build_id: str
     state_type: _session_pb2.SessionStateType
+    org_id: str
     count_only: bool
     page_size: int
     skip: int
     page_token: str
-    def __init__(self, deployment_id: _Optional[str] = ..., project_id: _Optional[str] = ..., event_id: _Optional[str] = ..., build_id: _Optional[str] = ..., state_type: _Optional[_Union[_session_pb2.SessionStateType, str]] = ..., count_only: bool = ..., page_size: _Optional[int] = ..., skip: _Optional[int] = ..., page_token: _Optional[str] = ...) -> None: ...
+    def __init__(self, deployment_id: _Optional[str] = ..., project_id: _Optional[str] = ..., event_id: _Optional[str] = ..., build_id: _Optional[str] = ..., state_type: _Optional[_Union[_session_pb2.SessionStateType, str]] = ..., org_id: _Optional[str] = ..., count_only: bool = ..., page_size: _Optional[int] = ..., skip: _Optional[int] = ..., page_token: _Optional[str] = ...) -> None: ...
 
 class ListResponse(_message.Message):
     __slots__ = ["sessions", "count", "next_page_token"]

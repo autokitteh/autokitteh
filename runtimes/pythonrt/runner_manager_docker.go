@@ -51,7 +51,7 @@ func configureDockerRunnerManager(log *zap.Logger, cfg DockerRuntimeConfig) erro
 				continue
 			}
 
-			log.Debug(fmt.Sprintf("stopped runner: %s", rid))
+			log.Debug("stopped runner: " + rid)
 		}
 	}
 
@@ -94,7 +94,7 @@ func (rm *dockerRunnerManager) Start(ctx context.Context, sessionID sdktypes.Ses
 
 	hash := md5.Sum(buildArtifacts)
 	version := fmt.Sprintf("u%x", hash)
-	containerName := fmt.Sprintf("usercode:%s", version)
+	containerName := "usercode:" + version
 
 	if err := rm.client.BuildImage(ctx, containerName, codePath); err != nil {
 		return "", nil, fmt.Errorf("build image: %w", err)
@@ -112,7 +112,7 @@ func (rm *dockerRunnerManager) Start(ctx context.Context, sessionID sdktypes.Ses
 		return "", nil, fmt.Errorf("start runner: %w", err)
 	}
 
-	runnerAddr := fmt.Sprintf("127.0.0.1:%s", port)
+	runnerAddr := "127.0.0.1:" + port
 	client, err := dialRunner(runnerAddr)
 	if err != nil {
 

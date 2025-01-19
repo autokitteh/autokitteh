@@ -114,5 +114,5 @@ func TransformMapValuesError[A comparable, B0, B1 any](m map[A]B0, f func(B0) (B
 }
 
 func TransformToStrings[T any](ts []T) []string {
-	return Transform(ts, func(t T) string { return ToString(t) })
+	return Transform(ts, ToString)
 }

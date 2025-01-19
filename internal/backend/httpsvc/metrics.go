@@ -26,7 +26,7 @@ func acquireServiceAPIMetrics(serviceAPI string, t *telemetry.Telemetry) (*apiMe
 		return m.(*apiMetrics), nil
 	}
 
-	cntName := fmt.Sprintf("api.%s", serviceAPI)
+	cntName := "api." + serviceAPI
 	histName := fmt.Sprintf("api.%s.duration", serviceAPI)
 
 	counter, err := t.NewCounter(cntName, fmt.Sprintf("GRPC request counter (%s)", cntName))

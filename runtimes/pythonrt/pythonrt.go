@@ -212,15 +212,15 @@ func loadSyscall(values map[string]sdktypes.Value) (sdktypes.Value, error) {
 	}
 
 	if !ak.IsStruct() {
-		return sdktypes.InvalidValue, fmt.Errorf("`ak` is not a struct")
+		return sdktypes.InvalidValue, errors.New("`ak` is not a struct")
 	}
 
 	syscall, ok := ak.GetStruct().Fields()["syscall"]
 	if !ok {
-		return sdktypes.InvalidValue, fmt.Errorf("`syscall` not found in `ak`")
+		return sdktypes.InvalidValue, errors.New("`syscall` not found in `ak`")
 	}
 	if !syscall.IsFunction() {
-		return sdktypes.InvalidValue, fmt.Errorf("`syscall` is not a function")
+		return sdktypes.InvalidValue, errors.New("`syscall` is not a function")
 	}
 
 	return syscall, nil
@@ -369,7 +369,7 @@ func (py *pySvc) call(ctx context.Context, val sdktypes.Value, args []sdktypes.V
 	out, err := py.cbs.Call(py.ctx, py.runID, val, args, kw)
 	switch {
 	case err != nil:
-		py.log.Warn("activity reply error", zap.Error(err))
+		py.log.Info("activity reply error", zap.Error(err))
 		req.Error = err.Error()
 	case !out.IsCustom():
 		py.log.Error("activity reply value not Custom", zap.Any("value", out))
@@ -382,64 +382,68 @@ func (py *pySvc) call(ctx context.Context, val sdktypes.Value, args []sdktypes.V
 	ctx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
 
-	reply, err := py.runner.ActivityReply(ctx, &req)
-	if err != nil || reply.Error != "" {
-		var error string
-		if err != nil {
-			error = err.Error()
-		} else {
-			error = reply.Error
+	if _, err = py.runner.ActivityReply(ctx, &req); err != nil {
+		py.log.Error("activity reply error", zap.Error(err))
+	}
+}
+
+func (py *pySvc) setupCallbacksListeningLoop(ctx context.Context) chan (error) {
+	callbackErrChan := make(chan error, 1)
+	go func() {
+		for {
+			select {
+			case r := <-py.channels.log:
+				py.log.Log(pyLevelToZap(r.level), r.message)
+				close(r.doneChannel)
+			case p := <-py.channels.print:
+				py.cbs.Print(ctx, py.runID, p.message)
+				close(p.doneChannel)
+			case r := <-py.channels.request:
+				var (
+					fnName = "pyFunc"
+					args   []sdktypes.Value
+					kw     map[string]sdktypes.Value
+				)
+
+				if r.CallInfo != nil {
+					fnName = r.CallInfo.Function
+					args = kittehs.Transform(r.CallInfo.Args, func(v *pbValues.Value) sdktypes.Value {
+						// TODO(ENG-1838): What if there's an error?
+						val, _ := sdktypes.ValueFromProto(v)
+						return val
+					})
+					kw = kittehs.TransformMap(r.CallInfo.Kwargs, func(k string, v *pbValues.Value) (string, sdktypes.Value) {
+						// TODO(ENG-1838): What if there's an error?
+						val, _ := sdktypes.ValueFromProto(v)
+						return k, val
+					})
+				}
+
+				// it was already checked before we got here
+				fn, err := sdktypes.NewFunctionValue(py.xid, fnName, r.Data, nil, pyModuleFunc)
+				if err != nil {
+					callbackErrChan <- err
+					return
+				}
+				py.call(ctx, fn, args, kw)
+			case cb := <-py.channels.callback:
+				val, err := py.cbs.Call(ctx, py.runID, py.syscallFn, cb.args, cb.kwargs)
+				if err != nil {
+					cb.errorChannel <- err
+				} else {
+					cb.successChannel <- val
+				}
+			case <-ctx.Done():
+				py.log.Debug("stopping callback handling loop")
+				return
+			}
 		}
-
-		py.log.Warn("activity reply error", zap.String("reply error", error))
-		// Stop the run
-		req := newDoneFromError(py.runnerID, error)
-		py.channels.done <- req
-	}
-}
-
-func newDoneFromError(runnerID string, error string) *pbUserCode.DoneRequest {
-	req := pbUserCode.DoneRequest{
-		RunnerId: runnerID,
-		Result: &pbValues.Value{
-			Custom: &pbValues.Custom{
-				Value: &pbValues.Value{
-					Nothing: &pbValues.Nothing{},
-				},
-				Data: nil,
-			},
-		},
-		Error: error,
-	}
-	return &req
-}
-
-// initialCall handles initial call from autokitteh, it does the message loop with Python.
-// We split it from Call since Call is also used to execute activities.
-func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
-	if len(args) > 0 {
-		return sdktypes.InvalidValue, fmt.Errorf("initial call can't have positional args")
-	}
-
-	defer func() {
-		py.cleanup(ctx)
-		py.log.Info("Python subprocess cleanup after initial call is done")
 	}()
 
-	py.log.Info("initial call", zap.Any("func", funcName))
-	event, err := py.kwToEvent(kwargs)
-	if err != nil {
-		py.log.Error("can't convert event", zap.Error(err))
-		return sdktypes.InvalidValue, fmt.Errorf("can't convert: %w", err)
-	}
+	return callbackErrChan
+}
 
-	keys := slices.Collect(maps.Keys(event))
-	py.log.Info("event", zap.Any("keys", keys))
-
-	eventData, err := json.Marshal(event)
-	if err != nil {
-		return sdktypes.InvalidValue, fmt.Errorf("marshal event: %w", err)
-	}
+func (py *pySvc) startRequest(ctx context.Context, funcName string, eventData []byte) error {
 
 	req := pbUserCode.StartRequest{
 		EntryPoint: fmt.Sprintf("%s:%s", py.fileName, funcName),
@@ -449,17 +453,19 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 	}
 	if _, err := py.runner.Start(ctx, &req); err != nil {
 		// TODO: Handle traceback
-		return sdktypes.InvalidValue, err
+		return err
 	}
 
-	cancellableCtx, cancel := context.WithCancel(ctx)
-	defer cancel()
+	return nil
+}
+
+func (py *pySvc) setupHealthcheck(ctx context.Context) chan (error) {
 
 	runnerHealthChan := make(chan error, 1)
 	go func() {
 		for {
 			select {
-			case <-cancellableCtx.Done():
+			case <-ctx.Done():
 				py.log.Debug("health check loop stopped")
 				return
 			case <-time.After(10 * time.Second):
@@ -483,6 +489,45 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 			}
 		}
 	}()
+	return runnerHealthChan
+}
+
+// initialCall handles initial call from autokitteh, it does the message loop with Python.
+// We split it from Call since Call is also used to execute activities.
+func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+	if len(args) > 0 {
+		return sdktypes.InvalidValue, errors.New("initial call can't have positional args")
+	}
+
+	defer func() {
+		py.cleanup(ctx)
+		py.log.Info("Python subprocess cleanup after initial call is done")
+	}()
+
+	py.log.Info("initial call", zap.Any("func", funcName))
+	event, err := py.kwToEvent(kwargs)
+	if err != nil {
+		py.log.Error("can't convert event", zap.Error(err))
+		return sdktypes.InvalidValue, fmt.Errorf("can't convert: %w", err)
+	}
+
+	keys := slices.Collect(maps.Keys(event))
+	py.log.Info("event", zap.Any("keys", keys))
+
+	eventData, err := json.Marshal(event)
+	if err != nil {
+		return sdktypes.InvalidValue, fmt.Errorf("marshal event: %w", err)
+	}
+
+	cancellableCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	callbackErrChan := py.setupCallbacksListeningLoop(cancellableCtx)
+
+	if err := py.startRequest(ctx, funcName, eventData); err != nil {
+		return sdktypes.InvalidValue, fmt.Errorf("start request: %w", err)
+	}
+
+	runnerHealthChan := py.setupHealthcheck(cancellableCtx)
 
 	// Wait for client Done message
 	var done *pbUserCode.DoneRequest
@@ -492,54 +537,17 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 			if healthErr != nil {
 				return sdktypes.InvalidValue, sdkerrors.NewRetryableErrorf("runner health: %w", healthErr)
 			}
-		case r := <-py.channels.log:
-			py.log.Log(pyLevelToZap(r.level), r.message)
-			close(r.doneChannel)
-		case p := <-py.channels.print:
-			py.cbs.Print(ctx, py.runID, p.message)
-			close(p.doneChannel)
-		case r := <-py.channels.request:
-			var (
-				fnName = "pyFunc"
-				args   []sdktypes.Value
-				kw     map[string]sdktypes.Value
-			)
-
-			if r.CallInfo != nil {
-				fnName = r.CallInfo.Function
-				args = kittehs.Transform(r.CallInfo.Args, func(v *pbValues.Value) sdktypes.Value {
-					// TODO(ENG-1838): What if there's an error?
-					val, _ := sdktypes.ValueFromProto(v)
-					return val
-				})
-				kw = kittehs.TransformMap(r.CallInfo.Kwargs, func(k string, v *pbValues.Value) (string, sdktypes.Value) {
-					// TODO(ENG-1838): What if there's an error?
-					val, _ := sdktypes.ValueFromProto(v)
-					return k, val
-				})
-			}
-
-			// it was already checked before we got here
-			fn, err := sdktypes.NewFunctionValue(py.xid, fnName, r.Data, nil, pyModuleFunc)
-			if err != nil {
-				return sdktypes.InvalidValue, err
-			}
-			py.call(ctx, fn, args, kw)
-		case cb := <-py.channels.callback:
-			py.log.Info("syscall", zap.Any("func", cb.args[0]))
-			val, err := py.cbs.Call(ctx, py.runID, py.syscallFn, cb.args, cb.kwargs)
-			if err != nil {
-				cb.errorChannel <- err
-			} else {
-				cb.successChannel <- val
-			}
+		case callbackErr := <-callbackErrChan:
+			return sdktypes.InvalidValue, callbackErr
 		case v := <-py.channels.done:
+			py.log.Info("done signal", zap.String("error", v.Error))
 			pCtx, cancel := context.WithTimeout(ctx, time.Second)
 			defer cancel()
 			py.drainPrints(pCtx)
 
 			done = v
 			if done.Error != "" {
+				py.log.Info("done error", zap.String("error", done.Error))
 				perr := sdktypes.NewProgramError(
 					sdktypes.NewStringValue(done.Error),
 					py.tracebackToLocation(done.Traceback),
@@ -549,6 +557,7 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 			}
 
 			if done.Result == nil {
+				py.log.Error("done: nil result")
 				return sdktypes.InvalidValue, errors.New("done result is nil")
 			}
 

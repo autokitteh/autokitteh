@@ -2,46 +2,34 @@ package sessions
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
-	"go.autokitteh.dev/autokitteh/internal/resolver"
 )
 
 var (
 	reason string
 	force  bool
+	delay  time.Duration
 )
 
 var stopCmd = common.StandardCommand(&cobra.Command{
-	Use:   "stop [session ID] [--reason <...>] [--force]",
+	Use:   "stop [session ID | project] [--reason <...>] [--force] [--delay t]",
 	Short: "Stop running session",
 	Args:  cobra.MaximumNArgs(1),
 
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if len(args) == 0 {
-			id, err := latestSessionID()
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
+		sid, err := acquireSessionID(args[0])
+		if err = common.AddNotFoundErrIfCond(err, sid.IsValid()); err != nil {
+			return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "session")
 		}
 
-		r := resolver.Resolver{Client: common.Client()}
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		s, id, err := r.SessionID(ctx, args[0])
-		if err != nil {
-			return err
-		}
-		if !s.IsValid() {
-			err = fmt.Errorf("session ID %q not found", args[0])
-			return common.NewExitCodeError(common.NotFoundExitCode, err)
-		}
-
-		if err = sessions().Stop(ctx, id, reason, force); err != nil {
+		if err = sessions().Stop(ctx, sid, reason, force, delay); err != nil {
 			return fmt.Errorf("stop session: %w", err)
 		}
 
@@ -53,4 +41,5 @@ func init() {
 	// Command-specific flags.
 	stopCmd.Flags().StringVarP(&reason, "reason", "r", "", "optional reason for stopping")
 	stopCmd.Flags().BoolVarP(&force, "force", "f", false, "terminate forcefully")
+	stopCmd.Flags().DurationVar(&delay, "delay", 0, "delay termination by specified duration")
 }

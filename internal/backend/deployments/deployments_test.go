@@ -7,12 +7,18 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
+
+func TestMain(m *testing.M) {
+	authz.DisableCheckForTesting()
+	m.Run()
+}
 
 var (
 	ids = []sdktypes.DeploymentID{
@@ -72,9 +78,9 @@ func (db *testDB) UpdateDeploymentState(_ context.Context, id sdktypes.Deploymen
 	return
 }
 
-func (db *testDB) ListSessions(_ context.Context, f sdkservices.ListSessionsFilter) (sdkservices.ListSessionResult, error) {
+func (db *testDB) ListSessions(_ context.Context, f sdkservices.ListSessionsFilter) (*sdkservices.ListSessionResult, error) {
 	if !f.CountOnly {
-		return sdkservices.ListSessionResult{}, nil
+		return nil, nil
 	}
 
 	var n int64
@@ -83,7 +89,7 @@ func (db *testDB) ListSessions(_ context.Context, f sdkservices.ListSessionsFilt
 		n = db.deployments[f.DeploymentID].NumRunningSessions
 	}
 
-	return sdkservices.ListSessionResult{
+	return &sdkservices.ListSessionResult{
 		PaginationResult: sdktypes.PaginationResult{
 			TotalCount: n,
 		},
@@ -92,7 +98,7 @@ func (db *testDB) ListSessions(_ context.Context, f sdkservices.ListSessionsFilt
 
 func newTestDeployments(deps map[sdktypes.DeploymentID]*testDeployment) *deployments {
 	return &deployments{
-		z:  zap.NewNop(),
+		l:  zap.NewNop(),
 		db: &testDB{deployments: deps},
 	}
 }

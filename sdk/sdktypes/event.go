@@ -15,11 +15,13 @@ import (
 
 type Event struct{ object[*EventPB, EventTraits] }
 
+func init() { registerObject[Event]() }
+
 var InvalidEvent Event
 
 type EventPB = eventv1.Event
 
-type EventTraits struct{}
+type EventTraits struct{ immutableObjectTrait }
 
 func (EventTraits) Validate(m *EventPB) error {
 	return errors.Join(

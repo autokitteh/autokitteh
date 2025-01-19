@@ -7,6 +7,45 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { Message, proto3 } from "@bufbuild/protobuf";
 
 /**
+ * @generated from enum autokitteh.users.v1.UserStatus
+ */
+export enum UserStatus {
+  /**
+   * @generated from enum value: USER_STATUS_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: USER_STATUS_ACTIVE = 1;
+   */
+  ACTIVE = 1,
+
+  /**
+   * not active yet, just invited.
+   *
+   * @generated from enum value: USER_STATUS_INVITED = 2;
+   */
+  INVITED = 2,
+
+  /**
+   * disabled, cannot login.
+   *
+   * @generated from enum value: USER_STATUS_DISABLED = 3;
+   */
+  DISABLED = 3,
+}
+// Retrieve enum metadata with: proto3.getEnumType(UserStatus)
+proto3.util.setEnumType(UserStatus, "autokitteh.users.v1.UserStatus", [
+  { no: 0, name: "USER_STATUS_UNSPECIFIED" },
+  { no: 1, name: "USER_STATUS_ACTIVE" },
+  { no: 2, name: "USER_STATUS_INVITED" },
+  { no: 3, name: "USER_STATUS_DISABLED" },
+]);
+
+/**
+ * `display_name` is a human-readable name for the user.
+ * `name` is a globally unique symbol for the user.
+ *
  * @generated from message autokitteh.users.v1.User
  */
 export class User extends Message<User> {
@@ -16,6 +55,8 @@ export class User extends Message<User> {
   userId = "";
 
   /**
+   * if email is empty, user cannot login.
+   *
    * @generated from field: string email = 2;
    */
   email = "";
@@ -26,9 +67,23 @@ export class User extends Message<User> {
   displayName = "";
 
   /**
+   * obsolete, use status instead.
+   *
    * @generated from field: bool disabled = 4;
    */
   disabled = false;
+
+  /**
+   * org to use for projects, if not otherwise specified.
+   *
+   * @generated from field: string default_org_id = 5;
+   */
+  defaultOrgId = "";
+
+  /**
+   * @generated from field: autokitteh.users.v1.UserStatus status = 6;
+   */
+  status = UserStatus.UNSPECIFIED;
 
   constructor(data?: PartialMessage<User>) {
     super();
@@ -42,6 +97,8 @@ export class User extends Message<User> {
     { no: 2, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "disabled", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "default_org_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "status", kind: "enum", T: proto3.getEnumType(UserStatus) },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): User {

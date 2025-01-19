@@ -12,11 +12,13 @@ type Integration struct {
 	object[*IntegrationPB, IntegrationTraits]
 }
 
+func init() { registerObject[Integration]() }
+
 var InvalidIntegration Integration
 
 type IntegrationPB = integrationv1.Integration
 
-type IntegrationTraits struct{}
+type IntegrationTraits struct{ immutableObjectTrait }
 
 func (IntegrationTraits) Validate(m *IntegrationPB) error {
 	return errors.Join(

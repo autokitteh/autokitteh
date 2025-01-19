@@ -118,7 +118,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	name := string(*i.Account.Login)
+	name := *i.Account.Login
 
 	events := fmt.Sprintf("%s", i.Events)
 	events = events[1 : len(events)-1]
@@ -132,12 +132,12 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 
 	c.Finalize(sdktypes.NewVars().
 		Set(vars.AppID, appID, false).
-		Set(vars.AppName, string(*i.AppSlug), false).
+		Set(vars.AppName, *i.AppSlug, false).
 		Set(vars.InstallID, installID, false).
 		Set(vars.TargetID, strconv.FormatInt(*i.TargetID, 10), false).
 		Set(vars.TargetName, name, false).
-		Set(vars.TargetType, string(*i.TargetType), false).
-		Set(vars.RepoSelection, string(*i.RepositorySelection), false).
+		Set(vars.TargetType, *i.TargetType, false).
+		Set(vars.RepoSelection, *i.RepositorySelection, false).
 		Set(vars.Permissions, ps, false).
 		Set(vars.Events, events, false).
 		Set(vars.UpdatedAt, i.UpdatedAt.Format(time.RFC3339), false).

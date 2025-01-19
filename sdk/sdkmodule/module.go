@@ -82,7 +82,7 @@ func (m *module) Configure(ctx context.Context, xid sdktypes.ExecutorID, cid sdk
 func (m *module) Call(ctx context.Context, fnv sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	name := fnv.GetFunction().Name()
 	if !name.IsValid() {
-		return sdktypes.InvalidValue, sdkerrors.ErrInvalidArgument{}
+		return sdktypes.InvalidValue, sdkerrors.InvalidArgumentError{}
 	}
 
 	fn, ok := m.opts.funcs[name.String()]

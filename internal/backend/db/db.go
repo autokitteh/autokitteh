@@ -53,9 +53,9 @@ type DB interface {
 	GetProjectByID(context.Context, sdktypes.ProjectID) (sdktypes.Project, error)
 
 	// Returns sdkerrors.ErrNotFound if not found.
-	GetProjectByName(context.Context, sdktypes.Symbol) (sdktypes.Project, error)
+	GetProjectByName(context.Context, sdktypes.OrgID, sdktypes.Symbol) (sdktypes.Project, error)
 
-	ListProjects(context.Context) ([]sdktypes.Project, error)
+	ListProjects(context.Context, sdktypes.OrgID) ([]sdktypes.Project, error)
 
 	// Returns nill, nil if no resources are set.
 	GetProjectResources(context.Context, sdktypes.ProjectID) (map[string][]byte, error)
@@ -111,15 +111,19 @@ type DB interface {
 	CreateDeployment(ctx context.Context, deployment sdktypes.Deployment) error
 	DeleteDeployment(ctx context.Context, deploymentID sdktypes.DeploymentID) error
 	DeploymentHasActiveSessions(ctx context.Context, deploymentID sdktypes.DeploymentID) (bool, error)
+	// Returns number of deployments affected.
+	DeactivateAllDrainedDeployments(ctx context.Context) (int, error)
+	// Returns true if the deployment was deactivated.
+	DeactivateDrainedDeployment(ctx context.Context, did sdktypes.DeploymentID) (bool, error)
 
 	// -----------------------------------------------------------------------
 	CreateSession(ctx context.Context, session sdktypes.Session) error
 	GetSession(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.Session, error)
-	GetSessionLog(ctx context.Context, filter sdkservices.ListSessionLogRecordsFilter) (sdkservices.GetLogResults, error)
+	GetSessionLog(ctx context.Context, filter sdkservices.ListSessionLogRecordsFilter) (*sdkservices.GetLogResults, error)
 	UpdateSessionState(ctx context.Context, sessionID sdktypes.SessionID, state sdktypes.SessionState) error
 	AddSessionPrint(ctx context.Context, sessionID sdktypes.SessionID, print string) error
 	AddSessionStopRequest(ctx context.Context, sessionID sdktypes.SessionID, reason string) error
-	ListSessions(ctx context.Context, f sdkservices.ListSessionsFilter) (sdkservices.ListSessionResult, error)
+	ListSessions(ctx context.Context, f sdkservices.ListSessionsFilter) (*sdkservices.ListSessionResult, error)
 	DeleteSession(ctx context.Context, sessionID sdktypes.SessionID) error
 
 	// -----------------------------------------------------------------------
@@ -139,18 +143,36 @@ type DB interface {
 
 	// -----------------------------------------------------------------------
 	CreateUser(ctx context.Context, user sdktypes.User) (sdktypes.UserID, error)
-	GetUserByEmail(ctx context.Context, email string) (sdktypes.User, error)
-	GetUserByID(ctx context.Context, id sdktypes.UserID) (sdktypes.User, error)
+	GetUser(ctx context.Context, uid sdktypes.UserID, email string) (sdktypes.User, error)
+	UpdateUser(ctx context.Context, user sdktypes.User, fieldMask *sdktypes.FieldMask) error
+
+	// -----------------------------------------------------------------------
+	CreateOrg(ctx context.Context, org sdktypes.Org) (sdktypes.OrgID, error)
+	GetOrg(ctx context.Context, oid sdktypes.OrgID, n sdktypes.Symbol) (sdktypes.Org, error)
+	DeleteOrg(ctx context.Context, oid sdktypes.OrgID) error
+	UpdateOrg(ctx context.Context, org sdktypes.Org, fm *sdktypes.FieldMask) error
+	ListOrgMembers(ctx context.Context, oid sdktypes.OrgID, includeUsers bool) ([]sdktypes.OrgMember, []sdktypes.User, error)
+	AddOrgMember(ctx context.Context, m sdktypes.OrgMember) error
+	UpdateOrgMember(ctx context.Context, m sdktypes.OrgMember, fm *sdktypes.FieldMask) error
+	RemoveOrgMember(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID) error
+	GetOrgMember(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID) (sdktypes.OrgMember, error)
+	GetOrgsForUser(ctx context.Context, uid sdktypes.UserID, includeOrgs bool) ([]sdktypes.OrgMember, []sdktypes.Org, error)
 
 	// -----------------------------------------------------------------------
 	SetSecret(ctx context.Context, key string, value string) error
 	GetSecret(ctx context.Context, key string) (string, error)
 	DeleteSecret(ctx context.Context, key string) error
 
-	// -----------------------------------------------------------------------
-	GetOwnership(ctx context.Context, entityID sdktypes.UUID) (sdktypes.User, error)
-
 	SetValue(ctx context.Context, pid sdktypes.ProjectID, key string, v sdktypes.Value) error
 	GetValue(ctx context.Context, pid sdktypes.ProjectID, key string) (sdktypes.Value, error)
 	ListValues(ctx context.Context, pid sdktypes.ProjectID) (map[string]sdktypes.Value, error)
+
+	// -----------------------------------------------------------------------
+
+	// Get the org id of an object.
+	// If err is nil, OrgID would always be valid.
+	GetOrgIDOf(ctx context.Context, id sdktypes.ID) (sdktypes.OrgID, error)
+
+	// Get project ID of an object.
+	GetProjectIDOf(ctx context.Context, id sdktypes.ID) (sdktypes.ProjectID, error)
 }

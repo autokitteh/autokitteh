@@ -9,7 +9,7 @@ import (
 
 type StructValuePB = valuev1.Struct
 
-type structValueTraits struct{}
+type structValueTraits struct{ immutableObjectTrait }
 
 func (structValueTraits) Validate(m *StructValuePB) error {
 	return errors.Join(
@@ -27,6 +27,8 @@ var _ objectTraits[*StructValuePB] = structValueTraits{}
 type StructValue struct {
 	object[*StructValuePB, structValueTraits]
 }
+
+func init() { registerObject[StructValue]() }
 
 func (StructValue) isConcreteValue() {}
 
@@ -58,7 +60,7 @@ func init() {
 
 type ModuleValuePB = valuev1.Module
 
-type moduleValueTraits struct{}
+type moduleValueTraits struct{ immutableObjectTrait }
 
 func (moduleValueTraits) Validate(m *ModuleValuePB) error {
 	return nil
@@ -73,6 +75,8 @@ var _ objectTraits[*ModuleValuePB] = moduleValueTraits{}
 type ModuleValue struct {
 	object[*ModuleValuePB, moduleValueTraits]
 }
+
+func init() { registerObject[ModuleValue]() }
 
 func (ModuleValue) isConcreteValue() {}
 

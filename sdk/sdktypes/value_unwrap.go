@@ -182,7 +182,7 @@ func (w ValueWrapper) unwrapInto(path string, dstv reflect.Value, v Value) error
 
 	// prefix is the string to prepend to error messages to indicate what errored.
 	if path != "" {
-		path = fmt.Sprintf("%s: ", path)
+		path += ": "
 	}
 
 	// deref ptrs if needed.

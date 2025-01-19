@@ -12,11 +12,13 @@ type BuildArtifact struct {
 	object[*BuildArtifactPB, BuildArtifactTraits]
 }
 
+func init() { registerObject[BuildArtifact]() }
+
 var InvalidBuildArtifact BuildArtifact
 
 type BuildArtifactPB = runtimesv1.Artifact
 
-type BuildArtifactTraits struct{}
+type BuildArtifactTraits struct{ immutableObjectTrait }
 
 func (BuildArtifactTraits) Validate(m *BuildArtifactPB) error {
 	return errors.Join(

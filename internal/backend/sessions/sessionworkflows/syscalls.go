@@ -10,6 +10,7 @@ import (
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncontext"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
@@ -26,7 +27,7 @@ const (
 
 func (w *sessionWorkflow) syscall(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	if len(args) == 0 {
-		return sdktypes.InvalidValue, fmt.Errorf("expecting syscall operation name as first argument")
+		return sdktypes.InvalidValue, errors.New("expecting syscall operation name as first argument")
 	}
 
 	var op string
@@ -91,7 +92,7 @@ func (w *sessionWorkflow) start(ctx context.Context, args []sdktypes.Value, kwar
 		WithDeploymentID(w.data.Session.DeploymentID()).
 		WithProjectID(w.data.Session.ProjectID())
 
-	sessionID, err := w.ws.sessions.Start(ctx, session)
+	sessionID, err := w.ws.sessions.Start(authcontext.SetAuthnSystemUser(ctx), session)
 	if err != nil {
 		return sdktypes.InvalidValue, err
 	}
@@ -120,11 +121,12 @@ func (w *sessionWorkflow) subscribe(ctx context.Context, args []sdktypes.Value, 
 
 	var did sdktypes.EventDestinationID
 
-	if connection.IsValid() {
+	switch {
+	case connection.IsValid():
 		did = sdktypes.NewEventDestinationID(connection.ID())
-	} else if trigger.IsValid() {
+	case trigger.IsValid():
 		did = sdktypes.NewEventDestinationID(trigger.ID())
-	} else {
+	default:
 		return sdktypes.InvalidValue, fmt.Errorf("source %q not found", name)
 	}
 

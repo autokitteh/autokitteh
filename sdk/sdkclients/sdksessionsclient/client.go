@@ -3,8 +3,10 @@ package sdksessionsclient
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"connectrpc.com/connect"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	sessionsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1"
@@ -44,11 +46,12 @@ func (c *client) Start(ctx context.Context, session sdktypes.Session) (sdktypes.
 	return pid, nil
 }
 
-func (c *client) Stop(ctx context.Context, sessionID sdktypes.SessionID, reason string, force bool) error {
+func (c *client) Stop(ctx context.Context, sessionID sdktypes.SessionID, reason string, force bool, forceTimeout time.Duration) error {
 	resp, err := c.client.Stop(ctx, connect.NewRequest(&sessionsv1.StopRequest{
-		SessionId: sessionID.String(),
-		Reason:    reason,
-		Terminate: force,
+		SessionId:        sessionID.String(),
+		Reason:           reason,
+		Terminate:        force,
+		TerminationDelay: durationpb.New(forceTimeout),
 	}))
 	if err != nil {
 		return rpcerrors.ToSDKError(err)
@@ -76,7 +79,7 @@ func (c *client) Get(ctx context.Context, sessionID sdktypes.SessionID) (sdktype
 	return sdktypes.SessionFromProto(resp.Msg.Session)
 }
 
-func (c *client) GetLog(ctx context.Context, filter sdkservices.ListSessionLogRecordsFilter) (sdkservices.GetLogResults, error) {
+func (c *client) GetLog(ctx context.Context, filter sdkservices.ListSessionLogRecordsFilter) (*sdkservices.GetLogResults, error) {
 	resp, err := c.client.GetLog(ctx, connect.NewRequest(&sessionsv1.GetLogRequest{
 		SessionId: filter.SessionID.String(),
 		PageSize:  filter.PageSize,
@@ -85,31 +88,30 @@ func (c *client) GetLog(ctx context.Context, filter sdkservices.ListSessionLogRe
 		Ascending: filter.Ascending,
 	}))
 	if err != nil {
-		return sdkservices.GetLogResults{Log: sdktypes.InvalidSessionLog}, rpcerrors.ToSDKError(err)
+		return nil, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
-		return sdkservices.GetLogResults{Log: sdktypes.InvalidSessionLog}, err
+		return nil, err
 	}
 	log, err := sdktypes.SessionLogFromProto(resp.Msg.Log)
 	if err != nil {
-		return sdkservices.GetLogResults{Log: sdktypes.InvalidSessionLog}, err
+		return nil, err
 	}
 
-	result := sdkservices.GetLogResults{
+	return &sdkservices.GetLogResults{
 		Log: log,
 		PaginationResult: sdktypes.PaginationResult{
 			TotalCount:    resp.Msg.Count,
 			NextPageToken: resp.Msg.NextPageToken,
 		},
-	}
-
-	return result, nil
+	}, nil
 }
 
-func (c *client) List(ctx context.Context, filter sdkservices.ListSessionsFilter) (sdkservices.ListSessionResult, error) {
+func (c *client) List(ctx context.Context, filter sdkservices.ListSessionsFilter) (*sdkservices.ListSessionResult, error) {
 	resp, err := c.client.List(ctx, connect.NewRequest(&sessionsv1.ListRequest{
 		DeploymentId: filter.DeploymentID.String(),
+		OrgId:        filter.OrgID.String(),
 		ProjectId:    filter.ProjectID.String(),
 		EventId:      filter.EventID.String(),
 		BuildId:      filter.BuildID.String(),
@@ -120,23 +122,25 @@ func (c *client) List(ctx context.Context, filter sdkservices.ListSessionsFilter
 		PageToken:    filter.PageToken,
 	}))
 	if err != nil {
-		return sdkservices.ListSessionResult{}, rpcerrors.ToSDKError(err)
+		return nil, rpcerrors.ToSDKError(err)
 	}
 
 	if err := internal.Validate(resp.Msg); err != nil {
-		return sdkservices.ListSessionResult{}, err
+		return nil, err
 	}
 
 	xs, err := kittehs.TransformError(resp.Msg.Sessions, sdktypes.SessionFromProto)
+	if err != nil {
+		return nil, err
+	}
 
-	res := sdkservices.ListSessionResult{
+	return &sdkservices.ListSessionResult{
 		Sessions: xs,
 		PaginationResult: sdktypes.PaginationResult{
 			TotalCount:    resp.Msg.Count,
 			NextPageToken: resp.Msg.NextPageToken,
 		},
-	}
-	return res, err
+	}, nil
 }
 
 func (c *client) Delete(ctx context.Context, sessionID sdktypes.SessionID) error {

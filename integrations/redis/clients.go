@@ -2,6 +2,7 @@ package redis
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -39,7 +40,7 @@ func loadConfig() *Config {
 
 	// See https://github.com/knadh/koanf#reading-environment-variables.
 	kittehs.Must0(k.Load(env.Provider(prefix, ".", func(s string) string {
-		return strings.Replace(strings.ToLower(strings.TrimPrefix(s, prefix)), "_", ".", -1)
+		return strings.ReplaceAll(strings.ToLower(strings.TrimPrefix(s, prefix)), "_", ".")
 	}), nil))
 
 	config := defaultConfig
@@ -79,7 +80,7 @@ func (m *module) externalClient(ctx context.Context) (*redis.Client, error) {
 
 	urlVar := vars.Get(urlVarName)
 	if !urlVar.IsValid() {
-		return nil, fmt.Errorf("missing URL var")
+		return nil, errors.New("missing URL var")
 	}
 
 	url := urlVar.Value()

@@ -2,8 +2,9 @@ package sessionworkflows
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/sdk/sdkexecutor"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
@@ -32,7 +33,7 @@ func (w *sessionWorkflow) newModule() sdkexecutor.Executor {
 
 func callopts(_ context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	if len(args) > 0 {
-		return sdktypes.InvalidValue, fmt.Errorf("expecting only key value arguments")
+		return sdktypes.InvalidValue, errors.New("expecting only key value arguments")
 	}
 
 	return sdktypes.NewStructValue(sdktypes.NewSymbolValue(fixtures.CallOptsCtorSymbol), kwargs)
@@ -46,7 +47,7 @@ func (w *sessionWorkflow) isDeploymentActive(ctx context.Context, args []sdktype
 	state := sdktypes.DeploymentStateUnspecified
 
 	if did := w.data.Session.DeploymentID(); did.IsValid() {
-		d, err := w.ws.svcs.Deployments.Get(ctx, did)
+		d, err := w.ws.svcs.Deployments.Get(authcontext.SetAuthnSystemUser(ctx), did)
 		if err != nil {
 			return sdktypes.InvalidValue, err
 		}

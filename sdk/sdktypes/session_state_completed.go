@@ -11,11 +11,13 @@ type SessionStateCompleted struct {
 	object[*SessionStateCompletedPB, SessionStateCompletedTraits]
 }
 
+func init() { registerObject[SessionStateCompleted]() }
+
 var InvalidSessionStateCompleted SessionStateCompleted
 
 type SessionStateCompletedPB = sessionv1.SessionState_Completed
 
-type SessionStateCompletedTraits struct{}
+type SessionStateCompletedTraits struct{ immutableObjectTrait }
 
 func (SessionStateCompleted) isConcreteSessionState() {}
 

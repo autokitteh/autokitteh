@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package autokitteh.users.v1;
+
+import "autokitteh/users/v1/user.proto";
+import "buf/validate/validate.proto";
+import "google/protobuf/field_mask.proto";
+
+message CreateRequest {
+  User user = 1 [(buf.validate.field).required = true];
+}
+
+message CreateResponse {
+  string user_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message GetRequest {
+  // at least one of these fields must be set.
+  string user_id = 1;
+  string email = 2;
+}
+
+message GetResponse {
+  User user = 1;
+}
+
+message UpdateRequest {
+  User user = 1 [(buf.validate.field).required = true];
+  google.protobuf.FieldMask field_mask = 2;
+}
+
+message UpdateResponse {}
+
+message GetIDRequest {
+  string email = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message GetIDResponse {
+  string user_id = 1;
+}
+
+service UsersService {
+  rpc Create(CreateRequest) returns (CreateResponse);
+  rpc Get(GetRequest) returns (GetResponse);
+  rpc GetID(GetIDRequest) returns (GetIDResponse);
+  rpc Update(UpdateRequest) returns (UpdateResponse);
+}

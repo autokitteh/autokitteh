@@ -56,7 +56,9 @@ class SessionsServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def Stop(self, request, context):
-        """Missing associated documentation comment in .proto file."""
+        """Will always try first to gracefully terminate the session.
+        Blocks only if `force` and forceDelay > 0`.
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')

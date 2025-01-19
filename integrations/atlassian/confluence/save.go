@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"go.uber.org/zap"
@@ -94,7 +95,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 		initData = initData.Set(webhookSecret(category), secret, true)
 		// }
 
-		initData = initData.Set(webhookID(category), fmt.Sprintf("%d", id), false)
+		initData = initData.Set(webhookID(category), strconv.Itoa(id), false)
 	}
 
 	c.Finalize(initData)

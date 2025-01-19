@@ -4,12 +4,13 @@ import (
 	"context"
 	"strconv"
 
+	"go.uber.org/zap"
+	"google.golang.org/api/calendar/v3"
+
 	"go.autokitteh.dev/autokitteh/integrations/google/internal/vars"
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.uber.org/zap"
-	"google.golang.org/api/calendar/v3"
 )
 
 // UpdateWatches creates or renews calendar watches for a specific

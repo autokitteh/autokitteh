@@ -1,12 +1,12 @@
 package sdktypes
 
-const sessionIDKind = "ses"
+const SessionIDKind = "ses"
 
 type SessionID = id[sessionIDTraits]
 
 type sessionIDTraits struct{}
 
-func (sessionIDTraits) Prefix() string { return sessionIDKind }
+func (sessionIDTraits) Prefix() string { return SessionIDKind }
 
 func NewSessionID() SessionID                          { return newID[SessionID]() }
 func ParseSessionID(s string) (SessionID, error)       { return ParseID[SessionID](s) }

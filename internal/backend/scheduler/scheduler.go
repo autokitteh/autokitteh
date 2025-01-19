@@ -10,6 +10,7 @@ import (
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -129,6 +130,8 @@ func (sch *Scheduler) Update(ctx context.Context, tid sdktypes.TriggerID, schedu
 
 func (sch *Scheduler) activity(ctx context.Context, tid sdktypes.TriggerID) error {
 	sl := sch.sl.With("trigger_id", tid)
+
+	ctx = authcontext.SetAuthnSystemUser(ctx)
 
 	t, err := sch.triggers.Get(ctx, tid)
 	if err != nil {

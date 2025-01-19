@@ -11,6 +11,8 @@ type Connection struct {
 	object[*ConnectionPB, ConnectionTraits]
 }
 
+func init() { registerObject[Connection]() }
+
 var InvalidConnection Connection
 
 type ConnectionPB = connectionv1.Connection
@@ -34,6 +36,8 @@ func (ConnectionTraits) StrictValidate(m *ConnectionPB) error {
 		mandatory("integration_id", m.IntegrationId),
 	)
 }
+
+func (ConnectionTraits) Mutables() []string { return []string{"name", "integration_id"} }
 
 func ConnectionFromProto(m *ConnectionPB) (Connection, error) { return FromProto[Connection](m) }
 func StrictConnectionFromProto(m *ConnectionPB) (Connection, error) {

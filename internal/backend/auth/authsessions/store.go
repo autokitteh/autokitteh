@@ -28,8 +28,8 @@ type sessionData struct {
 	CreatedAt time.Time
 }
 
-func NewSessionData(uid sdktypes.UserID) sessionData {
-	return sessionData{
+func NewSessionData(uid sdktypes.UserID) *sessionData {
+	return &sessionData{
 		UserID:    uid,
 		Validator: uuid.NewString(),
 		CreatedAt: time.Now(),
@@ -62,7 +62,7 @@ func New(cfg *Config) (Store, error) {
 
 	domain := cfg.Domain
 	if len(domain) > 0 && !strings.HasPrefix(domain, ".") {
-		domain = fmt.Sprintf(".%s", cfg.Domain)
+		domain = "." + cfg.Domain
 	}
 
 	cookieConfig := sessions.CookieConfig{

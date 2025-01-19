@@ -1,22 +1,25 @@
 package authhttpmiddleware
 
 import (
+	"errors"
 	"net/http"
 	"strings"
 
 	"go.uber.org/fx"
+	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authsessions"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authusers"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
-	akCtx "go.autokitteh.dev/autokitteh/internal/backend/context"
+	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 type Config struct {
-	// If set, not authn is required. The default user is always used.
+	// If set, no authn is required. If no other authn supplied,
+	// the default user will be considered authenticated.
 	UseDefaultUser bool `koanf:"use_default_user"`
 }
 
@@ -30,107 +33,137 @@ type AuthMiddlewareDecorator func(http.Handler) http.Handler
 type Deps struct {
 	fx.In
 
+	Logger   *zap.Logger
 	Cfg      *Config
-	Users    authusers.Users
+	Users    sdkservices.Users
 	Sessions authsessions.Store `optional:"true"`
 	Tokens   authtokens.Tokens  `optional:"true"`
 }
 
-func newTokensMiddleware(next http.Handler, deps Deps) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := akCtx.WithRequestOrginator(r.Context(), akCtx.User)
-		user := authcontext.GetAuthnUser(r.Context())
+type middlewareError struct {
+	code int
+	msg  string // must never contain sensitive data.
+}
+
+func (m *middlewareError) apply(w http.ResponseWriter) { http.Error(w, m.msg, m.code) }
+
+var (
+	invalidAuthHeaderErr = &middlewareError{http.StatusUnauthorized, "invalid authorization header"}
+	invalidTokenErr      = &middlewareError{http.StatusUnauthorized, "invalid token"}
+)
+
+// middlewareFn is a function that extracts a user ID from a request.
+// It returns the user ID and an error if the request is invalid.
+type middlewareFn func(*http.Request) (sdktypes.UserID, *middlewareError)
+
+func newTokensMiddleware(tokens authtokens.Tokens) middlewareFn {
+	return func(r *http.Request) (sdktypes.UserID, *middlewareError) {
 		authHdr := r.Header.Get("Authorization")
-
-		if deps.Cfg.UseDefaultUser {
-			if user.IsValid() || authHdr != "" {
-				http.Error(w, "only default user is allowed", http.StatusUnauthorized)
-				return
-			}
-			ctx = authcontext.SetAuthnUser(ctx, sdktypes.DefaultUser)
-		} else {
-			if !user.IsValid() && authHdr != "" {
-				kind, payload, _ := strings.Cut(authHdr, " ")
-				switch kind {
-				case "Bearer":
-					u, err := deps.Tokens.Parse(payload)
-					if err != nil {
-						http.Error(w, "invalid token", http.StatusUnauthorized)
-						return
-					}
-
-					// make sure the user exists.
-					u, err = deps.Users.GetByID(r.Context(), u.ID())
-					if err != nil {
-						http.Error(w, "unknown user", http.StatusUnauthorized)
-						return
-					}
-
-					if u.Disabled() {
-						http.Error(w, "user is disabled", http.StatusUnauthorized)
-						return
-					}
-
-					ctx = authcontext.SetAuthnUser(ctx, u)
-
-				default:
-					http.Error(w, "invalid authorization header", http.StatusUnauthorized)
-					return
-				}
-			}
+		if authHdr == "" {
+			return sdktypes.InvalidUserID, nil
 		}
 
-		r = r.WithContext(ctx)
-		next.ServeHTTP(w, r)
+		kind, payload, _ := strings.Cut(authHdr, " ")
+
+		if kind != "Bearer" {
+			return sdktypes.InvalidUserID, invalidAuthHeaderErr
+		}
+
+		u, err := tokens.Parse(payload)
+		if err != nil {
+			return sdktypes.InvalidUserID, invalidTokenErr
+		}
+
+		return u.ID(), nil
 	}
 }
 
-func newSessionsMiddleware(next http.Handler, sessions authsessions.Store, users authusers.Users) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-
-		if u := authcontext.GetAuthnUser(ctx); !u.IsValid() {
-			session, err := sessions.Get(r)
-			if err != nil {
-				http.Error(w, "invalid session", http.StatusUnauthorized)
-				return
-			}
-
-			if session != nil {
-				u, err := users.GetByID(r.Context(), session.UserID)
-				if err != nil {
-					http.Error(w, "invalid user", http.StatusUnauthorized)
-					return
-				}
-
-				r = r.WithContext(authcontext.SetAuthnUser(ctx, u))
-			}
+func newSessionsMiddleware(sessions authsessions.Store) middlewareFn {
+	return func(r *http.Request) (sdktypes.UserID, *middlewareError) {
+		session, err := sessions.Get(r)
+		// Do not fail on error - graceful degradation in case of session structure changes.
+		if err == nil && session != nil {
+			return session.UserID, nil
 		}
 
-		next.ServeHTTP(w, r)
+		return sdktypes.InvalidUserID, nil
 	}
+}
+
+func setDefaultUserMiddleware(r *http.Request) (sdktypes.UserID, *middlewareError) {
+	return authusers.DefaultUser.ID(), nil
 }
 
 func New(deps Deps) AuthMiddlewareDecorator {
-	return func(next http.Handler) http.Handler {
-		f := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if user := authcontext.GetAuthnUser(r.Context()); !user.IsValid() {
-				http.Error(w, "unauthorized user", http.StatusUnauthorized)
+	sessions, users, tokens := deps.Sessions, deps.Users, deps.Tokens
+
+	var mws []middlewareFn
+
+	if tokens != nil {
+		mws = append(mws, newTokensMiddleware(tokens))
+	}
+
+	if sessions != nil {
+		mws = append(mws, newSessionsMiddleware(sessions))
+	}
+
+	if deps.Cfg.UseDefaultUser {
+		mws = append(mws, setDefaultUserMiddleware)
+	}
+
+	return func(next http.Handler) http.Handler { // = AuthMiddlewareDecorator
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Process all middlewares.
+			var (
+				uid   sdktypes.UserID
+				mwErr *middlewareError
+			)
+
+			for _, mw := range mws {
+				// Stop processing middlewares if a valid user ID is found or there is an error.
+				if uid, mwErr = mw(r); uid.IsValid() || mwErr != nil {
+					break
+				}
+			}
+
+			l := deps.Logger
+
+			if mwErr != nil {
+				l.Info("auth middleware error", zap.Error(errors.New(mwErr.msg)))
+				mwErr.apply(w)
 				return
 			}
 
-			next.ServeHTTP(w, r)
+			// Check if authenticated.
+			if !uid.IsValid() {
+				l.Info("not authenticated")
+				http.Error(w, "unauthenticated", http.StatusUnauthorized)
+				return
+			}
+
+			// Hydrate user and check if it's active.
+			l = l.With(zap.String("user_id", uid.String()))
+
+			ctx := r.Context()
+
+			u, err := users.Get(authcontext.SetAuthnSystemUser(ctx), uid, "")
+			if err != nil {
+				l.Warn("failed to get user", zap.Error(err))
+				http.Error(w, "unknown user", http.StatusUnauthorized)
+				return
+			}
+
+			if u.Status() != sdktypes.UserStatusActive {
+				l.Info("user is not active")
+				http.Error(w, "user is not active", http.StatusUnauthorized)
+				return
+			}
+
+			ctx = authcontext.SetAuthnUser(ctx, u)
+
+			// Propagate the request to the next handler.
+			next.ServeHTTP(w, r.WithContext(ctx))
 		})
-
-		if deps.Sessions != nil {
-			f = newSessionsMiddleware(f, deps.Sessions, deps.Users)
-		}
-
-		if deps.Tokens != nil {
-			f = newTokensMiddleware(f, deps)
-		}
-
-		return f
 	}
 }
 

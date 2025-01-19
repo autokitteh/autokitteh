@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"google.golang.org/protobuf/proto"
@@ -117,7 +118,7 @@ func evaluateValue(v sdktypes.Value) (map[string]sdktypes.Value, error) {
 			v.Items(),
 			func(it sdktypes.DictItem) (string, sdktypes.Value, error) {
 				if !it.K.IsString() {
-					return "", sdktypes.InvalidValue, fmt.Errorf("dict key is not a string")
+					return "", sdktypes.InvalidValue, errors.New("dict key is not a string")
 				}
 				return it.K.GetString().Value(), it.V, nil
 			},
@@ -130,7 +131,7 @@ func evaluateValue(v sdktypes.Value) (map[string]sdktypes.Value, error) {
 	case sdktypes.ModuleValue:
 		exports = v.Members()
 	default:
-		return nil, fmt.Errorf("unhandled value type")
+		return nil, errors.New("unhandled value type")
 	}
 
 	return exports, nil

@@ -8,11 +8,13 @@ type SessionStateStopped struct {
 	object[*SessionStateStoppedPB, SessionStateStoppedTraits]
 }
 
+func init() { registerObject[SessionStateStopped]() }
+
 var InvalidSessionStateStopped SessionStateStopped
 
 type SessionStateStoppedPB = sessionv1.SessionState_Stopped
 
-type SessionStateStoppedTraits struct{}
+type SessionStateStoppedTraits struct{ immutableObjectTrait }
 
 func (SessionStateStopped) isConcreteSessionState() {}
 

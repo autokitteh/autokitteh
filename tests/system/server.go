@@ -2,14 +2,20 @@ package systest
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"maps"
+	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"testing"
 	"time"
 
 	"go.autokitteh.dev/autokitteh/backend/svc"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	"go.autokitteh.dev/autokitteh/tests/internal/svcproc"
 )
 
@@ -18,31 +24,56 @@ const (
 	serverReadyTimeout = 20 * time.Second
 )
 
+func writeSeedObjects(t *testing.T) (string, error) {
+	for _, sobj := range seedObjects {
+		t.Logf("seed object: %s", sobj)
+	}
+
+	path := filepath.Join(t.TempDir(), "autokitteh_seed_objects.json")
+
+	bs, err := json.Marshal(kittehs.Transform(seedObjects, sdktypes.NewAnyObject))
+	if err != nil {
+		return "", fmt.Errorf("marshal seed objects: %w", err)
+	}
+
+	if err := os.WriteFile(path, bs, 0o644); err != nil {
+		return "", fmt.Errorf("write seed objects: %w", err)
+	}
+
+	return path, nil
+}
+
 // Start the AK server, as an in-process goroutine rather than a separate
 // subprocess (to support breakpoint debugging, and measure test coverage),
 // unless the environment variable AK_SYSTEST_USE_PROC_SVC is set to "true".
-func startAKServer(ctx context.Context, akPath string) (svc.Service, string, error) {
+func startAKServer(t *testing.T, ctx context.Context, akPath string, userCfg map[string]any) (svc.Service, string, error) {
+	seedObjectsPath, err := writeSeedObjects(t)
+	if err != nil {
+		return nil, "", fmt.Errorf("write seed objects: %w", err)
+	}
+
 	runOpts := svc.RunOptions{Mode: "test"}
-	cfg := kittehs.Must1(svc.LoadConfig("", map[string]any{
+
+	cfgMap := map[string]any{
 		"db.type": "sqlite",
 		"db.dsn":  "file:autokitteh.sqlite", // In the test's temporary directory.
 
+		"pprof.enable":                        "false",
 		"http.addr":                           ":0",
 		"http.addr_filename":                  serverHTTPAddrFile, // In the test's temporary directory.
 		"authhttpmiddleware.use_default_user": "false",
-		"db.seed_commands":                    seedCommand,
-	}, ""))
+		"svc.seed_objects_path":               seedObjectsPath,
+	}
+
+	maps.Copy(cfgMap, userCfg)
 
 	// Instantiate the server, either as a subprocess or in-process.
-	var (
-		server svc.Service
-		err    error
-	)
+	var server svc.Service
 
 	if subproc, _ := strconv.ParseBool(os.Getenv("AK_SYSTEST_USE_PROC_SVC")); subproc {
-		server, err = svcproc.NewSvcProc(akPath, cfg, runOpts)
+		server, err = svcproc.NewSvcProc(akPath, cfgMap, runOpts)
 	} else {
-		server, err = svc.New(cfg, runOpts)
+		server, err = svc.New(kittehs.Must1(svc.LoadConfig("", cfgMap, "")), runOpts)
 	}
 	if err != nil {
 		return nil, "", fmt.Errorf("new AK server: %w", err)
@@ -96,7 +127,7 @@ func queryReadyz(result chan<- string) {
 
 		// For now, the availability of "/readyz" is sufficient,
 		// no need to check the response body yet.
-		if resp.resp.StatusCode == 200 {
+		if resp.resp.StatusCode == http.StatusOK {
 			result <- addr
 			return
 		}

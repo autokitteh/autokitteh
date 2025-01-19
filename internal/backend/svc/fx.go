@@ -24,7 +24,21 @@ func fxGetConfig[T any](path string, def T) func(c *Config) (*T, error) {
 }
 
 func chooseConfig[T any](set configset.Set[T]) (T, error) {
-	return set.Choose(configset.Mode(fxRunOpts.Mode))
+	return set.Choose(fxRunOpts.Mode)
+}
+
+// Make a specific configuration available to all components in the application.
+func SupplyConfig[T any](name string, set configset.Set[T]) fx.Option {
+	config, err := chooseConfig(set)
+	if err != nil {
+		return fx.Error(fmt.Errorf("%s: %w", name, err))
+	}
+
+	return fx.Module(
+		name,
+		fx.Provide(fxGetConfig(name, config)),
+		fx.Invoke(func(cfg *Config, c *T) { cfg.Store(name, c) }),
+	)
 }
 
 func Component[T any](name string, set configset.Set[T], opts ...fx.Option) fx.Option {

@@ -1,0 +1,90 @@
+# Preconditions: create & build project.
+
+ak project create --name my_project
+return code == 0
+
+ak project build my_project --file main.star -j
+return code == 0
+capture_jq bid .build_id
+
+# Preconditions: start a slow session, and wait for it to start running.
+ak session start --build-id $bid --project my_project --entrypoint main.star:main -j
+return code == 0
+capture_jq sid .session_id
+
+ak session watch $sid --fail --end-state RUNNING --timeout 5s
+return code == 0
+
+# Stop the session gracefully.
+ak session stop $sid --reason test
+return code == 0
+
+ak session watch $sid --timeout 5s
+return code == 0
+
+ak session log $sid -j
+return code == 0
+output contains "stop_request"
+
+ak session log $sid --page-size 1 --order desc --no-timestamps -j
+return code == 0
+output equals_json file last_state.json
+
+ak deploy --manifest test.yaml --file test.star
+return code == 0
+capture_re did dep_[0-9a-z]+
+
+ak session start --deployment-id $did --entrypoint test.star:test -j
+return code == 0
+capture_jq sid .session_id
+
+ak session watch $sid --no-timestamps --end-state RUNNING --timeout 7s
+return code == 0
+
+ak session stop $sid --reason test
+return code == 0
+
+ak session log $sid --no-timestamps -j
+return code == 0
+output equals file test.txt
+
+-- main.star --
+def main():
+  sleep(20)
+  print("finished")
+
+-- last_state.json --
+{
+  "state": {
+    "stopped": {
+      "reason": "test"
+    }
+  }
+}
+
+-- test.yaml --
+version: v1
+
+project:
+  name: test
+  connections:
+    - name: mytest
+      integration: test
+
+-- test.star --
+load("@test", "mytest")
+
+def test():
+  print("started")
+  mytest.freeze(10, True)
+  print("finished")
+
+-- test.txt --
+{"state":{"created":{}}}
+{"state":{"running":{"run_id":"run_0000000000000000000000000a"}}}
+{"state":{"running":{"run_id":"run_0000000000000000000000000a","call":{"function":{"executor_id":"run_0000000000000000000000000a","name":"test","desc":{},"data":"dGVzdCMx"}}}}}
+{"print":{"text":"started"}}
+{"call_spec":{"function":{"function":{"executor_id":"int_3kth00testaf9d33c5697341f0","name":"freeze","desc":{"input":[{"name":"duration","optional":true},{"name":"allow_cancel","optional":true}]},"data":"Y29uXzAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA2"}},"args":[{"integer":{"v":"10"}},{"boolean":{"v":true}}],"seq":1}}
+{"call_attempt_start":{}}
+{"stop_request":{"reason":"test"}}
+{"state":{"stopped":{"reason":"test"}}}

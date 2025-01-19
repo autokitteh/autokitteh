@@ -4,7 +4,7 @@
 // @ts-nocheck
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
-import { Message, proto3, protoInt64 } from "@bufbuild/protobuf";
+import { Duration, Message, proto3, protoInt64 } from "@bufbuild/protobuf";
 import { Session, SessionLog, SessionLogRecord_Type, SessionStateType } from "./session_pb.js";
 
 /**
@@ -104,11 +104,20 @@ export class StopRequest extends Message<StopRequest> {
   reason = "";
 
   /**
-   * non-graceful
+   * !terminate:                          gracefully terminate the session.
+   * terminate && termination_delay == 0: gracefully terminate the session and then immediately
+   *                                      forcefully terminate the session.
+   * terminate && termination_delay > 0:  will gracefully termination first and if not stopped
+   *                                      after delay, will forcefully terminate.
    *
    * @generated from field: bool terminate = 3;
    */
   terminate = false;
+
+  /**
+   * @generated from field: google.protobuf.Duration termination_delay = 4;
+   */
+  terminationDelay?: Duration;
 
   constructor(data?: PartialMessage<StopRequest>) {
     super();
@@ -121,6 +130,7 @@ export class StopRequest extends Message<StopRequest> {
     { no: 1, name: "session_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "reason", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "terminate", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 4, name: "termination_delay", kind: "message", T: Duration },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): StopRequest {
@@ -201,6 +211,11 @@ export class ListRequest extends Message<ListRequest> {
   stateType = SessionStateType.UNSPECIFIED;
 
   /**
+   * @generated from field: string org_id = 6;
+   */
+  orgId = "";
+
+  /**
    * @generated from field: bool count_only = 10;
    */
   countOnly = false;
@@ -236,6 +251,7 @@ export class ListRequest extends Message<ListRequest> {
     { no: 3, name: "event_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "build_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "state_type", kind: "enum", T: proto3.getEnumType(SessionStateType) },
+    { no: 6, name: "org_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "count_only", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 20, name: "page_size", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 21, name: "skip", kind: "scalar", T: 5 /* ScalarType.INT32 */ },

@@ -17,7 +17,7 @@ type Executors struct {
 
 func (ms *Executors) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	if !v.IsFunction() {
-		return sdktypes.InvalidValue, sdkerrors.ErrInvalidArgument{}
+		return sdktypes.InvalidValue, sdkerrors.InvalidArgumentError{}
 	}
 
 	xid := v.GetFunction().ExecutorID()

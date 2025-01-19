@@ -3,13 +3,14 @@ package dispatcher
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
-	akCtx "go.autokitteh.dev/autokitteh/internal/backend/context"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
@@ -50,12 +51,6 @@ func New(l *zap.Logger, cfg *Config, svcs Svcs) *Dispatcher {
 }
 
 func (d *Dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) (sdktypes.EventID, error) {
-	ctx = akCtx.WithRequestOrginator(ctx, akCtx.Dispatcher)
-	var err error
-	if ctx, err = akCtx.WithOwnershipOf(ctx, d.svcs.DB.GetOwnership, event.DestinationID().UUIDValue()); err != nil {
-		return sdktypes.InvalidEventID, fmt.Errorf("ownership: %w", err)
-	}
-
 	event = event.WithCreatedAt(time.Now())
 	eid, err := d.svcs.Events.Save(ctx, event)
 	if err != nil {
@@ -67,12 +62,16 @@ func (d *Dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *s
 
 	sl.Infof("event saved: %v", eid)
 
+	if err := authz.CheckContext(ctx, event.ID(), "dispatch", authz.WithData("event", event), authz.WithData("opts", opts)); err != nil {
+		return sdktypes.InvalidEventID, err
+	}
+
 	memo := map[string]string{
 		"event_id":         eid.String(),
 		"event_uuid":       eid.UUIDValue().String(),
 		"destination_id":   event.DestinationID().String(),
 		"destination_uuid": event.DestinationID().UUIDValue().String(),
-		"seq":              fmt.Sprintf("%d", event.Seq()),
+		"seq":              strconv.FormatUint(event.Seq(), 10),
 		"process_id":       fixtures.ProcessID(),
 	}
 
@@ -101,7 +100,6 @@ func (d *Dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *s
 func (d *Dispatcher) Redispatch(ctx context.Context, eventID sdktypes.EventID, opts *sdkservices.DispatchOptions) (sdktypes.EventID, error) {
 	sl := d.sl.With("event_id", eventID)
 
-	ctx = akCtx.WithRequestOrginator(ctx, akCtx.Dispatcher)
 	event, err := d.svcs.Events.Get(ctx, eventID)
 	if err != nil {
 		return sdktypes.InvalidEventID, err
@@ -109,6 +107,10 @@ func (d *Dispatcher) Redispatch(ctx context.Context, eventID sdktypes.EventID, o
 
 	if !event.IsValid() {
 		return sdktypes.InvalidEventID, sdkerrors.ErrNotFound
+	}
+
+	if err := authz.CheckContext(ctx, eventID, "redispatch", authz.WithData("event", event), authz.WithData("opts", opts)); err != nil {
+		return sdktypes.InvalidEventID, err
 	}
 
 	memo := event.Memo()

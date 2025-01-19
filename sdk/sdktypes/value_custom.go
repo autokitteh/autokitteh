@@ -9,7 +9,7 @@ import (
 
 type CustomValuePB = valuev1.Custom
 
-type customValueTraits struct{}
+type customValueTraits struct{ immutableObjectTrait }
 
 func (customValueTraits) Validate(m *CustomValuePB) error {
 	return errors.Join(
@@ -29,6 +29,8 @@ var _ objectTraits[*CustomValuePB] = customValueTraits{}
 type CustomValue struct {
 	object[*CustomValuePB, customValueTraits]
 }
+
+func init() { registerObject[CustomValue]() }
 
 func (CustomValue) isConcreteValue() {}
 

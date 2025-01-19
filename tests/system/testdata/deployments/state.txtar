@@ -6,17 +6,17 @@ resp code == 202
 
 wait 5s for session ses_00000000000000000000000007
 
-ak session log --prints-only
+ak session log my_project --prints-only
 return code == 0
 output contains 'True'
 
 http get /webhooks/00000000000000000000000003/long
 resp code == 202
 
-ak session watch ses_0000000000000000000000000b --end-state RUNNING
+ak session watch ses_0000000000000000000000000a --end-state RUNNING --wait-created
 return code == 0
 
-ak session watch ses_0000000000000000000000000b -r "still alive!"
+ak session watch ses_0000000000000000000000000a -r "still alive!"
 return code == 0
 
 ak deployment deactivate dep_00000000000000000000000005
@@ -28,7 +28,7 @@ output contains 'DEPLOYMENT_STATE_DRAINING'
 
 wait 5s for session ses_0000000000000000000000000a
 
-ak session log --prints-only
+ak session log --prints-only -p my_project
 return code == 0
 output contains 'done'
 

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/araddon/dateparse"
@@ -16,11 +17,13 @@ import (
 
 type Value struct{ object[*ValuePB, ValueTraits] }
 
+func init() { registerObject[Value]() }
+
 var InvalidValue Value
 
 type ValuePB = valuev1.Value
 
-type ValueTraits struct{}
+type ValueTraits struct{ immutableObjectTrait }
 
 func validateValue(m *ValuePB) error {
 	return errors.Join(
@@ -148,11 +151,11 @@ func (v Value) ToString() (string, error) {
 	case StringValue:
 		return v.Value(), nil
 	case IntegerValue:
-		return fmt.Sprintf("%d", v.Value()), nil
+		return strconv.FormatInt(v.Value(), 10), nil
 	case FloatValue:
 		return fmt.Sprintf("%f", v.Value()), nil
 	case BooleanValue:
-		return fmt.Sprintf("%t", v.Value()), nil
+		return strconv.FormatBool(v.Value()), nil
 	case DurationValue:
 		return v.Value().String(), nil
 	case TimeValue:

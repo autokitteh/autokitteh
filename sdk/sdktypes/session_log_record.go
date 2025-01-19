@@ -13,11 +13,13 @@ type SessionLogRecord struct {
 	object[*SessionLogRecordPB, SessionLogRecordTraits]
 }
 
+func init() { registerObject[SessionLogRecord]() }
+
 var InvalidSessionLogRecord SessionLogRecord
 
 type SessionLogRecordPB = sessionv1.SessionLogRecord
 
-type SessionLogRecordTraits struct{}
+type SessionLogRecordTraits struct{ immutableObjectTrait }
 
 func (SessionLogRecordTraits) Validate(m *SessionLogRecordPB) error {
 	return errors.Join(

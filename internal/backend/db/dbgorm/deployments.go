@@ -3,8 +3,8 @@ package dbgorm
 import (
 	"context"
 	"fmt"
-	"time"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
@@ -14,27 +14,18 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func (gdb *gormdb) withUserDeployments(ctx context.Context) *gorm.DB {
-	return gdb.withUserEntity(ctx, "deployment")
-}
-
 func (gdb *gormdb) createDeployment(ctx context.Context, d *scheme.Deployment) error {
-	createFunc := func(tx *gorm.DB, uid string) error { return tx.Create(d).Error }
-	return gormErrNotFoundToForeignKey(
-		gdb.createEntityWithOwnership(ctx, createFunc, d, &d.BuildID, d.ProjectID))
+	return gormErrNotFoundToForeignKey(gdb.db.WithContext(ctx).Create(d).Error)
 }
 
-func (gdb *gormdb) deleteDeployment(ctx context.Context, deploymentID sdktypes.UUID) error {
+func (gdb *gormdb) deleteDeployment(ctx context.Context, deploymentID uuid.UUID) error {
 	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isCtxUserEntity(tx.ctx, deploymentID); err != nil {
-			return err
-		}
-		return tx.deleteDeploymentsAndDependents(ctx, []sdktypes.UUID{deploymentID})
+		return tx.deleteDeploymentsAndDependents(ctx, []uuid.UUID{deploymentID})
 	})
 }
 
 // delete deployments and relevant sessions
-func (gdb *gormdb) deleteDeploymentsAndDependents(ctx context.Context, depIDs []sdktypes.UUID) error {
+func (gdb *gormdb) deleteDeploymentsAndDependents(ctx context.Context, depIDs []uuid.UUID) error {
 	// NOTE: should be transactional
 
 	if len(depIDs) == 0 {
@@ -57,7 +48,7 @@ func (gdb *gormdb) deleteDeploymentsAndDependents(ctx context.Context, depIDs []
 
 func (gdb *gormdb) updateDeploymentState(
 	ctx context.Context,
-	deploymentID sdktypes.UUID,
+	deploymentID uuid.UUID,
 	state sdktypes.DeploymentState,
 ) (sdktypes.DeploymentState, error) {
 	// NOTES:
@@ -72,15 +63,14 @@ func (gdb *gormdb) updateDeploymentState(
 	var oldState int32 = 0
 
 	if err := gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.isCtxUserEntity(tx.ctx, deploymentID); err != nil {
-			return err
-		}
-
 		if err := tx.db.Model(&d).Select("state").First(&oldState).Error; err != nil {
 			return err
 		}
 
-		if err := tx.db.Model(&d).Update("state", int32(state.ToProto())).Error; err != nil {
+		data := updatedBaseColumns(ctx)
+		data["state"] = int32(state.ToProto())
+
+		if err := tx.db.Model(&d).UpdateColumns(data).Error; err != nil {
 			return err
 		}
 		return nil
@@ -91,12 +81,16 @@ func (gdb *gormdb) updateDeploymentState(
 	return state, nil
 }
 
-func (gdb *gormdb) getDeployment(ctx context.Context, deploymentID sdktypes.UUID) (*scheme.Deployment, error) {
-	return getOne[scheme.Deployment](gdb.withUserDeployments(ctx), "deployment_id = ?", deploymentID)
+func (gdb *gormdb) getDeployment(ctx context.Context, deploymentID uuid.UUID) (*scheme.Deployment, error) {
+	return getOne[scheme.Deployment](gdb.db.WithContext(ctx), "deployment_id = ?", deploymentID)
 }
 
 func (gdb *gormdb) listDeploymentsCommonQuery(ctx context.Context, filter sdkservices.ListDeploymentsFilter) *gorm.DB {
-	q := gdb.withUserDeployments(ctx)
+	q := gdb.db.WithContext(ctx)
+
+	q = withProjectID(q, "deployments", filter.ProjectID)
+
+	q = withProjectOrgID(q, filter.OrgID, "deployments")
 
 	if filter.BuildID.IsValid() {
 		q = q.Where("deployments.build_id = ?", filter.BuildID.UUIDValue())
@@ -112,8 +106,7 @@ func (gdb *gormdb) listDeploymentsCommonQuery(ctx context.Context, filter sdkser
 		q = q.Limit(int(filter.Limit))
 	}
 
-	q = q.Order("created_at desc")
-	return q
+	return q.Order("deployments.deployment_id desc")
 }
 
 func (db *gormdb) listDeploymentsWithStats(ctx context.Context, filter sdkservices.ListDeploymentsFilter) ([]scheme.DeploymentWithStats, error) {
@@ -157,15 +150,12 @@ func (db *gormdb) CreateDeployment(ctx context.Context, deployment sdktypes.Depl
 		return err
 	}
 
-	now := time.Now()
-
 	d := scheme.Deployment{
+		Base:         based(ctx),
+		ProjectID:    deployment.ProjectID().UUIDValue(),
 		DeploymentID: deployment.ID().UUIDValue(),
 		BuildID:      deployment.BuildID().UUIDValue(),
-		ProjectID:    scheme.UUIDOrNil(deployment.ProjectID().UUIDValue()),
 		State:        int32(deployment.State().ToProto()),
-		CreatedAt:    now,
-		UpdatedAt:    now,
 	}
 	return translateError(db.createDeployment(ctx, &d))
 }
@@ -227,4 +217,44 @@ func (db *gormdb) DeploymentHasActiveSessions(ctx context.Context, id sdktypes.D
 	}
 
 	return r.TotalCount > 0, nil
+}
+
+var finalSessionStateTypes = kittehs.Transform(sdktypes.FinalSessionStateTypes, func(s sdktypes.SessionStateType) int { return s.ToInt() })
+
+func (db *gormdb) DeactivateAllDrainedDeployments(ctx context.Context) (int, error) {
+	q := db.db.WithContext(ctx).Exec(`UPDATE deployments
+SET state = ?
+WHERE state = ?
+AND NOT EXISTS (
+    SELECT 1
+    FROM sessions
+    WHERE sessions.deployment_id = deployments.deployment_id
+		AND sessions.current_state_type NOT IN (?)
+);`,
+		sdktypes.DeploymentStateInactive.ToInt(), sdktypes.DeploymentStateDraining.ToInt(), finalSessionStateTypes)
+
+	if err := q.Error; err != nil {
+		return 0, translateError(err)
+	}
+
+	return int(q.RowsAffected), nil
+}
+
+func (db *gormdb) DeactivateDrainedDeployment(ctx context.Context, did sdktypes.DeploymentID) (bool, error) {
+	q := db.db.WithContext(ctx).Exec(`UPDATE deployments
+SET state = ?
+WHERE state = ? AND deployment_id = ?
+AND NOT EXISTS (
+	SELECT 1
+	FROM sessions
+	WHERE sessions.deployment_id = deployments.deployment_id
+		AND sessions.current_state_type NOT IN (?)
+);`,
+		sdktypes.DeploymentStateInactive.ToInt(), sdktypes.DeploymentStateDraining.ToInt(), did.UUIDValue(), finalSessionStateTypes)
+
+	if err := q.Error; err != nil {
+		return false, translateError(err)
+	}
+
+	return int(q.RowsAffected) > 0, nil
 }

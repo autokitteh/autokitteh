@@ -10,9 +10,11 @@ type ModuleFunction struct {
 	object[*ModuleFunctionPB, ModuleFunctionTraits]
 }
 
+func init() { registerObject[ModuleFunction]() }
+
 type ModuleFunctionPB = modulev1.Function
 
-type ModuleFunctionTraits struct{}
+type ModuleFunctionTraits struct{ immutableObjectTrait }
 
 var InvalidModuleFunction ModuleFunction
 

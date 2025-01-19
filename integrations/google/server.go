@@ -21,6 +21,8 @@ const (
 
 	// calWebhookPath is the URL path to receive incoming Google Calendar push notifications.
 	calWebhookPath = "/googlecalendar/notif"
+	// driveWebhookPath is the URL path to receive incoming Google Drive push notifications.
+	driveWebhookPath = "/googledrive/notif"
 	// formsWebhookPath is the URL path to receive incoming Google Forms push notifications.
 	formsWebhookPath = "/googleforms/notif"
 	// gmailWebhookPath is the URL path to receive incoming Gmail push notifications.
@@ -29,7 +31,7 @@ const (
 
 // Start initializes all the HTTP handlers of all the Google integrations.
 // This includes connection UIs, initialization webhooks, and event webhooks.
-func Start(l *zap.Logger, muxes *muxes.Muxes, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.Dispatcher) {
+func Start(l *zap.Logger, muxes *muxes.Muxes, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.DispatchFunc) {
 	uiPath := "GET " + desc.ConnectionURL().Path + "/"
 
 	// Connection UI.
@@ -64,6 +66,7 @@ func Start(l *zap.Logger, muxes *muxes.Muxes, v sdkservices.Vars, o sdkservices.
 
 	// Event webhooks (unauthenticated by definition).
 	muxes.NoAuth.HandleFunc("POST "+calWebhookPath, h.handleCalNotification)
+	muxes.NoAuth.HandleFunc("POST "+driveWebhookPath, h.handleDriveNotification)
 	muxes.NoAuth.HandleFunc("POST "+formsWebhookPath, h.handleFormsNotification)
 	muxes.NoAuth.HandleFunc("POST "+gmailWebhookPath, h.handleGmailNotification)
 }

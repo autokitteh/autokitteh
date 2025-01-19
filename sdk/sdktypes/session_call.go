@@ -10,11 +10,13 @@ type SessionCall struct {
 	object[*SessionCallPB, SessionCallTraits]
 }
 
+func init() { registerObject[SessionCall]() }
+
 var InvalidSessionCall SessionCall
 
 type SessionCallPB = sessionv1.Call
 
-type SessionCallTraits struct{}
+type SessionCallTraits struct{ immutableObjectTrait }
 
 func (SessionCallTraits) Validate(m *SessionCallPB) error {
 	return errors.Join(

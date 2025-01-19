@@ -3,13 +3,14 @@ package webplatform
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/web/webplatform"
 )
@@ -65,7 +66,7 @@ func (w *Svc) Start(context.Context) error {
 	fsrv := http.FileServer(http.FS(webfs))
 
 	srv := &http.Server{
-		Addr: fmt.Sprintf("localhost:%d", w.Config.Port),
+		Addr: kittehs.BindingAddress(strconv.Itoa(w.Config.Port)),
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// If path actually exists in fs, serve it.
 			if f, _ := webfs.Open(strings.TrimPrefix(r.URL.Path, "/")); f != nil {
@@ -79,7 +80,7 @@ func (w *Svc) Start(context.Context) error {
 		}),
 	}
 
-	w.addr = srv.Addr
+	w.addr = kittehs.DisplayAddress(srv.Addr)
 
 	go func() {
 		err := srv.ListenAndServe()

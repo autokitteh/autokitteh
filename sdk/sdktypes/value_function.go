@@ -14,7 +14,7 @@ import (
 
 type FunctionValuePB = valuev1.Function
 
-type functionValueTraits struct{}
+type functionValueTraits struct{ immutableObjectTrait }
 
 func (functionValueTraits) Validate(m *FunctionValuePB) error {
 	return errors.Join(
@@ -36,6 +36,8 @@ var _ objectTraits[*FunctionValuePB] = functionValueTraits{}
 type FunctionValue struct {
 	object[*FunctionValuePB, functionValueTraits]
 }
+
+func init() { registerObject[FunctionValue]() }
 
 func (FunctionValue) isConcreteValue() {}
 
@@ -159,7 +161,7 @@ func NewConstFunctionError(name string, in error) (Value, error) {
 
 func (f FunctionValue) ConstValue() (Value, error) {
 	if !f.HasFlag(ConstFunctionFlag) {
-		return InvalidValue, fmt.Errorf("function is not a const")
+		return InvalidValue, errors.New("function is not a const")
 	}
 
 	bs := f.m.Data
