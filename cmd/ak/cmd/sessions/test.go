@@ -1,6 +1,7 @@
 package sessions
 
 import (
+	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
@@ -139,10 +140,16 @@ var testCmd = common.StandardCommand(&cobra.Command{
 
 		for _, r := range rs {
 			if p, ok := r.GetPrint(); ok {
-				p = normalizePath(p)
+				s := bufio.NewScanner(strings.NewReader(p))
+				for s.Scan() {
+					line := normalizePath(s.Text())
+					prints.WriteString(line)
+					prints.WriteRune('\n')
+				}
 
-				prints.WriteString(p)
-				prints.WriteRune('\n')
+				if err := s.Err(); err != nil {
+					return fmt.Errorf("scan print: %w", err)
+				}
 			}
 		}
 
