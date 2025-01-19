@@ -73,10 +73,12 @@ func checkNoTriggers(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string][]
 	if len(m.Project.Triggers) == 0 {
 		return []*sdktypes.CheckViolation{
 			{
-				FileName: manifestFilePath,
-				Level:    sdktypes.ViolationWarning,
-				Message:  "no triggers",
-				RuleId:   "W2",
+				Location: &sdktypes.CodeLocationPB{
+					Path: manifestFilePath,
+				},
+				Level:   sdktypes.ViolationWarning,
+				Message: "no triggers",
+				RuleId:  "W2",
 			},
 		}
 	}
@@ -89,10 +91,12 @@ func checkEmptyVars(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string][]b
 	for _, v := range m.Project.Vars {
 		if v.Value == "" {
 			vs = append(vs, &sdktypes.CheckViolation{
-				FileName: manifestFilePath,
-				Level:    sdktypes.ViolationWarning,
-				Message:  fmt.Sprintf("variable %q is empty", v.Name),
-				RuleId:   "W1",
+				Location: &sdktypes.CodeLocationPB{
+					Path: manifestFilePath,
+				},
+				Level:   sdktypes.ViolationWarning,
+				Message: fmt.Sprintf("variable %q is empty", v.Name),
+				RuleId:  "W1",
 			})
 		}
 	}
@@ -101,10 +105,12 @@ func checkEmptyVars(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string][]b
 		for _, v := range conn.Vars {
 			if v.Value == "" {
 				vs = append(vs, &sdktypes.CheckViolation{
-					FileName: manifestFilePath,
-					Level:    sdktypes.ViolationWarning,
-					Message:  fmt.Sprintf("connection %q variable %q is empty", conn.Name, v.Name),
-					RuleId:   "W1",
+					Location: &sdktypes.CodeLocationPB{
+						Path: manifestFilePath,
+					},
+					Level:   sdktypes.ViolationWarning,
+					Message: fmt.Sprintf("connection %q variable %q is empty", conn.Name, v.Name),
+					RuleId:  "W1",
 				})
 			}
 		}
@@ -129,10 +135,12 @@ func checkSize(_ sdktypes.ProjectID, _ *manifest.Manifest, resources map[string]
 		sizeMB := float64(total) / mb
 		return []*sdktypes.CheckViolation{
 			{
-				FileName: manifestFilePath,
-				Level:    sdktypes.ViolationError,
-				Message:  fmt.Sprintf("project size (%.2fMB) exceeds limt of %dMB", sizeMB, maxProjectSize/mb),
-				RuleId:   "E2",
+				Location: &sdktypes.CodeLocationPB{
+					Path: manifestFilePath,
+				},
+				Level:   sdktypes.ViolationError,
+				Message: fmt.Sprintf("project size (%.2fMB) exceeds limt of %dMB", sizeMB, maxProjectSize/mb),
+				RuleId:  "E2",
 			},
 		}
 	}
@@ -150,19 +158,23 @@ func checkConnectionNames(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[stri
 	for name, count := range names {
 		if _, err := sdktypes.ParseSymbol(name); err != nil {
 			vs = append(vs, &sdktypes.CheckViolation{
-				FileName: manifestFilePath,
-				Level:    sdktypes.ViolationError,
-				Message:  fmt.Sprintf("%q - malformed name (%s)", name, err),
-				RuleId:   "E10",
+				Location: &sdktypes.CodeLocationPB{
+					Path: manifestFilePath,
+				},
+				Level:   sdktypes.ViolationError,
+				Message: fmt.Sprintf("%q - malformed name (%s)", name, err),
+				RuleId:  "E10",
 			})
 		}
 
 		if count > 1 {
 			vs = append(vs, &sdktypes.CheckViolation{
-				FileName: manifestFilePath,
-				Level:    sdktypes.ViolationWarning,
-				Message:  fmt.Sprintf("%d connections are named %q", count, name),
-				RuleId:   "E3",
+				Location: &sdktypes.CodeLocationPB{
+					Path: manifestFilePath,
+				},
+				Level:   sdktypes.ViolationWarning,
+				Message: fmt.Sprintf("%d connections are named %q", count, name),
+				RuleId:  "E3",
 			})
 		}
 	}
@@ -180,19 +192,23 @@ func checkTriggerNames(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string]
 	for name, count := range names {
 		if _, err := sdktypes.ParseSymbol(name); err != nil {
 			vs = append(vs, &sdktypes.CheckViolation{
-				FileName: manifestFilePath,
-				Level:    sdktypes.ViolationError,
-				Message:  fmt.Sprintf("%q - malformed name (%s)", name, err),
-				RuleId:   "E10",
+				Location: &sdktypes.CodeLocationPB{
+					Path: manifestFilePath,
+				},
+				Level:   sdktypes.ViolationError,
+				Message: fmt.Sprintf("%q - malformed name (%s)", name, err),
+				RuleId:  "E10",
 			})
 		}
 
 		if count > 1 {
 			vs = append(vs, &sdktypes.CheckViolation{
-				FileName: manifestFilePath,
-				Level:    sdktypes.ViolationWarning,
-				Message:  fmt.Sprintf("%d triggers are named %q", count, name),
-				RuleId:   "E4",
+				Location: &sdktypes.CodeLocationPB{
+					Path: manifestFilePath,
+				},
+				Level:   sdktypes.ViolationWarning,
+				Message: fmt.Sprintf("%d triggers are named %q", count, name),
+				RuleId:  "E4",
 			})
 		}
 	}
@@ -214,10 +230,12 @@ func checkHandlers(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[str
 		loc, err := sdktypes.StrictParseCodeLocation(t.Call)
 		if err != nil {
 			vs = append(vs, &sdktypes.CheckViolation{
-				FileName: manifestFilePath,
-				Level:    sdktypes.ViolationError,
-				Message:  fmt.Sprintf(`%q - bad call definition (should be something like "handler.py:on_event")`, t.Call),
-				RuleId:   "E5",
+				Location: &sdktypes.CodeLocationPB{
+					Path: manifestFilePath,
+				},
+				Level:   sdktypes.ViolationError,
+				Message: fmt.Sprintf(`%q - bad call definition (should be something like "handler.py:on_event")`, t.Call),
+				RuleId:  "E5",
 			})
 			continue
 		}
@@ -226,10 +244,12 @@ func checkHandlers(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[str
 		data, ok := resources[fileName]
 		if !ok {
 			vs = append(vs, &sdktypes.CheckViolation{
-				FileName: manifestFilePath,
-				Level:    sdktypes.ViolationError,
-				Message:  fmt.Sprintf("file %q not found", fileName),
-				RuleId:   "E6",
+				Location: &sdktypes.CodeLocationPB{
+					Path: manifestFilePath,
+				},
+				Level:   sdktypes.ViolationError,
+				Message: fmt.Sprintf("file %q not found", fileName),
+				RuleId:  "E6",
 			})
 			continue
 		}
@@ -237,10 +257,12 @@ func checkHandlers(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[str
 		exports, err := fileExports(fileName, data)
 		if err != nil {
 			vs = append(vs, &sdktypes.CheckViolation{
-				FileName: manifestFilePath,
-				Level:    sdktypes.ViolationError,
-				Message:  fmt.Sprintf("can't parse %q - %s", fileName, err),
-				RuleId:   "E7",
+				Location: &sdktypes.CodeLocationPB{
+					Path: manifestFilePath,
+				},
+				Level:   sdktypes.ViolationError,
+				Message: fmt.Sprintf("can't parse %q - %s", fileName, err),
+				RuleId:  "E7",
 			})
 			continue
 		}
@@ -248,10 +270,12 @@ func checkHandlers(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[str
 		handler := loc.Name()
 		if exports != nil && !slices.Contains(exports, handler) {
 			vs = append(vs, &sdktypes.CheckViolation{
-				FileName: manifestFilePath,
-				Level:    sdktypes.ViolationError,
-				Message:  fmt.Sprintf("%q not found in %q", handler, fileName),
-				RuleId:   "E8",
+				Location: &sdktypes.CodeLocationPB{
+					Path: manifestFilePath,
+				},
+				Level:   sdktypes.ViolationError,
+				Message: fmt.Sprintf("%q not found in %q", handler, fileName),
+				RuleId:  "E8",
 			})
 			continue
 		}
@@ -278,11 +302,13 @@ func checkCodeConnections(_ sdktypes.ProjectID, m *manifest.Manifest, resources 
 		for _, conn := range fn(code) {
 			if !defConns[conn.Name] {
 				vs = append(vs, &sdktypes.CheckViolation{
-					FileName: fileName,
-					Line:     conn.Line,
-					Message:  fmt.Sprintf("%q - non existing connection", conn.Name),
-					Level:    sdktypes.ViolationError,
-					RuleId:   "E9",
+					Location: &sdktypes.CodeLocationPB{
+						Path: manifestFilePath,
+						Row:  conn.Line,
+					},
+					Message: fmt.Sprintf("%q - non existing connection", conn.Name),
+					Level:   sdktypes.ViolationError,
+					RuleId:  "E9",
 				})
 
 			}
@@ -296,10 +322,12 @@ func checkProjectName(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[
 	if _, err := sdktypes.ParseSymbol(m.Project.Name); err != nil {
 		return []*sdktypes.CheckViolation{
 			{
-				FileName: manifestFilePath,
-				Message:  fmt.Sprintf("%q - bad project name (%s)", m.Project.Name, err),
-				Level:    sdktypes.ViolationError,
-				RuleId:   "E10",
+				Location: &sdktypes.CodeLocationPB{
+					Path: manifestFilePath,
+				},
+				Message: fmt.Sprintf("%q - bad project name (%s)", m.Project.Name, err),
+				Level:   sdktypes.ViolationError,
+				RuleId:  "E10",
 			},
 		}
 	}

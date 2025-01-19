@@ -6,7 +6,7 @@
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3 } from "@bufbuild/protobuf";
 import { Project } from "./project_pb.js";
-import { Error } from "../../program/v1/program_pb.js";
+import { CodeLocation, Error } from "../../program/v1/program_pb.js";
 
 /**
  * @generated from message autokitteh.projects.v1.CreateRequest
@@ -745,27 +745,22 @@ export class LintRequest extends Message<LintRequest> {
  */
 export class CheckViolation extends Message<CheckViolation> {
   /**
-   * @generated from field: string file_name = 1;
+   * @generated from field: autokitteh.program.v1.CodeLocation location = 1;
    */
-  fileName = "";
+  location?: CodeLocation;
 
   /**
-   * @generated from field: uint32 line = 2;
-   */
-  line = 0;
-
-  /**
-   * @generated from field: autokitteh.projects.v1.CheckViolation.Level level = 3;
+   * @generated from field: autokitteh.projects.v1.CheckViolation.Level level = 2;
    */
   level = CheckViolation_Level.UNSPECIFIED;
 
   /**
-   * @generated from field: string message = 4;
+   * @generated from field: string message = 3;
    */
   message = "";
 
   /**
-   * @generated from field: string rule_id = 5;
+   * @generated from field: string rule_id = 4;
    */
   ruleId = "";
 
@@ -777,11 +772,10 @@ export class CheckViolation extends Message<CheckViolation> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "autokitteh.projects.v1.CheckViolation";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "file_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "line", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 3, name: "level", kind: "enum", T: proto3.getEnumType(CheckViolation_Level) },
-    { no: 4, name: "message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "rule_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "location", kind: "message", T: CodeLocation },
+    { no: 2, name: "level", kind: "enum", T: proto3.getEnumType(CheckViolation_Level) },
+    { no: 3, name: "message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "rule_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CheckViolation {

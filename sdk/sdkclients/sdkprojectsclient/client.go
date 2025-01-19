@@ -230,10 +230,12 @@ func (c *client) Lint(ctx context.Context, pid sdktypes.ProjectID, resources map
 
 	violations := kittehs.Transform(resp.Msg.Violations, func(v *projectsv1.CheckViolation) *sdktypes.CheckViolation {
 		return &sdktypes.CheckViolation{
-			FileName: v.FileName,
-			Line:     v.Line,
-			Level:    v.Level,
-			Message:  v.Message,
+			Location: &sdktypes.CodeLocationPB{
+				Path: v.Location.Path,
+				Row:  v.Location.Row,
+			},
+			Level:   v.Level,
+			Message: v.Message,
 		}
 	})
 	return violations, nil

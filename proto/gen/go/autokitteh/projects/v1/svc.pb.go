@@ -993,11 +993,10 @@ type CheckViolation struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	FileName string               `protobuf:"bytes,1,opt,name=file_name,json=fileName,proto3" json:"file_name,omitempty"`
-	Line     uint32               `protobuf:"varint,2,opt,name=line,proto3" json:"line,omitempty"`
-	Level    CheckViolation_Level `protobuf:"varint,3,opt,name=level,proto3,enum=autokitteh.projects.v1.CheckViolation_Level" json:"level,omitempty"`
-	Message  string               `protobuf:"bytes,4,opt,name=message,proto3" json:"message,omitempty"`
-	RuleId   string               `protobuf:"bytes,5,opt,name=rule_id,json=ruleId,proto3" json:"rule_id,omitempty"`
+	Location *v1.CodeLocation     `protobuf:"bytes,1,opt,name=location,proto3" json:"location,omitempty"`
+	Level    CheckViolation_Level `protobuf:"varint,2,opt,name=level,proto3,enum=autokitteh.projects.v1.CheckViolation_Level" json:"level,omitempty"`
+	Message  string               `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
+	RuleId   string               `protobuf:"bytes,4,opt,name=rule_id,json=ruleId,proto3" json:"rule_id,omitempty"`
 }
 
 func (x *CheckViolation) Reset() {
@@ -1032,18 +1031,11 @@ func (*CheckViolation) Descriptor() ([]byte, []int) {
 	return file_autokitteh_projects_v1_svc_proto_rawDescGZIP(), []int{19}
 }
 
-func (x *CheckViolation) GetFileName() string {
+func (x *CheckViolation) GetLocation() *v1.CodeLocation {
 	if x != nil {
-		return x.FileName
+		return x.Location
 	}
-	return ""
-}
-
-func (x *CheckViolation) GetLine() uint32 {
-	if x != nil {
-		return x.Line
-	}
-	return 0
+	return nil
 }
 
 func (x *CheckViolation) GetLevel() CheckViolation_Level {
@@ -1261,18 +1253,19 @@ var file_autokitteh_projects_v1_svc_proto_rawDesc = []byte{
 	0x52, 0x65, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x10,
 	0x0a, 0x03, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79,
 	0x12, 0x14, 0x0a, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0c, 0x52,
-	0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x22, 0xfc, 0x01, 0x0a, 0x0e, 0x43,
-	0x68, 0x65, 0x63, 0x6b, 0x56, 0x69, 0x6f, 0x6c, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x1b, 0x0a,
-	0x09, 0x66, 0x69, 0x6c, 0x65, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
-	0x52, 0x08, 0x66, 0x69, 0x6c, 0x65, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x6c, 0x69,
-	0x6e, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x04, 0x6c, 0x69, 0x6e, 0x65, 0x12, 0x42,
-	0x0a, 0x05, 0x6c, 0x65, 0x76, 0x65, 0x6c, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x2c, 0x2e,
+	0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x22, 0x8c, 0x02, 0x0a, 0x0e, 0x43,
+	0x68, 0x65, 0x63, 0x6b, 0x56, 0x69, 0x6f, 0x6c, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x3f, 0x0a,
+	0x08, 0x6c, 0x6f, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32,
+	0x23, 0x2e, 0x61, 0x75, 0x74, 0x6f, 0x6b, 0x69, 0x74, 0x74, 0x65, 0x68, 0x2e, 0x70, 0x72, 0x6f,
+	0x67, 0x72, 0x61, 0x6d, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x6f, 0x64, 0x65, 0x4c, 0x6f, 0x63, 0x61,
+	0x74, 0x69, 0x6f, 0x6e, 0x52, 0x08, 0x6c, 0x6f, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x42,
+	0x0a, 0x05, 0x6c, 0x65, 0x76, 0x65, 0x6c, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x2c, 0x2e,
 	0x61, 0x75, 0x74, 0x6f, 0x6b, 0x69, 0x74, 0x74, 0x65, 0x68, 0x2e, 0x70, 0x72, 0x6f, 0x6a, 0x65,
 	0x63, 0x74, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x56, 0x69, 0x6f, 0x6c,
 	0x61, 0x74, 0x69, 0x6f, 0x6e, 0x2e, 0x4c, 0x65, 0x76, 0x65, 0x6c, 0x52, 0x05, 0x6c, 0x65, 0x76,
-	0x65, 0x6c, 0x12, 0x18, 0x0a, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x18, 0x04, 0x20,
+	0x65, 0x6c, 0x12, 0x18, 0x0a, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x18, 0x03, 0x20,
 	0x01, 0x28, 0x09, 0x52, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x12, 0x17, 0x0a, 0x07,
-	0x72, 0x75, 0x6c, 0x65, 0x5f, 0x69, 0x64, 0x18, 0x05, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x72,
+	0x72, 0x75, 0x6c, 0x65, 0x5f, 0x69, 0x64, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x72,
 	0x75, 0x6c, 0x65, 0x49, 0x64, 0x22, 0x42, 0x0a, 0x05, 0x4c, 0x65, 0x76, 0x65, 0x6c, 0x12, 0x15,
 	0x0a, 0x11, 0x4c, 0x45, 0x56, 0x45, 0x4c, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46,
 	0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x11, 0x0a, 0x0d, 0x4c, 0x45, 0x56, 0x45, 0x4c, 0x5f, 0x57,
@@ -1402,6 +1395,7 @@ var file_autokitteh_projects_v1_svc_proto_goTypes = []interface{}{
 	nil,                               // 24: autokitteh.projects.v1.LintRequest.ResourcesEntry
 	(*Project)(nil),                   // 25: autokitteh.projects.v1.Project
 	(*v1.Error)(nil),                  // 26: autokitteh.program.v1.Error
+	(*v1.CodeLocation)(nil),           // 27: autokitteh.program.v1.CodeLocation
 }
 var file_autokitteh_projects_v1_svc_proto_depIdxs = []int32{
 	25, // 0: autokitteh.projects.v1.CreateRequest.project:type_name -> autokitteh.projects.v1.Project
@@ -1412,33 +1406,34 @@ var file_autokitteh_projects_v1_svc_proto_depIdxs = []int32{
 	22, // 5: autokitteh.projects.v1.SetResourcesRequest.resources:type_name -> autokitteh.projects.v1.SetResourcesRequest.ResourcesEntry
 	23, // 6: autokitteh.projects.v1.DownloadResourcesResponse.resources:type_name -> autokitteh.projects.v1.DownloadResourcesResponse.ResourcesEntry
 	24, // 7: autokitteh.projects.v1.LintRequest.resources:type_name -> autokitteh.projects.v1.LintRequest.ResourcesEntry
-	0,  // 8: autokitteh.projects.v1.CheckViolation.level:type_name -> autokitteh.projects.v1.CheckViolation.Level
-	20, // 9: autokitteh.projects.v1.LintResponse.violations:type_name -> autokitteh.projects.v1.CheckViolation
-	1,  // 10: autokitteh.projects.v1.ProjectsService.Create:input_type -> autokitteh.projects.v1.CreateRequest
-	3,  // 11: autokitteh.projects.v1.ProjectsService.Delete:input_type -> autokitteh.projects.v1.DeleteRequest
-	5,  // 12: autokitteh.projects.v1.ProjectsService.Get:input_type -> autokitteh.projects.v1.GetRequest
-	7,  // 13: autokitteh.projects.v1.ProjectsService.Update:input_type -> autokitteh.projects.v1.UpdateRequest
-	9,  // 14: autokitteh.projects.v1.ProjectsService.List:input_type -> autokitteh.projects.v1.ListRequest
-	11, // 15: autokitteh.projects.v1.ProjectsService.Build:input_type -> autokitteh.projects.v1.BuildRequest
-	13, // 16: autokitteh.projects.v1.ProjectsService.SetResources:input_type -> autokitteh.projects.v1.SetResourcesRequest
-	15, // 17: autokitteh.projects.v1.ProjectsService.DownloadResources:input_type -> autokitteh.projects.v1.DownloadResourcesRequest
-	17, // 18: autokitteh.projects.v1.ProjectsService.Export:input_type -> autokitteh.projects.v1.ExportRequest
-	19, // 19: autokitteh.projects.v1.ProjectsService.Lint:input_type -> autokitteh.projects.v1.LintRequest
-	2,  // 20: autokitteh.projects.v1.ProjectsService.Create:output_type -> autokitteh.projects.v1.CreateResponse
-	4,  // 21: autokitteh.projects.v1.ProjectsService.Delete:output_type -> autokitteh.projects.v1.DeleteResponse
-	6,  // 22: autokitteh.projects.v1.ProjectsService.Get:output_type -> autokitteh.projects.v1.GetResponse
-	8,  // 23: autokitteh.projects.v1.ProjectsService.Update:output_type -> autokitteh.projects.v1.UpdateResponse
-	10, // 24: autokitteh.projects.v1.ProjectsService.List:output_type -> autokitteh.projects.v1.ListResponse
-	12, // 25: autokitteh.projects.v1.ProjectsService.Build:output_type -> autokitteh.projects.v1.BuildResponse
-	14, // 26: autokitteh.projects.v1.ProjectsService.SetResources:output_type -> autokitteh.projects.v1.SetResourcesResponse
-	16, // 27: autokitteh.projects.v1.ProjectsService.DownloadResources:output_type -> autokitteh.projects.v1.DownloadResourcesResponse
-	18, // 28: autokitteh.projects.v1.ProjectsService.Export:output_type -> autokitteh.projects.v1.ExportResponse
-	21, // 29: autokitteh.projects.v1.ProjectsService.Lint:output_type -> autokitteh.projects.v1.LintResponse
-	20, // [20:30] is the sub-list for method output_type
-	10, // [10:20] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	27, // 8: autokitteh.projects.v1.CheckViolation.location:type_name -> autokitteh.program.v1.CodeLocation
+	0,  // 9: autokitteh.projects.v1.CheckViolation.level:type_name -> autokitteh.projects.v1.CheckViolation.Level
+	20, // 10: autokitteh.projects.v1.LintResponse.violations:type_name -> autokitteh.projects.v1.CheckViolation
+	1,  // 11: autokitteh.projects.v1.ProjectsService.Create:input_type -> autokitteh.projects.v1.CreateRequest
+	3,  // 12: autokitteh.projects.v1.ProjectsService.Delete:input_type -> autokitteh.projects.v1.DeleteRequest
+	5,  // 13: autokitteh.projects.v1.ProjectsService.Get:input_type -> autokitteh.projects.v1.GetRequest
+	7,  // 14: autokitteh.projects.v1.ProjectsService.Update:input_type -> autokitteh.projects.v1.UpdateRequest
+	9,  // 15: autokitteh.projects.v1.ProjectsService.List:input_type -> autokitteh.projects.v1.ListRequest
+	11, // 16: autokitteh.projects.v1.ProjectsService.Build:input_type -> autokitteh.projects.v1.BuildRequest
+	13, // 17: autokitteh.projects.v1.ProjectsService.SetResources:input_type -> autokitteh.projects.v1.SetResourcesRequest
+	15, // 18: autokitteh.projects.v1.ProjectsService.DownloadResources:input_type -> autokitteh.projects.v1.DownloadResourcesRequest
+	17, // 19: autokitteh.projects.v1.ProjectsService.Export:input_type -> autokitteh.projects.v1.ExportRequest
+	19, // 20: autokitteh.projects.v1.ProjectsService.Lint:input_type -> autokitteh.projects.v1.LintRequest
+	2,  // 21: autokitteh.projects.v1.ProjectsService.Create:output_type -> autokitteh.projects.v1.CreateResponse
+	4,  // 22: autokitteh.projects.v1.ProjectsService.Delete:output_type -> autokitteh.projects.v1.DeleteResponse
+	6,  // 23: autokitteh.projects.v1.ProjectsService.Get:output_type -> autokitteh.projects.v1.GetResponse
+	8,  // 24: autokitteh.projects.v1.ProjectsService.Update:output_type -> autokitteh.projects.v1.UpdateResponse
+	10, // 25: autokitteh.projects.v1.ProjectsService.List:output_type -> autokitteh.projects.v1.ListResponse
+	12, // 26: autokitteh.projects.v1.ProjectsService.Build:output_type -> autokitteh.projects.v1.BuildResponse
+	14, // 27: autokitteh.projects.v1.ProjectsService.SetResources:output_type -> autokitteh.projects.v1.SetResourcesResponse
+	16, // 28: autokitteh.projects.v1.ProjectsService.DownloadResources:output_type -> autokitteh.projects.v1.DownloadResourcesResponse
+	18, // 29: autokitteh.projects.v1.ProjectsService.Export:output_type -> autokitteh.projects.v1.ExportResponse
+	21, // 30: autokitteh.projects.v1.ProjectsService.Lint:output_type -> autokitteh.projects.v1.LintResponse
+	21, // [21:31] is the sub-list for method output_type
+	11, // [11:21] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_autokitteh_projects_v1_svc_proto_init() }

@@ -89,13 +89,13 @@ func findProjectNameOrID(projectNameOrID string, projectDir string, m *manifest.
 func printViolationText(w io.Writer, v *projectsv1.CheckViolation) {
 	level := levelName(v.Level)
 	// FIXME (ENG-1867): RuleId arrives as empty string.
-	fmt.Fprintf(w, "%s:%d - %s - %s\n", v.FileName, v.Line, level, v.Message)
+	fmt.Fprintf(w, "%s:%d - %s - %s\n", v.Location.Path, v.Location.Row, level, v.Message)
 }
 
 func violation2map(v *projectsv1.CheckViolation) map[string]any {
 	return map[string]any{
-		"file":    v.FileName,
-		"line":    v.Line,
+		"file":    v.Location.Path,
+		"line":    v.Location.Row,
 		"level":   levelName(v.Level),
 		"message": v.Message,
 	}
@@ -136,9 +136,11 @@ func runLint(cmd *cobra.Command, args []string) error {
 
 	if len(resources) > maxFiles {
 		v := projectsv1.CheckViolation{
-			FileName: manifestFile,
-			Level:    projectsv1.CheckViolation_LEVEL_WARNING,
-			Message:  "outdated manifest",
+			Location: &sdktypes.CodeLocationPB{
+				Path: manifestFile,
+			},
+			Level:   projectsv1.CheckViolation_LEVEL_WARNING,
+			Message: "outdated manifest",
 		}
 		printViolation(w, &v)
 		return fmt.Errorf("too many files (%d > %d)", len(resources), maxFiles)
@@ -167,9 +169,11 @@ func runLint(cmd *cobra.Command, args []string) error {
 			}
 			if len(actions) > 0 {
 				v := projectsv1.CheckViolation{
-					FileName: manifestFile,
-					Level:    projectsv1.CheckViolation_LEVEL_WARNING,
-					Message:  "outdated manifest",
+					Location: &sdktypes.CodeLocationPB{
+						Path: manifestFile,
+					},
+					Level:   projectsv1.CheckViolation_LEVEL_WARNING,
+					Message: "outdated manifest",
 				}
 				printViolation(w, &v)
 			}
