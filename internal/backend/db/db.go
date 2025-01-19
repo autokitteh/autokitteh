@@ -147,7 +147,7 @@ type DB interface {
 	UpdateUser(ctx context.Context, user sdktypes.User, fieldMask *sdktypes.FieldMask) error
 
 	// -----------------------------------------------------------------------
-	CreateOrg(ctx context.Context, user sdktypes.Org) (sdktypes.OrgID, error)
+	CreateOrg(ctx context.Context, org sdktypes.Org) (sdktypes.OrgID, error)
 	GetOrg(ctx context.Context, oid sdktypes.OrgID, n sdktypes.Symbol) (sdktypes.Org, error)
 	DeleteOrg(ctx context.Context, oid sdktypes.OrgID) error
 	UpdateOrg(ctx context.Context, org sdktypes.Org, fm *sdktypes.FieldMask) error

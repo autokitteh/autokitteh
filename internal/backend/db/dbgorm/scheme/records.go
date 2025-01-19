@@ -569,7 +569,7 @@ type Org struct {
 
 	OrgID       uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
 	DisplayName string
-	Name        string `gorm:"uniqueIndex"`
+	Name        string `gorm:"index"`
 
 	UpdatedBy uuid.UUID `gorm:"type:uuid"`
 	UpdatedAt time.Time
