@@ -24,32 +24,28 @@ import (
 
 var (
 	// /tmp/ak-user-2767870919/main.py:6.1,main
-	trimRe = regexp.MustCompile(`\/.*\/ak-user-.*?\/`)
+	userRe = regexp.MustCompile(`\/.*\/ak-user-.*?\/`)
 	// runner/main.py:6.1,main, in _call
-	runnerRe = regexp.MustCompile(`.*runner.*/.*\.py`)
+	runnerRe = regexp.MustCompile(`.*runner.*/.*\.py.*`)
+
+	// File "/opt/hostedtoolcache/Python/3.12.8/x64/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result`
+	pyLibRe = regexp.MustCompile(`File ".*/lib/python3\.\d+/(.*\.py)", line (\d+), in (.*)`)
 )
 
 func normalizePath(p string) string {
 	// Remove location specific prefix of Python standard library.
-	const pyLibPrefix = "/lib/python"
-	i := strings.Index(p, pyLibPrefix)
-	if i != -1 {
-		p = p[i+len(pyLibPrefix):]
-
-		j := strings.Index(p, "/")
-		if j > 0 {
-			p = "py/" + p[j+1:]
-		}
-
-		return p
+	line := pyLibRe.ReplaceAllString(p, `py-lib/$1, line XXX, in $3`)
+	if line != p {
+		return line
 	}
 
+	// Too many changes in runner, just show runner
 	if runnerRe.MatchString(p) {
-		return ""
+		return "   ak-runner"
 	}
 
-	// Remove ak-runner and ak-user.
-	return trimRe.ReplaceAllString(p, "")
+	// Remove /tmp/ak-userXXX prefix.
+	return userRe.ReplaceAllString(p, "")
 }
 
 var testCmd = common.StandardCommand(&cobra.Command{

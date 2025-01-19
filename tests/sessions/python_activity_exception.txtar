@@ -1,8 +1,22 @@
 before
-py/concurrent/futures/_base.py", line 456, in result
+error: division by zero
+
+Traceback (most recent call last):
+   ak-runner
+    value = fn(*args, **kw)
+            ^^^^^^^^^^^^^^^
+  File "main.py", line 6, in main
+    step()
+   ak-runner
+    return self.runner.call_in_activity(func, args, kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   ak-runner
+    return fut.result()
+           ^^^^^^^^^^^^
+  py-lib/concurrent/futures/_base.py, line XXX, in result
     return self.__get_result()
            ^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+  py-lib/concurrent/futures/_base.py, line XXX, in __get_result
     raise self._exception
 ZeroDivisionError: division by zero
 -- main.py:main --

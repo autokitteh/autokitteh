@@ -11,10 +11,9 @@ var normCases = []struct {
 	normed string
 }{
 	{"", ""},
-	{"/usr/lib/python3.12/concurrent/futures/_base.py", "py/concurrent/futures/_base.py"},
 	{
 		`File "/opt/hostedtoolcache/Python/3.12.8/x64/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result`,
-		`py/concurrent/futures/_base.py", line 401, in __get_result`,
+		`py-lib/concurrent/futures/_base.py, line XXX, in __get_result`,
 	},
 	{"/tmp/ak-user-2767870919/main.py:6.1,main", "main.py:6.1,main"},
 	{"/tmp/ak-runner-2767870918/main.py:6.1,main", ""},
