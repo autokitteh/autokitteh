@@ -76,10 +76,16 @@ message ListResponse {
 
 message BuildRequest {
   string project_id = 1 [(buf.validate.field).string.min_len = 1];
+
+  // if set to true, just create the build and return.
+  // the build will be processed asynchronously.
+  bool async = 2;
 }
 
 message BuildResponse {
   string build_id = 1;
+
+  // if async, this will be empty.
   program.v1.Error error = 2;
 }
 

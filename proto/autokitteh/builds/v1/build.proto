@@ -2,10 +2,24 @@ syntax = "proto3";
 
 package autokitteh.builds.v1;
 
+import "autokitteh/program/v1/program.proto";
 import "google/protobuf/timestamp.proto";
 
 message Build {
   string build_id = 1;
   string project_id = 2;
+
+  BuildStatus status = 4;
+  program.v1.Error error = 5; // populated if status == ERROR.
+
   google.protobuf.Timestamp created_at = 3;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+enum BuildStatus {
+  BUILD_STATUS_UNSPECIFIED = 0;
+  BUILD_STATUS_PENDING = 1;
+  BUILD_STATUS_IN_PROGRESS = 2;
+  BUILD_STATUS_READY = 3;
+  BUILD_STATUS_ERROR = 4;
 }

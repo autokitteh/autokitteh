@@ -5,6 +5,45 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3, Timestamp } from "@bufbuild/protobuf";
+import { Error } from "../../program/v1/program_pb.js";
+
+/**
+ * @generated from enum autokitteh.builds.v1.BuildStatus
+ */
+export enum BuildStatus {
+  /**
+   * @generated from enum value: BUILD_STATUS_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: BUILD_STATUS_PENDING = 1;
+   */
+  PENDING = 1,
+
+  /**
+   * @generated from enum value: BUILD_STATUS_IN_PROGRESS = 2;
+   */
+  IN_PROGRESS = 2,
+
+  /**
+   * @generated from enum value: BUILD_STATUS_READY = 3;
+   */
+  READY = 3,
+
+  /**
+   * @generated from enum value: BUILD_STATUS_ERROR = 4;
+   */
+  ERROR = 4,
+}
+// Retrieve enum metadata with: proto3.getEnumType(BuildStatus)
+proto3.util.setEnumType(BuildStatus, "autokitteh.builds.v1.BuildStatus", [
+  { no: 0, name: "BUILD_STATUS_UNSPECIFIED" },
+  { no: 1, name: "BUILD_STATUS_PENDING" },
+  { no: 2, name: "BUILD_STATUS_IN_PROGRESS" },
+  { no: 3, name: "BUILD_STATUS_READY" },
+  { no: 4, name: "BUILD_STATUS_ERROR" },
+]);
 
 /**
  * @generated from message autokitteh.builds.v1.Build
@@ -21,9 +60,26 @@ export class Build extends Message<Build> {
   projectId = "";
 
   /**
+   * @generated from field: autokitteh.builds.v1.BuildStatus status = 4;
+   */
+  status = BuildStatus.UNSPECIFIED;
+
+  /**
+   * populated if status == ERROR.
+   *
+   * @generated from field: autokitteh.program.v1.Error error = 5;
+   */
+  error?: Error;
+
+  /**
    * @generated from field: google.protobuf.Timestamp created_at = 3;
    */
   createdAt?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp updated_at = 6;
+   */
+  updatedAt?: Timestamp;
 
   constructor(data?: PartialMessage<Build>) {
     super();
@@ -35,7 +91,10 @@ export class Build extends Message<Build> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "build_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "status", kind: "enum", T: proto3.getEnumType(BuildStatus) },
+    { no: 5, name: "error", kind: "message", T: Error },
     { no: 3, name: "created_at", kind: "message", T: Timestamp },
+    { no: 6, name: "updated_at", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Build {
