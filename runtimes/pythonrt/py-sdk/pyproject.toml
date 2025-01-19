@@ -35,6 +35,7 @@ all = [
 	"grpcio-reflection ~= 1.68",
 	"PyYAML ~= 6.0",
 	"requests ~= 2.32",
+	"tenacity ~= 9.0",
 ]
 
 [tool.setuptools.packages.find]
