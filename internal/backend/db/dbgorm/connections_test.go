@@ -20,7 +20,7 @@ func (f *dbFixture) createConnectionsAndAssert(t *testing.T, connections ...sche
 
 func (f *dbFixture) assertConnectionDeleted(t *testing.T, connections ...scheme.Connection) {
 	for _, connection := range connections {
-		assertSoftDeleted(t, f, connection)
+		assertDeleted(t, f, connection)
 	}
 }
 
@@ -103,18 +103,21 @@ func TestDeleteConnection(t *testing.T) {
 	f.assertConnectionDeleted(t, c)
 }
 
-func TestDeleteConnectionForeignKeys(t *testing.T) {
+func TestDeleteConnectionNotDeletingEvent(t *testing.T) {
 	f, p := preConnectionTest(t)
 
 	c := f.newConnection(p)
 	evt := f.newEvent(c, p)
 	f.createConnectionsAndAssert(t, c)
 	f.createEventsAndAssert(t, evt)
-	// also trigger and signal are dependant on connection
 
 	// test deleteConnection
 	assert.NoError(t, f.gormdb.deleteConnection(f.ctx, c.ConnectionID))
-	f.assertConnectionDeleted(t, c) // soft deleted, dependent object won't complain
+	f.assertConnectionDeleted(t, c)
+	ev, err := f.gormdb.getEvent(f.ctx, evt.EventID)
+	assert.NoError(t, err)
+	assert.NotNil(t, ev)
+	assert.Nil(t, ev.ConnectionID)
 }
 
 func TestDeleteConnectionAndVars(t *testing.T) {
@@ -132,6 +135,38 @@ func TestDeleteConnectionAndVars(t *testing.T) {
 	// delete all connections for specific projectID
 	assert.NoError(t, f.gormdb.deleteConnectionsAndVars(ctx, "project_id", p.ProjectID))
 	f.assertConnectionDeleted(t, c2, c3)
+}
+
+func TestDeleteConnectionDeleteSignal(t *testing.T) {
+	ctx := context.Background()
+
+	f, p := preConnectionTest(t)
+
+	c := f.newConnection(p)
+	s := f.newSignal(c, p)
+
+	f.createConnectionsAndAssert(t, c)
+	f.saveSignalsAndAssert(t, s)
+
+	assert.NoError(t, f.gormdb.deleteConnectionsAndVars(ctx, "connection_id", c.ConnectionID))
+	f.assertConnectionDeleted(t, c)
+	f.assertSignalsDeleted(t, s)
+}
+
+func TestDeleteConnectionDeleteTrigger(t *testing.T) {
+	ctx := context.Background()
+
+	f, p := preConnectionTest(t)
+
+	c := f.newConnection(p)
+	trg := f.newTrigger(c, p)
+
+	f.createConnectionsAndAssert(t, c)
+	f.createTriggersAndAssert(t, trg)
+
+	assert.NoError(t, f.gormdb.deleteConnectionsAndVars(ctx, "connection_id", c.ConnectionID))
+	f.assertConnectionDeleted(t, c)
+	f.assertTriggersDeleted(t, trg)
 }
 
 func TestGetConnection(t *testing.T) {

@@ -45,7 +45,7 @@ func (gdb *gormdb) deleteProjectVars(ctx context.Context, id uuid.UUID) error {
 	db := gdb.db.WithContext(ctx)
 
 	var count int64
-	db.Model(&scheme.Deployment{}).Where("deleted_at is NULL and project_id = ?", id).Count(&count)
+	db.Model(&scheme.Deployment{}).Where("project_id = ?", id).Count(&count)
 	if count > 0 {
 		return fmt.Errorf("FOREIGN KEY: %w", gorm.ErrForeignKeyViolated)
 	}

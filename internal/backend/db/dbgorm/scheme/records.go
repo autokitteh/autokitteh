@@ -29,10 +29,8 @@ type Build struct {
 	BuildID   uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
 	Data      []byte
 
-	DeletedAt gorm.DeletedAt `gorm:"index"`
-
 	// enforce foreign keys
-	Project *Project
+	Project *Project `gorm:"constraint:OnDelete:Cascade DEFERRABLE;"`
 }
 
 func (Build) IDFieldName() string { return "build_id" }
@@ -62,11 +60,8 @@ type Connection struct {
 
 	UpdatedBy uuid.UUID `gorm:"type:uuid"`
 	UpdatedAt time.Time
-	DeletedAt gorm.DeletedAt `gorm:"index"`
 
-	// TODO(ENG-111): Also call "Preload()" where relevant
-
-	Project *Project
+	Project *Project `gorm:"constraint:OnDelete:Cascade Deferrable"`
 }
 
 func (Connection) IDFieldName() string { return "connection_id" }
@@ -127,7 +122,6 @@ type Project struct {
 
 	UpdatedBy uuid.UUID `gorm:"type:uuid"`
 	UpdatedAt time.Time
-	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
 func (Project) IDFieldName() string { return "project_id" }
@@ -170,12 +164,10 @@ type Event struct {
 	Seq       uint64 `gorm:"primaryKey;autoIncrement:true,index:idx_event_type_seq,priority:2"`
 
 	// enforce foreign keys
-	Connection *Connection
-	Trigger    *Trigger
+	Connection *Connection `gorm:"constraint:OnDelete:SET NULL"`
+	Trigger    *Trigger    `gorm:"constraint:OnDelete:SET NULL"` //TODO: do we want to delete events if we delete triggers ? why do we need this foreign key?
 
-	DeletedAt gorm.DeletedAt `gorm:"index"`
-
-	Project *Project
+	Project *Project `gorm:"constraint:OnDelete:Cascade Deferrable"`
 }
 
 func (Event) IDFieldName() string { return "event_id" }
@@ -235,11 +227,10 @@ type Trigger struct {
 
 	UpdatedBy uuid.UUID `gorm:"type:uuid"`
 	UpdatedAt time.Time
-	DeletedAt gorm.DeletedAt `gorm:"index"`
 
 	// enforce foreign keys
-	Connection *Connection
-	Project    *Project
+	Connection *Connection `gorm:"constraint:OnDelete:Cascade Deferrable"`
+	Project    *Project    `gorm:"constraint:OnDelete:Cascade Deferrable"`
 }
 
 func (Trigger) IDFieldName() string { return "trigger_id" }
@@ -280,7 +271,7 @@ type SessionLogRecord struct {
 	Type      string `gorm:"index"`
 
 	// enforce foreign keys
-	Session *Session
+	Session *Session `gorm:"constraint:OnDelete:Cascade Deferrable"`
 }
 
 func ParseSessionLogRecord(c SessionLogRecord) (spec sdktypes.SessionLogRecord, err error) {
@@ -294,7 +285,7 @@ type SessionCallSpec struct {
 	Data      datatypes.JSON
 
 	// enforce foreign keys
-	Session *Session
+	Session *Session `gorm:"constraint:OnDelete:Cascade Deferrable"`
 }
 
 func ParseSessionCallSpec(c SessionCallSpec) (spec sdktypes.SessionCallSpec, err error) {
@@ -310,7 +301,7 @@ type SessionCallAttempt struct {
 	Complete  datatypes.JSON
 
 	// enforce foreign keys
-	Session *Session
+	Session *Session `gorm:"constraint:OnDelete:Cascade Deferrable"`
 }
 
 func ParseSessionCallAttemptStart(c SessionCallAttempt) (d sdktypes.SessionCallAttemptStart, err error) {
@@ -338,13 +329,12 @@ type Session struct {
 
 	UpdatedBy uuid.UUID `gorm:"type:uuid"`
 	UpdatedAt time.Time
-	DeletedAt gorm.DeletedAt `gorm:"index"`
 
 	// enforce foreign keys
-	Build      *Build
-	Deployment *Deployment
-	Project    *Project
-	Event      *Event `gorm:"references:EventID"`
+	Build      *Build      `gorm:"constraint:OnDelete:Cascade Deferrable"`
+	Deployment *Deployment `gorm:"constraint:OnDelete:Cascade Deferrable"`
+	Project    *Project    `gorm:"constraint:OnDelete:Cascade Deferrable"`
+	Event      *Event      `gorm:"references:EventID;constraint:OnDelete:SET NULL"`
 }
 
 func (Session) IDFieldName() string { return "session_id" }
@@ -399,11 +389,10 @@ type Deployment struct {
 
 	UpdatedBy uuid.UUID `gorm:"type:uuid"`
 	UpdatedAt time.Time
-	DeletedAt gorm.DeletedAt `gorm:"index"`
 
 	// enforce foreign keys
-	Build   *Build
-	Project *Project
+	Build   *Build   `gorm:"constraint:OnDelete:Cascade Deferrable"`
+	Project *Project `gorm:"constraint:OnDelete:Cascade Deferrable"`
 }
 
 func (Deployment) IDFieldName() string { return "deployment_id" }
@@ -488,8 +477,8 @@ type Signal struct {
 	Filter        string
 
 	// enforce foreign key
-	Connection *Connection
-	Trigger    *Trigger
+	Connection *Connection `gorm:"constraint:OnDelete:Cascade Deferrable"`
+	Trigger    *Trigger    `gorm:"constraint:OnDelete:Cascade Deferrable"`
 }
 
 func ParseSignal(r *Signal) (*types.Signal, error) {
@@ -522,7 +511,7 @@ type Value struct {
 	UpdatedBy uuid.UUID `gorm:"type:uuid"`
 	UpdatedAt time.Time
 
-	Project *Project
+	Project *Project `gorm:"constraint:OnDelete:Cascade Deferrable"`
 }
 
 type User struct {

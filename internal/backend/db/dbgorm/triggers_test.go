@@ -20,7 +20,7 @@ func (f *dbFixture) createTriggersAndAssert(t *testing.T, triggers ...scheme.Tri
 
 func (f *dbFixture) assertTriggersDeleted(t *testing.T, triggers ...scheme.Trigger) {
 	for _, trigger := range triggers {
-		assertSoftDeleted(t, f, trigger)
+		assertDeleted(t, f, trigger)
 	}
 }
 
@@ -99,7 +99,7 @@ func TestCreateTriggerForeignKeys(t *testing.T) {
 	f.createTriggersAndAssert(t, t2)
 }
 
-func TestDeleteTriggerForeignKeys(t *testing.T) {
+func TestDeleteTriggerNotDeleteEvent(t *testing.T) {
 	f := preTriggerTest(t)
 	p, c := f.createProjectConnection(t)
 
@@ -108,9 +108,15 @@ func TestDeleteTriggerForeignKeys(t *testing.T) {
 	evt := f.newEvent(trg, p)
 	f.createEventsAndAssert(t, evt)
 
-	// trigger could be deleted, even if it refenced by non-deleted event
-	findAndAssertOne(t, f, evt, "trigger_id = ?", trg.TriggerID)    // non-deleted event
-	assert.NoError(t, f.gormdb.deleteTrigger(f.ctx, trg.TriggerID)) // deleted trigger
+	err := f.gormdb.deleteTrigger(f.ctx, trg.TriggerID)
+	assert.NoError(t, err) // deleted trigger
+
+	// check if event is deleted
+	e, err := f.gormdb.getEvent(f.ctx, evt.EventID)
+	assert.NoError(t, err)
+	assert.NotNil(t, e)
+	assert.Equal(t, evt.EventID, e.EventID)
+	assert.Nil(t, e.TriggerID)
 }
 
 func TestListTriggers(t *testing.T) {
@@ -144,6 +150,21 @@ func TestDeleteTrigger(t *testing.T) {
 	// test deleteTrigger
 	assert.NoError(t, f.gormdb.deleteTrigger(f.ctx, tr.TriggerID))
 	f.assertTriggersDeleted(t, tr)
+}
+
+func TestDeleteTriggerDeleteSignal(t *testing.T) {
+	f := preTriggerTest(t)
+
+	p, c := f.createProjectConnection(t)
+	tr := f.newTrigger(p, c)
+	f.createTriggersAndAssert(t, tr)
+	sig := f.newSignal(tr, p, tr)
+	f.saveSignalsAndAssert(t, sig)
+
+	// test deleteTrigger
+	assert.NoError(t, f.gormdb.deleteTrigger(f.ctx, tr.TriggerID))
+	f.assertTriggersDeleted(t, tr)
+	f.assertSignalsDeleted(t, sig)
 }
 
 func TestDuplicatedTrigger(t *testing.T) {

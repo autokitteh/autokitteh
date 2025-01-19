@@ -15,7 +15,8 @@ import (
 )
 
 func (gdb *gormdb) saveEvent(ctx context.Context, event *scheme.Event) error {
-	return gdb.db.WithContext(ctx).Create(event).Error
+	err := gdb.db.WithContext(ctx).Create(event).Error
+	return err
 }
 
 func (gdb *gormdb) deleteEvent(ctx context.Context, eventID uuid.UUID) error {

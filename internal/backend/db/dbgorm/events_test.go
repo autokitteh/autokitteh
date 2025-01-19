@@ -14,14 +14,14 @@ import (
 
 func (f *dbFixture) createEventsAndAssert(t *testing.T, events ...scheme.Event) {
 	for _, event := range events {
-		assert.NoError(t, f.gormdb.saveEvent(f.ctx, &event))
+		require.NoError(t, f.gormdb.saveEvent(f.ctx, &event))
 		findAndAssertOne(t, f, event, "event_id = ?", event.EventID)
 	}
 }
 
 func (f *dbFixture) assertEventsDeleted(t *testing.T, events ...scheme.Event) {
 	for _, event := range events {
-		assertSoftDeleted(t, f, scheme.Event{EventID: event.EventID})
+		assertDeleted(t, f, scheme.Event{EventID: event.EventID})
 	}
 }
 
@@ -66,16 +66,24 @@ func TestCreateEventForeignKeys(t *testing.T) {
 	f.createEventsAndAssert(t, e)
 }
 
-func TestDeleteEvent(t *testing.T) {
+func TestDeleteEventNotDeletingSessions(t *testing.T) {
 	f := preEventTest(t)
 	p := f.newProject()
 	f.createProjectsAndAssert(t, p)
 	e := f.newEvent(p) // connection is nil
 	f.createEventsAndAssert(t, e)
+	b := f.newBuild(p)
+	f.saveBuildsAndAssert(t, b)
+	s := f.newSession(e, p, b)
+	f.createSessionsAndAssert(t, s)
 
 	// test deleteEvent
 	assert.NoError(t, f.gormdb.deleteEvent(f.ctx, e.EventID))
 	f.assertEventsDeleted(t, e)
+
+	ses, err := f.gormdb.getSession(f.ctx, s.SessionID)
+	assert.NoError(t, err)
+	assert.Equal(t, ses.SessionID, s.SessionID)
 }
 
 func TestGetEvent(t *testing.T) {

@@ -60,7 +60,8 @@ func TestSetVar(t *testing.T) {
 
 	// test scopeID as foreign keys to either connectionID or envID
 	assert.NoError(t, f.gormdb.deleteConnection(f.ctx, c.ConnectionID))
-	assert.ErrorIs(t, f.gormdb.setVar(f.ctx, &v1), gorm.ErrForeignKeyViolated)
+	sv := f.gormdb.setVar(f.ctx, &v1)
+	assert.ErrorIs(t, sv, gorm.ErrForeignKeyViolated)
 
 	assert.NoError(t, f.gormdb.deleteProject(f.ctx, p.ProjectID))
 	assert.ErrorIs(t, f.gormdb.setVar(f.ctx, &v2), gorm.ErrForeignKeyViolated)

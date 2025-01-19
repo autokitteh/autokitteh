@@ -28,7 +28,7 @@ func (f *dbFixture) listProjectsAndAssert(t *testing.T, expected int) []scheme.P
 
 func (f *dbFixture) assertProjectDeleted(t *testing.T, projects ...scheme.Project) {
 	for _, project := range projects {
-		assertSoftDeleted(t, f, project)
+		assertDeleted(t, f, project)
 	}
 }
 

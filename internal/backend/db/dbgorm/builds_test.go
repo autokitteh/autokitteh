@@ -19,7 +19,7 @@ func (f *dbFixture) saveBuildsAndAssert(t *testing.T, builds ...scheme.Build) {
 }
 
 func (f *dbFixture) assertBuildDeleted(t *testing.T, buildID uuid.UUID) {
-	assertSoftDeleted(t, f, scheme.Build{BuildID: buildID})
+	assertDeleted(t, f, scheme.Build{BuildID: buildID})
 }
 
 func preBuildTest(t *testing.T) (*dbFixture, scheme.Project) {
@@ -50,6 +50,42 @@ func TestDeleteBuild(t *testing.T) {
 	// test deleteBuild
 	assert.NoError(t, f.gormdb.deleteBuild(f.ctx, b.BuildID))
 	f.assertBuildDeleted(t, b.BuildID)
+}
+
+func TestDeleteProjectDeleteBuild(t *testing.T) {
+	f, p := preBuildTest(t)
+	b := f.newBuild(p)
+	f.saveBuildsAndAssert(t, b)
+
+	// test deleteProject
+	assert.NoError(t, f.gormdb.deleteProject(f.ctx, p.ProjectID))
+	f.assertBuildDeleted(t, b.BuildID)
+}
+
+func TestDeleteBuildDeleteDeployment(t *testing.T) {
+	f, p := preBuildTest(t)
+	b := f.newBuild(p)
+	f.saveBuildsAndAssert(t, b)
+
+	d := f.newDeployment(b, p)
+	f.createDeploymentsAndAssert(t, d)
+
+	// test deleteBuild
+	assert.NoError(t, f.gormdb.deleteBuild(f.ctx, b.BuildID))
+	f.assertDeploymentsDeleted(t, d)
+}
+
+func TestDeleteBuildDeleteSession(t *testing.T) {
+	f, p := preBuildTest(t)
+	b := f.newBuild(p)
+	f.saveBuildsAndAssert(t, b)
+
+	s := f.newSession(b, p)
+	f.createSessionsAndAssert(t, s)
+
+	// test deleteBuild
+	assert.NoError(t, f.gormdb.deleteBuild(f.ctx, b.BuildID))
+	f.assertSessionsDeleted(t, s)
 }
 
 func TestGetBuild(t *testing.T) {
