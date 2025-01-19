@@ -3,9 +3,11 @@ package dbgorm
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authusers"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
@@ -76,15 +78,25 @@ func (gdb *gormdb) CreateOrg(ctx context.Context, o sdktypes.Org) (sdktypes.OrgI
 		oid = sdktypes.NewOrgID()
 	}
 
-	org := scheme.Org{
-		Base: based(ctx),
+	err := gdb.transaction(ctx, func(tx *tx) error {
+		org := scheme.Org{
+			Base: based(ctx),
 
-		OrgID:       oid.UUIDValue(),
-		DisplayName: o.DisplayName(),
-		Name:        o.Name().String(),
-	}
+			OrgID:       oid.UUIDValue(),
+			DisplayName: o.DisplayName(),
+			Name:        o.Name().String(),
+		}
 
-	err := gdb.db.WithContext(ctx).Create(&org).Error
+		if org.Name != "" {
+			if err := tx.db.Where("name = ?", org.Name).First(&scheme.Org{}).Error; err == nil {
+				return sdkerrors.ErrAlreadyExists
+			} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+				return err
+			}
+		}
+
+		return tx.db.Create(&org).Error
+	})
 	if err != nil {
 		return sdktypes.InvalidOrgID, translateError(err)
 	}
@@ -102,13 +114,23 @@ func (gdb *gormdb) UpdateOrg(ctx context.Context, o sdktypes.Org, fm *sdktypes.F
 		return err
 	}
 
-	return translateError(
-		gdb.db.WithContext(ctx).
+	err = gdb.transaction(ctx, func(tx *tx) error {
+		if name, ok := data["name"]; ok && name != "" {
+			if err := tx.db.Where("name = ?", name).First(&scheme.Org{}).Error; err == nil {
+				return sdkerrors.ErrAlreadyExists
+			} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+				return err
+			}
+		}
+
+		return tx.db.
 			Model(&scheme.Org{}).
 			Where("org_id = ?", o.ID().UUIDValue()).
 			Updates(data).
-			Error,
-	)
+			Error
+	})
+
+	return translateError(err)
 }
 
 func (gdb *gormdb) ListOrgMembers(ctx context.Context, oid sdktypes.OrgID, includeUsers bool) ([]sdktypes.OrgMember, []sdktypes.User, error) {
