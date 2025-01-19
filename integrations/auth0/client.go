@@ -24,7 +24,7 @@ var (
 	clientIDName     = sdktypes.NewSymbol("client_id")
 	clientSecretName = sdktypes.NewSymbol("client_secret")
 	domainName       = sdktypes.NewSymbol("auth0_domain")
-	authToken        = sdktypes.NewSymbol("oauth_AccessToken")
+	authTokenName        = sdktypes.NewSymbol("oauth_AccessToken")
 )
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
