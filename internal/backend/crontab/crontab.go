@@ -31,7 +31,7 @@ import (
 )
 
 const (
-	taskQueueName = "internal-scheduler-task-queue"
+	taskQueueName = "internal-maintenance-task-queue"
 	workflowName  = "internal_maintenance"
 	scheduleID    = "internal_maintenance"
 )

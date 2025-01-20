@@ -62,6 +62,11 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(res) == 0 {
+		l.Warn("No accessible resources for a 'valid' OAuth token")
+		c.AbortBadRequest("no Atlassian accessible resources")
+	}
+
 	if len(res) > 1 {
 		l.Warn("Multiple accessible resources for single OAuth token", zap.Any("resources", res))
 		c.AbortBadRequest("multiple Atlassian accessible resources")

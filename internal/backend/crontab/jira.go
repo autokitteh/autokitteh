@@ -2,6 +2,7 @@ package crontab
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -29,15 +30,16 @@ func (ct *Crontab) renewJiraEventWatchesWorkflow(wctx workflow.Context) error {
 	}
 
 	// Check each Jira connection, renew its event watch if needed, abort on the first error.
+	errs := make([]error, 0)
 	for _, c := range cs {
 		actx := temporalclient.WithActivityOptions(wctx, taskQueueName, ct.cfg.Activity)
 		err := workflow.ExecuteActivity(actx, ct.renewJiraEventWatchActivity, c.ID()).Get(wctx, nil)
 		if err != nil {
-			return err
+			errs = append(errs, err)
 		}
 	}
 
-	return nil
+	return errors.Join(errs...)
 }
 
 func (ct *Crontab) renewJiraEventWatchActivity(ctx context.Context, cid sdktypes.ConnectionID) error {
@@ -53,7 +55,7 @@ func (ct *Crontab) renewJiraEventWatchActivity(ctx context.Context, cid sdktypes
 
 	watchID := vs.GetValue(jira.WebhookID)
 	if watchID == "" {
-		// Jira connection uses a API token or a PAT instead of OAuth,
+		// Jira connection uses an API token or a PAT instead of OAuth,
 		// so it doesn't have an event watch to renew.
 		return nil
 	}
@@ -72,7 +74,7 @@ func (ct *Crontab) renewJiraEventWatchActivity(ctx context.Context, cid sdktypes
 		return nil
 	}
 
-	// Load the Jira OAuth configuration, to get a fresh OAUth access token.
+	// Load the Jira OAuth configuration, to get a fresh OAuth access token.
 	cfg, _, err := ct.oauth.Get(ctx, "jira")
 	if err != nil {
 		l.Error("Failed to get OAuth config for Jira event watch renewal", zap.Error(err))
