@@ -22,6 +22,12 @@ func (f *dbFixture) createSessionsAndAssert(t *testing.T, sessions ...scheme.Ses
 	}
 }
 
+func (f *dbFixture) assertSessionsLogRecordsDeleted(t *testing.T, records ...scheme.SessionLogRecord) {
+	for _, record := range records {
+		assertDeleted(t, f, record)
+	}
+}
+
 func (f *dbFixture) listSessionsAndAssert(t *testing.T, expected int64) []scheme.Session {
 	flt := sdkservices.ListSessionsFilter{
 		CountOnly: false,
@@ -38,7 +44,7 @@ func (f *dbFixture) listSessionsAndAssert(t *testing.T, expected int64) []scheme
 
 func (f *dbFixture) assertSessionsDeleted(t *testing.T, sessions ...scheme.Session) {
 	for _, session := range sessions {
-		assertSoftDeleted(t, f, session)
+		assertDeleted(t, f, session)
 	}
 }
 
@@ -219,6 +225,73 @@ func TestDeleteSession(t *testing.T) {
 	f.assertSessionsDeleted(t, s)
 }
 
+func TestDeleteSessionLogRecords(t *testing.T) {
+	f, p, b := preSessionTest(t)
+
+	s := f.newSession(sdktypes.SessionStateTypeCompleted, p, b)
+	f.createSessionsAndAssert(t, s)
+
+	lr := f.newSessionLogRecord(s.SessionID)
+	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, &lr, ""))
+
+	assert.NoError(t, f.gormdb.deleteSession(f.ctx, s.SessionID))
+	f.assertSessionsDeleted(t, s)
+	f.assertSessionsLogRecordsDeleted(t, lr)
+}
+
+func TestDeleteSessionCallSpec(t *testing.T) {
+	f, p, b := preSessionTest(t)
+
+	// Create Session
+	s := f.newSession(sdktypes.SessionStateTypeCompleted, p, b)
+	f.createSessionsAndAssert(t, s)
+
+	// Create SessionCallSpec
+	cs := sdktypes.NewSessionCallSpec(sdktypes.InvalidValue, nil, nil, 1)
+	assert.NoError(t, f.gormdb.createSessionCall(f.ctx, s.SessionID, cs))
+	_, err := f.gormdb.getSessionCallSpec(f.ctx, s.SessionID, 1)
+	assert.NoError(t, err)
+
+	// Delete Session
+	assert.NoError(t, f.gormdb.deleteSession(f.ctx, s.SessionID))
+
+	f.assertSessionsDeleted(t, s)
+
+	// Ensure that SessionCallSpec is deleted
+	_, err = f.gormdb.getSessionCallSpec(f.ctx, s.SessionID, 1)
+	assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
+
+	// Session call implicitly create session log records
+	_, n, err := f.gormdb.getSessionLogRecords(f.ctx, sdkservices.ListSessionLogRecordsFilter{SessionID: sdktypes.NewIDFromUUID[sdktypes.SessionID](s.SessionID)})
+	assert.NoError(t, err)
+	assert.Equal(t, n, int64(0))
+}
+
+func TestDeleteSessionCallAttempt(t *testing.T) {
+	f, p, b := preSessionTest(t)
+
+	// Create Session
+	s := f.newSession(sdktypes.SessionStateTypeCompleted, p, b)
+	f.createSessionsAndAssert(t, s)
+
+	// Create SessionCallAttempt
+	attempt, err := f.gormdb.startSessionCallAttempt(f.ctx, s.SessionID, 1)
+	assert.NoError(t, err)
+
+	// Delete Session
+	assert.NoError(t, f.gormdb.deleteSession(f.ctx, s.SessionID))
+	f.assertSessionsDeleted(t, s)
+
+	// Ensure that session call attempt is deleted
+	_, err = f.gormdb.getSessionCallAttemptResult(f.ctx, s.SessionID, 1, int64(attempt))
+	assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
+
+	// Session call attempt create session log records
+	_, n, err := f.gormdb.getSessionLogRecords(f.ctx, sdkservices.ListSessionLogRecordsFilter{SessionID: sdktypes.NewIDFromUUID[sdktypes.SessionID](s.SessionID)})
+	assert.NoError(t, err)
+	assert.Equal(t, n, int64(0))
+}
+
 /*
 func TestDeleteSessionForeignKeys(t *testing.T) {
     // session is soft-deleted, so no need to check foreign keys meanwhile
@@ -229,7 +302,7 @@ func TestAddSessionLogRecordUnexistingSession(t *testing.T) {
 	f, p, b := preSessionTest(t)
 
 	s := f.newSession(sdktypes.SessionStateTypeCompleted, p, b)
-	logr := f.newSessionLogRecord() // invalid sessionID
+	logr := f.newSessionLogRecord(testDummyID) // invalid sessionID
 
 	assert.ErrorIs(t, f.gormdb.addSessionLogRecord(f.ctx, &logr, ""), gorm.ErrForeignKeyViolated)
 
