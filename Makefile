@@ -110,7 +110,7 @@ test: test-opa test-race test-runs test-sessions
 test-opa:
 	@if which opa > /dev/null; then \
 		cd configs/opa_bundles/default; \
-		ls | xargs -I {} opa test -v {}; \
+		opa test -v .; \
 	else \
 		echo "opa not found, skipping OPA tests"; \
 	fi

@@ -14,6 +14,7 @@ message OrgMember {
   string user_id = 1;
   string org_id = 2;
   OrgMemberStatus status = 3;
+  repeated string roles = 4;
 }
 
 enum OrgMemberStatus {

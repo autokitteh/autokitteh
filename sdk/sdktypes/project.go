@@ -11,6 +11,8 @@ type Project struct {
 	object[*ProjectPB, ProjectTraits]
 }
 
+func init() { registerObject[Project]() }
+
 var InvalidProject Project
 
 type ProjectPB = projectv1.Project

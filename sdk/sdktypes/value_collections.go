@@ -15,6 +15,8 @@ type BytesValue struct {
 	object[*BytesValuePB, nopObjectTraits[*BytesValuePB]]
 }
 
+func init() { registerObject[BytesValue]() }
+
 func (BytesValue) isConcreteValue() {}
 
 func (s BytesValue) Value() []byte { return clone(s.m).V }
@@ -50,6 +52,8 @@ type ListValue struct {
 	object[*ListValuePB, listValueTraits]
 }
 
+func init() { registerObject[ListValue]() }
+
 func (ListValue) isConcreteValue() {}
 
 func NewListValue(vs []Value) (Value, error) {
@@ -84,6 +88,8 @@ var _ objectTraits[*SetValuePB] = setValueTraits{}
 type SetValue struct {
 	object[*SetValuePB, setValueTraits]
 }
+
+func init() { registerObject[SetValue]() }
 
 func (SetValue) isConcreteValue() {}
 
@@ -150,6 +156,8 @@ var _ objectTraits[*DictValuePB] = dictValueTraits{}
 type DictValue struct {
 	object[*DictValuePB, dictValueTraits]
 }
+
+func init() { registerObject[DictValue]() }
 
 type DictItem struct{ K, V Value }
 

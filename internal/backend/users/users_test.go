@@ -10,6 +10,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
+	"go.autokitteh.dev/autokitteh/internal/backend/orgs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -18,7 +19,7 @@ type fakeDB struct {
 
 	orgs       map[sdktypes.OrgID]sdktypes.Org
 	users      map[sdktypes.UserID]sdktypes.User
-	orgMembers map[sdktypes.OrgID]map[sdktypes.UserID]sdktypes.OrgMemberStatus
+	orgMembers map[sdktypes.OrgID]map[sdktypes.UserID]sdktypes.OrgMember
 }
 
 func (d *fakeDB) Transaction(ctx context.Context, f func(tx db.DB) error) error { return f(d) }
@@ -43,16 +44,18 @@ func (d *fakeDB) CreateUser(ctx context.Context, user sdktypes.User) (sdktypes.U
 	return id, nil
 }
 
-func (d *fakeDB) AddOrgMember(ctx context.Context, orgID sdktypes.OrgID, userID sdktypes.UserID, status sdktypes.OrgMemberStatus) error {
+func (d *fakeDB) AddOrgMember(ctx context.Context, m sdktypes.OrgMember) error {
+	oid, uid := m.OrgID(), m.UserID()
+
 	if d.orgMembers == nil {
-		d.orgMembers = make(map[sdktypes.OrgID]map[sdktypes.UserID]sdktypes.OrgMemberStatus)
+		d.orgMembers = make(map[sdktypes.OrgID]map[sdktypes.UserID]sdktypes.OrgMember)
 	}
 
-	if _, ok := d.orgMembers[orgID]; !ok {
-		d.orgMembers[orgID] = make(map[sdktypes.UserID]sdktypes.OrgMemberStatus)
+	if _, ok := d.orgMembers[oid]; !ok {
+		d.orgMembers[oid] = make(map[sdktypes.UserID]sdktypes.OrgMember)
 	}
 
-	d.orgMembers[orgID][userID] = status
+	d.orgMembers[oid][uid] = m
 	return nil
 }
 
@@ -76,7 +79,8 @@ func TestCreateWithoutDefaultOrgInCfg(t *testing.T) {
 				assert.True(t, db.orgs[oid].IsValid())
 			}
 
-			assert.Equal(t, sdktypes.OrgMemberStatusActive, db.orgMembers[oid][uid])
+			assert.Equal(t, sdktypes.OrgMemberStatusActive, db.orgMembers[oid][uid].Status())
+			assert.Equal(t, []sdktypes.Symbol{orgs.OrgAdminRoleName}, db.orgMembers[oid][uid].Roles())
 		}
 	}
 
@@ -101,7 +105,8 @@ func TestCreateWithDefaultOrgInCfg(t *testing.T) {
 		if assert.True(t, u.IsValid()) {
 			assert.Equal(t, "someone@somewhere", u.Email())
 			assert.Equal(t, oid, u.DefaultOrgID())
-			assert.Equal(t, sdktypes.OrgMemberStatusActive, db.orgMembers[oid][uid])
+			assert.Equal(t, sdktypes.OrgMemberStatusActive, db.orgMembers[oid][uid].Status())
+			assert.Len(t, db.orgMembers[oid][uid].Roles(), 0)
 			assert.Equal(t, sdktypes.UserStatusActive, u.Status())
 		}
 	}
@@ -127,7 +132,8 @@ func TestCreateWithDefaultOrgInUser(t *testing.T) {
 		if assert.True(t, u.IsValid()) {
 			assert.Equal(t, "someone@somewhere", u.Email())
 			assert.Equal(t, oid, u.DefaultOrgID())
-			assert.Equal(t, sdktypes.OrgMemberStatusActive, db.orgMembers[oid][uid])
+			assert.Equal(t, sdktypes.OrgMemberStatusActive, db.orgMembers[oid][uid].Status())
+			assert.Len(t, db.orgMembers[oid][uid].Roles(), 0)
 			assert.Equal(t, sdktypes.UserStatusActive, u.Status())
 		}
 	}
@@ -150,7 +156,7 @@ func TestCreateInvitedUser(t *testing.T) {
 		if assert.True(t, u.IsValid()) {
 			assert.Equal(t, "someone@somewhere", u.Email())
 			assert.True(t, u.DefaultOrgID().IsValid())
-			assert.Equal(t, sdktypes.OrgMemberStatusActive, db.orgMembers[u.DefaultOrgID()][uid])
+			assert.Equal(t, sdktypes.OrgMemberStatusActive, db.orgMembers[u.DefaultOrgID()][uid].Status())
 			assert.Equal(t, sdktypes.UserStatusInvited, u.Status())
 		}
 	}

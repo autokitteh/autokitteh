@@ -24,6 +24,7 @@ func OpenZ(z *zap.Logger, cfg *Config, f func(*gorm.Config)) (*gorm.DB, error) {
 			f(c)
 		}
 		c.Logger = l
+
 		// TODO(ENG-1590): maybe we could clone the core with the same encoder and writer, but with different/lower level?
 		// (we cannon lower level with zap.IncreaseLevel(), unfortunately or extract encoder and writer from the original core)
 		// so, if explicit debug is requested - switch to default gorm logger (which will log to stdout)

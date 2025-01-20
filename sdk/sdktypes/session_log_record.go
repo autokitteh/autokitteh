@@ -13,6 +13,8 @@ type SessionLogRecord struct {
 	object[*SessionLogRecordPB, SessionLogRecordTraits]
 }
 
+func init() { registerObject[SessionLogRecord]() }
+
 var InvalidSessionLogRecord SessionLogRecord
 
 type SessionLogRecordPB = sessionv1.SessionLogRecord

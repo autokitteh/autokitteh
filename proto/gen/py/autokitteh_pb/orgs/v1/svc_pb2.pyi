@@ -1,4 +1,5 @@
 from autokitteh_pb.orgs.v1 import org_pb2 as _org_pb2
+from autokitteh_pb.users.v1 import user_pb2 as _user_pb2
 from buf.validate import validate_pb2 as _validate_pb2
 from google.protobuf import field_mask_pb2 as _field_mask_pb2
 from google.protobuf.internal import containers as _containers
@@ -99,33 +100,26 @@ class ListMembersRequest(_message.Message):
     def __init__(self, org_id: _Optional[str] = ...) -> None: ...
 
 class ListMembersResponse(_message.Message):
-    __slots__ = ["members"]
+    __slots__ = ["members", "users"]
     MEMBERS_FIELD_NUMBER: _ClassVar[int]
+    USERS_FIELD_NUMBER: _ClassVar[int]
     members: _containers.RepeatedCompositeFieldContainer[_org_pb2.OrgMember]
-    def __init__(self, members: _Optional[_Iterable[_Union[_org_pb2.OrgMember, _Mapping]]] = ...) -> None: ...
+    users: _containers.RepeatedCompositeFieldContainer[_user_pb2.User]
+    def __init__(self, members: _Optional[_Iterable[_Union[_org_pb2.OrgMember, _Mapping]]] = ..., users: _Optional[_Iterable[_Union[_user_pb2.User, _Mapping]]] = ...) -> None: ...
 
 class GetOrgsForUserRequest(_message.Message):
-    __slots__ = ["user_id", "include_orgs"]
+    __slots__ = ["user_id"]
     USER_ID_FIELD_NUMBER: _ClassVar[int]
-    INCLUDE_ORGS_FIELD_NUMBER: _ClassVar[int]
     user_id: str
-    include_orgs: bool
-    def __init__(self, user_id: _Optional[str] = ..., include_orgs: bool = ...) -> None: ...
+    def __init__(self, user_id: _Optional[str] = ...) -> None: ...
 
 class GetOrgsForUserResponse(_message.Message):
     __slots__ = ["members", "orgs"]
-    class OrgsEntry(_message.Message):
-        __slots__ = ["key", "value"]
-        KEY_FIELD_NUMBER: _ClassVar[int]
-        VALUE_FIELD_NUMBER: _ClassVar[int]
-        key: str
-        value: _org_pb2.Org
-        def __init__(self, key: _Optional[str] = ..., value: _Optional[_Union[_org_pb2.Org, _Mapping]] = ...) -> None: ...
     MEMBERS_FIELD_NUMBER: _ClassVar[int]
     ORGS_FIELD_NUMBER: _ClassVar[int]
     members: _containers.RepeatedCompositeFieldContainer[_org_pb2.OrgMember]
-    orgs: _containers.MessageMap[str, _org_pb2.Org]
-    def __init__(self, members: _Optional[_Iterable[_Union[_org_pb2.OrgMember, _Mapping]]] = ..., orgs: _Optional[_Mapping[str, _org_pb2.Org]] = ...) -> None: ...
+    orgs: _containers.RepeatedCompositeFieldContainer[_org_pb2.Org]
+    def __init__(self, members: _Optional[_Iterable[_Union[_org_pb2.OrgMember, _Mapping]]] = ..., orgs: _Optional[_Iterable[_Union[_org_pb2.Org, _Mapping]]] = ...) -> None: ...
 
 class UpdateMemberRequest(_message.Message):
     __slots__ = ["member", "field_mask"]

@@ -10,6 +10,8 @@ type CallFrame struct {
 	object[*CallFramePB, CallFrameTraits]
 }
 
+func init() { registerObject[CallFrame]() }
+
 type CallFramePB = programv1.CallFrame
 
 type CallFrameTraits struct{ immutableObjectTrait }

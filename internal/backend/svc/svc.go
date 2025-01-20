@@ -106,9 +106,33 @@ func DBFxOpt() fx.Option {
 			"db",
 			dbfactory.Configs,
 			fx.Provide(dbfactory.New),
-			fx.Invoke(func(lc fx.Lifecycle, z *zap.Logger, db db.DB) {
-				HookOnStart(lc, db.Connect)
-				HookOnStart(lc, db.Setup)
+			fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, gdb db.DB, cfg *svcConfig) error {
+				HookOnStart(lc, gdb.Connect)
+				HookOnStart(lc, gdb.Setup)
+
+				if path := cfg.SeedObjectsPath; path != "" {
+					bs, err := os.ReadFile(path)
+					if err != nil {
+						return fmt.Errorf("read seed objects: %w", err)
+					}
+
+					var objs []sdktypes.AnyObject
+
+					if err := json.Unmarshal(bs, &objs); err != nil {
+						return fmt.Errorf("unmarshal seed objects: %w", err)
+					}
+
+					HookOnStart(lc, func(ctx context.Context) error {
+						if len(objs) == 0 {
+							return nil
+						}
+
+						l.Info("populating db with seed objects", zap.Int("n", len(objs)), zap.String("path", path))
+						return db.Populate(ctx, gdb, kittehs.Transform(objs, sdktypes.UnwrapAnyObject)...)
+					})
+				}
+
+				return nil
 			}),
 		),
 	)
@@ -126,14 +150,11 @@ var pprofConfigs = configset.Set[pprofConfig]{
 type HTTPServerAddr string
 
 func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
-	svcConfig, err := chooseConfig(svcConfigs)
-	if err != nil {
-		return []fx.Option{fx.Error(fmt.Errorf("svc: %w", err))}
-	}
-
 	return []fx.Option{
 		fx.Supply(cfg),
-		fx.Supply(svcConfig),
+
+		SupplyConfig("svc", svcConfigs),
+
 		LoggerFxOpt(opts.Silent),
 		DBFxOpt(),
 
@@ -341,7 +362,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				})
 			}),
 		),
-		fx.Invoke(func(muxes *muxes.Muxes) {
+		fx.Invoke(func(muxes *muxes.Muxes, svcConfig *svcConfig) {
 			muxes.NoAuth.Handle("/{$}", http.RedirectHandler(svcConfig.RootRedirect, http.StatusSeeOther))
 			muxes.NoAuth.HandleFunc("/internal/{$}", func(w http.ResponseWriter, r *http.Request) {
 				fmt.Fprint(w, `<html><body>

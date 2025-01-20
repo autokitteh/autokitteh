@@ -16,13 +16,14 @@ import (
 )
 
 type server struct {
-	orgs sdkservices.Orgs
+	orgs  sdkservices.Orgs
+	users sdkservices.Users
 }
 
 var _ orgsv1connect.OrgsServiceHandler = (*server)(nil)
 
-func Init(muxes *muxes.Muxes, orgs sdkservices.Orgs) {
-	srv := server{orgs: orgs}
+func Init(muxes *muxes.Muxes, orgs sdkservices.Orgs, users sdkservices.Users) {
+	srv := server{orgs: orgs, users: users}
 
 	path, handler := orgsv1connect.NewOrgsServiceHandler(&srv)
 	muxes.Auth.Handle(path, handler)
@@ -113,28 +114,12 @@ func (s *server) AddMember(ctx context.Context, req *connect.Request[orgsv1.AddM
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	member := msg.Member
-
-	if member == nil {
-		return nil, sdkerrors.NewInvalidArgumentError("member must be provided")
-	}
-
-	oid, err := sdktypes.Strict(sdktypes.ParseOrgID(member.OrgId))
+	m, err := sdktypes.Strict(sdktypes.OrgMemberFromProto(msg.Member))
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	uid, err := sdktypes.Strict(sdktypes.ParseUserID(member.UserId))
-	if err != nil {
-		return nil, sdkerrors.AsConnectError(err)
-	}
-
-	status, err := sdktypes.OrgMemberStatusFromProto(member.Status)
-	if err != nil {
-		return nil, sdkerrors.AsConnectError(err)
-	}
-
-	if err := s.orgs.AddMember(ctx, oid, uid, status); err != nil {
+	if err := s.orgs.AddMember(ctx, m); err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
@@ -196,19 +181,14 @@ func (s *server) ListMembers(ctx context.Context, req *connect.Request[orgsv1.Li
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	ms, err := s.orgs.ListMembers(ctx, oid)
+	ms, us, err := s.orgs.ListMembers(ctx, oid)
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
 	return connect.NewResponse(&orgsv1.ListMembersResponse{
-		Members: kittehs.Transform(ms, func(m *sdkservices.UserIDWithMemberStatus) *orgsv1.OrgMember {
-			return &orgsv1.OrgMember{
-				OrgId:  msg.OrgId,
-				UserId: m.UserID.String(),
-				Status: m.Status.ToProto(),
-			}
-		}),
+		Members: kittehs.Transform(ms, sdktypes.ToProto),
+		Users:   kittehs.Transform(us, sdktypes.ToProto),
 	}), nil
 }
 
@@ -224,28 +204,14 @@ func (s *server) GetOrgsForUser(ctx context.Context, req *connect.Request[orgsv1
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	orgs, err := s.orgs.GetOrgsForUser(ctx, uid)
+	ms, os, err := s.orgs.GetOrgsForUser(ctx, uid)
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	var pborgs map[string]*orgsv1.Org
-	if msg.IncludeOrgs {
-		pborgs = kittehs.ListToMap(orgs, func(o *sdkservices.OrgWithMemberStatus) (string, *orgsv1.Org) {
-			pborg := o.Org.ToProto()
-			return pborg.OrgId, pborg
-		})
-	}
-
 	return connect.NewResponse(&orgsv1.GetOrgsForUserResponse{
-		Members: kittehs.Transform(orgs, func(o *sdkservices.OrgWithMemberStatus) *orgsv1.OrgMember {
-			return &orgsv1.OrgMember{
-				OrgId:  o.Org.ToProto().OrgId,
-				UserId: msg.UserId,
-				Status: o.Status.ToProto(),
-			}
-		}),
-		Orgs: pborgs,
+		Members: kittehs.Transform(ms, sdktypes.ToProto),
+		Orgs:    kittehs.Transform(os, sdktypes.ToProto),
 	}), nil
 }
 
@@ -266,18 +232,12 @@ func (s *server) GetMember(ctx context.Context, req *connect.Request[orgsv1.GetM
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	status, err := s.orgs.GetMemberStatus(ctx, oid, uid)
+	m, err := s.orgs.GetMember(ctx, oid, uid)
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	return connect.NewResponse(&orgsv1.GetMemberResponse{
-		Member: &orgsv1.OrgMember{
-			OrgId:  msg.OrgId,
-			UserId: msg.UserId,
-			Status: status.ToProto(),
-		},
-	}), nil
+	return connect.NewResponse(&orgsv1.GetMemberResponse{Member: m.ToProto()}), nil
 }
 
 func (s *server) UpdateMember(ctx context.Context, req *connect.Request[orgsv1.UpdateMemberRequest]) (*connect.Response[orgsv1.UpdateMemberResponse], error) {
@@ -289,30 +249,12 @@ func (s *server) UpdateMember(ctx context.Context, req *connect.Request[orgsv1.U
 
 	member := msg.Member
 
-	if member == nil {
-		return nil, sdkerrors.NewInvalidArgumentError("member must be provided")
-	}
-
-	uid, err := sdktypes.ParseUserID(member.UserId)
+	m, err := sdktypes.Strict(sdktypes.OrgMemberFromProto(member))
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	oid, err := sdktypes.ParseOrgID(member.OrgId)
-	if err != nil {
-		return nil, sdkerrors.AsConnectError(err)
-	}
-
-	if msg.FieldMask == nil || len(msg.FieldMask.Paths) == 0 || msg.FieldMask.Paths[0] != "status" {
-		return nil, sdkerrors.NewInvalidArgumentError("field mask must be specified and contain only 'status'")
-	}
-
-	status, err := sdktypes.OrgMemberStatusFromProto(member.Status)
-	if err != nil {
-		return nil, sdkerrors.AsConnectError(err)
-	}
-
-	if err := s.orgs.UpdateMemberStatus(ctx, oid, uid, status); err != nil {
+	if err := s.orgs.UpdateMember(ctx, m, msg.FieldMask); err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
 

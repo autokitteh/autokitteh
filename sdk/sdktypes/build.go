@@ -12,6 +12,8 @@ import (
 
 type Build struct{ object[*BuildPB, BuildTraits] }
 
+func init() { registerObject[Build]() }
+
 type BuildPB = buildsv1.Build
 
 type BuildTraits struct{ immutableObjectTrait }

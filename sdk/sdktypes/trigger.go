@@ -11,6 +11,8 @@ type Trigger struct {
 	object[*TriggerPB, TriggerTraits]
 }
 
+func init() { registerObject[Trigger]() }
+
 var InvalidTrigger Trigger
 
 type TriggerPB = triggerv1.Trigger

@@ -15,6 +15,8 @@ import (
 
 type Event struct{ object[*EventPB, EventTraits] }
 
+func init() { registerObject[Event]() }
+
 var InvalidEvent Event
 
 type EventPB = eventv1.Event

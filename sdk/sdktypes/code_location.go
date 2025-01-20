@@ -18,6 +18,8 @@ type CodeLocation struct {
 	object[*CodeLocationPB, CodeLocationTraits]
 }
 
+func init() { registerObject[CodeLocation]() }
+
 type CodeLocationPB = programv1.CodeLocation
 
 type CodeLocationTraits struct{ immutableObjectTrait }
