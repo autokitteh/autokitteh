@@ -1,3 +1,10 @@
+error: cannot pickle result - cannot pickle '_thread.lock' object
+
+=======================================================================================================
+The below error means you need to use the @autokitteh.activity decorator.
+See https://docs.autokitteh.com/develop/python/#function-arguments-and-return-values-must-be-pickleable
+for more details.
+=======================================================================================================
 -- main.py:main --
 from threading import Lock
 
@@ -8,4 +15,3 @@ def main(event):
     print('unlocked')
 
 # This should fail, which is OK since you can't pickle Lock objects
-# For now there's no output, we'll fix it later

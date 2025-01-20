@@ -1,0 +1,12 @@
+ERROR: bad token
+
+-- main.py:main --
+from slack_sdk.errors import SlackApiError
+
+
+def main(event):
+    try:
+        raise SlackApiError('cannot connect', response={'error': 'bad token'})
+    except SlackApiError as err:
+        message = err.response.get('error', 'UNKNOWN ERROR')
+        print('ERROR:', message)
