@@ -31,6 +31,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/connections"
 	"go.autokitteh.dev/autokitteh/internal/backend/connectionsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/connectionsinitsvc"
+	"go.autokitteh.dev/autokitteh/internal/backend/crontab"
 	"go.autokitteh.dev/autokitteh/internal/backend/dashboardsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbfactory"
@@ -235,6 +236,18 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				func(lc fx.Lifecycle, sch *scheduler.Scheduler, d sdkservices.Dispatcher, ts sdkservices.Triggers) {
 					HookOnStart(lc, func(ctx context.Context) error {
 						return sch.Start(ctx, d, ts)
+					})
+				},
+			),
+		),
+		Component(
+			"crontab",
+			crontab.Configs,
+			fx.Provide(crontab.New),
+			fx.Invoke(
+				func(lc fx.Lifecycle, ct *crontab.Crontab, c sdkservices.Connections, v sdkservices.Vars, o sdkservices.OAuth) {
+					HookOnStart(lc, func(ctx context.Context) error {
+						return ct.Start(ctx, c, v, o)
 					})
 				},
 			),
