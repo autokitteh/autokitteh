@@ -267,6 +267,7 @@ class Runner(pb.runner_rpc.RunnerService):
                 self.worker.Done(req)
             except grpc.RpcError as err:
                 log.error("done send error: %r", err)
+                self.server.stop(SERVER_GRACE_TIMEOUT)
 
             return pb.runner.ActivityReplyResponse(error=request.error)
 
