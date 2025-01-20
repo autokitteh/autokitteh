@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -101,7 +102,10 @@ func connTest(i *integration) sdkintegrations.OptFn {
 		// https://auth0.com/docs/api/management/v2/stats/get-active-users
 		url := fmt.Sprintf("https://%s/api/v2/stats/active-users", domain)
 
-		req, err := http.NewRequest(http.MethodGet, url, nil)
+		timeoutCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
+		defer cancel()
+
+		req, err := http.NewRequestWithContext(timeoutCtx, http.MethodGet, url, nil)
 		if err != nil {
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 		}
