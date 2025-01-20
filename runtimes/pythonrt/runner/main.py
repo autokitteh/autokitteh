@@ -1,6 +1,5 @@
 import builtins
 import json
-import os
 import pickle
 import sys
 from base64 import b64decode
@@ -9,7 +8,7 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from io import StringIO
 from multiprocessing import cpu_count
 from pathlib import Path
-from threading import Lock, Thread
+from threading import Lock, Thread, Timer
 from time import sleep
 from traceback import TracebackException, format_exception
 
@@ -24,7 +23,9 @@ from autokitteh import AttrDict, connections
 from call import AKCall, full_func_name
 from syscalls import SysCalls
 
-SERVER_GRACE_TIMEOUT = 3  # seconds
+# Timeouts are in seconds
+SERVER_GRACE_TIMEOUT = 3
+START_TIMEOUT = 10
 
 
 class ActivityError(Exception):
@@ -100,12 +101,6 @@ def fix_http_body(event):
             pass
 
 
-def killIfStartWasntCalled(runner):
-    if not runner.did_start:
-        print("Start was not called, killing self")
-        os._exit(1)
-
-
 def abort_with_exception(context, status, err):
     io = StringIO()
     print(err, file=io)
@@ -130,6 +125,13 @@ class Runner(pb.runner_rpc.RunnerService):
         self.activity_calls: list[Call] = []
         self._orig_print = print
         self._start_called = False
+        self._inactivty_timer = Timer(START_TIMEOUT, self.stop_if_start_not_called)
+        self._inactivty_timer.start()
+
+    def stop_if_start_not_called(self):
+        log.error("Start not called after %s seconds, terminating", START_TIMEOUT)
+        if self.server:
+            self.server.stop(SERVER_GRACE_TIMEOUT)
 
     def Exports(self, request: pb.runner.ExportsRequest, context: grpc.ServicerContext):
         if request.file_name == "":
@@ -170,6 +172,8 @@ class Runner(pb.runner_rpc.RunnerService):
         if self._start_called:
             log.error("already called start before")
             return pb.runner.StartResponse(error="start already called")
+
+        self._inactivty_timer.cancel()
 
         self._start_called = True
         log.info("start request: %r", request.entry_point)

@@ -10,7 +10,7 @@ import json
 import pickle
 import sys
 from concurrent.futures import Future
-from subprocess import run
+from subprocess import run, Popen, TimeoutExpired
 from unittest.mock import MagicMock
 
 import main
@@ -91,3 +91,26 @@ def test_activity_reply():
     assert resp.error == ""
     assert fut.done()
     assert fut.result() == value
+
+
+# TODO: This test takes about 14 seconds to finish, can we do it faster?
+def test_start_timeout(monkeypatch, tmp_path):
+    cmd = [
+        sys.executable,
+        "main.py",
+        "--skip-check-worker",
+        "--port",
+        "0",
+        "--runner-id",
+        "r1",
+        "--code-dir",
+        str(tmp_path),
+    ]
+
+    timeout = main.START_TIMEOUT + main.SERVER_GRACE_TIMEOUT + 1
+    p = Popen(cmd)
+    try:
+        p.wait(timeout)
+    except TimeoutExpired:
+        p.kill()
+        assert False, "server did not terminate"
