@@ -112,7 +112,7 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	ctx := extrazap.AttachLoggerToContext(l, r.Context())
 	for _, id := range ids {
 		value := strconv.Itoa(id)
-		cids, err := h.vars.FindConnectionIDs(ctx, integrationID, webhookID, value)
+		cids, err := h.vars.FindConnectionIDs(ctx, IntegrationID, WebhookID, value)
 		if err != nil {
 			l.Error("Failed to find connection IDs", zap.Error(err))
 			break

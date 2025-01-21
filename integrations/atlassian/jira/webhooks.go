@@ -294,11 +294,11 @@ type webhookRefreshResponse struct {
 	ExpirationDate string `json:"expirationDate,omitempty"`
 }
 
-// extendWebhookLife extends the expiration date of the given webhook ID by 30 days. Based on:
+// ExtendWebhookLife extends the expiration date of the given webhook ID by 30 days. Based on:
 // https://developer.atlassian.com/cloud/jira/platform/webhooks/#using-the-rest-api--refreshing-registered-webhooks
 // https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-webhooks/#api-rest-api-3-webhook-refresh-put
 // https://developer.atlassian.com/server/jira/platform/webhooks/
-func extendWebhookLife(l *zap.Logger, baseURL, oauthToken string, id int) (time.Time, bool) {
+func ExtendWebhookLife(l *zap.Logger, baseURL, oauthToken string, id int) (time.Time, bool) {
 	jsonReader := bytes.NewReader([]byte(fmt.Sprintf(`{"webhookIds": [%d]}`, id)))
 	req, err := http.NewRequest(http.MethodPut, baseURL+"/rest/api/3/webhook/refresh", jsonReader)
 	if err != nil {
