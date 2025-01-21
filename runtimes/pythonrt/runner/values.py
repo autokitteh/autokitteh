@@ -25,7 +25,7 @@ def wrap_unhandled(v: Any) -> pb.Value:
 
 
 def safe_wrap(v):
-    """Same as wrap, but does raise TypeError if a type is not supported.
+    """Same as wrap, but does not raise TypeError if a type is not supported.
 
     Instead, it returns a struct with the type and the string representation of the value.
     """
