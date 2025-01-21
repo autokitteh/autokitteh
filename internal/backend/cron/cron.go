@@ -13,7 +13,7 @@
 // Note that even in the worst case (a child workflow fails or gets terminated
 // by the next invocation), successful activities won't need to run again, so
 // congestions will be resolved eventually no matter what.
-package crontab
+package cron
 
 import (
 	"context"
