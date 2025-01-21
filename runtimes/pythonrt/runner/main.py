@@ -248,7 +248,7 @@ class Runner(pb.runner_rpc.RunnerService):
             result=pb.values.Value(
                 custom=pb.values.Custom(
                     data=data,
-                    value=safe_wrap(result.value),
+                    value=values.safe_wrap(result.value),
                 ),
             )
         )
@@ -325,8 +325,8 @@ class Runner(pb.runner_rpc.RunnerService):
             runner_id=self.id,
             call_info=pb.handler.CallInfo(
                 function=fn.__name__,  # AK rejects __qualname__ such as "json.loads"
-                args=[safe_wrap(a) for a in args],
-                kwargs={k: safe_wrap(v) for k, v in kw.items()},
+                args=[values.safe_wrap(a) for a in args],
+                kwargs={k: values.safe_wrap(v) for k, v in kw.items()},
             ),
         )
         log.info("activity: sending")
@@ -369,7 +369,7 @@ class Runner(pb.runner_rpc.RunnerService):
             try:
                 data = pickle.dumps(result)
                 req.result.custom.data = data
-                req.result.custom.value.CopyFrom(safe_wrap(result.value))
+                req.result.custom.value.CopyFrom(values.safe_wrap(result.value))
             except (TypeError, pickle.PickleError) as err:
                 req.error = f"can't pickle {result.value} - {err}"
 
@@ -399,13 +399,6 @@ class Runner(pb.runner_rpc.RunnerService):
                 log.error("grpc cancelled or unavailable, killing self")
                 self.server.stop(SERVER_GRACE_TIMEOUT)
             log.error("print: %s", err)
-
-
-def safe_wrap(v):
-    try:
-        return values.wrap(v)
-    except TypeError:
-        return pb.values.Value(string=pb.values.String(v=repr(v)))
 
 
 def is_valid_port(port):
