@@ -1,4 +1,11 @@
 -- +goose Up
+-- remove deleted sessions and events
+DELETE from "session_log_records" where session_id in (select session_id from sessions where deleted_at is not NULL);
+DELETE from "session_call_specs" where session_id in (select session_id from sessions where deleted_at is not NULL);
+DELETE from "session_call_attempts" where session_id in (select session_id from sessions where deleted_at is not NULL);
+DELETE from "sessions" where deleted_at is not NULL;
+DELETE from events where deleted_at is not NULL;
+
 -- modify "events" table
 ALTER TABLE "events" DROP CONSTRAINT "fk_events_connection", DROP CONSTRAINT "fk_events_trigger", DROP COLUMN "deleted_at", ADD
  CONSTRAINT "fk_events_connection" FOREIGN KEY ("connection_id") REFERENCES "connections" ("connection_id") ON UPDATE NO ACTION ON DELETE SET NULL, ADD
