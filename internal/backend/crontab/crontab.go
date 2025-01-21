@@ -17,6 +17,7 @@ package crontab
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -170,11 +171,12 @@ func (ct *Crontab) workflow(wctx workflow.Context) error {
 	cwfs = append(cwfs, workflow.ExecuteChildWorkflow(wctx, ct.renewJiraEventWatchesWorkflow))
 
 	// Report an error if any child workflow failed.
+	errs := make([]error, 0)
 	for _, future := range cwfs {
 		if err := future.Get(wctx, nil); err != nil {
-			return err
+			errs = append(errs, err)
 		}
 	}
 
-	return nil
+	return errors.Join(errs...)
 }
