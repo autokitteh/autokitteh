@@ -12,6 +12,27 @@ from google.protobuf.duration_pb2 import Duration
 from google.protobuf.timestamp_pb2 import Timestamp
 
 
+def wrap_unhandled(v: Any) -> pb.Value:
+    return pb.Value(
+        struct=pb.Struct(
+            ctor=wrap("unhandled_type"),
+            fields={
+                "repr": wrap(repr(v)),
+                "type": wrap(str(type(v))),
+            },
+        )
+    )
+
+
+def safe_wrap(v):
+    """Same as wrap, but does raise TypeError if a type is not supported.
+
+    Instead, it returns a struct with the type and the string representation of the value.
+    """
+
+    return wrap(v, unhandled=wrap_unhandled)
+
+
 def wrap(v: Any, unhandled: Callable[[Any], pb.Value] = None) -> pb.Value:
     """Wrap a python value into an autokitteh value.
 
@@ -86,7 +107,7 @@ def wrap(v: Any, unhandled: Callable[[Any], pb.Value] = None) -> pb.Value:
         )
 
     if unhandled:
-        return unhandled(v)
+        return unhandled(v) or pb.Value(nothing=pb.Nothing())
 
     raise TypeError(f"unsupported type: {type(v)}")
 

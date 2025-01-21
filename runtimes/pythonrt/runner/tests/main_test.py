@@ -14,6 +14,7 @@ from subprocess import run
 from unittest.mock import MagicMock
 
 import main
+import values
 import pb.autokitteh.user_code.v1.runner_svc_pb2 as runner_pb
 import pb.autokitteh.user_code.v1.user_code_pb2 as user_code
 import pb.autokitteh.values.v1.values_pb2 as pb_values
@@ -83,7 +84,7 @@ def test_activity_reply():
             custom=pb_values.Custom(
                 executor_id=runner.id,
                 data=pickle.dumps(result),
-                value=main.safe_wrap(result.value),
+                value=values.safe_wrap(result.value),
             ),
         )
     )
