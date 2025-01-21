@@ -18,6 +18,14 @@ func (ct *Crontab) renewGoogleDriveEventWatchesWorkflow(wctx workflow.Context) e
 	return nil // TODO(INT-184): Implement.
 }
 
+func (ct *Crontab) listGoogleCalendarConnectionsActivity(ctx context.Context) ([]sdktypes.ConnectionID, error) {
+	return nil, nil // TODO(INT-184): Implement.
+}
+
+func (ct *Crontab) listGoogleDriveConnectionsActivity(ctx context.Context) ([]sdktypes.ConnectionID, error) {
+	return nil, nil // INT-184: Implement.
+}
+
 func (ct *Crontab) renewGoogleCalendarEventWatchActivity(ctx context.Context, cid sdktypes.ConnectionID) error {
 	return nil // TODO(INT-184): Implement.
 }

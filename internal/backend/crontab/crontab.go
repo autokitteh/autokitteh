@@ -89,12 +89,15 @@ func (ct *Crontab) Start(ctx context.Context, c sdkservices.Connections, v sdkse
 	w.RegisterWorkflowWithOptions(ct.workflow, workflow.RegisterOptions{Name: workflowName})
 
 	w.RegisterWorkflow(ct.renewGoogleCalendarEventWatchesWorkflow)
+	w.RegisterActivity(ct.listGoogleCalendarConnectionsActivity)
 	w.RegisterActivity(ct.renewGoogleCalendarEventWatchActivity)
 
 	w.RegisterWorkflow(ct.renewGoogleDriveEventWatchesWorkflow)
+	w.RegisterActivity(ct.listGoogleDriveConnectionsActivity)
 	w.RegisterActivity(ct.renewGoogleDriveEventWatchActivity)
 
 	w.RegisterWorkflow(ct.renewJiraEventWatchesWorkflow)
+	w.RegisterActivity(ct.listJiraConnectionsActivity)
 	w.RegisterActivity(ct.renewJiraEventWatchActivity)
 
 	// Start the worker.

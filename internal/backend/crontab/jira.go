@@ -22,20 +22,17 @@ import (
 // TODO(INT-190): Move this to the Jira integration package.
 
 func (ct *Crontab) renewJiraEventWatchesWorkflow(wctx workflow.Context) error {
-	// Enumerate all Jira connections (there's no single connection var value
-	// that we're looking for, so we can't use "ct.vars.FindConnectionIDs").
-	ctx := authcontext.SetAuthnSystemUser(context.Background())
-	cs, err := ct.connections.List(ctx, sdkservices.ListConnectionsFilter{IntegrationID: jira.IntegrationID})
+	actx := temporalclient.WithActivityOptions(wctx, taskQueueName, ct.cfg.Activity)
+
+	var cids []sdktypes.ConnectionID
+	err := workflow.ExecuteActivity(actx, ct.listJiraConnectionsActivity).Get(wctx, &cids)
 	if err != nil {
-		ct.logger.Error("Failed to list Jira connections for event watch renewal", zap.Error(err))
 		return err
 	}
 
-	// Check each Jira connection, renew its event watch if needed, abort on the first error.
 	errs := make([]error, 0)
-	for _, c := range cs {
-		actx := temporalclient.WithActivityOptions(wctx, taskQueueName, ct.cfg.Activity)
-		err := workflow.ExecuteActivity(actx, ct.renewJiraEventWatchActivity, c.ID()).Get(wctx, nil)
+	for _, cid := range cids {
+		err := workflow.ExecuteActivity(actx, ct.renewJiraEventWatchActivity, cid).Get(wctx, nil)
 		if err != nil {
 			errs = append(errs, err)
 		}
@@ -44,69 +41,108 @@ func (ct *Crontab) renewJiraEventWatchesWorkflow(wctx workflow.Context) error {
 	return errors.Join(errs...)
 }
 
-func (ct *Crontab) renewJiraEventWatchActivity(ctx context.Context, cid sdktypes.ConnectionID) error {
-	l := ct.logger.With(zap.String("connection_id", cid.String()))
+func (ct *Crontab) listJiraConnectionsActivity(ctx context.Context) ([]sdktypes.ConnectionID, error) {
 	ctx = authcontext.SetAuthnSystemUser(ctx)
 
-	// Load the Jira connection's webhook expiration and ID.
-	vs, err := ct.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+	// Enumerate all Jira connections (there's no single connection var value
+	// that we're looking for, so we can't use "ct.vars.FindConnectionIDs").
+	cs, err := ct.connections.List(ctx, sdkservices.ListConnectionsFilter{
+		IntegrationID: jira.IntegrationID,
+	})
 	if err != nil {
-		l.Error("Failed to get Jira connection vars for event watch renewal", zap.Error(err))
-		return err
+		ct.logger.Error("failed to list Jira connections for event watch renewal", zap.Error(err))
+		return nil, err
+	}
+
+	cids := make([]sdktypes.ConnectionID, 0)
+	for _, c := range cs {
+		cid := c.ID()
+		if ct.checkJiraEventWatch(ctx, cid) {
+			cids = append(cids, cid)
+		}
+	}
+
+	return cids, nil
+}
+
+func (ct *Crontab) checkJiraEventWatch(ctx context.Context, cid sdktypes.ConnectionID) bool {
+	l := ct.logger.With(zap.String("connection_id", cid.String()))
+
+	vs, err := ct.vars.Get(ctx, sdktypes.NewVarScopeID(cid), jira.WebhookID, jira.WebhookExpiration)
+	if err != nil {
+		l.Error("failed to get Jira connection vars for event watch renewal", zap.Error(err))
+		return false
 	}
 
 	watchID := vs.GetValue(jira.WebhookID)
 	if watchID == "" {
 		// Jira connection uses an API token or a PAT instead of OAuth,
 		// so it doesn't have an event watch to renew.
-		return nil
+		return false
 	}
 
-	id, err := strconv.Atoi(watchID)
+	e := vs.GetValue(jira.WebhookExpiration)
+	twoWeeksFromNow := time.Now().UTC().AddDate(0, 0, 14)
+	t, err := time.Parse(time.RFC3339, e)
 	if err != nil {
-		l.Error("Invalid Jira event watch ID for renewal", zap.Error(err))
+		l.Error("invalid Jira event watch expiration time during renewal check",
+			zap.String("expiration", e), zap.Error(err),
+		)
+		return false
+	}
+
+	// Update this event watch only if it's about to expire in less than 2 weeks.
+	return t.UTC().Before(twoWeeksFromNow)
+}
+
+func (ct *Crontab) renewJiraEventWatchActivity(ctx context.Context, cid sdktypes.ConnectionID) error {
+	l := ct.logger.With(zap.String("connection_id", cid.String()))
+	ctx = authcontext.SetAuthnSystemUser(ctx)
+
+	// Load the Jira connection's webhook ID.
+	vs, err := ct.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+	if err != nil {
+		l.Error("failed to get Jira connection vars for event watch renewal", zap.Error(err))
 		return err
 	}
 
-	twoWeeksFromNow := time.Now().UTC().AddDate(0, 0, 14)
-	expiration, err := time.Parse(time.RFC3339, vs.GetValue(jira.WebhookExpiration))
-	if err == nil && expiration.UTC().After(twoWeeksFromNow) {
-		// The event watch is still valid for at least 2 weeks,
-		// so there's no need to renew it.
-		return nil
+	id, err := strconv.Atoi(vs.GetValue(jira.WebhookID))
+	if err != nil {
+		l.Error("invalid Jira event watch ID for renewal", zap.Error(err))
+		return err
 	}
 
 	// Load the Jira OAuth configuration, to get a fresh OAuth access token.
 	cfg, _, err := ct.oauth.Get(ctx, "jira")
 	if err != nil {
-		l.Error("Failed to get OAuth config for Jira event watch renewal", zap.Error(err))
+		l.Error("failed to get OAuth config for Jira event watch renewal", zap.Error(err))
 		return err
 	}
 
 	refreshToken := vs.GetValueByString("oauth_RefreshToken")
 	t, err := cfg.TokenSource(ctx, &oauth2.Token{RefreshToken: refreshToken}).Token()
 	if err != nil {
-		l.Error("Failed to refresh OAuth token for Jira event watch renewal", zap.Error(err))
+		l.Error("failed to refresh OAuth token for Jira event watch renewal", zap.Error(err))
 		return err
 	}
 
 	// Refresh the event watch (2 weeks --> 1 month).
 	u, err := jira.APIBaseURL()
 	if err != nil {
-		l.Error("Invalid Atlassian base URL for Jira event watch renewal", zap.Error(err))
+		l.Error("invalid Atlassian base URL for Jira event watch renewal", zap.Error(err))
 		return err
 	}
 
 	u, err = url.JoinPath(u, "/ex/jira", vs.GetValue(jira.AccessID))
 	if err != nil {
-		l.Error("Failed to construct Jira API URL for event watch renewal", zap.Error(err))
+		l.Error("failed to construct Jira API URL for event watch renewal", zap.Error(err))
 		return err
 	}
 
 	newExp, ok := jira.ExtendWebhookLife(l, u, t.AccessToken, id)
 	if !ok {
-		l.Error("Failed to renew Jira event watch")
-		return fmt.Errorf("Failed to renew Jira event watch: %s", cid.String())
+		l.Error("failed to renew Jira event watch")
+		return fmt.Errorf("failed to renew Jira event watch: %s", cid.String())
 	}
 
 	// Update the connection vars.
@@ -115,8 +151,9 @@ func (ct *Crontab) renewJiraEventWatchActivity(ctx context.Context, cid sdktypes
 	vs.Set(sdktypes.NewSymbol("oauth_RefreshToken"), t.RefreshToken, true)
 	vs.Set(sdktypes.NewSymbol("WebhookExpiration"), newExp.Format(time.RFC3339), false)
 	if err := ct.vars.Set(ctx, vs...); err != nil {
-		l.Error("Failed to update Jira connection vars after event watch renewal", zap.Error(err))
+		l.Error("failed to update Jira connection vars after event watch renewal", zap.Error(err))
 		return err
 	}
+
 	return nil
 }
