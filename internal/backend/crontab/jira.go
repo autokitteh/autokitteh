@@ -19,6 +19,8 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+// TODO(INT-190): Move this to the Jira integration package.
+
 func (ct *Crontab) renewJiraEventWatchesWorkflow(wctx workflow.Context) error {
 	// Enumerate all Jira connections (there's no single connection var value
 	// that we're looking for, so we can't use "ct.vars.FindConnectionIDs").
