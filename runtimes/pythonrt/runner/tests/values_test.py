@@ -6,7 +6,6 @@ import google.protobuf.timestamp_pb2 as timestamp_pb2
 import pb.autokitteh.values.v1.values_pb2 as pb
 import pytest
 from threading import Lock
-import requests
 
 from values import unwrap, wrap, safe_wrap, wrap_unhandled
 
