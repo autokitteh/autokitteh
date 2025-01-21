@@ -1,4 +1,4 @@
-// Package crontab is a Temporal worker that implements recurring internal
+// Package cron is a Temporal worker that implements recurring internal
 // maintenance tasks (e.g. cleanups, 3rd-party event watch renewals, etc.).
 //
 // In a normal state, Temporal will have: 1 available worker PER connected
@@ -62,7 +62,7 @@ var (
 	}
 )
 
-type Crontab struct {
+type Cron struct {
 	cfg         *Config
 	logger      *zap.Logger
 	temporal    temporalclient.Client
@@ -71,34 +71,34 @@ type Crontab struct {
 	oauth       sdkservices.OAuth
 }
 
-func New(c *Config, l *zap.Logger, t temporalclient.Client) *Crontab {
-	return &Crontab{cfg: c, logger: l, temporal: t}
+func New(c *Config, l *zap.Logger, t temporalclient.Client) *Cron {
+	return &Cron{cfg: c, logger: l, temporal: t}
 }
 
-func (ct *Crontab) Start(ctx context.Context, c sdkservices.Connections, v sdkservices.Vars, o sdkservices.OAuth) error {
-	ct.connections = c
-	ct.vars = v
-	ct.oauth = o
+func (cr *Cron) Start(ctx context.Context, c sdkservices.Connections, v sdkservices.Vars, o sdkservices.OAuth) error {
+	cr.connections = c
+	cr.vars = v
+	cr.oauth = o
 
 	// Configure a worker for the internal maintenance workflow.
-	w := temporalclient.NewWorker(ct.logger, ct.temporal.Temporal(), taskQueueName, ct.cfg.Worker)
+	w := temporalclient.NewWorker(cr.logger, cr.temporal.Temporal(), taskQueueName, cr.cfg.Worker)
 	if w == nil {
 		return nil
 	}
 
-	w.RegisterWorkflowWithOptions(ct.workflow, workflow.RegisterOptions{Name: workflowName})
+	w.RegisterWorkflowWithOptions(cr.workflow, workflow.RegisterOptions{Name: workflowName})
 
-	w.RegisterWorkflow(ct.renewGoogleCalendarEventWatchesWorkflow)
-	w.RegisterActivity(ct.listGoogleCalendarConnectionsActivity)
-	w.RegisterActivity(ct.renewGoogleCalendarEventWatchActivity)
+	w.RegisterWorkflow(cr.renewGoogleCalendarEventWatchesWorkflow)
+	w.RegisterActivity(cr.listGoogleCalendarConnectionsActivity)
+	w.RegisterActivity(cr.renewGoogleCalendarEventWatchActivity)
 
-	w.RegisterWorkflow(ct.renewGoogleDriveEventWatchesWorkflow)
-	w.RegisterActivity(ct.listGoogleDriveConnectionsActivity)
-	w.RegisterActivity(ct.renewGoogleDriveEventWatchActivity)
+	w.RegisterWorkflow(cr.renewGoogleDriveEventWatchesWorkflow)
+	w.RegisterActivity(cr.listGoogleDriveConnectionsActivity)
+	w.RegisterActivity(cr.renewGoogleDriveEventWatchActivity)
 
-	w.RegisterWorkflow(ct.renewJiraEventWatchesWorkflow)
-	w.RegisterActivity(ct.listJiraConnectionsActivity)
-	w.RegisterActivity(ct.renewJiraEventWatchActivity)
+	w.RegisterWorkflow(cr.renewJiraEventWatchesWorkflow)
+	w.RegisterActivity(cr.listJiraConnectionsActivity)
+	w.RegisterActivity(cr.renewJiraEventWatchActivity)
 
 	// Start the worker.
 	if err := w.Start(); err != nil {
@@ -107,22 +107,22 @@ func (ct *Crontab) Start(ctx context.Context, c sdkservices.Connections, v sdkse
 
 	// Create or update the internal maintenance schedule.
 	var err error
-	if handle, ok := ct.scheduleAlreadyCreated(ctx); ok {
-		err = ct.updateSchedule(ctx, handle)
+	if handle, ok := cr.scheduleAlreadyCreated(ctx); ok {
+		err = cr.updateSchedule(ctx, handle)
 	} else {
-		err = ct.createSchedule(ctx)
+		err = cr.createSchedule(ctx)
 	}
 	return err
 }
 
-func (ct *Crontab) scheduleAlreadyCreated(ctx context.Context) (client.ScheduleHandle, bool) {
-	h := ct.temporal.Temporal().ScheduleClient().GetHandle(ctx, scheduleID)
+func (cr *Cron) scheduleAlreadyCreated(ctx context.Context) (client.ScheduleHandle, bool) {
+	h := cr.temporal.Temporal().ScheduleClient().GetHandle(ctx, scheduleID)
 	_, err := h.Describe(ctx)
 	return h, err == nil
 }
 
-func (ct *Crontab) createSchedule(ctx context.Context) error {
-	handle, err := ct.temporal.Temporal().ScheduleClient().Create(ctx, client.ScheduleOptions{
+func (cr *Cron) createSchedule(ctx context.Context) error {
+	handle, err := cr.temporal.Temporal().ScheduleClient().Create(ctx, client.ScheduleOptions{
 		ID:      scheduleID,
 		Spec:    scheduleSpec,
 		Action:  scheduleAction,
@@ -132,15 +132,15 @@ func (ct *Crontab) createSchedule(ctx context.Context) error {
 		return fmt.Errorf("cron: create schedule: %w", err)
 	}
 
-	ct.logger.Info("created internal maintenance schedule",
+	cr.logger.Info("created internal maintenance schedule",
 		zap.String("schedule_id", scheduleID),
 		zap.String("handle_id", handle.GetID()),
 	)
 	return nil
 }
 
-func (ct *Crontab) updateSchedule(ctx context.Context, handle client.ScheduleHandle) error {
-	ct.logger.Debug("found existing internal maintenance schedule")
+func (cr *Cron) updateSchedule(ctx context.Context, handle client.ScheduleHandle) error {
+	cr.logger.Debug("found existing internal maintenance schedule")
 
 	// Attention: "handle.Update" calls are susceptible to race conditions,
 	// but that's not a concern here because the schedule is supposed to be
@@ -158,7 +158,7 @@ func (ct *Crontab) updateSchedule(ctx context.Context, handle client.ScheduleHan
 		},
 	})
 	if err != nil {
-		ct.logger.Warn("failed to update internal maintenance schedule", zap.Error(err))
+		cr.logger.Warn("failed to update internal maintenance schedule", zap.Error(err))
 	}
 
 	return nil
@@ -166,12 +166,12 @@ func (ct *Crontab) updateSchedule(ctx context.Context, handle client.ScheduleHan
 
 // workflow is the main entry point for the internal maintenance workflow.
 // It is triggered by the schedule created in [createSchedule].
-func (ct *Crontab) workflow(wctx workflow.Context) error {
+func (cr *Cron) workflow(wctx workflow.Context) error {
 	// Start multiple child workflows in parallel.
 	cwfs := []workflow.ChildWorkflowFuture{}
-	cwfs = append(cwfs, workflow.ExecuteChildWorkflow(wctx, ct.renewGoogleCalendarEventWatchesWorkflow))
-	cwfs = append(cwfs, workflow.ExecuteChildWorkflow(wctx, ct.renewGoogleDriveEventWatchesWorkflow))
-	cwfs = append(cwfs, workflow.ExecuteChildWorkflow(wctx, ct.renewJiraEventWatchesWorkflow))
+	cwfs = append(cwfs, workflow.ExecuteChildWorkflow(wctx, cr.renewGoogleCalendarEventWatchesWorkflow))
+	cwfs = append(cwfs, workflow.ExecuteChildWorkflow(wctx, cr.renewGoogleDriveEventWatchesWorkflow))
+	cwfs = append(cwfs, workflow.ExecuteChildWorkflow(wctx, cr.renewJiraEventWatchesWorkflow))
 
 	// Report an error if any child workflow failed.
 	errs := make([]error, 0)

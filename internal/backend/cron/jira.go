@@ -21,7 +21,7 @@ import (
 
 // TODO(INT-190): Move this to the Jira integration package.
 
-func (ct *Crontab) renewJiraEventWatchesWorkflow(wctx workflow.Context) error {
+func (ct *Cron) renewJiraEventWatchesWorkflow(wctx workflow.Context) error {
 	actx := temporalclient.WithActivityOptions(wctx, taskQueueName, ct.cfg.Activity)
 
 	var cids []sdktypes.ConnectionID
@@ -41,7 +41,7 @@ func (ct *Crontab) renewJiraEventWatchesWorkflow(wctx workflow.Context) error {
 	return errors.Join(errs...)
 }
 
-func (ct *Crontab) listJiraConnectionsActivity(ctx context.Context) ([]sdktypes.ConnectionID, error) {
+func (ct *Cron) listJiraConnectionsActivity(ctx context.Context) ([]sdktypes.ConnectionID, error) {
 	ctx = authcontext.SetAuthnSystemUser(ctx)
 
 	// Enumerate all Jira connections (there's no single connection var value
@@ -65,7 +65,7 @@ func (ct *Crontab) listJiraConnectionsActivity(ctx context.Context) ([]sdktypes.
 	return cids, nil
 }
 
-func (ct *Crontab) checkJiraEventWatch(ctx context.Context, cid sdktypes.ConnectionID) bool {
+func (ct *Cron) checkJiraEventWatch(ctx context.Context, cid sdktypes.ConnectionID) bool {
 	l := ct.logger.With(zap.String("connection_id", cid.String()))
 
 	vs, err := ct.vars.Get(ctx, sdktypes.NewVarScopeID(cid), jira.WebhookID, jira.WebhookExpiration)
@@ -95,7 +95,7 @@ func (ct *Crontab) checkJiraEventWatch(ctx context.Context, cid sdktypes.Connect
 	return t.UTC().Before(twoWeeksFromNow)
 }
 
-func (ct *Crontab) renewJiraEventWatchActivity(ctx context.Context, cid sdktypes.ConnectionID) error {
+func (ct *Cron) renewJiraEventWatchActivity(ctx context.Context, cid sdktypes.ConnectionID) error {
 	l := ct.logger.With(zap.String("connection_id", cid.String()))
 	ctx = authcontext.SetAuthnSystemUser(ctx)
 
