@@ -33,5 +33,5 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Finish implement.
+	// TODO(BEFORE MERGE): Finish implementation.
 }
