@@ -149,6 +149,30 @@ def test_safe_wrap():
     v = Lock()
     u = safe_wrap(v)
     assert u == wrap_unhandled(v)
-    assert u.struct.ctor == wrap("unhandled_type")
+    assert u.struct.ctor == wrap("__unhandled_type")
     assert u.struct.fields.keys() == {"type", "repr"}
     assert u.struct.fields["type"] == wrap("<class '_thread.lock'>")
+
+
+def test_recursive_wrap():
+    class C:
+        def __init__(self):
+            self.x = "meow"
+            self.next = self
+
+    c = C()
+
+    assert wrap(c) == pb.Value(
+        struct=pb.Struct(
+            ctor=wrap("C"),
+            fields={
+                "x": wrap("meow"),
+                "next": pb.Value(
+                    struct=pb.Struct(
+                        ctor=wrap("__recursive_value"),
+                        fields={"value": wrap(repr(c))},
+                    )
+                ),
+            },
+        ),
+    )
