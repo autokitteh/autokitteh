@@ -7,13 +7,26 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
+
+var (
+	authTypeVar = sdktypes.NewSymbol("auth_type")
+
+	clientIDVar     = sdktypes.NewSymbol("client_id")
+	clientSecretVar = sdktypes.NewSymbol("client_secret")
+)
+
+// isSecrets shows which connection variables are secrets.
+func isSecret(varName sdktypes.Symbol) bool {
+	return varName == clientSecretVar
+}
 
 // handleOAuth receives an incoming redirect request from AutoKitteh's
 // generic OAuth service, which contains an OAuth token (if the OAuth
 // flow was successful) and form parameters for debugging and validation.
 // This is the last step in a 3-legged OAuth 2.0 flow, in which we verify
-// the Xusability of the OAuth token, and save it as connection variables.
+// the usability of the OAuth token, and save it as connection variables.
 func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, desc)
 

@@ -1,6 +1,7 @@
 package microsoft
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -10,6 +11,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 // handleSave saves connection variables for an AutoKitteh connection.
@@ -38,14 +40,19 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 
 	// Determine what to save and how to proceed.
 	switch at := r.FormValue("auth_type"); at {
-	// Use the AutoKitteh's server's default Microsoft 365 OAuth 2.0 app, i.e.
+	// Use the AutoKitteh's server's default Microsoft OAuth 2.0 app, i.e.
 	// immediately redirect to the 3-legged OAuth 2.0 flow's starting point.
 	case integrations.OAuthDefault:
 		startOAuth(w, r, c, l)
 
-	// The the user-provided details of a custom Microsoft 365 OAuth 2.0 app.
+	// First save the user-provided details of a custom Microsoft OAuth 2.0 app,
+	// and only then redirect to the 3-legged OAuth 2.0 flow's starting point.
 	case integrations.OAuthCustom:
-		// TODO: Save connection vars.
+		if err := h.saveOAuthAppConfig(r, c); err != nil {
+			l.Warn("save connection: " + err.Error())
+			c.AbortBadRequest(err.Error())
+			return
+		}
 		startOAuth(w, r, c, l)
 
 	// Unknown/unrecognized mode - an error.
@@ -53,6 +60,38 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 		l.Warn("save connection: unexpected auth type", zap.String("auth_type", at))
 		c.AbortBadRequest(fmt.Sprintf("unexpected auth type %q", at))
 	}
+}
+
+// saveOAuthAppConfig saves the user-provided details of a
+// custom Microsoft OAuth 2.0 app as connection variables.
+func (h handler) saveOAuthAppConfig(r *http.Request, c sdkintegrations.ConnectionInit) error {
+	// Sanity check: the connection ID is valid.
+	cid, err := sdktypes.StrictParseConnectionID(c.ConnectionID)
+	if err != nil {
+		return fmt.Errorf("invalid connection ID: %w", err)
+	}
+
+	m := map[sdktypes.Symbol]string{
+		clientIDVar:     r.FormValue("client_id"),
+		clientSecretVar: r.FormValue("client_secret"),
+	}
+
+	// Sanity check: all the required details were provided.
+	if m[clientIDVar] == "" || m[clientSecretVar] == "" {
+		return errors.New("missing OAuth 2.0 app details")
+	}
+
+	return h.vars.Set(r.Context(), mapToVars(m, sdktypes.NewVarScopeID(cid))...)
+}
+
+// mapToVars converts a map of key-value pairs to a Vars object for a given connection.
+func mapToVars(m map[sdktypes.Symbol]string, vsid sdktypes.VarScopeID) sdktypes.Vars {
+	vs := sdktypes.NewVars()
+	for name, val := range m {
+		v := sdktypes.NewVar(name).WithScopeID(vsid).SetValue(val)
+		vs = vs.Append(v.SetSecret(isSecret(name)))
+	}
+	return vs
 }
 
 // startOAuth redirects the user to the AutoKitteh server's
@@ -79,10 +118,13 @@ func oauthURL(vs url.Values, c sdkintegrations.ConnectionInit) string {
 	path = fmt.Sprintf(path, scopes, c.ConnectionID, c.Origin)
 	path = strings.ReplaceAll(path, "-?", "?")
 
-	// Security check: ensure the URL is relative
+	// Security checks: ensure the URL is relative
 	// and doesn't contain suspicious characters.
+	if strings.Contains(path, "..") || strings.Contains(path, "//") {
+		return ""
+	}
 	u, err := url.Parse(path)
-	if err != nil || u.Hostname() != "" || strings.Contains(path, "..") || strings.Contains(path, "//") {
+	if err != nil || u.IsAbs() || u.Hostname() != "" {
 		return ""
 	}
 
