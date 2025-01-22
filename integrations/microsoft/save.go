@@ -41,16 +41,12 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	// Use the AutoKitteh's server's default Microsoft 365 OAuth 2.0 app, i.e.
 	// immediately redirect to the 3-legged OAuth 2.0 flow's starting point.
 	case integrations.OAuthDefault:
-		if urlPath := oauthStartURL(r.Form, c); urlPath != "" {
-			http.Redirect(w, r, urlPath, http.StatusFound)
-		} else {
-			l.Warn("save connection: bad OAuth redirect URL")
-			c.AbortBadRequest("bad redirect URL")
-		}
+		startOAuth(w, r, c, l)
 
 	// The the user-provided details of a custom Microsoft 365 OAuth 2.0 app.
 	case integrations.OAuthCustom:
-		// TODO: Implement.
+		// TODO: Save connection vars.
+		startOAuth(w, r, c, l)
 
 	// Unknown/unrecognized mode - an error.
 	default:
@@ -59,9 +55,20 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// oauthStartURL constructs a relative URL to start a 3-legged
-// OAuth 2.0 flow, using the AutoKitteh server's generic OAuth service.
-func oauthStartURL(vs url.Values, c sdkintegrations.ConnectionInit) string {
+// startOAuth redirects the user to the AutoKitteh server's
+// generic OAuth service, to start a 3-legged OAuth 2.0 flow.
+func startOAuth(w http.ResponseWriter, r *http.Request, c sdkintegrations.ConnectionInit, l *zap.Logger) {
+	if urlPath := oauthURL(r.Form, c); urlPath != "" {
+		http.Redirect(w, r, urlPath, http.StatusFound)
+	} else {
+		l.Warn("save connection: bad OAuth redirect URL")
+		c.AbortBadRequest("bad redirect URL")
+	}
+}
+
+// oauthURL constructs a relative URL to start a 3-legged OAuth
+// 2.0 flow, using the AutoKitteh server's generic OAuth service.
+func oauthURL(vs url.Values, c sdkintegrations.ConnectionInit) string {
 	// Default scopes: all ("microsoft").
 	path := "/oauth/start/microsoft-%s?cid=%s&origin=%s"
 
@@ -72,7 +79,8 @@ func oauthStartURL(vs url.Values, c sdkintegrations.ConnectionInit) string {
 	path = fmt.Sprintf(path, scopes, c.ConnectionID, c.Origin)
 	path = strings.ReplaceAll(path, "-?", "?")
 
-	// Security check: ensure the URL is relative and does not contain suspicious characters.
+	// Security check: ensure the URL is relative
+	// and doesn't contain suspicious characters.
 	u, err := url.Parse(path)
 	if err != nil || u.Hostname() != "" || strings.Contains(path, "..") || strings.Contains(path, "//") {
 		return ""
