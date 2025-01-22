@@ -71,11 +71,7 @@ func (h handler) saveClientIDAndSecret(ctx context.Context, c sdkintegrations.Co
 		sdktypes.NewVar(vars.PrivateKey).SetValue(privateKey).WithScopeID(scopeID).SetSecret(true),
 	}
 
-	if err := h.vars.Set(ctx, vars...); err != nil {
-		return err
-	}
-
-	return nil
+	return h.vars.Set(ctx, vars...)
 }
 
 func (h handler) isCustomOAuth(ctx context.Context, cid sdktypes.ConnectionID) bool {
