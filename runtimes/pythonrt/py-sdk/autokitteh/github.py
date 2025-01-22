@@ -50,7 +50,7 @@ def github_client(connection: str, **kwargs) -> Github:
     app = None
     private_key = os.getenv(f"{connection}__private_key")
     if private_key:
-        # Exposing the private key is fine here as it's a custom OAuth and stored in connection variables.
+        # Exposing the private key is fine here as it belongs to the user.
         app = GithubIntegration(auth=Auth.AppAuth(int(app_id), private_key), **kwargs)
     else:
         app = GithubIntegration(auth=AppAuth(int(app_id), connection), **kwargs)
