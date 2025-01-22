@@ -1,6 +1,13 @@
 -- +goose Up
 -- disable the enforcement of foreign-keys constraints
 PRAGMA foreign_keys = off;
+
+DELETE from "session_log_records" where session_id in (select session_id from sessions where deleted_at is not NULL);
+DELETE from "session_call_specs" where session_id in (select session_id from sessions where deleted_at is not NULL);
+DELETE from "session_call_attempts" where session_id in (select session_id from sessions where deleted_at is not NULL);
+DELETE from "sessions" where deleted_at is not NULL;
+DELETE from events where deleted_at is not NULL;
+
 -- create "new_session_call_attempts" table
 CREATE TABLE `new_session_call_attempts` (
   `session_id` uuid NOT NULL,
