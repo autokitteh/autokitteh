@@ -5,7 +5,9 @@ import google.protobuf.duration_pb2 as duration_pb2
 import google.protobuf.timestamp_pb2 as timestamp_pb2
 import pb.autokitteh.values.v1.values_pb2 as pb
 import pytest
-from values import unwrap, wrap
+from threading import Lock
+
+from values import unwrap, wrap, safe_wrap, wrap_unhandled
 
 
 def intv(n):
@@ -89,6 +91,7 @@ wrap_test_cases = [
 @pytest.mark.parametrize("u,v", wrap_test_cases)
 def test_wrap(u, v):
     assert wrap(u) == v
+    assert safe_wrap(u) == v
     assert unwrap(v) == u
 
 
@@ -140,3 +143,36 @@ def test_special_wraps():
     assert wrap(D()) == dv
 
     assert unwrap(dv) == namedtuple("D", ["a", "b"])(1, "meow")
+
+
+def test_safe_wrap():
+    v = Lock()
+    u = safe_wrap(v)
+    assert u == wrap_unhandled(v)
+    assert u.struct.ctor == wrap("__unhandled_type")
+    assert u.struct.fields.keys() == {"type", "repr"}
+    assert u.struct.fields["type"] == wrap("<class '_thread.lock'>")
+
+
+def test_recursive_wrap():
+    class C:
+        def __init__(self):
+            self.x = "meow"
+            self.next = self
+
+    c = C()
+
+    assert wrap(c) == pb.Value(
+        struct=pb.Struct(
+            ctor=wrap("C"),
+            fields={
+                "x": wrap("meow"),
+                "next": pb.Value(
+                    struct=pb.Struct(
+                        ctor=wrap("__recursive_value"),
+                        fields={"value": wrap(repr(c))},
+                    )
+                ),
+            },
+        ),
+    )

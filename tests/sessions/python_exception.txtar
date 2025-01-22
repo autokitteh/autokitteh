@@ -1,13 +1,12 @@
-error: 
+error: X()
 
 Traceback (most recent call last):
-  File "runner/main.py", line 334, in on_event
-    result = fn(event)
-             ^^^^^^^^^
+   ak-runner
+    value = fn(*args, **kw)
+            ^^^^^^^^^^^^^^^
   File "main.py", line 4, in main
     raise X()
 main.X
-
 -- main.py:main --
 class X(Exception): pass
 

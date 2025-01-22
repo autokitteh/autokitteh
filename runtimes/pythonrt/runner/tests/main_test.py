@@ -10,13 +10,14 @@ import json
 import pickle
 import sys
 from concurrent.futures import Future
-from subprocess import run
+from subprocess import Popen, TimeoutExpired, run
 from unittest.mock import MagicMock
 
 import main
 import pb.autokitteh.user_code.v1.runner_svc_pb2 as runner_pb
 import pb.autokitteh.user_code.v1.user_code_pb2 as user_code
 import pb.autokitteh.values.v1.values_pb2 as pb_values
+import values
 from conftest import clear_module_cache, workflows
 
 
@@ -52,42 +53,107 @@ def sub(a, b):
     return a - b
 
 
-def test_execute():
+def new_test_runner(code_dir):
     runner = main.Runner(
         id="runner1",
         worker=None,
-        code_dir=workflows.simple,
+        code_dir=code_dir,
         server=None,
     )
+    runner._inactivty_timer.cancel()
+    return runner
 
-    runner.activity_calls.append(main.Call(sub, [1, 7], {}, Future()))
+
+def test_execute():
+    runner = new_test_runner(workflows.simple)
+    runner.activity_call = main.Call(sub, [1, 7], {}, Future())
     req = runner_pb.ExecuteRequest()
     resp = runner.Execute(req, None)
     assert resp.error == ""
-    value = pickle.loads(resp.result.custom.data)
-    assert value == -6
+    result = pickle.loads(resp.result.custom.data)
+    assert result.value == -6
 
 
 def test_activity_reply():
-    runner = main.Runner(
-        id="runner1",
-        worker=None,
-        code_dir=workflows.simple,
-        server=None,
-    )
+    runner = new_test_runner(workflows.simple)
     fut = Future()
-    runner.activity_calls.append(main.Call(print, (), {}, fut))
-    value = 42
+    runner.activity_call = main.Call(print, (), {}, fut)
+    result = main.Result(42, None, None)
     req = runner_pb.ActivityReplyRequest(
         result=pb_values.Value(
             custom=pb_values.Custom(
                 executor_id=runner.id,
-                data=pickle.dumps(value, protocol=0),
-                value=main.safe_wrap(value),
+                data=pickle.dumps(result),
+                value=values.safe_wrap(result.value),
             ),
         )
     )
     resp = runner.ActivityReply(req, MagicMock())
     assert resp.error == ""
     assert fut.done()
-    assert fut.result() == value
+    assert fut.result() == result.value
+
+
+# TODO: This test takes about 14 seconds to finish, can we do it faster?
+def test_start_timeout(tmp_path):
+    cmd = [
+        sys.executable,
+        "main.py",
+        "--skip-check-worker",
+        "--port",
+        "0",
+        "--runner-id",
+        "r1",
+        "--code-dir",
+        str(tmp_path),
+    ]
+
+    timeout = main.START_TIMEOUT + main.SERVER_GRACE_TIMEOUT + 1
+    p = Popen(cmd)
+    try:
+        p.wait(timeout)
+    except TimeoutExpired:
+        p.kill()
+        assert False, "server did not terminate"
+
+
+def test_result_error():
+    msg = "oops"
+
+    def fn_a():
+        fn_b()
+
+    def fn_b():
+        fn_c()
+
+    def fn_c():
+        raise ZeroDivisionError(msg)
+
+    err = None
+    try:
+        fn_a()
+    except ZeroDivisionError as e:
+        err = e
+
+    text = main.result_error(err)
+
+    assert msg in text
+    for name in ("fn_a", "fn_b", "fn_c"):
+        assert name in text
+
+
+class SlackError(Exception):
+    def __init__(self, message, response):
+        self.response = response
+        super().__init__(message)
+
+
+def test_pickle_exception():
+    def fn():
+        raise SlackError("cannot connect", response={"error": "bad token"})
+
+    runner = new_test_runner("/tmp")
+    result = runner._call(fn, [], {})
+    data = pickle.dumps(result)
+    result2 = pickle.loads(data)
+    assert isinstance(result2.error, SlackError)

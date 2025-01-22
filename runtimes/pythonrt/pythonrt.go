@@ -258,7 +258,11 @@ func (py *pySvc) Run(
 	py.runID = runID
 	py.sessionID = sessionID
 	py.xid = sdktypes.NewExecutorID(runID) // Should be first
-	py.log = py.log.With(zap.String("run_id", runID.String()), zap.String("session_id", sessionID.String()), zap.String("path", mainPath))
+	py.log = py.log.With(
+		zap.String("run_id", runID.String()),
+		zap.String("session_id", sessionID.String()),
+		zap.String("path", mainPath),
+	)
 
 	py.cbs = cbs
 
@@ -384,6 +388,11 @@ func (py *pySvc) call(ctx context.Context, val sdktypes.Value, args []sdktypes.V
 
 	if _, err = py.runner.ActivityReply(ctx, &req); err != nil {
 		py.log.Error("activity reply error", zap.Error(err))
+		req := pbUserCode.DoneRequest{
+			RunnerId: py.runnerID,
+			Error:    err.Error(),
+		}
+		py.channels.done <- &req
 	}
 }
 
@@ -581,6 +590,7 @@ func (py *pySvc) drainPrints(ctx context.Context) {
 			py.log.Log(pyLevelToZap(r.level), r.message)
 		case r := <-py.channels.print:
 			py.cbs.Print(ctx, py.runID, r.message)
+			close(r.doneChannel)
 		}
 	}
 }
@@ -650,7 +660,7 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 	case err != nil:
 		return sdktypes.InvalidValue, err
 	case resp.Error != "":
-		return sdktypes.InvalidValue, fmt.Errorf("%s", resp.Error)
+		py.log.Warn("activity error", zap.String("error", resp.Error))
 	}
 
 	resp.Result.Custom.ExecutorId = py.xid.String()

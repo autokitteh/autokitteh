@@ -60,7 +60,6 @@ allow if {
 	input.action.name == "update"
 	input.authn_user.id == input.subject.id
 	not "status" in input.data.field_mask
-	input.data.status == "UNSPECIFIED"
 }
 
 # Allow any user to invite other users as long as they

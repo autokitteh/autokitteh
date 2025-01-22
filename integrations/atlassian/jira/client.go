@@ -19,10 +19,10 @@ type integration struct {
 	vars sdkservices.Vars
 }
 
-var integrationID = sdktypes.NewIntegrationIDFromName("jira")
+var IntegrationID = sdktypes.NewIntegrationIDFromName("jira")
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
-	IntegrationId: integrationID.String(),
+	IntegrationId: IntegrationID.String(),
 	UniqueName:    "jira",
 	DisplayName:   "Atlassian Jira",
 	Description:   "Atlassian Jira is an issue tracking and project management system.",
@@ -119,7 +119,7 @@ func connTest(i *integration) sdkintegrations.OptFn {
 // oauthConnTest verifies the connection for OAuth authentication.
 // It checks the accessible resources using the OAuth access token.
 func oauthConnTest(vs sdktypes.Vars) error {
-	baseURL, err := apiBaseURL()
+	baseURL, err := APIBaseURL()
 	if err != nil {
 		return err
 	}

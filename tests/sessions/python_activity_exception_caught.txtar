@@ -1,0 +1,20 @@
+before
+error: division by zero
+after
+
+-- main.py:main --
+import autokitteh
+
+
+def main(event):
+	print('before')
+	try:
+		step()
+	except ZeroDivisionError as err:
+		print(f'error: {err}')
+	print('after')  # shouldn't get here
+
+
+@autokitteh.activity
+def step():
+	1/0
