@@ -72,9 +72,9 @@ func oauthStartURL(vs url.Values, c sdkintegrations.ConnectionInit) string {
 	path = fmt.Sprintf(path, scopes, c.ConnectionID, c.Origin)
 	path = strings.ReplaceAll(path, "-?", "?")
 
-	// Security check: ensure the URL is relative.
+	// Security check: ensure the URL is relative and does not contain suspicious characters.
 	u, err := url.Parse(path)
-	if err != nil || u.Hostname() != "" {
+	if err != nil || u.Hostname() != "" || strings.Contains(path, "..") || strings.Contains(path, "//") {
 		return ""
 	}
 
