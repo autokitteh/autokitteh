@@ -147,14 +147,11 @@ func (cr *Cron) updateSchedule(ctx context.Context, handle client.ScheduleHandle
 	// the same for all workers. Even if it isn't due to a partial server
 	// upgrades, it will be eventually consistent when the rollout is done.
 	err := handle.Update(ctx, client.ScheduleUpdateOptions{
-		DoUpdate: func(spec client.ScheduleUpdateInput) (*client.ScheduleUpdate, error) {
-			return &client.ScheduleUpdate{
-				Schedule: &client.Schedule{
-					Spec:   &scheduleSpec,
-					Action: scheduleAction,
-					Policy: schedulePolicies,
-				},
-			}, nil
+		DoUpdate: func(input client.ScheduleUpdateInput) (*client.ScheduleUpdate, error) {
+			input.Description.Schedule.Spec = &scheduleSpec
+			input.Description.Schedule.Action = scheduleAction
+			input.Description.Schedule.Policy = schedulePolicies
+			return &client.ScheduleUpdate{Schedule: &input.Description.Schedule}, nil
 		},
 	})
 	if err != nil {
