@@ -12,7 +12,28 @@ from google.protobuf.duration_pb2 import Duration
 from google.protobuf.timestamp_pb2 import Timestamp
 
 
-def wrap(v: Any, unhandled: Callable[[Any], pb.Value] = None) -> pb.Value:
+def wrap_unhandled(v: Any) -> pb.Value:
+    return pb.Value(
+        struct=pb.Struct(
+            ctor=wrap("__unhandled_type"),
+            fields={
+                "repr": wrap(repr(v)),
+                "type": wrap(str(type(v))),
+            },
+        )
+    )
+
+
+def safe_wrap(v):
+    """Same as wrap, but does not raise TypeError if a type is not supported.
+
+    Instead, it returns a struct with the type and the string representation of the value.
+    """
+
+    return wrap(v, unhandled=wrap_unhandled)
+
+
+def wrap(v: Any, unhandled: Callable[[Any], pb.Value] = None, history=None) -> pb.Value:
     """Wrap a python value into an autokitteh value.
 
     If a type is not supported, the unhandled function is called with the value if supplied.
@@ -22,6 +43,25 @@ def wrap(v: Any, unhandled: Callable[[Any], pb.Value] = None) -> pb.Value:
     Classes with __slots__ or __dict__ are wrapped as structs.
     Namedtuples are wrapped as structs.
     """
+
+    history = history or []
+
+    # Check for recursion.
+    for vv in history:
+        # Must use `is` here as we check if the same object.
+        # If we use `v in history`, we would check if the value is equal which
+        # might invoke `__eq__` which is not what we want.
+        if v is vv:
+            return pb.Value(
+                struct=pb.Struct(
+                    ctor=wrap("__recursive_value"),
+                    fields={"value": wrap(repr(v))},
+                )
+            )
+
+    # automatically pass on recursive parameters.
+    def dive(vv):
+        return wrap(vv, unhandled, history + [v])
 
     if v is None:
         return pb.Value(nothing=pb.Nothing())
@@ -39,22 +79,19 @@ def wrap(v: Any, unhandled: Callable[[Any], pb.Value] = None) -> pb.Value:
         if hasattr(type(v), "_fields"):  # namedtuple
             return pb.Value(
                 struct=pb.Struct(
-                    ctor=wrap(v.__class__.__name__, unhandled),
-                    fields={f: wrap(getattr(v, f)) for f in v._fields},
+                    ctor=dive(v.__class__.__name__),
+                    fields={f: dive(getattr(v, f)) for f in v._fields},
                 )
             )
-        return pb.Value(list=pb.List(vs=[wrap(x, unhandled) for x in v]))
+        return pb.Value(list=pb.List(vs=[dive(x) for x in v]))
     if isinstance(v, list):
-        return pb.Value(list=pb.List(vs=[wrap(x, unhandled) for x in v]))
+        return pb.Value(list=pb.List(vs=[dive(x) for x in v]))
     if isinstance(v, set):
-        return pb.Value(set=pb.Set(vs=[wrap(x, unhandled) for x in v]))
+        return pb.Value(set=pb.Set(vs=[dive(x) for x in v]))
     if isinstance(v, dict):
         return pb.Value(
             dict=pb.Dict(
-                items=[
-                    pb.Dict.Item(k=wrap(k, unhandled), v=wrap(v, unhandled))
-                    for k, v in v.items()
-                ]
+                items=[pb.Dict.Item(k=dive(k), v=dive(v)) for k, v in v.items()]
             )
         )
     if isinstance(v, bytes):
@@ -72,21 +109,25 @@ def wrap(v: Any, unhandled: Callable[[Any], pb.Value] = None) -> pb.Value:
     if hasattr(v, "__dict__"):
         return pb.Value(
             struct=pb.Struct(
-                ctor=wrap(v.__class__.__name__, unhandled),
-                fields={k: wrap(v, unhandled) for k, v in v.__dict__.items()},
+                ctor=dive(v.__class__.__name__),
+                fields={
+                    k: dive(v) for k, v in v.__dict__.items() if not k.startswith("_")
+                },
             )
         )
 
     if hasattr(v, "__slots__"):
         return pb.Value(
             struct=pb.Struct(
-                ctor=wrap(v.__class__.__name__, unhandled),
-                fields={k: wrap(getattr(v, k), unhandled) for k in v.__slots__},
+                ctor=dive(v.__class__.__name__),
+                fields={
+                    k: dive(getattr(v, k)) for k in v.__slots__ if not k.startswith("_")
+                },
             )
         )
 
     if unhandled:
-        return unhandled(v)
+        return unhandled(v) or pb.Value(nothing=pb.Nothing())
 
     raise TypeError(f"unsupported type: {type(v)}")
 
