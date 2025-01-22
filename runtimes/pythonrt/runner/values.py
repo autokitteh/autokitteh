@@ -7,6 +7,8 @@ from collections import namedtuple
 from datetime import UTC, datetime, timedelta
 from typing import Any, Callable
 
+import requests
+
 import pb.autokitteh.values.v1.values_pb2 as pb
 from google.protobuf.duration_pb2 import Duration
 from google.protobuf.timestamp_pb2 import Timestamp
@@ -105,6 +107,31 @@ def wrap(v: Any, unhandled: Callable[[Any], pb.Value] = None, history=None) -> p
         d = Duration()
         d.FromTimedelta(v)
         return pb.Value(duration=pb.Duration(v=d))
+
+    if isinstance(v, requests.Response):
+        json = text = None
+
+        if len(v.content) > 100 * 1024:
+            json = text = "<Response content too large to be included>"
+        else:
+            text = dive(v.text)
+
+            try:
+                json = dive(v.json())
+            except requests.exceptions.JSONDecodeError:
+                pass
+
+        return pb.Value(
+            struct=pb.Struct(
+                ctor=dive(v.__class__.__name__),
+                fields={
+                    "status_code": dive(v.status_code),
+                    "headers": dive(v.headers),
+                    "text": text,
+                    "json": json,
+                },
+            )
+        )
 
     if hasattr(v, "__dict__"):
         return pb.Value(
