@@ -41,29 +41,42 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	// Use the AutoKitteh's server's default Microsoft 365 OAuth 2.0 app, i.e.
 	// immediately redirect to the 3-legged OAuth 2.0 flow's starting point.
 	case integrations.OAuthDefault:
-		http.Redirect(w, r, oauthURL(r.Form, c), http.StatusFound)
+		if urlPath := oauthStartURL(r.Form, c); urlPath != "" {
+			http.Redirect(w, r, urlPath, http.StatusFound)
+		} else {
+			l.Warn("save connection: bad OAuth redirect URL")
+			c.AbortBadRequest("bad redirect URL")
+		}
 
 	// The the user-provided details of a custom Microsoft 365 OAuth 2.0 app.
 	case integrations.OAuthCustom:
-		// TODO
+		// TODO: Implement.
 
 	// Unknown/unrecognized mode - an error.
 	default:
 		l.Warn("save connection: unexpected auth type", zap.String("auth_type", at))
 		c.AbortBadRequest(fmt.Sprintf("unexpected auth type %q", at))
-		return
 	}
 }
 
-// oauthURL constructs the URL to start a 3-legged OAuth 2.0
-// flow, using the AutoKitteh server's generic OAuth service.
-func oauthURL(vs url.Values, c sdkintegrations.ConnectionInit) string {
+// oauthStartURL constructs a relative URL to start a 3-legged
+// OAuth 2.0 flow, using the AutoKitteh server's generic OAuth service.
+func oauthStartURL(vs url.Values, c sdkintegrations.ConnectionInit) string {
 	// Default scopes: all ("microsoft").
-	u := "/oauth/start/microsoft-%s?cid=%s&origin=%s"
+	path := "/oauth/start/microsoft-%s?cid=%s&origin=%s"
 
-	// Narrow down the requested scopes?
+	// Narrow down the requested scopes to a specific Microsoft 365 product?
 	scopes := vs.Get("auth_scopes")
 
 	// Remember the AutoKitteh connection ID and request origin.
-	return strings.ReplaceAll(fmt.Sprintf(u, scopes, c.ConnectionID, c.Origin), "-?", "?")
+	path = fmt.Sprintf(path, scopes, c.ConnectionID, c.Origin)
+	path = strings.ReplaceAll(path, "-?", "?")
+
+	// Security check: ensure the URL is relative.
+	u, err := url.Parse(path)
+	if err != nil || u.Hostname() != "" {
+		return ""
+	}
+
+	return path
 }
