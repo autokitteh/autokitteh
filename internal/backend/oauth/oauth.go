@@ -488,7 +488,7 @@ func (o *oauth) applyIntegrationConfig(ctx context.Context, s intgSetup) error {
 			if err != nil {
 				return err
 			}
-			gh, err := github.NewClientFromGitHubAppID(aid, s.vars)
+			gh, err := github.NewClientFromGitHubAppID(aid, s.vars.GetValueByString("private_key"))
 			if err != nil {
 				return err
 			}

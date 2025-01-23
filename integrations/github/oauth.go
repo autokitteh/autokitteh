@@ -112,7 +112,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	gh, err := NewClientFromGitHubAppID(aid, vs)
+	gh, err := NewClientFromGitHubAppID(aid, vs.GetValue(vars.PrivateKey))
 	if err != nil {
 		l.Warn("failed to initialize GitHub app client", zap.Error(err))
 		c.AbortBadRequest("failed to initialize GitHub app client")
