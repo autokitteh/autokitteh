@@ -298,12 +298,18 @@ func (w *sessionWorkflow) createEventSubscription(wctx workflow.Context, filter 
 		return uuid.Nil, sdkerrors.NewInvalidArgumentError("invalid filter: %w", err)
 	}
 
-	// generate a unique signal id.
 	var signalID uuid.UUID
-	if err := workflow.SideEffect(wctx, func(wctx workflow.Context) any {
-		return uuid.New()
-	}).Get(&signalID); err != nil {
-		return uuid.Nil, fmt.Errorf("generate signal ID: %w", err)
+
+	if did.IsSessionID() {
+		// for sessions, reuse the session id since there will never be more than a single signal of that
+		signalID = did.ToSessionID().UUIDValue()
+	} else {
+		// generate a unique signal id.
+		if err := workflow.SideEffect(wctx, func(wctx workflow.Context) any {
+			return uuid.New()
+		}).Get(&signalID); err != nil {
+			return uuid.Nil, fmt.Errorf("generate signal ID: %w", err)
+		}
 	}
 
 	var minSequence uint64

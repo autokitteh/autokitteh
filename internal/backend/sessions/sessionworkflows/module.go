@@ -26,6 +26,7 @@ func (w *sessionWorkflow) newModule() sdkexecutor.Executor {
 		sdkmodule.ExportFunction("subscribe", w.subscribe, flags),
 		sdkmodule.ExportFunction("unsubscribe", w.unsubscribe, flags),
 		sdkmodule.ExportFunction("next_event", w.nextEvent, flags),
+		sdkmodule.ExportFunction("join", w.join, flags),
 		sdkmodule.ExportFunction("callopts", callopts, flags),
 		sdkmodule.ExportFunction("is_deployment_active", w.isDeploymentActive),
 	)

@@ -316,6 +316,7 @@ allow if {
 	input.subject.kind == "ses"
 	input.action.name == "start"
 	is_active_member_of_single_assosicated_org_id
+	not input.data.session.id
 }
 
 allow if {

@@ -1,0 +1,26 @@
+COMPLETED meow
+COMPLETED ['woof', 3]
+
+-- main.py:main --
+from time import sleep
+
+from autokitteh import start, next_event
+
+
+def main(event):
+    sid1 = start('main.py:child1')
+    sid2 = start('main.py:child2', data={"t": 3})
+
+    state = next_event(sid1)['state']
+    print(state['type'], state['value'])
+
+    state = next_event(sid2)['state']
+    print(state['type'], state['value'])
+
+def child1(event):
+    return "meow"
+
+def child2(event):
+    t = event["t"]
+    sleep(t)
+    return ("woof", t)

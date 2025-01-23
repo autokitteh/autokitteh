@@ -361,6 +361,64 @@ func (s *workerGRPCHandler) NextEvent(ctx context.Context, req *userCode.NextEve
 	}
 }
 
+func (s *workerGRPCHandler) Join(ctx context.Context, req *userCode.JoinRequest) (*userCode.JoinResponse, error) {
+	if len(req.SignalIds) == 0 {
+		w.log.Error("empty signal ID")
+		return nil, status.Error(codes.InvalidArgument, "at least one signal ID required")
+	}
+	if req.TimeoutMs < 0 {
+		w.log.Error("bad timeout", zap.Int64("timeout", req.TimeoutMs))
+		return nil, status.Error(codes.InvalidArgument, "timeout < 0")
+	}
+
+	w.mu.Lock()
+	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
+	w.mu.Unlock()
+	if !ok {
+		w.log.Error("unknown runner ID", zap.String("id", req.RunnerId))
+		return &userCode.JoinResponse{Error: "unknown runner ID"}, nil
+	}
+
+	args := make([]sdktypes.Value, len(req.SignalIds)+1)
+	args[0] = sdktypes.NewStringValue("join")
+	for i, id := range req.SignalIds {
+		args[i+1] = sdktypes.NewStringValue(id)
+	}
+	// timeout is kw only
+	kw := make(map[string]sdktypes.Value)
+	if req.TimeoutMs > 0 {
+		kw["timeout"] = sdktypes.NewFloatValue(float64(req.TimeoutMs) / 1000.0)
+	}
+
+	msg := makeCallbackMessage(args, kw)
+	runner.channels.callback <- msg
+
+	select {
+	case err := <-msg.errorChannel:
+		err = status.Errorf(codes.Internal, "join(%s, %d) -> %s", req.SignalIds, req.TimeoutMs, err)
+		return &userCode.JoinResponse{Error: err.Error()}, nil
+	case val := <-msg.successChannel:
+		out, err := sdktypes.ValueWrapper{SafeForJSON: true}.Unwrap(val)
+		if err != nil {
+			err = status.Errorf(codes.Internal, "can't unwrap %v - %s", val, err)
+			return &userCode.JoinResponse{Error: err.Error()}, err
+		}
+
+		data, err := json.Marshal(out)
+		if err != nil {
+			err = status.Errorf(codes.Internal, "can't json.Marshal %v - %s", out, err)
+			return &userCode.JoinResponse{Error: err.Error()}, err
+		}
+
+		resp := userCode.JoinResponse{
+			Event: &userCode.Event{
+				Data: data,
+			},
+		}
+		return &resp, nil
+	}
+}
+
 func (s *workerGRPCHandler) Unsubscribe(ctx context.Context, req *userCode.UnsubscribeRequest) (*userCode.UnsubscribeResponse, error) {
 	w.mu.Lock()
 	runner, ok := w.runnerIDsToRuntime[req.RunnerId]

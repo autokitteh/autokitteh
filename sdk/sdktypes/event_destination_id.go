@@ -11,7 +11,7 @@ type EventDestinationID struct{ id[typeid.AnyPrefix] }
 var InvalidEventDestinationID EventDestinationID
 
 type concreteEventDestinationID interface {
-	ConnectionID | TriggerID
+	ConnectionID | TriggerID | SessionID
 	ID
 }
 
@@ -31,7 +31,7 @@ func ParseEventDestinationID(s string) (EventDestinationID, error) {
 	}
 
 	switch parsed.Kind() {
-	case TriggerIDKind, ConnectionIDKind:
+	case TriggerIDKind, ConnectionIDKind, SessionIDKind:
 		return EventDestinationID{parsed}, nil
 	default:
 		return InvalidEventDestinationID, sdkerrors.NewInvalidArgumentError("invalid executor id")
@@ -48,7 +48,13 @@ func (e EventDestinationID) ToTriggerID() TriggerID {
 	return id
 }
 
+func (e EventDestinationID) ToSessionID() SessionID {
+	id, _ := ParseSessionID(e.String())
+	return id
+}
+
 func (e EventDestinationID) IsConnectionID() bool { return e.Kind() == ConnectionIDKind }
 func (e EventDestinationID) IsTriggerID() bool    { return e.Kind() == TriggerIDKind }
+func (e EventDestinationID) IsSessionID() bool    { return e.Kind() == SessionIDKind }
 
 func (e EventDestinationID) AsID() ID { return e }

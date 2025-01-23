@@ -123,6 +123,38 @@ class SysCalls:
 
         return AttrDict(data) if isinstance(data, dict) else data
 
+    def ak_join(self, args, kw):
+        log.info("ak_join: %r %r", args, kw)
+        (
+            ids,
+            timeout,
+        ) = extract_args(["subscription_id", "timeout?"], args, kw)
+        if not ids:
+            raise ValueError("empty subscription_id")
+
+        if isinstance(ids, str):
+            ids = [ids]
+
+        req = pb.JoinRequest(runner_id=self.runner_id, signal_ids=ids)
+        if timeout:
+            if isinstance(timeout, int | float):
+                req.timeout_ms = int(timeout * 1000)
+            elif isinstance(timeout, timedelta):
+                req.timeout_ms = int(timeout.total_seconds() * 1000)
+            else:
+                raise TypeError(
+                    f"timeout {timeout!r} should be a timedelta or number of seconds"
+                )
+
+        resp = call_grpc("join", self.worker.Join, req)
+
+        try:
+            data = json.loads(resp.event.data)
+        except (ValueError, TypeError, AttributeError) as err:
+            raise SyscallError(f"next_event: invalid event: {err}")
+
+        return data
+
     def ak_unsubscribe(self, args, kw):
         (id,) = extract_args(["subscription_id"], args, kw)
         if not id:

@@ -20,6 +20,7 @@ func (db *gormdb) SaveSignal(ctx context.Context, signal *types.Signal) error {
 		DestinationID: signal.DestinationID.UUIDValue(),
 		ConnectionID:  signal.DestinationID.ToConnectionID().UUIDValuePtr(),
 		TriggerID:     signal.DestinationID.ToTriggerID().UUIDValuePtr(),
+		SessionID:     signal.DestinationID.ToSessionID().UUIDValuePtr(),
 		SignalID:      signal.ID,
 		WorkflowID:    signal.WorkflowID,
 		Filter:        signal.Filter,

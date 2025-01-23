@@ -22,8 +22,9 @@ import (
 type Sessions interface {
 	sdkservices.Sessions
 
-	StartWorkers(context.Context) error
+	StartWorkers(context.Context, sdkservices.DispatchFunc) error
 }
+
 type sessions struct {
 	config *Config
 	l      *zap.Logger
@@ -45,7 +46,7 @@ func New(l *zap.Logger, config *Config, db db.DB, svcs sessionsvcs.Svcs, telemet
 	}
 }
 
-func (s *sessions) StartWorkers(ctx context.Context) error {
+func (s *sessions) StartWorkers(ctx context.Context, dispatch sdkservices.DispatchFunc) error {
 	s.calls = sessioncalls.New(s.l.Named("sessionworkflows"), s.config.Calls, s.svcs)
 	s.workflows = sessionworkflows.New(s.l.Named("sessionworkflows"), s.config.Workflows, s, s.svcs, s.calls, s.telemetry)
 
@@ -56,7 +57,7 @@ func (s *sessions) StartWorkers(ctx context.Context) error {
 
 	s.l.Info("Session worker: enabled")
 
-	if err := s.workflows.StartWorkers(ctx); err != nil {
+	if err := s.workflows.StartWorkers(ctx, dispatch); err != nil {
 		return fmt.Errorf("workflow workflows: %w", err)
 	}
 
@@ -158,15 +159,14 @@ func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktype
 		return sdktypes.InvalidSessionID, err
 	}
 
-	if session.ID().IsValid() {
-		return sdktypes.InvalidSessionID, sdkerrors.NewInvalidArgumentError("session id is not nil")
-	}
-
 	if err := session.Strict(); err != nil {
 		return sdktypes.InvalidSessionID, err
 	}
 
-	session = session.WithNewID()
+	if !session.ID().IsValid() {
+		session = session.WithNewID()
+	}
+
 	sid := session.ID()
 	l := s.l.With(zap.Any("session_id", sid))
 

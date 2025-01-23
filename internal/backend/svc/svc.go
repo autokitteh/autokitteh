@@ -207,7 +207,9 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			sessions.Configs,
 			fx.Provide(sessions.New),
 			fx.Provide(func(s sessions.Sessions) sdkservices.Sessions { return s }),
-			fx.Invoke(func(lc fx.Lifecycle, s sessions.Sessions) { HookOnStart(lc, s.StartWorkers) }),
+			fx.Invoke(func(lc fx.Lifecycle, s sessions.Sessions, dispatch sdkservices.DispatchFunc) {
+				HookOnStart(lc, func(ctx context.Context) error { return s.StartWorkers(ctx, dispatch) })
+			}),
 		),
 		Component("store", store.Configs, fx.Provide(store.New)),
 		Component("builds", configset.Empty, fx.Provide(builds.New)),
@@ -255,7 +257,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component(
 			"dispatcher",
 			dispatcher.Configs,
-			fx.Provide(func(lc fx.Lifecycle, l *zap.Logger, cfg *dispatcher.Config, svcs dispatcher.Svcs) (sdkservices.Dispatcher, sdkservices.DispatchFunc) {
+			fx.Provide(func(lc fx.Lifecycle, l *zap.Logger, cfg *dispatcher.Config, svcs dispatcher.Svcs, s sessions.Sessions) (sdkservices.Dispatcher, sdkservices.DispatchFunc) {
 				d := dispatcher.New(l, cfg, svcs)
 				HookOnStart(lc, d.Start)
 				return d, d.Dispatch

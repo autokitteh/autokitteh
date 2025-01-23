@@ -163,6 +163,7 @@ type Event struct {
 	IntegrationID *uuid.UUID `gorm:"index;type:uuid"`
 	ConnectionID  *uuid.UUID `gorm:"index;type:uuid"`
 	TriggerID     *uuid.UUID `gorm:"index;type:uuid"`
+	SessionID     *uuid.UUID `gorm:"index;type:uuid"`
 
 	EventType string `gorm:"index:idx_event_type_seq,priority:1;index:idx_event_type"`
 	Data      datatypes.JSON
@@ -172,6 +173,7 @@ type Event struct {
 	// enforce foreign keys
 	Connection *Connection
 	Trigger    *Trigger
+	// Session    *Session
 
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 
@@ -193,14 +195,9 @@ func ParseEvent(e Event) (sdktypes.Event, error) {
 		return sdktypes.InvalidEvent, fmt.Errorf("event memo: %w", err)
 	}
 
-	var did sdktypes.EventDestinationID
-
-	if uuid := e.ConnectionID; uuid != nil {
-		did = sdktypes.NewEventDestinationID(sdktypes.NewIDFromUUIDPtr[sdktypes.ConnectionID](uuid))
-	} else if uuid := e.TriggerID; uuid != nil {
-		did = sdktypes.NewEventDestinationID(sdktypes.NewIDFromUUIDPtr[sdktypes.TriggerID](uuid))
-	} else {
-		return sdktypes.InvalidEvent, sdkerrors.NewInvalidArgumentError("event must have a connection or trigger")
+	did, err := parseEventDestinationID(e.ConnectionID, e.TriggerID, e.SessionID)
+	if err != nil {
+		return sdktypes.InvalidEvent, fmt.Errorf("destination id: %w", err)
 	}
 
 	return sdktypes.StrictEventFromProto(&sdktypes.EventPB{
@@ -344,7 +341,7 @@ type Session struct {
 	Build      *Build
 	Deployment *Deployment
 	Project    *Project
-	Event      *Event `gorm:"references:EventID"`
+	// Event      *Event `gorm:"references:EventID"`
 }
 
 func (Session) IDFieldName() string { return "session_id" }
@@ -483,6 +480,7 @@ type Signal struct {
 	DestinationID uuid.UUID  `gorm:"index;type:uuid;not null"`
 	ConnectionID  *uuid.UUID `gorm:"type:uuid"`
 	TriggerID     *uuid.UUID `gorm:"type:uuid"`
+	SessionID     *uuid.UUID `gorm:"type:uuid"`
 	CreatedAt     time.Time
 	WorkflowID    string
 	Filter        string
@@ -490,18 +488,13 @@ type Signal struct {
 	// enforce foreign key
 	Connection *Connection
 	Trigger    *Trigger
+	// NOTE: A session is created after the signal, hence we cannot have a session fk here.
 }
 
 func ParseSignal(r *Signal) (*types.Signal, error) {
-	var dstID sdktypes.EventDestinationID
-
-	switch {
-	case r.ConnectionID != nil:
-		dstID = sdktypes.NewEventDestinationID(sdktypes.NewIDFromUUIDPtr[sdktypes.ConnectionID](r.ConnectionID))
-	case r.TriggerID != nil:
-		dstID = sdktypes.NewEventDestinationID(sdktypes.NewIDFromUUIDPtr[sdktypes.TriggerID](r.TriggerID))
-	default:
-		return nil, sdkerrors.NewInvalidArgumentError("signal must have a connection or trigger")
+	dstID, err := parseEventDestinationID(r.ConnectionID, r.TriggerID, r.SessionID)
+	if err != nil {
+		return nil, fmt.Errorf("destination id: %w", err)
 	}
 
 	return &types.Signal{
@@ -628,4 +621,17 @@ type Ownership struct {
 	EntityType string    `gorm:"not null"`
 
 	UserID string `gorm:"not null"`
+}
+
+func parseEventDestinationID(con, trg, ses *uuid.UUID) (sdktypes.EventDestinationID, error) {
+	switch {
+	case con != nil:
+		return sdktypes.NewEventDestinationID(sdktypes.NewIDFromUUIDPtr[sdktypes.ConnectionID](con)), nil
+	case trg != nil:
+		return sdktypes.NewEventDestinationID(sdktypes.NewIDFromUUIDPtr[sdktypes.TriggerID](trg)), nil
+	case ses != nil:
+		return sdktypes.NewEventDestinationID(sdktypes.NewIDFromUUIDPtr[sdktypes.SessionID](ses)), nil
+	default:
+		return sdktypes.InvalidEventDestinationID, sdkerrors.NewInvalidArgumentError("signal must have a connection, trigger or session")
+	}
 }

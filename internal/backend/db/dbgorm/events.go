@@ -85,6 +85,7 @@ func (db *gormdb) SaveEvent(ctx context.Context, event sdktypes.Event) error {
 		DestinationID: event.DestinationID().UUIDValue(),
 		ConnectionID:  uuidPtrOrNil(connectionID),
 		TriggerID:     uuidPtrOrNil(event.DestinationID().ToTriggerID()),
+		SessionID:     uuidPtrOrNil(event.DestinationID().ToSessionID()),
 		EventType:     event.Type(),
 		Data:          kittehs.Must1(json.Marshal(event.Data())),
 		Memo:          kittehs.Must1(json.Marshal(event.Memo())),
@@ -127,7 +128,8 @@ func (db *gormdb) GetLatestEventSequence(ctx context.Context) (uint64, error) {
 	// NOTE: called from workflow, not protected by user context
 	var s scheme.Event
 	if err := db.db.WithContext(ctx).Last(&s).Error; err != nil {
-		return 0, err
+		return 0, translateError(err)
 	}
+
 	return s.Seq, nil
 }

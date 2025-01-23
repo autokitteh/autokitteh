@@ -2,9 +2,11 @@ package sdktypes
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	sessionv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdklogger"
 )
 
@@ -106,4 +108,27 @@ func (p SessionState) Concrete() concreteSessionState {
 	}
 
 	return nil
+}
+
+var sessionStateStructCtor = NewSymbolValue(NewSymbol("session_state"))
+
+func (p SessionState) ToValue() (Value, error) {
+	fields := make(map[string]Value)
+
+	switch s := p.Concrete().(type) {
+	case SessionStateCompleted:
+		fields["value"] = s.ReturnValue()
+	case SessionStateCreated:
+	case SessionStateError:
+		fields["value"] = s.GetProgramError().Value()
+	case SessionStateRunning:
+	case SessionStateStopped:
+		fields["reason"] = NewStringValue(s.Reason())
+	default:
+		return InvalidValue, fmt.Errorf("%w: unknown state type", sdkerrors.ErrUnretryableUnknown)
+	}
+
+	fields["type"] = NewStringValue(p.Type().String())
+
+	return NewStructValue(sessionStateStructCtor, fields)
 }

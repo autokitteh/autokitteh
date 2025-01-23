@@ -26,6 +26,7 @@ const (
 	HandlerService_Sleep_FullMethodName             = "/autokitteh.user_code.v1.HandlerService/Sleep"
 	HandlerService_Subscribe_FullMethodName         = "/autokitteh.user_code.v1.HandlerService/Subscribe"
 	HandlerService_NextEvent_FullMethodName         = "/autokitteh.user_code.v1.HandlerService/NextEvent"
+	HandlerService_Join_FullMethodName              = "/autokitteh.user_code.v1.HandlerService/Join"
 	HandlerService_Unsubscribe_FullMethodName       = "/autokitteh.user_code.v1.HandlerService/Unsubscribe"
 	HandlerService_StartSession_FullMethodName      = "/autokitteh.user_code.v1.HandlerService/StartSession"
 	HandlerService_EncodeJWT_FullMethodName         = "/autokitteh.user_code.v1.HandlerService/EncodeJWT"
@@ -50,6 +51,7 @@ type HandlerServiceClient interface {
 	Sleep(ctx context.Context, in *SleepRequest, opts ...grpc.CallOption) (*SleepResponse, error)
 	Subscribe(ctx context.Context, in *SubscribeRequest, opts ...grpc.CallOption) (*SubscribeResponse, error)
 	NextEvent(ctx context.Context, in *NextEventRequest, opts ...grpc.CallOption) (*NextEventResponse, error)
+	Join(ctx context.Context, in *JoinRequest, opts ...grpc.CallOption) (*JoinResponse, error)
 	Unsubscribe(ctx context.Context, in *UnsubscribeRequest, opts ...grpc.CallOption) (*UnsubscribeResponse, error)
 	StartSession(ctx context.Context, in *StartSessionRequest, opts ...grpc.CallOption) (*StartSessionResponse, error)
 	// Utility functions
@@ -137,6 +139,16 @@ func (c *handlerServiceClient) NextEvent(ctx context.Context, in *NextEventReque
 	return out, nil
 }
 
+func (c *handlerServiceClient) Join(ctx context.Context, in *JoinRequest, opts ...grpc.CallOption) (*JoinResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(JoinResponse)
+	err := c.cc.Invoke(ctx, HandlerService_Join_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *handlerServiceClient) Unsubscribe(ctx context.Context, in *UnsubscribeRequest, opts ...grpc.CallOption) (*UnsubscribeResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(UnsubscribeResponse)
@@ -213,6 +225,7 @@ type HandlerServiceServer interface {
 	Sleep(context.Context, *SleepRequest) (*SleepResponse, error)
 	Subscribe(context.Context, *SubscribeRequest) (*SubscribeResponse, error)
 	NextEvent(context.Context, *NextEventRequest) (*NextEventResponse, error)
+	Join(context.Context, *JoinRequest) (*JoinResponse, error)
 	Unsubscribe(context.Context, *UnsubscribeRequest) (*UnsubscribeResponse, error)
 	StartSession(context.Context, *StartSessionRequest) (*StartSessionResponse, error)
 	// Utility functions
@@ -250,6 +263,9 @@ func (UnimplementedHandlerServiceServer) Subscribe(context.Context, *SubscribeRe
 }
 func (UnimplementedHandlerServiceServer) NextEvent(context.Context, *NextEventRequest) (*NextEventResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method NextEvent not implemented")
+}
+func (UnimplementedHandlerServiceServer) Join(context.Context, *JoinRequest) (*JoinResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Join not implemented")
 }
 func (UnimplementedHandlerServiceServer) Unsubscribe(context.Context, *UnsubscribeRequest) (*UnsubscribeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Unsubscribe not implemented")
@@ -416,6 +432,24 @@ func _HandlerService_NextEvent_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _HandlerService_Join_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(JoinRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HandlerServiceServer).Join(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HandlerService_Join_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HandlerServiceServer).Join(ctx, req.(*JoinRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _HandlerService_Unsubscribe_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UnsubscribeRequest)
 	if err := dec(in); err != nil {
@@ -558,6 +592,10 @@ var HandlerService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "NextEvent",
 			Handler:    _HandlerService_NextEvent_Handler,
+		},
+		{
+			MethodName: "Join",
+			Handler:    _HandlerService_Join_Handler,
 		},
 		{
 			MethodName: "Unsubscribe",

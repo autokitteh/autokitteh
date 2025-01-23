@@ -1,0 +1,23 @@
+['COMPLETED']
+
+-- main.py:main --
+from time import sleep
+
+from autokitteh import start, join
+
+
+def main(event):
+    sid1 = start('main.py:child1')
+    sid2 = start('main.py:child2', data={"t": 5})
+
+    results = join([sid1, sid2], timeout=3)
+
+    print([v['state']['type'] for v in results.values()])
+
+def child1(event):
+    return "meow"
+
+def child2(event):
+    t = event["t"]
+    sleep(t)
+    return ("woof", t)

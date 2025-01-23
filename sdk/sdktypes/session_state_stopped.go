@@ -34,6 +34,8 @@ func StrictSessionStateStoppedFromProto(m *SessionStateStoppedPB) (SessionStateS
 	return Strict(SessionStateStoppedFromProto(m))
 }
 
+func (s SessionStateStopped) Reason() string { return s.read().Reason }
+
 func (s SessionState) GetStopped() SessionStateStopped {
 	return forceFromProto[SessionStateStopped](s.read().Stopped)
 }
