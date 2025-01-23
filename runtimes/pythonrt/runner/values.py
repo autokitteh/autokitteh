@@ -121,7 +121,7 @@ def wrap(v: Any, unhandled: Callable[[Any], pb.Value] = None, history=None) -> p
             try:
                 json = dive(v.json())
             except requests.exceptions.JSONDecodeError:
-                pass
+                json = pb.Value(nothing=pb.Nothing())
 
         return pb.Value(
             struct=pb.Struct(
