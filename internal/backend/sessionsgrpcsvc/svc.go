@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -46,12 +45,8 @@ func (s *server) Start(ctx context.Context, req *connect.Request[sessionsv1.Star
 	for k, v := range msg.JsonInputs {
 		decoded, err := decodeNestedJSON(v)
 		if err != nil {
-			if !json.Valid([]byte(v)) {
-				log.Printf("Failed to decode JSON for key %s: %v\nJSON content: %s", k, err, v)
-				decoded = v
-			} else {
-				return nil, sdkerrors.AsConnectError(err)
-			}
+			err = sdkerrors.NewInvalidArgumentError(`json_inputs["%s"]: %w`, k, err)
+			return nil, sdkerrors.AsConnectError(err)
 		}
 
 		if msg.Session.Inputs == nil {
