@@ -111,7 +111,8 @@ def wrap(v: Any, unhandled: Callable[[Any], pb.Value] = None, history=None) -> p
     if isinstance(v, requests.Response):
         json = text = None
 
-        if len(v.content) > 100 * 1024:
+        max_size = 100 * 1024  # 100K
+        if len(v.content) > max_size:
             json = "<Response content too large to be included>"
             text = dive(v.text[:max_size] + "...")
         else:
