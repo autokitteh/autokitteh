@@ -97,7 +97,7 @@ func connTest(i *integration) sdkintegrations.OptFn {
 			return sdktypes.InvalidStatus, err
 		}
 
-		# TODO(INT-124): Use the refresh token to get a new access token.
+		// TODO(INT-124): Use the refresh token to get a new access token.
 		token := vs.Get(authTokenName).Value()
 		domain := vs.Get(domainName).Value()
 		// https://auth0.com/docs/api/management/v2/stats/get-active-users
