@@ -42,14 +42,11 @@ func NewHTTPHandler(l *zap.Logger, o sdkservices.OAuth, v sdkservices.Vars, d sd
 	return handler{logger: l, oauth: o, vars: v, dispatch: d}
 }
 
-// handleEvent receives from Jira asynchronous events,
+// handleEvent receives asynchronous events from Jira,
 // and dispatches them to zero or more AutoKitteh connections.
 // Note 1: By default, AutoKitteh creates webhooks automatically,
 // subscribing to all events - see "webhooks.go" for more details.
-// TODO(ENG-965):
-// Note 2: Dynamic (i.e. auto-created) webhooks expire after 30 days.
-// This functions extends this deadline at the 20-day mark.
-// Note 3: The requests are sent by a service, so no need to respond
+// Note 2: The requests are sent by a service, so no need to respond
 // with user-friendly error web pages.
 func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	l := h.logger.With(zap.String("urlPath", r.URL.Path))
