@@ -1,6 +1,7 @@
 package microsoft
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -38,8 +39,19 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Sanity check: the connection ID is valid.
+	cid, err := sdktypes.StrictParseConnectionID(c.ConnectionID)
+	if err != nil {
+		l.Warn("save connection: invalid connection ID", zap.Error(err))
+		c.AbortBadRequest("invalid connection ID")
+		return
+	}
+	vsid := sdktypes.NewVarScopeID(cid)
+
 	// Determine what to save and how to proceed.
-	switch at := r.FormValue("auth_type"); at {
+	authType := h.saveAuthType(r.Context(), vsid, r.FormValue("auth_type"))
+
+	switch authType {
 	// Use the AutoKitteh's server's default Microsoft OAuth 2.0 app, i.e.
 	// immediately redirect to the 3-legged OAuth 2.0 flow's starting point.
 	case integrations.OAuthDefault:
@@ -48,50 +60,49 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	// First save the user-provided details of a custom Microsoft OAuth 2.0 app,
 	// and only then redirect to the 3-legged OAuth 2.0 flow's starting point.
 	case integrations.OAuthCustom:
-		if err := h.saveOAuthAppConfig(r, c); err != nil {
-			l.Warn("save connection: " + err.Error())
-			c.AbortBadRequest(err.Error())
+		if err := h.saveOAuthAppConfig(r, vsid); err != nil {
+			l.Error("save connection: " + err.Error())
+			c.AbortServerError(err.Error())
 			return
 		}
 		startOAuth(w, r, c, l)
 
 	// Unknown/unrecognized mode - an error.
 	default:
-		l.Warn("save connection: unexpected auth type", zap.String("auth_type", at))
-		c.AbortBadRequest(fmt.Sprintf("unexpected auth type %q", at))
+		l.Warn("save connection: unexpected auth type", zap.String("auth_type", authType))
+		c.AbortBadRequest(fmt.Sprintf("unexpected auth type %q", authType))
 	}
+}
+
+// saveAuthType saves the authentication type that the user selected for this connection.
+// This will be redundant if/when the only way to initialize connections is via the web UI.
+// Therefore, we do not care if this function fails to save it as a connection variable.
+func (h handler) saveAuthType(ctx context.Context, vsid sdktypes.VarScopeID, authType string) string {
+	v := sdktypes.NewVar(sdktypes.NewSymbol("auth_type")).WithScopeID(vsid)
+	_ = h.vars.Set(ctx, v.SetValue(authType))
+	return authType
+}
+
+// OAuthAppConfig contains the user-provided details of a custom Microsoft OAuth 2.0 app.
+type OAuthAppConfig struct {
+	ClientID     string `var:"client_id"`
+	ClientSecret string `var:"client_secret,secret"`
 }
 
 // saveOAuthAppConfig saves the user-provided details of a
 // custom Microsoft OAuth 2.0 app as connection variables.
-func (h handler) saveOAuthAppConfig(r *http.Request, c sdkintegrations.ConnectionInit) error {
-	// Sanity check: the connection ID is valid.
-	cid, err := sdktypes.StrictParseConnectionID(c.ConnectionID)
-	if err != nil {
-		return fmt.Errorf("invalid connection ID: %w", err)
-	}
-
-	m := map[sdktypes.Symbol]string{
-		clientIDVar:     r.FormValue("client_id"),
-		clientSecretVar: r.FormValue("client_secret"),
+func (h handler) saveOAuthAppConfig(r *http.Request, vsid sdktypes.VarScopeID) error {
+	app := OAuthAppConfig{
+		ClientID:     r.FormValue("client_id"),
+		ClientSecret: r.FormValue("client_secret"),
 	}
 
 	// Sanity check: all the required details were provided.
-	if m[clientIDVar] == "" || m[clientSecretVar] == "" {
+	if app.ClientID == "" || app.ClientSecret == "" {
 		return errors.New("missing OAuth 2.0 app details")
 	}
 
-	return h.vars.Set(r.Context(), mapToVars(m, sdktypes.NewVarScopeID(cid))...)
-}
-
-// mapToVars converts a map of key-value pairs to a Vars object for a given connection.
-func mapToVars(m map[sdktypes.Symbol]string, vsid sdktypes.VarScopeID) sdktypes.Vars {
-	vs := sdktypes.NewVars()
-	for name, val := range m {
-		v := sdktypes.NewVar(name).WithScopeID(vsid).SetValue(val)
-		vs = vs.Append(v.SetSecret(isSecret(name)))
-	}
-	return vs
+	return h.vars.Set(r.Context(), sdktypes.EncodeVars(app).WithScopeID(vsid)...)
 }
 
 // startOAuth redirects the user to the AutoKitteh server's
