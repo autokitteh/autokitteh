@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 
 	"go.uber.org/zap"
@@ -57,9 +58,9 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	case integrations.OAuthDefault:
 		startOAuth(w, r, c, l)
 
-	// First save the user-provided details of a custom Microsoft OAuth 2.0 app,
+	// First save the user-provided details of a private Microsoft OAuth 2.0 app,
 	// and only then redirect to the 3-legged OAuth 2.0 flow's starting point.
-	case integrations.OAuthCustom:
+	case integrations.OAuthPrivate:
 		if err := h.saveOAuthAppConfig(r, vsid); err != nil {
 			l.Error("save connection: " + err.Error())
 			c.AbortServerError(err.Error())
@@ -83,14 +84,14 @@ func (h handler) saveAuthType(ctx context.Context, vsid sdktypes.VarScopeID, aut
 	return authType
 }
 
-// OAuthAppConfig contains the user-provided details of a custom Microsoft OAuth 2.0 app.
+// OAuthAppConfig contains the user-provided details of a private Microsoft OAuth 2.0 app.
 type OAuthAppConfig struct {
 	ClientID     string `var:"client_id"`
 	ClientSecret string `var:"client_secret,secret"`
 }
 
 // saveOAuthAppConfig saves the user-provided details of a
-// custom Microsoft OAuth 2.0 app as connection variables.
+// private Microsoft OAuth 2.0 app as connection variables.
 func (h handler) saveOAuthAppConfig(r *http.Request, vsid sdktypes.VarScopeID) error {
 	app := OAuthAppConfig{
 		ClientID:     r.FormValue("client_id"),
@@ -129,13 +130,14 @@ func oauthURL(vs url.Values, c sdkintegrations.ConnectionInit) string {
 	path = fmt.Sprintf(path, scopes, c.ConnectionID, c.Origin)
 	path = strings.ReplaceAll(path, "-?", "?")
 
-	// Security checks: ensure the URL is relative
-	// and doesn't contain suspicious characters.
-	if strings.Contains(path, "..") || strings.Contains(path, "//") {
+	// Security checks: relative URL without suspicious characters.
+	if regexp.MustCompile(`(\.\.)|(//)|(\\)`).MatchString(path) {
 		return ""
 	}
 	u, err := url.Parse(path)
 	if err != nil || u.IsAbs() || u.Hostname() != "" {
+		return ""
+	} else if !strings.HasPrefix(u.Path, "/oauth/start/microsoft") {
 		return ""
 	}
 

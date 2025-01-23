@@ -25,6 +25,6 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 // is registered when the AutoKitteh server starts.
 func New(v sdkservices.Vars) sdkservices.Integration {
 	return sdkintegrations.NewIntegration(desc, sdkmodule.New(),
-		// TODO(BEFORE MERGE): connStatus, connTest,
+		// TODO: connStatus, connTest,
 		sdkintegrations.WithConnectionConfigFromVars(v))
 }

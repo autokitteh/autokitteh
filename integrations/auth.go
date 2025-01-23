@@ -8,8 +8,8 @@ const (
 	Init         = "initialized" // integrations with 1 auth method
 	JSONKey      = "jsonKey"     // Google integrations only
 	OAuth        = "oauth"       // Deprecate?
-	OAuthCustom  = "oauthCustom"
 	OAuthDefault = "oauthDefault"
+	OAuthPrivate = "oauthPrivate"
 	PAT          = "pat"
 	SocketMode   = "socketMode" // Slack integration only
 )
