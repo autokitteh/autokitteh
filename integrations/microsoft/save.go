@@ -12,6 +12,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations"
+	"go.autokitteh.dev/autokitteh/integrations/microsoft/connection"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -79,7 +80,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 // This will be redundant if/when the only way to initialize connections is via the web UI.
 // Therefore, we do not care if this function fails to save it as a connection variable.
 func (h handler) saveAuthType(ctx context.Context, vsid sdktypes.VarScopeID, authType string) string {
-	v := sdktypes.NewVar(sdktypes.NewSymbol("auth_type")).WithScopeID(vsid)
+	v := sdktypes.NewVar(connection.AuthTypeVar).WithScopeID(vsid)
 	_ = h.vars.Set(ctx, v.SetValue(authType))
 	return authType
 }

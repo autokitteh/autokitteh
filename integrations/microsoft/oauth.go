@@ -2,16 +2,14 @@ package microsoft
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
-	"io"
 	"net/http"
 	"time"
 
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 
+	"go.autokitteh.dev/autokitteh/integrations/microsoft/connection"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -23,19 +21,6 @@ type oauthData struct {
 	Expiry       string `var:"expiry"`
 	RefreshToken string `var:"refresh_token,secret"`
 	TokenType    string `var:"token_type"`
-}
-
-// userInfo contains user profile details from Microsoft Graph
-// (based on: https://learn.microsoft.com/en-us/graph/api/user-get).
-type userInfo struct {
-	PrincipalName string `json:"userPrincipalName" var:"principal_name"`
-	ID            string `json:"id" var:"id"`
-	DisplayName   string `json:"displayName" var:"display_name"`
-	Surname       string `json:"surname" var:"surname"`
-	GivenName     string `json:"givenName" var:"given_name"`
-	Language      string `json:"preferredLanguage" var:"language"`
-	Mail          string `json:"mail" var:"mail"`
-	MobilePhone   string `json:"mobilePhone" var:"mobile_phone"`
 }
 
 // handleOAuth receives an incoming redirect request from AutoKitteh's
@@ -82,7 +67,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 
 	// Test the OAuth token's usability by getting the user info associated with it.
 	ctx := r.Context()
-	user, err := h.getUserInfo(ctx, data.Token)
+	user, err := connection.GetUserInfo(ctx, data.Token)
 	if err != nil {
 		l.Error("failed to fetch authenticated user details", zap.Error(err))
 		c.AbortServerError("user details error")
@@ -98,41 +83,8 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, c.FinalURL(), http.StatusFound)
 }
 
-// getUserInfo returns user profile details from Microsoft Graph
-// (based on: https://learn.microsoft.com/en-us/graph/api/user-get).
-func (h handler) getUserInfo(ctx context.Context, t *oauth2.Token) (*userInfo, error) {
-	url := "https://graph.microsoft.com/v1.0/me"
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
-	}
-
-	req.Header.Set("Authorization", "Bearer "+t.AccessToken)
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("request for Microsoft user info failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("request for Microsoft user info failed: %s", resp.Status)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read Microsoft user info response: %w", err)
-	}
-
-	var user userInfo
-	if err := json.Unmarshal(body, &user); err != nil {
-		return nil, fmt.Errorf("failed to parse Microsoft user info: %w", err)
-	}
-
-	return &user, nil
-}
-
 // saveConnection saves OAuth token and user profile details as connection variables.
-func (h handler) saveConnection(ctx context.Context, vsid sdktypes.VarScopeID, t *oauth2.Token, u *userInfo) error {
+func (h handler) saveConnection(ctx context.Context, vsid sdktypes.VarScopeID, t *oauth2.Token, u *connection.UserInfo) error {
 	if t == nil {
 		return errors.New("OAuth redirection missing token data")
 	}
