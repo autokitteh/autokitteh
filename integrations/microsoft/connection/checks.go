@@ -80,26 +80,26 @@ func Test(v sdkservices.Vars, o sdkservices.OAuth) sdkintegrations.OptFn {
 // Return the OAuth token stored in the connection variables,
 // unless it's stale, in which case it will be refreshed first.
 func oauthToken(ctx context.Context, vs sdktypes.Vars, o sdkservices.OAuth) *oauth2.Token {
-	t := &oauth2.Token{
+	t1 := &oauth2.Token{
 		AccessToken:  vs.GetValueByString("oauth_access_token"),
 		RefreshToken: vs.GetValueByString("oauth_refresh_token"),
 		TokenType:    vs.GetValueByString("oauth_token_type"),
 	}
-	if t.Valid() {
-		return t
+	if t1.Valid() {
+		return t1
 	}
 
 	cfg, _, err := o.Get(ctx, "microsoft")
 	if err != nil {
-		return t
+		return t1
 	}
 
-	t, err = cfg.TokenSource(ctx, t).Token()
+	t2, err := cfg.TokenSource(ctx, t1).Token()
 	if err != nil {
-		return nil
+		return t1
 	}
 
-	return t
+	return t2
 }
 
 // UserInfo contains user profile details from Microsoft Graph

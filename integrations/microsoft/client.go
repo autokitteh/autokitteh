@@ -20,15 +20,16 @@ var (
 		ConnectionUrl: "/microsoft/connect",
 		ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
 			RequiresConnectionInit: true,
+			SupportsConnectionTest: true,
 		},
 	}))
 )
 
 // New defines an AutoKitteh integration, which
 // is registered when the AutoKitteh server starts.
-func New(v sdkservices.Vars) sdkservices.Integration {
+func New(v sdkservices.Vars, o sdkservices.OAuth) sdkservices.Integration {
 	return sdkintegrations.NewIntegration(
 		desc, sdkmodule.New(),
-		connection.Status(v), // TODO: connection.Test(v),
+		connection.Status(v), connection.Test(v, o),
 		sdkintegrations.WithConnectionConfigFromVars(v))
 }
