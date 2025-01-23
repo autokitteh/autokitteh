@@ -92,14 +92,16 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	vs, err := h.vars.Get(r.Context(), sdktypes.NewVarScopeID(cid))
+	if err != nil {
+		l.Warn("failed to get GitHub app ID", zap.Error(err))
+		c.AbortBadRequest("failed to get GitHub app ID")
+		return
+	}
+
 	appID := os.Getenv("GITHUB_APP_ID")
-	if h.isCustomOAuth(r.Context(), cid) {
-		vs, err := h.vars.Get(r.Context(), sdktypes.NewVarScopeID(cid))
-		if err != nil {
-			l.Warn("failed to get GitHub app ID", zap.Error(err))
-			c.AbortBadRequest("failed to get GitHub app ID")
-			return
-		}
+	if vs.GetValueByString("client_secret") != "" {
+		// Use custom GitHub App credentials instead of environment variables
 		appID = vs.GetValueByString("app_id")
 	}
 
@@ -107,13 +109,6 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		l.Warn("invalid GitHub app ID", zap.Error(err))
 		c.AbortBadRequest("invalid GitHub app ID")
-		return
-	}
-
-	vs, err := h.vars.Get(r.Context(), sdktypes.NewVarScopeID(cid))
-	if err != nil {
-		l.Warn("failed to get vars", zap.Error(err))
-		c.AbortServerError("failed to get vars")
 		return
 	}
 

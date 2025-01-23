@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"go.uber.org/zap"
@@ -32,19 +33,12 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	clientID := r.FormValue("client_id")
-	clientSecret := r.FormValue("client_secret")
-	appID := r.FormValue("app_id")
-	webhookSecret := r.FormValue("webhook_secret")
-	enterpriseURL := r.FormValue("enterprise_url")
-	privateKey := r.FormValue("private_key")
-
-	if clientID == "" || clientSecret == "" {
+	if r.Form.Get("client_id") == "" || r.Form.Get("client_secret") == "" {
 		c.AbortBadRequest("missing client ID or client secret")
 		return
 	}
 
-	if err := h.saveClientIDAndSecret(r.Context(), c, clientID, clientSecret, appID, webhookSecret, enterpriseURL, privateKey); err != nil {
+	if err := h.saveClientIDAndSecret(r.Context(), c, r.Form); err != nil {
 		l.Warn("Failed to save client ID and secret", zap.Error(err))
 		c.AbortBadRequest("failed to save client ID and secret")
 		return
@@ -54,7 +48,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, redirectURL, http.StatusSeeOther)
 }
 
-func (h handler) saveClientIDAndSecret(ctx context.Context, c sdkintegrations.ConnectionInit, clientID, clientSecret, appID, webhookSecret, enterpriseURL, privateKey string) error {
+func (h handler) saveClientIDAndSecret(ctx context.Context, c sdkintegrations.ConnectionInit, form url.Values) error {
 	// Sanity check: the connection ID is valid.
 	cid, err := sdktypes.StrictParseConnectionID(c.ConnectionID)
 	if err != nil {
@@ -63,21 +57,13 @@ func (h handler) saveClientIDAndSecret(ctx context.Context, c sdkintegrations.Co
 
 	scopeID := sdktypes.NewVarScopeID(cid)
 	vars := []sdktypes.Var{
-		sdktypes.NewVar(vars.ClientID).SetValue(clientID).WithScopeID(scopeID),
-		sdktypes.NewVar(vars.ClientSecret).SetValue(clientSecret).WithScopeID(scopeID).SetSecret(true),
-		sdktypes.NewVar(vars.AppID).SetValue(appID).WithScopeID(scopeID),
-		sdktypes.NewVar(vars.WebhookSecret).SetValue(webhookSecret).WithScopeID(scopeID).SetSecret(true),
-		sdktypes.NewVar(vars.EnterpriseURL).SetValue(enterpriseURL).WithScopeID(scopeID),
-		sdktypes.NewVar(vars.PrivateKey).SetValue(privateKey).WithScopeID(scopeID).SetSecret(true),
+		sdktypes.NewVar(vars.ClientID).SetValue(form.Get("client_id")).WithScopeID(scopeID),
+		sdktypes.NewVar(vars.ClientSecret).SetValue(form.Get("client_secret")).WithScopeID(scopeID).SetSecret(true),
+		sdktypes.NewVar(vars.AppID).SetValue(form.Get("app_id")).WithScopeID(scopeID),
+		sdktypes.NewVar(vars.WebhookSecret).SetValue(form.Get("webhook_secret")).WithScopeID(scopeID).SetSecret(true),
+		sdktypes.NewVar(vars.EnterpriseURL).SetValue(form.Get("enterprise_url")).WithScopeID(scopeID),
+		sdktypes.NewVar(vars.PrivateKey).SetValue(form.Get("private_key")).WithScopeID(scopeID).SetSecret(true),
 	}
 
 	return h.vars.Set(ctx, vars...)
-}
-
-func (h handler) isCustomOAuth(ctx context.Context, cid sdktypes.ConnectionID) bool {
-	vs, err := h.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
-	if err != nil {
-		return false
-	}
-	return vs.GetValueByString("client_secret") != ""
 }

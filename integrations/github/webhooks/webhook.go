@@ -213,13 +213,14 @@ func (h handler) getWebHookSecret(w http.ResponseWriter, r *http.Request) (strin
 		return "", nil
 	}
 	cid := cids[0]
-	if h.isCustomOAuth(r.Context(), cid) {
-		vs, err := h.vars.Get(r.Context(), sdktypes.NewVarScopeID(cid))
-		if err != nil {
-			l.Warn("Failed to get GitHub app ID", zap.Error(err))
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return "", err
-		}
+	vs, err := h.vars.Get(r.Context(), sdktypes.NewVarScopeID(cid))
+	if err != nil {
+		l.Warn("Failed to get GitHub app ID", zap.Error(err))
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return "", err
+	}
+	// If the user has defined a custom GitHub App, use its secret instead of the environment variable.
+	if vs.GetValueByString("client_secret") != "" {
 		s = vs.GetValueByString("webhook_secret")
 	}
 	return s, nil
@@ -278,12 +279,4 @@ func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, cids []sd
 		}
 		l.Debug("Event dispatched")
 	}
-}
-
-func (h handler) isCustomOAuth(ctx context.Context, cid sdktypes.ConnectionID) bool {
-	vs, err := h.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
-	if err != nil {
-		return false
-	}
-	return vs.GetValueByString("client_secret") != ""
 }
