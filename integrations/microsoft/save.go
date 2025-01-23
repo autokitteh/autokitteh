@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 	"regexp"
 	"strings"
 
@@ -117,37 +116,31 @@ func (h handler) saveOAuthAppConfig(r *http.Request, vsid sdktypes.VarScopeID) e
 // startOAuth redirects the user to the AutoKitteh server's
 // generic OAuth service, to start a 3-legged OAuth 2.0 flow.
 func startOAuth(w http.ResponseWriter, r *http.Request, c sdkintegrations.ConnectionInit, l *zap.Logger) {
-	if urlPath := oauthURL(r.Form, c); urlPath != "" {
-		http.Redirect(w, r, urlPath, http.StatusFound)
-	} else {
+	urlPath, err := oauthURL(c.ConnectionID, c.Origin, r.FormValue("auth_scopes"))
+	if err != nil {
 		l.Warn("save connection: bad OAuth redirect URL")
 		c.AbortBadRequest("bad redirect URL")
 	}
+	http.Redirect(w, r, urlPath, http.StatusFound)
 }
 
 // oauthURL constructs a relative URL to start a 3-legged OAuth
 // 2.0 flow, using the AutoKitteh server's generic OAuth service.
-func oauthURL(vs url.Values, c sdkintegrations.ConnectionInit) string {
-	// Default scopes: all ("microsoft").
-	path := "/oauth/start/microsoft-%s?cid=%s&origin=%s"
+func oauthURL(cid, origin, scopes string) (string, error) {
+	// Security check: parameters must be alphanumeric strings,
+	// to prevent path traversal attacks and other issues.
+	re := regexp.MustCompile(`^[\w]+$`)
+	if !re.MatchString(cid + origin + scopes) {
+		return "", errors.New("invalid connection ID, origin, or scopes")
+	}
 
-	// Narrow down the requested scopes to a specific Microsoft 365 product?
-	scopes := vs.Get("auth_scopes")
+	// Default scopes: all ("microsoft").
+	// Narrowed-down scopes: "microft-excel", "microsoft-teams", etc.
+	path := "/oauth/start/microsoft"
+	if scopes != "" {
+		path += "-" + scopes
+	}
 
 	// Remember the AutoKitteh connection ID and request origin.
-	path = fmt.Sprintf(path, scopes, c.ConnectionID, c.Origin)
-	path = strings.ReplaceAll(path, "-?", "?")
-
-	// Security checks: relative URL without suspicious characters.
-	if regexp.MustCompile(`(\.\.)|(//)|(\\)`).MatchString(path) {
-		return ""
-	}
-	u, err := url.Parse(path)
-	if err != nil || u.IsAbs() || u.Hostname() != "" {
-		return ""
-	} else if !strings.HasPrefix(u.Path, "/oauth/start/microsoft") {
-		return ""
-	}
-
-	return path
+	return path + fmt.Sprintf("?cid=%s&origin=%s", cid, origin), nil
 }

@@ -1,9 +1,11 @@
 package sdkintegrations
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 
 	"go.uber.org/zap"
 
@@ -96,7 +98,14 @@ func (c ConnectionInit) Finalize(data []sdktypes.Var) {
 // FinalURL returns the final redirect URL at the end of the connection flow in
 // each integration, based on the origin of the connection initialization request.
 // TODO(INT-195): Deprecate "Finalize" above and the "postinit" webhook.
-func (c ConnectionInit) FinalURL() string {
+func (c ConnectionInit) FinalURL() (string, error) {
+	// Security check: connection ID and origin must be alphanumeric
+	// strings, to prevent path traversal attacks and other issues.
+	re := regexp.MustCompile(`^[\w]+$`)
+	if !re.MatchString(c.ConnectionID) || !re.MatchString(c.Origin) {
+		return "", errors.New("invalid connection ID or origin")
+	}
+
 	var u string
 	switch c.Origin {
 	case "vscode":
@@ -107,5 +116,5 @@ func (c ConnectionInit) FinalURL() string {
 		// Another redirect just to get rid of the secrets in the URL.
 		u = "/connections/%s/success"
 	}
-	return fmt.Sprintf(u, c.ConnectionID)
+	return fmt.Sprintf(u, c.ConnectionID), nil
 }

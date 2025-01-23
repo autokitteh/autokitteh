@@ -75,12 +75,20 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.saveConnection(ctx, vsid, data.Token, user); err != nil {
-		l.Error("failed to save connection details", zap.Error(err))
+		l.Error("failed to save OAuth connection details", zap.Error(err))
 		c.AbortServerError("failed to save connection details")
 		return
 	}
 
-	http.Redirect(w, r, c.FinalURL(), http.StatusFound)
+	// Redirect the user back to the UI.
+	urlPath, err := c.FinalURL()
+	if err != nil {
+		l.Error("failed to construct final OAuth URL", zap.Error(err))
+		c.AbortServerError("bad redirect URL")
+		return
+	}
+
+	http.Redirect(w, r, urlPath, http.StatusFound)
 }
 
 // saveConnection saves OAuth token and user profile details as connection variables.
