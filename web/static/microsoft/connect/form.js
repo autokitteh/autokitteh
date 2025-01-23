@@ -4,15 +4,16 @@ const urlParams = new URLSearchParams(window.location.search);
 document.getElementById("cid").value = urlParams.get("cid") ?? "";
 document.getElementById("origin").value = urlParams.get("origin") ?? "";
 
-// Hide/show the custom OAuth 2.0 app fields based on the selected auth type.
+// Hide/show the OAuth 2.0 private app fields based on the selected auth type.
 document.getElementById("authType").addEventListener("change", function () {
   const isDefaultApp = this.value === "oauthDefault";
-  const customApp = document.getElementById("customApp");
+  const privateApp = document.getElementById("privateApp");
   if (isDefaultApp) {
-    customApp.classList.add("hidden");
+    privateApp.classList.add("hidden");
   } else {
-    customApp.classList.remove("hidden");
+    privateApp.classList.remove("hidden");
   }
   document.getElementById("clientId").disabled = isDefaultApp;
   document.getElementById("clientSecret").disabled = isDefaultApp;
+  document.getElementById("tenant").disabled = isDefaultApp;
 });

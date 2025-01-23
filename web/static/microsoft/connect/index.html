@@ -58,7 +58,7 @@
         <label for="auth_type">Auth Type</label>
         <select name="auth_type" id="authType">
           <option value="oauthDefault">Default App</option>
-          <option value="oauthCustom">Custom App</option>
+          <option value="oauthPrivate">Private App</option>
         </select>
       </div>
 
@@ -69,8 +69,8 @@
         </select>
       </div>
 
-      <div id="customApp" class="hidden">
-        <h2>Custom App</h2>
+      <div id="privateApp" class="hidden">
+        <h2>Private App</h2>
 
         <div class="form-group">
           <label for="client_id">Client ID</label>
@@ -90,6 +90,18 @@
             type="text"
             id="clientSecret"
             name="client_secret"
+            autocomplete="off"
+            spellcheck="false"
+            disabled
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="tenant">Tenant (Default = "common")</label>
+          <input
+            type="text"
+            id="tenant"
+            name="tenant"
             autocomplete="off"
             spellcheck="false"
             disabled

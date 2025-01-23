@@ -88,14 +88,21 @@ func (h handler) saveAuthType(ctx context.Context, vsid sdktypes.VarScopeID, aut
 type OAuthAppConfig struct {
 	ClientID     string `var:"client_id"`
 	ClientSecret string `var:"client_secret,secret"`
+	Tenant       string `var:"tenant"`
 }
 
 // saveOAuthAppConfig saves the user-provided details of a
 // private Microsoft OAuth 2.0 app as connection variables.
 func (h handler) saveOAuthAppConfig(r *http.Request, vsid sdktypes.VarScopeID) error {
+	tenant := r.FormValue("tenant")
+	if tenant == "" {
+		tenant = "common"
+	}
+
 	app := OAuthAppConfig{
 		ClientID:     r.FormValue("client_id"),
 		ClientSecret: r.FormValue("client_secret"),
+		Tenant:       tenant,
 	}
 
 	// Sanity check: all the required details were provided.
