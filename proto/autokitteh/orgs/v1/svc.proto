@@ -3,6 +3,7 @@ syntax = "proto3";
 package autokitteh.orgs.v1;
 
 import "autokitteh/orgs/v1/org.proto";
+import "autokitteh/users/v1/user.proto";
 import "buf/validate/validate.proto";
 import "google/protobuf/field_mask.proto";
 
@@ -64,16 +65,16 @@ message ListMembersRequest {
 
 message ListMembersResponse {
   repeated OrgMember members = 1 [(buf.validate.field).repeated.items.required = true];
+  repeated users.v1.User users = 2 [(buf.validate.field).repeated.items.required = true];
 }
 
 message GetOrgsForUserRequest {
   string user_id = 1;
-  bool include_orgs = 2;
 }
 
 message GetOrgsForUserResponse {
   repeated OrgMember members = 1 [(buf.validate.field).repeated.items.required = true];
-  map<string, Org> orgs = 2;
+  repeated Org orgs = 2 [(buf.validate.field).repeated.items.required = true];
 }
 
 message UpdateMemberRequest {

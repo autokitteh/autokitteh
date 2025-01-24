@@ -6,16 +6,22 @@ capture_jq meow_oid .org_id
 
 ak orgs get-member $meow_oid $ZUMI_UID -f
 return code == 0
-output equals_jq .member ACTIVE
+output equals_jq .member.status ORG_MEMBER_STATUS_ACTIVE
+output equals_jq .member.roles [admin]
 
 ak orgs add-member $meow_oid $GIZMO_UID
 return code == 0
 
 ak orgs get-member $meow_oid $GIZMO_UID -f
 return code == 0
-output equals_jq .member INVITED
+output equals_jq .member.status ORG_MEMBER_STATUS_INVITED
+output equals_jq .member.roles <nil>
 
 ak orgs update-member $meow_oid $GIZMO_UID --status ACTIVE
+return code == $RC_UNAUTHZ
+
+# cannot remove self if admin.
+ak orgs remove-member $meow_oid $ZUMI_UID
 return code == $RC_UNAUTHZ
 
 user shoogy
@@ -33,20 +39,25 @@ return code == $RC_NOT_FOUND
 
 ak users get-orgs
 return code == 0
-output equals_jq .orgs[].org.org_id $GIZMO_OID,$CATS_OID,$meow_oid
-output equals_jq .orgs[].status ACTIVE,ACTIVE,INVITED
+output equals_jq .orgs[].org_id $GIZMO_OID,$CATS_OID,$meow_oid
+output equals_jq .orgs[].status ORG_MEMBER_STATUS_ACTIVE,ORG_MEMBER_STATUS_ACTIVE,ORG_MEMBER_STATUS_INVITED
 
 ak orgs update-member $meow_oid $GIZMO_UID --status ACTIVE
 return code == 0
 
 ak orgs get-member $meow_oid $GIZMO_UID -f
 return code == 0
-output equals_jq .member ACTIVE
+output equals_jq .member.status ORG_MEMBER_STATUS_ACTIVE
 
 ak users get-orgs
 return code == 0
-output equals_jq .orgs[].org.org_id $GIZMO_OID,$CATS_OID,$meow_oid
-output equals_jq .orgs[].status ACTIVE,ACTIVE,ACTIVE
+output equals_jq .orgs[].org_id $GIZMO_OID,$CATS_OID,$meow_oid
+output equals_jq .orgs[].status ORG_MEMBER_STATUS_ACTIVE,ORG_MEMBER_STATUS_ACTIVE,ORG_MEMBER_STATUS_ACTIVE
+
+ak orgs add-member $meow_oid $SHOOGY_UID
+return code == $RC_UNAUTHZ
+
+user zumi
 
 ak orgs add-member $meow_oid $SHOOGY_UID
 return code == 0
@@ -58,18 +69,27 @@ return code == 0
 
 ak users get-orgs
 return code == 0
-output equals_jq .orgs[].org.org_id $SHOOGY_OID,$DOGS_OID,$meow_oid
-output equals_jq .orgs[].status ACTIVE,ACTIVE,DECLINED
+output equals_jq .orgs[].org_id $SHOOGY_OID,$DOGS_OID,$meow_oid
+output equals_jq .orgs[].status ORG_MEMBER_STATUS_ACTIVE,ORG_MEMBER_STATUS_ACTIVE,ORG_MEMBER_STATUS_DECLINED
 
-user gizmo
+ak orgs remove-member $meow_oid $GIZMO_UID
+return code == $RC_UNAUTHZ
+
+# can remove self.
+ak orgs remove-member $meow_oid $SHOOGY_UID
+return code == 0
+
+user zumi
 
 ak orgs remove-member $meow_oid $GIZMO_UID
 return code == 0
 
+user gizmo
+
 ak users get-orgs
 return code == 0
-output equals_jq .orgs[].org.org_id $GIZMO_OID,$CATS_OID
-output equals_jq .orgs[].status ACTIVE,ACTIVE
+output equals_jq .orgs[].org_id $GIZMO_OID,$CATS_OID
+output equals_jq .orgs[].status ORG_MEMBER_STATUS_ACTIVE,ORG_MEMBER_STATUS_ACTIVE
 
 ak orgs get-member $meow_oid $GIZMO_UID -f
 return code == $RC_NOT_FOUND

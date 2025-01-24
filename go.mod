@@ -1,6 +1,6 @@
 module go.autokitteh.dev/autokitteh
 
-go 1.23.4
+go 1.23.5
 
 require (
 	ariga.io/atlas-provider-gorm v0.5.0
@@ -58,7 +58,7 @@ require (
 	github.com/knadh/koanf/providers/env v1.0.0
 	github.com/knadh/koanf/providers/file v1.1.2
 	github.com/knadh/koanf/v2 v2.1.2
-	github.com/open-policy-agent/contrib/logging/plugins/ozap v0.0.0-20241129193640-0626e7f10109
+	github.com/mennanov/fieldmask-utils v1.1.2
 	github.com/open-policy-agent/opa v1.0.0
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
 	github.com/pressly/goose/v3 v3.24.0
@@ -99,6 +99,7 @@ require (
 	gorm.io/driver/postgres v1.5.11
 	gorm.io/driver/sqlite v1.5.7
 	gorm.io/gorm v1.25.12
+	gotest.tools/v3 v3.5.1
 	logur.dev/adapter/zap v0.5.0
 	logur.dev/logur v0.17.0
 	moul.io/zapgorm2 v1.3.0
@@ -288,11 +289,11 @@ require (
 	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 	golang.org/x/time v0.8.0 // indirect
+	google.golang.org/genproto v0.0.0-20241118233622-e639e219e697 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20241219192143-6b3ec007d9bb // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241219192143-6b3ec007d9bb // indirect
 	gorm.io/driver/mysql v1.5.7 // indirect
 	gorm.io/driver/sqlserver v1.5.4 // indirect
-	gotest.tools/v3 v3.5.1 // indirect
 	modernc.org/libc v1.61.4 // indirect
 	modernc.org/mathutil v1.6.0 // indirect
 	modernc.org/memory v1.8.0 // indirect

@@ -94,6 +94,10 @@ func parseLogLevel(txt, def string) (zap.AtomicLevel, error) {
 }
 
 func New(cfg *Config, l *zap.Logger) (policy.DecideFunc, error) {
+	if cfg == nil {
+		cfg = &Config{}
+	}
+
 	var (
 		cfgf []byte
 		err  error

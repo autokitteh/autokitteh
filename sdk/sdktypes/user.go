@@ -9,6 +9,8 @@ import (
 
 type User struct{ object[*UserPB, UserTraits] }
 
+func init() { registerObject[User]() }
+
 var InvalidUser User
 
 type UserPB = userv1.User

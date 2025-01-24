@@ -258,7 +258,11 @@ func (py *pySvc) Run(
 	py.runID = runID
 	py.sessionID = sessionID
 	py.xid = sdktypes.NewExecutorID(runID) // Should be first
-	py.log = py.log.With(zap.String("run_id", runID.String()), zap.String("session_id", sessionID.String()), zap.String("path", mainPath))
+	py.log = py.log.With(
+		zap.String("run_id", runID.String()),
+		zap.String("session_id", sessionID.String()),
+		zap.String("path", mainPath),
+	)
 
 	py.cbs = cbs
 
@@ -384,7 +388,117 @@ func (py *pySvc) call(ctx context.Context, val sdktypes.Value, args []sdktypes.V
 
 	if _, err = py.runner.ActivityReply(ctx, &req); err != nil {
 		py.log.Error("activity reply error", zap.Error(err))
+		req := pbUserCode.DoneRequest{
+			RunnerId: py.runnerID,
+			Error:    err.Error(),
+		}
+		py.channels.done <- &req
 	}
+}
+
+func (py *pySvc) setupCallbacksListeningLoop(ctx context.Context) chan (error) {
+	callbackErrChan := make(chan error, 1)
+	go func() {
+		for {
+			select {
+			case r := <-py.channels.log:
+				py.log.Log(pyLevelToZap(r.level), r.message)
+				close(r.doneChannel)
+			case p := <-py.channels.print:
+				py.cbs.Print(ctx, py.runID, p.message)
+				close(p.doneChannel)
+			case r := <-py.channels.request:
+				var (
+					fnName = "pyFunc"
+					args   []sdktypes.Value
+					kw     map[string]sdktypes.Value
+				)
+
+				if r.CallInfo != nil {
+					fnName = r.CallInfo.Function
+					args = kittehs.Transform(r.CallInfo.Args, func(v *pbValues.Value) sdktypes.Value {
+						// TODO(ENG-1838): What if there's an error?
+						val, _ := sdktypes.ValueFromProto(v)
+						return val
+					})
+					kw = kittehs.TransformMap(r.CallInfo.Kwargs, func(k string, v *pbValues.Value) (string, sdktypes.Value) {
+						// TODO(ENG-1838): What if there's an error?
+						val, _ := sdktypes.ValueFromProto(v)
+						return k, val
+					})
+				}
+
+				// it was already checked before we got here
+				fn, err := sdktypes.NewFunctionValue(py.xid, fnName, r.Data, nil, pyModuleFunc)
+				if err != nil {
+					callbackErrChan <- err
+					return
+				}
+				py.call(ctx, fn, args, kw)
+			case cb := <-py.channels.callback:
+				val, err := py.cbs.Call(ctx, py.runID, py.syscallFn, cb.args, cb.kwargs)
+				if err != nil {
+					cb.errorChannel <- err
+				} else {
+					cb.successChannel <- val
+				}
+			case <-ctx.Done():
+				py.log.Debug("stopping callback handling loop")
+				return
+			}
+		}
+	}()
+
+	return callbackErrChan
+}
+
+func (py *pySvc) startRequest(ctx context.Context, funcName string, eventData []byte) error {
+
+	req := pbUserCode.StartRequest{
+		EntryPoint: fmt.Sprintf("%s:%s", py.fileName, funcName),
+		Event: &pbUserCode.Event{
+			Data: eventData,
+		},
+	}
+	if _, err := py.runner.Start(ctx, &req); err != nil {
+		// TODO: Handle traceback
+		return err
+	}
+
+	return nil
+}
+
+func (py *pySvc) setupHealthcheck(ctx context.Context) chan (error) {
+
+	runnerHealthChan := make(chan error, 1)
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				py.log.Debug("health check loop stopped")
+				return
+			case <-time.After(10 * time.Second):
+				healthReq := pbUserCode.RunnerHealthRequest{}
+
+				resp, err := py.runner.Health(ctx, &healthReq)
+				if err != nil { // no network/lost packet.load? for sanity check the state locally via IPC/signals
+					err = runnerManager.RunnerHealth(ctx, py.runnerID)
+				} else if resp.Error != "" {
+					err = fmt.Errorf("grpc: %s", resp.Error)
+				}
+				if err != nil {
+					py.log.Error("runner health failed", zap.Error(err))
+
+					// TODO: ENG-1675 - cleanup runner junk
+
+					runnerHealthChan <- err
+					return
+				}
+
+			}
+		}
+	}()
+	return runnerHealthChan
 }
 
 // initialCall handles initial call from autokitteh, it does the message loop with Python.
@@ -414,48 +528,15 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 		return sdktypes.InvalidValue, fmt.Errorf("marshal event: %w", err)
 	}
 
-	req := pbUserCode.StartRequest{
-		EntryPoint: fmt.Sprintf("%s:%s", py.fileName, funcName),
-		Event: &pbUserCode.Event{
-			Data: eventData,
-		},
-	}
-	if _, err := py.runner.Start(ctx, &req); err != nil {
-		// TODO: Handle traceback
-		return sdktypes.InvalidValue, err
-	}
-
 	cancellableCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
+	callbackErrChan := py.setupCallbacksListeningLoop(cancellableCtx)
 
-	runnerHealthChan := make(chan error, 1)
-	go func() {
-		for {
-			select {
-			case <-cancellableCtx.Done():
-				py.log.Debug("health check loop stopped")
-				return
-			case <-time.After(10 * time.Second):
-				healthReq := pbUserCode.RunnerHealthRequest{}
+	if err := py.startRequest(ctx, funcName, eventData); err != nil {
+		return sdktypes.InvalidValue, fmt.Errorf("start request: %w", err)
+	}
 
-				resp, err := py.runner.Health(ctx, &healthReq)
-				if err != nil { // no network/lost packet.load? for sanity check the state locally via IPC/signals
-					err = runnerManager.RunnerHealth(ctx, py.runnerID)
-				} else if resp.Error != "" {
-					err = fmt.Errorf("grpc: %s", resp.Error)
-				}
-				if err != nil {
-					py.log.Error("runner health failed", zap.Error(err))
-
-					// TODO: ENG-1675 - cleanup runner junk
-
-					runnerHealthChan <- err
-					return
-				}
-
-			}
-		}
-	}()
+	runnerHealthChan := py.setupHealthcheck(cancellableCtx)
 
 	// Wait for client Done message
 	var done *pbUserCode.DoneRequest
@@ -465,46 +546,8 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 			if healthErr != nil {
 				return sdktypes.InvalidValue, sdkerrors.NewRetryableErrorf("runner health: %w", healthErr)
 			}
-		case r := <-py.channels.log:
-			py.log.Log(pyLevelToZap(r.level), r.message)
-			close(r.doneChannel)
-		case p := <-py.channels.print:
-			py.cbs.Print(ctx, py.runID, p.message)
-			close(p.doneChannel)
-		case r := <-py.channels.request:
-			var (
-				fnName = "pyFunc"
-				args   []sdktypes.Value
-				kw     map[string]sdktypes.Value
-			)
-
-			if r.CallInfo != nil {
-				fnName = r.CallInfo.Function
-				args = kittehs.Transform(r.CallInfo.Args, func(v *pbValues.Value) sdktypes.Value {
-					// TODO(ENG-1838): What if there's an error?
-					val, _ := sdktypes.ValueFromProto(v)
-					return val
-				})
-				kw = kittehs.TransformMap(r.CallInfo.Kwargs, func(k string, v *pbValues.Value) (string, sdktypes.Value) {
-					// TODO(ENG-1838): What if there's an error?
-					val, _ := sdktypes.ValueFromProto(v)
-					return k, val
-				})
-			}
-
-			// it was already checked before we got here
-			fn, err := sdktypes.NewFunctionValue(py.xid, fnName, r.Data, nil, pyModuleFunc)
-			if err != nil {
-				return sdktypes.InvalidValue, err
-			}
-			py.call(ctx, fn, args, kw)
-		case cb := <-py.channels.callback:
-			val, err := py.cbs.Call(ctx, py.runID, py.syscallFn, cb.args, cb.kwargs)
-			if err != nil {
-				cb.errorChannel <- err
-			} else {
-				cb.successChannel <- val
-			}
+		case callbackErr := <-callbackErrChan:
+			return sdktypes.InvalidValue, callbackErr
 		case v := <-py.channels.done:
 			py.log.Info("done signal", zap.String("error", v.Error))
 			pCtx, cancel := context.WithTimeout(ctx, time.Second)
@@ -546,6 +589,7 @@ func (py *pySvc) drainPrints(ctx context.Context) {
 			py.log.Log(pyLevelToZap(r.level), r.message)
 		case r := <-py.channels.print:
 			py.cbs.Print(ctx, py.runID, r.message)
+			close(r.doneChannel)
 		}
 	}
 }
@@ -615,7 +659,7 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 	case err != nil:
 		return sdktypes.InvalidValue, err
 	case resp.Error != "":
-		return sdktypes.InvalidValue, fmt.Errorf("%s", resp.Error)
+		py.log.Warn("activity error", zap.String("error", resp.Error))
 	}
 
 	resp.Result.Custom.ExecutorId = py.xid.String()

@@ -1,6 +1,6 @@
 import builtins
+import inspect
 import json
-import os
 import pickle
 import sys
 from base64 import b64decode
@@ -9,7 +9,7 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from io import StringIO
 from multiprocessing import cpu_count
 from pathlib import Path
-from threading import Lock, Thread
+from threading import Lock, Thread, Timer
 from time import sleep
 from traceback import TracebackException, format_exception
 
@@ -24,7 +24,9 @@ from autokitteh import AttrDict, connections
 from call import AKCall, full_func_name
 from syscalls import SysCalls
 
-SERVER_GRACE_TIMEOUT = 3  # seconds
+# Timeouts are in seconds
+SERVER_GRACE_TIMEOUT = 3
+START_TIMEOUT = 10
 
 
 class ActivityError(Exception):
@@ -46,9 +48,8 @@ def parse_entry_point(entry_point):
     return file_name[:-3], func_name
 
 
-def exc_traceback(err):
-    """Format traceback to JSONable list."""
-    te = TracebackException.from_exception(err)
+def pb_traceback(tb):
+    """Convert traceback to a list of pb.user_code.Frame for serialization."""
     return [
         pb.user_code.Frame(
             filename=frame.filename,
@@ -56,7 +57,7 @@ def exc_traceback(err):
             code=frame.line,
             name=frame.name,
         )
-        for frame in te.stack
+        for frame in tb.stack
     ]
 
 
@@ -69,17 +70,17 @@ for more details.
 """
 
 
-def display_err(fn, err):
-    func_name = full_func_name(fn)
-    log.exception("calling %s: %s", func_name, err)
+def result_error(err):
+    io = StringIO()
 
     if "pickle" in str(err):
-        print(pickle_help, file=sys.stderr)
+        print(pickle_help, file=io)
 
     exc = "".join(format_exception(err))
+    message = s if (s := str(err)) else repr(err)
+    print(f"error: {message}\n\n{exc}", file=io)
 
-    # Print the error to stderr so it'll show in session logs
-    print(f"error: {err}\n\n{exc}", file=sys.stderr)
+    return io.getvalue()
 
 
 # Go passes HTTP event.data.body.bytes as base64 encode string
@@ -100,21 +101,43 @@ def fix_http_body(event):
             pass
 
 
-def killIfStartWasntCalled(runner):
-    if not runner.did_start:
-        print("Start was not called, killing self")
-        os._exit(1)
-
-
 def abort_with_exception(context, status, err):
     io = StringIO()
-    print(err, file=io)
     for line in format_exception(err):
         io.write(line)
-    context.abort(status, io.getvalue())
+    text = io.getvalue()
+    context.abort(status, text)
+
+
+def set_exception_args(err):
+    """Make it possible to unpickle an error.
+
+    See https://stackoverflow.com/questions/41808912/cannot-unpickle-exception-subclass
+    """
+    code = getattr(err.__init__, "__code__", None)
+    if code is None:  # Built-in
+        return
+
+    init_args = inspect.getargs(code).args
+    if not init_args:
+        return
+
+    if init_args[0] == "self":
+        init_args = init_args[1:]
+
+    err_args = getattr(err, "args")
+    if len(err_args) == len(init_args):
+        return
+
+    extra = []
+    for name in init_args[len(err_args) :]:
+        extra.append(getattr(err, name, None))
+
+    err.args += tuple(extra)
 
 
 Call = namedtuple("Call", "fn args kw fut")
+Result = namedtuple("Result", "value error traceback")
 
 
 class Runner(pb.runner_rpc.RunnerService):
@@ -127,9 +150,16 @@ class Runner(pb.runner_rpc.RunnerService):
         self.executor = ThreadPoolExecutor()
 
         self.lock = Lock()
-        self.activity_calls: list[Call] = []
+        self.activity_call = None
         self._orig_print = print
         self._start_called = False
+        self._inactivty_timer = Timer(START_TIMEOUT, self.stop_if_start_not_called)
+        self._inactivty_timer.start()
+
+    def stop_if_start_not_called(self):
+        log.error("Start not called after %s seconds, terminating", START_TIMEOUT)
+        if self.server:
+            self.server.stop(SERVER_GRACE_TIMEOUT)
 
     def Exports(self, request: pb.runner.ExportsRequest, context: grpc.ServicerContext):
         if request.file_name == "":
@@ -171,6 +201,8 @@ class Runner(pb.runner_rpc.RunnerService):
             log.error("already called start before")
             return pb.runner.StartResponse(error="start already called")
 
+        self._inactivty_timer.cancel()
+
         self._start_called = True
         log.info("start request: %r", request.entry_point)
 
@@ -209,49 +241,44 @@ class Runner(pb.runner_rpc.RunnerService):
 
     def Execute(self, request: pb.runner.ExecuteRequest, context: grpc.ServicerContext):
         with self.lock:
-            call = self.activity_calls[-1] if self.activity_calls else None
+            call: Call = self.activity_call
 
         if call is None:
-            context.abort(grpc.StatusCode.INVALID_ARGUMENT, "no pending activity calls")
+            context.abort(grpc.StatusCode.INTERNAL, "no pending activity calls")
 
-        func_name = full_func_name(call.fn)
-        log.info("calling %s", func_name)
-        result = err = None
+        result = self._call(call.fn, call.args, call.kw)
         try:
-            result = call.fn(*call.args, **call.kw)
-        except Exception as e:
-            log.error("%s failed: %s", func_name, e)
-            display_err(call.fn, e)
-            err = e
+            data = pickle.dumps(result)
+        except (TypeError, pickle.PickleError) as err:
+            # Print so it'll get to session log
+            print(f"error: cannot pickle result - {err}")
+            print(pickle_help)
+            context.abort(grpc.StatusCode.INTERNAL, f"can't pickle result - {err}")
 
-        # Always set the result since it contains call info
         resp = pb.runner.ExecuteResponse(
             result=pb.values.Value(
                 custom=pb.values.Custom(
-                    data=pickle.dumps(result, protocol=0),
-                    value=safe_wrap(result),
+                    data=data,
+                    value=values.safe_wrap(result.value),
                 ),
             )
         )
-
-        if err:
-            resp.error = str(err)
-            tb = exc_traceback(err)
-            resp.traceback.extend(tb)
 
         return resp
 
     def ActivityReply(
         self, request: pb.runner.ActivityReplyRequest, context: grpc.ServicerContext
     ):
-        if request.error and not request.result.custom.data:
+        if not request.result.custom.data:
             req = pb.handler.DoneRequest(
                 runner_id=self.id,
-                error=request.error,
+                error="activity reply not a Custom value",
             )
-            resp = self.worker.Done(req)
-            if resp.error:
-                log.error("on_event: done send error: %r", resp.error)
+            try:
+                self.worker.Done(req)
+            except grpc.RpcError as err:
+                log.error("done send error: %r", err)
+                self.server.stop(SERVER_GRACE_TIMEOUT)
 
             return pb.runner.ActivityReplyResponse(error=request.error)
 
@@ -262,22 +289,25 @@ class Runner(pb.runner_rpc.RunnerService):
             log.exception(f"can't decode data: pickle: {err}")
             abort_with_exception(context, grpc.StatusCode.INTERNAL, err)
 
+        if not isinstance(result, Result):
+            context.abort(
+                grpc.StatusCode.INVALID_ARGUMENT, "ActivityReply data not a Result"
+            )
+
         with self.lock:
-            call = self.activity_calls.pop() if self.activity_calls else None
+            call = self.activity_call
+            self.activity_call = None
 
         if call is None:
             context.abort(
                 grpc.StatusCode.INVALID_ARGUMENT, "ActivityReply without pending calls"
             )
 
-        if request.error:
-            call.fut.set_exception(ActivityError(request.error))
-            context.abort(
-                grpc.StatusCode.ABORTED,
-                f"activity error: {request.error}",
-            )
+        if result.error:
+            call.fut.set_exception(result.error)
+        else:
+            call.fut.set_result(result.value)
 
-        call.fut.set_result(result)
         return pb.runner.ActivityReplyResponse()
 
     def Health(
@@ -297,14 +327,17 @@ class Runner(pb.runner_rpc.RunnerService):
         log.info("calling %s", fn_name)
         call = Call(fn, args, kw, Future())
         with self.lock:
-            self.activity_calls.append(call)
+            if self.activity_call:
+                log.error("nested activity: %r < %r", self.activity_call, call)
+                raise RuntimeError(f"nested activity: {self.activity_call} < {call}")
+            self.activity_call = call
 
         req = pb.handler.ActivityRequest(
             runner_id=self.id,
             call_info=pb.handler.CallInfo(
                 function=fn.__name__,  # AK rejects __qualname__ such as "json.loads"
-                args=[safe_wrap(a) for a in args],
-                kwargs={k: safe_wrap(v) for k, v in kw.items()},
+                args=[values.safe_wrap(a) for a in args],
+                kwargs={k: values.safe_wrap(v) for k, v in kw.items()},
             ),
         )
         log.info("activity: sending")
@@ -314,38 +347,47 @@ class Runner(pb.runner_rpc.RunnerService):
         log.info("activity request ended")
         return call.fut
 
-    def on_event(self, fn, event):
-        log.info("on_event: start")
-
-        # TODO: This is similar to Execute, merge?
-        err = result = None
+    def _call(self, fn, args, kw):
+        func_name = full_func_name(fn)
+        log.info("calling %s", func_name)
+        value = error = tb = None
         try:
-            result = fn(event)
-        except Exception as e:
-            display_err(fn, e)
-            err = e
+            value = fn(*args, **kw)
+            if isinstance(value, Exception):
+                set_exception_args(value)
+        except Exception as err:
+            log.error("%s raised: %s", func_name, err)
+            tb = TracebackException.from_exception(err)
+            error = err
+            set_exception_args(error)
 
-        self.signal_done(result, err)
+        return Result(value, error, tb)
 
-    def signal_done(self, result, error=None):
-        log.info("on_event: end: error=%r", error)
+    def on_event(self, fn, event):
+        log.info("start event: %s", full_func_name(fn))
+
+        result = self._call(fn, [event], {})
+        log.info("event end: error=%r", result.error)
         req = pb.handler.DoneRequest(
             runner_id=self.id,
         )
 
-        if error:
-            # req.error must not be empty, otherwise the server would not know
-            # that there was an error.
-            req.error = str(error) or "exception"
-            tb = exc_traceback(error)
+        if result.error:
+            req.error = result_error(result.error)
+            tb = pb_traceback(result.traceback)
             req.traceback.extend(tb)
         else:
-            req.result.custom.data = pickle.dumps(result, protocol=0)
-            req.result.custom.value.CopyFrom(safe_wrap(result))
+            try:
+                data = pickle.dumps(result)
+                req.result.custom.data = data
+                req.result.custom.value.CopyFrom(values.safe_wrap(result.value))
+            except (TypeError, pickle.PickleError) as err:
+                req.error = f"can't pickle {result.value} - {err}"
 
-        resp = self.worker.Done(req)
-        if resp.Error:
-            log.error("on_event: done send error: %r", resp.error)
+        try:
+            self.worker.Done(req)
+        except grpc.RpcError as err:
+            log.error("on_event: done send error: %r", err)
 
     def syscall(self, fn, args, kw):
         return self.syscalls.call(fn, args, kw)
@@ -368,13 +410,6 @@ class Runner(pb.runner_rpc.RunnerService):
                 log.error("grpc cancelled or unavailable, killing self")
                 self.server.stop(SERVER_GRACE_TIMEOUT)
             log.error("print: %s", err)
-
-
-def safe_wrap(v):
-    try:
-        return values.wrap(v)
-    except TypeError:
-        return pb.values.Value(string=pb.values.String(v=repr(v)))
 
 
 def is_valid_port(port):

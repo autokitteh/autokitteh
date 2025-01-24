@@ -11,6 +11,8 @@ type Status struct {
 	object[*StatusPB, StatusTraits]
 }
 
+func init() { registerObject[Status]() }
+
 var InvalidStatus Status
 
 type StatusPB = commonv1.Status

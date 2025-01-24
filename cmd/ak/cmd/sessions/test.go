@@ -1,6 +1,7 @@
 package sessions
 
 import (
+	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
@@ -21,7 +22,31 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var trimRe = regexp.MustCompile(`\/.*\/ak-(user|runner)-.*?\/`)
+var (
+	// /tmp/ak-user-2767870919/main.py:6.1,main
+	userRe = regexp.MustCompile(`\/.*\/ak-user-.*?\/`)
+	// runner/main.py:6.1,main, in _call
+	runnerRe = regexp.MustCompile(`.*runner.*/.*\.py.*`)
+
+	// File "/opt/hostedtoolcache/Python/3.12.8/x64/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result`
+	pyLibRe = regexp.MustCompile(`File ".*/lib/python3\.\d+/(.*\.py)", line (\d+), in (.*)`)
+)
+
+func normalizePath(p string) string {
+	// Remove location specific prefix of Python standard library.
+	line := pyLibRe.ReplaceAllString(p, `py-lib/$1, line XXX, in $3`)
+	if line != p {
+		return line
+	}
+
+	// Too many changes in runner, just show runner
+	if runnerRe.MatchString(p) {
+		return "   ak-runner"
+	}
+
+	// Remove /tmp/ak-userXXX prefix.
+	return userRe.ReplaceAllString(p, "")
+}
 
 var testCmd = common.StandardCommand(&cobra.Command{
 	Use:   "test <txtar-file> [--build-id=...] [--project project] [--deployment-id=...] [--entrypoint=...] [--quiet] [--timeout DURATION] [--poll-interval DURATION] [--no-timestamps]",
@@ -108,12 +133,19 @@ var testCmd = common.StandardCommand(&cobra.Command{
 		})
 
 		var prints strings.Builder
+
 		for _, r := range rs {
 			if p, ok := r.GetPrint(); ok {
-				p = trimRe.ReplaceAllString(p, "")
+				s := bufio.NewScanner(strings.NewReader(p))
+				for s.Scan() {
+					line := normalizePath(s.Text())
+					prints.WriteString(line)
+					prints.WriteRune('\n')
+				}
 
-				prints.WriteString(p)
-				prints.WriteRune('\n')
+				if err := s.Err(); err != nil {
+					return fmt.Errorf("scan print: %w", err)
+				}
 			}
 		}
 

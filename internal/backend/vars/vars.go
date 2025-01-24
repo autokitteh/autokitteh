@@ -77,7 +77,7 @@ func (v *Vars) Set(ctx context.Context, vs ...sdktypes.Var) error {
 		}
 
 		if v.cfg.MaxValueSize != 0 && len(va.Value()) > v.cfg.MaxValueSize {
-			return fmt.Errorf("%w: value size %d exceeds max value size %d", sdkerrors.ErrLimitExceeded, len(va.Value()), v.cfg.MaxValueSize)
+			return sdkerrors.NewInvalidArgumentError("value size %d exceeds max value size %d", len(va.Value()), v.cfg.MaxValueSize)
 		}
 
 		scids[va.ScopeID()] = true
@@ -92,7 +92,7 @@ func (v *Vars) Set(ctx context.Context, vs ...sdktypes.Var) error {
 				}
 
 				if n > maxN {
-					return fmt.Errorf("%w: number of variables for scope %v %d exceeds max number of variables %d", sdkerrors.ErrLimitExceeded, scid, len(vs), maxN)
+					return sdkerrors.NewInvalidArgumentError("number of variables for scope %v %d exceeds max number of variables %d", scid, len(vs), maxN)
 				}
 			}
 		}

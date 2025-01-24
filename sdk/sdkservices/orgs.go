@@ -2,24 +2,9 @@ package sdkservices
 
 import (
 	"context"
-	"fmt"
 
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
-
-type UserIDWithMemberStatus struct {
-	UserID sdktypes.UserID          `json:"user_id"`
-	Status sdktypes.OrgMemberStatus `json:"status"`
-}
-
-func (s UserIDWithMemberStatus) String() string { return fmt.Sprintf("%v: %v", s.UserID, s.Status) }
-
-type OrgWithMemberStatus struct {
-	Org    sdktypes.Org             `json:"org"`
-	Status sdktypes.OrgMemberStatus `json:"status"`
-}
-
-func (s OrgWithMemberStatus) String() string { return fmt.Sprintf("%v, %v", s.Org, s.Status) }
 
 type Orgs interface {
 	Create(ctx context.Context, org sdktypes.Org) (sdktypes.OrgID, error)
@@ -27,10 +12,11 @@ type Orgs interface {
 	GetByName(ctx context.Context, name sdktypes.Symbol) (sdktypes.Org, error)
 	Delete(ctx context.Context, id sdktypes.OrgID) error
 	Update(ctx context.Context, org sdktypes.Org, fieldMask *sdktypes.FieldMask) error
-	ListMembers(ctx context.Context, oid sdktypes.OrgID) ([]*UserIDWithMemberStatus, error)
-	AddMember(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID, status sdktypes.OrgMemberStatus) error
-	UpdateMemberStatus(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID, status sdktypes.OrgMemberStatus) error
+	AddMember(ctx context.Context, m sdktypes.OrgMember) error
+	UpdateMember(ctx context.Context, m sdktypes.OrgMember, fm *sdktypes.FieldMask) error
 	RemoveMember(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID) error
-	GetMemberStatus(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID) (sdktypes.OrgMemberStatus, error)
-	GetOrgsForUser(ctx context.Context, uid sdktypes.UserID) ([]*OrgWithMemberStatus, error)
+	GetMember(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID) (sdktypes.OrgMember, error)
+
+	GetOrgsForUser(ctx context.Context, uid sdktypes.UserID) ([]sdktypes.OrgMember, []sdktypes.Org, error)
+	ListMembers(ctx context.Context, oid sdktypes.OrgID) ([]sdktypes.OrgMember, []sdktypes.User, error)
 }

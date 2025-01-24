@@ -20,6 +20,8 @@ type NothingValue struct {
 	object[*NothingValuePB, nopObjectTraits[*NothingValuePB]]
 }
 
+func init() { registerObject[NothingValue]() }
+
 func (NothingValue) isConcreteValue() {}
 
 var Nothing = forceFromProto[Value](&ValuePB{Nothing: &NothingValuePB{}})
@@ -62,6 +64,8 @@ type SymbolValue struct {
 	object[*SymbolValuePB, symbolValueTraits]
 }
 
+func init() { registerObject[SymbolValue]() }
+
 func (s SymbolValue) Symbol() Symbol { return NewSymbol(s.read().Name) }
 
 func (v Value) IsSymbol() bool         { return v.read().Symbol != nil }
@@ -87,6 +91,8 @@ type StringValuePB = valuev1.String
 type StringValue struct {
 	object[*StringValuePB, nopObjectTraits[*StringValuePB]]
 }
+
+func init() { registerObject[StringValue]() }
 
 func (StringValue) isConcreteValue() {}
 
@@ -118,6 +124,8 @@ type IntegerValue struct {
 	object[*IntegerValuePB, nopObjectTraits[*IntegerValuePB]]
 }
 
+func init() { registerObject[IntegerValue]() }
+
 func (IntegerValue) isConcreteValue() {}
 
 func (s IntegerValue) Value() int64 { return s.read().V }
@@ -145,6 +153,8 @@ type BooleanValuePB = valuev1.Boolean
 type BooleanValue struct {
 	object[*BooleanValuePB, nopObjectTraits[*BooleanValuePB]]
 }
+
+func init() { registerObject[BooleanValue]() }
 
 func (BooleanValue) isConcreteValue() {}
 
@@ -187,6 +197,8 @@ type FloatValue struct {
 	object[*FloatValuePB, nopObjectTraits[*FloatValuePB]]
 }
 
+func init() { registerObject[FloatValue]() }
+
 func (FloatValue) isConcreteValue() {}
 
 func (s FloatValue) Value() float64 { return s.read().V }
@@ -215,6 +227,8 @@ type DurationValue struct {
 	object[*DurationValuePB, nopObjectTraits[*DurationValuePB]]
 }
 
+func init() { registerObject[DurationValue]() }
+
 func (DurationValue) isConcreteValue() {}
 
 func (s DurationValue) Value() time.Duration { return s.read().V.AsDuration() }
@@ -242,6 +256,8 @@ type TimeValuePB = valuev1.Time
 type TimeValue struct {
 	object[*TimeValuePB, nopObjectTraits[*TimeValuePB]]
 }
+
+func init() { registerObject[TimeValue]() }
 
 func (TimeValue) isConcreteValue() {}
 

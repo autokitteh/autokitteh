@@ -569,7 +569,7 @@ type Org struct {
 
 	OrgID       uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
 	DisplayName string
-	Name        string `gorm:"uniqueIndex"`
+	Name        string `gorm:"index"`
 
 	UpdatedBy uuid.UUID `gorm:"type:uuid"`
 	UpdatedAt time.Time
@@ -591,12 +591,35 @@ func ParseOrg(r Org) (sdktypes.Org, error) {
 type OrgMember struct {
 	Base
 
-	OrgID  uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
-	UserID uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
-	Status int       `gorm:"index"`
+	OrgID  uuid.UUID      `gorm:"primaryKey;type:uuid;not null"`
+	UserID uuid.UUID      `gorm:"primaryKey;type:uuid;not null"`
+	Status int            `gorm:"index"`
+	Roles  datatypes.JSON // [str]
+
+	UpdatedBy uuid.UUID `gorm:"type:uuid"`
+	UpdatedAt time.Time
 
 	Org  *Org
 	User *User
+}
+
+func ParseOrgMember(r OrgMember) (sdktypes.OrgMember, error) {
+	roles := make([]sdktypes.Symbol, 0)
+	if len(r.Roles) > 0 {
+		if err := json.Unmarshal(r.Roles, &roles); err != nil {
+			return sdktypes.InvalidOrgMember, fmt.Errorf("roles: %w", err)
+		}
+	}
+
+	s, err := sdktypes.OrgMemberStatusFromProto(sdktypes.OrgMemberStatusPB(r.Status))
+	if err != nil {
+		return sdktypes.InvalidOrgMember, fmt.Errorf("status: %w", err)
+	}
+
+	return sdktypes.NewOrgMember(
+		sdktypes.NewIDFromUUID[sdktypes.OrgID](r.OrgID),
+		sdktypes.NewIDFromUUID[sdktypes.UserID](r.UserID),
+	).WithStatus(s).WithRoles(roles...), nil
 }
 
 // TODO: Remove after migration to new ownership is done.

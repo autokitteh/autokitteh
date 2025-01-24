@@ -2,6 +2,9 @@ package auth0
 
 import (
 	"context"
+	"fmt"
+	"net/http"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -22,6 +25,7 @@ var (
 	clientIDName     = sdktypes.NewSymbol("client_id")
 	clientSecretName = sdktypes.NewSymbol("client_secret")
 	domainName       = sdktypes.NewSymbol("auth0_domain")
+	authTokenName    = sdktypes.NewSymbol("oauth_AccessToken")
 )
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
@@ -79,9 +83,46 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 	})
 }
 
-// TODO(INT-113): Implement
-func connTest(_ *integration) sdkintegrations.OptFn {
+// connTest is an optional connection test provided by the integration
+// to AutoKitteh. It is used to verify that the connection is working
+// as expected. The possible results are "OK" and "error".
+func connTest(i *integration) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
-		return sdktypes.NewStatus(sdktypes.StatusCodeUnspecified, "Not implemented"), nil
+		if !cid.IsValid() {
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Init required"), nil
+		}
+
+		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+		if err != nil {
+			return sdktypes.InvalidStatus, err
+		}
+
+		// TODO(INT-124): Use the refresh token to get a new access token.
+		token := vs.Get(authTokenName).Value()
+		domain := vs.Get(domainName).Value()
+		// https://auth0.com/docs/api/management/v2/stats/get-active-users
+		url := fmt.Sprintf("https://%s/api/v2/stats/active-users", domain)
+
+		timeoutCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
+		defer cancel()
+
+		req, err := http.NewRequestWithContext(timeoutCtx, http.MethodGet, url, nil)
+		if err != nil {
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
+		}
+		req.Header.Set("Authorization", "Bearer "+token)
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Invalid OAuth token"), nil
+		}
+
+		return sdktypes.NewStatus(sdktypes.StatusCodeOK, "OK"), nil
 	})
 }

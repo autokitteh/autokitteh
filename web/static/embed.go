@@ -10,6 +10,9 @@ var RootWebContent embed.FS
 //go:embed asana/connect
 var AsanaWebContent embed.FS
 
+//go:embed auth0/connect
+var Auth0WebContent embed.FS
+
 //go:embed aws/connect
 var AWSWebContent embed.FS
 
@@ -58,8 +61,8 @@ var HubSpotWebContent embed.FS
 //go:embed jira/connect
 var JiraWebContent embed.FS
 
-//go:embed auth0/connect
-var Auth0WebContent embed.FS
+//go:embed microsoft
+var MicrosoftWebContent embed.FS
 
 //go:embed slack/connect
 var SlackWebContent embed.FS

@@ -18,14 +18,23 @@ import (
 
 type Object interface {
 	json.Marshaler
+
 	fmt.Stringer
 	isValider
 	stricter
 
 	isObject()
 
+	// If no message set, returns nil.
+	ProtoMessage() proto.Message
+
+	// Always returns a new message, even if the object is invalid.
+	ProtoMessageName() string
+
 	IsMutableField(n string) bool
 	Mutables() []string
+
+	NewFromJSON([]byte) (Object, error)
 }
 
 type objectTraits[M interface{ proto.Message }] interface {
@@ -68,11 +77,36 @@ func (o object[M, T]) ProtoSize() int { return proto.Size(o.m) }
 
 func clone[M proto.Message](m M) M { return proto.Clone(m).(M) }
 
-func (o object[T, M]) isObject()              {}
-func (o object[M, T]) IsValid() bool          { var zero M; return o.m != zero }
-func (o object[M, T]) ToProto() M             { return clone(o.m) }
-func (o object[M, T]) Message() proto.Message { return o.ToProto() }
-func (o object[M, T]) IsZero() bool           { return proto.Size(o.m) == 0 }
+func (o object[T, M]) isObject()                   {}
+func (o object[M, T]) IsValid() bool               { var zero M; return o.m != zero }
+func (o object[M, T]) ToProto() M                  { return clone(o.m) }
+func (o object[M, T]) ProtoMessage() proto.Message { return o.ToProto() }
+func (o object[M, T]) ProtoMessageName() string    { return string(proto.MessageName(o.read())) }
+func (o object[M, T]) IsZero() bool                { return proto.Size(o.m) == 0 }
+
+func (object[M, T]) NewFromJSON(bs []byte) (Object, error) {
+	// The object can be marshalled as a pointer, so if it's null, we reset the object.
+	// (ie. we got an invalid/nil object)
+	if string(bs) == "null" {
+		return nil, nil
+	}
+
+	m := zero[M]()
+
+	if err := protojson.Unmarshal(bs, m); err != nil {
+		return nil, err
+	}
+
+	if err := validate[M, T](m); err != nil {
+		return nil, err
+	}
+
+	return object[M, T]{m: m}, nil
+}
+
+func zero[M proto.Message]() (m M) {
+	return reflect.New(reflect.TypeOf(m).Elem()).Interface().(M)
+}
 
 // the returned message will not always be the message stored in the object.
 func (o *object[M, T]) read() M {
@@ -80,7 +114,7 @@ func (o *object[M, T]) read() M {
 		return o.m
 	}
 
-	return reflect.New(reflect.TypeOf(o.m).Elem()).Interface().(M)
+	return zero[M]()
 }
 
 // sets the message is nil. this mutates the object.
@@ -113,6 +147,7 @@ func (o object[M, T]) MarshalJSON() ([]byte, error) {
 	return protoMarshal(o.m)
 }
 
+// This makes sense only when working on a concrete object, where you not the Object interface.
 func (o *object[M, T]) UnmarshalJSON(b []byte) (err error) {
 	// The object can be marshalled as a pointer, so if it's null, we reset the object.
 	// (ie. we got an invalid/nil object)
@@ -160,7 +195,7 @@ func (o object[M, T]) Equal(other interface{ ToProto() M }) bool {
 type FieldMask = fieldmaskpb.FieldMask
 
 func (o object[M, T]) ValidateUpdateFieldMask(fm *FieldMask) error {
-	if !fm.IsValid(o.Message()) {
+	if !fm.IsValid(o.ProtoMessage()) {
 		return sdkerrors.NewInvalidArgumentError("invalid field mask")
 	}
 
