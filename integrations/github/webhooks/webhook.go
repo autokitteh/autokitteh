@@ -38,6 +38,7 @@ type handler struct {
 	vars          sdkservices.Vars
 	dispatch      sdkservices.DispatchFunc
 	integrationID sdktypes.IntegrationID
+	webhookSecret string
 }
 
 func NewHandler(l *zap.Logger, vars sdkservices.Vars, d sdkservices.DispatchFunc, id sdktypes.IntegrationID) handler {
@@ -46,6 +47,7 @@ func NewHandler(l *zap.Logger, vars sdkservices.Vars, d sdkservices.DispatchFunc
 		vars:          vars,
 		dispatch:      d,
 		integrationID: id,
+		webhookSecret: os.Getenv(webhookSecretEnvVar),
 	}
 }
 
@@ -200,7 +202,6 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (h handler) getWebHookSecret(w http.ResponseWriter, r *http.Request) (string, error) {
 	l := extrazap.ExtractLoggerFromContext(r.Context())
 
-	s := os.Getenv(webhookSecretEnvVar)
 	appID := r.Header.Get(githubAppIDHeader)
 	cids, err := h.vars.FindConnectionIDs(r.Context(), h.integrationID, vars.AppID, appID)
 	if err != nil {
@@ -219,11 +220,12 @@ func (h handler) getWebHookSecret(w http.ResponseWriter, r *http.Request) (strin
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return "", err
 	}
+	whs := h.webhookSecret
 	// If the user has defined a custom GitHub App, use its secret instead of the environment variable.
 	if vs.GetValueByString("client_secret") != "" {
-		s = vs.GetValueByString("webhook_secret")
+		whs = vs.GetValueByString("webhook_secret")
 	}
-	return s, nil
+	return whs, nil
 }
 
 func extractInstallationID(event any) (inst string, err error) {
