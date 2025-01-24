@@ -20,7 +20,7 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/google/drive"
 	"go.autokitteh.dev/autokitteh/integrations/google/forms"
 	"go.autokitteh.dev/autokitteh/integrations/google/gmail"
-	"go.autokitteh.dev/autokitteh/integrations/google/internal/vars"
+	"go.autokitteh.dev/autokitteh/integrations/google/vars"
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )

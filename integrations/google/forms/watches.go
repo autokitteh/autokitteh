@@ -7,7 +7,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/api/forms/v1"
 
-	"go.autokitteh.dev/autokitteh/integrations/google/internal/vars"
+	"go.autokitteh.dev/autokitteh/integrations/google/vars"
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"

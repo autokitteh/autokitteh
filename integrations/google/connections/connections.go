@@ -10,7 +10,7 @@ import (
 	"golang.org/x/oauth2/google"
 
 	"go.autokitteh.dev/autokitteh/integrations"
-	"go.autokitteh.dev/autokitteh/integrations/google/internal/vars"
+	"go.autokitteh.dev/autokitteh/integrations/google/vars"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
