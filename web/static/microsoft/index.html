@@ -50,6 +50,11 @@
         <input type="text" name="origin" id="origin" readonly />
       </div>
 
+      <div class="form-group">
+        <label for="auth_scopes">Auth Scopes ("" = All)</label>
+        <input type="text" name="auth_scopes" value="" readonly />
+      </div>
+
       <h2>OAuth 2.0</h2>
 
       <div class="form-group">
@@ -57,13 +62,6 @@
         <select name="auth_type" id="authType">
           <option value="oauthDefault">Default App</option>
           <option value="oauthPrivate">Private App</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label for="auth_scopes">Auth Scopes</label>
-        <select name="auth_scopes">
-          <option value="">All</option>
         </select>
       </div>
 

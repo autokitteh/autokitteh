@@ -138,7 +138,7 @@ func oauthURL(cid, origin, scopes string) (string, error) {
 	// Narrowed-down scopes: "microft-excel", "microsoft-teams", etc.
 	path := "/oauth/start/microsoft"
 	if scopes != "" {
-		path += "-" + scopes
+		path += "_" + scopes
 	}
 
 	// Remember the AutoKitteh connection ID and request origin.

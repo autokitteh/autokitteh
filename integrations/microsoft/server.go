@@ -24,7 +24,7 @@ func Start(l *zap.Logger, muxes *muxes.Muxes, v sdkservices.Vars, o sdkservices.
 	muxes.Auth.HandleFunc("GET /microsoft/save", h.handleSave)
 	muxes.Auth.HandleFunc("GET /microsoft/oauth", h.handleOAuth)
 
-	// TODO: Event webhooks (no AutoKitteh user authentication by definition, because
+	// TODO(INT-170): Event webhooks (no AutoKitteh user authentication by definition, because
 	// these asynchronous requests are sent to us by third-party services).
 }
 

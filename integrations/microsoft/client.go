@@ -9,15 +9,19 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+const (
+	integrationName = "microsoft"
+)
+
 var (
-	integrationID = sdktypes.NewIntegrationIDFromName("microsoft")
+	integrationID = sdktypes.NewIntegrationIDFromName(integrationName)
 
 	desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
 		IntegrationId: integrationID.String(),
-		UniqueName:    "microsoft",
+		UniqueName:    integrationName,
 		DisplayName:   "Microsoft (All APIs)",
 		LogoUrl:       "/static/images/microsoft.svg",
-		ConnectionUrl: "/microsoft/connect",
+		ConnectionUrl: "/microsoft",
 		ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
 			RequiresConnectionInit: true,
 			SupportsConnectionTest: true,
