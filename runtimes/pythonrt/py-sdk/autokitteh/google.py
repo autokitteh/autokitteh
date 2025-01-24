@@ -1,4 +1,4 @@
-"""Initialize Google API clients, based on an AutoKitteh connections."""
+"""Initialize Google API clients, based on AutoKitteh connections."""
 
 from datetime import UTC, datetime
 import json
