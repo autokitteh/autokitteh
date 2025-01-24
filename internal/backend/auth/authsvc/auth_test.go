@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
-	"go.autokitteh.dev/autokitteh/internal/backend/auth/authusers"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -33,10 +32,6 @@ func TestCreateToken(t *testing.T) {
 	assert.Equal(t, tok, "")
 
 	tok, err = a.CreateToken(authcontext.SetAuthnSystemUser(context.Background()))
-	assert.ErrorIs(t, err, sdkerrors.ErrUnauthorized)
-	assert.Equal(t, tok, "")
-
-	tok, err = a.CreateToken(authcontext.SetAuthnUser(context.Background(), authusers.DefaultUser))
 	assert.ErrorIs(t, err, sdkerrors.ErrUnauthorized)
 	assert.Equal(t, tok, "")
 

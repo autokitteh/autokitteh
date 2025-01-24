@@ -224,8 +224,8 @@ func (a *svc) newSuccessLoginHandler(ctx context.Context, ld *loginData) http.Ha
 			}
 
 			// We don't want internal users logging in - doesn't make sense.
-			if authusers.IsInternalUserID(uid) {
-				sl.Errorf("internal user attempting to login: %v", u)
+			if authusers.IsSystemUserID(uid) {
+				sl.Errorf("system user attempting to login: %v", u)
 				return newErrHandler("internal user, cannot login", http.StatusBadRequest)
 			}
 		}

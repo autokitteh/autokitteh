@@ -61,8 +61,8 @@ func New(cfg *Config) (authtokens.Tokens, error) {
 }
 
 func (js *tokens) Create(u sdktypes.User) (string, error) {
-	if authusers.IsInternalUserID(u.ID()) {
-		return "", sdkerrors.NewInvalidArgumentError("internal user")
+	if authusers.IsSystemUserID(u.ID()) {
+		return "", sdkerrors.NewInvalidArgumentError("system user")
 	}
 
 	uuid, err := uuid.NewV7()
