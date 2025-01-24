@@ -20,7 +20,7 @@ var (
 		IntegrationId: integrationID.String(),
 		UniqueName:    integrationName,
 		DisplayName:   "Microsoft Teams",
-		LogoUrl:       "/static/images/microsoft.svg",
+		LogoUrl:       "/static/images/microsoft_teams.svg",
 		ConnectionUrl: "/microsoft/teams",
 		ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
 			RequiresConnectionInit: true,
