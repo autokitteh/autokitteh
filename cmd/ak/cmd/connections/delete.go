@@ -6,6 +6,7 @@ import (
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 var deleteCmd = common.StandardCommand(&cobra.Command{
@@ -19,7 +20,7 @@ var deleteCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		_, id, err := r.ConnectionNameOrID(ctx, args[0], "")
+		_, id, err := r.ConnectionNameOrID(ctx, args[0], "", sdktypes.InvalidOrgID)
 		if err != nil {
 			return common.WrapError(err, "connection")
 		}

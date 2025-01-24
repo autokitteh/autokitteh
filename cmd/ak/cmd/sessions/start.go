@@ -136,7 +136,7 @@ func sessionArgs() (did sdktypes.DeploymentID, pid sdktypes.ProjectID, bid sdkty
 	}
 
 	if project != "" {
-		if pid, err = r.ProjectNameOrID(ctx, project); err != nil {
+		if pid, err = r.ProjectNameOrID(ctx, sdktypes.InvalidOrgID, project); err != nil {
 			return
 		}
 		if project != "" && !pid.IsValid() {

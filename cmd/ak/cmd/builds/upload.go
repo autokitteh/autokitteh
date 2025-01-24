@@ -28,7 +28,7 @@ var uploadCmd = common.StandardCommand(&cobra.Command{
 		defer cancel()
 
 		r := resolver.Resolver{Client: common.Client()}
-		pid, err := r.ProjectNameOrID(ctx, project)
+		pid, err := r.ProjectNameOrID(ctx, sdktypes.InvalidOrgID, project)
 		if err != nil {
 			return err
 		}

@@ -1,6 +1,7 @@
 package manifest
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 
@@ -23,14 +24,23 @@ var (
 // Allow no dir/file - use manifest dir by default
 
 var deployCmd = common.StandardCommand(&cobra.Command{
-	Use:   "deploy <manifest file> [--project-name <name>] [--dir <path> [...]] [--file <path> [...]] [--env <name or ID>] [--quiet]",
+	Use:   "deploy <manifest file> [--project-name <name>] [--org org] [--dir <path> [...]] [--file <path> [...]] [--env <name or ID>] [--quiet]",
 	Short: "Create, configure, build, deploy, and activate project",
 	Long:  `Create, configure, build, deploy, and activate project - see also the "build", "deployment", and "project" parent commands`,
 	Args:  cobra.ExactArgs(1),
 
 	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx, cancel := common.LimitedContext()
+		defer cancel()
+
+		r := resolver.Resolver{Client: common.Client()}
+		oid, err := r.Org(ctx, org)
+		if err != nil {
+			return err
+		}
+
 		// Step 1: apply the manifest file (see also the "manifest" parent command).
-		effects, project, err := applyManifest(cmd, args)
+		effects, project, err := applyManifest(ctx, cmd, args, oid)
 		if err != nil {
 			return err
 		}
@@ -43,11 +53,7 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 			dirPaths = append(dirPaths, filepath.Dir(args[0]))
 		}
 
-		r := resolver.Resolver{Client: common.Client()}
-		ctx, cancel := common.LimitedContext()
-		defer cancel()
-
-		pid, err := r.ProjectNameOrID(ctx, project)
+		pid, err := r.ProjectNameOrID(ctx, oid, project)
 		if err != nil {
 			return err
 		}
@@ -95,23 +101,22 @@ func init() {
 	deployCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "only show errors, if any")
 	deployCmd.Flags().StringVarP(&env, "env", "e", "", "environment name or ID")
 	deployCmd.Flags().StringVarP(&projectName, "project-name", "n", "", "project name")
+	deployCmd.Flags().StringVarP(&org, "org", "o", "", "org name or id")
 }
 
-func applyManifest(cmd *cobra.Command, args []string) (manifest.Effects, string, error) {
+func applyManifest(ctx context.Context, cmd *cobra.Command, args []string, oid sdktypes.OrgID) (manifest.Effects, string, error) {
+	client := common.Client()
+
 	// Read and parse the manifest file.
 	data, path, err := common.Consume(args)
 	if err != nil {
 		return nil, "", err
 	}
 
-	actions, err := plan(cmd, data, path, projectName)
+	actions, err := plan(cmd, data, path, projectName, oid)
 	if err != nil {
 		return nil, "", err
 	}
-
-	client := common.Client()
-	ctx, cancel := common.LimitedContext()
-	defer cancel()
 
 	// Execute the plan.
 	effects, err := manifest.Execute(ctx, actions, client, logFunc(cmd, "exec"))

@@ -155,7 +155,7 @@ func planProjectVars(ctx context.Context, mvars []*Var, client sdkservices.Servi
 
 		desired := sdktypes.NewVar(n).SetValue(mvar.Value).SetSecret(mvar.Secret).WithScopeID(sid)
 
-		setAction := actions.SetVarAction{Key: mvar.GetKey(), Project: projName, Var: desired}
+		setAction := actions.SetVarAction{Key: mvar.GetKey(), Project: projName, Var: desired, OrgID: opts.oid}
 
 		log := opts.log.For("var", mvar)
 
@@ -286,7 +286,7 @@ func planConnectionVars(mconn Connection, cid sdktypes.ConnectionID, cvars sdkty
 			log.Printf("not found, will set")
 		}
 
-		acts = append(acts, actions.SetVarAction{Key: mvar.GetKey(), Connection: mconn.GetKey(), Var: want})
+		acts = append(acts, actions.SetVarAction{Key: mvar.GetKey(), Connection: mconn.GetKey(), Var: want, OrgID: opts.oid})
 	}
 
 	// Remove connection vars not in the manifest.
@@ -326,6 +326,7 @@ func planConnection(mconn *Connection, curr sdktypes.Connection, optfns ...Optio
 			actions.CreateConnectionAction{
 				Key:            mconn.GetKey(),
 				ProjectKey:     mconn.ProjectKey,
+				OrgID:          opts.oid,
 				IntegrationKey: mconn.IntegrationKey,
 				Connection:     desired,
 			},
@@ -435,7 +436,13 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 
 		if !curr.IsValid() {
 			log.Printf("not found, will create")
-			add(actions.CreateTriggerAction{Key: mtrigger.GetKey(), ConnectionKey: mtrigger.ConnectionKey, ProjectKey: mtrigger.ProjectKey, Trigger: desired})
+			add(actions.CreateTriggerAction{
+				Key:           mtrigger.GetKey(),
+				ConnectionKey: mtrigger.ConnectionKey,
+				OrgID:         opts.oid,
+				ProjectKey:    mtrigger.ProjectKey,
+				Trigger:       desired,
+			})
 		} else {
 			matchedTriggerIDs = append(matchedTriggerIDs, curr.ID().String())
 			log.Printf("found, id=%q", curr.ID())
@@ -458,7 +465,7 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 				log.Printf("no changes needed")
 			} else {
 				log.Printf("not as desired, will update")
-				add(actions.UpdateTriggerAction{Key: mtrigger.GetKey(), ConnectionKey: mtrigger.ConnectionKey, ProjectKey: mtrigger.ProjectKey, Trigger: desired})
+				add(actions.UpdateTriggerAction{Key: mtrigger.GetKey(), ConnectionKey: mtrigger.ConnectionKey, ProjectKey: mtrigger.ProjectKey, Trigger: desired, OrgID: opts.oid})
 			}
 		}
 	}

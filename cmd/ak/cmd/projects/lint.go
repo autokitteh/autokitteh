@@ -19,14 +19,12 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var (
-	lintOpts struct {
-		manifestPath    string
-		projectNameOrID string
-		dirPaths        []string
-		filePaths       []string
-	}
-)
+var lintOpts struct {
+	manifestPath    string
+	projectNameOrID string
+	dirPaths        []string
+	filePaths       []string
+}
 
 func init() {
 	// Command-specific flags.
@@ -157,7 +155,7 @@ func runLint(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	projectID, err := r.ProjectNameOrID(ctx, projectNameOrID)
+	projectID, err := r.ProjectNameOrID(ctx, sdktypes.InvalidOrgID, projectNameOrID)
 	switch err {
 	case sdkerrors.ErrNotFound: // new project
 		// no need to check

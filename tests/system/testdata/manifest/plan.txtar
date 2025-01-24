@@ -6,6 +6,13 @@ ak manifest plan a.yaml -qJ
 return code == 0
 output equals_json file a.json
 
+ak orgs create --name test
+return code == 0
+
+ak manifest plan a.yaml --org test -qJ
+return code == 0
+output equals_json file a_with_org.json
+
 ak manifest plan b.yaml -qJ
 return code == 0
 output equals_json file b.json
@@ -45,6 +52,7 @@ project:
       },
       "integration": "test",
       "key": "my_project/my_connection",
+      "org_id": "",
       "project": "my_project"
     },
     "type": "create_connection"
@@ -54,6 +62,51 @@ project:
       "connection": "my_project/my_connection",
       "project": "my_project",
       "key": "my_project:connection:my_project/my_connection/meow",
+      "org_id": "",
+      "trigger": {
+        "code_location": {
+          "name": "on_test",
+          "path": "my_program.star"
+        },
+        "event_type": "get",
+        "name": "meow",
+        "source_type": "SOURCE_TYPE_CONNECTION"
+      }
+    },
+    "type": "create_trigger"
+  }
+]
+
+-- a_with_org.json --
+[
+  {
+    "action": {
+      "key": "my_project",
+      "project": {
+        "org_id": "org_00000000000000000000000001",
+        "name": "my_project"
+      }
+    },
+    "type": "create_project"
+  },
+  {
+    "action": {
+      "connection": {
+        "name": "my_connection"
+      },
+      "integration": "test",
+      "key": "my_project/my_connection",
+      "org_id": "org_00000000000000000000000001",
+      "project": "my_project"
+    },
+    "type": "create_connection"
+  },
+  {
+    "action": {
+      "connection": "my_project/my_connection",
+      "project": "my_project",
+      "key": "my_project:connection:my_project/my_connection/meow",
+      "org_id": "org_00000000000000000000000001",
       "trigger": {
         "code_location": {
           "name": "on_test",
@@ -96,6 +149,7 @@ project:
     "action": {
       "key": "my_project/TEST_VAR",
       "project": "my_project",
+      "org_id": "",
       "var": {
         "name": "TEST_VAR",
         "value": "meow"
@@ -107,6 +161,7 @@ project:
     "action": {
       "key": "my_project/TEST_SECRET_VAR1",
       "project": "my_project",
+      "org_id": "",
       "var": {
         "name": "TEST_SECRET_VAR1",
         "value": "woof",
