@@ -25,7 +25,7 @@ func TestOAuthURLX(t *testing.T) {
 			cid:    "XXX",
 			origin: "YYY",
 			scopes: "ZZZ",
-			want:   "/oauth/start/microsoft-ZZZ?cid=XXX&origin=YYY",
+			want:   "/oauth/start/microsoft_ZZZ?cid=XXX&origin=YYY",
 		},
 		{
 			name:   "malicious_scopes",
