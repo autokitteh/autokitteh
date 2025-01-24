@@ -5,6 +5,7 @@ import os
 
 from azure.core.credentials import AccessToken
 from azure.core.credentials import TokenCredential
+from msgraph import GraphServiceClient
 
 from .connections import check_connection_name, refresh_oauth
 from .errors import ConnectionInitError
@@ -24,7 +25,16 @@ def teams_client(connection: str, **kwargs):
         ConnectionInitError: AutoKitteh connection was not initialized yet.
         OAuthRefreshError: OAuth token refresh failed.
     """
-    raise NotImplementedError("TODO(INT-170)")
+    check_connection_name(connection)
+
+    auth_type = os.getenv(connection + "__auth_type")
+    if not auth_type:
+        raise ConnectionInitError(connection)
+    if not auth_type.startswith("oauth"):
+        raise ValueError(f"AutoKitteh connection {connection!r} not using OAuth")
+
+    creds = OAuthTokenProvider(connection)
+    return GraphServiceClient(credentials=creds, **kwargs)
 
 
 class OAuthTokenProvider(TokenCredential):
