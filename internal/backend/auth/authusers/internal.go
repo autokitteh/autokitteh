@@ -21,7 +21,7 @@ var (
 
 	// DefaultUser is a user that is used when no user authentication is required but not enabled.
 	// This user is a regular user and has no special privileges whatsoever.
-	// This user cannot login.
+	// This user cannot login, hence it must not have an email associated with it.
 	DefaultUser = sdktypes.NewUser().
 			WithID(uid("usr_3vser000000000000000000001")).
 			WithDisplayName("Default User").
@@ -33,6 +33,4 @@ var (
 			WithDisplayName("Default Org")
 )
 
-func IsInternalUserID(id sdktypes.UserID) bool {
-	return id == SystemUser.ID() || id == DefaultUser.ID()
-}
+func IsSystemUserID(id sdktypes.UserID) bool { return id == SystemUser.ID() }

@@ -33,7 +33,7 @@ func (a *auth) CreateToken(ctx context.Context) (string, error) {
 		return "", sdkerrors.ErrNotImplemented
 	}
 
-	if authusers.IsInternalUserID(u.ID()) {
+	if authusers.IsSystemUserID(u.ID()) {
 		return "", sdkerrors.ErrUnauthorized
 	}
 

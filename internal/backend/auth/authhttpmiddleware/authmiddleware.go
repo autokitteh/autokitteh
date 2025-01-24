@@ -12,21 +12,9 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authsessions"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authusers"
-	"go.autokitteh.dev/autokitteh/internal/backend/configset"
-	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
+	"go.autokitteh.dev/autokitteh/internal/backend/users"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
-
-type Config struct {
-	// If set, no authn is required. If no other authn supplied,
-	// the default user will be considered authenticated.
-	UseDefaultUser bool `koanf:"use_default_user"`
-}
-
-var Configs = configset.Set[Config]{
-	Default: &Config{},
-	Dev:     &Config{UseDefaultUser: true},
-}
 
 type AuthMiddlewareDecorator func(http.Handler) http.Handler
 
@@ -34,8 +22,7 @@ type Deps struct {
 	fx.In
 
 	Logger   *zap.Logger
-	Cfg      *Config
-	Users    sdkservices.Users
+	Users    users.Users
 	Sessions authsessions.Store `optional:"true"`
 	Tokens   authtokens.Tokens  `optional:"true"`
 }
@@ -107,7 +94,7 @@ func New(deps Deps) AuthMiddlewareDecorator {
 		mws = append(mws, newSessionsMiddleware(sessions))
 	}
 
-	if deps.Cfg.UseDefaultUser {
+	if deps.Users.HasDefaultUser() {
 		mws = append(mws, setDefaultUserMiddleware)
 	}
 

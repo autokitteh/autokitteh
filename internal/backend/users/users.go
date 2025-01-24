@@ -2,12 +2,14 @@ package users
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authusers"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
@@ -21,28 +23,85 @@ type Config struct {
 	// If set, do not create a personal org for new users. Instead, set this as their default org.
 	// This is useful for single-tenant setups where all users belong to the same org.
 	DefaultOrgID string `koanf:"default_org_id"`
-}
 
-func (c *Config) GetDefaultOrgID() (sdktypes.OrgID, error) {
-	return sdktypes.ParseOrgID(c.DefaultOrgID)
+	UseDefaultUser bool `koanf:"use_default_user"`
 }
 
 var Configs = configset.Set[Config]{
 	Default: &Config{},
+	Dev:     &Config{UseDefaultUser: true},
+}
+
+type Users interface {
+	sdkservices.Users
+
+	Setup(context.Context) error
+
+	HasDefaultUser() bool
 }
 
 type users struct {
 	db  db.DB
 	l   *zap.Logger
 	cfg *Config
+
+	defaultOrgID sdktypes.OrgID
 }
 
-func New(cfg *Config, db db.DB, l *zap.Logger) (sdkservices.Users, error) {
-	if _, err := cfg.GetDefaultOrgID(); err != nil {
+func New(cfg *Config, db db.DB, l *zap.Logger) (Users, error) {
+	oid, err := sdktypes.ParseOrgID(cfg.DefaultOrgID)
+	if err != nil {
 		return nil, fmt.Errorf("invalid default org ID: %w", err)
 	}
 
-	return &users{cfg: cfg, db: db, l: l}, nil
+	return &users{cfg: cfg, db: db, l: l, defaultOrgID: oid}, nil
+}
+
+func (u *users) HasDefaultUser() bool { return u.cfg.UseDefaultUser }
+
+func (u *users) Setup(ctx context.Context) error {
+	if u.cfg.UseDefaultUser {
+		u.l.Warn("using default user")
+
+		if _, err := u.db.GetUser(ctx, authusers.DefaultUser.ID(), ""); err == nil {
+			// user exists - nothing to do.
+			u.l.Info("default user exist in db")
+			return nil
+		} else if !errors.Is(err, sdkerrors.ErrNotFound) {
+			return fmt.Errorf("get default user: %w", err)
+		}
+
+		// no user - populate.
+		u.l.Info("no default user found in db, populating")
+
+		var seed []sdktypes.Object
+
+		if u.cfg.DefaultOrgID == "" {
+			// Add both the default org and default user as the org admin.
+
+			seed = []sdktypes.Object{
+				authusers.DefaultUser,
+				authusers.DefaultOrg,
+				sdktypes.NewOrgMember(authusers.DefaultUser.DefaultOrgID(), authusers.DefaultUser.ID()).
+					WithRoles(orgs.OrgAdminRoleName).
+					WithStatus(sdktypes.OrgMemberStatusActive),
+			}
+		} else {
+			// Add default user to the desired default org - do not make them an admin.
+
+			seed = []sdktypes.Object{
+				authusers.DefaultUser.WithDefaultOrgID(u.defaultOrgID),
+				sdktypes.NewOrgMember(u.defaultOrgID, authusers.DefaultUser.ID()).
+					WithStatus(sdktypes.OrgMemberStatusActive),
+			}
+		}
+
+		if err := db.Populate(ctx, u.db, seed...); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (u *users) Create(ctx context.Context, user sdktypes.User) (sdktypes.UserID, error) {
@@ -74,7 +133,7 @@ func (u *users) Create(ctx context.Context, user sdktypes.User) (sdktypes.UserID
 
 		if oid := user.DefaultOrgID(); !oid.IsValid() {
 			// If user has no default org id set, set the one from the config, if specified.
-			if oid, _ = u.cfg.GetDefaultOrgID(); !oid.IsValid() {
+			if oid = u.defaultOrgID; !oid.IsValid() {
 				// ... otherwise create a new personal org for that user.
 				org := sdktypes.NewOrg()
 

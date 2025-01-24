@@ -164,12 +164,20 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component("authsessions", authsessions.Configs, fx.Provide(authsessions.New)),
 		Component(
 			"authhttpmiddleware",
-			authhttpmiddleware.Configs,
+			configset.Empty,
 			fx.Provide(authhttpmiddleware.New),
 			fx.Provide(authhttpmiddleware.AuthorizationHeaderExtractor),
 		),
 		Component("orgs", configset.Empty, fx.Provide(orgs.New)),
-		Component("users", users.Configs, fx.Provide(users.New)),
+		Component(
+			"users",
+			users.Configs,
+			fx.Provide(users.New),
+			fx.Provide(func(u users.Users) sdkservices.Users { return u }),
+			fx.Invoke(func(lc fx.Lifecycle, u users.Users) {
+				HookOnStart(lc, u.Setup)
+			}),
+		),
 		Component("opapolicy", opapolicy.Configs, fx.Provide(opapolicy.New)),
 		Component("authz", configset.Empty, fx.Provide(authz.NewPolicyCheckFunc)),
 
