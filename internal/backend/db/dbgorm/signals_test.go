@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
@@ -31,7 +32,7 @@ func preSignalTest(t *testing.T) *dbFixture {
 
 func TestSaveSignal(t *testing.T) {
 	f := preSignalTest(t)
-	foreignKeys(f.gormdb, false) // no foreign keys
+	require.NoError(t, foreignKeys(f.gormdb, false)) // no foreign keys
 
 	sig := f.newSignal()
 	// test createSignal
@@ -65,7 +66,7 @@ func TestSaveSignelForeignKeys(t *testing.T) {
 
 func TestDeleteSignal(t *testing.T) {
 	f := preSignalTest(t)
-	foreignKeys(f.gormdb, false) // no foreign keys
+	require.NoError(t, foreignKeys(f.gormdb, false)) // no foreign keys
 
 	sig := f.newSignal()
 	f.saveSignalsAndAssert(t, sig)

@@ -14,24 +14,24 @@ import (
 )
 
 func (gdb *gormdb) createTrigger(ctx context.Context, trigger *scheme.Trigger) error {
-	return gormErrNotFoundToForeignKey(gdb.db.WithContext(ctx).Create(trigger).Error)
+	return gormErrNotFoundToForeignKey(gdb.wdb.WithContext(ctx).Create(trigger).Error)
 }
 
 func (gdb *gormdb) deleteTrigger(ctx context.Context, triggerID uuid.UUID) error {
 	// NOTE: we allow delettion of triggers referenced by events. see ENG-1535
-	return gdb.db.WithContext(ctx).Delete(&scheme.Trigger{TriggerID: triggerID}).Error
+	return gdb.wdb.WithContext(ctx).Delete(&scheme.Trigger{TriggerID: triggerID}).Error
 }
 
 func (gdb *gormdb) updateTrigger(ctx context.Context, trigger *scheme.Trigger) error {
-	return gdb.db.WithContext(ctx).Model(&scheme.Trigger{TriggerID: trigger.TriggerID}).Updates(trigger).Error
+	return gdb.wdb.WithContext(ctx).Model(&scheme.Trigger{TriggerID: trigger.TriggerID}).Updates(trigger).Error
 }
 
 func (gdb *gormdb) getTriggerByID(ctx context.Context, triggerID uuid.UUID) (*scheme.Trigger, error) {
-	return getOne[scheme.Trigger](gdb.db.WithContext(ctx), "trigger_id = ?", triggerID)
+	return getOne[scheme.Trigger](gdb.rdb.WithContext(ctx), "trigger_id = ?", triggerID)
 }
 
 func (gdb *gormdb) listTriggers(ctx context.Context, filter sdkservices.ListTriggersFilter) ([]scheme.Trigger, error) {
-	q := gdb.db.WithContext(ctx)
+	q := gdb.rdb.WithContext(ctx)
 
 	if filter.ProjectID.IsValid() {
 		q = q.Where("triggers.project_id = ?", filter.ProjectID.UUIDValue())
@@ -129,7 +129,7 @@ func (db *gormdb) ListTriggers(ctx context.Context, filter sdkservices.ListTrigg
 }
 
 func (db *gormdb) GetTriggerByWebhookSlug(ctx context.Context, slug string) (sdktypes.Trigger, error) {
-	r, err := getOne[scheme.Trigger](db.db.WithContext(ctx), "webhook_slug = ?", slug)
+	r, err := getOne[scheme.Trigger](db.rdb.WithContext(ctx), "webhook_slug = ?", slug)
 	if err != nil {
 		return sdktypes.InvalidTrigger, translateError(err)
 	}

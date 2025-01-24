@@ -13,19 +13,19 @@ import (
 )
 
 func (gdb *gormdb) saveBuild(ctx context.Context, build *scheme.Build) error {
-	return gdb.db.WithContext(ctx).Create(build).Error
+	return gdb.wdb.WithContext(ctx).Create(build).Error
 }
 
 func (gdb *gormdb) deleteBuild(ctx context.Context, buildID uuid.UUID) error {
-	return gdb.db.WithContext(ctx).Delete(&scheme.Build{BuildID: buildID}).Error
+	return gdb.wdb.WithContext(ctx).Delete(&scheme.Build{BuildID: buildID}).Error
 }
 
 func (gdb *gormdb) getBuild(ctx context.Context, buildID uuid.UUID) (*scheme.Build, error) {
-	return getOne[scheme.Build](gdb.db.WithContext(ctx), "build_id = ?", buildID)
+	return getOne[scheme.Build](gdb.rdb.WithContext(ctx), "build_id = ?", buildID)
 }
 
 func (gdb *gormdb) listBuilds(ctx context.Context, filter sdkservices.ListBuildsFilter) ([]scheme.Build, error) {
-	q := gdb.db.WithContext(ctx).Order("created_at desc")
+	q := gdb.rdb.WithContext(ctx).Order("created_at desc")
 
 	q = withProjectID(q, "", filter.ProjectID)
 

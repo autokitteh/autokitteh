@@ -57,7 +57,7 @@ func TestMain(m *testing.M) {
 	cfg, _ = cfg.Explicit()
 	db := setupDB(cfg)
 	z := kittehs.Must1(zap.NewDevelopment())
-	gormDB = gormdb{db: db, cfg: cfg, mu: nil, z: z}
+	gormDB = gormdb{rdb: db, wdb: db, cfg: cfg, z: z}
 
 	ctx := context.Background()
 	if err := gormDB.Setup(ctx); err != nil { // ensure migration/schemas
@@ -169,9 +169,11 @@ func setupDB(config *gormkitteh.Config) *gorm.DB {
 func TeardownDB(gormdb *gormdb, ctx context.Context) error {
 	isSqlite := gormdb.cfg.Type == "sqlite"
 	if isSqlite {
-		foreignKeys(gormdb, false)
+		if err := foreignKeys(gormdb, false); err != nil {
+			return err
+		}
 	}
-	db := gormdb.db.WithContext(ctx).Scopes(NoDebug())
+	db := gormdb.wdb.WithContext(ctx).Scopes(NoDebug())
 	if err := db.Migrator().DropTable(scheme.Tables...); err != nil {
 		return fmt.Errorf("droptable: %w", err)
 	}
@@ -179,16 +181,21 @@ func TeardownDB(gormdb *gormdb, ctx context.Context) error {
 		return fmt.Errorf("failed to drop migraiton table (goose_db_version) : %w", err)
 	}
 	if isSqlite {
-		foreignKeys(gormdb, true)
+		if err := foreignKeys(gormdb, true); err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
 func CleanupDB(gormdb *gormdb, ctx context.Context) error {
-	foreignKeys(gormdb, false) // disable foreign keys
+	// disable foreign keys
+	if err := foreignKeys(gormdb, false); err != nil {
+		return err
+	}
 
-	db := gormdb.db.WithContext(ctx).Unscoped().Session(&gorm.Session{AllowGlobalUpdate: true})
+	db := gormdb.wdb.WithContext(ctx).Unscoped().Session(&gorm.Session{AllowGlobalUpdate: true})
 	for _, model := range scheme.Tables {
 		modelType := reflect.TypeOf(model)
 		model := reflect.New(modelType).Interface()
@@ -199,7 +206,11 @@ func CleanupDB(gormdb *gormdb, ctx context.Context) error {
 		}
 	}
 
-	foreignKeys(gormdb, true) // re-enable foreign keys
+	// re-enable foreign keys
+	if err := foreignKeys(gormdb, true); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -209,20 +220,25 @@ func newDBFixture() *dbFixture {
 		log.Fatalf("Failed to cleanup gormdb: %v", err)
 	}
 	gormdb := gormDB
-	f := dbFixture{db: gormdb.db, gormdb: &gormdb, ctx: ctx}
+	f := dbFixture{db: gormdb.wdb, gormdb: &gormdb, ctx: ctx}
 	return &f
 }
 
 func (f *dbFixture) WithForeignKeysDisabled(fn func()) {
-	foreignKeys(f.gormdb, false) // disable
+	if err := foreignKeys(f.gormdb, false); err != nil {
+		panic(err)
+	}
 	fn()
-	foreignKeys(f.gormdb, true) // enable
+	if err := foreignKeys(f.gormdb, true); err != nil {
+		panic(err)
+	}
 }
 
 // enable SQL logging
 func (f *dbFixture) WithDebug() *dbFixture {
 	f.db = f.db.Debug()
-	f.gormdb.db = f.db
+	f.gormdb.wdb = f.db
+	f.gormdb.rdb = f.db
 	return f
 }
 
@@ -237,7 +253,7 @@ func NoDebug() func(*gorm.DB) *gorm.DB {
 
 func findAndAssertCount[T any](t *testing.T, f *dbFixture, expected int, where string, args ...any) []T {
 	var objs []T
-	res := f.gormdb.db.Where(where, args...).Find(&objs)
+	res := f.gormdb.rdb.Where(where, args...).Find(&objs)
 	require.NoError(t, res.Error)
 	require.Equal(t, expected, len(objs))
 	require.Equal(t, int64(expected), res.RowsAffected)

@@ -35,16 +35,16 @@ func (gdb *gormdb) createSession(ctx context.Context, session *scheme.Session) e
 		return err
 	}
 
-	return translateError(gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.db.Create(session).Error; err != nil {
+	return translateError(gdb.transaction(ctx, func(tx *gormdb) error {
+		if err := tx.wdb.Create(session).Error; err != nil {
 			return err
 		}
-		return createLogRecord(tx.db, ctx, logr, stateSessionLogRecordType)
+		return createLogRecord(tx.wdb, ctx, logr, stateSessionLogRecordType)
 	}))
 }
 
 func (gdb *gormdb) deleteSession(ctx context.Context, sessionID uuid.UUID) error {
-	return gdb.db.WithContext(ctx).Delete(&scheme.Session{SessionID: sessionID}).Error
+	return gdb.wdb.WithContext(ctx).Delete(&scheme.Session{SessionID: sessionID}).Error
 }
 
 func (gdb *gormdb) updateSessionState(ctx context.Context, sessionID uuid.UUID, state sdktypes.SessionState) error {
@@ -54,20 +54,20 @@ func (gdb *gormdb) updateSessionState(ctx context.Context, sessionID uuid.UUID, 
 		return err
 	}
 
-	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.db.Model(&scheme.Session{SessionID: sessionID}).Updates(sessionStateUpdate).Error; err != nil {
+	return gdb.transaction(ctx, func(tx *gormdb) error {
+		if err := tx.wdb.Model(&scheme.Session{SessionID: sessionID}).Updates(sessionStateUpdate).Error; err != nil {
 			return err
 		}
-		return createLogRecord(tx.db, ctx, logr, stateSessionLogRecordType)
+		return createLogRecord(tx.wdb, ctx, logr, stateSessionLogRecordType)
 	})
 }
 
 func (gdb *gormdb) getSession(ctx context.Context, sessionID uuid.UUID) (*scheme.Session, error) {
-	return getOne[scheme.Session](gdb.db.WithContext(ctx), "session_id = ?", sessionID)
+	return getOne[scheme.Session](gdb.rdb.WithContext(ctx), "session_id = ?", sessionID)
 }
 
 func (gdb *gormdb) listSessions(ctx context.Context, f sdkservices.ListSessionsFilter) ([]scheme.Session, int64, error) {
-	q := gdb.db.WithContext(ctx)
+	q := gdb.rdb.WithContext(ctx)
 
 	q = withProjectID(q, "", f.ProjectID)
 
@@ -130,14 +130,14 @@ func createLogRecord(db *gorm.DB, ctx context.Context, logr *scheme.SessionLogRe
 }
 
 func (gdb *gormdb) addSessionLogRecord(ctx context.Context, logr *scheme.SessionLogRecord, typ string) error {
-	return createLogRecord(gdb.db, ctx, logr, typ)
+	return createLogRecord(gdb.wdb, ctx, logr, typ)
 }
 
 func (gdb *gormdb) getSessionLogRecords(ctx context.Context, filter sdkservices.SessionLogRecordsFilter) (logs []scheme.SessionLogRecord, n int64, err error) {
 	sessionID := filter.SessionID.UUIDValue()
 
-	if err := gdb.transaction(ctx, func(tx *tx) error {
-		q := tx.db.Where("session_id = ?", sessionID)
+	if err := gdb.transaction(ctx, func(tx *gormdb) error {
+		q := tx.rdb.Where("session_id = ?", sessionID)
 
 		if err := q.Model(&scheme.SessionLogRecord{}).Count(&n).Error; err != nil {
 			return err
@@ -205,17 +205,17 @@ func (gdb *gormdb) createSessionCall(ctx context.Context, sessionID uuid.UUID, s
 		Data:      jsonSpec,
 	}
 
-	return gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.db.Create(&callSpec).Error; err != nil {
+	return gdb.transaction(ctx, func(tx *gormdb) error {
+		if err := tx.wdb.Create(&callSpec).Error; err != nil {
 			return err
 		}
-		return createLogRecord(tx.db, ctx, logr, callSpecSessionLogRecordType)
+		return createLogRecord(tx.wdb, ctx, logr, callSpecSessionLogRecordType)
 	})
 }
 
 func (gdb *gormdb) getSessionCallSpec(ctx context.Context, sessionID uuid.UUID, seq uint32) (*scheme.SessionCallSpec, error) {
 	var r scheme.SessionCallSpec
-	if err := gdb.db.WithContext(ctx).Where("session_id = ?", sessionID).Where("seq = ?", seq).First(&r).Error; err != nil {
+	if err := gdb.rdb.WithContext(ctx).Where("session_id = ?", sessionID).Where("seq = ?", seq).First(&r).Error; err != nil {
 		return nil, err
 	}
 	return &r, nil
@@ -232,8 +232,8 @@ func countCallAttempts(db *gorm.DB, sessionID uuid.UUID, seq uint32) (uint32, er
 }
 
 func (gdb *gormdb) startSessionCallAttempt(ctx context.Context, sessionID uuid.UUID, seq uint32) (attempt uint32, err error) {
-	err = gdb.transaction(ctx, func(tx *tx) error {
-		if attempt, err = countCallAttempts(tx.db, sessionID, seq); err != nil {
+	err = gdb.transaction(ctx, func(tx *gormdb) error {
+		if attempt, err = countCallAttempts(tx.wdb, sessionID, seq); err != nil {
 			return err
 		}
 
@@ -257,11 +257,11 @@ func (gdb *gormdb) startSessionCallAttempt(ctx context.Context, sessionID uuid.U
 			Start:     callAttemptStartJson,
 		}
 
-		if err := tx.db.Create(&callAttempt).Error; err != nil {
+		if err := tx.wdb.Create(&callAttempt).Error; err != nil {
 			return err
 		}
 
-		return createLogRecord(tx.db, ctx, logr, callAttemptStartSessionLogRecordType)
+		return createLogRecord(tx.wdb, ctx, logr, callAttemptStartSessionLogRecordType)
 	})
 	return
 }
@@ -278,13 +278,13 @@ func (gdb *gormdb) completeSessionCallAttempt(ctx context.Context, sessionID uui
 	}
 	r := scheme.SessionCallAttempt{Complete: json}
 
-	return gdb.transaction(ctx, func(tx *tx) error {
-		if res := tx.db.Model(&r).Where("session_id = ? AND seq = ? AND attempt = ?", sessionID, seq, attempt).Updates(r); res.Error != nil {
+	return gdb.transaction(ctx, func(tx *gormdb) error {
+		if res := tx.wdb.Model(&r).Where("session_id = ? AND seq = ? AND attempt = ?", sessionID, seq, attempt).Updates(r); res.Error != nil {
 			return res.Error
 		} else if res.RowsAffected == 0 {
 			return sdkerrors.ErrNotFound
 		}
-		return createLogRecord(tx.db, ctx, logr, callAttemptCompleteSessionLogRecordType)
+		return createLogRecord(tx.wdb, ctx, logr, callAttemptCompleteSessionLogRecordType)
 	})
 }
 
@@ -292,8 +292,8 @@ func (gdb *gormdb) completeSessionCallAttempt(ctx context.Context, sessionID uui
 func (gdb *gormdb) getSessionCallAttemptResult(ctx context.Context, sessionID uuid.UUID, seq uint32, attempt int64) (*scheme.SessionCallAttempt, error) {
 	var r scheme.SessionCallAttempt
 
-	if err := gdb.transaction(ctx, func(tx *tx) error {
-		q := tx.db.Where("session_id = ? AND seq = ?", sessionID, seq)
+	if err := gdb.rtransaction(ctx, func(tx *gormdb) error {
+		q := tx.rdb.Where("session_id = ? AND seq = ?", sessionID, seq)
 
 		switch {
 		case attempt == -1:

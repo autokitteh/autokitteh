@@ -10,7 +10,7 @@ import (
 )
 
 func (gdb *gormdb) GetUser(ctx context.Context, id sdktypes.UserID, email string) (sdktypes.User, error) {
-	q := gdb.db.WithContext(ctx)
+	q := gdb.rdb.WithContext(ctx)
 
 	if !id.IsValid() && email == "" {
 		return sdktypes.InvalidUser, sdkerrors.NewInvalidArgumentError("missing id or email")
@@ -55,7 +55,7 @@ func (gdb *gormdb) CreateUser(ctx context.Context, u sdktypes.User) (sdktypes.Us
 		Status:       int32(u.Status().ToProto()),
 	}
 
-	err := gdb.db.WithContext(ctx).Create(&user).Error
+	err := gdb.wdb.WithContext(ctx).Create(&user).Error
 	if err != nil {
 		return sdktypes.InvalidUserID, translateError(err)
 	}
@@ -78,7 +78,7 @@ func (gdb *gormdb) UpdateUser(ctx context.Context, u sdktypes.User, fm *sdktypes
 	}
 
 	return translateError(
-		gdb.db.WithContext(ctx).
+		gdb.wdb.WithContext(ctx).
 			Model(&scheme.User{}).
 			Where("user_id = ?", u.ID().UUIDValue()).
 			Updates(data).

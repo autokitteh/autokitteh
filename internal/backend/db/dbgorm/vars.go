@@ -19,8 +19,8 @@ func (gdb *gormdb) setVar(ctx context.Context, vr *scheme.Var) error {
 
 	// TODO: Check that connection or trigger were not deleted.
 
-	return gdb.transaction(ctx, func(tx *tx) error {
-		db := tx.db
+	return gdb.transaction(ctx, func(tx *gormdb) error {
+		db := tx.wdb
 
 		var (
 			tableName, idField string
@@ -55,11 +55,11 @@ func varsCommonQuery(db *gorm.DB, scopeID uuid.UUID, names []string) *gorm.DB {
 }
 
 func (gdb *gormdb) deleteVars(ctx context.Context, scopeID uuid.UUID, names ...string) error {
-	return varsCommonQuery(gdb.db.WithContext(ctx), scopeID, names).Delete(&scheme.Var{}).Error
+	return varsCommonQuery(gdb.wdb.WithContext(ctx), scopeID, names).Delete(&scheme.Var{}).Error
 }
 
 func (gdb *gormdb) listVars(ctx context.Context, scopeID uuid.UUID, names ...string) ([]scheme.Var, error) {
-	db := varsCommonQuery(gdb.db.WithContext(ctx), scopeID, names) // skip not user owned vars
+	db := varsCommonQuery(gdb.rdb.WithContext(ctx), scopeID, names) // skip not user owned vars
 
 	// Note: we are not checking if scope (env/connection) is deleted, since scope deletion will cascade deletion of relevant vars
 	// e.g. vars present only for valid and active scope
@@ -74,7 +74,7 @@ func (gdb *gormdb) listVars(ctx context.Context, scopeID uuid.UUID, names ...str
 }
 
 func (gdb *gormdb) findConnectionIDsByVar(ctx context.Context, integrationID uuid.UUID, name string, v string) ([]uuid.UUID, error) {
-	db := gdb.db.WithContext(ctx).Where("integration_id = ? AND name = ?", integrationID, name)
+	db := gdb.rdb.WithContext(ctx).Where("integration_id = ? AND name = ?", integrationID, name)
 	if v != "" {
 		db = db.Where("value = ? AND is_secret is false", v)
 	}
@@ -149,7 +149,7 @@ func (db *gormdb) DeleteVars(ctx context.Context, sid sdktypes.VarScopeID, names
 }
 
 func (gdb *gormdb) CountVars(ctx context.Context, sid sdktypes.VarScopeID) (int, error) {
-	q := varsCommonQuery(gdb.db.WithContext(ctx), sid.UUIDValue(), nil)
+	q := varsCommonQuery(gdb.rdb.WithContext(ctx), sid.UUIDValue(), nil)
 
 	var n int64
 	if err := q.Model(&scheme.Var{}).Count(&n).Error; err != nil {

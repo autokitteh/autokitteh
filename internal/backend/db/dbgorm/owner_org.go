@@ -18,7 +18,7 @@ type (
 func (gdb *gormdb) getProjectOrg(ctx context.Context, id uuidValuer) (sdktypes.OrgID, error) {
 	var p scheme.Project
 
-	err := gdb.db.WithContext(ctx).
+	err := gdb.rdb.WithContext(ctx).
 		Where("project_id = ?", id.UUIDValue()).
 		Select("org_id").
 		First(&p).
@@ -40,7 +40,7 @@ func (gdb *gormdb) getRecordProjectOwner(
 		Project   scheme.Project `gorm:"foreignKey:project_id"`
 	}
 
-	err := gdb.db.WithContext(ctx).
+	err := gdb.rdb.WithContext(ctx).
 		Model(m).
 		Where(m.IDFieldName()+" = ?", id.UUIDValue()).
 		Preload("Project").
@@ -109,7 +109,7 @@ func (gdb *gormdb) GetProjectIDOf(ctx context.Context, id sdktypes.ID) (sdktypes
 		Project   scheme.Project `gorm:"foreignKey:project_id"`
 	}
 
-	err := gdb.db.WithContext(ctx).
+	err := gdb.rdb.WithContext(ctx).
 		Model(m).
 		Where(m.IDFieldName()+" = ?", id.UUIDValue()).
 		Select("project_id").

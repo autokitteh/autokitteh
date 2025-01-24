@@ -12,7 +12,7 @@ import (
 )
 
 func (db *gormdb) saveSignal(ctx context.Context, signal *scheme.Signal) error {
-	return db.db.WithContext(ctx).Create(signal).Error
+	return db.wdb.WithContext(ctx).Create(signal).Error
 }
 
 func (db *gormdb) SaveSignal(ctx context.Context, signal *types.Signal) error {
@@ -30,7 +30,7 @@ func (db *gormdb) SaveSignal(ctx context.Context, signal *types.Signal) error {
 
 func (db *gormdb) ListWaitingSignals(ctx context.Context, dstID sdktypes.EventDestinationID) ([]*types.Signal, error) {
 	var rs []*scheme.Signal
-	q := db.db.WithContext(ctx).Where("destination_id = ?", dstID.UUIDValue())
+	q := db.rdb.WithContext(ctx).Where("destination_id = ?", dstID.UUIDValue())
 	if err := q.Find(&rs).Error; err != nil {
 		return nil, translateError(err)
 	}
@@ -38,13 +38,13 @@ func (db *gormdb) ListWaitingSignals(ctx context.Context, dstID sdktypes.EventDe
 }
 
 func (db *gormdb) RemoveSignal(ctx context.Context, signalID uuid.UUID) error {
-	return translateError(db.db.WithContext(ctx).Delete(&scheme.Signal{SignalID: signalID}).Error)
+	return translateError(db.wdb.WithContext(ctx).Delete(&scheme.Signal{SignalID: signalID}).Error)
 }
 
 func (db *gormdb) GetSignal(ctx context.Context, signalID uuid.UUID) (*types.Signal, error) {
 	var signal scheme.Signal
 
-	q := db.db.
+	q := db.rdb.
 		WithContext(ctx).
 		Where("signal_id = ?", signalID).
 		Preload("Connection").
