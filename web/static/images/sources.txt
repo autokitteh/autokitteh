@@ -58,6 +58,10 @@ Microsoft:
 https://commons.wikimedia.org/wiki/File:Microsoft_logo.svg
 https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg
 
+Microsoft Teams:
+https://commons.wikimedia.org/wiki/File:Microsoft_Office_Teams_(2018%E2%80%93present).svg
+https://upload.wikimedia.org/wikipedia/commons/c/c9/Microsoft_Office_Teams_%282018%E2%80%93present%29.svg
+
 OpenAI ChatGPT:
 https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg
 
