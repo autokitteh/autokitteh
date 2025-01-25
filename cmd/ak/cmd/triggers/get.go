@@ -5,6 +5,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 var getCmd = common.StandardCommand(&cobra.Command{
@@ -17,7 +18,7 @@ var getCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		t, _, err := r.TriggerNameOrID(ctx, args[0], project)
+		t, _, err := r.TriggerNameOrID(ctx, sdktypes.InvalidOrgID, args[0], project)
 		err = common.AddNotFoundErrIfCond(err, t.IsValid())
 		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "trigger"); err == nil {
 			common.RenderKVIfV("trigger", t)

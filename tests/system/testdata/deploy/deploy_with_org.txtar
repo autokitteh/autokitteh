@@ -1,0 +1,69 @@
+ak orgs create --name test
+return code == 0
+
+ak deploy --manifest my_project/manifest.yaml --org test
+return code == 0
+output equals file expected_output_1.txt
+
+ak deploy --manifest my_project/manifest.yaml
+return code == 0
+output equals file expected_output_2.txt
+
+ak project get prj_00000000000000000000000002 -J
+return code == 0
+output equals_json file project1.json
+
+ak project get prj_00000000000000000000000007 -J
+return code == 0
+output equals_json file project2.json
+
+-- my_project/manifest.yaml --
+version: v1
+
+project:
+  name: my_project
+  triggers:
+    - name: get
+      type: webhook
+      event_type: get
+      call: my_program.star:on_http_get
+
+-- expected_output_1.txt --
+[plan] project "my_project": not found, will create
+[plan] trigger "my_project:/get": not found, will create
+[exec] create_project "my_project": prj_00000000000000000000000002 created
+[exec] create_trigger "my_project:/get": trg_00000000000000000000000003 created
+[!!!!] trigger "get" created, webhook path is "/webhooks/00000000000000000000000004"
+[plan] project "prj_00000000000000000000000002": found, id="prj_00000000000000000000000002"
+[exec] create_build: created "bld_00000000000000000000000005"
+[exec] create_deployment: created "dep_00000000000000000000000006"
+[exec] activate_deployment: activated
+
+-- expected_output_2.txt --
+[plan] project "my_project": not found, will create
+[plan] trigger "my_project:/get": not found, will create
+[exec] create_project "my_project": prj_00000000000000000000000007 created
+[exec] create_trigger "my_project:/get": trg_00000000000000000000000008 created
+[!!!!] trigger "get" created, webhook path is "/webhooks/00000000000000000000000009"
+[plan] project "prj_00000000000000000000000007": found, id="prj_00000000000000000000000007"
+[exec] create_build: created "bld_0000000000000000000000000a"
+[exec] create_deployment: created "dep_0000000000000000000000000b"
+[exec] activate_deployment: activated
+
+-- project1.json --
+{
+  "project": {
+    "name":"my_project",
+    "org_id":"org_00000000000000000000000001",
+    "project_id":"prj_00000000000000000000000002"
+  }
+}
+
+-- project2.json --
+{
+  "project": {
+    "name":"my_project",
+    "org_id": "org_3kthzvm10r16a40eef31710220",
+    "project_id":"prj_00000000000000000000000007"
+  }
+}

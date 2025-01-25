@@ -27,7 +27,7 @@ var createCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		pid, err := r.ProjectNameOrID(ctx, project)
+		pid, err := r.ProjectNameOrID(ctx, sdktypes.InvalidOrgID, project)
 		if err != nil {
 			return err
 		}

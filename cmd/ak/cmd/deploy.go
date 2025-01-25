@@ -18,13 +18,13 @@ import (
 )
 
 var (
-	manifestPath, project, projectName string
+	manifestPath, project, projectName, org string
 
 	filePaths, dirPaths []string
 )
 
 var deployCmd = common.StandardCommand(&cobra.Command{
-	Use:   "deploy {--manifest <file> [--project-name <name>]|--project <name or ID>} [--dir <path> [...]] [--file <path> [...]] ",
+	Use:   "deploy {--manifest <file> [--project-name <name>]|--project <name or ID>} [--org org] [--dir <path> [...]] [--file <path> [...]] ",
 	Short: "Create, configure, build, deploy, and activate project",
 	Long:  `Create, configure, build, deploy, and activate project - see also the "manifest", "build", "deployment", and "project" parent commands`,
 	Args:  cobra.NoArgs,
@@ -34,11 +34,20 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
+		var oid sdktypes.OrgID
+		if org != "" {
+			var err error
+			if oid, err = r.Org(ctx, org); err != nil {
+				return fmt.Errorf("org: %w", err)
+			}
+
+		}
+
 		// Step 1: apply the manifest file, if provided
 		// (see also the "manifest" parent command).
 		if manifestPath != "" {
 			var err error
-			project, err = applyManifest(cmd, manifestPath, projectName)
+			project, err = applyManifest(cmd, manifestPath, projectName, oid)
 			if err != nil {
 				return err
 			}
@@ -46,7 +55,7 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 			return errors.New("project name provided without manifest")
 		}
 
-		pid, err := r.ProjectNameOrID(ctx, project)
+		pid, err := r.ProjectNameOrID(ctx, oid, project)
 		if err != nil {
 			err = fmt.Errorf("project: %w", err)
 
@@ -106,9 +115,11 @@ func init() {
 	// Command-specific flags.
 	deployCmd.Flags().StringVarP(&manifestPath, "manifest", "m", "", "YAML manifest file containing project settings")
 	deployCmd.Flags().StringVarP(&projectName, "project-name", "n", "", "project name to use for manifest")
+	deployCmd.Flags().StringVarP(&org, "org", "o", "", "org to use for manifest")
 	deployCmd.Flags().StringVarP(&project, "project", "p", "", "existing project name or ID")
 	deployCmd.MarkFlagsOneRequired("manifest", "project")
 	deployCmd.MarkFlagsMutuallyExclusive("manifest", "project")
+	deployCmd.MarkFlagsMutuallyExclusive("project-name", "project")
 
 	deployCmd.Flags().StringArrayVarP(&dirPaths, "dir", "d", []string{}, "0 or more directory paths (default = manifest directory)")
 	deployCmd.Flags().StringArrayVarP(&filePaths, "file", "f", []string{}, "0 or more file paths")
@@ -116,7 +127,7 @@ func init() {
 	kittehs.Must0(deployCmd.MarkFlagFilename("file"))
 }
 
-func applyManifest(cmd *cobra.Command, manifestPath, projectName string) (string, error) {
+func applyManifest(cmd *cobra.Command, manifestPath, projectName string, oid sdktypes.OrgID) (string, error) {
 	// Read and parse the manifest file.
 	data, err := os.ReadFile(manifestPath)
 	if err != nil {
@@ -133,7 +144,14 @@ func applyManifest(cmd *cobra.Command, manifestPath, projectName string) (string
 	defer cancel()
 
 	// Plan the actions to execute.
-	actions, err := manifest.Plan(ctx, m, client, manifest.WithLogger(logFunc(cmd, "plan")), manifest.WithProjectName(projectName))
+	actions, err := manifest.Plan(
+		ctx,
+		m,
+		client,
+		manifest.WithLogger(logFunc(cmd, "plan")),
+		manifest.WithProjectName(projectName),
+		manifest.WithOrgID(oid),
+	)
 	if err != nil {
 		return "", err
 	}

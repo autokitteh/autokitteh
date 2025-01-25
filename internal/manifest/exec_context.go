@@ -17,7 +17,7 @@ type execContext struct {
 	connections  map[string]sdktypes.ConnectionID
 }
 
-func (c *execContext) resolveProjectID(ctx context.Context, name string) (sdktypes.ProjectID, error) {
+func (c *execContext) resolveProjectID(ctx context.Context, name string, oid sdktypes.OrgID) (sdktypes.ProjectID, error) {
 	if pid, ok := c.projects[name]; ok {
 		return pid, nil
 	}
@@ -27,7 +27,7 @@ func (c *execContext) resolveProjectID(ctx context.Context, name string) (sdktyp
 		return sdktypes.InvalidProjectID, err
 	}
 
-	p, err := c.client.Projects().GetByName(ctx, sdktypes.InvalidOrgID, sdkName)
+	p, err := c.client.Projects().GetByName(ctx, oid, sdkName)
 	if err != nil {
 		return sdktypes.InvalidProjectID, err
 	}
@@ -52,17 +52,17 @@ func (c *execContext) resolveIntegrationID(ctx context.Context, name string) (sd
 	return iid, nil
 }
 
-func (c *execContext) resolveConnectionID(ctx context.Context, connID string) (sdktypes.ConnectionID, error) {
-	if cid, ok := c.connections[connID]; ok {
+func (c *execContext) resolveConnectionID(ctx context.Context, connIDOrName string, oid sdktypes.OrgID) (sdktypes.ConnectionID, error) {
+	if cid, ok := c.connections[connIDOrName]; ok {
 		return cid, nil
 	}
 
-	conn, _, err := c.resolver.ConnectionNameOrID(ctx, connID, "")
+	conn, _, err := c.resolver.ConnectionNameOrID(ctx, connIDOrName, "", oid)
 	if err != nil {
 		return sdktypes.InvalidConnectionID, err
 	}
 
 	cid := conn.ID()
-	c.connections[connID] = cid
+	c.connections[connIDOrName] = cid
 	return cid, nil
 }

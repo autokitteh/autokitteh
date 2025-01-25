@@ -6,6 +6,7 @@ import (
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 var listCmd = common.StandardCommand(&cobra.Command{
@@ -30,7 +31,7 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		if project != "" {
-			pid, err := r.ProjectNameOrID(ctx, project)
+			pid, err := r.ProjectNameOrID(ctx, sdktypes.InvalidOrgID, project)
 			if err = common.AddNotFoundErrIfCond(err, pid.IsValid()); err != nil {
 				return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "project")
 			}

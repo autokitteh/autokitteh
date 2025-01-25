@@ -42,7 +42,7 @@ var createCmd = common.StandardCommand(&cobra.Command{
 			return errors.New("missing project")
 		}
 
-		pid, err := r.ProjectNameOrID(ctx, project)
+		pid, err := r.ProjectNameOrID(ctx, sdktypes.InvalidOrgID, project)
 		if err = common.AddNotFoundErrIfCond(err, pid.IsValid()); err != nil {
 			return common.WrapError(err, "project")
 		}
@@ -59,7 +59,7 @@ var createCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		if connection != "" {
-			_, cid, err := r.ConnectionNameOrID(ctx, connection, project)
+			_, cid, err := r.ConnectionNameOrID(ctx, connection, project, sdktypes.InvalidOrgID)
 			if err != nil {
 				return common.WrapError(err, "connection")
 			}
