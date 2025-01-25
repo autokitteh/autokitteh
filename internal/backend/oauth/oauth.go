@@ -375,6 +375,32 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 				ClientSecret: os.Getenv("MICROSOFT_CLIENT_SECRET"),
 				Endpoint:     microsoft.AzureADEndpoint("common"),
 				RedirectURL:  redirectURL + "microsoft",
+				// https://learn.microsoft.com/en-us/graph/permissions-overview
+				// https://learn.microsoft.com/en-us/graph/permissions-reference
+				// https://learn.microsoft.com/en-us/entra/identity-platform/scopes-oidc#openid-connect-scopes
+				Scopes: []string{
+					// Non-sensitive delegated-only permissions.
+					"email",
+					"offline_access",
+					"openid",
+					"profile",
+					"User.Read",
+
+					// Admin consent required, but important for many operations.
+					"User.ReadBasic.All",
+
+					// TODO(INT-170): Teams
+				},
+			},
+
+			// Based on:
+			// https://learn.microsoft.com/en-us/entra/identity-platform/v2-app-types
+			"microsoft_teams": {
+				ClientID:     os.Getenv("MICROSOFT_CLIENT_ID"),
+				ClientSecret: os.Getenv("MICROSOFT_CLIENT_SECRET"),
+				Endpoint:     microsoft.AzureADEndpoint("common"),
+				RedirectURL:  redirectURL + "microsoft",
+				// https://learn.microsoft.com/en-us/graph/permissions-overview
 				// https://learn.microsoft.com/en-us/graph/permissions-reference
 				// https://learn.microsoft.com/en-us/entra/identity-platform/scopes-oidc#openid-connect-scopes
 				Scopes: []string{
