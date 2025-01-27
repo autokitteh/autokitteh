@@ -2,6 +2,7 @@ package orgs
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	"go.uber.org/zap"
@@ -94,6 +95,14 @@ func (o *orgs) GetByName(ctx context.Context, n sdktypes.Symbol) (sdktypes.Org, 
 func (o *orgs) Delete(ctx context.Context, id sdktypes.OrgID) error {
 	if err := authz.CheckContext(ctx, id, "delete:delete", authz.WithConvertForbiddenToNotFound); err != nil {
 		return err
+	}
+
+	projects, err := o.db.ListProjects(ctx, id)
+	if err != nil {
+		return err
+	}
+	if len(projects) > 0 {
+		return errors.New("cannot delete an organization with projects")
 	}
 
 	return o.db.DeleteOrg(ctx, id)
