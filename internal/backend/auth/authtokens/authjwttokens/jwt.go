@@ -1,12 +1,12 @@
 package authjwttokens
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
+
+	"crypto/ecdsa"
 
 	j "github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
@@ -18,19 +18,36 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-const issuer = "ak"
+const (
+	issuer       = "https://api.autokitteh.cloud"
+	oneYear      = 365 * 24 * time.Hour
+	devPublicKey = `-----BEGIN PUBLIC KEY-----
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEpn+ugYKvxyjH1PP5M+TyI9AhxnWP
+3NtBzkt35Ppv9aX2YoBMXbbQcgUFDCwKY3QpsCmUILh3vno97lHkbgwjbQ==
+-----END PUBLIC KEY-----`
+	devPrivateKey = `-----BEGIN EC PRIVATE KEY-----
+MHcCAQEEIBB5QU93Ceqzqc1Yn415+nDBkTQ7Zdrs1rxV2bvNIXlQoAoGCCqGSM49
+AwEHoUQDQgAEpn+ugYKvxyjH1PP5M+TyI9AhxnWP3NtBzkt35Ppv9aX2YoBMXbbQ
+cgUFDCwKY3QpsCmUILh3vno97lHkbgwjbQ==
+-----END EC PRIVATE KEY-----
+`
+)
 
 var (
-	method   = j.SigningMethodHS256
+	method   = j.SigningMethodES256
 	hashSize = method.Hash.Size()
 )
 
 type Config struct {
-	SignKey string `koanf:"sign_key"`
+	PrivateKey            string        `koanf:"private_key"`
+	PublicKey             string        `koanf:"public_key"`
+	ExpirationTimeMinutes time.Duration `koanf:"expiration_time_minutes"`
 }
 
 type tokens struct {
-	signKey []byte
+	publicKey             *ecdsa.PublicKey
+	privateKey            *ecdsa.PrivateKey
+	expirationTimeMinutes time.Duration
 }
 
 type token struct {
@@ -38,26 +55,31 @@ type token struct {
 }
 
 var Configs = configset.Set[Config]{
-	Default: &Config{},
+	Default: &Config{
+		ExpirationTimeMinutes: oneYear,
+	},
 	Dev: &Config{
-		SignKey: strings.Repeat("00", hashSize),
+		PublicKey:  devPublicKey,
+		PrivateKey: devPrivateKey,
 	},
 	Test: &Config{
-		SignKey: strings.Repeat("00", hashSize),
+		PublicKey:  devPublicKey,
+		PrivateKey: devPrivateKey,
 	},
 }
 
 func New(cfg *Config) (authtokens.Tokens, error) {
-	key, err := hex.DecodeString(cfg.SignKey)
+	privateKey, err := j.ParseECPrivateKeyFromPEM([]byte(cfg.PrivateKey))
 	if err != nil {
 		return nil, fmt.Errorf("invalid signing key: %w", err)
 	}
 
-	if len(key) != hashSize {
-		return nil, fmt.Errorf("invalid key len: %d != desired %d", len(key), hashSize)
+	publicKey, err := j.ParseECPublicKeyFromPEM([]byte(cfg.PublicKey))
+	if err != nil {
+		return nil, fmt.Errorf("invalid signing key: %w", err)
 	}
 
-	return &tokens{signKey: key}, nil
+	return &tokens{privateKey: privateKey, publicKey: publicKey}, nil
 }
 
 func (js *tokens) Create(u sdktypes.User) (string, error) {
@@ -77,19 +99,21 @@ func (js *tokens) Create(u sdktypes.User) (string, error) {
 	}
 
 	claim := j.RegisteredClaims{
-		IssuedAt: j.NewNumericDate(time.Now()),
-		Issuer:   issuer,
-		Subject:  string(bs),
-		ID:       uuid.String(),
+		IssuedAt:  j.NewNumericDate(time.Now()),
+		Audience:  j.ClaimStrings{u.ID().String()},
+		Issuer:    issuer,
+		Subject:   string(bs),
+		ID:        uuid.String(),
+		ExpiresAt: j.NewNumericDate(time.Now().Add(time.Minute * js.expirationTimeMinutes)),
 	}
 
-	return j.NewWithClaims(method, claim).SignedString(js.signKey)
+	return j.NewWithClaims(method, claim).SignedString(js.privateKey)
 }
 
 func (js *tokens) Parse(raw string) (sdktypes.User, error) {
 	var claims j.RegisteredClaims
 
-	t, err := j.ParseWithClaims(raw, &claims, func(t *j.Token) (interface{}, error) { return js.signKey, nil })
+	t, err := j.ParseWithClaims(raw, &claims, func(t *j.Token) (interface{}, error) { return js.publicKey, nil })
 	if err != nil {
 		return sdktypes.InvalidUser, err // TODO: better error handling
 	}
