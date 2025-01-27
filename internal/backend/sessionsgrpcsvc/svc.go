@@ -42,24 +42,18 @@ func (s *server) Start(ctx context.Context, req *connect.Request[sessionsv1.Star
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	for k, v := range msg.JsonInputs {
-		decoded, err := decodeNestedJSON(v)
-		if err != nil {
-			err = sdkerrors.NewInvalidArgumentError(`json_inputs["%s"]: %w`, k, err)
-			return nil, sdkerrors.AsConnectError(err)
-		}
+	if msg.Session.Inputs == nil {
+		msg.Session.Inputs = make(map[string]*sdktypes.ValuePB)
+	}
 
-		if msg.Session.Inputs == nil {
-			msg.Session.Inputs = make(map[string]*sdktypes.ValuePB)
+	if jsonMap := msg.JsonInputs; jsonMap != nil {
+		for k, v := range jsonMap {
+			wrappedValue, err := sdktypes.WrapValue(v)
+			if err != nil {
+				return nil, sdkerrors.AsConnectError(fmt.Errorf(`json_inputs["%s"]: %w`, k, err))
+			}
+			msg.Session.Inputs[k] = wrappedValue.ToProto()
 		}
-
-		wrappedValue, err := sdktypes.WrapValue(decoded)
-		if err != nil {
-			err = sdkerrors.NewInvalidArgumentError(`json_inputs["%s"]: %w`, k, err)
-			return nil, sdkerrors.AsConnectError(fmt.Errorf(`json_inputs["%s"]: %w`, k, err))
-		}
-
-		msg.Session.Inputs[k] = wrappedValue.ToProto()
 	}
 
 	session, err := sdktypes.SessionFromProto(msg.Session)

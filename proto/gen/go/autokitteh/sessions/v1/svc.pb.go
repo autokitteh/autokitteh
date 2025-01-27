@@ -29,7 +29,7 @@ type StartRequest struct {
 
 	Session *Session `protobuf:"bytes,1,opt,name=session,proto3" json:"session,omitempty"`
 	// Helper: if set, merged into and overwrites the session's inputs.
-	JsonInputs map[string]string `protobuf:"bytes,2,rep,name=json_inputs,json=jsonInputs,proto3" json:"json_inputs,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	JsonInputs map[string]interface{} `protobuf:"bytes,2,rep,name=json_inputs,json=jsonInputs,proto3" json:"json_inputs,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
 func (x *StartRequest) Reset() {
@@ -71,7 +71,7 @@ func (x *StartRequest) GetSession() *Session {
 	return nil
 }
 
-func (x *StartRequest) GetJsonInputs() map[string]string {
+func (x *StartRequest) GetJsonInputs() map[string]interface{} {
 	if x != nil {
 		return x.JsonInputs
 	}
