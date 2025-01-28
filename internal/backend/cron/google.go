@@ -74,7 +74,7 @@ func (cr *Cron) listGoogleDriveConnectionsActivity(ctx context.Context) ([]sdkty
 func (cr *Cron) checkGoogleDriveEventWatch(ctx context.Context, cid sdktypes.ConnectionID) bool {
 	l := cr.logger.With(zap.String("connection_id", cid.String()))
 
-	vs, err := cr.vars.Get(ctx, sdktypes.NewVarScopeID(cid), vars.DriveEventsWatchID, vars.DriveEventsWatchExp)
+	vs, err := cr.vars.Get(ctx, sdktypes.NewVarScopeID(cid), vars.DriveEventsWatchExp)
 	if err != nil {
 		l.Error("failed to get Google Drive connection vars for event watch renewal", zap.Error(err))
 		return false
