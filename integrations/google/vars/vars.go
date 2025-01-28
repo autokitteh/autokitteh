@@ -35,6 +35,7 @@ var (
 	FormID               = sdktypes.NewSymbol("FormID")
 	FormResponsesWatchID = sdktypes.NewSymbol("FormResponsesWatchID")
 	FormSchemaWatchID    = sdktypes.NewSymbol("FormSchemaWatchID")
+	FormEventsWatchExp   = sdktypes.NewSymbol("FormEventsWatchExp")
 
 	UserEmail = sdktypes.NewSymbol("user_email")
 	UserScope = sdktypes.NewSymbol("user_scope")

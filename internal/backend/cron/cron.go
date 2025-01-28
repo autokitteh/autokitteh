@@ -96,6 +96,10 @@ func (cr *Cron) Start(ctx context.Context, c sdkservices.Connections, v sdkservi
 	w.RegisterActivity(cr.listGoogleDriveConnectionsActivity)
 	w.RegisterActivity(cr.renewGoogleDriveEventWatchActivity)
 
+	w.RegisterWorkflow(cr.renewGoogleFormsEventWatchesWorkflow)
+	w.RegisterActivity(cr.listGoogleFormsConnectionsActivity)
+	w.RegisterActivity(cr.renewGoogleFormsEventWatchActivity)
+
 	w.RegisterWorkflow(cr.renewJiraEventWatchesWorkflow)
 	w.RegisterActivity(cr.listJiraConnectionsActivity)
 	w.RegisterActivity(cr.renewJiraEventWatchActivity)
@@ -168,6 +172,7 @@ func (cr *Cron) workflow(wctx workflow.Context) error {
 	cwfs := []workflow.ChildWorkflowFuture{}
 	cwfs = append(cwfs, workflow.ExecuteChildWorkflow(wctx, cr.renewGoogleCalendarEventWatchesWorkflow))
 	cwfs = append(cwfs, workflow.ExecuteChildWorkflow(wctx, cr.renewGoogleDriveEventWatchesWorkflow))
+	cwfs = append(cwfs, workflow.ExecuteChildWorkflow(wctx, cr.renewGoogleFormsEventWatchesWorkflow))
 	cwfs = append(cwfs, workflow.ExecuteChildWorkflow(wctx, cr.renewJiraEventWatchesWorkflow))
 
 	// Report an error if any child workflow failed.
