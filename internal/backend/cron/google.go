@@ -143,13 +143,13 @@ func (cr *Cron) checkGoogleDriveEventWatch(ctx context.Context, cid sdktypes.Con
 func (cr *Cron) checkGoogleFormsEventWatch(ctx context.Context, cid sdktypes.ConnectionID) bool {
 	l := cr.logger.With(zap.String("connection_id", cid.String()))
 
-	vs, err := cr.vars.Get(ctx, sdktypes.NewVarScopeID(cid), vars.FormEventsWatchExp)
+	vs, err := cr.vars.Get(ctx, sdktypes.NewVarScopeID(cid), vars.FormWatchesExpiration)
 	if err != nil {
 		l.Error("failed to get Google Forms connection vars for event watch renewal", zap.Error(err))
 		return false
 	}
 
-	e := vs.GetValue(vars.FormEventsWatchExp)
+	e := vs.GetValue(vars.FormWatchesExpiration)
 	t, err := time.Parse(time.RFC3339, e)
 	if err != nil {
 		l.Warn("invalid Google Forms event watch expiration time during renewal check",

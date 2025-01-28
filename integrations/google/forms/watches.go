@@ -96,7 +96,7 @@ func (a api) saveWatchID(ctx context.Context, e WatchEventType, watchID, expirat
 
 	vs := sdktypes.NewVars(
 		sdktypes.NewVar(n).SetValue(watchID),
-		sdktypes.NewVar(vars.FormEventsWatchExp).SetValue(expirationTime),
+		sdktypes.NewVar(vars.FormWatchesExpiration).SetValue(expirationTime),
 	).WithScopeID(sdktypes.NewVarScopeID(a.cid))
 	if err := a.vars.Set(ctx, vs...); err != nil {
 		return err
