@@ -30,7 +30,7 @@ func (cr *Cron) renewJiraEventWatchesWorkflow(wctx workflow.Context) error {
 		return err
 	}
 
-	errs := make([]error, 0)
+	var errs []error
 	for _, cid := range cids {
 		err := workflow.ExecuteActivity(actx, cr.renewJiraEventWatchActivity, cid).Get(wctx, nil)
 		if err != nil {
@@ -54,7 +54,7 @@ func (cr *Cron) listJiraConnectionsActivity(ctx context.Context) ([]sdktypes.Con
 		return nil, err
 	}
 
-	cids := make([]sdktypes.ConnectionID, 0)
+	var cids []sdktypes.ConnectionID
 	for _, c := range cs {
 		cid := c.ID()
 		if cr.checkJiraEventWatch(ctx, cid) {

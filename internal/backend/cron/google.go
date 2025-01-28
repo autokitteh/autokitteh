@@ -34,7 +34,7 @@ func (cr *Cron) renewGoogleEventWatchesWorkflow(wctx workflow.Context, la listAc
 		return err
 	}
 
-	errs := make([]error, 0)
+	var errs []error
 	for _, cid := range cids {
 		if err := workflow.ExecuteActivity(actx, ra, cid).Get(wctx, nil); err != nil {
 			errs = append(errs, err)
@@ -82,7 +82,7 @@ func (cr *Cron) listGoogleDriveConnectionsActivity(ctx context.Context) ([]sdkty
 		return nil, err
 	}
 
-	cids := make([]sdktypes.ConnectionID, 0)
+	var cids []sdktypes.ConnectionID
 	for _, c := range cs {
 		cid := c.ID()
 		if cr.checkGoogleDriveEventWatch(ctx, cid) {
@@ -106,7 +106,7 @@ func (cr *Cron) listGoogleFormsConnectionsActivity(ctx context.Context) ([]sdkty
 		return nil, err
 	}
 
-	cids := make([]sdktypes.ConnectionID, 0)
+	var cids []sdktypes.ConnectionID
 	for _, c := range cs {
 		cid := c.ID()
 		if cr.checkGoogleFormsEventWatch(ctx, cid) {
