@@ -91,8 +91,7 @@ func (cr *Cron) checkGoogleDriveEventWatch(ctx context.Context, cid sdktypes.Con
 		return false
 	}
 
-	t := time.Unix(timestamp, 0).UTC()
-	return t.Before(threeDaysFromNow)
+	return time.Unix(timestamp, 0).UTC().Before(threeDaysFromNow)
 }
 
 func (cr *Cron) renewGoogleCalendarEventWatchActivity(ctx context.Context, cid sdktypes.ConnectionID) error {
