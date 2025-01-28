@@ -57,6 +57,8 @@ type DB interface {
 
 	ListProjects(context.Context, sdktypes.OrgID) ([]sdktypes.Project, error)
 
+	CountProjects(context.Context, sdktypes.OrgID) (int, error)
+
 	// Returns nill, nil if no resources are set.
 	GetProjectResources(context.Context, sdktypes.ProjectID) (map[string][]byte, error)
 

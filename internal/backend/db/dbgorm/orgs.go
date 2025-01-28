@@ -44,6 +44,14 @@ func (gdb *gormdb) DeleteOrg(ctx context.Context, oid sdktypes.OrgID) error {
 		return sdkerrors.NewInvalidArgumentError("missing id")
 	}
 
+	projectCount, err := gdb.CountProjects(ctx, oid)
+	if err != nil {
+		return translateError(err)
+	}
+	if projectCount > 0 {
+		return errors.New("cannot delete an organization with projects")
+	}
+
 	return translateError(gdb.transaction(ctx, func(tx *tx) error {
 		err := tx.db.Where("org_id = ?", oid.UUIDValue()).Delete(&scheme.OrgMember{}).Error
 		if err != nil {

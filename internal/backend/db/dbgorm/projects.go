@@ -147,6 +147,20 @@ func (gdb *gormdb) listProjects(ctx context.Context, oid sdktypes.OrgID) ([]sche
 	return ps, nil
 }
 
+func (db *gormdb) CountProjects(ctx context.Context, oid sdktypes.OrgID) (int, error) {
+	q := db.db.WithContext(ctx)
+
+	if oid.IsValid() {
+		q = q.Where("org_id = ?", oid.UUIDValue())
+	}
+
+	var count int64
+	if err := q.Model(&scheme.Project{}).Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return int(count), nil
+}
+
 func (db *gormdb) CreateProject(ctx context.Context, p sdktypes.Project) error {
 	if err := p.Strict(); err != nil {
 		return err
