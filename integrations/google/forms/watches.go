@@ -51,12 +51,12 @@ func UpdateWatches(ctx context.Context, v sdkservices.Vars, cid sdktypes.Connect
 
 	// Renew or create the form's SCHEMA (changes) and (new) RESPONSES watches.
 	for _, e := range []WatchEventType{WatchSchemaChanges, WatchNewResponses} {
-		watchID, err := a.updateSingleWatch(ctx, e, ws[e])
+		watchID, expirationTime, err := a.updateSingleWatch(ctx, e, ws[e])
 		if err != nil {
 			return err
 		}
 		// And save their IDs.
-		err = a.saveWatchID(ctx, e, watchID)
+		err = a.saveWatchID(ctx, e, watchID, expirationTime)
 		if err != nil {
 			return err
 		}
@@ -65,37 +65,40 @@ func UpdateWatches(ctx context.Context, v sdkservices.Vars, cid sdktypes.Connect
 	return nil
 }
 
-func (a api) updateSingleWatch(ctx context.Context, e WatchEventType, w *forms.Watch) (string, error) {
+func (a api) updateSingleWatch(ctx context.Context, e WatchEventType, w *forms.Watch) (string, string, error) {
 	l := extrazap.ExtractLoggerFromContext(ctx)
 
 	// Create a new watch...
 	if w == nil {
 		w, err := a.watchesCreate(ctx, e)
 		if err != nil {
-			return "", fmt.Errorf("failed to create %s form watch: %w", e, err)
+			return "", "", fmt.Errorf("failed to create %s form watch: %w", e, err)
 		}
 		l.Info("Created form watch", zap.Any("watch", w))
-		return w.Id, nil
+		return w.Id, w.ExpireTime, nil
 	}
 
 	// ...Or renew an existing watch.
 	l.Info("Found existing form watch", zap.Any("watch", w))
 	w, err := a.watchesRenew(ctx, w.Id)
 	if err != nil {
-		return "", fmt.Errorf("failed to renew %s form watch: %w", e, err)
+		return "", "", fmt.Errorf("failed to renew %s form watch: %w", e, err)
 	}
 	l.Info("Renewed form watch", zap.Any("watch", w))
-	return w.Id, nil
+	return w.Id, w.ExpireTime, nil
 }
 
-func (a api) saveWatchID(ctx context.Context, e WatchEventType, watchID string) error {
+func (a api) saveWatchID(ctx context.Context, e WatchEventType, watchID, expirationTime string) error {
 	n := vars.FormResponsesWatchID
 	if e == WatchSchemaChanges {
 		n = vars.FormSchemaWatchID
 	}
 
-	v := sdktypes.NewVar(n).SetValue(watchID).WithScopeID(sdktypes.NewVarScopeID(a.cid))
-	if err := a.vars.Set(ctx, v); err != nil {
+	vs := sdktypes.NewVars(
+		sdktypes.NewVar(n).SetValue(watchID),
+		sdktypes.NewVar(vars.FormEventsWatchExp).SetValue(expirationTime),
+	).WithScopeID(sdktypes.NewVarScopeID(a.cid))
+	if err := a.vars.Set(ctx, vs...); err != nil {
 		return err
 	}
 
