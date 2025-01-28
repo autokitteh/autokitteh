@@ -15,6 +15,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens/authjwttokens"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authusers"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktest"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -141,6 +142,15 @@ type harness struct {
 	users    *sdktest.TestUsers
 }
 
+type testUsers struct{ sdkservices.Users }
+
+func (u testUsers) HasDefaultUser() bool {
+	_, err := u.Get(context.TODO(), authusers.DefaultUser.ID(), "")
+	return err == nil
+}
+
+func (u testUsers) Setup(context.Context) error { return nil }
+
 func newTestHarness(t *testing.T, useDefaultUser bool) *harness {
 	h, check := newTestHandler(t, authcontext.GetAuthnUserID)
 
@@ -158,8 +168,7 @@ func newTestHarness(t *testing.T, useDefaultUser bool) *harness {
 		Logger:   zaptest.NewLogger(t),
 		Sessions: sessions,
 		Tokens:   tokens,
-		Users:    users,
-		Cfg:      &Config{UseDefaultUser: useDefaultUser},
+		Users:    testUsers{users},
 	})(h)
 
 	return &harness{

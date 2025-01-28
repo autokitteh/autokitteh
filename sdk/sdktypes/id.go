@@ -91,8 +91,21 @@ func (i id[T]) UUIDValuePtr() *uuid.UUID {
 	return &uuid
 }
 
-func (i id[T]) MarshalJSON() ([]byte, error)           { return json.Marshal(i.tid) }
-func (i *id[T]) UnmarshalJSON(data []byte) (err error) { err = json.Unmarshal(data, &i.tid); return }
+func (i id[T]) MarshalJSON() ([]byte, error) {
+	if !i.IsValid() {
+		return []byte(`""`), nil
+	}
+
+	return json.Marshal(i.tid)
+}
+
+func (i *id[T]) UnmarshalJSON(data []byte) (err error) {
+	if string(data) != `""` {
+		err = json.Unmarshal(data, &i.tid)
+	}
+
+	return
+}
 
 func (i id[T]) ToTypeID() typeid.TypeID[T] { return i.tid }
 

@@ -6,6 +6,7 @@ type CreateConnectionAction struct {
 	Key            string              `json:"key"`
 	Connection     sdktypes.Connection `json:"connection"`
 	ProjectKey     string              `json:"project"`
+	OrgID          sdktypes.OrgID      `json:"org_id,omitempty"`
 	IntegrationKey string              `json:"integration"`
 }
 

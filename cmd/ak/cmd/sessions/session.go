@@ -72,7 +72,7 @@ func latestSessionID(project string) (sdktypes.SessionID, error) {
 	defer cancel()
 
 	r := resolver.Resolver{Client: common.Client()}
-	pid, err := r.ProjectNameOrID(ctx, project)
+	pid, err := r.ProjectNameOrID(ctx, sdktypes.InvalidOrgID, project)
 	if err != nil {
 		return sdktypes.InvalidSessionID, common.NewExitCodeError(common.BadRequest, errors.New("invalid project"))
 	}

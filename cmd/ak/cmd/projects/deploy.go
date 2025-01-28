@@ -25,7 +25,7 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		pid, err := r.ProjectNameOrID(ctx, args[0])
+		pid, err := r.ProjectNameOrID(ctx, sdktypes.InvalidOrgID, args[0])
 		if err != nil {
 			err = fmt.Errorf("project: %w", err)
 

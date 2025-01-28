@@ -57,7 +57,7 @@ func resolveScopeID() (sdktypes.VarScopeID, error) {
 	defer cancel()
 
 	if conn != "" {
-		c, id, err := r.ConnectionNameOrID(ctx, conn, project)
+		c, id, err := r.ConnectionNameOrID(ctx, conn, project, sdktypes.InvalidOrgID)
 		if err != nil {
 			return sdktypes.InvalidVarScopeID, err
 		}
@@ -69,7 +69,7 @@ func resolveScopeID() (sdktypes.VarScopeID, error) {
 		return sdktypes.NewVarScopeID(id), nil
 	}
 
-	id, err := r.ProjectNameOrID(ctx, project)
+	id, err := r.ProjectNameOrID(ctx, sdktypes.InvalidOrgID, project)
 	if err != nil {
 		return sdktypes.InvalidVarScopeID, err
 	}

@@ -39,7 +39,7 @@ var saveCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		if connection != "" {
-			_, cid, err := r.ConnectionNameOrID(ctx, args[0], "")
+			_, cid, err := r.ConnectionNameOrID(ctx, args[0], "", sdktypes.InvalidOrgID)
 			if err != nil {
 				return err
 			}

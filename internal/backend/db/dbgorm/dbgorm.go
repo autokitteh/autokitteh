@@ -289,21 +289,16 @@ func (db *gormdb) backfillUsersAndOrgs(ctx context.Context) error {
 
 		var oid uuid.UUID
 
-		if uid == authusers.DefaultUser.ID().UUIDValue() {
-			// This is the default user, it already has a default org.
-			oid = authusers.DefaultUser.DefaultOrgID().UUIDValue()
-		} else {
-			user, found := usersMap[uid]
-			if !found {
-				// User is not found since it already had a default org before migration, and just now updating its projects.
-				if err := gdb.Where("user_id = ?", uid).First(&user).Error; err != nil {
-					l.Error("failed to find user", zap.Error(err))
-					continue
-				}
+		user, found := usersMap[uid]
+		if !found {
+			// User is not found since it already had a default org before migration, and just now updating its projects.
+			if err := gdb.Where("user_id = ?", uid).First(&user).Error; err != nil {
+				l.Error("failed to find user", zap.Error(err))
+				continue
 			}
-
-			oid = user.DefaultOrgID
 		}
+
+		oid = user.DefaultOrgID
 
 		l = l.With(zap.String("org_id", oid.String()))
 

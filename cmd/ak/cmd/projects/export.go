@@ -8,6 +8,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 var exportCmd = common.StandardCommand(&cobra.Command{
@@ -31,7 +32,7 @@ func export(cmd *cobra.Command, args []string) error {
 	defer cancel()
 
 	name := args[0]
-	pid, err := r.ProjectNameOrID(ctx, name)
+	pid, err := r.ProjectNameOrID(ctx, sdktypes.InvalidOrgID, name)
 	if err != nil {
 		return err
 	}

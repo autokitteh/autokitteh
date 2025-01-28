@@ -7,6 +7,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 var deleteCmd = common.StandardCommand(&cobra.Command{
@@ -20,7 +21,7 @@ var deleteCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		t, id, err := r.TriggerNameOrID(ctx, args[0], project)
+		t, id, err := r.TriggerNameOrID(ctx, sdktypes.InvalidOrgID, args[0], project)
 		if err != nil {
 			return err
 		}

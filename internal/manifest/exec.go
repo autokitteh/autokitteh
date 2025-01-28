@@ -55,7 +55,7 @@ func executeAction(ctx context.Context, action actions.Action, execContext *exec
 		return &Effect{SubjectID: action.Project.ID(), Type: Created}, nil
 
 	case actions.CreateConnectionAction:
-		pid, err := execContext.resolveProjectID(ctx, action.ProjectKey)
+		pid, err := execContext.resolveProjectID(ctx, action.ProjectKey, action.OrgID)
 		if err != nil {
 			return nil, err
 		} else if !pid.IsValid() {
@@ -99,7 +99,7 @@ func executeAction(ctx context.Context, action actions.Action, execContext *exec
 	case actions.SetVarAction:
 		var scopeID sdktypes.VarScopeID
 		if action.Project != "" {
-			pid, err := execContext.resolveProjectID(ctx, action.Project)
+			pid, err := execContext.resolveProjectID(ctx, action.Project, action.OrgID)
 			if err != nil {
 				return nil, err
 			} else if !pid.IsValid() {
@@ -108,7 +108,7 @@ func executeAction(ctx context.Context, action actions.Action, execContext *exec
 
 			scopeID = sdktypes.NewVarScopeID(pid)
 		} else {
-			cid, err := execContext.resolveConnectionID(ctx, action.Connection)
+			cid, err := execContext.resolveConnectionID(ctx, action.Connection, action.OrgID)
 			if err != nil {
 				return nil, err
 			} else if !cid.IsValid() {
@@ -138,7 +138,7 @@ func executeAction(ctx context.Context, action actions.Action, execContext *exec
 		return &Effect{SubjectID: action.ScopeID, Type: Updated, Text: fmt.Sprintf("var %q deleted", n)}, nil
 
 	case actions.CreateTriggerAction:
-		pid, err := execContext.resolveProjectID(ctx, action.ProjectKey)
+		pid, err := execContext.resolveProjectID(ctx, action.ProjectKey, action.OrgID)
 		if err != nil {
 			return nil, err
 		} else if !pid.IsValid() {
@@ -148,7 +148,7 @@ func executeAction(ctx context.Context, action actions.Action, execContext *exec
 		trigger := action.Trigger.WithProjectID(pid)
 
 		if key := action.ConnectionKey; key != nil {
-			cid, err := execContext.resolveConnectionID(ctx, *key)
+			cid, err := execContext.resolveConnectionID(ctx, *key, action.OrgID)
 			if err != nil {
 				return nil, err
 			} else if !cid.IsValid() {
@@ -170,7 +170,7 @@ func executeAction(ctx context.Context, action actions.Action, execContext *exec
 
 		// convert scheduler -> normal trigger, or just update connection
 		if key := action.ConnectionKey; key != nil {
-			cid, err := execContext.resolveConnectionID(ctx, *key)
+			cid, err := execContext.resolveConnectionID(ctx, *key, action.OrgID)
 			if err != nil {
 				return nil, err
 			} else if !cid.IsValid() {

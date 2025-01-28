@@ -10,6 +10,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 var outputDirectory string
@@ -24,7 +25,7 @@ var downloadCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		pid, err := r.ProjectNameOrID(ctx, args[0])
+		pid, err := r.ProjectNameOrID(ctx, sdktypes.InvalidOrgID, args[0])
 		if err = common.AddNotFoundErrIfCond(err, pid.IsValid()); err != nil {
 			return common.WrapError(err, "project")
 		}

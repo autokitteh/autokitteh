@@ -30,7 +30,7 @@ var createCmd = common.StandardCommand(&cobra.Command{
 			return err
 		}
 
-		pid, err := r.ProjectNameOrID(ctx, project)
+		pid, err := r.ProjectNameOrID(ctx, sdktypes.InvalidOrgID, project)
 		err = common.AddNotFoundErrIfCond(err, pid.IsValid())
 		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, fmt.Sprintf("project %q", project)); err != nil {
 			return err
