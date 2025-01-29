@@ -1,0 +1,44 @@
+[project]
+name = 'autokitteh'
+version = '0.3.9'
+description = 'AutoKitteh Python SDK'
+readme = 'README.md'
+license = {file = 'LICENSE'}
+requires-python = '>= 3.11'
+
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project.optional-dependencies]
+# The AutoKitteh environment when running workflows
+all = [
+	# Integrations
+	"asana ~= 5.0",
+	"atlassian-python-api ~= 3.41",
+	"auth0-python ~= 4.7",
+	"azure-identity ~= 1.19",
+	"boto3 ~= 1.35",
+	"discord.py ~= 2.4",
+	"google-api-python-client ~= 2.155",
+	"google-auth-httplib2 ~= 0.2",
+	"google-auth-oauthlib ~= 1.2",
+	"google-generativeai ~= 0.8",
+	"hubspot-api-client ~= 11.1",
+	"msgraph-sdk ~= 1.18",
+	"openai ~= 1.57",
+	"PyGithub @ git+https://github.com/PyGithub/PyGithub.git@b5f8f078f2b7fc0db6a041499c7a05b0bc7e750d",
+	"slack-sdk ~= 3.33",
+	"twilio ~= 9.4",
+
+	# General
+	"beautifulsoup4 ~= 4.12",
+	"grpcio ~= 1.68",
+	"grpcio-reflection ~= 1.68",
+	"PyYAML ~= 6.0",
+	"requests ~= 2.32",
+	"tenacity ~= 9.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["autokitteh", "autokitteh.*"]

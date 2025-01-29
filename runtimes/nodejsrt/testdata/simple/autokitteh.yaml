@@ -1,0 +1,12 @@
+version: v1
+
+project:
+  name: py_simple
+  triggers:
+    - name: events
+      event_type: post
+      call: simple.py:greet
+      webhook: {}
+  vars:
+    - name: USER
+      value: Garfield

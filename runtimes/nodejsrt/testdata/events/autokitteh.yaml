@@ -1,0 +1,12 @@
+version: v1
+
+project:
+  name: events
+  connections:
+  triggers:
+    - name: get
+      event_type: get
+      data:
+        path: test
+      call: events.py:on_http_get
+      webhook: {}

@@ -1,0 +1,12 @@
+[tool.pytest.ini_options]
+addopts = """
+	-v 
+	--doctest-modules 
+	--ignore testdata
+	--ignore py-sdk
+"""
+
+[tool.ruff]
+exclude = [
+	"testdata",
+]

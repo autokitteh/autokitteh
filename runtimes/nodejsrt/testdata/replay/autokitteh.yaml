@@ -1,0 +1,13 @@
+---
+version: v1
+
+project:
+  name: py_replay
+  triggers:
+    - name: events
+      event_type: post
+      call: replay.py:on_event
+      webhook: {}
+  vars:
+    - name: USER
+      value: Garfield
