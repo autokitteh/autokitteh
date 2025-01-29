@@ -132,23 +132,27 @@ func (cr *Cron) renewJiraEventWatchActivity(ctx context.Context, cid sdktypes.Co
 		AccessToken:  vs.GetValueByString("oauth_AccessToken"),
 		RefreshToken: vs.GetValueByString("oauth_RefreshToken"),
 		TokenType:    vs.GetValueByString("oauth_TokenType"),
-		Expiry:       parseTime(vs.GetValueByString("oauth_Expiry")),
-	}
-	t, err = cfg.TokenSource(ctx, t).Token()
-	if err != nil {
-		l.Error("failed to refresh OAuth token for Jira event watch renewal", zap.Error(err))
-		return err
+		Expiry:       parseTimeSafely(vs.GetValueByString("oauth_Expiry")),
 	}
 
-	vs = sdktypes.NewVars(
-		sdktypes.NewVar(sdktypes.NewSymbol("AccessToken")).SetValue(t.AccessToken),
-		sdktypes.NewVar(sdktypes.NewSymbol("RefreshToken")).SetValue(t.RefreshToken),
-		sdktypes.NewVar(sdktypes.NewSymbol("Expiry")).SetValue(t.Expiry.String()),
-	).WithPrefix("oauth_").WithScopeID(vsid)
-	if err = cr.vars.Set(ctx, vs...); err != nil {
-		l.Error("failed to update Jira connection vars after OAuth token refresh", zap.Error(err))
-		// We have a valid OAuth token, but we can't save it. This may cause problems
-		// down the line, but for now we can at least try to renew the event watch.
+	if t.Expiry.UTC().Before(time.Now().UTC()) {
+		t, err = cfg.TokenSource(ctx, t).Token()
+		if err != nil {
+			l.Error("failed to refresh OAuth token for Jira event watch renewal", zap.Error(err))
+			return err
+		}
+
+		vs = sdktypes.NewVars(
+			sdktypes.NewVar(sdktypes.NewSymbol("AccessToken")).SetValue(t.AccessToken),
+			sdktypes.NewVar(sdktypes.NewSymbol("RefreshToken")).SetValue(t.RefreshToken),
+			sdktypes.NewVar(sdktypes.NewSymbol("Expiry")).SetValue(t.Expiry.String()),
+		).WithPrefix("oauth_").WithScopeID(vsid)
+
+		if err = cr.vars.Set(ctx, vs...); err != nil {
+			l.Error("failed to update Jira connection vars after OAuth token refresh", zap.Error(err))
+			// We have a valid OAuth token, but we can't save it. This may cause problems
+			// down the line, but for now we can at least try to renew the event watch.
+		}
 	}
 
 	// Refresh the event watch (2 weeks --> 1 month).
@@ -190,18 +194,20 @@ func (cr *Cron) deleteInvalidWatchID(ctx context.Context, cid sdktypes.Connectio
 	}
 }
 
-func parseTime(s string) time.Time {
+func parseTimeSafely(s string) time.Time {
 	// Remove unnecessary suffixes, e.g. "PST m=+3759.281638293".
-	s = regexp.MustCompile("[A-Z].*").ReplaceAllString(s, "")
+	s = regexp.MustCompile(`\s+[A-Z].*`).ReplaceAllString(s, "")
 
-	// Go time string formats.
+	// Go time format.
 	if t, err := time.Parse("2006-01-02 15:04:05.999999999 -0700", s); err == nil {
 		return t
 	}
 
+	// RFC-3339.
 	if t, err := time.Parse(time.RFC3339, s); err == nil {
 		return t
 	}
 
-	return time.Now() // Fallback if we don't know the format.
+	// Fallback if we don't know the format: refresh the OAuth token.
+	return time.Now().Add(-time.Hour)
 }
