@@ -77,7 +77,7 @@ func (cr *Cron) listGmailConnectionsActivity(ctx context.Context) ([]sdktypes.Co
 	ctx = authcontext.SetAuthnSystemUser(ctx)
 
 	// Enumerate all Gmail connections (there's no single connection var value
-	// that we're looking for, so we can't use "ct.vars.FindConnectionIDs").
+	// that we're looking for, so we can't use "cr.vars.FindConnectionIDs").
 	cs, err := cr.connections.List(ctx, sdkservices.ListConnectionsFilter{
 		IntegrationID: gmail.IntegrationID,
 	})
@@ -98,14 +98,34 @@ func (cr *Cron) listGmailConnectionsActivity(ctx context.Context) ([]sdktypes.Co
 }
 
 func (cr *Cron) listGoogleCalendarConnectionsActivity(ctx context.Context) ([]sdktypes.ConnectionID, error) {
-	return nil, nil // TODO(INT-184): Implement.
+	ctx = authcontext.SetAuthnSystemUser(ctx)
+
+	// Enumerate all Google Calendar connections (there's no single connection var
+	// value that we're looking for, so we can't use "cr.vars.FindConnectionIDs").
+	cs, err := cr.connections.List(ctx, sdkservices.ListConnectionsFilter{
+		IntegrationID: calendar.IntegrationID,
+	})
+	if err != nil {
+		cr.logger.Error("failed to list Google Calendar connections for event watch renewal", zap.Error(err))
+		return nil, err
+	}
+
+	var cids []sdktypes.ConnectionID
+	for _, c := range cs {
+		cid := c.ID()
+		if cr.checkGoogleCalendarEventWatch(ctx, cid) {
+			cids = append(cids, cid)
+		}
+	}
+
+	return cids, nil
 }
 
 func (cr *Cron) listGoogleDriveConnectionsActivity(ctx context.Context) ([]sdktypes.ConnectionID, error) {
 	ctx = authcontext.SetAuthnSystemUser(ctx)
 
 	// Enumerate all Google Drive connections (there's no single connection var value
-	// that we're looking for, so we can't use "ct.vars.FindConnectionIDs").
+	// that we're looking for, so we can't use "cr.vars.FindConnectionIDs").
 	cs, err := cr.connections.List(ctx, sdkservices.ListConnectionsFilter{
 		IntegrationID: drive.IntegrationID,
 	})
@@ -170,6 +190,29 @@ func (cr *Cron) checkGmailEventWatch(ctx context.Context, cid sdktypes.Connectio
 	// Update this event watch only if it's about to expire in less than 3 days.
 	threeDaysFromNow := time.Now().UTC().AddDate(0, 0, 3)
 	return t.UTC().Before(threeDaysFromNow)
+}
+
+func (cr *Cron) checkGoogleCalendarEventWatch(ctx context.Context, cid sdktypes.ConnectionID) bool {
+	l := cr.logger.With(zap.String("connection_id", cid.String()))
+
+	vs, err := cr.vars.Get(ctx, sdktypes.NewVarScopeID(cid), vars.CalendarEventsWatchExp)
+	if err != nil {
+		l.Error("failed to get Google Drive connection vars for event watch renewal", zap.Error(err))
+		return false
+	}
+
+	e := vs.GetValue(vars.CalendarEventsWatchExp)
+	timestamp, err := strconv.ParseInt(e, 10, 64)
+	if err != nil {
+		l.Warn("invalid Google Calendar event watch expiration timestamp",
+			zap.String("expiration", e), zap.Error(err),
+		)
+		return false
+	}
+
+	// Update this event watch only if it's about to expire in less than 3 days.
+	threeDaysFromNow := time.Now().UTC().AddDate(0, 0, 3)
+	return time.Unix(timestamp/1000, 0).UTC().Before(threeDaysFromNow)
 }
 
 func (cr *Cron) checkGoogleDriveEventWatch(ctx context.Context, cid sdktypes.ConnectionID) bool {
