@@ -68,6 +68,22 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 		}
 		startOAuth(w, r, c, l)
 
+	// Same as a private OAuth 2.0 app, but without the OAuth 2.0 flow
+	// (it uses application permissions instead of user-delegated ones).
+	case integrations.DaemonApp:
+		if err := h.saveOAuthAppConfig(r, vsid); err != nil {
+			l.Error("save connection: " + err.Error())
+			c.AbortServerError(err.Error())
+			return
+		}
+		urlPath, err := c.FinalURL()
+		if err != nil {
+			l.Error("failed to construct final OAuth URL", zap.Error(err))
+			c.AbortServerError("save connection: bad redirect URL")
+			return
+		}
+		http.Redirect(w, r, urlPath, http.StatusFound)
+
 	// Unknown/unrecognized mode - an error.
 	default:
 		l.Warn("save connection: unexpected auth type", zap.String("auth_type", authType))
@@ -88,21 +104,21 @@ func (h handler) saveAuthType(ctx context.Context, vsid sdktypes.VarScopeID, aut
 type OAuthAppConfig struct {
 	ClientID     string `var:"client_id"`
 	ClientSecret string `var:"client_secret,secret"`
-	Tenant       string `var:"tenant"`
+	TenantID     string `var:"tenant_id"`
 }
 
 // saveOAuthAppConfig saves the user-provided details of a
 // private Microsoft OAuth 2.0 app as connection variables.
 func (h handler) saveOAuthAppConfig(r *http.Request, vsid sdktypes.VarScopeID) error {
-	tenant := r.FormValue("tenant")
-	if tenant == "" {
-		tenant = "common"
+	tenantID := r.FormValue("tenant_id")
+	if tenantID == "" {
+		tenantID = "common"
 	}
 
 	app := OAuthAppConfig{
 		ClientID:     r.FormValue("client_id"),
 		ClientSecret: r.FormValue("client_secret"),
-		Tenant:       tenant,
+		TenantID:     tenantID,
 	}
 
 	// Sanity check: all the required details were provided.
@@ -110,7 +126,7 @@ func (h handler) saveOAuthAppConfig(r *http.Request, vsid sdktypes.VarScopeID) e
 		return errors.New("missing OAuth 2.0 app details")
 	}
 
-	return h.vars.Set(r.Context(), sdktypes.EncodeVars(app).WithScopeID(vsid)...)
+	return h.vars.Set(r.Context(), sdktypes.EncodeVars(app).WithPrefix("private_").WithScopeID(vsid)...)
 }
 
 // startOAuth redirects the user to the AutoKitteh server's

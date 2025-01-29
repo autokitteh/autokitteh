@@ -15,5 +15,12 @@ document.getElementById("authType").addEventListener("change", function () {
   }
   document.getElementById("clientId").disabled = isDefaultApp;
   document.getElementById("clientSecret").disabled = isDefaultApp;
-  document.getElementById("tenant").disabled = isDefaultApp;
+  document.getElementById("tenantId").disabled = isDefaultApp;
+
+  const submitButton = document.getElementById("submit");
+  if (this.value === "daemonApp") {
+    submitButton.textContent = "Save Connection";
+  } else {
+    submitButton.textContent = "Start OAuth Flow";
+  }
 });

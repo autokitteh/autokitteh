@@ -21,6 +21,7 @@ import (
 	googleoauth2 "google.golang.org/api/oauth2/v2"
 	"google.golang.org/api/sheets/v4"
 
+	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/github"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -380,16 +381,30 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 				// https://learn.microsoft.com/en-us/entra/identity-platform/scopes-oidc#openid-connect-scopes
 				Scopes: []string{
 					// Non-sensitive delegated-only permissions.
-					"email",
-					"offline_access",
-					"openid",
-					"profile",
+					"email", "offline_access", "openid", "profile",
 					"User.Read",
 
 					// Admin consent required, but important for many operations.
 					"User.ReadBasic.All",
 
-					// TODO(INT-170): Teams
+					// Teams.
+					"Channel.Create",
+					"Channel.Delete.All",
+					// "ChannelMember.ReadWrite.All", // Application-only.
+					"ChannelMessage.Read.All",
+					"ChannelMessage.ReadWrite", // Delegated-only.
+					"ChannelMessage.Send",      // Delegated-only.
+					"ChannelSettings.ReadWrite.All",
+					"Chat.Create",
+					"Chat.ManageDeletion.All",
+					"Chat.ReadWrite.All",
+					"ChatMember.ReadWrite", // Delegated-only.
+					// "ChatMember.ReadWrite.All", // App-only, alternative: WhereInstalled.
+					// "Group.ReadWrite.All", // Special: allow apps to update messages.
+					"Team.ReadBasic.All",
+					"TeamMember.ReadWrite.All",
+					// TODO: TeamsAppInstallation? TeamsTab?
+					// "Teamwork.Migrate.All", // Application-only.
 				},
 			},
 
@@ -405,16 +420,30 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 				// https://learn.microsoft.com/en-us/entra/identity-platform/scopes-oidc#openid-connect-scopes
 				Scopes: []string{
 					// Non-sensitive delegated-only permissions.
-					"email",
-					"offline_access",
-					"openid",
-					"profile",
+					"email", "offline_access", "openid", "profile",
 					"User.Read",
 
 					// Admin consent required, but important for many operations.
 					"User.ReadBasic.All",
 
-					// TODO(INT-170): Teams
+					// Teams.
+					"Channel.Create",
+					"Channel.Delete.All",
+					// "ChannelMember.ReadWrite.All", // Application-only.
+					"ChannelMessage.Read.All",
+					"ChannelMessage.ReadWrite", // Delegated-only.
+					"ChannelMessage.Send",      // Delegated-only.
+					"ChannelSettings.ReadWrite.All",
+					"Chat.Create",
+					"Chat.ManageDeletion.All",
+					"Chat.ReadWrite.All",
+					"ChatMember.ReadWrite", // Delegated-only.
+					// "ChatMember.ReadWrite.All", // App-only, alternative: WhereInstalled.
+					// "Group.ReadWrite.All", // Special: allow apps to update messages.
+					"Team.ReadBasic.All",
+					"TeamMember.ReadWrite.All",
+					// TODO: TeamsAppInstallation? TeamsTab?
+					// "Teamwork.Migrate.All", // Application-only.
 				},
 			},
 
@@ -501,6 +530,10 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 				"access_type": "offline", // oauth2.AccessTypeOffline
 				"prompt":      "consent", // oauth2.ApprovalForce
 			},
+			"microsoft_teams": {
+				"access_type": "offline", // oauth2.AccessTypeOffline
+				"prompt":      "consent", // oauth2.ApprovalForce
+			},
 		},
 	}
 }
@@ -557,6 +590,12 @@ func (o *oauth) applyIntegrationConfig(ctx context.Context, s intgSetup) error {
 			appName = os.Getenv("GITHUB_APP_NAME")
 		}
 		s.cfg.Endpoint.AuthURL = strings.Replace(s.cfg.Endpoint.AuthURL, placeholder, appName, 1)
+
+	case "microsoft", "microsoft_teams":
+		if o.isCustomOAuth(s.vars) {
+			s.cfg.ClientID = s.vars.GetValueByString("private_client_id")
+			s.cfg.ClientSecret = s.vars.GetValueByString("private_client_secret")
+		}
 	}
 
 	return nil
@@ -666,5 +705,7 @@ func authCode(opts map[string]string) []oauth2.AuthCodeOption {
 
 // Determines if the connection uses custom OAuth based on the presence of a client secret in vars.
 func (o *oauth) isCustomOAuth(vs sdktypes.Vars) bool {
-	return vs.GetValueByString("client_secret") != ""
+	authType := vs.GetValueByString("auth_type")
+	clientSecret := vs.GetValueByString("client_secret")
+	return authType == integrations.OAuthPrivate || clientSecret != ""
 }
