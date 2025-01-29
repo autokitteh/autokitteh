@@ -37,6 +37,9 @@ var (
 	FormSchemaWatchID     = sdktypes.NewSymbol("FormSchemaWatchID")
 	FormWatchesExpiration = sdktypes.NewSymbol("FormWatchesExpiration")
 
+	GmailHistoryID       = sdktypes.NewSymbol("GmailHistoryID")
+	GmailWatchExpiration = sdktypes.NewSymbol("GmailWatchExpiration")
+
 	UserEmail = sdktypes.NewSymbol("user_email")
 	UserScope = sdktypes.NewSymbol("user_scope")
 )
