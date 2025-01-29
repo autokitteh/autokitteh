@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
+	"golang.org/x/oauth2/microsoft"
 	"google.golang.org/api/calendar/v3"
 	"google.golang.org/api/chat/v1"
 	"google.golang.org/api/drive/v3"
@@ -19,6 +21,7 @@ import (
 	googleoauth2 "google.golang.org/api/oauth2/v2"
 	"google.golang.org/api/sheets/v4"
 
+	"go.autokitteh.dev/autokitteh/integrations/github"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -35,6 +38,15 @@ type oauth struct {
 	// storage, we will merge them into a single table.
 	configs map[string]*oauth2.Config
 	opts    map[string]map[string]string
+}
+
+// intgSetup contains the parameters for configuring an integration's OAuth
+type intgSetup struct {
+	intg string
+	cid  sdktypes.ConnectionID
+	cfg  *oauth2.Config
+	opts map[string]string
+	vars sdktypes.Vars
 }
 
 func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
@@ -59,6 +71,7 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 	l.Debug("Atlassian base URL for OAuth", zap.String("url", atlassianBaseURL))
 
 	// Determine GitHub base URL (to support GitHub Enterprise Server, i.e. on-prem).
+	// TODO(INT-194): Add support for custom OAuth.
 	githubBaseURL := os.Getenv("GITHUB_ENTERPRISE_URL")
 	if githubBaseURL == "" {
 		githubBaseURL = "https://github.com"
@@ -147,7 +160,7 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 				ClientSecret: os.Getenv("GITHUB_CLIENT_SECRET"),
 				Endpoint: oauth2.Endpoint{
 					// https://docs.github.com/en/apps/using-github-apps/installing-a-github-app-from-a-third-party#installing-a-github-app
-					AuthURL: fmt.Sprintf("%s/%s/%s/installations/new", githubBaseURL, appsDir, os.Getenv("GITHUB_APP_NAME")),
+					AuthURL: fmt.Sprintf("%s/%s/{{GITHUB_APP_NAME}}/installations/new", githubBaseURL, appsDir),
 					// https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#device-flow
 					DeviceAuthURL: githubBaseURL + "/login/device/code",
 					// https://docs.github.com/en/enterprise-server/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#2-users-are-redirected-back-to-your-site-by-github
@@ -356,6 +369,56 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 			},
 
 			// Based on:
+			// https://learn.microsoft.com/en-us/entra/identity-platform/v2-app-types
+			"microsoft": {
+				ClientID:     os.Getenv("MICROSOFT_CLIENT_ID"),
+				ClientSecret: os.Getenv("MICROSOFT_CLIENT_SECRET"),
+				Endpoint:     microsoft.AzureADEndpoint("common"),
+				RedirectURL:  redirectURL + "microsoft",
+				// https://learn.microsoft.com/en-us/graph/permissions-overview
+				// https://learn.microsoft.com/en-us/graph/permissions-reference
+				// https://learn.microsoft.com/en-us/entra/identity-platform/scopes-oidc#openid-connect-scopes
+				Scopes: []string{
+					// Non-sensitive delegated-only permissions.
+					"email",
+					"offline_access",
+					"openid",
+					"profile",
+					"User.Read",
+
+					// Admin consent required, but important for many operations.
+					"User.ReadBasic.All",
+
+					// TODO(INT-170): Teams
+				},
+			},
+
+			// Based on:
+			// https://learn.microsoft.com/en-us/entra/identity-platform/v2-app-types
+			"microsoft_teams": {
+				ClientID:     os.Getenv("MICROSOFT_CLIENT_ID"),
+				ClientSecret: os.Getenv("MICROSOFT_CLIENT_SECRET"),
+				Endpoint:     microsoft.AzureADEndpoint("common"),
+				RedirectURL:  redirectURL + "microsoft",
+				// https://learn.microsoft.com/en-us/graph/permissions-overview
+				// https://learn.microsoft.com/en-us/graph/permissions-reference
+				// https://learn.microsoft.com/en-us/entra/identity-platform/scopes-oidc#openid-connect-scopes
+				Scopes: []string{
+					// Non-sensitive delegated-only permissions.
+					"email",
+					"offline_access",
+					"openid",
+					"profile",
+					"User.Read",
+
+					// Admin consent required, but important for many operations.
+					"User.ReadBasic.All",
+
+					// TODO(INT-170): Teams
+				},
+			},
+
+			// Based on:
 			// https://api.slack.com/apps/A05F30M6W3H
 			"slack": {
 				ClientID:     os.Getenv("SLACK_CLIENT_ID"),
@@ -434,6 +497,10 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 				"access_type": "offline", // oauth2.AccessTypeOffline
 				"prompt":      "consent", // oauth2.ApprovalForce
 			},
+			"microsoft": {
+				"access_type": "offline", // oauth2.AccessTypeOffline
+				"prompt":      "consent", // oauth2.ApprovalForce
+			},
 		},
 	}
 }
@@ -453,6 +520,48 @@ func (o *oauth) Get(ctx context.Context, intg string) (*oauth2.Config, map[strin
 	return cfg, o.opts[intg], nil
 }
 
+// applyIntegrationConfig customizes the OAuth2 configuration and options for a specific integration.
+// It adjusts the AuthURL, TokenURL, and other parameters based on the integration's setup.
+// If custom OAuth is used (instead of the default app), it retrieves and applies the custom configuration.
+func (o *oauth) applyIntegrationConfig(ctx context.Context, s intgSetup) error {
+	switch s.intg {
+	case "auth0":
+		placeholder := "{{AUTH0_DOMAIN}}"
+		domain := s.vars.GetValueByString("auth0_domain")
+
+		s.cfg.Endpoint.AuthURL = strings.Replace(s.cfg.Endpoint.AuthURL, placeholder, domain, 1)
+		s.cfg.Endpoint.TokenURL = strings.Replace(s.cfg.Endpoint.TokenURL, placeholder, domain, 1)
+		s.opts["audience"] = strings.Replace(s.opts["audience"], placeholder, domain, 1)
+
+	case "github":
+		placeholder := "{{GITHUB_APP_NAME}}"
+		var appName string
+		if o.isCustomOAuth(s.vars) {
+			// Get app name using appID for custom OAuth
+			appID := s.vars.GetValueByString("app_id")
+			aid, err := strconv.ParseInt(appID, 10, 64)
+			if err != nil {
+				return err
+			}
+			gh, err := github.NewClientFromGitHubAppID(aid, s.vars.GetValueByString("private_key"))
+			if err != nil {
+				return err
+			}
+			app, _, err := gh.Apps.Get(ctx, "")
+			if err != nil {
+				return err
+			}
+			appName = *app.Slug
+		} else {
+			// Use default app name from env
+			appName = os.Getenv("GITHUB_APP_NAME")
+		}
+		s.cfg.Endpoint.AuthURL = strings.Replace(s.cfg.Endpoint.AuthURL, placeholder, appName, 1)
+	}
+
+	return nil
+}
+
 func (o *oauth) getConfigWithConnection(ctx context.Context, intg string, cid sdktypes.ConnectionID) (*oauth2.Config, map[string]string, error) {
 	if !cid.IsValid() {
 		return nil, nil, errors.New("invalid connection ID")
@@ -463,26 +572,12 @@ func (o *oauth) getConfigWithConnection(ctx context.Context, intg string, cid sd
 		return nil, nil, err
 	}
 
-	if !o.isCustomOAuth(ctx, cid) {
-		return baseCfg, opts, nil
-	}
-
-	vs, err := o.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
-	if err != nil {
-		return nil, nil, err
-	}
-
 	cfgCopy := &oauth2.Config{
-		ClientID:     vs.GetValueByString("client_id"),
-		ClientSecret: vs.GetValueByString("client_secret"),
-		Endpoint: oauth2.Endpoint{
-			AuthURL:       baseCfg.Endpoint.AuthURL,
-			TokenURL:      baseCfg.Endpoint.TokenURL,
-			DeviceAuthURL: baseCfg.Endpoint.DeviceAuthURL,
-			AuthStyle:     baseCfg.Endpoint.AuthStyle,
-		},
-		RedirectURL: baseCfg.RedirectURL,
-		Scopes:      append([]string{}, baseCfg.Scopes...),
+		ClientID:     baseCfg.ClientID,
+		ClientSecret: baseCfg.ClientSecret,
+		Endpoint:     baseCfg.Endpoint,
+		RedirectURL:  baseCfg.RedirectURL,
+		Scopes:       append([]string{}, baseCfg.Scopes...),
 	}
 
 	optsCopy := make(map[string]string, len(opts))
@@ -490,16 +585,26 @@ func (o *oauth) getConfigWithConnection(ctx context.Context, intg string, cid sd
 		optsCopy[k] = v
 	}
 
-	// Special case: Auth0 uses a dynamic domain stored in vars.
-	// TODO(INT-129): Add dynamic domain handling to all OAuth integrations.
-	if intg == "auth0" {
-		placeholder := "{{AUTH0_DOMAIN}}"
-		domain := vs.GetValueByString("auth0_domain")
+	vs, err := o.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+	if err != nil {
+		return nil, nil, err
+	}
 
-		cfgCopy.Endpoint.AuthURL = strings.Replace(cfgCopy.Endpoint.AuthURL, placeholder, domain, 1)
-		cfgCopy.Endpoint.TokenURL = strings.Replace(cfgCopy.Endpoint.TokenURL, placeholder, domain, 1)
+	if o.isCustomOAuth(vs) {
+		cfgCopy.ClientID = vs.GetValueByString("client_id")
+		cfgCopy.ClientSecret = vs.GetValueByString("client_secret")
+	}
 
-		optsCopy["audience"] = strings.Replace(opts["audience"], placeholder, domain, 1)
+	s := intgSetup{
+		intg: intg,
+		cid:  cid,
+		cfg:  cfgCopy,
+		opts: optsCopy,
+		vars: vs,
+	}
+
+	if err := o.applyIntegrationConfig(ctx, s); err != nil {
+		return nil, nil, err
 	}
 
 	return cfgCopy, optsCopy, nil
@@ -518,7 +623,12 @@ func (o *oauth) StartFlow(ctx context.Context, intg string, cid sdktypes.Connect
 	// Identify the relevant connection when we get an OAuth response.
 	state := strings.Replace(cid.String(), "con_", "", 1) + "_" + origin
 
-	if !o.isCustomOAuth(ctx, cid) {
+	vs, err := o.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+	if err != nil {
+		return "", err
+	}
+
+	if !o.isCustomOAuth(vs) {
 		return cfg.AuthCodeURL(state, authCode(opts)...), nil
 	}
 
@@ -555,11 +665,6 @@ func authCode(opts map[string]string) []oauth2.AuthCodeOption {
 }
 
 // Determines if the connection uses custom OAuth based on the presence of a client secret in vars.
-func (o *oauth) isCustomOAuth(ctx context.Context, cid sdktypes.ConnectionID) bool {
-	vs, err := o.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
-	if err != nil {
-		return false
-	}
-
+func (o *oauth) isCustomOAuth(vs sdktypes.Vars) bool {
 	return vs.GetValueByString("client_secret") != ""
 }

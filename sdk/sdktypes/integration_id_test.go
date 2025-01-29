@@ -14,6 +14,7 @@ func TestNamedID(t *testing.T) {
 		{"testing", "int_3kthtest1n7bf767860ab68268"},
 		{"123abc", "int_3kth123abc819fc78d4caa616c"},
 		{"iou", "int_3kth00010v08d1729ff0ad290d"},
+		{"foo-bar", "int_3kthf000ba732f13282aa60744"},
 	}
 
 	for _, tt := range tests {

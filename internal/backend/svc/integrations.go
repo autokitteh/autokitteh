@@ -23,6 +23,8 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/google/sheets"
 	"go.autokitteh.dev/autokitteh/integrations/grpc"
 	"go.autokitteh.dev/autokitteh/integrations/hubspot"
+	"go.autokitteh.dev/autokitteh/integrations/microsoft"
+	"go.autokitteh.dev/autokitteh/integrations/microsoft/teams"
 	"go.autokitteh.dev/autokitteh/integrations/redis"
 	"go.autokitteh.dev/autokitteh/integrations/slack"
 	"go.autokitteh.dev/autokitteh/integrations/twilio"
@@ -98,6 +100,8 @@ func integrationsFXOption() fx.Option {
 		integration("grpc", configset.Empty, grpc.New),
 		integration("hubspot", configset.Empty, hubspot.New),
 		integration("jira", configset.Empty, jira.New),
+		integration("microsoft", configset.Empty, microsoft.New),
+		integration("microsoft_teams", configset.Empty, teams.New),
 		integration("redis", configset.Empty, redis.New),
 		integration("sheets", configset.Empty, sheets.New),
 		integration("slack", configset.Empty, slack.New),
@@ -115,6 +119,7 @@ func integrationsFXOption() fx.Option {
 				google.Start(l, muxes, vars, oauth, dispatch)
 				hubspot.Start(l, muxes, oauth)
 				jira.Start(l, muxes, vars, oauth, dispatch)
+				microsoft.Start(l, muxes, vars, oauth, dispatch)
 				slack.Start(l, muxes, vars, dispatch)
 				twilio.Start(l, muxes, vars, dispatch)
 				return nil

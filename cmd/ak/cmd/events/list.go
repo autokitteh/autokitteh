@@ -25,7 +25,7 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		defer cancel()
 
 		if connection != "" {
-			_, cid, err := r.ConnectionNameOrID(ctx, connection, "")
+			_, cid, err := r.ConnectionNameOrID(ctx, connection, "", sdktypes.InvalidOrgID)
 			if err = common.AddNotFoundErrIfCond(err, cid.IsValid()); err != nil {
 				return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "connection")
 			}
@@ -33,7 +33,7 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		if trigger != "" {
-			_, tid, err := r.TriggerNameOrID(ctx, trigger, "")
+			_, tid, err := r.TriggerNameOrID(ctx, sdktypes.InvalidOrgID, trigger, "")
 			if err = common.AddNotFoundErrIfCond(err, tid.IsValid()); err != nil {
 				return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "trigger")
 			}
@@ -49,7 +49,7 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		if project != "" {
-			pid, err := r.ProjectNameOrID(ctx, project)
+			pid, err := r.ProjectNameOrID(ctx, sdktypes.InvalidOrgID, project)
 			if err = common.AddNotFoundErrIfCond(err, pid.IsValid()); err != nil {
 				return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "project")
 			}

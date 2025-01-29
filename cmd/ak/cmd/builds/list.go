@@ -7,6 +7,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 var listCmd = common.StandardCommand(&cobra.Command{
@@ -20,7 +21,7 @@ var listCmd = common.StandardCommand(&cobra.Command{
 		defer cancel()
 
 		r := resolver.Resolver{Client: common.Client()}
-		pid, err := r.ProjectNameOrID(ctx, project)
+		pid, err := r.ProjectNameOrID(ctx, sdktypes.InvalidOrgID, project)
 		if err != nil {
 			return err
 		}

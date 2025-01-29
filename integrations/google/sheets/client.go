@@ -12,7 +12,7 @@ import (
 	"google.golang.org/api/sheets/v4"
 
 	"go.autokitteh.dev/autokitteh/integrations/google/connections"
-	"go.autokitteh.dev/autokitteh/integrations/google/internal/vars"
+	"go.autokitteh.dev/autokitteh/integrations/google/vars"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"

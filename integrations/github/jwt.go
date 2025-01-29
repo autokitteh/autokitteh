@@ -54,14 +54,16 @@ func newClientWithInstallJWT(data sdktypes.Vars) (*github.Client, error) {
 		return nil, fmt.Errorf("invalid install ID %q", s)
 	}
 
-	return newClientWithInstallJWTFromGitHubIDs(aid, iid)
+	return newClientWithInstallJWTFromGitHubIDs(aid, iid, data.GetValue(vars.PrivateKey))
 }
 
 // newClientWithInstallJWTFromGitHubIDs generates a GitHub app
 // installation JWT based on the given GitHub app ID and installation ID. See:
 // https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/authenticating-as-a-github-app-installation
-func newClientWithInstallJWTFromGitHubIDs(appID, installID int64) (*github.Client, error) {
-	client, err := newClientFromGitHubAppID(appID)
+// The private key is used to sign the JWT and determine whether this is a
+// user-defined GitHub App or a GitHub App.
+func newClientWithInstallJWTFromGitHubIDs(appID, installID int64, privateKey string) (*github.Client, error) {
+	client, err := NewClientFromGitHubAppID(appID, privateKey)
 	if err != nil {
 		return nil, err
 	}
@@ -84,13 +86,15 @@ func newClientWithInstallJWTFromGitHubIDs(appID, installID int64) (*github.Clien
 	return client, nil
 }
 
-// newClientFromGitHubAppID generates a GitHub app JWT based on its ID.
-func newClientFromGitHubAppID(appID int64) (*github.Client, error) {
+// NewClientFromGitHubAppID generates a GitHub app JWT based on its ID. The private key
+// determines whether this is a user-defined GitHub App and is used to sign the JWT.
+// If the private key is not provided, the environment variable is used.
+func NewClientFromGitHubAppID(appID int64, privateKey string) (*github.Client, error) {
 	// Shared transport to reuse TCP connections.
 	tr := http.DefaultTransport
 
 	// Wrap the shared transport.
-	atr, err := ghinstallation.NewAppsTransport(tr, appID, getPrivateKey())
+	atr, err := ghinstallation.NewAppsTransport(tr, appID, getPrivateKey(privateKey))
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +116,11 @@ func newClientFromGitHubAppID(appID int64) (*github.Client, error) {
 	return client, nil
 }
 
-func getPrivateKey() []byte {
+func getPrivateKey(privateKey string) []byte {
+	// Check if this is a custom OAuth connection
+	if privateKey != "" {
+		return []byte(strings.ReplaceAll(privateKey, "\\n", "\n"))
+	}
 	s, ok := os.LookupEnv(privateKeyEnvVar)
 	if ok {
 		return []byte(strings.ReplaceAll(s, "\\n", "\n"))

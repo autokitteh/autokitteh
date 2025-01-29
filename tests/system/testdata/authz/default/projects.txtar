@@ -104,6 +104,8 @@ ak project export test
 return code == $RC_UNAUTHN
 
 -- test-config.yaml --
+server:
+    users.use_default_user: false
 ak:
     extra_args: ["-j", "--array_json_list"]
 

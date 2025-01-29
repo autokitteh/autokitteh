@@ -9,22 +9,13 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/auth/authusers"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var defaultUserMembership = sdktypes.NewOrgMember(authusers.DefaultOrg.ID(), authusers.DefaultUser.ID()).
-	WithStatus(sdktypes.OrgMemberStatusActive).
-	WithRoles(sdktypes.NewSymbol("admin"))
-
 func (gdb *gormdb) GetOrg(ctx context.Context, oid sdktypes.OrgID, n sdktypes.Symbol) (sdktypes.Org, error) {
-	if oid == authusers.DefaultOrg.ID() {
-		return authusers.DefaultOrg, nil
-	}
-
 	q := gdb.db.WithContext(ctx)
 
 	if !oid.IsValid() && !n.IsValid() {
@@ -49,10 +40,6 @@ func (gdb *gormdb) GetOrg(ctx context.Context, oid sdktypes.OrgID, n sdktypes.Sy
 }
 
 func (gdb *gormdb) DeleteOrg(ctx context.Context, oid sdktypes.OrgID) error {
-	if oid == authusers.DefaultOrg.ID() {
-		return sdkerrors.ErrUnauthorized
-	}
-
 	if !oid.IsValid() {
 		return sdkerrors.NewInvalidArgumentError("missing id")
 	}
@@ -69,10 +56,6 @@ func (gdb *gormdb) DeleteOrg(ctx context.Context, oid sdktypes.OrgID) error {
 
 func (gdb *gormdb) CreateOrg(ctx context.Context, o sdktypes.Org) (sdktypes.OrgID, error) {
 	oid := o.ID()
-
-	if oid == authusers.DefaultOrg.ID() {
-		return sdktypes.InvalidOrgID, sdkerrors.ErrAlreadyExists
-	}
 
 	if !oid.IsValid() {
 		oid = sdktypes.NewOrgID()
@@ -105,10 +88,6 @@ func (gdb *gormdb) CreateOrg(ctx context.Context, o sdktypes.Org) (sdktypes.OrgI
 }
 
 func (gdb *gormdb) UpdateOrg(ctx context.Context, o sdktypes.Org, fm *sdktypes.FieldMask) error {
-	if o.ID() == authusers.DefaultOrg.ID() {
-		return sdkerrors.ErrUnauthorized
-	}
-
 	data, err := updatedFields(ctx, o, fm)
 	if err != nil {
 		return err
@@ -134,10 +113,6 @@ func (gdb *gormdb) UpdateOrg(ctx context.Context, o sdktypes.Org, fm *sdktypes.F
 }
 
 func (gdb *gormdb) ListOrgMembers(ctx context.Context, oid sdktypes.OrgID, includeUsers bool) ([]sdktypes.OrgMember, []sdktypes.User, error) {
-	if oid == authusers.DefaultOrg.ID() {
-		return []sdktypes.OrgMember{defaultUserMembership}, nil, nil
-	}
-
 	var mrs []scheme.OrgMember
 	err := gdb.db.WithContext(ctx).
 		Where("org_id = ?", oid.UUIDValue()).
@@ -173,10 +148,6 @@ func (gdb *gormdb) ListOrgMembers(ctx context.Context, oid sdktypes.OrgID, inclu
 }
 
 func (gdb *gormdb) AddOrgMember(ctx context.Context, m sdktypes.OrgMember) error {
-	if m.OrgID() == authusers.DefaultOrg.ID() {
-		return sdkerrors.ErrUnauthorized
-	}
-
 	roles, err := json.Marshal(m.Roles())
 	if err != nil {
 		return fmt.Errorf("failed to marshal roles: %w", err)
@@ -193,10 +164,6 @@ func (gdb *gormdb) AddOrgMember(ctx context.Context, m sdktypes.OrgMember) error
 }
 
 func (gdb *gormdb) UpdateOrgMember(ctx context.Context, m sdktypes.OrgMember, fm *sdktypes.FieldMask) error {
-	if m.OrgID() == authusers.DefaultOrg.ID() {
-		return sdkerrors.ErrUnauthorized
-	}
-
 	data, err := updatedFields(ctx, m, fm)
 	if err != nil {
 		return err
@@ -218,10 +185,6 @@ func (gdb *gormdb) UpdateOrgMember(ctx context.Context, m sdktypes.OrgMember, fm
 }
 
 func (gdb *gormdb) RemoveOrgMember(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID) error {
-	if oid == authusers.DefaultOrg.ID() {
-		return sdkerrors.ErrUnauthorized
-	}
-
 	return translateError(
 		gdb.db.WithContext(ctx).
 			Where("org_id = ? AND user_id = ?", oid.UUIDValue(), uid.UUIDValue()).
@@ -231,14 +194,6 @@ func (gdb *gormdb) RemoveOrgMember(ctx context.Context, oid sdktypes.OrgID, uid 
 }
 
 func (gdb *gormdb) GetOrgMember(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID) (sdktypes.OrgMember, error) {
-	if oid == authusers.DefaultOrg.ID() {
-		if uid == authusers.DefaultUser.ID() {
-			return defaultUserMembership, nil
-		}
-
-		return sdktypes.InvalidOrgMember, sdkerrors.ErrNotFound
-	}
-
 	var om scheme.OrgMember
 
 	err := gdb.db.WithContext(ctx).
@@ -259,10 +214,6 @@ func (gdb *gormdb) GetOrgMember(ctx context.Context, oid sdktypes.OrgID, uid sdk
 }
 
 func (gdb *gormdb) GetOrgsForUser(ctx context.Context, uid sdktypes.UserID, includeOrgs bool) ([]sdktypes.OrgMember, []sdktypes.Org, error) {
-	if uid == authusers.DefaultUser.ID() {
-		return []sdktypes.OrgMember{defaultUserMembership}, nil, nil
-	}
-
 	var rms []scheme.OrgMember
 	err := gdb.db.WithContext(ctx).
 		Where("user_id = ?", uid.UUIDValue()).

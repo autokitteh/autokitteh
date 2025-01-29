@@ -5,6 +5,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 var getCmd = common.StandardCommand(&cobra.Command{
@@ -18,7 +19,7 @@ var getCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		c, _, err := r.ConnectionNameOrID(ctx, args[0], "")
+		c, _, err := r.ConnectionNameOrID(ctx, args[0], "", sdktypes.InvalidOrgID)
 		err = common.AddNotFoundErrIfCond(err, c.IsValid())
 		if err = common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "connection"); err == nil {
 			common.RenderKVIfV("connection", c)

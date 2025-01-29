@@ -32,9 +32,13 @@ var (
 	DriveEventsWatchID         = sdktypes.NewSymbol("DriveEventsWatchID")
 	DriveEventsWatchResID      = sdktypes.NewSymbol("DriveEventsWatchResID")
 
-	FormID               = sdktypes.NewSymbol("FormID")
-	FormResponsesWatchID = sdktypes.NewSymbol("FormResponsesWatchID")
-	FormSchemaWatchID    = sdktypes.NewSymbol("FormSchemaWatchID")
+	FormID                = sdktypes.NewSymbol("FormID")
+	FormResponsesWatchID  = sdktypes.NewSymbol("FormResponsesWatchID")
+	FormSchemaWatchID     = sdktypes.NewSymbol("FormSchemaWatchID")
+	FormWatchesExpiration = sdktypes.NewSymbol("FormWatchesExpiration")
+
+	GmailHistoryID       = sdktypes.NewSymbol("GmailHistoryID")
+	GmailWatchExpiration = sdktypes.NewSymbol("GmailWatchExpiration")
 
 	UserEmail = sdktypes.NewSymbol("user_email")
 	UserScope = sdktypes.NewSymbol("user_scope")

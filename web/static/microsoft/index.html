@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>AutoKitteh - Microsoft</title>
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/static/apple-touch-icon.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/static/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/static/favicon-16x16.png"
+    />
+    <link rel="manifest" href="/static/site.webmanifest" />
+    <link rel="stylesheet" type="text/css" href="styles.css" />
+    <meta name="robots" content="noindex, nofollow" />
+    <script src="form.js" defer></script>
+  </head>
+
+  <body>
+    <a href="/" target="_self">
+      <img class="banner" src="/static/banner.svg" alt="AutoKitteh" />
+    </a>
+
+    <table class="title">
+      <td>
+        <img class="logo" src="/static/images/microsoft.svg" alt="Logo" />
+      </td>
+      <td><h1>Microsoft - Initialize Connection</h1></td>
+    </table>
+
+    <form method="post" action="/microsoft/save">
+      <h2>Query Params From the URL</h2>
+
+      <div class="form-group">
+        <label for="cid">Connection ID</label>
+        <input type="text" name="cid" id="cid" readonly />
+      </div>
+
+      <div class="form-group">
+        <label for="origin">Request Origin</label>
+        <input type="text" name="origin" id="origin" readonly />
+      </div>
+
+      <div class="form-group">
+        <label for="auth_scopes">Auth Scopes ("" = All)</label>
+        <input type="text" name="auth_scopes" value="" readonly />
+      </div>
+
+      <h2>OAuth 2.0</h2>
+
+      <div class="form-group">
+        <label for="auth_type">Auth Type</label>
+        <select name="auth_type" id="authType">
+          <option value="oauthDefault">Default App</option>
+          <option value="oauthPrivate">Private App</option>
+        </select>
+      </div>
+
+      <div id="privateApp" class="hidden">
+        <h2>Private App</h2>
+
+        <div class="form-group">
+          <label for="client_id">Client ID</label>
+          <input
+            type="text"
+            id="clientId"
+            name="client_id"
+            autocomplete="off"
+            spellcheck="false"
+            disabled
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="client_secret">Client Secret</label>
+          <input
+            type="text"
+            id="clientSecret"
+            name="client_secret"
+            autocomplete="off"
+            spellcheck="false"
+            disabled
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="tenant">Tenant (Default = "common")</label>
+          <input
+            type="text"
+            id="tenant"
+            name="tenant"
+            value="common"
+            autocomplete="off"
+            spellcheck="false"
+            disabled
+          />
+        </div>
+      </div>
+
+      <button type="submit" class="submit-btn">Start OAuth Flow</button>
+    </form>
+  </body>
+</html>

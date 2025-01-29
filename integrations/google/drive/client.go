@@ -15,7 +15,7 @@ import (
 	"google.golang.org/api/option"
 
 	"go.autokitteh.dev/autokitteh/integrations/google/connections"
-	"go.autokitteh.dev/autokitteh/integrations/google/internal/vars"
+	"go.autokitteh.dev/autokitteh/integrations/google/vars"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
@@ -193,6 +193,7 @@ func (a api) watchEvents(ctx context.Context, connID sdktypes.ConnectionID, user
 	if err != nil {
 		return nil, fmt.Errorf("recreate watch channel: %w", err)
 	}
+	a.logger.Warn("Google Drive watch channel recreated", zap.Int64("expiration", resp.Expiration))
 	return resp, nil
 }
 
@@ -313,7 +314,6 @@ func (a api) listChanges(ctx context.Context) ([]*drive.Change, error) {
 	}
 
 	// Save the new start page token for future requests
-	// TODO: helper function for saving NewStartPageToken?
 	if resp.NewStartPageToken != "" {
 		v := sdktypes.NewVar(vars.DriveChangesStartPageToken).SetValue(resp.NewStartPageToken)
 		if err := a.vars.Set(ctx, v.WithScopeID(sdktypes.NewVarScopeID(a.cid))); err != nil {

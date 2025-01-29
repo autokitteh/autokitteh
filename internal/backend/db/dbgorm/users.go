@@ -10,10 +10,6 @@ import (
 )
 
 func (gdb *gormdb) GetUser(ctx context.Context, id sdktypes.UserID, email string) (sdktypes.User, error) {
-	if id == authusers.DefaultUser.ID() {
-		return authusers.DefaultUser, nil
-	}
-
 	q := gdb.db.WithContext(ctx)
 
 	if !id.IsValid() && email == "" {
@@ -45,8 +41,8 @@ func (gdb *gormdb) CreateUser(ctx context.Context, u sdktypes.User) (sdktypes.Us
 	uid := u.ID()
 	if !uid.IsValid() {
 		uid = sdktypes.NewUserID()
-	} else if authusers.IsInternalUserID(uid) {
-		return sdktypes.InvalidUserID, sdkerrors.ErrAlreadyExists
+	} else if authusers.IsSystemUserID(uid) {
+		return sdktypes.InvalidUserID, sdkerrors.NewInvalidArgumentError("system user")
 	}
 
 	user := scheme.User{
@@ -72,7 +68,7 @@ func (gdb *gormdb) UpdateUser(ctx context.Context, u sdktypes.User, fm *sdktypes
 		return sdkerrors.NewInvalidArgumentError("missing uid")
 	}
 
-	if authusers.IsInternalUserID(u.ID()) {
+	if authusers.IsSystemUserID(u.ID()) {
 		return sdkerrors.ErrUnauthorized
 	}
 

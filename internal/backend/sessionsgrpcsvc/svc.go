@@ -43,11 +43,8 @@ func (s *server) Start(ctx context.Context, req *connect.Request[sessionsv1.Star
 	}
 
 	for k, v := range msg.JsonInputs {
-		d := json.NewDecoder(strings.NewReader(v))
-		d.UseNumber()
-
-		var x any
-		if err := d.Decode(&x); err != nil {
+		decoded, err := decodeNestedJSON(v)
+		if err != nil {
 			err = sdkerrors.NewInvalidArgumentError(`json_inputs["%s"]: %w`, k, err)
 			return nil, sdkerrors.AsConnectError(err)
 		}
@@ -56,13 +53,13 @@ func (s *server) Start(ctx context.Context, req *connect.Request[sessionsv1.Star
 			msg.Session.Inputs = make(map[string]*sdktypes.ValuePB)
 		}
 
-		v, err := sdktypes.WrapValue(x)
+		wrappedValue, err := sdktypes.WrapValue(decoded)
 		if err != nil {
 			err = sdkerrors.NewInvalidArgumentError(`json_inputs["%s"]: %w`, k, err)
 			return nil, sdkerrors.AsConnectError(fmt.Errorf(`json_inputs["%s"]: %w`, k, err))
 		}
 
-		msg.Session.Inputs[k] = v.ToProto()
+		msg.Session.Inputs[k] = wrappedValue.ToProto()
 	}
 
 	session, err := sdktypes.SessionFromProto(msg.Session)
@@ -76,6 +73,37 @@ func (s *server) Start(ctx context.Context, req *connect.Request[sessionsv1.Star
 	}
 
 	return connect.NewResponse(&sessionsv1.StartResponse{SessionId: uid.String()}), nil
+}
+
+func decodeNestedJSON(input string) (any, error) {
+	var result any
+	d := json.NewDecoder(strings.NewReader(input))
+	d.UseNumber()
+
+	if err := d.Decode(&result); err != nil {
+		return nil, err
+	}
+
+	switch v := result.(type) {
+	case map[string]any:
+		for key, value := range v {
+			if str, ok := value.(string); ok {
+				if decoded, err := decodeNestedJSON(str); err == nil {
+					v[key] = decoded
+				}
+			}
+		}
+	case []any:
+		for i, value := range v {
+			if str, ok := value.(string); ok {
+				if decoded, err := decodeNestedJSON(str); err == nil {
+					v[i] = decoded
+				}
+			}
+		}
+	}
+
+	return result, nil
 }
 
 func (s *server) Get(ctx context.Context, req *connect.Request[sessionsv1.GetRequest]) (*connect.Response[sessionsv1.GetResponse], error) {

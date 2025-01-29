@@ -7,6 +7,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 var testCmd = common.StandardCommand(&cobra.Command{
@@ -20,7 +21,7 @@ var testCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		_, cid, err := r.ConnectionNameOrID(ctx, args[0], "")
+		_, cid, err := r.ConnectionNameOrID(ctx, args[0], "", sdktypes.InvalidOrgID)
 		if err != nil {
 			return err
 		}

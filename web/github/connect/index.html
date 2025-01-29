@@ -1,134 +1,146 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>AutoKitteh - GitHub - New Connection</title>
-    <link
-      rel="apple-touch-icon"
-      sizes="180x180"
-      href="/static/apple-touch-icon.png"
-    />
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="32x32"
-      href="/static/favicon-32x32.png"
-    />
-    <link
-      rel="icon"
-      type="image/png"
-      sizes="16x16"
-      href="/static/favicon-16x16.png"
-    />
-    <link rel="manifest" href="/static/site.webmanifest" />
-    <link rel="stylesheet" type="text/css" href="styles.css" />
-    <meta name="robots" content="noindex, nofollow" />
-    <script src="form.js" defer></script>
-  </head>
 
-  <body>
-    <a href="/" target="_self">
-      <img class="banner" src="/static/banner.svg" alt="AutoKitteh" />
-    </a>
+<head>
+  <title>AutoKitteh - GitHub - New Connection</title>
+  <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png" />
+  <link rel="manifest" href="/static/site.webmanifest" />
+  <link rel="stylesheet" type="text/css" href="styles.css" />
+  <meta name="robots" content="noindex, nofollow" />
+  <script src="form.js" defer></script>
+</head>
 
-    <table class="title">
-      <td><img class="logo" src="/static/images/github.svg" alt="Logo" /></td>
-      <td>
-        <h1>GitHub - Initialize Connection</h1>
-      </td>
-    </table>
+<body>
+  <a href="/" target="_self">
+    <img class="banner" src="/static/banner.svg" alt="AutoKitteh" />
+  </a>
 
-    <div class="toggle-container">
-      <button class="toggle" id="toggletab1" onclick="toggleTab('tab1')">
-        PAT + Webhook
-      </button>
-      <span class="toggle-sep"></span>
-      <button class="toggle" id="toggletab2" onclick="toggleTab('tab2')">
-        GitHub App
-      </button>
-    </div>
+  <table class="title">
+    <td><img class="logo" src="/static/images/github.svg" alt="Logo" /></td>
+    <td>
+      <h1>GitHub - Initialize Connection</h1>
+    </td>
+  </table>
 
-    <div class="tab" id="tab1">
-      <p class="info">
-        <a
-          href="https://docs.autokitteh.com/integrations/github/connection"
-          target="_blank"
-          class="info"
-        >
-          AutoKitteh guide: initializing a connection with a PAT and/or a
-          webhook
-        </a>
-      </p>
+  <div class="toggle-container">
+    <button class="toggle" id="toggletab1" onclick="toggleTab('tab1')">
+      PAT + Webhook
+    </button>
+    <span class="toggle-sep"></span>
+    <button class="toggle" id="toggletab2" onclick="toggleTab('tab2')">
+      GitHub App
+    </button>
+    <span class="toggle-sep"></span>
+    <button class="toggle" id="toggletab3" onclick="toggleTab('tab3')">
+      Custom App
+    </button>
+  </div>
 
-      <!-- TODO(ENG-799): remove ID once its unused -->
-      <form id="pat-form" method="post" action="/github/save">
-        <div class="form-group">
-          <label for="pat">
-            Personal Access Token (PAT) - Fine-Grained or Classic
-          </label>
-          <input
-            type="text"
-            name="pat"
-            autocomplete="off"
-            spellcheck="false"
-            required
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="webhook">Webhook URL</label>
-          <input
-            type="text"
-            id="webhook"
-            name="webhook"
-            value="https://{{.address}}/github/webhook/{{.path}}"
-            readonly
-          />
-          <span class="copy-btn" id="copyButton">Copy</span>
-          <span class="notif" id="notif">Copied</span>
-        </div>
-
-        <div class="form-group">
-          <label for="secret">Webhook Secret</label>
-          <input
-            type="text"
-            name="secret"
-            autocomplete="off"
-            spellcheck="false"
-          />
-        </div>
-
-        <button type="submit" class="submit-btn">Save Connection</button>
-      </form>
-    </div>
-
-    <div class="tab" id="tab2">
-      <p class="info">
-        <a
-          href="https://docs.autokitteh.com/integrations/github/config"
-          target="_blank"
-          class="info"
-        >
-          AutoKitteh guide: configuring the GitHub integration
-        </a>
-      </p>
-      <p class="no-margin">
-        Click the button below to install/update the
-        <strong>AutoKitteh</strong> GitHub app
-      </p>
-      <a id="oauth-link" href="/oauth/start/github" class="clickable">
-        Start OAuth Flow
+  <div class="tab" id="tab1">
+    <p class="info">
+      <a href="https://docs.autokitteh.com/integrations/github/connection" target="_blank" class="info">
+        AutoKitteh guide: initializing a connection with a PAT and/or a
+        webhook
       </a>
-    </div>
+    </p>
 
-    <!-- TODO(ENG-799) -->
-    <script>
-      const queryString = window.location.search;
-      document
-        .getElementById("oauth-link")
-        .setAttribute("href", "/oauth/start/github" + queryString);
-      document
-        .getElementById("pat-form")
-        .setAttribute("action", "/github/save" + queryString);
-    </script>
-  </body>
+    <!-- TODO(ENG-799): remove ID once its unused -->
+    <form id="pat-form" method="post" action="/github/save">
+      <div class="form-group">
+        <label for="pat">
+          Personal Access Token (PAT) - Fine-Grained or Classic
+        </label>
+        <input type="text" name="pat" autocomplete="off" spellcheck="false" required />
+      </div>
+
+      <div class="form-group">
+        <label for="webhook">Webhook URL</label>
+        <input type="text" id="webhook" name="webhook" value="https://{{.address}}/github/webhook/{{.path}}" readonly />
+        <span class="copy-btn" id="copyButton">Copy</span>
+        <span class="notif" id="notif">Copied</span>
+      </div>
+
+      <div class="form-group">
+        <label for="secret">Webhook Secret</label>
+        <input type="text" name="secret" autocomplete="off" spellcheck="false" />
+      </div>
+
+      <button type="submit" class="submit-btn">Save Connection</button>
+    </form>
+  </div>
+
+  <div class="tab" id="tab2">
+    <p class="info">
+      <a href="https://docs.autokitteh.com/integrations/github/config" target="_blank" class="info">
+        AutoKitteh guide: configuring the GitHub integration
+      </a>
+    </p>
+    <p class="no-margin">
+      Click the button below to install/update the
+      <strong>AutoKitteh</strong> GitHub app
+    </p>
+    <a id="oauth-link" href="/oauth/start/github" class="clickable">
+      Start OAuth Flow
+    </a>
+  </div>
+
+  <div class="tab" id="tab3">
+    <p class="info">
+      <a href="https://docs.autokitteh.com/integrations/github/config" target="_blank" class="info">
+        AutoKitteh guide: configuring a custom GitHub app
+      </a>
+    </p>
+
+    <form id="custom-app-form" method="post" action="/github/custom-app">
+      <div class="form-group">
+        <label for="client_id">Client ID</label>
+        <input type="text" name="client_id" autocomplete="off" spellcheck="false" required />
+      </div>
+
+      <div class="form-group">
+        <label for="client_secret">Client Secret</label>
+        <input type="text" name="client_secret" autocomplete="off" spellcheck="false" required />
+      </div>
+
+      <div class="form-group">
+        <label for="app_id">App ID</label>
+        <input type="text" name="app_id" autocomplete="off" spellcheck="false" required />
+      </div>
+
+      <div class="form-group">
+        <label for="webhook_secret">Webhook Secret</label>
+        <input type="text" name="webhook_secret" autocomplete="off" spellcheck="false" required />
+      </div>
+
+      <div class="form-group">
+        <label for="enterprise_url">Enterprise URL (Optional)</label>
+        <input type="text" name="enterprise_url" autocomplete="off" spellcheck="false" />
+      </div>
+
+      <div class="form-group">
+        <label for="private_key">Private Key</label>
+        <textarea name="private_key" autocomplete="off" spellcheck="false" required></textarea>
+      </div>
+
+      <button type="submit" class="submit-btn">Start Custom OAuth Flow</button>
+    </form>
+  </div>
+
+  <!-- TODO(ENG-799) -->
+  <script>
+    const queryString = window.location.search;
+    document
+      .getElementById("oauth-link")
+      .setAttribute("href", "/oauth/start/github" + queryString);
+    document
+      .getElementById("pat-form")
+      .setAttribute("action", "/github/save" + queryString);
+    document
+      .getElementById("custom-app-form")
+      .setAttribute("action", "/github/custom-oauth" + queryString);
+  </script>
+</body>
+
 </html>

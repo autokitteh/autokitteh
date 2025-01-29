@@ -95,7 +95,7 @@ func (r Resolver) DeploymentID(ctx context.Context, id string) (d sdktypes.Deplo
 
 // ConnectionNameOrID returns a connection, based on the given name or
 // ID. If the input is empty, we return nil but not an error.
-func (r Resolver) ConnectionNameOrID(ctx context.Context, nameOrID, project string) (c sdktypes.Connection, cid sdktypes.ConnectionID, err error) {
+func (r Resolver) ConnectionNameOrID(ctx context.Context, nameOrID, project string, oid sdktypes.OrgID) (c sdktypes.Connection, cid sdktypes.ConnectionID, err error) {
 	if nameOrID == "" {
 		return
 	}
@@ -110,11 +110,11 @@ func (r Resolver) ConnectionNameOrID(ctx context.Context, nameOrID, project stri
 		if project == "" {
 			err = fmt.Errorf("invalid connection name %q: missing project prefix", nameOrID)
 		} else {
-			return r.connectionByFullName(ctx, project, parts[0], nameOrID)
+			return r.connectionByFullName(ctx, oid, project, parts[0], nameOrID)
 		}
 		return
 	case 2:
-		return r.connectionByFullName(ctx, parts[0], parts[1], nameOrID)
+		return r.connectionByFullName(ctx, oid, parts[0], parts[1], nameOrID)
 	default:
 		err = fmt.Errorf("invalid connection name %q: too many parts", nameOrID)
 		return
@@ -123,7 +123,7 @@ func (r Resolver) ConnectionNameOrID(ctx context.Context, nameOrID, project stri
 
 // TriggerNameOrID returns a trigger, based on the given name or
 // ID. If the input is empty, we return nil but not an error.
-func (r Resolver) TriggerNameOrID(ctx context.Context, nameOrID, project string) (c sdktypes.Trigger, cid sdktypes.TriggerID, err error) {
+func (r Resolver) TriggerNameOrID(ctx context.Context, oid sdktypes.OrgID, nameOrID, project string) (c sdktypes.Trigger, cid sdktypes.TriggerID, err error) {
 	if nameOrID == "" {
 		return
 	}
@@ -138,11 +138,11 @@ func (r Resolver) TriggerNameOrID(ctx context.Context, nameOrID, project string)
 		if project == "" {
 			err = fmt.Errorf("invalid trigger name %q: missing project prefix", nameOrID)
 		} else {
-			return r.triggerByFullName(ctx, project, parts[0], nameOrID)
+			return r.triggerByFullName(ctx, oid, project, parts[0], nameOrID)
 		}
 		return
 	case 2:
-		return r.triggerByFullName(ctx, parts[0], parts[1], nameOrID)
+		return r.triggerByFullName(ctx, oid, parts[0], parts[1], nameOrID)
 	default:
 		err = fmt.Errorf("invalid trigger name %q: too many parts", nameOrID)
 		return
@@ -164,8 +164,8 @@ func (r Resolver) connectionByID(ctx context.Context, id string) (c sdktypes.Con
 }
 
 // TODO: add type and maybe id to sdkerrors.ErrNotFound and replace NotFoundError below
-func (r Resolver) connectionByFullName(ctx context.Context, projNameOrID, connName, fullName string) (sdktypes.Connection, sdktypes.ConnectionID, error) {
-	pid, err := r.ProjectNameOrID(ctx, projNameOrID)
+func (r Resolver) connectionByFullName(ctx context.Context, oid sdktypes.OrgID, projNameOrID, connName, fullName string) (sdktypes.Connection, sdktypes.ConnectionID, error) {
+	pid, err := r.ProjectNameOrID(ctx, oid, projNameOrID)
 	if err != nil {
 		return sdktypes.InvalidConnection, sdktypes.InvalidConnectionID, err
 	}
@@ -189,8 +189,8 @@ func (r Resolver) connectionByFullName(ctx context.Context, projNameOrID, connNa
 }
 
 // TODO: add type and maybe id to sdkerrors.ErrNotFound and replace NotFoundError below
-func (r Resolver) triggerByFullName(ctx context.Context, projNameOrID, triggerName, fullName string) (sdktypes.Trigger, sdktypes.TriggerID, error) {
-	pid, err := r.ProjectNameOrID(ctx, projNameOrID)
+func (r Resolver) triggerByFullName(ctx context.Context, oid sdktypes.OrgID, projNameOrID, triggerName, fullName string) (sdktypes.Trigger, sdktypes.TriggerID, error) {
+	pid, err := r.ProjectNameOrID(ctx, oid, projNameOrID)
 	if err != nil {
 		return sdktypes.InvalidTrigger, sdktypes.InvalidTriggerID, err
 	}
@@ -303,7 +303,7 @@ func (r Resolver) TriggerID(ctx context.Context, id string) (t sdktypes.Trigger,
 
 // ProjectNameOrID returns a project, based on the given name or ID.
 // If the input is empty, we return nil but not an error.
-func (r Resolver) ProjectNameOrID(ctx context.Context, nameOrID string) (sdktypes.ProjectID, error) {
+func (r Resolver) ProjectNameOrID(ctx context.Context, oid sdktypes.OrgID, nameOrID string) (sdktypes.ProjectID, error) {
 	if nameOrID == "" {
 		return sdktypes.InvalidProjectID, nil
 	}
@@ -312,7 +312,7 @@ func (r Resolver) ProjectNameOrID(ctx context.Context, nameOrID string) (sdktype
 		return r.projectByID(nameOrID)
 	}
 
-	return r.projectByName(ctx, nameOrID)
+	return r.projectByName(ctx, oid, nameOrID)
 }
 
 func (r Resolver) projectByID(id string) (pid sdktypes.ProjectID, err error) {
@@ -324,7 +324,7 @@ func (r Resolver) projectByID(id string) (pid sdktypes.ProjectID, err error) {
 	return
 }
 
-func (r Resolver) projectByName(ctx context.Context, name string) (pid sdktypes.ProjectID, err error) {
+func (r Resolver) projectByName(ctx context.Context, oid sdktypes.OrgID, name string) (pid sdktypes.ProjectID, err error) {
 	org, proj, ok := strings.Cut(name, ".")
 	if !ok {
 		org, proj = "", name
@@ -336,10 +336,11 @@ func (r Resolver) projectByName(ctx context.Context, name string) (pid sdktypes.
 		return
 	}
 
-	var oid sdktypes.OrgID
-	oid, err = r.Org(ctx, org)
-	if err != nil {
-		return
+	if org != "" {
+		oid, err = r.Org(ctx, org)
+		if err != nil {
+			return
+		}
 	}
 
 	p, err := r.Client.Projects().GetByName(ctx, oid, n)

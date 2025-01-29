@@ -54,12 +54,16 @@ HTTP/REST:
 https://commons.wikimedia.org/wiki/File:HTTP_logo.svg
 https://upload.wikimedia.org/wikipedia/commons/5/5b/HTTP_logo.svg
 
+Microsoft:
+https://commons.wikimedia.org/wiki/File:Microsoft_logo.svg
+https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg
+
+Microsoft Teams:
+https://commons.wikimedia.org/wiki/File:Microsoft_Office_Teams_(2018%E2%80%93present).svg
+https://upload.wikimedia.org/wikipedia/commons/c/c9/Microsoft_Office_Teams_%282018%E2%80%93present%29.svg
+
 OpenAI ChatGPT:
 https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg
-
-ProxySQL:
-https://github.com/ProxySQL
-https://avatars.githubusercontent.com/u/29518891?s=200&v=4
 
 Redis:
 https://redis.com/brand-guidelines/

@@ -4,6 +4,7 @@
 asana ~= 5.0
 atlassian-python-api ~= 3.41
 auth0-python ~= 4.7
+azure-identity ~= 1.19
 boto3 ~= 1.35
 discord.py ~= 2.4
 google-api-python-client ~= 2.155
@@ -11,6 +12,7 @@ google-auth-httplib2 ~= 0.2
 google-auth-oauthlib ~= 1.2
 google-generativeai ~= 0.8
 hubspot-api-client ~= 11.1
+msgraph-sdk ~= 1.18
 openai ~= 1.57
 PyGithub @ git+https://github.com/PyGithub/PyGithub.git@b5f8f078f2b7fc0db6a041499c7a05b0bc7e750d
 slack-sdk ~= 3.33

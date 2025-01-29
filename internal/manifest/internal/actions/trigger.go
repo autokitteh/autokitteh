@@ -6,6 +6,7 @@ type CreateTriggerAction struct {
 	Key           string           `json:"key"`
 	ConnectionKey *string          `json:"connection"`
 	ProjectKey    string           `json:"project"`
+	OrgID         sdktypes.OrgID   `json:"org_id,omitempty"`
 	Trigger       sdktypes.Trigger `json:"trigger"`
 }
 
@@ -21,6 +22,7 @@ type UpdateTriggerAction struct {
 	Key           string           `json:"key"`
 	ConnectionKey *string          `json:"connection"`
 	ProjectKey    string           `json:"project"`
+	OrgID         sdktypes.OrgID   `json:"org_id"`
 	Trigger       sdktypes.Trigger `json:"trigger"`
 }
 
