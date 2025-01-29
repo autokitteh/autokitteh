@@ -184,7 +184,7 @@ func (cr *Cron) checkGmailEventWatch(ctx context.Context, cid sdktypes.Connectio
 		l.Warn("invalid Gmail event watch expiration time during renewal check",
 			zap.String("expiration", e), zap.Error(err),
 		)
-		return false
+		return true // Invalid expiration time: don't ignore watch, solve by renewing it.
 	}
 
 	// Update this event watch only if it's about to expire in less than 3 days.
@@ -207,7 +207,7 @@ func (cr *Cron) checkGoogleCalendarEventWatch(ctx context.Context, cid sdktypes.
 		l.Warn("invalid Google Calendar event watch expiration timestamp",
 			zap.String("expiration", e), zap.Error(err),
 		)
-		return false
+		return true // Invalid expiration time: don't ignore watch, solve by renewing it.
 	}
 
 	// Update this event watch only if it's about to expire in less than 3 days.
@@ -230,7 +230,7 @@ func (cr *Cron) checkGoogleDriveEventWatch(ctx context.Context, cid sdktypes.Con
 		l.Warn("invalid Google Drive event watch expiration timestamp",
 			zap.String("expiration", e), zap.Error(err),
 		)
-		return false
+		return true // Invalid expiration time: don't ignore watch, solve by renewing it.
 	}
 
 	// Update this event watch only if it's about to expire in less than 3 days.
@@ -253,7 +253,7 @@ func (cr *Cron) checkGoogleFormsEventWatch(ctx context.Context, cid sdktypes.Con
 		l.Warn("invalid Google Forms event watch expiration time during renewal check",
 			zap.String("expiration", e), zap.Error(err),
 		)
-		return false
+		return true // Invalid expiration time: don't ignore watch, solve by renewing it.
 	}
 
 	// Update this event watch only if it's about to expire in less than 3 days.

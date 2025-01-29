@@ -87,7 +87,7 @@ func (cr *Cron) checkJiraEventWatch(ctx context.Context, cid sdktypes.Connection
 		l.Warn("invalid Jira event watch expiration time during renewal check",
 			zap.String("expiration", e), zap.Error(err),
 		)
-		return false
+		return true // Invalid expiration time: don't ignore watch, solve by renewing it.
 	}
 
 	// Update this event watch only if it's about to expire in less than 2 weeks.
