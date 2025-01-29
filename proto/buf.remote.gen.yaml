@@ -22,6 +22,9 @@ plugins:
     opt: pyi_out
   - remote: buf.build/grpc/python:v1.66.2
     out: ../runtimes/pythonrt/runner/pb
+  - remote: buf.build/connectrpc/es:v1.1.4
+    out: ../runtimes/nodejsrt/runner/pb
+    opt: target=ts
 
 inputs:
   - directory: .
