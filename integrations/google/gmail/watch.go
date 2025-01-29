@@ -39,10 +39,10 @@ func UpdateWatch(ctx context.Context, v sdkservices.Vars, cid sdktypes.Connectio
 	}
 
 	hid := strconv.FormatUint(watch.HistoryId, 10)
-	exp := time.Unix(watch.Expiration/1000, 0).UTC()
+	exp := time.Unix(watch.Expiration/1000, 0).UTC().Format(time.RFC3339)
 	vs := sdktypes.NewVars(
 		sdktypes.NewVar(vars.GmailHistoryID).SetValue(hid),
-		sdktypes.NewVar(vars.GmailWatchExpiration).SetValue(exp.Format(time.RFC3339)),
+		sdktypes.NewVar(vars.GmailWatchExpiration).SetValue(exp),
 	).WithScopeID(sdktypes.NewVarScopeID(cid))
 
 	if err := v.Set(ctx, vs...); err != nil {
