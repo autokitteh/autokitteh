@@ -30,13 +30,13 @@ const runnerChResponseTimeout = 5 * time.Second
 type workerGRPCHandler struct {
 	userCode.HandlerServiceServer
 
-	runnerIDsToRuntime map[string]*pySvc
+	runnerIDsToRuntime map[string]*nodejsSvc
 	mu                 *sync.Mutex
 	log                *zap.Logger
 }
 
 var w = workerGRPCHandler{
-	runnerIDsToRuntime: map[string]*pySvc{},
+	runnerIDsToRuntime: map[string]*nodejsSvc{},
 	mu:                 new(sync.Mutex),
 }
 
@@ -48,7 +48,7 @@ func ConfigureWorkerGRPCHandler(l *zap.Logger, mux *http.ServeMux) {
 	mux.Handle(path, srv)
 }
 
-func addRunnerToServer(runnerID string, svc *pySvc) error {
+func addRunnerToServer(runnerID string, svc *nodejsSvc) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 

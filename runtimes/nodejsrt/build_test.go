@@ -17,7 +17,7 @@ import (
 func TestBuildFiles(t *testing.T) {
 	m := map[string][]byte{
 		"autokitteh.yaml":         []byte("ak"),
-		"program.py":              []byte("py"),
+		"program.js":              []byte("js"),
 		".gitignore":              []byte("git"),
 		"__pycache__/program.pyc": []byte("pyc"),
 	}
@@ -27,11 +27,11 @@ func TestBuildFiles(t *testing.T) {
 
 	log, err := zap.NewDevelopment()
 	require.NoError(t, err)
-	py := pySvc{
+	js := nodejsSvc{
 		log: log,
 	}
 
-	ba, err := py.Build(context.Background(), mfs, ".", nil)
+	ba, err := js.Build(context.Background(), mfs, ".", nil)
 	require.NoError(t, err)
 
 	tarData, ok := ba.CompiledData()[archiveKey]
@@ -48,6 +48,6 @@ func TestBuildFiles(t *testing.T) {
 		names = append(names, hdr.Name)
 	}
 
-	expected := []string{"autokitteh.yaml", "program.py"}
+	expected := []string{"autokitteh.yaml", "program.js"}
 	require.Equal(t, expected, names)
 }

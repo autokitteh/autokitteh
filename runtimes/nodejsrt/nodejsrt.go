@@ -58,7 +58,7 @@ type comChannels struct {
 	callback chan *callbackMessage
 }
 
-type pySvc struct {
+type nodejsSvc struct {
 	cfg       *Config
 	ctx       context.Context
 	log       *zap.Logger
@@ -83,17 +83,17 @@ type pySvc struct {
 	syscallFn sdktypes.Value
 }
 
-func (py *pySvc) cleanup(ctx context.Context) {
-	if err := runnerManager.Stop(ctx, py.runnerID); err != nil {
-		py.log.Warn("stop manager", zap.Error(err))
+func (js *nodejsSvc) cleanup(ctx context.Context) {
+	if err := runnerManager.Stop(ctx, js.runnerID); err != nil {
+		js.log.Warn("stop manager", zap.Error(err))
 	}
 
-	if err := py.runner.Close(); err != nil {
-		py.log.Warn("close runner", zap.Error(err))
+	if err := js.runner.Close(); err != nil {
+		js.log.Warn("close runner", zap.Error(err))
 	}
 
-	if err := removeRunnerFromServer(py.runnerID); err != nil {
-		py.log.Warn("remove runner from grpc", zap.Error(err))
+	if err := removeRunnerFromServer(js.runnerID); err != nil {
+		js.log.Warn("remove runner from grpc", zap.Error(err))
 	}
 }
 
@@ -149,7 +149,7 @@ func New(cfg *Config, l *zap.Logger, getLocalAddr func() string) (*sdkruntimes.R
 func newSvc(cfg *Config, l *zap.Logger) (sdkservices.Runtime, error) {
 	l = l.With(zap.String("runtime", "python"))
 
-	svc := pySvc{
+	svc := nodejsSvc{
 		cfg:       cfg,
 		log:       l,
 		firstCall: true,
@@ -166,7 +166,7 @@ func newSvc(cfg *Config, l *zap.Logger) (sdkservices.Runtime, error) {
 	return &svc, nil
 }
 
-func (py *pySvc) Get() sdktypes.Runtime { return desc }
+func (js *nodejsSvc) Get() sdktypes.Runtime { return desc }
 
 const archiveKey = "code.tar"
 
@@ -244,7 +244,7 @@ It'll load the Python module and set the list of exported names.
 mainPath is in the form `issues.py:on_issue`, Python will load the `issues` module.
 Run *does not* execute a function in the Python module, this happens in Call.
 */
-func (py *pySvc) Run(
+func (js *nodejsSvc) Run(
 	ctx context.Context,
 	runID sdktypes.RunID,
 	sessionID sdktypes.SessionID,
@@ -254,17 +254,17 @@ func (py *pySvc) Run(
 	cbs *sdkservices.RunCallbacks,
 ) (sdkservices.Run, error) {
 	runnerOK := false
-	py.ctx = ctx
-	py.runID = runID
-	py.sessionID = sessionID
-	py.xid = sdktypes.NewExecutorID(runID) // Should be first
-	py.log = py.log.With(
+	js.ctx = ctx
+	js.runID = runID
+	js.sessionID = sessionID
+	js.xid = sdktypes.NewExecutorID(runID) // Should be first
+	js.log = js.log.With(
 		zap.String("run_id", runID.String()),
 		zap.String("session_id", sessionID.String()),
 		zap.String("path", mainPath),
 	)
 
-	py.cbs = cbs
+	js.cbs = cbs
 
 	// Load environment defined by user in the `vars` section of the manifest,
 	// these are injected to the Python subprocess environment.
@@ -272,7 +272,7 @@ func (py *pySvc) Run(
 	if err != nil {
 		return nil, fmt.Errorf("can't load env : %w", err)
 	}
-	py.envVars = kittehs.TransformMap(env, func(key string, value sdktypes.Value) (string, string) {
+	js.envVars = kittehs.TransformMap(env, func(key string, value sdktypes.Value) (string, string) {
 		return key, value.GetString().Value()
 	})
 
@@ -281,73 +281,73 @@ func (py *pySvc) Run(
 		return nil, fmt.Errorf("%q note found in compiled data", archiveKey)
 	}
 
-	py.syscallFn, err = loadSyscall(values)
+	js.syscallFn, err = loadSyscall(values)
 	if err != nil {
 		return nil, fmt.Errorf("can't load syscall: %w", err)
 	}
 
-	runnerID, runner, err := runnerManager.Start(ctx, sessionID, tarData, py.envVars)
+	runnerID, runner, err := runnerManager.Start(ctx, sessionID, tarData, js.envVars)
 	if err != nil {
 		return nil, fmt.Errorf("starting runner: %w", err)
 	}
 
 	defer func() {
 		if !runnerOK {
-			py.cleanup(ctx)
+			js.cleanup(ctx)
 		}
 	}()
 
-	if err := addRunnerToServer(runnerID, py); err != nil {
+	if err := addRunnerToServer(runnerID, js); err != nil {
 		return nil, err
 	}
 
-	py.runner = runner
-	py.runnerID = runnerID
+	js.runner = runner
+	js.runnerID = runnerID
 	defer func() {
 		if runnerOK {
 			return
 		}
-		py.cleanup(ctx)
+		js.cleanup(ctx)
 	}()
 
-	py.fileName = entryPointFileName(mainPath)
+	js.fileName = entryPointFileName(mainPath)
 	req := pbUserCode.ExportsRequest{
-		FileName: py.fileName,
+		FileName: js.fileName,
 	}
 
-	resp, err := py.runner.Exports(ctx, &req)
+	resp, err := js.runner.Exports(ctx, &req)
 	if err != nil {
 		return nil, err
 	}
 
-	py.log.Debug("loaded exports", zap.Any("entries", resp.Exports))
-	exports, err := entriesToValues(py.xid, resp.Exports)
+	js.log.Debug("loaded exports", zap.Any("entries", resp.Exports))
+	exports, err := entriesToValues(js.xid, resp.Exports)
 	if err != nil {
-		py.log.Error("can't create module entries", zap.Error(err))
+		js.log.Error("can't create module entries", zap.Error(err))
 		return nil, fmt.Errorf("can't create module entries: %w", err)
 	}
-	py.exports = exports
+	js.exports = exports
 
 	runnerOK = true // All is good, don't kill Python subprocess.
 
-	py.log.Info("run created")
-	return py, nil
+	js.log.Info("run created")
+	return js, nil
 }
 
-func (py *pySvc) ID() sdktypes.RunID              { return py.runID }
-func (py *pySvc) ExecutorID() sdktypes.ExecutorID { return py.xid }
+func (js *nodejsSvc) ID() sdktypes.RunID              { return js.runID }
+func (js *nodejsSvc) ExecutorID() sdktypes.ExecutorID { return js.xid }
 
-func (py *pySvc) Values() map[string]sdktypes.Value {
-	return py.exports
+func (js *nodejsSvc) Values() map[string]sdktypes.Value {
+	return js.exports
 }
 
-func (py *pySvc) Close() {
-	py.log.Info("closing (not really)")
+func (js *nodejsSvc) Close() {
+	js.log.Info("closing (not really)")
 	// AK calls Close after `Run`, but we need the Python process running for `Call` as well.
 	// We kill the Python process once the initial `Call` is completed.
 }
 
-func (py *pySvc) kwToEvent(kwargs map[string]sdktypes.Value) (map[string]any, error) {
+func (js *nodejsSvc) kwToEvent(kwargs map[string]sdktypes.Value) (map[string]any, error) {
 	unw := sdktypes.ValueWrapper{IgnoreFunctions: true, SafeForJSON: true}.Unwrap
 	return kittehs.TransformMapValuesError(kwargs, unw)
 }
@@ -367,47 +367,47 @@ func pyLevelToZap(level string) zapcore.Level {
 	return zap.InfoLevel
 }
 
-func (py *pySvc) call(ctx context.Context, val sdktypes.Value, args []sdktypes.Value, kw map[string]sdktypes.Value) {
+func (js *nodejsSvc) call(ctx context.Context, val sdktypes.Value, args []sdktypes.Value, kw map[string]sdktypes.Value) {
 	var req pbUserCode.ActivityReplyRequest
 
-	out, err := py.cbs.Call(py.ctx, py.runID, val, args, kw)
+	out, err := js.cbs.Call(js.ctx, js.runID, val, args, kw)
 	switch {
 	case err != nil:
-		py.log.Info("activity reply error", zap.Error(err))
+		js.log.Info("activity reply error", zap.Error(err))
 		req.Error = err.Error()
 	case !out.IsCustom():
-		py.log.Error("activity reply value not Custom", zap.Any("value", out))
+		js.log.Error("activity reply value not Custom", zap.Any("value", out))
 		req.Error = fmt.Sprintf("activity reply not custom (%v)", out)
 	default:
 		req.Result = out.ToProto()
-		req.Result.Custom.ExecutorId = py.xid.String()
+		req.Result.Custom.ExecutorId = js.xid.String()
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
 
-	if _, err = py.runner.ActivityReply(ctx, &req); err != nil {
-		py.log.Error("activity reply error", zap.Error(err))
+	if _, err = js.runner.ActivityReply(ctx, &req); err != nil {
+		js.log.Error("activity reply error", zap.Error(err))
 		req := pbUserCode.DoneRequest{
-			RunnerId: py.runnerID,
+			RunnerId: js.runnerID,
 			Error:    err.Error(),
 		}
-		py.channels.done <- &req
+		js.channels.done <- &req
 	}
 }
 
-func (py *pySvc) setupCallbacksListeningLoop(ctx context.Context) chan (error) {
+func (js *nodejsSvc) setupCallbacksListeningLoop(ctx context.Context) chan (error) {
 	callbackErrChan := make(chan error, 1)
 	go func() {
 		for {
 			select {
-			case r := <-py.channels.log:
-				py.log.Log(pyLevelToZap(r.level), r.message)
+			case r := <-js.channels.log:
+				js.log.Log(pyLevelToZap(r.level), r.message)
 				close(r.doneChannel)
-			case p := <-py.channels.print:
-				py.cbs.Print(ctx, py.runID, p.message)
+			case p := <-js.channels.print:
+				js.cbs.Print(ctx, js.runID, p.message)
 				close(p.doneChannel)
-			case r := <-py.channels.request:
+			case r := <-js.channels.request:
 				var (
 					fnName = "pyFunc"
 					args   []sdktypes.Value
@@ -429,21 +429,21 @@ func (py *pySvc) setupCallbacksListeningLoop(ctx context.Context) chan (error) {
 				}
 
 				// it was already checked before we got here
-				fn, err := sdktypes.NewFunctionValue(py.xid, fnName, r.Data, nil, pyModuleFunc)
+				fn, err := sdktypes.NewFunctionValue(js.xid, fnName, r.Data, nil, pyModuleFunc)
 				if err != nil {
 					callbackErrChan <- err
 					return
 				}
-				py.call(ctx, fn, args, kw)
-			case cb := <-py.channels.callback:
-				val, err := py.cbs.Call(ctx, py.runID, py.syscallFn, cb.args, cb.kwargs)
+				js.call(ctx, fn, args, kw)
+			case cb := <-js.channels.callback:
+				val, err := js.cbs.Call(ctx, js.runID, js.syscallFn, cb.args, cb.kwargs)
 				if err != nil {
 					cb.errorChannel <- err
 				} else {
 					cb.successChannel <- val
 				}
 			case <-ctx.Done():
-				py.log.Debug("stopping callback handling loop")
+				js.log.Debug("stopping callback handling loop")
 				return
 			}
 		}
@@ -452,15 +452,15 @@ func (py *pySvc) setupCallbacksListeningLoop(ctx context.Context) chan (error) {
 	return callbackErrChan
 }
 
-func (py *pySvc) startRequest(ctx context.Context, funcName string, eventData []byte) error {
+func (js *nodejsSvc) startRequest(ctx context.Context, funcName string, eventData []byte) error {
 
 	req := pbUserCode.StartRequest{
-		EntryPoint: fmt.Sprintf("%s:%s", py.fileName, funcName),
+		EntryPoint: fmt.Sprintf("%s:%s", js.fileName, funcName),
 		Event: &pbUserCode.Event{
 			Data: eventData,
 		},
 	}
-	if _, err := py.runner.Start(ctx, &req); err != nil {
+	if _, err := js.runner.Start(ctx, &req); err != nil {
 		// TODO: Handle traceback
 		return err
 	}
@@ -468,26 +468,26 @@ func (py *pySvc) startRequest(ctx context.Context, funcName string, eventData []
 	return nil
 }
 
-func (py *pySvc) setupHealthcheck(ctx context.Context) chan (error) {
+func (js *nodejsSvc) setupHealthcheck(ctx context.Context) chan (error) {
 
 	runnerHealthChan := make(chan error, 1)
 	go func() {
 		for {
 			select {
 			case <-ctx.Done():
-				py.log.Debug("health check loop stopped")
+				js.log.Debug("health check loop stopped")
 				return
 			case <-time.After(10 * time.Second):
 				healthReq := pbUserCode.RunnerHealthRequest{}
 
-				resp, err := py.runner.Health(ctx, &healthReq)
+				resp, err := js.runner.Health(ctx, &healthReq)
 				if err != nil { // no network/lost packet.load? for sanity check the state locally via IPC/signals
-					err = runnerManager.RunnerHealth(ctx, py.runnerID)
+					err = runnerManager.RunnerHealth(ctx, js.runnerID)
 				} else if resp.Error != "" {
 					err = fmt.Errorf("grpc: %s", resp.Error)
 				}
 				if err != nil {
-					py.log.Error("runner health failed", zap.Error(err))
+					js.log.Error("runner health failed", zap.Error(err))
 
 					// TODO: ENG-1675 - cleanup runner junk
 
@@ -503,25 +503,25 @@ func (py *pySvc) setupHealthcheck(ctx context.Context) chan (error) {
 
 // initialCall handles initial call from autokitteh, it does the message loop with Python.
 // We split it from Call since Call is also used to execute activities.
-func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+func (js *nodejsSvc) initialCall(ctx context.Context, funcName string, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	if len(args) > 0 {
 		return sdktypes.InvalidValue, errors.New("initial call can't have positional args")
 	}
 
 	defer func() {
-		py.cleanup(ctx)
-		py.log.Info("Python subprocess cleanup after initial call is done")
+		js.cleanup(ctx)
+		js.log.Info("Python subprocess cleanup after initial call is done")
 	}()
 
-	py.log.Info("initial call", zap.Any("func", funcName))
-	event, err := py.kwToEvent(kwargs)
+	js.log.Info("initial call", zap.Any("func", funcName))
+	event, err := js.kwToEvent(kwargs)
 	if err != nil {
-		py.log.Error("can't convert event", zap.Error(err))
+		js.log.Error("can't convert event", zap.Error(err))
 		return sdktypes.InvalidValue, fmt.Errorf("can't convert: %w", err)
 	}
 
 	keys := slices.Collect(maps.Keys(event))
-	py.log.Info("event", zap.Any("keys", keys))
+	js.log.Info("event", zap.Any("keys", keys))
 
 	eventData, err := json.Marshal(event)
 	if err != nil {
@@ -530,13 +530,13 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 
 	cancellableCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	callbackErrChan := py.setupCallbacksListeningLoop(cancellableCtx)
+	callbackErrChan := js.setupCallbacksListeningLoop(cancellableCtx)
 
-	if err := py.startRequest(ctx, funcName, eventData); err != nil {
+	if err := js.startRequest(ctx, funcName, eventData); err != nil {
 		return sdktypes.InvalidValue, fmt.Errorf("start request: %w", err)
 	}
 
-	runnerHealthChan := py.setupHealthcheck(cancellableCtx)
+	runnerHealthChan := js.setupHealthcheck(cancellableCtx)
 
 	// Wait for client Done message
 	var done *pbUserCode.DoneRequest
@@ -548,29 +548,29 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 			}
 		case callbackErr := <-callbackErrChan:
 			return sdktypes.InvalidValue, callbackErr
-		case v := <-py.channels.done:
-			py.log.Info("done signal", zap.String("error", v.Error))
+		case v := <-js.channels.done:
+			js.log.Info("done signal", zap.String("error", v.Error))
 			pCtx, cancel := context.WithTimeout(ctx, time.Second)
 			defer cancel()
-			py.drainPrints(pCtx)
+			js.drainPrints(pCtx)
 
 			done = v
 			if done.Error != "" {
-				py.log.Info("done error", zap.String("error", done.Error))
+				js.log.Info("done error", zap.String("error", done.Error))
 				perr := sdktypes.NewProgramError(
 					sdktypes.NewStringValue(done.Error),
-					py.tracebackToLocation(done.Traceback),
+					js.tracebackToLocation(done.Traceback),
 					map[string]string{"raw": done.Error},
 				)
 				return sdktypes.InvalidValue, perr.ToError()
 			}
 
 			if done.Result == nil {
-				py.log.Error("done: nil result")
+				js.log.Error("done: nil result")
 				return sdktypes.InvalidValue, errors.New("done result is nil")
 			}
 
-			done.Result.Custom.ExecutorId = py.xid.String()
+			done.Result.Custom.ExecutorId = js.xid.String()
 			return sdktypes.ValueFromProto(done.Result)
 		case <-ctx.Done():
 			return sdktypes.InvalidValue, fmt.Errorf("context expired - %w", ctx.Err())
@@ -579,22 +579,22 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 }
 
 // drainPrints drains the print channel at the end of a run.
-func (py *pySvc) drainPrints(ctx context.Context) {
+func (js *nodejsSvc) drainPrints(ctx context.Context) {
 	// flush the rest of the prints and logs.
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case r := <-py.channels.log:
-			py.log.Log(pyLevelToZap(r.level), r.message)
-		case r := <-py.channels.print:
-			py.cbs.Print(ctx, py.runID, r.message)
+		case r := <-js.channels.log:
+			js.log.Log(pyLevelToZap(r.level), r.message)
+		case r := <-js.channels.print:
+			js.cbs.Print(ctx, js.runID, r.message)
 			close(r.doneChannel)
 		}
 	}
 }
 
-func (py *pySvc) tracebackToLocation(traceback []*pbUserCode.Frame) []sdktypes.CallFrame {
+func (js *nodejsSvc) tracebackToLocation(traceback []*pbUserCode.Frame) []sdktypes.CallFrame {
 	frames := make([]sdktypes.CallFrame, len(traceback))
 	for i, f := range traceback {
 		var err error
@@ -608,7 +608,7 @@ func (py *pySvc) tracebackToLocation(traceback []*pbUserCode.Frame) []sdktypes.C
 			},
 		})
 		if err != nil {
-			py.log.Warn("can't translate traceback frame", zap.Error(err))
+			js.log.Warn("can't translate traceback frame", zap.Error(err))
 		}
 	}
 
@@ -617,19 +617,19 @@ func (py *pySvc) tracebackToLocation(traceback []*pbUserCode.Frame) []sdktypes.C
 
 // Call handles a function call from autokitteh.
 // First used of Call start a workflow, later invocations are activity calls.
-func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+func (js *nodejsSvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	fn := v.GetFunction()
 	if !fn.IsValid() {
-		py.log.Error("call - invalid function", zap.Any("function", v))
+		js.log.Error("call - invalid function", zap.Any("function", v))
 		return sdktypes.InvalidValue, fmt.Errorf("%#v is not a function", v)
 	}
 
 	fnName := fn.Name().String()
-	py.log.Info("call", zap.String("func", fnName))
+	js.log.Info("call", zap.String("func", fnName))
 
-	if py.firstCall {
-		py.firstCall = false
-		return py.initialCall(ctx, fnName, args, kwargs)
+	if js.firstCall {
+		js.firstCall = false
+		return js.initialCall(ctx, fnName, args, kwargs)
 	}
 
 	done := make(chan struct{})
@@ -638,11 +638,11 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 	go func() {
 		for {
 			select {
-			case r := <-py.channels.log:
-				py.log.Log(pyLevelToZap(r.level), r.message)
+			case r := <-js.channels.log:
+				js.log.Log(pyLevelToZap(r.level), r.message)
 				close(r.doneChannel)
-			case p := <-py.channels.print:
-				py.cbs.Print(ctx, py.runID, p.message)
+			case p := <-js.channels.print:
+				js.cbs.Print(ctx, js.runID, p.message)
 				close(p.doneChannel)
 			case <-done:
 				return
@@ -654,14 +654,14 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 	req := pbUserCode.ExecuteRequest{
 		Data: fn.Data(),
 	}
-	resp, err := py.runner.Execute(ctx, &req)
+	resp, err := js.runner.Execute(ctx, &req)
 	switch {
 	case err != nil:
 		return sdktypes.InvalidValue, err
 	case resp.Error != "":
-		py.log.Warn("activity error", zap.String("error", resp.Error))
+		js.log.Warn("activity error", zap.String("error", resp.Error))
 	}
 
-	resp.Result.Custom.ExecutorId = py.xid.String()
+	resp.Result.Custom.ExecutorId = js.xid.String()
 	return sdktypes.ValueFromProto(resp.Result)
 }

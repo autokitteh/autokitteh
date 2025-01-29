@@ -34,8 +34,8 @@ func isBuildFile(entry fs.DirEntry) bool {
 
 // TODO: Move build to runner
 // TODO: optional, build manager like remote runner vs local runner
-func (py *pySvc) Build(ctx context.Context, fsys fs.FS, path string, values []sdktypes.Symbol) (sdktypes.BuildArtifact, error) {
-	py.log.Info("build Python module", zap.String("path", path))
+func (js *nodejsSvc) Build(ctx context.Context, fsys fs.FS, path string, values []sdktypes.Symbol) (sdktypes.BuildArtifact, error) {
+	js.log.Info("build Python module", zap.String("path", path))
 
 	ffs, err := kittehs.NewFilterFS(fsys, isBuildFile)
 	if err != nil {
@@ -44,7 +44,7 @@ func (py *pySvc) Build(ctx context.Context, fsys fs.FS, path string, values []sd
 
 	data, err := createTar(ffs)
 	if err != nil {
-		py.log.Error("create tar", zap.Error(err))
+		js.log.Error("create tar", zap.Error(err))
 		return sdktypes.InvalidBuildArtifact, err
 	}
 
@@ -60,11 +60,11 @@ func (py *pySvc) Build(ctx context.Context, fsys fs.FS, path string, values []sd
 			break
 		}
 		if err != nil {
-			py.log.Error("next tar", zap.Error(err))
+			js.log.Error("next tar", zap.Error(err))
 			return sdktypes.InvalidBuildArtifact, err
 		}
 
-		if !strings.HasSuffix(hdr.Name, ".py") {
+		if !strings.HasSuffix(hdr.Name, ".js") {
 			continue
 		}
 
@@ -74,9 +74,9 @@ func (py *pySvc) Build(ctx context.Context, fsys fs.FS, path string, values []sd
 	var art sdktypes.BuildArtifact
 	art = art.WithCompiledData(compiledData)
 
-	exports, err := findExports(py.log, fsys)
+	exports, err := findExports(js.log, fsys)
 	if err != nil {
-		py.log.Error("get exports", zap.Error(err))
+		js.log.Error("get exports", zap.Error(err))
 		return sdktypes.InvalidBuildArtifact, err
 	}
 

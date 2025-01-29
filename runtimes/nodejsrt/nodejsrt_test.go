@@ -71,10 +71,10 @@ func isFSFile(fsys fs.FS, path string) bool {
 	return !info.IsDir()
 }
 
-func newSVC(t *testing.T) *pySvc {
+func newSVC(t *testing.T) *nodejsSvc {
 	rt, err := newSvc(Configs.Default, zap.NewNop())
 	require.NoError(t, err, "New")
-	svc, ok := rt.(*pySvc)
+	svc, ok := rt.(*nodejsSvc)
 	require.Truef(t, ok, "type assertion failed, got %T", rt)
 
 	return svc
@@ -140,7 +140,7 @@ func newValues(t *testing.T, runID sdktypes.RunID) (sdktypes.ModuleFunction, map
 	return mod, map[string]sdktypes.Value{"ak": ak}
 }
 
-func newCallbacks(svc *pySvc) *sdkservices.RunCallbacks {
+func newCallbacks(svc *nodejsSvc) *sdkservices.RunCallbacks {
 	cbs := sdkservices.RunCallbacks{
 		Call: func(
 			ctx context.Context,
