@@ -88,6 +88,10 @@ func (cr *Cron) Start(ctx context.Context, c sdkservices.Connections, v sdkservi
 
 	w.RegisterWorkflowWithOptions(cr.workflow, workflow.RegisterOptions{Name: workflowName})
 
+	w.RegisterWorkflow(cr.renewGmailEventWatchesWorkflow)
+	w.RegisterActivity(cr.listGmailConnectionsActivity)
+	w.RegisterActivity(cr.renewGmailEventWatchActivity)
+
 	w.RegisterWorkflow(cr.renewGoogleCalendarEventWatchesWorkflow)
 	w.RegisterActivity(cr.listGoogleCalendarConnectionsActivity)
 	w.RegisterActivity(cr.renewGoogleCalendarEventWatchActivity)
@@ -98,7 +102,7 @@ func (cr *Cron) Start(ctx context.Context, c sdkservices.Connections, v sdkservi
 
 	w.RegisterWorkflow(cr.renewGoogleFormsEventWatchesWorkflow)
 	w.RegisterActivity(cr.listGoogleFormsConnectionsActivity)
-	w.RegisterActivity(cr.renewGoogleFormsEventWatchActivity)
+	w.RegisterActivity(cr.renewGoogleFormsEventWatchesActivity)
 
 	w.RegisterWorkflow(cr.renewJiraEventWatchesWorkflow)
 	w.RegisterActivity(cr.listJiraConnectionsActivity)

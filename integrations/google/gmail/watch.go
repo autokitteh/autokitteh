@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 
 	"go.uber.org/zap"
 	"google.golang.org/api/gmail/v1"
@@ -34,6 +36,17 @@ func UpdateWatch(ctx context.Context, v sdkservices.Vars, cid sdktypes.Connectio
 	watch, err := api{vars: v, cid: cid}.watch(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create Gmail watch: %w", err)
+	}
+
+	hid := strconv.FormatUint(watch.HistoryId, 10)
+	exp := time.Unix(watch.Expiration/1000, 0).UTC()
+	vs := sdktypes.NewVars(
+		sdktypes.NewVar(vars.GmailHistoryID).SetValue(hid),
+		sdktypes.NewVar(vars.GmailWatchExpiration).SetValue(exp.Format(time.RFC3339)),
+	).WithScopeID(sdktypes.NewVarScopeID(cid))
+
+	if err := v.Set(ctx, vs...); err != nil {
+		return fmt.Errorf("failed to save Gmail watch: %w", err)
 	}
 
 	l.Info("Created Gmail user mailbox watch", zap.Any("watch", watch))
