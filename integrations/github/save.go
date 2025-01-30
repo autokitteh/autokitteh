@@ -19,32 +19,26 @@ import (
 func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, desc)
 
-	var form url.Values
-	if r.Method == "GET" {
-		form = r.URL.Query()
-	} else {
-		// Check "Content-Type" header.
-		contentType := r.Header.Get(headerContentType)
-		if !strings.HasPrefix(contentType, contentTypeForm) {
-			c.AbortBadRequest("unexpected content type")
-			return
-		}
-
-		// Read and parse POST request body.
-		if err := r.ParseForm(); err != nil {
-			l.Warn("Failed to parse incoming HTTP request", zap.Error(err))
-			c.AbortBadRequest("failed to parse form data")
-			return
-		}
-		form = r.Form
+	// Check "Content-Type" header.
+	contentType := r.Header.Get(headerContentType)
+	if !strings.HasPrefix(contentType, contentTypeForm) {
+		c.AbortBadRequest("unexpected content type")
+		return
 	}
 
-	if form.Get("client_id") == "" || form.Get("client_secret") == "" {
+	// Read and parse POST request body.
+	if err := r.ParseForm(); err != nil {
+		l.Warn("Failed to parse incoming HTTP request", zap.Error(err))
+		c.AbortBadRequest("failed to parse form data")
+		return
+	}
+
+	if r.Form.Get("client_id") == "" || r.Form.Get("client_secret") == "" {
 		c.AbortBadRequest("missing client ID or client secret")
 		return
 	}
 
-	if err := h.saveClientIDAndSecret(r.Context(), c, form); err != nil {
+	if err := h.saveClientIDAndSecret(r.Context(), c, r.Form); err != nil {
 		l.Warn("Failed to save client ID and secret", zap.Error(err))
 		c.AbortBadRequest("failed to save client ID and secret")
 		return
