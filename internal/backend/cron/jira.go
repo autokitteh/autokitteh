@@ -99,7 +99,7 @@ func (cr *Cron) checkJiraEventWatch(ctx context.Context, cid sdktypes.Connection
 
 func (cr *Cron) renewJiraEventWatchActivity(ctx context.Context, cid sdktypes.ConnectionID) error {
 	l := cr.logger.With(zap.String("connection_id", cid.String()))
-	l.Sugar().Debugf("renewing Jira event watch in: ", cid.String())
+	l.Debug("renewing Jira event watch in: " + cid.String())
 
 	ctx = authcontext.SetAuthnSystemUser(ctx)
 	vsid := sdktypes.NewVarScopeID(cid)
@@ -186,7 +186,7 @@ func (cr *Cron) renewJiraEventWatchActivity(ctx context.Context, cid sdktypes.Co
 		return err
 	}
 
-	l.Sugar().Debugf("finished renewing Jira event watch in: ", cid.String())
+	l.Debug("finished renewing Jira event watch in: " + cid.String())
 	return nil
 }
 
