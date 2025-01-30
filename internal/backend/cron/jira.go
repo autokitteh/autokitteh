@@ -161,13 +161,17 @@ func (cr *Cron) renewJiraEventWatchActivity(ctx context.Context, cid sdktypes.Co
 	u, err := jira.APIBaseURL()
 	if err != nil {
 		l.Error("invalid Atlassian base URL for Jira event watch renewal", zap.Error(err))
-		return err
+		return temporal.NewNonRetryableApplicationError(
+			"invalid Atlassian base URL: "+err.Error(), "URLParseError", err, cid.String(), wid,
+		)
 	}
 
 	u, err = url.JoinPath(u, "/ex/jira", accessID)
 	if err != nil {
 		l.Error("failed to construct Jira API URL for event watch renewal", zap.Error(err))
-		return err
+		return temporal.NewNonRetryableApplicationError(
+			"invalid Atlassian base URL: "+err.Error(), "URLParseError", err, cid.String(), wid,
+		)
 	}
 
 	newExp, ok := jira.ExtendWebhookLife(l, u, t.AccessToken, id)
