@@ -13,8 +13,9 @@ import (
 )
 
 const (
-	descopeRootPath  = "/auth/descope"
-	descopeLoginPath = descopeRootPath + "/login"
+	descopeRootPath      = "/auth/descope"
+	descopeProjectIDPath = descopeRootPath + "/project_id"
+	descopeLoginPath     = descopeRootPath + "/login"
 )
 
 func registerDescopeRoutes(mux *http.ServeMux, cfg descopeConfig, onSuccess func(context.Context, *loginData) http.Handler) error {
@@ -27,7 +28,7 @@ func registerDescopeRoutes(mux *http.ServeMux, cfg descopeConfig, onSuccess func
 		return err
 	}
 
-	mux.HandleFunc(descopeRootPath+"/project_id", func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc(descopeLoginPath, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprintf(w, "%q", cfg.ProjectID)
 	})
