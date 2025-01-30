@@ -19,7 +19,7 @@ import (
 type localRunnerManager struct {
 	logger           *zap.Logger
 	pyExe            string
-	runnerIDToRunner map[string]*LocalPython
+	runnerIDToRunner map[string]*LocalNodeJS
 	mu               *sync.Mutex
 	workerAddress    string
 	cfg              LocalRunnerManagerConfig
@@ -59,7 +59,7 @@ func configureLocalRunnerManager(log *zap.Logger, cfg LocalRunnerManagerConfig) 
 
 	lm := &localRunnerManager{
 		logger:           log,
-		runnerIDToRunner: map[string]*LocalPython{},
+		runnerIDToRunner: map[string]*LocalNodeJS{},
 		mu:               new(sync.Mutex),
 		workerAddress:    cfg.WorkerAddress,
 		cfg:              cfg,
@@ -86,7 +86,7 @@ func configureLocalRunnerManager(log *zap.Logger, cfg LocalRunnerManagerConfig) 
 
 func (l *localRunnerManager) Start(ctx context.Context, sessionID sdktypes.SessionID, buildArtifacts []byte, vars map[string]string) (string, *RunnerClient, error) {
 	log := l.logger.With(zap.String("session_id", sessionID.String()))
-	r := &LocalPython{
+	r := &LocalNodeJS{
 		log:           log,
 		logRunnerCode: l.cfg.LogCodeRunnerCode,
 		sessionID:     sessionID,

@@ -32,7 +32,7 @@ func prepareUserCode(code []byte, gzipped bool) (string, error) {
 		return "", err
 	}
 
-	pycode, err := fs.Sub(runnerPyCode, "runner")
+	pycode, err := fs.Sub(runnerJsCode, "runner")
 	if err != nil {
 		return "", err
 	}
@@ -80,14 +80,6 @@ func prepareUserCode(code []byte, gzipped bool) (string, error) {
 		dockerfile = []byte(dockerfileWithDeps)
 	}
 	if err := os.WriteFile(path.Join(tmpDir, "Dockerfile"), dockerfile, 0o777); err != nil {
-		return "", err
-	}
-
-	if err := os.WriteFile(path.Join(tmpDir, "pyproject.toml"), pyProjectTOML, 0o777); err != nil {
-		return "", err
-	}
-
-	if err := copyFS(pysdk, tmpDir); err != nil {
 		return "", err
 	}
 

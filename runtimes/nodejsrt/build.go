@@ -75,32 +75,16 @@ func (js *nodejsSvc) Build(ctx context.Context, fsys fs.FS, path string, values 
 	art = art.WithCompiledData(compiledData)
 
 	exports, err := findExports(js.log, fsys)
-	if err != nil {
-		js.log.Error("get exports", zap.Error(err))
-		return sdktypes.InvalidBuildArtifact, err
-	}
+	//if err != nil {
+	//	js.log.Error("get exports", zap.Error(err))
+	//	return sdktypes.InvalidBuildArtifact, err
+	//}
 
 	art = art.WithExports(exports)
 	return art, nil
 }
 
-func findExports(log *zap.Logger, fsys fs.FS) ([]sdktypes.BuildExport, error) {
-	// TODO(ENG-1784): This has common code with configureLocalRunnerManager, find a way to unite
-	sysPyExe, isUserPy, err := pythonToRun(log)
-	if err != nil {
-		return nil, err
-	}
-
-	var pyExe string
-	if !isUserPy {
-		if err := ensureVEnv(log, sysPyExe); err != nil {
-			return nil, err
-		}
-		pyExe = venvPy
-	} else {
-		pyExe = sysPyExe
-	}
-
+func findExports(_ *zap.Logger, fsys fs.FS) ([]sdktypes.BuildExport, error) {
 	codeDir, err := os.MkdirTemp("", "ak-proj")
 	if err != nil {
 		return nil, err
@@ -114,12 +98,11 @@ func findExports(log *zap.Logger, fsys fs.FS) ([]sdktypes.BuildExport, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := os.CopyFS(runnerDir, runnerPyCode); err != nil {
+	if err := os.CopyFS(runnerDir, runnerJsCode); err != nil {
 		return nil, err
 	}
 
-	pyFile := path.Join(runnerDir, "runner", "exports.py")
-	cmd := exec.Command(pyExe, pyFile, codeDir)
+	cmd := exec.Command("npx", "exports", codeDir)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr

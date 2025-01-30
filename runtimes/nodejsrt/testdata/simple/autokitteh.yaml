@@ -1,7 +1,7 @@
 version: v1
 
 project:
-  name: py_simple
+  name: js_simple
   triggers:
     - name: events
       event_type: post

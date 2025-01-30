@@ -26,16 +26,10 @@ import (
 
 var (
 	//go:embed all:runner
-	runnerPyCode embed.FS
-
-	//go:embed all:py-sdk
-	pysdk embed.FS
-
-	//go:embed runner/pyproject.toml
-	pyProjectTOML []byte
+	runnerJsCode embed.FS
 )
 
-type LocalPython struct {
+type LocalNodeJS struct {
 	log                *zap.Logger
 	userDir            string
 	runnerDir          string
@@ -48,7 +42,7 @@ type LocalPython struct {
 	stderrRunnerLogger *zapio.Writer
 }
 
-func (r *LocalPython) Close() error {
+func (r *LocalNodeJS) Close() error {
 	var err error
 
 	if r.proc != nil {
@@ -98,7 +92,7 @@ func freePort() (int, error) {
 	return conn.Addr().(*net.TCPAddr).Port, nil
 }
 
-func (r *LocalPython) Start(pyExe string, tarData []byte, env map[string]string, workerAddr string) error {
+func (r *LocalNodeJS) Start(pyExe string, tarData []byte, env map[string]string, workerAddr string) error {
 	runOK := false
 
 	defer func() {
@@ -133,7 +127,7 @@ func (r *LocalPython) Start(pyExe string, tarData []byte, env map[string]string,
 	r.runnerDir = runnerDir
 	r.log.Info("python root dir", zap.String("path", r.runnerDir))
 
-	if err := copyFS(runnerPyCode, r.runnerDir); err != nil {
+	if err := copyFS(runnerJsCode, r.runnerDir); err != nil {
 		return fmt.Errorf("copy runner code - %w", err)
 	}
 
@@ -151,7 +145,6 @@ func (r *LocalPython) Start(pyExe string, tarData []byte, env map[string]string,
 		"--runner-id", r.id,
 		"--code-dir", r.userDir,
 	)
-	cmd.Env = overrideEnv(env, r.runnerDir)
 	cmd.Dir = r.userDir
 
 	if r.logRunnerCode {
@@ -176,7 +169,7 @@ func (r *LocalPython) Start(pyExe string, tarData []byte, env map[string]string,
 	return nil
 }
 
-func (r *LocalPython) Health() error {
+func (r *LocalNodeJS) Health() error {
 	var status syscall.WaitStatus
 
 	pid, err := syscall.Wait4(r.proc.Pid, &status, syscall.WNOHANG, nil)
@@ -328,29 +321,6 @@ func extractTar(rootDir string, data []byte) error {
 	return nil
 }
 
-func adjustPythonPath(env []string, runnerPath string) []string {
-	// Iterate in reverse since last value overrides
-	for i := len(env) - 1; i >= 0; i-- {
-		v := env[i]
-		if strings.HasPrefix(v, "PYTHONPATH=") {
-			env[i] = fmt.Sprintf("%s:%s", v, runnerPath)
-			return env
-		}
-	}
-
-	return append(env, "PYTHONPATH="+runnerPath)
-}
-
-func overrideEnv(envMap map[string]string, runnerPath string) []string {
-	env := os.Environ()
-	// Append AK values to end to override (see Env docs in https://pkg.go.dev/os/exec#Cmd)
-	for k, v := range envMap {
-		env = append(env, fmt.Sprintf("%s=%s", k, v))
-	}
-
-	return adjustPythonPath(env, runnerPath)
-}
-
 func createVEnv(pyExe string, venvPath string) error {
 	cmd := exec.Command(pyExe, "-m", "venv", venvPath)
 	cmd.Stdout = os.Stdout
@@ -358,47 +328,6 @@ func createVEnv(pyExe string, venvPath string) error {
 
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("create venv: %w", err)
-	}
-
-	tmpDir, err := os.MkdirTemp("", "ak-proj")
-	if err != nil {
-		return err
-	}
-
-	outFile := path.Join(tmpDir, "pyproject.toml")
-	file, err := os.Create(outFile)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	if _, err := io.Copy(file, bytes.NewReader(pyProjectTOML)); err != nil {
-		return fmt.Errorf("copy requirements to %q: %w", file.Name(), err)
-	}
-
-	venvPy := path.Join(venvPath, "bin", "python")
-	if err := install(venvPy, tmpDir, []string{"-m", "pip", "install", ".[all]"}); err != nil {
-		return fmt.Errorf("install dependencies from %q: %w", file.Name(), err)
-	}
-
-	if err := copyFS(pysdk, tmpDir); err != nil {
-		return err
-	}
-
-	if err = install(venvPy, path.Join(tmpDir, "/py-sdk"), []string{"-m", "pip", "install", "."}); err != nil {
-		return fmt.Errorf("install autokitteh py sdk %w", err)
-	}
-	return nil
-}
-
-func install(pyPath, cwd string, args []string) error {
-	cmd := exec.Command(pyPath, args...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Dir = cwd
-
-	if err := cmd.Run(); err != nil {
-		return err
 	}
 
 	return nil

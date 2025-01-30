@@ -71,7 +71,7 @@ func TestRunner_Start(t *testing.T) {
 		envKey: "B",
 	}
 
-	r := LocalPython{
+	r := LocalNodeJS{
 		log: log,
 	}
 	err := r.Start("python", tarData, env, "")
@@ -198,7 +198,7 @@ func Test_parsePyVersion(t *testing.T) {
 // 	require.NoError(t, err)
 
 // 	workerAddr := fmt.Sprintf("localhost:%d", svc.port)
-// 	r := LocalPython{
+// 	r := LocalNodeJS{
 // 		log: log,
 // 	}
 // 	err = r.Start("python", tarData, nil, workerAddr)
@@ -209,7 +209,7 @@ func Test_parsePyVersion(t *testing.T) {
 // 	client, err := dialRunner(fmt.Sprintf("localhost:%d", r.port))
 // 	require.NoError(t, err)
 // 	req := pb.ExportsRequest{
-// 		FileName: "simple.py",
+// 		FileName: "simple.js",
 // 	}
 // 	ctx, cancel := testCtx(t)
 // 	defer cancel()
@@ -240,19 +240,10 @@ var adjustCases = []struct {
 	},
 }
 
-func Test_adjustPYTHONPATH(t *testing.T) {
-	for _, tc := range adjustCases {
-		t.Run(tc.name, func(t *testing.T) {
-			out := adjustPythonPath(tc.env, testRunnerPath)
-			require.Equal(t, tc.expected, out)
-		})
-	}
-}
-
 func TestRunner_Close(t *testing.T) {
 	log := zap.NewExample()
 	defer log.Sync() //nolint:all
-	r := LocalPython{
+	r := LocalNodeJS{
 		log: log,
 	}
 

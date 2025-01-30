@@ -16,10 +16,9 @@ import (
 
 func TestBuildFiles(t *testing.T) {
 	m := map[string][]byte{
-		"autokitteh.yaml":         []byte("ak"),
-		"program.js":              []byte("js"),
-		".gitignore":              []byte("git"),
-		"__pycache__/program.pyc": []byte("pyc"),
+		"autokitteh.yaml": []byte("ak"),
+		"program.js":      []byte("js"),
+		".gitignore":      []byte("git"),
 	}
 
 	mfs, err := kittehs.MapToMemFS(m)
