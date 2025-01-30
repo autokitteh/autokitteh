@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "index.ts",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "exports": "ts-node exports.ts"
   },
   "keywords": [],
   "author": "",

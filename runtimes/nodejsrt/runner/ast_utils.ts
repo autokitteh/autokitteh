@@ -6,6 +6,7 @@ import {listFiles} from "./file_utils";
 import fs from "fs"
 
 export interface Symbol {
+    file: string;
     name: string;
     args: string[];
     line: number;
@@ -15,7 +16,7 @@ export interface Symbols {
     [fileName: string]: Symbol[];
 }
 
-export async function listSymbols(code: string): Promise<Symbol[]> {
+export async function listSymbols(code: string, file: string): Promise<Symbol[]> {
     const ast = parse(code, {sourceType: "module", plugins: ["typescript"]});
 
     let symbols: Symbol[] = [];
@@ -40,19 +41,19 @@ export async function listSymbols(code: string): Promise<Symbol[]> {
                 line = path.node.loc.start.line;
             }
 
-            symbols.push({args: params, line: line, name: name});
+            symbols.push({args: params, line: line, name: name, file: file});
         },
     })
 
     return symbols;
 }
 
-export async function listSymbolsInDirectory(dirPath: string): Promise<Symbols> {
+export async function listSymbolsInDirectory(dirPath: string): Promise<Symbol[]> {
     const files = await listFiles(dirPath);
-    let symbols: Symbols = {}
+    let symbols: Symbol[] = []
     for (const file of files) {
         let code = fs.readFileSync(file, "utf8");
-        symbols[file] = await listSymbols(code);
+        symbols = symbols.concat(symbols, await listSymbols(code, file))
     }
 
     return symbols;

@@ -75,10 +75,10 @@ func (js *nodejsSvc) Build(ctx context.Context, fsys fs.FS, path string, values 
 	art = art.WithCompiledData(compiledData)
 
 	exports, err := findExports(js.log, fsys)
-	//if err != nil {
-	//	js.log.Error("get exports", zap.Error(err))
-	//	return sdktypes.InvalidBuildArtifact, err
-	//}
+	if err != nil {
+		js.log.Error("get exports", zap.Error(err))
+		return sdktypes.InvalidBuildArtifact, err
+	}
 
 	art = art.WithExports(exports)
 	return art, nil
@@ -102,7 +102,8 @@ func findExports(_ *zap.Logger, fsys fs.FS) ([]sdktypes.BuildExport, error) {
 		return nil, err
 	}
 
-	cmd := exec.Command("npx", "exports", codeDir)
+	cmd := exec.Command("npm", "run", "exports", "--silent", codeDir)
+	cmd.Dir = "./runner"
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
