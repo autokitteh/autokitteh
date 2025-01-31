@@ -222,8 +222,8 @@ func (h handler) getWebHookSecret(w http.ResponseWriter, r *http.Request) (strin
 	}
 	whs := h.webhookSecret
 	// If the user has defined a custom GitHub App, use its secret instead of the environment variable.
-	if vs.GetValueByString("client_secret") != "" {
-		whs = vs.GetValueByString("webhook_secret")
+	if vs.GetValue(vars.ClientSecret) != "" {
+		whs = vs.GetValue(vars.WebhookSecret)
 	}
 	return whs, nil
 }
