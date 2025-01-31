@@ -118,9 +118,7 @@ func (cr *Cron) renewJiraEventWatchActivity(ctx context.Context, cid sdktypes.Co
 	if err != nil {
 		l.Warn("invalid Jira event watch ID for renewal", zap.String("watch_id", wid), zap.Error(err))
 		cr.deleteInvalidWatchID(ctx, cid, wid)
-		return temporal.NewNonRetryableApplicationError(
-			"invalid Jira event watch ID: "+err.Error(), "NumError", err, cid.String(), wid,
-		)
+		return nil // No need to retry.
 	}
 
 	// Update the Jira OAuth configuration, to get a fresh OAuth access token.
