@@ -164,6 +164,7 @@ func GetDaemonToken(ctx context.Context, vs sdktypes.Vars) error {
 	}
 	u := fmt.Sprintf("https://login.microsoftonline.com/%s/oauth2/v2.0/token", tenantID)
 
+	// TODO(INT-227): Add support for certificate-based authentication.
 	data := url.Values{}
 	data.Set("grant_type", "client_credentials")
 	data.Set("client_id", vs.GetValueByString("private_client_id"))
