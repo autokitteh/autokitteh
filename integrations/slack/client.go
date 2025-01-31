@@ -71,8 +71,10 @@ func connStatus(cvars sdkservices.Vars) sdkintegrations.OptFn {
 		}
 
 		switch at.Value() {
-		case integrations.OAuth:
+		case integrations.OAuth, integrations.OAuthDefault:
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using OAuth v2"), nil
+		case integrations.OAuthPrivate:
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using OAuth v2 (private)"), nil
 		case integrations.SocketMode:
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using Socket Mode"), nil
 		default:
