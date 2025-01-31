@@ -145,11 +145,10 @@ func (cr *Cron) renewJiraEventWatchActivity(ctx context.Context, cid sdktypes.Co
 		}
 
 		vs = sdktypes.NewVars(
-			sdktypes.NewVar(sdktypes.NewSymbol("AccessToken")).SetValue(t.AccessToken),
-			sdktypes.NewVar(sdktypes.NewSymbol("RefreshToken")).SetValue(t.RefreshToken),
-			sdktypes.NewVar(sdktypes.NewSymbol("Expiry")).SetValue(t.Expiry.String()),
-		).WithPrefix("oauth_").WithScopeID(vsid)
-
+			vs.Get(sdktypes.NewSymbol("oauth_AccessToken")).SetValue(t.AccessToken),
+			vs.Get(sdktypes.NewSymbol("oauth_RefreshToken")).SetValue(t.RefreshToken),
+			vs.Get(sdktypes.NewSymbol("oauth_Expiry")).SetValue(t.Expiry.String()),
+		)
 		if err = cr.vars.Set(ctx, vs...); err != nil {
 			l.Error("failed to update Jira connection vars after OAuth token refresh", zap.Error(err))
 			// We have a valid OAuth token, but we can't save it. This may cause problems
