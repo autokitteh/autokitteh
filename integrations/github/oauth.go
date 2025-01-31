@@ -151,7 +151,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	ps = strings.ReplaceAll(ps, ",", " ")
 
 	at := integrations.OAuthDefault
-	if vs.GetValueByString("client_secret") != "" {
+	if vs.GetValue(vars.ClientSecret) != "" {
 		at = integrations.OAuthPrivate
 	}
 
