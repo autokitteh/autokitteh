@@ -100,9 +100,9 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	appID := os.Getenv("GITHUB_APP_ID")
-	if vs.GetValueByString("client_secret") != "" {
+	if vs.GetValue(vars.ClientSecret) != "" {
 		// Use custom GitHub App credentials instead of environment variables
-		appID = vs.GetValueByString("app_id")
+		appID = vs.GetValue(vars.AppID)
 	}
 
 	aid, err := strconv.ParseInt(appID, 10, 64)

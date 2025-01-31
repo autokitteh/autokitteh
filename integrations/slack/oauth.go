@@ -92,7 +92,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	at := integrations.OAuthDefault
-	if vs.GetValueByString("client_secret") != "" {
+	if vs.GetValue(vars.ClientSecret) != "" {
 		at = integrations.OAuthPrivate
 	}
 

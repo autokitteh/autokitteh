@@ -64,8 +64,6 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 		switch at.Value() {
 		case integrations.OAuth, integrations.OAuthDefault:
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using GitHub app"), nil
-		case integrations.OAuthPrivate:
-			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using GitHub app (private)"), nil
 		case integrations.PAT:
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using PAT + webhook"), nil
 		default:
