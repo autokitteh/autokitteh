@@ -6,6 +6,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/auth"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/bots"
@@ -75,6 +76,26 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if the connection is using a private OAuth app.
+	cid, err := sdktypes.StrictParseConnectionID(c.ConnectionID)
+	if err != nil {
+		l.Warn("invalid connection ID", zap.Error(err))
+		c.AbortBadRequest("invalid connection ID")
+		return
+	}
+
+	vs, err := h.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+	if err != nil {
+		l.Warn("Failed to get connection vars", zap.Error(err))
+		c.AbortBadRequest("failed to get connection vars")
+		return
+	}
+
+	at := integrations.OAuthDefault
+	if vs.GetValueByString("client_secret") != "" {
+		at = integrations.OAuthPrivate
+	}
+
 	key := vars.KeyValue(botInfo.Bot.AppID, authTest.EnterpriseID, authTest.TeamID)
 	c.Finalize(sdktypes.EncodeVars(vars.Vars{
 		AppID:        botInfo.Bot.AppID,
@@ -83,5 +104,6 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}).
 		Set(vars.KeyName, key, false).
 		Set(vars.OAuthDataName, raw, true).
+		Set(vars.AuthType, at, false).
 		Append(data.ToVars()...))
 }
