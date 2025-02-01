@@ -1,5 +1,6 @@
-import {ActivityResponse, AKClient} from "./pb/ak";
-import {credentials, type ServiceError} from "@grpc/grpc-js";
+import {HandlerService} from "./pb/autokitteh/user_code/v1/handler_svc_pb";
+import { createConnectTransport } from "@connectrpc/connect-node";
+import { createClient } from "@connectrpc/connect";
 import {EventEmitter, once} from "node:events";
 import { randomUUID } from "node:crypto";
 
@@ -15,28 +16,14 @@ export const functionsCache: FunctionsCache = {}
 export const resultsCache: ResultsCache = {}
 
 const sendActivityAndGetResults = async (f: string, args: any[]) => {
-    const client = new AKClient(
-        'localhost:9998',
-        credentials.createInsecure()
-    )
+    const transport = createConnectTransport({
+        baseUrl: "http://localhost:8080",
+        httpVersion: "1.1"
+    });
 
-    const encoder = new TextEncoder();
-    const data = encoder.encode(JSON.stringify({"function": f, "args": args}));
     resultsCache[f] = new EventEmitter()
-    client.activity(
-        {callInfo: {
-                function: f,
-                args: args,
-                kwargs: {}
-            }, data: data},
-        (error: ServiceError | null, response: ActivityResponse) => {
-            console.log("activity reply", response, error);
-        })
-
-    client.done({ result: f, error: "", traceback: []}, (err, result) => {
-        console.log("done reply", result, err)
-    })
-
+    const client = createClient(HandlerService, transport);
+    await client.activity({})
     return (await once(resultsCache[f], "result"))[0]
 }
 

@@ -43,7 +43,7 @@ export const listExports: RuntimeServer['exports'] = async (call: { request: Exp
 
     try {
         const code = await fs.promises.readFile(filePath, "utf-8")
-        symbols = await listSymbols(code)
+        symbols = await listSymbols(code, filePath)
     }
     catch (error) {
         console.log(error)
