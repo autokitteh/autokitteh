@@ -209,7 +209,7 @@ func Test_parsePyVersion(t *testing.T) {
 // 	client, err := dialRunner(fmt.Sprintf("localhost:%d", r.port))
 // 	require.NoError(t, err)
 // 	req := pb.ExportsRequest{
-// 		FileName: "simple.js",
+// 		FileName: "simple.py",
 // 	}
 // 	ctx, cancel := testCtx(t)
 // 	defer cancel()

@@ -207,7 +207,7 @@ func Test_pySvc_Run(t *testing.T) {
 	ctx, cancel := testCtx(t)
 	defer cancel()
 	runID := sdktypes.NewRunID()
-	mainPath := "simple.js"
+	mainPath := "simple.py"
 	compiled := map[string][]byte{
 		archiveKey: tarData,
 	}
