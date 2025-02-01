@@ -61,7 +61,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	// First save the user-provided details of a private Microsoft OAuth 2.0 app,
 	// and only then redirect to the 3-legged OAuth 2.0 flow's starting point.
 	case integrations.OAuthPrivate:
-		if err := h.saveOAuthAppConfig(r, vsid); err != nil {
+		if err := h.savePrivateAppConfig(r, vsid); err != nil {
 			l.Error("save connection: " + err.Error())
 			c.AbortServerError(err.Error())
 			return
@@ -71,7 +71,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	// Same as a private OAuth 2.0 app, but without the OAuth 2.0 flow
 	// (it uses application permissions instead of user-delegated ones).
 	case integrations.DaemonApp:
-		if err := h.saveOAuthAppConfig(r, vsid); err != nil {
+		if err := h.savePrivateAppConfig(r, vsid); err != nil {
 			l.Error("save connection: " + err.Error())
 			c.AbortServerError(err.Error())
 			return
@@ -100,33 +100,26 @@ func (h handler) saveAuthType(ctx context.Context, vsid sdktypes.VarScopeID, aut
 	return authType
 }
 
-// OAuthAppConfig contains the user-provided details of a private Microsoft OAuth 2.0 app.
-type OAuthAppConfig struct {
-	ClientID     string `var:"client_id"`
-	ClientSecret string `var:"client_secret,secret"`
-	TenantID     string `var:"tenant_id"`
-}
-
-// saveOAuthAppConfig saves the user-provided details of a
-// private Microsoft OAuth 2.0 app as connection variables.
-func (h handler) saveOAuthAppConfig(r *http.Request, vsid sdktypes.VarScopeID) error {
+// savePrivateAppConfig saves the user-provided details of
+// a private Microsoft OAuth 2.0 app as connection variables.
+func (h handler) savePrivateAppConfig(r *http.Request, vsid sdktypes.VarScopeID) error {
 	tenantID := r.FormValue("tenant_id")
 	if tenantID == "" {
 		tenantID = "common"
 	}
 
-	app := OAuthAppConfig{
+	app := connection.PrivateAppConfig{
 		ClientID:     r.FormValue("client_id"),
 		ClientSecret: r.FormValue("client_secret"),
 		TenantID:     tenantID,
 	}
 
 	// Sanity check: all the required details were provided.
-	if app.ClientID == "" || app.ClientSecret == "" {
-		return errors.New("missing OAuth 2.0 app details")
+	if app.ClientID == "" || (app.ClientSecret == "" && app.Certificate == "") {
+		return errors.New("missing private app details")
 	}
 
-	return h.vars.Set(r.Context(), sdktypes.EncodeVars(app).WithPrefix("private_").WithScopeID(vsid)...)
+	return h.vars.Set(r.Context(), sdktypes.EncodeVars(app).WithScopeID(vsid)...)
 }
 
 // startOAuth redirects the user to the AutoKitteh server's

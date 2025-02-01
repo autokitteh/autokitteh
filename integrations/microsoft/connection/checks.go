@@ -20,8 +20,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var AuthTypeVar = sdktypes.NewSymbol("auth_type")
-
 // Status checks the connection's initialization status (is it
 // initialized? what type of authentication is configured?). This
 // ensures that the connection is at least theoretically usable.
@@ -87,9 +85,9 @@ func Test(v sdkservices.Vars, o sdkservices.OAuth) sdkintegrations.OptFn {
 // unless it's stale, in which case it will be refreshed first.
 func oauthToken(ctx context.Context, vs sdktypes.Vars, o sdkservices.OAuth) *oauth2.Token {
 	t1 := &oauth2.Token{
-		AccessToken:  vs.GetValueByString("oauth_access_token"),
-		RefreshToken: vs.GetValueByString("oauth_refresh_token"),
-		TokenType:    vs.GetValueByString("oauth_token_type"),
+		AccessToken:  vs.GetValue(oauthAccessTokenVar),
+		RefreshToken: vs.GetValue(oauthRefreshTokenVar),
+		TokenType:    vs.GetValue(oauthTokenTypeVar),
 	}
 	if t1.Valid() {
 		return t1
@@ -106,19 +104,6 @@ func oauthToken(ctx context.Context, vs sdktypes.Vars, o sdkservices.OAuth) *oau
 	}
 
 	return t2
-}
-
-// UserInfo contains user profile details from Microsoft Graph
-// (based on: https://learn.microsoft.com/en-us/graph/api/user-get).
-type UserInfo struct {
-	PrincipalName string `json:"userPrincipalName" var:"principal_name"`
-	ID            string `json:"id" var:"id"`
-	DisplayName   string `json:"displayName" var:"display_name"`
-	Surname       string `json:"surname" var:"surname"`
-	GivenName     string `json:"givenName" var:"given_name"`
-	Language      string `json:"preferredLanguage" var:"language"`
-	Mail          string `json:"mail" var:"mail"`
-	MobilePhone   string `json:"mobilePhone" var:"mobile_phone"`
 }
 
 // GetUserInfo returns the authenticated user's profile from Microsoft
@@ -157,7 +142,7 @@ func GetUserInfo(ctx context.Context, t *oauth2.Token) (*UserInfo, error) {
 // GetDaemonToken checks whether a Microsoft Graph daemon app is configured correctly
 // (based on: https://learn.microsoft.com/en-us/entra/identity-platform/scenario-daemon-acquire-token).
 func GetDaemonToken(ctx context.Context, vs sdktypes.Vars) error {
-	tenantID := vs.GetValueByString("private_tenant_id")
+	tenantID := vs.GetValue(privateTenantIDVar)
 	if tenantID == "" {
 		// https://learn.microsoft.com/en-us/answers/questions/1853467/aadsts7000229-the-client-application-is-missing-se
 		return errors.New("missing tenant ID")
@@ -167,8 +152,8 @@ func GetDaemonToken(ctx context.Context, vs sdktypes.Vars) error {
 	// TODO(INT-227): Add support for certificate-based authentication.
 	data := url.Values{}
 	data.Set("grant_type", "client_credentials")
-	data.Set("client_id", vs.GetValueByString("private_client_id"))
-	data.Set("client_secret", vs.GetValueByString("private_client_secret"))
+	data.Set("client_id", vs.GetValue(privateClientIDVar))
+	data.Set("client_secret", vs.GetValue(privateClientSecretVar))
 	data.Set("scope", "https://graph.microsoft.com/.default")
 
 	if data.Get("client_id") == "" || data.Get("client_secret") == "" {

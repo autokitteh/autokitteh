@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"time"
 
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
@@ -14,14 +13,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
-
-// oauthData contains OAuth token details.
-type oauthData struct {
-	AccessToken  string `var:"access_token,secret"`
-	Expiry       string `var:"expiry"`
-	RefreshToken string `var:"refresh_token,secret"`
-	TokenType    string `var:"token_type"`
-}
 
 // handleOAuth receives an incoming redirect request from AutoKitteh's
 // generic OAuth service, which contains an OAuth token (if the OAuth
@@ -97,14 +88,8 @@ func (h handler) saveConnection(ctx context.Context, vsid sdktypes.VarScopeID, t
 		return errors.New("OAuth redirection missing token data")
 	}
 
-	vs := sdktypes.EncodeVars(oauthData{
-		AccessToken:  t.AccessToken,
-		Expiry:       t.Expiry.Format(time.RFC3339),
-		RefreshToken: t.RefreshToken,
-		TokenType:    t.TokenType,
-	}).WithPrefix("oauth_")
-
-	vs = vs.Append(sdktypes.EncodeVars(u).WithPrefix("user_")...)
+	vs := sdktypes.EncodeVars(connection.NewOAuthData(t))
+	vs = vs.Append(sdktypes.EncodeVars(u)...)
 
 	return h.vars.Set(ctx, vs.WithScopeID(vsid)...)
 }
