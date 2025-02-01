@@ -41,7 +41,6 @@ func (s *server) Start(ctx context.Context, req *connect.Request[sessionsv1.Star
 	if err := proto.Validate(msg); err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
-
 	for k, v := range msg.JsonInputs {
 		decoded, err := decodeNestedJSON(v)
 		if err != nil {

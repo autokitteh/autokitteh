@@ -269,6 +269,19 @@ class Runner(pb.runner_rpc.RunnerService):
     def ActivityReply(
         self, request: pb.runner.ActivityReplyRequest, context: grpc.ServicerContext
     ):
+        with self.lock:
+            call = self.activity_call
+            self.activity_call = None
+
+        if call is None:
+            context.abort(
+                grpc.StatusCode.INVALID_ARGUMENT, "ActivityReply without pending calls"
+            )
+
+        if request.error:
+            call.fut.set_exception(RuntimeError(request.error))
+            return pb.runner.ActivityReplyResponse()
+
         if not request.result.custom.data:
             req = pb.handler.DoneRequest(
                 runner_id=self.id,
@@ -294,19 +307,7 @@ class Runner(pb.runner_rpc.RunnerService):
                 grpc.StatusCode.INVALID_ARGUMENT, "ActivityReply data not a Result"
             )
 
-        with self.lock:
-            call = self.activity_call
-            self.activity_call = None
-
-        if call is None:
-            context.abort(
-                grpc.StatusCode.INVALID_ARGUMENT, "ActivityReply without pending calls"
-            )
-
-        if result.error:
-            call.fut.set_exception(result.error)
-        else:
-            call.fut.set_result(result.value)
+        call.fut.set_result(request.result)
 
         return pb.runner.ActivityReplyResponse()
 
