@@ -55,13 +55,13 @@
         <input type="text" name="auth_scopes" value="" readonly />
       </div>
 
-      <h2>OAuth 2.0</h2>
+      <h2>Authentication Type</h2>
 
       <div class="form-group">
-        <label for="auth_type">Auth Type</label>
         <select name="auth_type" id="authType">
-          <option value="oauthDefault">Default App</option>
-          <option value="oauthPrivate">Private App</option>
+          <option value="oauthDefault">Default user-delegated app</option>
+          <option value="oauthPrivate">Private user-delegated app</option>
+          <option value="daemonApp">Private daemon application</option>
         </select>
       </div>
 
@@ -77,6 +77,7 @@
             autocomplete="off"
             spellcheck="false"
             disabled
+            required
           />
         </div>
 
@@ -89,24 +90,28 @@
             autocomplete="off"
             spellcheck="false"
             disabled
+            required
           />
         </div>
 
         <div class="form-group">
-          <label for="tenant">Tenant (Default = "common")</label>
+          <label for="tenant_id">Tenant ID (Multi/Default = "common")</label>
           <input
             type="text"
-            id="tenant"
-            name="tenant"
+            id="tenantId"
+            name="tenant_id"
             value="common"
             autocomplete="off"
             spellcheck="false"
             disabled
+            required
           />
         </div>
       </div>
 
-      <button type="submit" class="submit-btn">Start OAuth Flow</button>
+      <button type="submit" class="submit-btn" id="submit">
+        Start OAuth Flow
+      </button>
     </form>
   </body>
 </html>
