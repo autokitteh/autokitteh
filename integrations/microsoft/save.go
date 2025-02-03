@@ -47,10 +47,9 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 		c.AbortBadRequest("invalid connection ID")
 		return
 	}
-	vsid := sdktypes.NewVarScopeID(cid)
 
 	// Determine what to save and how to proceed.
-	authType := h.saveAuthType(r.Context(), vsid, r.FormValue("auth_type"))
+	authType := h.saveAuthType(r.Context(), sdktypes.NewVarScopeID(cid), r.FormValue("auth_type"))
 
 	switch authType {
 	// Use the AutoKitteh's server's default Microsoft OAuth 2.0 app, i.e.
@@ -61,7 +60,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	// First save the user-provided details of a private Microsoft OAuth 2.0 app,
 	// and only then redirect to the 3-legged OAuth 2.0 flow's starting point.
 	case integrations.OAuthPrivate:
-		if err := h.savePrivateAppConfig(r, vsid); err != nil {
+		if err := h.savePrivateAppConfig(r, cid); err != nil {
 			l.Error("save connection: " + err.Error())
 			c.AbortServerError(err.Error())
 			return
@@ -71,7 +70,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	// Same as a private OAuth 2.0 app, but without the OAuth 2.0 flow
 	// (it uses application permissions instead of user-delegated ones).
 	case integrations.DaemonApp:
-		if err := h.savePrivateAppConfig(r, vsid); err != nil {
+		if err := h.savePrivateAppConfig(r, cid); err != nil {
 			l.Error("save connection: " + err.Error())
 			c.AbortServerError(err.Error())
 			return
@@ -102,7 +101,7 @@ func (h handler) saveAuthType(ctx context.Context, vsid sdktypes.VarScopeID, aut
 
 // savePrivateAppConfig saves the user-provided details of
 // a private Microsoft OAuth 2.0 app as connection variables.
-func (h handler) savePrivateAppConfig(r *http.Request, vsid sdktypes.VarScopeID) error {
+func (h handler) savePrivateAppConfig(r *http.Request, cid sdktypes.ConnectionID) error {
 	tenantID := r.FormValue("tenant_id")
 	if tenantID == "" {
 		tenantID = "common"
@@ -114,12 +113,57 @@ func (h handler) savePrivateAppConfig(r *http.Request, vsid sdktypes.VarScopeID)
 		TenantID:     tenantID,
 	}
 
-	// Sanity check: all the required details were provided.
+	// Sanity check: all the required details were provided, and are valid.
 	if app.ClientID == "" || (app.ClientSecret == "" && app.Certificate == "") {
 		return errors.New("missing private app details")
 	}
 
-	return h.vars.Set(r.Context(), sdktypes.EncodeVars(app).WithScopeID(vsid)...)
+	ctx := r.Context()
+	vsid := sdktypes.NewVarScopeID(cid)
+	vs, err := h.vars.Get(ctx, vsid)
+	if err != nil {
+		return fmt.Errorf("failed to read connection vars: %w", err)
+	}
+
+	t, err := connection.DaemonToken(ctx, vs)
+	if err != nil {
+		return err
+	}
+	vs = sdktypes.EncodeVars(app)
+
+	// Optional: save the tenant details, if the app is allowed to read them.
+	if org, err := connection.GetOrgInfo(ctx, t); err == nil {
+		vs = vs.Append(sdktypes.EncodeVars(org)...)
+	}
+
+	if err := h.vars.Set(r.Context(), vs.WithScopeID(vsid)...); err != nil {
+		return err
+	}
+
+	// https://learn.microsoft.com/en-us/graph/teams-change-notification-in-microsoft-teams-overview
+	resources := []string{
+		"/chats",
+		"/chats/getAllMembers",
+		"/chats/getAllMessages",
+		"/teams",
+		"/teams/getAllChannels",
+		"/teams/getAllMessages",
+	}
+
+	svc := connection.NewServices(h.logger, h.vars, h.oauth)
+	var errs []error
+	for _, r := range resources {
+		if err := connection.CreateSubscription(ctx, svc, cid, r); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	// TODO(INT-203): "Subscription operations for tenant-wide chats subscription is not allowed in 'OnBehalfOfUser' context."
+	if len(errs) > 0 {
+		h.logger.Error("failed to create event subscriptions", zap.Errors("errors", errs))
+		// return errors.Join(errs...)
+	}
+
+	return nil
 }
 
 // startOAuth redirects the user to the AutoKitteh server's

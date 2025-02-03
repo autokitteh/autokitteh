@@ -56,8 +56,15 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Test the OAuth token's usability by getting the user info associated with it.
+	// Test the OAuth token's usability by getting the org and user info associated with it.
 	ctx := r.Context()
+	org, err := connection.GetOrgInfo(ctx, data.Token)
+	if err != nil {
+		l.Error("failed to fetch organization details", zap.Error(err))
+		c.AbortServerError("organization details error")
+		return
+	}
+
 	user, err := connection.GetUserInfo(ctx, data.Token)
 	if err != nil {
 		l.Error("failed to fetch authenticated user details", zap.Error(err))
@@ -65,10 +72,36 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.saveConnection(ctx, vsid, data.Token, user); err != nil {
+	if err := h.saveConnection(ctx, vsid, data.Token, org, user); err != nil {
 		l.Error("failed to save OAuth connection details", zap.Error(err))
 		c.AbortServerError("failed to save connection details")
 		return
+	}
+
+	// https://learn.microsoft.com/en-us/graph/teams-change-notification-in-microsoft-teams-overview
+	resources := []string{
+		"/chats",
+		"/chats/getAllMembers",
+		"/chats/getAllMessages",
+		"/teams",
+		"/teams/getAllChannels",
+		"teams/getAllChannels/getAllMembers",
+		"/teams/getAllMessages",
+	}
+
+	svc := connection.NewServices(l, h.vars, h.oauth)
+	var errs []error
+	for _, r := range resources {
+		if err := connection.CreateSubscription(ctx, svc, cid, r); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	// TODO(INT-203): "Subscription operations for tenant-wide chats subscription is not allowed in 'OnBehalfOfUser' context."
+	if len(errs) > 0 {
+		// TODO: Remove this error log when this is fixed, each error is already logged above.
+		l.Error("failed to create event subscriptions", zap.Errors("errors", errs))
+		// c.AbortServerError("failed to create event subscriptions")
+		// return
 	}
 
 	// Redirect the user back to the UI.
@@ -82,13 +115,14 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, urlPath, http.StatusFound)
 }
 
-// saveConnection saves OAuth token and user profile details as connection variables.
-func (h handler) saveConnection(ctx context.Context, vsid sdktypes.VarScopeID, t *oauth2.Token, u *connection.UserInfo) error {
+// saveConnection saves OAuth token, org, and user details as connection variables.
+func (h handler) saveConnection(ctx context.Context, vsid sdktypes.VarScopeID, t *oauth2.Token, o *connection.OrgInfo, u *connection.UserInfo) error {
 	if t == nil {
 		return errors.New("OAuth redirection missing token data")
 	}
 
 	vs := sdktypes.EncodeVars(connection.NewOAuthData(t))
+	vs = vs.Append(sdktypes.EncodeVars(o)...)
 	vs = vs.Append(sdktypes.EncodeVars(u)...)
 
 	return h.vars.Set(ctx, vs.WithScopeID(vsid)...)

@@ -5,12 +5,9 @@ package connection
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
-	"strings"
 
 	"golang.org/x/oauth2"
 
@@ -70,7 +67,7 @@ func Test(v sdkservices.Vars, o sdkservices.OAuth) sdkintegrations.OptFn {
 				return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 			}
 		case integrations.DaemonApp:
-			if err = GetDaemonToken(ctx, vs); err != nil {
+			if _, err = DaemonToken(ctx, vs); err != nil {
 				return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 			}
 		default:
@@ -81,38 +78,13 @@ func Test(v sdkservices.Vars, o sdkservices.OAuth) sdkintegrations.OptFn {
 	})
 }
 
-// Return the OAuth token stored in the connection variables,
-// unless it's stale, in which case it will be refreshed first.
-func oauthToken(ctx context.Context, vs sdktypes.Vars, o sdkservices.OAuth) *oauth2.Token {
-	t1 := &oauth2.Token{
-		AccessToken:  vs.GetValue(oauthAccessTokenVar),
-		RefreshToken: vs.GetValue(oauthRefreshTokenVar),
-		TokenType:    vs.GetValue(oauthTokenTypeVar),
-	}
-	if t1.Valid() {
-		return t1
-	}
-
-	cfg, _, err := o.Get(ctx, "microsoft")
-	if err != nil {
-		return t1
-	}
-
-	t2, err := cfg.TokenSource(ctx, t1).Token()
-	if err != nil {
-		return t1
-	}
-
-	return t2
-}
-
 // GetUserInfo returns the authenticated user's profile from Microsoft
 // Graph (based on: https://learn.microsoft.com/en-us/graph/api/user-get).
 func GetUserInfo(ctx context.Context, t *oauth2.Token) (*UserInfo, error) {
 	u := "https://graph.microsoft.com/v1.0/me"
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, http.NoBody)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create HTTP request: %w", err)
+		return nil, err
 	}
 
 	req.Header.Set("Authorization", "Bearer "+t.AccessToken)
@@ -139,47 +111,42 @@ func GetUserInfo(ctx context.Context, t *oauth2.Token) (*UserInfo, error) {
 	return &user, nil
 }
 
-// GetDaemonToken checks whether a Microsoft Graph daemon app is configured correctly
-// (based on: https://learn.microsoft.com/en-us/entra/identity-platform/scenario-daemon-acquire-token).
-func GetDaemonToken(ctx context.Context, vs sdktypes.Vars) error {
-	tenantID := vs.GetValue(privateTenantIDVar)
-	if tenantID == "" {
-		// https://learn.microsoft.com/en-us/answers/questions/1853467/aadsts7000229-the-client-application-is-missing-se
-		return errors.New("missing tenant ID")
-	}
-	u := fmt.Sprintf("https://login.microsoftonline.com/%s/oauth2/v2.0/token", tenantID)
+type orgInfoWrapper struct {
+	Value []OrgInfo `json:"value"`
+}
 
-	// TODO(INT-227): Add support for certificate-based authentication.
-	data := url.Values{}
-	data.Set("grant_type", "client_credentials")
-	data.Set("client_id", vs.GetValue(privateClientIDVar))
-	data.Set("client_secret", vs.GetValue(privateClientSecretVar))
-	data.Set("scope", "https://graph.microsoft.com/.default")
-
-	if data.Get("client_id") == "" || data.Get("client_secret") == "" {
-		return errors.New("missing required connection variables")
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u, strings.NewReader(data.Encode()))
+// GetOrgInfo returns the authenticated user's organization profile from Microsoft
+// Graph (based on: https://learn.microsoft.com/en-us/graph/api/organization-get).
+func GetOrgInfo(ctx context.Context, t *oauth2.Token) (*OrgInfo, error) {
+	u := "https://graph.microsoft.com/v1.0/organization"
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, http.NoBody)
 	if err != nil {
-		return fmt.Errorf("failed to create HTTP request: %w", err)
+		return nil, err
 	}
 
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Authorization", "Bearer "+t.AccessToken)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("request for token failed: %w", err)
+		return nil, fmt.Errorf("request for org info failed: %w", err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("failed to read token response: %w", err)
+		return nil, fmt.Errorf("failed to read org info response: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("request for token failed: %s (%s)", resp.Status, body)
+		return nil, fmt.Errorf("request for org info failed: %s (%s)", resp.Status, body)
 	}
 
-	return nil
+	var org orgInfoWrapper
+	if err := json.Unmarshal(body, &org); err != nil {
+		return nil, fmt.Errorf("failed to parse org info: %w", err)
+	}
+	if len(org.Value) != 1 {
+		return nil, fmt.Errorf("unexpected number of Entra organizations: %s", body)
+	}
+
+	return &org.Value[0], nil
 }
