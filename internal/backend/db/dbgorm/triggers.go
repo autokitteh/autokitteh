@@ -30,6 +30,23 @@ func (gdb *gormdb) getTriggerByID(ctx context.Context, triggerID uuid.UUID) (*sc
 	return getOne[scheme.Trigger](gdb.db.WithContext(ctx), "trigger_id = ?", triggerID)
 }
 
+func (gdb *gormdb) hasTriggers(ctx context.Context, connID uuid.UUID) (bool, error) {
+	var exists bool
+	q := gdb.db.WithContext(ctx)
+
+	q = q.Model(&scheme.Trigger{}).
+		Select("1").
+		Where("connection_id = ?", connID).
+		Where("deleted_at IS NULL").
+		Limit(1)
+
+	err := q.Find(&exists).Error
+	if err != nil {
+		return false, fmt.Errorf("checking active triggers: %w", err)
+	}
+	return exists, nil
+}
+
 func (gdb *gormdb) listTriggers(ctx context.Context, filter sdkservices.ListTriggersFilter) ([]scheme.Trigger, error) {
 	q := gdb.db.WithContext(ctx)
 

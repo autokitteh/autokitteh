@@ -2,6 +2,7 @@ package dbgorm
 
 import (
 	"context"
+	"errors"
 	"maps"
 
 	"github.com/google/uuid"
@@ -49,6 +50,13 @@ func (gdb *gormdb) deleteConnectionsAndVars(ctx context.Context, what string, id
 }
 
 func (gdb *gormdb) deleteConnection(ctx context.Context, id uuid.UUID) error {
+	hasTriggers, err := gdb.hasTriggers(ctx, id)
+	if err != nil {
+		return translateError(err)
+	}
+	if hasTriggers {
+		return errors.New("cannot delete a connection that has associated triggers")
+	}
 	return gdb.deleteConnectionsAndVars(ctx, "connection_id", id)
 }
 
