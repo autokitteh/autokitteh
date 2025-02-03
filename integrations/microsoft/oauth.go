@@ -85,7 +85,6 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		"/chats/getAllMessages",
 		"/teams",
 		"/teams/getAllChannels",
-		"teams/getAllChannels/getAllMembers",
 		"/teams/getAllMessages",
 	}
 

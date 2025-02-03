@@ -19,7 +19,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-// Return the OAuth token stored in the connection variables,
+// oauthToken return the OAuth token stored in the connection variables,
 // unless it's stale, in which case it will be refreshed first.
 func oauthToken(ctx context.Context, vs sdktypes.Vars, o sdkservices.OAuth) *oauth2.Token {
 	t1 := &oauth2.Token{
