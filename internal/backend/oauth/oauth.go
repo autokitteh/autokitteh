@@ -369,6 +369,18 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 				},
 			},
 
+			// Based on: https://developers.linear.app/docs/oauth/authentication
+			"linear": {
+				ClientID:     os.Getenv("LINEAR_CLIENT_ID"),
+				ClientSecret: os.Getenv("LINEAR_CLIENT_SECRET"),
+				Endpoint: oauth2.Endpoint{
+					AuthURL:  "https://linear.app/oauth/authorize",
+					TokenURL: "https://linear.app/oauth/token",
+				},
+				RedirectURL: redirectURL + "linear",
+				Scopes:      []string{"read", "write"},
+			},
+
 			// Based on:
 			// https://learn.microsoft.com/en-us/entra/identity-platform/v2-app-types
 			"microsoft": {
@@ -525,6 +537,9 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 			"googlesheets": {
 				"access_type": "offline", // oauth2.AccessTypeOffline
 				"prompt":      "consent", // oauth2.ApprovalForce
+			},
+			"linear": {
+				"prompt": "consent", // oauth2.ApprovalForce
 			},
 			"microsoft": {
 				"access_type": "offline", // oauth2.AccessTypeOffline

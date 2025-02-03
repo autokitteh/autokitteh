@@ -61,6 +61,9 @@ var HubSpotWebContent embed.FS
 //go:embed jira/connect
 var JiraWebContent embed.FS
 
+//go:embed linear
+var LinearWebContent embed.FS
+
 //go:embed microsoft
 var MicrosoftWebContent embed.FS
 
