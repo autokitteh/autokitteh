@@ -323,6 +323,19 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 				},
 			},
 
+			"height": {
+				ClientID:     os.Getenv("HEIGHT_CLIENT_ID"),
+				ClientSecret: os.Getenv("HEIGHT_CLIENT_SECRET"),
+				Endpoint: oauth2.Endpoint{
+					AuthURL:  "https://height.app/oauth/authorization",
+					TokenURL: "https://api.height.app/oauth/tokens",
+				},
+				RedirectURL: redirectURL + "height",
+				Scopes: []string{
+					"api",
+				},
+			},
+
 			// Based on:
 			// https://developers.hubspot.com/beta-docs/guides/apps/authentication/working-with-oauth
 			"hubspot": {
