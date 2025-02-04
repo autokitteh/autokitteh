@@ -623,6 +623,8 @@ export class SessionLogRecord extends Message<SessionLogRecord> {
   /**
    * one of the following is required.
    *
+   * deprecated, avoid.
+   *
    * @generated from field: autokitteh.sessions.v1.SessionLogRecord.Print print = 10;
    */
   print?: SessionLogRecord_Print;
@@ -699,6 +701,8 @@ export enum SessionLogRecord_Type {
   UNSPECIFIED = 0,
 
   /**
+   * deprecated, avoid.
+   *
    * @generated from enum value: TYPE_PRINT = 1;
    */
   PRINT = 1,
