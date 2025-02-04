@@ -13,21 +13,17 @@ const (
 	integrationName = "microsoft"
 )
 
-var (
-	integrationID = sdktypes.NewIntegrationIDFromName(integrationName)
-
-	desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
-		IntegrationId: integrationID.String(),
-		UniqueName:    integrationName,
-		DisplayName:   "Microsoft (All APIs)",
-		LogoUrl:       "/static/images/microsoft.svg",
-		ConnectionUrl: "/microsoft",
-		ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
-			RequiresConnectionInit: true,
-			SupportsConnectionTest: true,
-		},
-	}))
-)
+var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
+	IntegrationId: sdktypes.NewIntegrationIDFromName(integrationName).String(),
+	UniqueName:    integrationName,
+	DisplayName:   "Microsoft (All APIs)",
+	LogoUrl:       "/static/images/microsoft.svg",
+	ConnectionUrl: "/microsoft",
+	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
+		RequiresConnectionInit: true,
+		SupportsConnectionTest: true,
+	},
+}))
 
 // New defines an AutoKitteh integration, which
 // is registered when the AutoKitteh server starts.
