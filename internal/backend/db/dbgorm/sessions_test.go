@@ -383,7 +383,7 @@ func TestSessionLogRecordNextPageTokenEmpty(t *testing.T) {
 		})
 
 	assert.NoError(t, err)
-	assert.Equal(t, len(res.Log.Records()), 2)
+	assert.Equal(t, len(res.Records), 2)
 	assert.Equal(t, res.TotalCount, int64(2))
 	assert.Equal(t, res.PaginationResult.NextPageToken, "")
 }
@@ -408,7 +408,7 @@ func TestSessionLogRecordNextPageTokenNotEmpty(t *testing.T) {
 		})
 
 	assert.NoError(t, err)
-	assert.Equal(t, len(res.Log.Records()), 2)
+	assert.Equal(t, len(res.Records), 2)
 	assert.Equal(t, res.TotalCount, int64(3))
 	assert.NotEmpty(t, res.NextPageToken)
 
@@ -420,7 +420,7 @@ func TestSessionLogRecordNextPageTokenNotEmpty(t *testing.T) {
 		})
 
 	assert.NoError(t, err)
-	assert.Equal(t, len(res.Log.Records()), 1)
+	assert.Equal(t, len(res.Records), 1)
 	assert.Equal(t, res.TotalCount, int64(3))
 	assert.Equal(t, res.PaginationResult.NextPageToken, "")
 }

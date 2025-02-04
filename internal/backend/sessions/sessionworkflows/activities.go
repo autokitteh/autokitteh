@@ -173,7 +173,7 @@ func (ws *workflows) getSessionStopReasonActivity(ctx context.Context, sid sdkty
 		return "", temporalclient.TranslateError(err, "get session log for %v", sid)
 	}
 
-	for _, rec := range log.Log.Records() {
+	for _, rec := range log.Records {
 		if r, ok := rec.GetStopRequest(); ok {
 			return r, nil
 		}

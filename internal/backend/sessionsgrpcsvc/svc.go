@@ -189,14 +189,15 @@ func (s *server) GetLog(ctx context.Context, req *connect.Request[sessionsv1.Get
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	logpb := hist.Log.ToProto()
+	pbrs := kittehs.Transform(hist.Records, sdktypes.ToProto)
+
 	if req.Msg.JsonValues {
-		for _, r := range logpb.Records {
-			if c := r.CallAttemptComplete; c != nil {
+		for _, pbr := range pbrs {
+			if c := pbr.CallAttemptComplete; c != nil {
 				if c.Result.Value, err = sdktypes.ValueProtoToJSONStringValue(c.Result.Value); err != nil {
 					return nil, err
 				}
-			} else if c := r.CallSpec; c != nil {
+			} else if c := pbr.CallSpec; c != nil {
 				if c.Args, err = kittehs.TransformError(c.Args, sdktypes.ValueProtoToJSONStringValue); err != nil {
 					return nil, err
 				}
@@ -208,7 +209,9 @@ func (s *server) GetLog(ctx context.Context, req *connect.Request[sessionsv1.Get
 		}
 	}
 
-	return connect.NewResponse(&sessionsv1.GetLogResponse{Log: logpb, Count: hist.TotalCount, NextPageToken: hist.NextPageToken}), nil
+	pblog := &sessionsv1.SessionLog{Records: pbrs}
+
+	return connect.NewResponse(&sessionsv1.GetLogResponse{Records: pbrs, Log: pblog, Count: hist.TotalCount, NextPageToken: hist.NextPageToken}), nil
 }
 
 func (s *server) List(ctx context.Context, req *connect.Request[sessionsv1.ListRequest]) (*connect.Response[sessionsv1.ListResponse], error) {

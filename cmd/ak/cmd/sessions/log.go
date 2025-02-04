@@ -74,7 +74,7 @@ func sessionLog(filter sdkservices.ListSessionLogRecordsFilter) error {
 		return fmt.Errorf("get log: %w", err)
 	}
 
-	rs := l.Log.Records()
+	rs := l.Records
 	if len(rs) == 0 {
 		return nil
 	}

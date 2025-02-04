@@ -122,7 +122,7 @@ func sessionWatch(sid sdktypes.SessionID, endState sdktypes.SessionStateType, en
 				return nil, err
 			}
 
-			logs := res.Log.Records()
+			logs := res.Records
 
 			for _, log := range logs {
 				if p, ok := log.GetPrint(); ok {

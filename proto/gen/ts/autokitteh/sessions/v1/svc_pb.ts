@@ -5,7 +5,7 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Duration, Message, proto3, protoInt64 } from "@bufbuild/protobuf";
-import { Session, SessionLog, SessionLogRecord_Type, SessionStateType } from "./session_pb.js";
+import { Session, SessionLog, SessionLogRecord, SessionLogRecord_Type, SessionStateType } from "./session_pb.js";
 
 /**
  * @generated from message autokitteh.sessions.v1.StartRequest
@@ -494,6 +494,8 @@ export class GetLogRequest extends Message<GetLogRequest> {
  */
 export class GetLogResponse extends Message<GetLogResponse> {
   /**
+   * deprecated, use records.
+   *
    * @generated from field: autokitteh.sessions.v1.SessionLog log = 1;
    */
   log?: SessionLog;
@@ -502,6 +504,11 @@ export class GetLogResponse extends Message<GetLogResponse> {
    * @generated from field: int64 count = 2;
    */
   count = protoInt64.zero;
+
+  /**
+   * @generated from field: repeated autokitteh.sessions.v1.SessionLogRecord records = 3;
+   */
+  records: SessionLogRecord[] = [];
 
   /**
    * @generated from field: string next_page_token = 10;
@@ -518,6 +525,7 @@ export class GetLogResponse extends Message<GetLogResponse> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "log", kind: "message", T: SessionLog },
     { no: 2, name: "count", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 3, name: "records", kind: "message", T: SessionLogRecord, repeated: true },
     { no: 10, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 

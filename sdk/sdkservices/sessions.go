@@ -35,7 +35,7 @@ type ListSessionLogRecordsFilter struct {
 }
 
 type GetLogResults struct {
-	Log sdktypes.SessionLog
+	Records []sdktypes.SessionLogRecord
 	sdktypes.PaginationResult
 }
 

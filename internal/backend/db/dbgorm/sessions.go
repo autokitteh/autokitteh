@@ -410,14 +410,16 @@ func (db *gormdb) GetSessionLog(ctx context.Context, filter sdkservices.ListSess
 	}
 
 	prs, err := kittehs.TransformError(rs, scheme.ParseSessionLogRecord)
-	log := sdktypes.NewSessionLog(prs)
+	if err != nil {
+		return nil, err
+	}
 
 	nextPageToken := ""
 	if len(rs) == int(filter.PageSize) && len(rs) > 0 {
 		nextPageToken = strconv.FormatUint(rs[len(rs)-1].Seq, 10)
 	}
 
-	return &sdkservices.GetLogResults{Log: log, PaginationResult: sdktypes.PaginationResult{TotalCount: n, NextPageToken: nextPageToken}}, err
+	return &sdkservices.GetLogResults{Records: prs, PaginationResult: sdktypes.PaginationResult{TotalCount: n, NextPageToken: nextPageToken}}, err
 }
 
 // --- session call funcs ---

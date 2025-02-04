@@ -112,14 +112,16 @@ class GetLogRequest(_message.Message):
     def __init__(self, session_id: _Optional[str] = ..., json_values: bool = ..., types: _Optional[_Union[_session_pb2.SessionLogRecord.Type, str]] = ..., ascending: bool = ..., page_size: _Optional[int] = ..., skip: _Optional[int] = ..., page_token: _Optional[str] = ...) -> None: ...
 
 class GetLogResponse(_message.Message):
-    __slots__ = ["log", "count", "next_page_token"]
+    __slots__ = ["log", "count", "records", "next_page_token"]
     LOG_FIELD_NUMBER: _ClassVar[int]
     COUNT_FIELD_NUMBER: _ClassVar[int]
+    RECORDS_FIELD_NUMBER: _ClassVar[int]
     NEXT_PAGE_TOKEN_FIELD_NUMBER: _ClassVar[int]
     log: _session_pb2.SessionLog
     count: int
+    records: _containers.RepeatedCompositeFieldContainer[_session_pb2.SessionLogRecord]
     next_page_token: str
-    def __init__(self, log: _Optional[_Union[_session_pb2.SessionLog, _Mapping]] = ..., count: _Optional[int] = ..., next_page_token: _Optional[str] = ...) -> None: ...
+    def __init__(self, log: _Optional[_Union[_session_pb2.SessionLog, _Mapping]] = ..., count: _Optional[int] = ..., records: _Optional[_Iterable[_Union[_session_pb2.SessionLogRecord, _Mapping]]] = ..., next_page_token: _Optional[str] = ...) -> None: ...
 
 class DeleteRequest(_message.Message):
     __slots__ = ["session_id"]
