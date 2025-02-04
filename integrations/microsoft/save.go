@@ -12,7 +12,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/microsoft/connection"
-	"go.autokitteh.dev/autokitteh/integrations/microsoft/teams"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -62,7 +61,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	// First save the user-provided details of a private Microsoft OAuth 2.0 app,
 	// and only then redirect to the 3-legged OAuth 2.0 flow's starting point.
 	case integrations.OAuthPrivate:
-		if err := h.savePrivateApp(r, cid); err != nil {
+		if err := h.savePrivateApp(r, c.Integration, cid); err != nil {
 			l.Error("save connection: " + err.Error())
 			c.AbortServerError(err.Error())
 			return
@@ -72,7 +71,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	// Same as a private OAuth 2.0 app, but without the OAuth 2.0 flow
 	// (it uses application permissions instead of user-delegated ones).
 	case integrations.DaemonApp:
-		if err := h.savePrivateApp(r, cid); err != nil {
+		if err := h.savePrivateApp(r, c.Integration, cid); err != nil {
 			l.Error("save connection: " + err.Error())
 			c.AbortServerError(err.Error())
 			return
@@ -103,7 +102,7 @@ func (h handler) saveAuthType(ctx context.Context, vsid sdktypes.VarScopeID, aut
 
 // savePrivateApp saves the user-provided details of a private
 // Microsoft OAuth 2.0 or daemon app as connection variables.
-func (h handler) savePrivateApp(r *http.Request, cid sdktypes.ConnectionID) error {
+func (h handler) savePrivateApp(r *http.Request, i sdktypes.Integration, cid sdktypes.ConnectionID) error {
 	tenantID := r.FormValue("tenant_id")
 	if tenantID == "" {
 		tenantID = "common"
@@ -142,10 +141,10 @@ func (h handler) savePrivateApp(r *http.Request, cid sdktypes.ConnectionID) erro
 		return err
 	}
 
-	rs := teams.SubscriptionResources
-
+	// Subscribe to receive asynchronous change notifications from
+	// Microsoft Graph, based on the connection's integration type.
 	svc := connection.NewServices(h.logger, h.vars, h.oauth)
-	return errors.Join(connection.Subscribe(ctx, svc, cid, rs)...)
+	return errors.Join(connection.Subscribe(ctx, svc, cid, resources(i))...)
 }
 
 // startOAuth redirects the user to the AutoKitteh server's

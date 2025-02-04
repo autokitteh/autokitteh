@@ -2,6 +2,7 @@ package microsoft
 
 import (
 	"go.autokitteh.dev/autokitteh/integrations/microsoft/connection"
+	"go.autokitteh.dev/autokitteh/integrations/microsoft/teams"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
@@ -32,4 +33,14 @@ func New(v sdkservices.Vars, o sdkservices.OAuth) sdkservices.Integration {
 		desc, sdkmodule.New(),
 		connection.Status(v), connection.Test(v, o),
 		sdkintegrations.WithConnectionConfigFromVars(v))
+}
+
+// resources returns the Microsoft Graph resources that each Microsoft integration
+// should subscribe to in order to receive asynchronous change notifications.
+func resources(i sdktypes.Integration) []string {
+	// TODO: Convert this to a switch when we add more integrations.
+	if i.UniqueName().String() == teams.IntegrationName {
+		return teams.SubscriptionResources
+	}
+	return nil
 }
