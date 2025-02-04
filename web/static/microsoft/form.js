@@ -4,7 +4,7 @@ const urlParams = new URLSearchParams(window.location.search);
 document.getElementById("cid").value = urlParams.get("cid") ?? "";
 document.getElementById("origin").value = urlParams.get("origin") ?? "";
 
-// Hide/show the OAuth 2.0 private app fields based on the selected auth type.
+// Show/hide fields based on the selected auth type.
 document.getElementById("authType").addEventListener("change", function () {
   const isDefaultApp = this.value === "oauthDefault";
   const privateAppSection = document.getElementById("privateAppSection");

@@ -69,7 +69,7 @@
         <h2>Private App</h2>
 
         <div class="form-group">
-          <label for="client_id">Client ID</label>
+          <label for="client_id">Client ID <i>(required)</i></label>
           <input
             type="text"
             id="clientId"
@@ -82,7 +82,7 @@
         </div>
 
         <div class="form-group">
-          <label for="client_secret">Client Secret</label>
+          <label for="client_secret">Client Secret <i>(required)</i></label>
           <input
             type="text"
             id="clientSecret"
@@ -95,12 +95,13 @@
         </div>
 
         <div class="form-group">
-          <label for="tenant_id">Tenant ID (Multi/Default = "common")</label>
+          <label for="tenant_id">
+            Tenant ID <i>(required, multi-tenant = "common")</i>
+          </label>
           <input
             type="text"
             id="tenantId"
             name="tenant_id"
-            value="common"
             autocomplete="off"
             spellcheck="false"
             disabled
