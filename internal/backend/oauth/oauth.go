@@ -551,6 +551,11 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 				"access_type": "offline", // oauth2.AccessTypeOffline
 				"prompt":      "consent", // oauth2.ApprovalForce
 			},
+			"height": {
+				// This is a workaround for Height's non-standard OAuth 2.0 flow
+				// which expects the scopes string in the exchange request as well.
+				"scope": "api",
+			},
 			"linear": {
 				"prompt": "consent", // oauth2.ApprovalForce
 			},
@@ -713,6 +718,8 @@ func (o *oauth) Exchange(ctx context.Context, integration string, cid sdktypes.C
 	if err != nil {
 		return nil, fmt.Errorf("bad oauth integration name: %w", err)
 	}
+
+	o.logger.Warn("Exchange", zap.String("code", code))
 
 	hc := &http.Client{Timeout: exchangeTimeout}
 	ctx = context.WithValue(ctx, oauth2.HTTPClient, hc)

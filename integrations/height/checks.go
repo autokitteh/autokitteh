@@ -53,9 +53,7 @@ func test(v sdkservices.Vars, o sdkservices.OAuth) sdkintegrations.OptFn {
 		case "":
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 		case integrations.OAuthDefault, integrations.OAuthPrivate:
-			// TODO: Implement.
-		case integrations.APIKey:
-			// TODO: Implement.
+			// TODO(INT-235): Implement.
 		default:
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil
 		}

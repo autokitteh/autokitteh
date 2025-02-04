@@ -52,7 +52,7 @@ var GoogleGeminiWebContent embed.FS
 //go:embed googlesheets/connect
 var GoogleSheetsWebContent embed.FS
 
-//go:embed height/connect
+//go:embed height
 var HeightWebContent embed.FS
 
 //go:embed i/http/connect

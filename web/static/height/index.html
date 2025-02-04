@@ -38,13 +38,14 @@
     </table>
 
     <form method="post" action="/height/save">
+      <h2>Query Params From the URL</h2>
 
-      <div class="form-group hidden">
+      <div class="form-group">
         <label for="cid">Connection ID</label>
         <input type="text" name="cid" id="cid" readonly />
       </div>
 
-      <div class="form-group hidden">
+      <div class="form-group">
         <label for="origin">Request Origin</label>
         <input type="text" name="origin" id="origin" readonly />
       </div>
@@ -58,8 +59,12 @@
         </select>
       </div>
 
-      <div id="privateApp" class="hidden">
-        <h2>Private App</h2>
+      <div id="oauthSection">
+        <h2>OAuth 2.0</h2>
+      </div>
+
+      <div id="privateOauthSection" class="hidden">
+        <h2>Private OAuth 2.0</h2>
 
         <div class="form-group">
           <label for="client_id">Client ID <i>(required)</i></label>

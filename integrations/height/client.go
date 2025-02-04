@@ -18,8 +18,7 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 	IntegrationId: integrationID.String(),
 	UniqueName:    integrationName,
 	DisplayName:   "Height",
-	// TODO: LogoUrl
-	LogoUrl:       "/static/images/height.svg",
+	LogoUrl:       "/static/images/height.png",
 	ConnectionUrl: "/height",
 	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
 		RequiresConnectionInit: true,
@@ -29,7 +28,6 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 
 func New(v sdkservices.Vars, o sdkservices.OAuth) sdkservices.Integration {
 	return sdkintegrations.NewIntegration(
-		desc, sdkmodule.New(),
-		// TODO: connection.Status(v), connection.Test(v, o),
+		desc, sdkmodule.New(), status(v), test(v, o),
 		sdkintegrations.WithConnectionConfigFromVars(v))
 }
