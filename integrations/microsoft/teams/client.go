@@ -10,24 +10,20 @@ import (
 )
 
 const (
-	integrationName = "microsoft_teams"
+	IntegrationName = "microsoft_teams"
 )
 
-var (
-	integrationID = sdktypes.NewIntegrationIDFromName(integrationName)
-
-	desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
-		IntegrationId: integrationID.String(),
-		UniqueName:    integrationName,
-		DisplayName:   "Microsoft Teams",
-		LogoUrl:       "/static/images/microsoft_teams.svg",
-		ConnectionUrl: "/microsoft/teams",
-		ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
-			RequiresConnectionInit: true,
-			SupportsConnectionTest: true,
-		},
-	}))
-)
+var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
+	IntegrationId: sdktypes.NewIntegrationIDFromName(IntegrationName).String(),
+	UniqueName:    IntegrationName,
+	DisplayName:   "Microsoft Teams",
+	LogoUrl:       "/static/images/microsoft_teams.svg",
+	ConnectionUrl: "/microsoft/teams",
+	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
+		RequiresConnectionInit: true,
+		SupportsConnectionTest: true,
+	},
+}))
 
 // New defines an AutoKitteh integration, which
 // is registered when the AutoKitteh server starts.
