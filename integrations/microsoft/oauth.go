@@ -85,6 +85,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		"/chats/getAllMessages",
 		"/teams",
 		"/teams/getAllChannels",
+		"/teams/getAllMembers",
 		"/teams/getAllMessages",
 	}
 
@@ -95,7 +96,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 			errs = append(errs, err)
 		}
 	}
-	// TODO(INT-203): "Subscription operations for tenant-wide chats subscription is not allowed in 'OnBehalfOfUser' context."
+	// TODO(INT-232): "Subscription operations for tenant-wide chats subscription is not allowed in 'OnBehalfOfUser' context."
 	if len(errs) > 0 {
 		// TODO: Remove this error log when this is fixed, each error is already logged above.
 		l.Error("failed to create event subscriptions", zap.Errors("errors", errs))

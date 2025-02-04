@@ -65,9 +65,11 @@ func CreateSubscription(ctx context.Context, svc Services, cid sdktypes.Connecti
 		NotificationURL:          changeURL,
 		LifecycleNotificationURL: lifecyleURL,
 		Resource:                 resource,
-		IncludeResourceData:      false,
-		ExpirationDateTime:       expiration(resource),
-		ClientState:              cid.String(),
+		IncludeResourceData:      false, // TODO(INT-233): true,
+		// TODO(INT-233): EncryptionCertificate
+		// TODO(INT-233): EncryptionCertificateID
+		ExpirationDateTime: expiration(resource),
+		ClientState:        cid.String(),
 	}
 
 	err := sendRequest(ctx, svc, cid, http.MethodPost, "", sub)

@@ -141,6 +141,7 @@ func (h handler) savePrivateApp(r *http.Request, cid sdktypes.ConnectionID) erro
 		return err
 	}
 
+	// TODO(INT-203): Share common function with "oauth.go".
 	// https://learn.microsoft.com/en-us/graph/teams-change-notification-in-microsoft-teams-overview
 	resources := []string{
 		"/chats",
@@ -148,6 +149,7 @@ func (h handler) savePrivateApp(r *http.Request, cid sdktypes.ConnectionID) erro
 		"/chats/getAllMessages",
 		"/teams",
 		"/teams/getAllChannels",
+		"/teams/getAllMembers",
 		"/teams/getAllMessages",
 	}
 
@@ -158,8 +160,9 @@ func (h handler) savePrivateApp(r *http.Request, cid sdktypes.ConnectionID) erro
 			errs = append(errs, err)
 		}
 	}
-	// TODO(INT-203): "Subscription operations for tenant-wide chats subscription is not allowed in 'OnBehalfOfUser' context."
+	// TODO(INT-232): "Subscription operations for tenant-wide chats subscription is not allowed in 'OnBehalfOfUser' context."
 	if len(errs) > 0 {
+		// TODO: Remove this error log when this is fixed, each error is already logged above.
 		h.logger.Error("failed to create event subscriptions", zap.Errors("errors", errs))
 		// return errors.Join(errs...)
 	}
@@ -174,6 +177,7 @@ func startOAuth(w http.ResponseWriter, r *http.Request, c sdkintegrations.Connec
 	if err != nil {
 		l.Warn("save connection: bad OAuth redirect URL")
 		c.AbortBadRequest("bad redirect URL")
+		return
 	}
 	http.Redirect(w, r, urlPath, http.StatusFound)
 }
