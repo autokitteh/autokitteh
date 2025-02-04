@@ -11,10 +11,11 @@ from deterministic import is_deterministic
 
 # Functions that are called back to ak
 AK_FUNCS = {
+    autokitteh.join,
     autokitteh.next_event,
+    autokitteh.start,
     autokitteh.subscribe,
     autokitteh.unsubscribe,
-    autokitteh.start,
     sleep,
 }
 

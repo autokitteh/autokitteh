@@ -11,6 +11,7 @@ import (
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/backend/types"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -28,6 +29,7 @@ const (
 	removeSignalActivityName                = "remove_signal"
 	addSessionPrintActivityName             = "add_session_print"
 	deactivateDrainedDeploymentActivityName = "deactivate_drained_deployment"
+	signalSessionActivityName               = "signal_session"
 )
 
 func (ws *workflows) registerActivities() {
@@ -75,6 +77,11 @@ func (ws *workflows) registerActivities() {
 		ws.deactivateDrainedDeploymentActivity,
 		activity.RegisterOptions{Name: deactivateDrainedDeploymentActivityName},
 	)
+
+	ws.worker.RegisterActivityWithOptions(
+		ws.signalSessionActivity,
+		activity.RegisterOptions{Name: signalSessionActivityName},
+	)
 }
 
 func (ws *workflows) updateSessionStateActivity(ctx context.Context, sid sdktypes.SessionID, state sdktypes.SessionState) error {
@@ -91,6 +98,11 @@ func (ws *workflows) removeSignalActivity(ctx context.Context, sigid uuid.UUID) 
 
 func (ws *workflows) getLatestEventSequenceActivity(ctx context.Context) (uint64, error) {
 	seq, err := ws.svcs.DB.GetLatestEventSequence(ctx)
+	if errors.Is(err, sdkerrors.ErrNotFound) {
+		// first ever event.
+		return 0, nil
+	}
+
 	err = temporalclient.TranslateError(err, "get latest event sequence")
 	return seq, err
 }
@@ -106,6 +118,54 @@ func (ws *workflows) deactivateDrainedDeploymentActivity(ctx context.Context, di
 	if drained {
 		sl.Infof("deactivated drained deployment")
 	}
+
+	return nil
+}
+
+func (ws *workflows) signalSessionActivity(ctx context.Context, session sdktypes.Session) error {
+	log, err := ws.svcs.DB.GetSessionLog(
+		ctx,
+		sdkservices.ListSessionLogRecordsFilter{
+			SessionID:         session.ID(),
+			Types:             sdktypes.StateSessionLogRecordType,
+			PaginationRequest: sdktypes.PaginationRequest{PageSize: 1},
+		},
+	)
+	if err != nil {
+		return temporalclient.TranslateError(err, "get session log for %v", session.ID())
+	}
+
+	rs := log.Log.Records()
+
+	if len(rs) == 0 {
+		return temporalclient.TranslateError(sdkerrors.ErrUnretryableUnknown, "no records")
+	}
+
+	s := rs[0].GetState()
+	if !s.Type().IsFinal() {
+		return temporalclient.TranslateError(sdkerrors.ErrUnretryableUnknown, "state is not final")
+	}
+
+	sid := session.ID()
+
+	v, err := s.ToValue()
+	if err != nil {
+		return temporalclient.TranslateError(err, "state to value")
+	}
+
+	e := sdktypes.NewEvent(sid).WithData(
+		map[string]sdktypes.Value{
+			"session_id": sdktypes.NewStringValue(sid.String()),
+			"state":      v,
+		},
+	)
+
+	eid, err := ws.dispatch(authcontext.SetAuthnSystemUser(ctx), e, nil)
+	if err != nil {
+		return temporalclient.TranslateError(err, "dispatch signal")
+	}
+
+	ws.l.Sugar().With("event_id", eid).Infof("dispatched session signal event %v for %v", eid, sid)
 
 	return nil
 }

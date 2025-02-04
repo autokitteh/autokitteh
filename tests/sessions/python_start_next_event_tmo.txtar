@@ -1,0 +1,12 @@
+None
+
+-- main.py:main --
+from autokitteh import start, next_event
+from time import sleep
+
+def main(event):
+    sid = start('main.py:child')
+    print(next_event(sid, timeout=2))
+
+def child(event):
+    sleep(10)

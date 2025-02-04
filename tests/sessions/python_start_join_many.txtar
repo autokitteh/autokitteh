@@ -1,0 +1,24 @@
+[('COMPLETED', 3), ('COMPLETED', 3), ('COMPLETED', 0), ('COMPLETED', 2), ('COMPLETED', 4)]
+
+-- main.py:main --
+from time import sleep
+from random import seed, randint
+
+from autokitteh import start, join
+
+
+seed(0)
+
+def main(event):
+    sids=[
+        start('main.py:child', data={"t": randint(0, 5) }) for t in range(5)
+    ]
+    
+    results = join(sids)
+
+    print([(v["state"]["type"], v["state"]["value"]) for _, v in results.items()])
+
+def child(event):
+    t = event["t"]
+    sleep(t)
+    return t

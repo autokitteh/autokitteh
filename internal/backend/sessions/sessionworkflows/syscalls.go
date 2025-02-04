@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
+	"slices"
 	"time"
 
 	"github.com/google/uuid"
@@ -21,6 +23,7 @@ const (
 	startOp       = "start"
 	subscribeOp   = "subscribe"
 	nextEventOp   = "next_event"
+	joinOp        = "join"
 	unsubscribeOp = "unsubscribe"
 )
 
@@ -46,6 +49,8 @@ func (w *sessionWorkflow) syscall(ctx context.Context, args []sdktypes.Value, kw
 		return w.subscribe(ctx, args, kwargs)
 	case nextEventOp:
 		return w.nextEvent(ctx, args, kwargs)
+	case joinOp:
+		return w.join(ctx, args, kwargs)
 	case unsubscribeOp:
 		return w.unsubscribe(ctx, args, kwargs)
 	default:
@@ -88,14 +93,20 @@ func (w *sessionWorkflow) start(ctx context.Context, args []sdktypes.Value, kwar
 	session := sdktypes.NewSession(w.data.Build.ID(), cl, inputs, memo).
 		WithParentSessionID(w.data.Session.ID()).
 		WithDeploymentID(w.data.Session.DeploymentID()).
-		WithProjectID(w.data.Session.ProjectID())
+		WithProjectID(w.data.Session.ProjectID()).
+		WithNewID()
 
-	sessionID, err := w.ws.sessions.Start(authcontext.SetAuthnSystemUser(ctx), session)
-	if err != nil {
+	wctx := sessioncontext.GetWorkflowContext(ctx)
+
+	if _, err := w.createEventSubscription(wctx, "", sdktypes.NewEventDestinationID(session.ID())); err != nil {
 		return sdktypes.InvalidValue, err
 	}
 
-	return sdktypes.NewStringValue(sessionID.String()), nil
+	if _, err := w.ws.sessions.Start(authcontext.SetAuthnSystemUser(ctx), session); err != nil {
+		return sdktypes.InvalidValue, err
+	}
+
+	return sdktypes.NewStringValue(session.ID().String()), nil
 }
 
 func (w *sessionWorkflow) subscribe(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
@@ -164,7 +175,13 @@ func (w *sessionWorkflow) nextEvent(ctx context.Context, args []sdktypes.Value, 
 	}
 
 	signals, err := kittehs.TransformError(args, func(v sdktypes.Value) (uuid.UUID, error) {
-		return uuid.Parse(v.GetString().Value())
+		s := v.GetString().Value()
+
+		if sid, err := sdktypes.ParseSessionID(s); err == nil {
+			return sid.UUIDValue(), nil
+		}
+
+		return uuid.Parse(s)
 	})
 	if err != nil {
 		return sdktypes.InvalidValue, err
@@ -209,6 +226,99 @@ func (w *sessionWorkflow) nextEvent(ctx context.Context, args []sdktypes.Value, 
 			return sdktypes.WrapValue(event)
 		}
 	}
+}
+
+func (w *sessionWorkflow) join(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+	var timeout time.Duration
+	if err := sdkmodule.UnpackArgs(nil, kwargs, "timeout=?", &timeout); err != nil {
+		return sdktypes.InvalidValue, err
+	}
+
+	if len(args) == 0 {
+		return sdktypes.InvalidValue, errors.New("expecting at least one signal")
+	}
+
+	if timeout < 0 {
+		return sdktypes.InvalidValue, errors.New("timeout must be a non-negative value")
+	}
+
+	signals, err := kittehs.ListToMapError(args, func(v sdktypes.Value) (uuid.UUID, bool, error) {
+		s := v.GetString().Value()
+
+		if sid, err := sdktypes.ParseSessionID(s); err == nil {
+			return sid.UUIDValue(), true, nil
+		}
+
+		id, err := uuid.Parse(s)
+		if err != nil {
+			return uuid.Nil, false, err
+		}
+
+		return id, true, nil
+	})
+	if err != nil {
+		return sdktypes.InvalidValue, err
+	}
+
+	received := make(map[string]sdktypes.Value, len(signals))
+
+	wctx := sessioncontext.GetWorkflowContext(ctx)
+
+	var timeoutFuture workflow.Future
+	if timeout != 0 {
+		timeoutFuture = workflow.NewTimer(wctx, timeout)
+	}
+
+L:
+	for len(signals) > 0 {
+		// check if there is an event already in one of the signals
+		for signalID := range signals {
+			event, err := w.getNextEvent(ctx, signalID)
+			if err != nil {
+				return sdktypes.InvalidValue, err
+			}
+
+			if event == nil {
+				continue
+			}
+
+			if received[signalID.String()], err = sdktypes.WrapValue(event); err != nil {
+				return sdktypes.InvalidValue, err
+			}
+
+			delete(signals, signalID)
+			continue L
+		}
+
+		for {
+			// no event, wait for first signal
+			signalID, err := w.waitOnFirstSignal(wctx, slices.Collect(maps.Keys(signals)), timeoutFuture)
+			if err != nil {
+				return sdktypes.InvalidValue, err
+			}
+
+			if signalID == uuid.Nil {
+				// timeout.
+				break L
+			}
+
+			// get next event on this signal
+			event, err := w.getNextEvent(ctx, signalID)
+			if err != nil {
+				return sdktypes.InvalidValue, err
+			}
+
+			if received[signalID.String()], err = sdktypes.WrapValue(event); err != nil {
+				return sdktypes.InvalidValue, err
+			}
+
+			delete(signals, signalID)
+
+			break
+		}
+	}
+
+	return sdktypes.NewDictValueFromStringMap(received), nil
 }
 
 func (w *sessionWorkflow) unsubscribe(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {

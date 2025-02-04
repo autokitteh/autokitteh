@@ -40,6 +40,10 @@ func StrictSessionStateCompletedFromProto(m *SessionStateCompletedPB) (SessionSt
 	return Strict(SessionStateCompletedFromProto(m))
 }
 
+func (s SessionStateCompleted) ReturnValue() Value {
+	return forceFromProto[Value](s.read().ReturnValue)
+}
+
 func (s SessionState) GetCompleted() SessionStateCompleted {
 	return forceFromProto[SessionStateCompleted](s.read().Completed)
 }

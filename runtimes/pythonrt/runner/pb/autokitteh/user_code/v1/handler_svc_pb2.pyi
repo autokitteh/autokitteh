@@ -107,6 +107,24 @@ class NextEventResponse(_message.Message):
     error: str
     def __init__(self, event: _Optional[_Union[_user_code_pb2.Event, _Mapping]] = ..., error: _Optional[str] = ...) -> None: ...
 
+class JoinRequest(_message.Message):
+    __slots__ = ["runner_id", "signal_ids", "timeout_ms"]
+    RUNNER_ID_FIELD_NUMBER: _ClassVar[int]
+    SIGNAL_IDS_FIELD_NUMBER: _ClassVar[int]
+    TIMEOUT_MS_FIELD_NUMBER: _ClassVar[int]
+    runner_id: str
+    signal_ids: _containers.RepeatedScalarFieldContainer[str]
+    timeout_ms: int
+    def __init__(self, runner_id: _Optional[str] = ..., signal_ids: _Optional[_Iterable[str]] = ..., timeout_ms: _Optional[int] = ...) -> None: ...
+
+class JoinResponse(_message.Message):
+    __slots__ = ["event", "error"]
+    EVENT_FIELD_NUMBER: _ClassVar[int]
+    ERROR_FIELD_NUMBER: _ClassVar[int]
+    event: _user_code_pb2.Event
+    error: str
+    def __init__(self, event: _Optional[_Union[_user_code_pb2.Event, _Mapping]] = ..., error: _Optional[str] = ...) -> None: ...
+
 class UnsubscribeRequest(_message.Message):
     __slots__ = ["runner_id", "signal_id"]
     RUNNER_ID_FIELD_NUMBER: _ClassVar[int]

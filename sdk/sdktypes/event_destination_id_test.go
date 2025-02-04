@@ -11,6 +11,7 @@ func TestEventDestinationID(t *testing.T) {
 		typeID         string
 		wantConnection bool
 		wantTrigger    bool
+		wantSession    bool
 	}{
 		{
 			typeID:         "con_01jbw762gzfe4vbv30zvf6f4cj",
@@ -19,6 +20,10 @@ func TestEventDestinationID(t *testing.T) {
 		{
 			typeID:      "trg_01jbw762h5f8mvte837j1qqtfr",
 			wantTrigger: true,
+		},
+		{
+			typeID:      "ses_01jbw762h5f8mvte837j1qqtfq",
+			wantSession: true,
 		},
 	}
 	for _, tt := range tests {
@@ -36,6 +41,12 @@ func TestEventDestinationID(t *testing.T) {
 				assert.True(t, id.IsTriggerID())
 			} else {
 				assert.False(t, id.IsTriggerID())
+			}
+
+			if tt.wantSession {
+				assert.True(t, id.IsSessionID())
+			} else {
+				assert.False(t, id.IsSessionID())
 			}
 
 			assert.Equal(t, tt.typeID, id.String())

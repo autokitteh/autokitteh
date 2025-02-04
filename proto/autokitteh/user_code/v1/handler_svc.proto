@@ -63,6 +63,17 @@ message NextEventResponse {
   string error = 3;
 }
 
+message JoinRequest {
+  string runner_id = 1;
+  repeated string signal_ids = 2;
+  int64 timeout_ms = 3;
+}
+
+message JoinResponse {
+  Event event = 1;
+  string error = 3;
+}
+
 message UnsubscribeRequest {
   string runner_id = 1;
   string signal_id = 2;
@@ -154,6 +165,7 @@ service HandlerService {
   rpc Sleep(SleepRequest) returns (SleepResponse) {}
   rpc Subscribe(SubscribeRequest) returns (SubscribeResponse) {}
   rpc NextEvent(NextEventRequest) returns (NextEventResponse) {}
+  rpc Join(JoinRequest) returns (JoinResponse) {}
   rpc Unsubscribe(UnsubscribeRequest) returns (UnsubscribeResponse) {}
   rpc StartSession(StartSessionRequest) returns (StartSessionResponse) {}
 
