@@ -47,9 +47,9 @@ type OrgInfo struct {
 	TenantType  string `json:"tenantType" var:"org_tenant_type"`
 }
 
-// PrivateAppConfig contains the user-provided details
-// of a private Microsoft OAuth 2.0 app or daemon app.
-type PrivateAppConfig struct {
+// PrivateApp contains the user-provided details of
+// a private Microsoft OAuth 2.0 app or daemon app.
+type PrivateApp struct {
 	ClientID     string `var:"private_client_id"`
 	ClientSecret string `var:"private_client_secret,secret"`
 	Certificate  string `var:"private_certificate,secret"`

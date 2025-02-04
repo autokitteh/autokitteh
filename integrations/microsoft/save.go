@@ -49,7 +49,8 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Determine what to save and how to proceed.
-	authType := h.saveAuthType(r.Context(), sdktypes.NewVarScopeID(cid), r.FormValue("auth_type"))
+	vsid := sdktypes.NewVarScopeID(cid)
+	authType := h.saveAuthType(r.Context(), vsid, r.FormValue("auth_type"))
 
 	switch authType {
 	// Use the AutoKitteh's server's default Microsoft OAuth 2.0 app, i.e.
@@ -60,7 +61,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	// First save the user-provided details of a private Microsoft OAuth 2.0 app,
 	// and only then redirect to the 3-legged OAuth 2.0 flow's starting point.
 	case integrations.OAuthPrivate:
-		if err := h.savePrivateAppConfig(r, cid); err != nil {
+		if err := h.savePrivateApp(r, cid); err != nil {
 			l.Error("save connection: " + err.Error())
 			c.AbortServerError(err.Error())
 			return
@@ -70,7 +71,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	// Same as a private OAuth 2.0 app, but without the OAuth 2.0 flow
 	// (it uses application permissions instead of user-delegated ones).
 	case integrations.DaemonApp:
-		if err := h.savePrivateAppConfig(r, cid); err != nil {
+		if err := h.savePrivateApp(r, cid); err != nil {
 			l.Error("save connection: " + err.Error())
 			c.AbortServerError(err.Error())
 			return
@@ -99,15 +100,15 @@ func (h handler) saveAuthType(ctx context.Context, vsid sdktypes.VarScopeID, aut
 	return authType
 }
 
-// savePrivateAppConfig saves the user-provided details of
-// a private Microsoft OAuth 2.0 app as connection variables.
-func (h handler) savePrivateAppConfig(r *http.Request, cid sdktypes.ConnectionID) error {
+// savePrivateApp saves the user-provided details of a private
+// Microsoft OAuth 2.0 or daemon app as connection variables.
+func (h handler) savePrivateApp(r *http.Request, cid sdktypes.ConnectionID) error {
 	tenantID := r.FormValue("tenant_id")
 	if tenantID == "" {
 		tenantID = "common"
 	}
 
-	app := connection.PrivateAppConfig{
+	app := connection.PrivateApp{
 		ClientID:     r.FormValue("client_id"),
 		ClientSecret: r.FormValue("client_secret"),
 		TenantID:     tenantID,
@@ -182,7 +183,7 @@ func startOAuth(w http.ResponseWriter, r *http.Request, c sdkintegrations.Connec
 func oauthURL(cid, origin, scopes string) (string, error) {
 	// Security check: parameters must be alphanumeric strings,
 	// to prevent path traversal attacks and other issues.
-	re := regexp.MustCompile(`^[\w]+$`)
+	re := regexp.MustCompile(`^\w+$`)
 	if !re.MatchString(cid + origin + scopes) {
 		return "", errors.New("invalid connection ID, origin, or scopes")
 	}
@@ -195,5 +196,5 @@ func oauthURL(cid, origin, scopes string) (string, error) {
 	}
 
 	// Remember the AutoKitteh connection ID and request origin.
-	return path + fmt.Sprintf("?cid=%s&origin=%s", cid, origin), nil
+	return fmt.Sprintf("%s?cid=%s&origin=%s", path, cid, origin), nil
 }

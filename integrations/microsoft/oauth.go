@@ -36,7 +36,6 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		c.AbortBadRequest("invalid connection ID")
 		return
 	}
-	vsid := sdktypes.NewVarScopeID(cid)
 
 	// Handle OAuth errors (e.g. the user didn't authorize us), based on:
 	// https://developers.google.com/identity/protocols/oauth2/web-server#handlingresponse
@@ -72,6 +71,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	vsid := sdktypes.NewVarScopeID(cid)
 	if err := h.saveConnection(ctx, vsid, data.Token, org, user); err != nil {
 		l.Error("failed to save OAuth connection details", zap.Error(err))
 		c.AbortServerError("failed to save connection details")
@@ -123,6 +123,5 @@ func (h handler) saveConnection(ctx context.Context, vsid sdktypes.VarScopeID, t
 	vs := sdktypes.EncodeVars(connection.NewOAuthData(t))
 	vs = vs.Append(sdktypes.EncodeVars(o)...)
 	vs = vs.Append(sdktypes.EncodeVars(u)...)
-
 	return h.vars.Set(ctx, vs.WithScopeID(vsid)...)
 }
