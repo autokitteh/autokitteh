@@ -28,7 +28,7 @@ func registerDescopeRoutes(mux *http.ServeMux, cfg descopeConfig, onSuccess func
 		return err
 	}
 
-	mux.HandleFunc(descopeLoginPath, func(w http.ResponseWriter, _ *http.Request) {
+	mux.HandleFunc(descopeProjectIDPath, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprintf(w, "%q", cfg.ProjectID)
 	})
