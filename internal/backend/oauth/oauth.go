@@ -571,7 +571,7 @@ func (o *oauth) Get(ctx context.Context, intg string) (*oauth2.Config, map[strin
 // applyIntegrationConfig customizes the OAuth2 configuration and options for a specific integration.
 // It adjusts the AuthURL, TokenURL, and other parameters based on the integration's setup.
 // If custom OAuth is used (instead of the default app), it retrieves and applies the custom configuration.
-func (o *oauth) applyIntegrationConfig(ctx context.Context, s intgSetup) error {
+func (o *oauth) applyIntegrationConfig(ctx context.Context, s *intgSetup) error {
 	switch s.intg {
 	case "auth0":
 		placeholder := "{{AUTH0_DOMAIN}}"
@@ -649,7 +649,7 @@ func (o *oauth) getConfigWithConnection(ctx context.Context, intg string, cid sd
 		cfgCopy.ClientSecret = vs.GetValueByString("client_secret")
 	}
 
-	s := intgSetup{
+	s := &intgSetup{
 		intg: intg,
 		cid:  cid,
 		cfg:  cfgCopy,
@@ -676,15 +676,6 @@ func (o *oauth) StartFlow(ctx context.Context, intg string, cid sdktypes.Connect
 
 	// Identify the relevant connection when we get an OAuth response.
 	state := strings.Replace(cid.String(), "con_", "", 1) + "_" + origin
-
-	vs, err := o.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
-	if err != nil {
-		return "", err
-	}
-
-	if !o.isCustomOAuth(vs) {
-		return cfg.AuthCodeURL(state, authCode(opts)...), nil
-	}
 
 	return cfg.AuthCodeURL(state, authCode(opts)...), nil
 }
