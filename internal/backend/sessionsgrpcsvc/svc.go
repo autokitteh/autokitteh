@@ -48,85 +48,49 @@ func (s *server) Start(ctx context.Context, req *connect.Request[sessionsv1.Star
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	// Convert map[string]string to JSON
-	jsonBytes, err := json.Marshal(msg.JsonInputs)
-	if err != nil {
-		fmt.Printf("Error marshalling JsonInputs: %s\n", err)
-		// return
-	}
-
-	// Step 1: Unmarshal into a temporary map
-	var tempMap map[string]string
-	err = json.Unmarshal(jsonBytes, &tempMap)
-	if err != nil {
-		fmt.Printf("Error decoding JsonInputs: %s\n", err)
-		// return
-	}
-
-	// Step 2: Extract and double unmarshal `body`
-	var t testStruct
-	bodyStr, ok := tempMap["body"]
-	if !ok {
-		fmt.Println("Error: 'body' field not found in JsonInputs")
-		// return
-	}
-
-	var rawString string
-
-	// Step 1: First unmarshal to remove extra escaping
-	err = json.Unmarshal([]byte(bodyStr), &rawString)
-	if err != nil {
-		fmt.Printf("Error decoding JSON string: %s\n", err)
-		// return
-	}
-
-	// Step 2: Unmarshal the cleaned JSON into the struct
-	err = json.Unmarshal([]byte(rawString), &t.Body)
-	if err != nil {
-		fmt.Printf("Error unmarshaling nested 'body' JSON: %s\n", err)
-		// return
-	}
-
-	// Step 3: Convert json.RawMessage to a dictionary (map)
-	var bodyMap map[string]interface{}
-	err = json.Unmarshal(t.Body.JSON, &bodyMap)
-	if err != nil {
-		fmt.Printf("Error converting json.RawMessage to map: %s\n", err)
-		// return
-	}
-
-	fmt.Printf("Final Decoded Dictionary: %#v\n", bodyMap)
-
-	inputsAsValues, err := convertToValueMap(bodyMap)
-	if err != nil {
-		return nil, sdkerrors.AsConnectError(err)
-	}
-
-	// Create the nested structure
+	// Initialize wrapped value
 	wrappedValue := &valuesv1.Value{
 		Struct: &valuesv1.Struct{
 			Ctor: &valuesv1.Value{
 				Symbol: &valuesv1.Symbol{
-					Name: "foo", // TODO: replace with actual constructor name
+					Name: "startSession",
 				},
 			},
-			Fields: map[string]*valuesv1.Value{
-				"body": &valuesv1.Value{
-					Dict: &valuesv1.Dict{
-						Items: []*valuesv1.Dict_Item{
-							{
-								K: &valuesv1.Value{String_: &valuesv1.String{V: "json"}},
-								V: &valuesv1.Value{
-									Dict: &valuesv1.Dict{
-										Items: convertMapToItems(inputsAsValues),
-									},
-								},
-							},
-						},
-					},
-				},
-			},
+			Fields: make(map[string]*valuesv1.Value),
 		},
+	}
+
+	// Process each JsonInputs field
+	for key, jsonStr := range msg.JsonInputs {
+		var rawValue string
+		if err := json.Unmarshal([]byte(jsonStr), &rawValue); err != nil {
+			// Handle raw string case
+			wrappedValue.Struct.Fields[key] = &valuesv1.Value{
+				String_: &valuesv1.String{V: jsonStr},
+			}
+			continue
+		}
+
+		// Try parsing as JSON object
+		var jsonObj map[string]interface{}
+		if err := json.Unmarshal([]byte(rawValue), &jsonObj); err == nil {
+			// Convert JSON object to value map
+			valueMap, err := convertToValueMap(jsonObj)
+			if err != nil {
+				return nil, sdkerrors.AsConnectError(err)
+			}
+
+			wrappedValue.Struct.Fields[key] = &valuesv1.Value{
+				Dict: &valuesv1.Dict{
+					Items: convertMapToItems(valueMap),
+				},
+			}
+		} else {
+			// Handle as simple string
+			wrappedValue.Struct.Fields[key] = &valuesv1.Value{
+				String_: &valuesv1.String{V: rawValue},
+			}
+		}
 	}
 
 	msg.Session.Inputs = map[string]*valuesv1.Value{
