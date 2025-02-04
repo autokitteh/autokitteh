@@ -12,6 +12,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/microsoft/connection"
+	"go.autokitteh.dev/autokitteh/integrations/microsoft/teams"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -141,33 +142,10 @@ func (h handler) savePrivateApp(r *http.Request, cid sdktypes.ConnectionID) erro
 		return err
 	}
 
-	// TODO(INT-203): Share common function with "oauth.go".
-	// https://learn.microsoft.com/en-us/graph/teams-change-notification-in-microsoft-teams-overview
-	resources := []string{
-		"/chats",
-		"/chats/getAllMembers",
-		"/chats/getAllMessages",
-		"/teams",
-		"/teams/getAllChannels",
-		"/teams/getAllMembers",
-		"/teams/getAllMessages",
-	}
+	rs := teams.SubscriptionResources
 
 	svc := connection.NewServices(h.logger, h.vars, h.oauth)
-	var errs []error
-	for _, r := range resources {
-		if err := connection.CreateSubscription(ctx, svc, cid, r); err != nil {
-			errs = append(errs, err)
-		}
-	}
-	// TODO(INT-232): "Subscription operations for tenant-wide chats subscription is not allowed in 'OnBehalfOfUser' context."
-	if len(errs) > 0 {
-		// TODO: Remove this error log when this is fixed, each error is already logged above.
-		h.logger.Error("failed to create event subscriptions", zap.Errors("errors", errs))
-		// return errors.Join(errs...)
-	}
-
-	return nil
+	return errors.Join(connection.Subscribe(ctx, svc, cid, rs)...)
 }
 
 // startOAuth redirects the user to the AutoKitteh server's

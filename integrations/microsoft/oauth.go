@@ -9,6 +9,7 @@ import (
 	"golang.org/x/oauth2"
 
 	"go.autokitteh.dev/autokitteh/integrations/microsoft/connection"
+	"go.autokitteh.dev/autokitteh/integrations/microsoft/teams"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -78,31 +79,15 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// https://learn.microsoft.com/en-us/graph/teams-change-notification-in-microsoft-teams-overview
-	resources := []string{
-		"/chats",
-		"/chats/getAllMembers",
-		"/chats/getAllMessages",
-		"/teams",
-		"/teams/getAllChannels",
-		"/teams/getAllMembers",
-		"/teams/getAllMessages",
-	}
+	rs := teams.SubscriptionResources
 
 	svc := connection.NewServices(l, h.vars, h.oauth)
-	var errs []error
-	for _, r := range resources {
-		if err := connection.CreateSubscription(ctx, svc, cid, r); err != nil {
-			errs = append(errs, err)
-		}
-	}
 	// TODO(INT-232): "Subscription operations for tenant-wide chats subscription is not allowed in 'OnBehalfOfUser' context."
-	if len(errs) > 0 {
-		// TODO: Remove this error log when this is fixed, each error is already logged above.
-		l.Error("failed to create event subscriptions", zap.Errors("errors", errs))
-		// c.AbortServerError("failed to create event subscriptions")
-		// return
-	}
+	_ = connection.Subscribe(ctx, svc, cid, rs)
+	// if err := errors.Join(connection.Subscribe(ctx, svc, cid, rs)...); err != nil {
+	// 	c.AbortServerError("failed to create/renew event subscriptions")
+	// 	return
+	// }
 
 	// Redirect the user back to the UI.
 	urlPath, err := c.FinalURL()
