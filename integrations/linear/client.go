@@ -32,7 +32,6 @@ var (
 // is registered when the AutoKitteh server starts.
 func New(v sdkservices.Vars, o sdkservices.OAuth) sdkservices.Integration {
 	return sdkintegrations.NewIntegration(
-		desc, sdkmodule.New(),
-		// TODO: connectionStatus(v), connectionTest(v, o),
+		desc, sdkmodule.New(), status(v), test(v, o),
 		sdkintegrations.WithConnectionConfigFromVars(v))
 }
