@@ -32,7 +32,7 @@ func newOAuthData(t *oauth2.Token) oauthData {
 }
 
 // privateOAuth contains the user-provided details of
-// a private Microsoft OAuth 2.0 app or daemon app.
+// a private Linear OAuth 2.0 app.
 type privateOAuth struct {
 	ClientID      string `var:"private_client_id"`
 	ClientSecret  string `var:"private_client_secret,secret"`
