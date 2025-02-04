@@ -91,12 +91,12 @@ func CreateSubscription(ctx context.Context, svc Services, cid sdktypes.Connecti
 		changeType = "created,deleted"
 	}
 
-	changeURL, lifecyleURL := webhookURLs()
+	changeURL, lifecycleURL := webhookURLs()
 
 	sub := &Subscription{
 		ChangeType:               changeType,
 		NotificationURL:          changeURL,
-		LifecycleNotificationURL: lifecyleURL,
+		LifecycleNotificationURL: lifecycleURL,
 		Resource:                 resource,
 		IncludeResourceData:      false, // TODO(INT-233): true,
 		// TODO(INT-233): EncryptionCertificate

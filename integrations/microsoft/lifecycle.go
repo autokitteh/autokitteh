@@ -33,11 +33,7 @@ func (h handler) handleLifecycle(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
-	l.Warn("TODO: handle MS lifecycle notif",
-		zap.String("url", r.URL.String()),
-		zap.Any("headers", r.Header),
-		zap.ByteString("body", body),
-	)
+	l.Warn("TODO: handle MS lifecycle notif", zap.ByteString("body", body))
 
 	w.WriteHeader(http.StatusAccepted)
 }

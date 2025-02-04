@@ -44,4 +44,7 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO(INT-203): Dispatch change notifications to AutoKitteh connections.
+	for _, n := range notifs.Value {
+		l.Warn("TODO: handle MS change notif", zap.Any("change_notif", n))
+	}
 }

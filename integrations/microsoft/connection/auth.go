@@ -127,7 +127,7 @@ func bearerToken(ctx context.Context, l *zap.Logger, svc Services, cid sdktypes.
 
 	// Unknown/unrecognized mode - an error.
 	default:
-		l.Error("MS Graph subscirption: unexpected auth type", zap.String("auth_type", authType))
+		l.Error("MS Graph subscription: unexpected auth type", zap.String("auth_type", authType))
 		return ""
 	}
 }
