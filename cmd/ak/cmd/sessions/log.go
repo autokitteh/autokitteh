@@ -28,7 +28,7 @@ var logCmd = common.StandardCommand(&cobra.Command{
 			return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "session")
 		}
 
-		f := sdkservices.ListSessionLogRecordsFilter{SessionID: sid}
+		f := sdkservices.SessionLogRecordsFilter{SessionID: sid}
 		if nextPageToken != "" {
 			f.PageToken = nextPageToken
 		}
@@ -65,7 +65,7 @@ func init() {
 
 // skip >= 0: skip first records
 // skip < 0: skip all up to last |skip| records.
-func sessionLog(filter sdkservices.ListSessionLogRecordsFilter) error {
+func sessionLog(filter sdkservices.SessionLogRecordsFilter) error {
 	ctx, done := common.LimitedContext()
 	defer done()
 
