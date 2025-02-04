@@ -67,7 +67,7 @@ func (s *sessions) StartWorkers(ctx context.Context) error {
 	return nil
 }
 
-func (s *sessions) GetLog(ctx context.Context, filter sdkservices.ListSessionLogRecordsFilter) (*sdkservices.GetLogResults, error) {
+func (s *sessions) GetLog(ctx context.Context, filter sdkservices.SessionLogRecordsFilter) (*sdkservices.GetLogResults, error) {
 	if err := authz.CheckContext(ctx, filter.SessionID, "read:get-log", authz.WithData("filter", filter), authz.WithConvertForbiddenToNotFound); err != nil {
 		return nil, err
 	}

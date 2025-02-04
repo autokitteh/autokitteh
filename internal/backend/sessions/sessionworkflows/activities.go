@@ -168,7 +168,7 @@ func (ws *workflows) getSignalEventActivity(ctx context.Context, sigid uuid.UUID
 }
 
 func (ws *workflows) getSessionStopReasonActivity(ctx context.Context, sid sdktypes.SessionID) (string, error) {
-	log, err := ws.svcs.DB.GetSessionLog(ctx, sdkservices.ListSessionLogRecordsFilter{SessionID: sid})
+	log, err := ws.svcs.DB.GetSessionLog(ctx, sdkservices.SessionLogRecordsFilter{SessionID: sid})
 	if err != nil {
 		return "", temporalclient.TranslateError(err, "get session log for %v", sid)
 	}

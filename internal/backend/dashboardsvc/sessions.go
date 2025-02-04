@@ -84,7 +84,7 @@ func (s *svc) session(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log, err := s.Sessions().GetLog(r.Context(), sdkservices.ListSessionLogRecordsFilter{SessionID: sid})
+	log, err := s.Sessions().GetLog(r.Context(), sdkservices.SessionLogRecordsFilter{SessionID: sid})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

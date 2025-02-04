@@ -170,7 +170,7 @@ func (s *server) GetLog(ctx context.Context, req *connect.Request[sessionsv1.Get
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	filter := sdkservices.ListSessionLogRecordsFilter{
+	filter := sdkservices.SessionLogRecordsFilter{
 		PaginationRequest: sdktypes.PaginationRequest{
 			Skip:      msg.Skip,
 			PageToken: msg.PageToken,

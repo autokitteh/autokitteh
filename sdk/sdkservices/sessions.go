@@ -28,7 +28,7 @@ type ListSessionResult struct {
 	sdktypes.PaginationResult
 }
 
-type ListSessionLogRecordsFilter struct {
+type SessionLogRecordsFilter struct {
 	SessionID sdktypes.SessionID
 	Types     sdktypes.SessionLogRecordType // bitmask
 	sdktypes.PaginationRequest
@@ -47,6 +47,6 @@ type Sessions interface {
 	// List returns sessions without their data.
 	List(ctx context.Context, filter ListSessionsFilter) (*ListSessionResult, error)
 	Get(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.Session, error)
-	GetLog(ctx context.Context, filter ListSessionLogRecordsFilter) (*GetLogResults, error)
+	GetLog(ctx context.Context, filter SessionLogRecordsFilter) (*GetLogResults, error)
 	Delete(ctx context.Context, sessionID sdktypes.SessionID) error
 }
