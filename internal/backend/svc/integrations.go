@@ -30,6 +30,7 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/redis"
 	"go.autokitteh.dev/autokitteh/integrations/slack"
 	"go.autokitteh.dev/autokitteh/integrations/twilio"
+	"go.autokitteh.dev/autokitteh/integrations/zoom"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/backend/integrations"
@@ -110,6 +111,7 @@ func integrationsFXOption() fx.Option {
 		integration("sheets", configset.Empty, sheets.New),
 		integration("slack", configset.Empty, slack.New),
 		integration("twilio", configset.Empty, twilio.New),
+		integration("zoom", configset.Empty, zoom.New),
 		fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, muxes *muxes.Muxes, vars sdkservices.Vars, dispatch sdkservices.DispatchFunc, oauth sdkservices.OAuth) {
 			HookOnStart(lc, func(ctx context.Context) error {
 				asana.Start(l, muxes)
@@ -128,6 +130,7 @@ func integrationsFXOption() fx.Option {
 				microsoft.Start(l, muxes, vars, oauth, dispatch)
 				slack.Start(l, muxes, vars, dispatch)
 				twilio.Start(l, muxes, vars, dispatch)
+				zoom.Start(l, muxes, vars, oauth)
 				return nil
 			})
 		}),
