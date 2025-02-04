@@ -10,6 +10,7 @@ import (
 
 var (
 	authTypeVar = sdktypes.NewSymbol("auth_type")
+	actorVar    = sdktypes.NewSymbol("actor")
 	apiKeyVar   = sdktypes.NewSymbol("api_key")
 )
 

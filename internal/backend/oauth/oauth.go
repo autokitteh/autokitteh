@@ -375,7 +375,7 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 				ClientSecret: os.Getenv("LINEAR_CLIENT_SECRET"),
 				Endpoint: oauth2.Endpoint{
 					AuthURL:  "https://linear.app/oauth/authorize",
-					TokenURL: "https://linear.app/oauth/token",
+					TokenURL: "https://api.linear.app/oauth/token",
 				},
 				RedirectURL: redirectURL + "linear",
 				Scopes:      []string{"read", "write"},
