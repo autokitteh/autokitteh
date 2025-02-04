@@ -25,7 +25,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 
 	// Check "Content-Type" header.
 	contentType := r.Header.Get(headerContentType)
-	if !strings.HasPrefix(contentType, contentTypeForm) {
+	if r.Method == http.MethodPost && !strings.HasPrefix(contentType, contentTypeForm) {
 		c.AbortBadRequest("unexpected content type")
 		return
 	}
