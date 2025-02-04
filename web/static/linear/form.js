@@ -4,20 +4,28 @@ const urlParams = new URLSearchParams(window.location.search);
 document.getElementById("cid").value = urlParams.get("cid") ?? "";
 document.getElementById("origin").value = urlParams.get("origin") ?? "";
 
-// Hide/show the private OAuth 2.0 and API key fields based on the selected auth type.
+// Show/hide fields based on the selected auth type.
 document.getElementById("authType").addEventListener("change", function () {
-  const isPrivateOauth = this.value === "oauthPrivate";
   const isApiKey = this.value === "apiKey";
+  const isOauthPrivate = this.value === "oauthPrivate";
+
+  const oauthSection = document.getElementById("oauthSection");
+  if (isApiKey) {
+    oauthSection.classList.add("hidden");
+  } else {
+    oauthSection.classList.remove("hidden");
+  }
+  document.getElementById("actor").disabled = isApiKey;
 
   const privateOauthSection = document.getElementById("privateOauthSection");
-  if (isPrivateOauth) {
+  if (isOauthPrivate) {
     privateOauthSection.classList.remove("hidden");
   } else {
     privateOauthSection.classList.add("hidden");
   }
-  document.getElementById("clientId").disabled = !isPrivateOauth;
-  document.getElementById("clientSecret").disabled = !isPrivateOauth;
-  document.getElementById("webhookSecret").disabled = !isPrivateOauth;
+  document.getElementById("clientId").disabled = !isOauthPrivate;
+  document.getElementById("clientSecret").disabled = !isOauthPrivate;
+  document.getElementById("webhookSecret").disabled = !isOauthPrivate;
 
   const apiKeySection = document.getElementById("apiKeySection");
   if (isApiKey) {

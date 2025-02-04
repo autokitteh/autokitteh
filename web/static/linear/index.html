@@ -60,11 +60,23 @@
         </select>
       </div>
 
+      <div id="oauthSection">
+        <h2>OAuth 2.0</h2>
+
+        <div class="form-group">
+          <label for="actor">Actor</label>
+          <select name="actor" id="actor">
+            <option value="user">User</option>
+            <option value="application">Application</option>
+          </select>
+        </div>
+      </div>
+
       <div id="privateOauthSection" class="hidden">
         <h2>Private OAuth 2.0</h2>
 
         <div class="form-group">
-          <label for="client_id">Client ID</label>
+          <label for="client_id">Client ID <i>(required)</i></label>
           <input
             type="text"
             id="clientId"
@@ -77,7 +89,7 @@
         </div>
 
         <div class="form-group">
-          <label for="client_secret">Client Secret</label>
+          <label for="client_secret">Client Secret <i>(required)</i></label>
           <input
             type="text"
             id="clientSecret"
@@ -90,18 +102,20 @@
         </div>
 
         <div class="form-group">
-          <label for="webhook_url">Webhook URL</label>
+          <label for="webhook_url">Webhook URL <i>(required)</i></label>
           <input
             type="text"
             id="webhookUrl"
             name="webhook_url"
-            value="https://.../linear/webhook"
+            value="https://.../linear/event"
             disabled
           />
         </div>
 
         <div class="form-group">
-          <label for="webhook_secret">Webhook Signing Secret</label>
+          <label for="webhook_secret">
+            Webhook Signing Secret <i>(optional, empty = no events)</i>
+          </label>
           <input
             type="text"
             id="webhookSecret"
@@ -117,7 +131,7 @@
         <h2>API Key</h2>
 
         <div class="form-group">
-          <label for="api_key">API Key</label>
+          <label for="api_key">API Key <i>(required)</i></label>
           <input
             type="text"
             id="apiKey"
