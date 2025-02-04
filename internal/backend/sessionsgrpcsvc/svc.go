@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"connectrpc.com/connect"
@@ -15,6 +14,7 @@ import (
 	"go.autokitteh.dev/autokitteh/proto"
 	sessionsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1/sessionsv1connect"
+	valuesv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/values/v1"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -35,6 +35,12 @@ func Init(muxes *muxes.Muxes, sessions sdkservices.Sessions) {
 	muxes.Auth.Handle(path, handler)
 }
 
+type testStruct struct {
+	Body struct {
+		JSON json.RawMessage `json:"json"` // Preserve JSON for further unmarshaling
+	} `json:"body"`
+}
+
 func (s *server) Start(ctx context.Context, req *connect.Request[sessionsv1.StartRequest]) (*connect.Response[sessionsv1.StartResponse], error) {
 	msg := req.Msg
 
@@ -42,24 +48,89 @@ func (s *server) Start(ctx context.Context, req *connect.Request[sessionsv1.Star
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	for k, v := range msg.JsonInputs {
-		decoded, err := decodeNestedJSON(v)
-		if err != nil {
-			err = sdkerrors.NewInvalidArgumentError(`json_inputs["%s"]: %w`, k, err)
-			return nil, sdkerrors.AsConnectError(err)
-		}
+	// Convert map[string]string to JSON
+	jsonBytes, err := json.Marshal(msg.JsonInputs)
+	if err != nil {
+		fmt.Printf("Error marshalling JsonInputs: %s\n", err)
+		// return
+	}
 
-		if msg.Session.Inputs == nil {
-			msg.Session.Inputs = make(map[string]*sdktypes.ValuePB)
-		}
+	// Step 1: Unmarshal into a temporary map
+	var tempMap map[string]string
+	err = json.Unmarshal(jsonBytes, &tempMap)
+	if err != nil {
+		fmt.Printf("Error decoding JsonInputs: %s\n", err)
+		// return
+	}
 
-		wrappedValue, err := sdktypes.WrapValue(decoded)
-		if err != nil {
-			err = sdkerrors.NewInvalidArgumentError(`json_inputs["%s"]: %w`, k, err)
-			return nil, sdkerrors.AsConnectError(fmt.Errorf(`json_inputs["%s"]: %w`, k, err))
-		}
+	// Step 2: Extract and double unmarshal `body`
+	var t testStruct
+	bodyStr, ok := tempMap["body"]
+	if !ok {
+		fmt.Println("Error: 'body' field not found in JsonInputs")
+		// return
+	}
 
-		msg.Session.Inputs[k] = wrappedValue.ToProto()
+	var rawString string
+
+	// Step 1: First unmarshal to remove extra escaping
+	err = json.Unmarshal([]byte(bodyStr), &rawString)
+	if err != nil {
+		fmt.Printf("Error decoding JSON string: %s\n", err)
+		// return
+	}
+
+	// Step 2: Unmarshal the cleaned JSON into the struct
+	err = json.Unmarshal([]byte(rawString), &t.Body)
+	if err != nil {
+		fmt.Printf("Error unmarshaling nested 'body' JSON: %s\n", err)
+		// return
+	}
+
+	// Step 3: Convert json.RawMessage to a dictionary (map)
+	var bodyMap map[string]interface{}
+	err = json.Unmarshal(t.Body.JSON, &bodyMap)
+	if err != nil {
+		fmt.Printf("Error converting json.RawMessage to map: %s\n", err)
+		// return
+	}
+
+	fmt.Printf("Final Decoded Dictionary: %#v\n", bodyMap)
+
+	inputsAsValues, err := convertToValueMap(bodyMap)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	// Create the nested structure
+	wrappedValue := &valuesv1.Value{
+		Struct: &valuesv1.Struct{
+			Ctor: &valuesv1.Value{
+				Symbol: &valuesv1.Symbol{
+					Name: "foo", // TODO: replace with actual constructor name
+				},
+			},
+			Fields: map[string]*valuesv1.Value{
+				"body": &valuesv1.Value{
+					Dict: &valuesv1.Dict{
+						Items: []*valuesv1.Dict_Item{
+							{
+								K: &valuesv1.Value{String_: &valuesv1.String{V: "json"}},
+								V: &valuesv1.Value{
+									Dict: &valuesv1.Dict{
+										Items: convertMapToItems(inputsAsValues),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	msg.Session.Inputs = map[string]*valuesv1.Value{
+		"data": wrappedValue,
 	}
 
 	session, err := sdktypes.SessionFromProto(msg.Session)
@@ -75,35 +146,93 @@ func (s *server) Start(ctx context.Context, req *connect.Request[sessionsv1.Star
 	return connect.NewResponse(&sessionsv1.StartResponse{SessionId: uid.String()}), nil
 }
 
-func decodeNestedJSON(input string) (any, error) {
-	var result any
-	d := json.NewDecoder(strings.NewReader(input))
-	d.UseNumber()
-
-	if err := d.Decode(&result); err != nil {
-		return nil, err
+func convertMapToItems(m map[string]*valuesv1.Value) []*valuesv1.Dict_Item {
+	items := make([]*valuesv1.Dict_Item, 0, len(m))
+	for k, v := range m {
+		items = append(items, &valuesv1.Dict_Item{
+			K: &valuesv1.Value{String_: &valuesv1.String{V: k}},
+			V: v,
+		})
 	}
+	return items
+}
 
-	switch v := result.(type) {
-	case map[string]any:
-		for key, value := range v {
-			if str, ok := value.(string); ok {
-				if decoded, err := decodeNestedJSON(str); err == nil {
-					v[key] = decoded
-				}
-			}
+func convertToValueMap(input map[string]interface{}) (map[string]*valuesv1.Value, error) {
+	result := make(map[string]*valuesv1.Value)
+
+	for k, v := range input {
+		value, err := interfaceToValue(v)
+		if err != nil {
+			return nil, fmt.Errorf("error converting key %s: %w", k, err)
 		}
-	case []any:
-		for i, value := range v {
-			if str, ok := value.(string); ok {
-				if decoded, err := decodeNestedJSON(str); err == nil {
-					v[i] = decoded
-				}
-			}
-		}
+		result[k] = value
 	}
 
 	return result, nil
+}
+
+func interfaceToValue(v interface{}) (*valuesv1.Value, error) {
+	switch x := v.(type) {
+	case string:
+		return &valuesv1.Value{
+			String_: &valuesv1.String{
+				V: x,
+			},
+		}, nil
+	case float64:
+		return &valuesv1.Value{
+			Float: &valuesv1.Float{
+				V: x,
+			},
+		}, nil
+	case bool:
+		return &valuesv1.Value{
+			Boolean: &valuesv1.Boolean{
+				V: x,
+			},
+		}, nil
+	case nil:
+		return &valuesv1.Value{
+			Nothing: &valuesv1.Nothing{},
+		}, nil
+	case map[string]interface{}:
+		items := make([]*valuesv1.Dict_Item, 0, len(x))
+		for k, v := range x {
+			val, err := interfaceToValue(v)
+			if err != nil {
+				return nil, err
+			}
+			kval, err := interfaceToValue(k)
+			if err != nil {
+				return nil, err
+			}
+			items = append(items, &valuesv1.Dict_Item{
+				K: kval,
+				V: val,
+			})
+		}
+		return &valuesv1.Value{
+			Dict: &valuesv1.Dict{
+				Items: items,
+			},
+		}, nil
+	case []interface{}:
+		values := make([]*valuesv1.Value, len(x))
+		for i, v := range x {
+			val, err := interfaceToValue(v)
+			if err != nil {
+				return nil, err
+			}
+			values[i] = val
+		}
+		return &valuesv1.Value{
+			List: &valuesv1.List{
+				Vs: values,
+			},
+		}, nil
+	default:
+		return nil, fmt.Errorf("unsupported type: %T", v)
+	}
 }
 
 func (s *server) Get(ctx context.Context, req *connect.Request[sessionsv1.GetRequest]) (*connect.Response[sessionsv1.GetResponse], error) {

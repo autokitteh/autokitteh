@@ -16,7 +16,7 @@ message StartRequest {
   Session session = 1 [(buf.validate.field).required = true];
 
   // Helper: if set, merged into and overwrites the session's inputs.
-  map<string, google.protobuf.Value> json_inputs = 2;
+  map<string, string> json_inputs = 2;
 }
 
 message StartResponse {
