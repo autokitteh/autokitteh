@@ -110,11 +110,19 @@ func webhookURLs() (changeURL, lifecycleURL string) {
 	return
 }
 
-// https://learn.microsoft.com/en-us/graph/change-notifications-overview
+// https://learn.microsoft.com/en-us/graph/change-notifications-overview#subscription-lifetime
 func expiration(resource string) string {
 	t := time.Now().UTC()
-	t = t.Add(3 * 24 * time.Hour)
-	return t.Format(time.RFC3339)
+	var d time.Duration
+	switch {
+	case strings.HasPrefix(resource, "/chats"):
+		d = 3 * 24 * time.Hour
+	case strings.HasPrefix(resource, "/teams"):
+		d = 3 * 24 * time.Hour
+	default:
+		d = 7 * 24 * time.Hour
+	}
+	return t.Add(d).Format(time.RFC3339)
 }
 
 // If this function is successful (error == nil), it updates the input [Subscription] details...
