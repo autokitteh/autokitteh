@@ -1,4 +1,5 @@
 import {listExports, Symbol, listExportsInDirectory, Symbols, patchCode} from './ast_utils';
+import {Export} from "./pb/autokitteh/user_code/v1/runner_svc_pb";
 
 test('test list symbols', async () => {
     const code = `
@@ -10,20 +11,36 @@ test('test list symbols', async () => {
     function another_func() {}
     `;
 
-    const expected: Symbol[] = [
-        {line: 4, name: "some_func", args: ["a", "b"]},
-        {line: 7, name: "another_func", args: []},
+    const expected: Export[] = [
+        {line: 4, name: "some_func", args: ["a", "b"], file: "test.ts", $typeName:"autokitteh.user_code.v1.Export"},
+        {line: 7, name: "another_func", args: [], file: "test.ts", $typeName:"autokitteh.user_code.v1.Export"},
     ];
-    expect(await listExports(code)).toEqual(expected);
+    expect(await listExports(code, "test.ts")).toEqual(expected);
+});
+
+test('test list symbols arrow func', async () => {
+    const code = `
+    import {a} from './a';
+    
+    const some_func = (a, b) => {
+        return a + b;
+    }
+    const another_func = () => {}
+    `;
+
+    const expected: Export[] = [
+        {line: 4, name: "some_func", args: ["a", "b"], file: "test.ts", $typeName:"autokitteh.user_code.v1.Export"},
+        {line: 7, name: "another_func", args: [], file: "test.ts", $typeName:"autokitteh.user_code.v1.Export"},
+    ];
+    expect(await listExports(code, "test.ts")).toEqual(expected);
 });
 
 test('list symbols in directory', async () => {
     const dir = "./test_data/list_symbols";
     const actual = await listExportsInDirectory(dir)
-    const expected:  Symbols = {
-        "test_data/list_symbols/a.js": [],
-        "test_data/list_symbols/dep.js": [{line: 1, name: "test_func", args: []}],
-    }
+    const expected:  Export[] = [
+        {line: 1, name: "test_func", args: [], file: "test_data/list_symbols/dep.js", $typeName:"autokitteh.user_code.v1.Export"},
+    ]
 
     expect(actual).toEqual(expected);
 })
