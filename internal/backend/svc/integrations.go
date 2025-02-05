@@ -130,7 +130,7 @@ func integrationsFXOption() fx.Option {
 				microsoft.Start(l, muxes, vars, oauth, dispatch)
 				slack.Start(l, muxes, vars, dispatch)
 				twilio.Start(l, muxes, vars, dispatch)
-				zoom.Start(l, muxes, vars, oauth)
+				zoom.Start(l, muxes, vars, oauth, dispatch)
 				return nil
 			})
 		}),
