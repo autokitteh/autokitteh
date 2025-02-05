@@ -71,7 +71,7 @@ func sessionWatch(sid sdktypes.SessionID, endState sdktypes.SessionStateType, en
 	var state sdktypes.SessionStateType
 	var rs []sdktypes.SessionLogRecord
 
-	f := sdkservices.ListSessionLogRecordsFilter{SessionID: sid}
+	f := sdkservices.SessionLogRecordsFilter{SessionID: sid}
 	f.PageSize = int32(pageSize)
 	f.Ascending = true
 
@@ -122,7 +122,7 @@ func sessionWatch(sid sdktypes.SessionID, endState sdktypes.SessionStateType, en
 				return nil, err
 			}
 
-			logs := res.Log.Records()
+			logs := res.Records
 
 			for _, log := range logs {
 				if p, ok := log.GetPrint(); ok {

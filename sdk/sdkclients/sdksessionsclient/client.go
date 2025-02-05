@@ -79,7 +79,7 @@ func (c *client) Get(ctx context.Context, sessionID sdktypes.SessionID) (sdktype
 	return sdktypes.SessionFromProto(resp.Msg.Session)
 }
 
-func (c *client) GetLog(ctx context.Context, filter sdkservices.ListSessionLogRecordsFilter) (*sdkservices.GetLogResults, error) {
+func (c *client) GetLog(ctx context.Context, filter sdkservices.SessionLogRecordsFilter) (*sdkservices.GetLogResults, error) {
 	resp, err := c.client.GetLog(ctx, connect.NewRequest(&sessionsv1.GetLogRequest{
 		SessionId: filter.SessionID.String(),
 		PageSize:  filter.PageSize,
@@ -94,13 +94,14 @@ func (c *client) GetLog(ctx context.Context, filter sdkservices.ListSessionLogRe
 	if err := internal.Validate(resp.Msg); err != nil {
 		return nil, err
 	}
-	log, err := sdktypes.SessionLogFromProto(resp.Msg.Log)
+
+	rs, err := kittehs.TransformError(resp.Msg.Records, sdktypes.SessionLogRecordFromProto)
 	if err != nil {
 		return nil, err
 	}
 
 	return &sdkservices.GetLogResults{
-		Log: log,
+		Records: rs,
 		PaginationResult: sdktypes.PaginationResult{
 			TotalCount:    resp.Msg.Count,
 			NextPageToken: resp.Msg.NextPageToken,

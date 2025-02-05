@@ -111,8 +111,9 @@ message GetLogRequest {
 }
 
 message GetLogResponse {
-  SessionLog log = 1 [(buf.validate.field).required = true];
+  SessionLog log = 1 [(buf.validate.field).required = true]; // deprecated, use records.
   int64 count = 2;
+  repeated SessionLogRecord records = 3 [(buf.validate.field).repeated.items.required = true];
 
   string next_page_token = 10;
 }

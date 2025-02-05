@@ -84,7 +84,7 @@ func (s *svc) session(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log, err := s.Sessions().GetLog(r.Context(), sdkservices.ListSessionLogRecordsFilter{SessionID: sid})
+	log, err := s.Sessions().GetLog(r.Context(), sdkservices.SessionLogRecordsFilter{SessionID: sid})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -108,7 +108,7 @@ func (s *svc) session(w http.ResponseWriter, r *http.Request) {
 
 	var prints string
 
-	for _, r := range log.Log.Records() {
+	for _, r := range log.Records {
 		if s, ok := r.GetPrint(); ok {
 			prints += s + "\n"
 		}
@@ -128,8 +128,8 @@ func (s *svc) session(w http.ResponseWriter, r *http.Request) {
 		Title:       "Session: " + sdkS.ID().String(),
 		ID:          sdkS.ID().String(),
 		SessionJSON: marshalObject(sdkS.WithInputs(nil).ToProto()),
-		LogJSON:     template.HTML(kittehs.Must1(kittehs.MarshalProtoSliceJSON(log.Log.ToProto().Records))),
-		LogText: kittehs.Transform(log.Log.Records(), func(r sdktypes.SessionLogRecord) template.HTML {
+		LogJSON:     template.HTML(kittehs.Must1(kittehs.MarshalProtoSliceJSON(kittehs.Transform(log.Records, sdktypes.ToProto)))),
+		LogText: kittehs.Transform(log.Records, func(r sdktypes.SessionLogRecord) template.HTML {
 			return template.HTML(r.ToString())
 		}),
 		InputsJSON: template.HTML(jsonInputs),
