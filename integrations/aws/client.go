@@ -20,6 +20,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations"
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdklogger"
@@ -27,6 +28,8 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
+
+var desc = common.LegacyDescriptor("aws", "AWS (All APIs)", "/static/images/aws.svg")
 
 type integration struct {
 	vars sdkservices.Vars
@@ -80,21 +83,6 @@ func initOpts(vars sdkservices.Vars) (opts []sdkmodule.Optfn) {
 	}
 	return
 }
-
-var integrationID = sdktypes.NewIntegrationIDFromName("aws")
-
-var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
-	IntegrationId: integrationID.String(),
-	UniqueName:    "aws",
-	DisplayName:   "AWS (All APIs)",
-	Description:   "Aggregation of all available Amazon Web Services (AWS) APIs.",
-	LogoUrl:       "/static/images/aws.svg",
-	UserLinks: map[string]string{
-		"1 API documentation": "https://docs.aws.amazon.com/",
-		"2 Service console":   "https://console.aws.amazon.com/",
-	},
-	ConnectionUrl: "/aws/connect",
-}))
 
 func New(cvars sdkservices.Vars) sdkservices.Integration {
 	i := &integration{vars: cvars}

@@ -46,5 +46,5 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	c.Finalize(sdktypes.NewVars().
 		Set(apiKeyVar, r.Form.Get("key"), true).
-		Set(authType, integrations.Init, false))
+		Set(authTypeVar, integrations.Init, false))
 }

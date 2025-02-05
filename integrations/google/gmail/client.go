@@ -11,9 +11,9 @@ import (
 	googleoauth2 "google.golang.org/api/oauth2/v2"
 	"google.golang.org/api/option"
 
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/google/connections"
 	"go.autokitteh.dev/autokitteh/integrations/google/vars"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -21,7 +21,13 @@ import (
 )
 
 const (
-	googleScope = "google"
+	integrationName = "gmail"
+)
+
+var (
+	IntegrationID = sdktypes.NewIntegrationIDFromName(integrationName)
+
+	desc = common.LegacyDescriptor(integrationName, "Gmail", "/static/images/gmail.svg")
 )
 
 type api struct {
@@ -29,24 +35,8 @@ type api struct {
 	cid  sdktypes.ConnectionID
 }
 
-var IntegrationID = sdktypes.NewIntegrationIDFromName("gmail")
-
-var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
-	IntegrationId: IntegrationID.String(),
-	UniqueName:    "gmail",
-	DisplayName:   "Gmail",
-	Description:   "Gmail is an email service provided by Google.",
-	LogoUrl:       "/static/images/gmail.svg",
-	ConnectionUrl: "/gmail/connect",
-	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
-		RequiresConnectionInit: true,
-	},
-}))
-
 func New(cvars sdkservices.Vars) sdkservices.Integration {
-	scope := googleScope
-
-	opts := ExportedFunctions(cvars, scope, false)
+	opts := ExportedFunctions(cvars, "google", false)
 
 	return sdkintegrations.NewIntegration(
 		desc,

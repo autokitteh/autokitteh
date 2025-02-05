@@ -9,40 +9,24 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-type integration struct{ vars sdkservices.Vars }
-
 var (
-	integrationID = sdktypes.NewIntegrationIDFromName("auth0")
+	desc = common.LegacyDescriptor("auth0", "Auth0", "/static/images/auth0.svg")
 
-	authType         = sdktypes.NewSymbol("auth_type")
-	clientIDName     = sdktypes.NewSymbol("client_id")
-	clientSecretName = sdktypes.NewSymbol("client_secret")
-	domainName       = sdktypes.NewSymbol("auth0_domain")
-	authTokenName    = sdktypes.NewSymbol("oauth_AccessToken")
+	authTypeVar         = sdktypes.NewSymbol("auth_type")
+	clientIDNameVar     = sdktypes.NewSymbol("client_id")
+	clientSecretNameVar = sdktypes.NewSymbol("client_secret")
+	domainNameVar       = sdktypes.NewSymbol("auth0_domain")
+	authTokenNameVar    = sdktypes.NewSymbol("oauth_AccessToken")
 )
 
-var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
-	IntegrationId: integrationID.String(),
-	UniqueName:    "auth0",
-	DisplayName:   "Auth0",
-	Description:   "Auth0 is an identity platform that provides authentication and authorization services.",
-	LogoUrl:       "/static/images/auth0.svg",
-	UserLinks: map[string]string{
-		"1 Auth0 API reference": "https://auth0.com/docs/api/management/v2",
-		"2 Python client API":   "https://auth0-python.readthedocs.io/en/latest/",
-	},
-	ConnectionUrl: "/auth0/connect",
-	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
-		RequiresConnectionInit: true,
-	},
-}))
+type integration struct{ vars sdkservices.Vars }
 
 func New(cvars sdkservices.Vars) sdkservices.Integration {
 	i := &integration{vars: cvars}
@@ -67,7 +51,7 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 			return sdktypes.InvalidStatus, err
 		}
 
-		at := vs.Get(authType)
+		at := vs.Get(authTypeVar)
 		if !at.IsValid() || at.Value() == "" {
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 		}
@@ -98,8 +82,8 @@ func connTest(i *integration) sdkintegrations.OptFn {
 		}
 
 		// TODO(INT-124): Use the refresh token to get a new access token.
-		token := vs.Get(authTokenName).Value()
-		domain := vs.Get(domainName).Value()
+		token := vs.Get(authTokenNameVar).Value()
+		domain := vs.Get(domainNameVar).Value()
 		// https://auth0.com/docs/api/management/v2/stats/get-active-users
 		url := fmt.Sprintf("https://%s/api/v2/stats/active-users", domain)
 
