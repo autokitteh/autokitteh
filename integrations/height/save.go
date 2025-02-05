@@ -84,7 +84,7 @@ func (h handler) saveAuthType(ctx context.Context, vsid sdktypes.VarScopeID, aut
 }
 
 // savePrivateOAuth saves the user-provided details of a
-// private Linear OAuth 2.0 app as connection variables.
+// private Height OAuth 2.0 app as connection variables.
 func (h handler) savePrivateOAuth(r *http.Request, vsid sdktypes.VarScopeID) error {
 	app := privateOAuth{
 		ClientID:     r.FormValue("client_id"),
