@@ -1,6 +1,8 @@
 from autokitteh_pb.sessions.v1 import session_pb2 as _session_pb2
+from autokitteh_pb.values.v1 import values_pb2 as _values_pb2
 from buf.validate import validate_pb2 as _validate_pb2
 from google.protobuf import duration_pb2 as _duration_pb2
+from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from google.protobuf.internal import containers as _containers
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
@@ -122,6 +124,35 @@ class GetLogResponse(_message.Message):
     records: _containers.RepeatedCompositeFieldContainer[_session_pb2.SessionLogRecord]
     next_page_token: str
     def __init__(self, log: _Optional[_Union[_session_pb2.SessionLog, _Mapping]] = ..., count: _Optional[int] = ..., records: _Optional[_Iterable[_Union[_session_pb2.SessionLogRecord, _Mapping]]] = ..., next_page_token: _Optional[str] = ...) -> None: ...
+
+class GetPrintsRequest(_message.Message):
+    __slots__ = ["session_id", "ascending", "page_size", "skip", "page_token"]
+    SESSION_ID_FIELD_NUMBER: _ClassVar[int]
+    ASCENDING_FIELD_NUMBER: _ClassVar[int]
+    PAGE_SIZE_FIELD_NUMBER: _ClassVar[int]
+    SKIP_FIELD_NUMBER: _ClassVar[int]
+    PAGE_TOKEN_FIELD_NUMBER: _ClassVar[int]
+    session_id: str
+    ascending: bool
+    page_size: int
+    skip: int
+    page_token: str
+    def __init__(self, session_id: _Optional[str] = ..., ascending: bool = ..., page_size: _Optional[int] = ..., skip: _Optional[int] = ..., page_token: _Optional[str] = ...) -> None: ...
+
+class GetPrintsResponse(_message.Message):
+    __slots__ = ["prints", "next_page_token"]
+    class Print(_message.Message):
+        __slots__ = ["v", "t"]
+        V_FIELD_NUMBER: _ClassVar[int]
+        T_FIELD_NUMBER: _ClassVar[int]
+        v: _values_pb2.Value
+        t: _timestamp_pb2.Timestamp
+        def __init__(self, v: _Optional[_Union[_values_pb2.Value, _Mapping]] = ..., t: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
+    PRINTS_FIELD_NUMBER: _ClassVar[int]
+    NEXT_PAGE_TOKEN_FIELD_NUMBER: _ClassVar[int]
+    prints: _containers.RepeatedCompositeFieldContainer[GetPrintsResponse.Print]
+    next_page_token: str
+    def __init__(self, prints: _Optional[_Iterable[_Union[GetPrintsResponse.Print, _Mapping]]] = ..., next_page_token: _Optional[str] = ...) -> None: ...
 
 class DeleteRequest(_message.Message):
     __slots__ = ["session_id"]

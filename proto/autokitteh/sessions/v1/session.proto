@@ -94,7 +94,7 @@ message SessionLogRecord {
   // Bitfield.
   enum Type {
     TYPE_UNSPECIFIED = 0;
-    TYPE_PRINT = 1;
+    TYPE_PRINT = 1; // deprecated, avoid.
     TYPE_CALL_SPEC = 2;
     TYPE_CALL_ATTEMPT_START = 4;
     TYPE_CALL_ATTEMPT_COMPLETE = 8;
@@ -114,7 +114,7 @@ message SessionLogRecord {
   string process_id = 2;
 
   // one of the following is required.
-  Print print = 10;
+  Print print = 10; // deprecated, avoid.
   Call.Spec call_spec = 11;
   Call.Attempt.Start call_attempt_start = 12;
   Call.Attempt.Complete call_attempt_complete = 13;

@@ -39,6 +39,16 @@ type GetLogResults struct {
 	sdktypes.PaginationResult
 }
 
+type SessionPrint struct {
+	Timestamp time.Time
+	Value     sdktypes.Value
+}
+
+type GetPrintsResults struct {
+	Prints []*SessionPrint
+	sdktypes.PaginationResult
+}
+
 type Sessions interface {
 	Start(ctx context.Context, session sdktypes.Session) (sdktypes.SessionID, error)
 	// Will always try first to gracefully terminate the session.
@@ -48,5 +58,6 @@ type Sessions interface {
 	List(ctx context.Context, filter ListSessionsFilter) (*ListSessionResult, error)
 	Get(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.Session, error)
 	GetLog(ctx context.Context, filter SessionLogRecordsFilter) (*GetLogResults, error)
+	GetPrints(ctx context.Context, sid sdktypes.SessionID, pagination sdktypes.PaginationRequest) (*GetPrintsResults, error)
 	Delete(ctx context.Context, sessionID sdktypes.SessionID) error
 }

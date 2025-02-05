@@ -88,7 +88,7 @@ type SessionLogRecord_Type int32
 
 const (
 	SessionLogRecord_TYPE_UNSPECIFIED           SessionLogRecord_Type = 0
-	SessionLogRecord_TYPE_PRINT                 SessionLogRecord_Type = 1
+	SessionLogRecord_TYPE_PRINT                 SessionLogRecord_Type = 1 // deprecated, avoid.
 	SessionLogRecord_TYPE_CALL_SPEC             SessionLogRecord_Type = 2
 	SessionLogRecord_TYPE_CALL_ATTEMPT_START    SessionLogRecord_Type = 4
 	SessionLogRecord_TYPE_CALL_ATTEMPT_COMPLETE SessionLogRecord_Type = 8
@@ -288,7 +288,7 @@ type SessionLogRecord struct {
 	T         *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=t,proto3" json:"t,omitempty"`
 	ProcessId string                 `protobuf:"bytes,2,opt,name=process_id,json=processId,proto3" json:"process_id,omitempty"`
 	// one of the following is required.
-	Print               *SessionLogRecord_Print       `protobuf:"bytes,10,opt,name=print,proto3" json:"print,omitempty"`
+	Print               *SessionLogRecord_Print       `protobuf:"bytes,10,opt,name=print,proto3" json:"print,omitempty"` // deprecated, avoid.
 	CallSpec            *Call_Spec                    `protobuf:"bytes,11,opt,name=call_spec,json=callSpec,proto3" json:"call_spec,omitempty"`
 	CallAttemptStart    *Call_Attempt_Start           `protobuf:"bytes,12,opt,name=call_attempt_start,json=callAttemptStart,proto3" json:"call_attempt_start,omitempty"`
 	CallAttemptComplete *Call_Attempt_Complete        `protobuf:"bytes,13,opt,name=call_attempt_complete,json=callAttemptComplete,proto3" json:"call_attempt_complete,omitempty"`
