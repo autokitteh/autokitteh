@@ -4,6 +4,7 @@ import generate from "@babel/generator";
 import {isMemberExpression, identifier, isIdentifier, isAwaitExpression} from "@babel/types";
 import {listFiles} from "./file_utils";
 import fs from "fs"
+import {Export} from "./pb/autokitteh/user_code/v1/runner_svc_pb";
 
 export interface Symbol {
     file: string;
@@ -16,10 +17,10 @@ export interface Symbols {
     [fileName: string]: Symbol[];
 }
 
-export async function listSymbols(code: string, file: string): Promise<Symbol[]> {
+export async function listExports(code: string, file: string): Promise<Export[]> {
     const ast = parse(code, {sourceType: "module", plugins: ["typescript"]});
 
-    let symbols: Symbol[] = [];
+    let exports: Export[] = [];
     traverse(ast, {
         FunctionDeclaration: function (path) {
             let params: string[] = []
@@ -41,22 +42,22 @@ export async function listSymbols(code: string, file: string): Promise<Symbol[]>
                 line = path.node.loc.start.line;
             }
 
-            symbols.push({args: params, line: line, name: name, file: file});
+            exports.push({args: params, line: line, name: name, file: file, $typeName:"autokitteh.user_code.v1.Export"});
         },
     })
 
-    return symbols;
+    return exports;
 }
 
-export async function listSymbolsInDirectory(dirPath: string): Promise<Symbol[]> {
+export async function listExportsInDirectory(dirPath: string): Promise<Export[]> {
     const files = await listFiles(dirPath);
-    let symbols: Symbol[] = []
+    let exports: Export[] = []
     for (const file of files) {
         let code = fs.readFileSync(file, "utf8");
-        symbols = symbols.concat(symbols, await listSymbols(code, file))
+        exports = exports.concat(exports, await listExports(code, file))
     }
 
-    return symbols;
+    return exports;
 }
 
 export async function patchCode(code: string, exclude: string[] = []): Promise<string> {

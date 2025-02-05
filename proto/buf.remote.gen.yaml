@@ -23,6 +23,7 @@ plugins:
   - remote: buf.build/grpc/python:v1.66.2
     out: ../runtimes/pythonrt/runner/pb
   - remote: buf.build/bufbuild/es:v2.2.3
+    include_imports: true
     out: ../runtimes/nodejsrt/runner/pb
     opt: target=ts
 

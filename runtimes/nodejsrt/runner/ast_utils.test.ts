@@ -1,4 +1,4 @@
-import {listSymbols, Symbol, listSymbolsInDirectory, Symbols, patchCode} from './ast_utils';
+import {listExports, Symbol, listExportsInDirectory, Symbols, patchCode} from './ast_utils';
 
 test('test list symbols', async () => {
     const code = `
@@ -14,12 +14,12 @@ test('test list symbols', async () => {
         {line: 4, name: "some_func", args: ["a", "b"]},
         {line: 7, name: "another_func", args: []},
     ];
-    expect(await listSymbols(code)).toEqual(expected);
+    expect(await listExports(code)).toEqual(expected);
 });
 
 test('list symbols in directory', async () => {
     const dir = "./test_data/list_symbols";
-    const actual = await listSymbolsInDirectory(dir)
+    const actual = await listExportsInDirectory(dir)
     const expected:  Symbols = {
         "test_data/list_symbols/a.js": [],
         "test_data/list_symbols/dep.js": [{line: 1, name: "test_func", args: []}],

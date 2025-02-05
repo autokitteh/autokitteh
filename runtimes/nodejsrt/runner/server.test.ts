@@ -1,45 +1,42 @@
-import { listExports, execute } from './server';
-import { ServerUnaryCall, sendUnaryData } from '@grpc/grpc-js';
-import { ExportsRequest, ExportsResponse, ExecuteRequest, ExecuteResponse } from './pb/ak';
-import {functionsCache, resultsCache} from "./ak_call";
-import {EventEmitter, once} from "node:events";
+import {functionsCache} from "./ak_call";
+import { createRouterTransport, createClient } from "@connectrpc/connect";
+import server from "./server";
+
+import {RunnerService } from "./pb/autokitteh/user_code/v1/runner_svc_pb";
+import { Value } from "./pb/autokitteh/values/v1/values_pb";
+
+test('xxx', async () => {
+    const mockTransport = createRouterTransport(server)
+    const client = createClient(RunnerService, mockTransport);
+    let v: Value = { $typeName:"autokitteh.values.v1.Value", string: {$typeName:"autokitteh.values.v1.String", v:"a"}};
+    await client.activityReply({result: v, error: "a", $typeName:"autokitteh.user_code.v1.ActivityReplyRequest"});
+});
 
 test('listExports', async () => {
-    const mockRequest: Partial<ServerUnaryCall<ExportsRequest, ExportsResponse>> = {
-        request: { fileName: "dep.js" },
-    };
-
+    const mockTransport = createRouterTransport(server)
+    const client = createClient(RunnerService, mockTransport);
     process.env["CODE_DIR"] = "test_data/list_symbols"
 
-    const mockCallback: sendUnaryData<ExportsResponse> = async (error, response) => {
-        expect(response?.exports).toEqual([{"args": [], "line": 1, "name": "test_func"}]);
-    };
-
-    // Invoke the service method
-    await listExports(mockRequest as ServerUnaryCall<ExportsRequest, ExportsResponse>, mockCallback);
+    const resp = await client.exports({fileName: "dep.js"})
+    expect(resp.exports).toEqual([{
+        "$typeName": "autokitteh.user_code.v1.Export",
+        "args": [],
+        "line": 1,
+        "name": "test_func",
+        "file": "test_data/list_symbols/dep.js",
+    }]);
 });
 
 
 test('execute', async () => {
-    const encoder = new TextEncoder();
-    const mockRequest: Partial<ServerUnaryCall<ExecuteRequest, ExecuteResponse>> = {
-        request: {data: encoder.encode(JSON.stringify({"function": "sum", "args": [1,2]}))}
-    };
-
     functionsCache["sum"] = async (a: number, b: number) => {
         return a + b;
     }
-
-    resultsCache["sum"] = new EventEmitter()
-
-    const mockCallback: sendUnaryData<ExecuteResponse> = async (error, response) => {
-        const decoder = new TextDecoder();
-        const resultsCacheKey = JSON.parse(decoder.decode(response?.result))
-        expect(resultsCacheKey).toEqual("sum");
-        const results = (await once(resultsCache["sum"], "result"))[0];
-        expect(results).toEqual(3)
-    };
-
-    // Invoke the service method
-    await execute(mockRequest as ServerUnaryCall<ExecuteRequest, ExecuteResponse>, mockCallback);
+    const encoder = new TextEncoder();
+    const mockTransport = createRouterTransport(server)
+    const client = createClient(RunnerService, mockTransport);
+    const req = JSON.stringify({"function": "sum", "args": [1,2]})
+    const resp = await client.execute({data: encoder.encode(req)})
+    const results = JSON.parse(resp.result?.string?.v ?? '')
+    expect(results).toEqual(3)
 });
