@@ -53,3 +53,7 @@ check-sdk-docs-requirements:
 	cd py-sdk/docs && ./gen-reqs.py
 	git add -N .
 	git diff --name-only --exit-code
+
+clean-temporal:
+	killall -9 "temporal-cli-go-sdk-1.31.0" 
+	rm "/Users/adiludmer/Library/Application Support/autokitteh/temporal_dev.sqlite"

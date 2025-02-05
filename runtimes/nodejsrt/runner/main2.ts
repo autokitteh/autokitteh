@@ -3,11 +3,7 @@ import { fastifyConnectPlugin } from "@connectrpc/connect-fastify";
 import routes from "./server"
 
 async function main() {
-    const server = fastify(
-        {
-            http2: true,
-        }
-    );
+    const server = fastify();
     await server.register(fastifyConnectPlugin, {
         routes,
     });
@@ -15,7 +11,7 @@ async function main() {
         reply.type("text/plain");
         reply.send("Hello World!");
     });
-    await server.listen({ host: "localhost", port: 8080 });
+    await server.listen({ host: "localhost", port: 8085 });
     console.log("server is listening at", server.addresses());
 }
 // You can remove the main() wrapper if you set type: module in your package.json,
