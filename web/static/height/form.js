@@ -8,13 +8,6 @@ document.getElementById("origin").value = urlParams.get("origin") ?? "";
 document.getElementById("authType").addEventListener("change", function () {
   const isOauthPrivate = this.value === "oauthPrivate";
 
-  const oauthSection = document.getElementById("oauthSection");
-  if (isOauthPrivate) {
-    oauthSection.classList.remove("hidden");
-  } else {
-    oauthSection.classList.add("hidden");
-  }
-
   const privateOauthSection = document.getElementById("privateOauthSection");
   if (isOauthPrivate) {
     privateOauthSection.classList.remove("hidden");
