@@ -14,6 +14,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionsvcs"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows"
 	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -67,7 +68,36 @@ func (s *sessions) StartWorkers(ctx context.Context) error {
 	return nil
 }
 
-func (s *sessions) GetLog(ctx context.Context, filter sdkservices.ListSessionLogRecordsFilter) (*sdkservices.GetLogResults, error) {
+func (s *sessions) GetPrints(ctx context.Context, sid sdktypes.SessionID, pagination sdktypes.PaginationRequest) (*sdkservices.GetPrintsResults, error) {
+	if err := authz.CheckContext(ctx, sid, "read:get-prints", authz.WithData("pagination", pagination), authz.WithConvertForbiddenToNotFound); err != nil {
+		return nil, err
+	}
+
+	lr, err := s.svcs.DB.GetSessionLog(ctx, sdkservices.SessionLogRecordsFilter{
+		SessionID:         sid,
+		Types:             sdktypes.PrintSessionLogRecordType,
+		PaginationRequest: pagination,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	prints := kittehs.Transform(lr.Records, func(r sdktypes.SessionLogRecord) *sdkservices.SessionPrint {
+		p, _ := r.GetPrint()
+
+		return &sdkservices.SessionPrint{
+			Timestamp: r.Timestamp(),
+			Value:     sdktypes.NewStringValue(p),
+		}
+	})
+
+	return &sdkservices.GetPrintsResults{
+		Prints:           prints,
+		PaginationResult: lr.PaginationResult,
+	}, nil
+}
+
+func (s *sessions) GetLog(ctx context.Context, filter sdkservices.SessionLogRecordsFilter) (*sdkservices.GetLogResults, error) {
 	if err := authz.CheckContext(ctx, filter.SessionID, "read:get-log", authz.WithData("filter", filter), authz.WithConvertForbiddenToNotFound); err != nil {
 		return nil, err
 	}

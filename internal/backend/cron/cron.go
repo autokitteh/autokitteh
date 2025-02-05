@@ -174,6 +174,7 @@ func (cr *Cron) updateSchedule(ctx context.Context, handle client.ScheduleHandle
 func (cr *Cron) workflow(wctx workflow.Context) error {
 	// Start multiple child workflows in parallel.
 	cwfs := []workflow.ChildWorkflowFuture{}
+	cwfs = append(cwfs, workflow.ExecuteChildWorkflow(wctx, cr.renewGmailEventWatchesWorkflow))
 	cwfs = append(cwfs, workflow.ExecuteChildWorkflow(wctx, cr.renewGoogleCalendarEventWatchesWorkflow))
 	cwfs = append(cwfs, workflow.ExecuteChildWorkflow(wctx, cr.renewGoogleDriveEventWatchesWorkflow))
 	cwfs = append(cwfs, workflow.ExecuteChildWorkflow(wctx, cr.renewGoogleFormsEventWatchesWorkflow))

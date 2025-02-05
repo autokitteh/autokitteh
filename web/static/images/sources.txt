@@ -54,6 +54,9 @@ HTTP/REST:
 https://commons.wikimedia.org/wiki/File:HTTP_logo.svg
 https://upload.wikimedia.org/wikipedia/commons/5/5b/HTTP_logo.svg
 
+Linear:
+https://linear.app/brand
+
 Microsoft:
 https://commons.wikimedia.org/wiki/File:Microsoft_logo.svg
 https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg

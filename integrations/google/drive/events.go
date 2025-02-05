@@ -58,8 +58,13 @@ func constructSingleEvent(a api, change *drive.Change) (sdktypes.Event, error) {
 		return sdktypes.InvalidEvent, err
 	}
 
+	eventType := "file_change"
+	if change.Removed {
+		eventType = "file_remove"
+	}
+
 	akEvent, err := sdktypes.EventFromProto(&sdktypes.EventPB{
-		EventType: "change",
+		EventType: eventType,
 		Data:      kittehs.TransformMapValues(data, sdktypes.ToProto),
 	})
 	if err != nil {

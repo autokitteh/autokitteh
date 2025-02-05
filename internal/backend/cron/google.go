@@ -8,6 +8,7 @@ import (
 
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
+	"google.golang.org/api/googleapi"
 
 	"go.autokitteh.dev/autokitteh/integrations/google/calendar"
 	"go.autokitteh.dev/autokitteh/integrations/google/drive"
@@ -202,6 +203,10 @@ func (cr *Cron) checkGoogleCalendarEventWatch(ctx context.Context, cid sdktypes.
 	}
 
 	e := vs.GetValue(vars.CalendarEventsWatchExp)
+	if e == "" {
+		return false // No optional watch to renew.
+	}
+
 	timestamp, err := strconv.ParseInt(e, 10, 64)
 	if err != nil {
 		l.Warn("invalid Google Calendar event watch expiration timestamp",
@@ -248,6 +253,10 @@ func (cr *Cron) checkGoogleFormsEventWatch(ctx context.Context, cid sdktypes.Con
 	}
 
 	e := vs.GetValue(vars.FormWatchesExpiration)
+	if e == "" {
+		return false // No optional watch to renew.
+	}
+
 	t, err := time.Parse(time.RFC3339, e)
 	if err != nil {
 		l.Warn("invalid Google Forms event watch expiration time during renewal check",
@@ -263,8 +272,10 @@ func (cr *Cron) checkGoogleFormsEventWatch(ctx context.Context, cid sdktypes.Con
 
 type update func(context.Context, sdkservices.Vars, sdktypes.ConnectionID) error
 
-func (cr *Cron) renewGoogleEventWatchesActivity(ctx context.Context, cid sdktypes.ConnectionID, u update) error {
+func (cr *Cron) renewGoogleEventWatchesActivity(ctx context.Context, cid sdktypes.ConnectionID, name string, u update) error {
 	l := cr.logger.With(zap.String("connection_id", cid.String()))
+	l.Sugar().Debugf("renewing %s event watches in: %s", name, cid.String())
+
 	ctx = authcontext.SetAuthnSystemUser(ctx)
 
 	err := u(ctx, cr.vars, cid)
@@ -273,21 +284,48 @@ func (cr *Cron) renewGoogleEventWatchesActivity(ctx context.Context, cid sdktype
 		return err
 	}
 
+	l.Sugar().Debugf("finished renewing %s event watches in: %s", name, cid.String())
 	return nil
 }
 
 func (cr *Cron) renewGmailEventWatchActivity(ctx context.Context, cid sdktypes.ConnectionID) error {
-	return cr.renewGoogleEventWatchesActivity(ctx, cid, gmail.UpdateWatch)
+	return cr.renewGoogleEventWatchesActivity(ctx, cid, "Gmail", gmail.UpdateWatch)
 }
 
 func (cr *Cron) renewGoogleCalendarEventWatchActivity(ctx context.Context, cid sdktypes.ConnectionID) error {
-	return cr.renewGoogleEventWatchesActivity(ctx, cid, calendar.UpdateWatches)
+	return cr.renewGoogleEventWatchesActivity(ctx, cid, "Google Calendar", calendar.UpdateWatches)
 }
 
 func (cr *Cron) renewGoogleDriveEventWatchActivity(ctx context.Context, cid sdktypes.ConnectionID) error {
-	return cr.renewGoogleEventWatchesActivity(ctx, cid, drive.UpdateWatches)
+	return cr.renewGoogleEventWatchesActivity(ctx, cid, "Google Drive", drive.UpdateWatches)
 }
 
 func (cr *Cron) renewGoogleFormsEventWatchesActivity(ctx context.Context, cid sdktypes.ConnectionID) error {
-	return cr.renewGoogleEventWatchesActivity(ctx, cid, forms.UpdateWatches)
+	err := cr.renewGoogleEventWatchesActivity(ctx, cid, "Google Forms", forms.UpdateWatches)
+	gerr := &googleapi.Error{}
+
+	// Any error other than "form ID not found" should be retryable.
+	if err == nil || !errors.As(err, &gerr) || gerr.Code != 404 {
+		return err
+	}
+
+	// Form ID not found: forget the ID and its watches, and finish.
+	cr.stopWatchingForm(ctx, cid)
+	return nil
+}
+
+func (cr *Cron) stopWatchingForm(ctx context.Context, cid sdktypes.ConnectionID) {
+	l := cr.logger.With(zap.String("connection_id", cid.String()))
+
+	ctx = authcontext.SetAuthnSystemUser(ctx)
+
+	symbols := []sdktypes.Symbol{
+		vars.FormID, vars.FormWatchesExpiration,
+		vars.FormResponsesWatchID, vars.FormSchemaWatchID,
+	}
+	if err := cr.vars.Delete(ctx, sdktypes.NewVarScopeID(cid), symbols...); err != nil {
+		l.Error("failed to delete invalid Google Form ID during watch renewal", zap.Error(err))
+	} else {
+		l.Info("deleted invalid Google Form ID during watch renewal")
+	}
 }

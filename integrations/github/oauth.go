@@ -100,9 +100,9 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	appID := os.Getenv("GITHUB_APP_ID")
-	if vs.GetValueByString("client_secret") != "" {
+	if vs.GetValue(vars.ClientSecret) != "" {
 		// Use custom GitHub App credentials instead of environment variables
-		appID = vs.GetValueByString("app_id")
+		appID = vs.GetValue(vars.AppID)
 	}
 
 	aid, err := strconv.ParseInt(appID, 10, 64)
@@ -150,10 +150,15 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	ps := strings.ReplaceAll(string(perms[1:len(perms)-1]), `"`, "")
 	ps = strings.ReplaceAll(ps, ",", " ")
 
+	at := integrations.OAuthDefault
+	if vs.GetValue(vars.ClientSecret) != "" {
+		at = integrations.OAuthPrivate
+	}
+
 	c.Finalize(sdktypes.NewVars().
 		Set(vars.AppID, appID, false).
 		Set(vars.AppName, *i.AppSlug, false).
-		Set(vars.AuthType, integrations.OAuth, false).
+		Set(vars.AuthType, at, false).
 		Set(vars.InstallID, installID, false).
 		Set(vars.TargetID, strconv.FormatInt(*i.TargetID, 10), false).
 		Set(vars.TargetName, name, false).

@@ -22,7 +22,9 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/google/gmail"
 	"go.autokitteh.dev/autokitteh/integrations/google/sheets"
 	"go.autokitteh.dev/autokitteh/integrations/grpc"
+	"go.autokitteh.dev/autokitteh/integrations/height"
 	"go.autokitteh.dev/autokitteh/integrations/hubspot"
+	"go.autokitteh.dev/autokitteh/integrations/linear"
 	"go.autokitteh.dev/autokitteh/integrations/microsoft"
 	"go.autokitteh.dev/autokitteh/integrations/microsoft/teams"
 	"go.autokitteh.dev/autokitteh/integrations/redis"
@@ -98,8 +100,10 @@ func integrationsFXOption() fx.Option {
 		integration("gemini", configset.Empty, gemini.New),
 		integration("google", configset.Empty, google.New),
 		integration("grpc", configset.Empty, grpc.New),
+		integration("height", configset.Empty, height.New),
 		integration("hubspot", configset.Empty, hubspot.New),
 		integration("jira", configset.Empty, jira.New),
+		integration("linear", configset.Empty, linear.New),
 		integration("microsoft", configset.Empty, microsoft.New),
 		integration("microsoft_teams", configset.Empty, teams.New),
 		integration("redis", configset.Empty, redis.New),
@@ -117,8 +121,10 @@ func integrationsFXOption() fx.Option {
 				gemini.Start(l, muxes)
 				github.Start(l, muxes, vars, oauth, dispatch)
 				google.Start(l, muxes, vars, oauth, dispatch)
+				height.Start(l, muxes, vars, oauth, dispatch)
 				hubspot.Start(l, muxes, oauth)
 				jira.Start(l, muxes, vars, oauth, dispatch)
+				linear.Start(l, muxes, vars, oauth, dispatch)
 				microsoft.Start(l, muxes, vars, oauth, dispatch)
 				slack.Start(l, muxes, vars, dispatch)
 				twilio.Start(l, muxes, vars, dispatch)

@@ -28,14 +28,24 @@ type ListSessionResult struct {
 	sdktypes.PaginationResult
 }
 
-type ListSessionLogRecordsFilter struct {
+type SessionLogRecordsFilter struct {
 	SessionID sdktypes.SessionID
 	Types     sdktypes.SessionLogRecordType // bitmask
 	sdktypes.PaginationRequest
 }
 
 type GetLogResults struct {
-	Log sdktypes.SessionLog
+	Records []sdktypes.SessionLogRecord
+	sdktypes.PaginationResult
+}
+
+type SessionPrint struct {
+	Timestamp time.Time
+	Value     sdktypes.Value
+}
+
+type GetPrintsResults struct {
+	Prints []*SessionPrint
 	sdktypes.PaginationResult
 }
 
@@ -47,6 +57,7 @@ type Sessions interface {
 	// List returns sessions without their data.
 	List(ctx context.Context, filter ListSessionsFilter) (*ListSessionResult, error)
 	Get(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.Session, error)
-	GetLog(ctx context.Context, filter ListSessionLogRecordsFilter) (*GetLogResults, error)
+	GetLog(ctx context.Context, filter SessionLogRecordsFilter) (*GetLogResults, error)
+	GetPrints(ctx context.Context, sid sdktypes.SessionID, pagination sdktypes.PaginationRequest) (*GetPrintsResults, error)
 	Delete(ctx context.Context, sessionID sdktypes.SessionID) error
 }

@@ -52,6 +52,9 @@ var GoogleGeminiWebContent embed.FS
 //go:embed googlesheets/connect
 var GoogleSheetsWebContent embed.FS
 
+//go:embed height
+var HeightWebContent embed.FS
+
 //go:embed i/http/connect
 var HTTPWebContent embed.FS
 
@@ -60,6 +63,9 @@ var HubSpotWebContent embed.FS
 
 //go:embed jira/connect
 var JiraWebContent embed.FS
+
+//go:embed linear
+var LinearWebContent embed.FS
 
 //go:embed microsoft
 var MicrosoftWebContent embed.FS

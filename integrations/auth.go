@@ -5,9 +5,10 @@ package integrations
 const (
 	APIKey       = "apiKey"
 	APIToken     = "apiToken"
-	Init         = "initialized" // integrations with 1 auth method
+	DaemonApp    = "daemonApp"   // Microsoft integrations only
+	Init         = "initialized" // Integrations with only 1 type by definition
 	JSONKey      = "jsonKey"     // Google integrations only
-	OAuth        = "oauth"       // Deprecate?
+	OAuth        = "oauth"       // Deprecate in the future, use "OAuthDefault"
 	OAuthDefault = "oauthDefault"
 	OAuthPrivate = "oauthPrivate"
 	PAT          = "pat"

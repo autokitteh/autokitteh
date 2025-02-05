@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/descope/go-sdk/descope/client"
@@ -11,19 +12,28 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authloginhttpsvc/web"
 )
 
-const descopeLoginPath = "/auth/descope/login"
+const (
+	descopeRootPath      = "/auth/descope"
+	descopeProjectIDPath = descopeRootPath + "/project_id"
+	descopeLoginPath     = descopeRootPath + "/login"
+)
 
 func registerDescopeRoutes(mux *http.ServeMux, cfg descopeConfig, onSuccess func(context.Context, *loginData) http.Handler) error {
 	if cfg.ProjectID == "" {
 		return errors.New("descope login is enabled, but missing DESCOPE_PROJECT_ID")
 	}
 
-	client, err := client.NewWithConfig(&client.Config{ProjectID: cfg.ProjectID, ManagementKey: cfg.ManagementKey})
+	client, err := client.NewWithConfig(&client.Config{ProjectID: cfg.ProjectID})
 	if err != nil {
 		return err
 	}
 
-	mux.Handle(descopeLoginPath, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc(descopeProjectIDPath, func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintf(w, "%q", cfg.ProjectID)
+	})
+
+	mux.HandleFunc(descopeLoginPath, func(w http.ResponseWriter, r *http.Request) {
 		jwt := r.URL.Query().Get("jwt")
 
 		if jwt == "" {
@@ -64,7 +74,7 @@ func registerDescopeRoutes(mux *http.ServeMux, cfg descopeConfig, onSuccess func
 		}
 
 		onSuccess(ctx, &ld).ServeHTTP(w, r)
-	}))
+	})
 
 	return nil
 }

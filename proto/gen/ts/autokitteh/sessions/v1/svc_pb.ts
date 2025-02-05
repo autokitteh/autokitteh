@@ -4,8 +4,9 @@
 // @ts-nocheck
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
-import { Duration, Message, proto3, protoInt64 } from "@bufbuild/protobuf";
-import { Session, SessionLog, SessionLogRecord_Type, SessionStateType } from "./session_pb.js";
+import { Duration, Message, proto3, protoInt64, Timestamp } from "@bufbuild/protobuf";
+import { Session, SessionLog, SessionLogRecord, SessionLogRecord_Type, SessionStateType } from "./session_pb.js";
+import { Value } from "../../values/v1/values_pb.js";
 
 /**
  * @generated from message autokitteh.sessions.v1.StartRequest
@@ -494,6 +495,8 @@ export class GetLogRequest extends Message<GetLogRequest> {
  */
 export class GetLogResponse extends Message<GetLogResponse> {
   /**
+   * deprecated, use records.
+   *
    * @generated from field: autokitteh.sessions.v1.SessionLog log = 1;
    */
   log?: SessionLog;
@@ -502,6 +505,11 @@ export class GetLogResponse extends Message<GetLogResponse> {
    * @generated from field: int64 count = 2;
    */
   count = protoInt64.zero;
+
+  /**
+   * @generated from field: repeated autokitteh.sessions.v1.SessionLogRecord records = 3;
+   */
+  records: SessionLogRecord[] = [];
 
   /**
    * @generated from field: string next_page_token = 10;
@@ -518,6 +526,7 @@ export class GetLogResponse extends Message<GetLogResponse> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "log", kind: "message", T: SessionLog },
     { no: 2, name: "count", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 3, name: "records", kind: "message", T: SessionLogRecord, repeated: true },
     { no: 10, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
@@ -535,6 +544,153 @@ export class GetLogResponse extends Message<GetLogResponse> {
 
   static equals(a: GetLogResponse | PlainMessage<GetLogResponse> | undefined, b: GetLogResponse | PlainMessage<GetLogResponse> | undefined): boolean {
     return proto3.util.equals(GetLogResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.sessions.v1.GetPrintsRequest
+ */
+export class GetPrintsRequest extends Message<GetPrintsRequest> {
+  /**
+   * @generated from field: string session_id = 1;
+   */
+  sessionId = "";
+
+  /**
+   * @generated from field: bool ascending = 11;
+   */
+  ascending = false;
+
+  /**
+   * @generated from field: int32 page_size = 20;
+   */
+  pageSize = 0;
+
+  /**
+   * @generated from field: int32 skip = 21;
+   */
+  skip = 0;
+
+  /**
+   * @generated from field: string page_token = 22;
+   */
+  pageToken = "";
+
+  constructor(data?: PartialMessage<GetPrintsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.sessions.v1.GetPrintsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "session_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "ascending", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 20, name: "page_size", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 21, name: "skip", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 22, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetPrintsRequest {
+    return new GetPrintsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetPrintsRequest {
+    return new GetPrintsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetPrintsRequest {
+    return new GetPrintsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetPrintsRequest | PlainMessage<GetPrintsRequest> | undefined, b: GetPrintsRequest | PlainMessage<GetPrintsRequest> | undefined): boolean {
+    return proto3.util.equals(GetPrintsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.sessions.v1.GetPrintsResponse
+ */
+export class GetPrintsResponse extends Message<GetPrintsResponse> {
+  /**
+   * @generated from field: repeated autokitteh.sessions.v1.GetPrintsResponse.Print prints = 1;
+   */
+  prints: GetPrintsResponse_Print[] = [];
+
+  /**
+   * @generated from field: string next_page_token = 10;
+   */
+  nextPageToken = "";
+
+  constructor(data?: PartialMessage<GetPrintsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.sessions.v1.GetPrintsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "prints", kind: "message", T: GetPrintsResponse_Print, repeated: true },
+    { no: 10, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetPrintsResponse {
+    return new GetPrintsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetPrintsResponse {
+    return new GetPrintsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetPrintsResponse {
+    return new GetPrintsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetPrintsResponse | PlainMessage<GetPrintsResponse> | undefined, b: GetPrintsResponse | PlainMessage<GetPrintsResponse> | undefined): boolean {
+    return proto3.util.equals(GetPrintsResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.sessions.v1.GetPrintsResponse.Print
+ */
+export class GetPrintsResponse_Print extends Message<GetPrintsResponse_Print> {
+  /**
+   * @generated from field: autokitteh.values.v1.Value v = 1;
+   */
+  v?: Value;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp t = 2;
+   */
+  t?: Timestamp;
+
+  constructor(data?: PartialMessage<GetPrintsResponse_Print>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.sessions.v1.GetPrintsResponse.Print";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "v", kind: "message", T: Value },
+    { no: 2, name: "t", kind: "message", T: Timestamp },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetPrintsResponse_Print {
+    return new GetPrintsResponse_Print().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetPrintsResponse_Print {
+    return new GetPrintsResponse_Print().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetPrintsResponse_Print {
+    return new GetPrintsResponse_Print().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetPrintsResponse_Print | PlainMessage<GetPrintsResponse_Print> | undefined, b: GetPrintsResponse_Print | PlainMessage<GetPrintsResponse_Print> | undefined): boolean {
+    return proto3.util.equals(GetPrintsResponse_Print, a, b);
   }
 }
 

@@ -79,7 +79,46 @@ func (c *client) Get(ctx context.Context, sessionID sdktypes.SessionID) (sdktype
 	return sdktypes.SessionFromProto(resp.Msg.Session)
 }
 
-func (c *client) GetLog(ctx context.Context, filter sdkservices.ListSessionLogRecordsFilter) (*sdkservices.GetLogResults, error) {
+func (c *client) GetPrints(ctx context.Context, sid sdktypes.SessionID, pagination sdktypes.PaginationRequest) (*sdkservices.GetPrintsResults, error) {
+	resp, err := c.client.GetPrints(ctx, connect.NewRequest(&sessionsv1.GetPrintsRequest{
+		SessionId: sid.String(),
+		PageSize:  pagination.PageSize,
+		Skip:      pagination.Skip,
+		PageToken: pagination.PageToken,
+		Ascending: pagination.Ascending,
+	}))
+	if err != nil {
+		return nil, rpcerrors.ToSDKError(err)
+	}
+
+	if err := internal.Validate(resp.Msg); err != nil {
+		return nil, err
+	}
+
+	rs, err := kittehs.TransformError(resp.Msg.Prints, func(p *sessionsv1.GetPrintsResponse_Print) (*sdkservices.SessionPrint, error) {
+		v, err := sdktypes.ValueFromProto(p.V)
+		if err != nil {
+			return nil, err
+		}
+
+		return &sdkservices.SessionPrint{
+			Timestamp: p.T.AsTime(),
+			Value:     v,
+		}, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &sdkservices.GetPrintsResults{
+		Prints: rs,
+		PaginationResult: sdktypes.PaginationResult{
+			NextPageToken: resp.Msg.NextPageToken,
+		},
+	}, nil
+}
+
+func (c *client) GetLog(ctx context.Context, filter sdkservices.SessionLogRecordsFilter) (*sdkservices.GetLogResults, error) {
 	resp, err := c.client.GetLog(ctx, connect.NewRequest(&sessionsv1.GetLogRequest{
 		SessionId: filter.SessionID.String(),
 		PageSize:  filter.PageSize,
@@ -94,13 +133,14 @@ func (c *client) GetLog(ctx context.Context, filter sdkservices.ListSessionLogRe
 	if err := internal.Validate(resp.Msg); err != nil {
 		return nil, err
 	}
-	log, err := sdktypes.SessionLogFromProto(resp.Msg.Log)
+
+	rs, err := kittehs.TransformError(resp.Msg.Records, sdktypes.SessionLogRecordFromProto)
 	if err != nil {
 		return nil, err
 	}
 
 	return &sdkservices.GetLogResults{
-		Log: log,
+		Records: rs,
 		PaginationResult: sdktypes.PaginationResult{
 			TotalCount:    resp.Msg.Count,
 			NextPageToken: resp.Msg.NextPageToken,

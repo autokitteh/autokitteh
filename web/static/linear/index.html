@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>AutoKitteh - Linear</title>
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/static/apple-touch-icon.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/static/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/static/favicon-16x16.png"
+    />
+    <link rel="manifest" href="/static/site.webmanifest" />
+    <link rel="stylesheet" type="text/css" href="styles.css" />
+    <meta name="robots" content="noindex, nofollow" />
+    <script src="form.js" defer></script>
+  </head>
+
+  <body>
+    <a href="/" target="_self">
+      <img class="banner" src="/static/banner.svg" alt="AutoKitteh" />
+    </a>
+
+    <table class="title">
+      <td>
+        <img class="logo" src="/static/images/linear.svg" alt="Logo" />
+      </td>
+      <td><h1>Linear - Initialize Connection</h1></td>
+    </table>
+
+    <form method="post" action="/linear/save">
+      <h2>Query Params From the URL</h2>
+
+      <div class="form-group">
+        <label for="cid">Connection ID</label>
+        <input type="text" name="cid" id="cid" readonly />
+      </div>
+
+      <div class="form-group">
+        <label for="origin">Request Origin</label>
+        <input type="text" name="origin" id="origin" readonly />
+      </div>
+
+      <h2>Authentication Type</h2>
+
+      <div class="form-group">
+        <select name="auth_type" id="authType">
+          <option value="oauthDefault">Default OAuth 2.0</option>
+          <option value="oauthPrivate">Private OAuth 2.0</option>
+          <option value="apiKey">API key</option>
+        </select>
+      </div>
+
+      <div id="oauthSection">
+        <h2>OAuth 2.0</h2>
+
+        <div class="form-group">
+          <label for="actor">Actor</label>
+          <select name="actor" id="actor">
+            <option value="user">User</option>
+            <option value="application">Application</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="privateOauthSection" class="hidden">
+        <h2>Private OAuth 2.0</h2>
+
+        <div class="form-group">
+          <label for="client_id">Client ID <i>(required)</i></label>
+          <input
+            type="text"
+            id="clientId"
+            name="client_id"
+            autocomplete="off"
+            spellcheck="false"
+            disabled
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="client_secret">Client Secret <i>(required)</i></label>
+          <input
+            type="text"
+            id="clientSecret"
+            name="client_secret"
+            autocomplete="off"
+            spellcheck="false"
+            disabled
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="webhook_url">Webhook URL <i>(required)</i></label>
+          <input
+            type="text"
+            id="webhookUrl"
+            name="webhook_url"
+            value="https://.../linear/event"
+            disabled
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="webhook_secret">
+            Webhook Signing Secret <i>(optional, empty = no events)</i>
+          </label>
+          <input
+            type="text"
+            id="webhookSecret"
+            name="webhook_secret"
+            autocomplete="off"
+            spellcheck="false"
+            disabled
+          />
+        </div>
+      </div>
+
+      <div id="apiKeySection" class="hidden">
+        <h2>API Key</h2>
+
+        <div class="form-group">
+          <label for="api_key">API Key <i>(required)</i></label>
+          <input
+            type="text"
+            id="apiKey"
+            name="api_key"
+            autocomplete="off"
+            spellcheck="false"
+            disabled
+            required
+          />
+        </div>
+      </div>
+
+      <button type="submit" class="submit-btn" id="submit">
+        Start OAuth Flow
+      </button>
+    </form>
+  </body>
+</html>
