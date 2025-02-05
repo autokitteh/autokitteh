@@ -140,7 +140,7 @@ class GetPrintsRequest(_message.Message):
     def __init__(self, session_id: _Optional[str] = ..., ascending: bool = ..., page_size: _Optional[int] = ..., skip: _Optional[int] = ..., page_token: _Optional[str] = ...) -> None: ...
 
 class GetPrintsResponse(_message.Message):
-    __slots__ = ["prints", "count", "next_page_token"]
+    __slots__ = ["prints", "next_page_token"]
     class Print(_message.Message):
         __slots__ = ["v", "t"]
         V_FIELD_NUMBER: _ClassVar[int]
@@ -149,12 +149,10 @@ class GetPrintsResponse(_message.Message):
         t: _timestamp_pb2.Timestamp
         def __init__(self, v: _Optional[_Union[_values_pb2.Value, _Mapping]] = ..., t: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
     PRINTS_FIELD_NUMBER: _ClassVar[int]
-    COUNT_FIELD_NUMBER: _ClassVar[int]
     NEXT_PAGE_TOKEN_FIELD_NUMBER: _ClassVar[int]
     prints: _containers.RepeatedCompositeFieldContainer[GetPrintsResponse.Print]
-    count: int
     next_page_token: str
-    def __init__(self, prints: _Optional[_Iterable[_Union[GetPrintsResponse.Print, _Mapping]]] = ..., count: _Optional[int] = ..., next_page_token: _Optional[str] = ...) -> None: ...
+    def __init__(self, prints: _Optional[_Iterable[_Union[GetPrintsResponse.Print, _Mapping]]] = ..., next_page_token: _Optional[str] = ...) -> None: ...
 
 class DeleteRequest(_message.Message):
     __slots__ = ["session_id"]

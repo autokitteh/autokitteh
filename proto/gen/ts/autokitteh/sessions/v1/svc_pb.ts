@@ -618,11 +618,6 @@ export class GetPrintsResponse extends Message<GetPrintsResponse> {
   prints: GetPrintsResponse_Print[] = [];
 
   /**
-   * @generated from field: int64 count = 2;
-   */
-  count = protoInt64.zero;
-
-  /**
    * @generated from field: string next_page_token = 10;
    */
   nextPageToken = "";
@@ -636,7 +631,6 @@ export class GetPrintsResponse extends Message<GetPrintsResponse> {
   static readonly typeName = "autokitteh.sessions.v1.GetPrintsResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "prints", kind: "message", T: GetPrintsResponse_Print, repeated: true },
-    { no: 2, name: "count", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 10, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
