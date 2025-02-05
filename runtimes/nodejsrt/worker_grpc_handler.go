@@ -44,7 +44,7 @@ func ConfigureWorkerGRPCHandler(l *zap.Logger, mux *http.ServeMux) {
 	w.log = l
 	srv := grpc.NewServer()
 	userCode.RegisterHandlerServiceServer(srv, &w)
-	path := fmt.Sprintf("/%s/", userCode.HandlerService_ServiceDesc.ServiceName)
+	path := fmt.Sprintf("/%s/2", userCode.HandlerService_ServiceDesc.ServiceName)
 	mux.Handle(path, srv)
 }
 

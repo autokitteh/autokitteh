@@ -1,6 +1,7 @@
 package svc
 
 import (
+	"go.autokitteh.dev/autokitteh/runtimes/nodejsrt"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
@@ -41,6 +42,16 @@ func runtimesFXOption() fx.Option {
 	return fx.Options(
 		runtime("starlarkrt", configset.Empty, starlarkrt.New),
 		runtime("configrt", configset.Empty, configrt.New),
+		runtime(
+			"nodejsrt",
+			nodejsrt.Configs,
+			func(cfg *nodejsrt.Config, l *zap.Logger, httpsvc httpsvc.Svc) (*sdkruntimes.Runtime, error) {
+				return nodejsrt.New(cfg, l, httpsvc.Addr)
+			},
+			fx.Invoke(func(l *zap.Logger, muxes *muxes.Muxes) {
+				nodejsrt.ConfigureWorkerGRPCHandler(l, muxes.NoAuth)
+			}),
+		),
 		runtime(
 			"pythonrt",
 			pythonrt.Configs,

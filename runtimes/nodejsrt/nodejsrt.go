@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"maps"
 	"net"
-	"path"
 	"slices"
 	"strings"
 	"time"
@@ -16,7 +15,6 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	"go.autokitteh.dev/autokitteh/internal/xdg"
 	pbModule "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/module/v1"
 	pbUserCode "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/user_code/v1"
 	pbValues "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/values/v1"
@@ -28,12 +26,9 @@ import (
 
 var (
 	desc = kittehs.Must1(sdktypes.StrictRuntimeFromProto(&sdktypes.RuntimePB{
-		Name:           "python",
-		FileExtensions: []string{"py"},
+		Name:           "nodejs",
+		FileExtensions: []string{"ts", "js"},
 	}))
-
-	venvPath = path.Join(xdg.DataHomeDir(), "venv")
-	venvPy   = path.Join(venvPath, "bin", "python")
 )
 
 type callbackMessage struct {
