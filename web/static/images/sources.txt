@@ -78,3 +78,7 @@ https://upload.wikimedia.org/wikipedia/commons/3/3b/Slack_icon_2022.svg
 
 Twilio:
 https://seeklogo.com/images/T/twilio-logo-341DD81BFB-seeklogo.com.png
+
+Zoom:
+https://en.m.wikipedia.org/wiki/File:Zoom_Communications_Logo.svg
+https://upload.wikimedia.org/wikipedia/commons/7/7b/Zoom_Communications_Logo.svg
