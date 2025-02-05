@@ -323,6 +323,8 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 				},
 			},
 
+			// Based on:
+			// https://height.notion.site/OAuth-Apps-on-Height-a8ebeab3f3f047e3857bd8ce60c2f640
 			"height": {
 				ClientID:     os.Getenv("HEIGHT_CLIENT_ID"),
 				ClientSecret: os.Getenv("HEIGHT_CLIENT_SECRET"),
