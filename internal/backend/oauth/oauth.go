@@ -324,6 +324,21 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 			},
 
 			// Based on:
+			// https://height.notion.site/OAuth-Apps-on-Height-a8ebeab3f3f047e3857bd8ce60c2f640
+			"height": {
+				ClientID:     os.Getenv("HEIGHT_CLIENT_ID"),
+				ClientSecret: os.Getenv("HEIGHT_CLIENT_SECRET"),
+				Endpoint: oauth2.Endpoint{
+					AuthURL:  "https://height.app/oauth/authorization",
+					TokenURL: "https://api.height.app/oauth/tokens",
+				},
+				RedirectURL: redirectURL + "height",
+				Scopes: []string{
+					"api",
+				},
+			},
+
+			// Based on:
 			// https://developers.hubspot.com/beta-docs/guides/apps/authentication/working-with-oauth
 			"hubspot": {
 				ClientID:     os.Getenv("HUBSPOT_CLIENT_ID"),
@@ -538,6 +553,11 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 				"access_type": "offline", // oauth2.AccessTypeOffline
 				"prompt":      "consent", // oauth2.ApprovalForce
 			},
+			"height": {
+				// This is a workaround for Height's non-standard OAuth 2.0 flow
+				// which expects the scopes string in the exchange request as well.
+				"scope": "api",
+			},
 			"linear": {
 				"prompt": "consent", // oauth2.ApprovalForce
 			},
@@ -606,6 +626,8 @@ func (o *oauth) applyIntegrationConfig(ctx context.Context, s *intgSetup) error 
 		}
 		s.cfg.Endpoint.AuthURL = strings.Replace(s.cfg.Endpoint.AuthURL, placeholder, appName, 1)
 
+	// case "height":
+
 	case "microsoft", "microsoft_teams":
 		if o.isCustomOAuth(s.vars) {
 			s.cfg.ClientID = s.vars.GetValueByString("private_client_id")
@@ -646,7 +668,13 @@ func (o *oauth) getConfigWithConnection(ctx context.Context, intg string, cid sd
 
 	if o.isCustomOAuth(vs) {
 		cfgCopy.ClientID = vs.GetValueByString("client_id")
+		if cfgCopy.ClientID == "" {
+			cfgCopy.ClientID = vs.GetValueByString("private_client_id")
+		}
 		cfgCopy.ClientSecret = vs.GetValueByString("client_secret")
+		if cfgCopy.ClientSecret == "" {
+			cfgCopy.ClientSecret = vs.GetValueByString("private_client_secret")
+		}
 	}
 
 	s := &intgSetup{
