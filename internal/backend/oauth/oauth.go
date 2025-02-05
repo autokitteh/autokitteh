@@ -719,8 +719,6 @@ func (o *oauth) Exchange(ctx context.Context, integration string, cid sdktypes.C
 		return nil, fmt.Errorf("bad oauth integration name: %w", err)
 	}
 
-	o.logger.Warn("Exchange", zap.String("code", code))
-
 	hc := &http.Client{Timeout: exchangeTimeout}
 	ctx = context.WithValue(ctx, oauth2.HTTPClient, hc)
 	token, err := cfg.Exchange(ctx, code, authCode(opts)...)
