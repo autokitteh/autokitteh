@@ -14,12 +14,8 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-const (
-	integrationName = "chatgpt"
-)
-
 var (
-	desc = common.LegacyDescriptor(integrationName, "OpenAI ChatGPT", "/static/images/chatgpt.svg")
+	desc = common.LegacyDescriptor("chatgpt", "OpenAI ChatGPT", "/static/images/chatgpt.svg")
 
 	apiKeyVar   = sdktypes.NewSymbol("apiKey")
 	authTypeVar = sdktypes.NewSymbol("authType")

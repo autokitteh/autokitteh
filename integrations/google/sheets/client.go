@@ -20,11 +20,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-const (
-	integrationName = "googlesheets"
-)
-
-var desc = common.LegacyDescriptor(integrationName, "Google Sheets", "/static/images/google_sheets.svg")
+var desc = common.LegacyDescriptor("googlesheets", "Google Sheets", "/static/images/google_sheets.svg")
 
 type api struct {
 	vars sdkservices.Vars

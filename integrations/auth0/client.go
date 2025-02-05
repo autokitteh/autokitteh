@@ -16,12 +16,8 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-const (
-	integrationName = "auth0"
-)
-
 var (
-	desc = common.LegacyDescriptor(integrationName, "Auth0", "/static/images/auth0.svg")
+	desc = common.LegacyDescriptor("auth0", "Auth0", "/static/images/auth0.svg")
 
 	authTypeVar         = sdktypes.NewSymbol("auth_type")
 	clientIDNameVar     = sdktypes.NewSymbol("client_id")

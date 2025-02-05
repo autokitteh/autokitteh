@@ -16,11 +16,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-const (
-	integrationName = "googlegemini"
-)
-
-var desc = common.LegacyDescriptor(integrationName, "Google Gemini", "/static/images/google_gemini.svg")
+var desc = common.LegacyDescriptor("googlegemini", "Google Gemini", "/static/images/google_gemini.svg")
 
 func New(cvars sdkservices.Vars) sdkservices.Integration {
 	return sdkintegrations.NewIntegration(
