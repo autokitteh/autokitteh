@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -212,6 +213,52 @@ func (s *server) GetLog(ctx context.Context, req *connect.Request[sessionsv1.Get
 	pblog := &sessionsv1.SessionLog{Records: pbrs}
 
 	return connect.NewResponse(&sessionsv1.GetLogResponse{Records: pbrs, Log: pblog, Count: hist.TotalCount, NextPageToken: hist.NextPageToken}), nil
+}
+
+func (s *server) GetPrints(ctx context.Context, req *connect.Request[sessionsv1.GetPrintsRequest]) (*connect.Response[sessionsv1.GetPrintsResponse], error) {
+	msg := req.Msg
+
+	if err := proto.Validate(msg); err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	sid, err := sdktypes.ParseSessionID(msg.SessionId)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	pagination := sdktypes.PaginationRequest{
+		Skip:      msg.Skip,
+		PageToken: msg.PageToken,
+		PageSize:  msg.PageSize,
+		Ascending: msg.Ascending,
+	}
+
+	if pagination.PageSize > 100 {
+		pagination.PageSize = 100
+	}
+
+	if pagination.PageSize < 10 {
+		pagination.PageSize = 10
+	}
+
+	prints, err := s.sessions.GetPrints(ctx, sid, pagination)
+	if err != nil {
+		if errors.Is(err, sdkerrors.ErrNotFound) {
+			return connect.NewResponse(&sessionsv1.GetPrintsResponse{}), nil
+		}
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	return connect.NewResponse(&sessionsv1.GetPrintsResponse{
+		Prints: kittehs.Transform(prints.Prints, func(p *sdkservices.SessionPrint) *sessionsv1.GetPrintsResponse_Print {
+			return &sessionsv1.GetPrintsResponse_Print{
+				V: p.Value.ToProto(),
+				T: timestamppb.New(p.Timestamp),
+			}
+		}),
+		NextPageToken: prints.NextPageToken,
+	}), nil
 }
 
 func (s *server) List(ctx context.Context, req *connect.Request[sessionsv1.ListRequest]) (*connect.Response[sessionsv1.ListResponse], error) {
