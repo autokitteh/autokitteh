@@ -113,7 +113,6 @@ func (c *client) GetPrints(ctx context.Context, sid sdktypes.SessionID, paginati
 	return &sdkservices.GetPrintsResults{
 		Prints: rs,
 		PaginationResult: sdktypes.PaginationResult{
-			TotalCount:    resp.Msg.Count,
 			NextPageToken: resp.Msg.NextPageToken,
 		},
 	}, nil
