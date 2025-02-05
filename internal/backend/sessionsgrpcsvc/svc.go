@@ -48,7 +48,6 @@ func (s *server) Start(ctx context.Context, req *connect.Request[sessionsv1.Star
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	// Initialize wrapped value
 	wrappedValue := &valuesv1.Value{
 		Struct: &valuesv1.Struct{
 			Ctor: &valuesv1.Value{
@@ -62,18 +61,9 @@ func (s *server) Start(ctx context.Context, req *connect.Request[sessionsv1.Star
 
 	// Process each JsonInputs field
 	for key, jsonStr := range msg.JsonInputs {
-		var rawValue string
-		if err := json.Unmarshal([]byte(jsonStr), &rawValue); err != nil {
-			// Handle raw string case
-			wrappedValue.Struct.Fields[key] = &valuesv1.Value{
-				String_: &valuesv1.String{V: jsonStr},
-			}
-			continue
-		}
-
-		// Try parsing as JSON object
+		// Try parsing as JSON object directly
 		var jsonObj map[string]interface{}
-		if err := json.Unmarshal([]byte(rawValue), &jsonObj); err == nil {
+		if err := json.Unmarshal([]byte(jsonStr), &jsonObj); err == nil {
 			// Convert JSON object to value map
 			valueMap, err := convertToValueMap(jsonObj)
 			if err != nil {
@@ -86,9 +76,9 @@ func (s *server) Start(ctx context.Context, req *connect.Request[sessionsv1.Star
 				},
 			}
 		} else {
-			// Handle as simple string
+			// Handle as simple string if not valid JSON object
 			wrappedValue.Struct.Fields[key] = &valuesv1.Value{
-				String_: &valuesv1.String{V: rawValue},
+				String_: &valuesv1.String{V: jsonStr},
 			}
 		}
 	}
