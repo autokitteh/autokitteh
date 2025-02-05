@@ -26,8 +26,8 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 	},
 }))
 
-func New(v sdkservices.Vars, o sdkservices.OAuth) sdkservices.Integration {
+func New(v sdkservices.Vars) sdkservices.Integration {
 	return sdkintegrations.NewIntegration(
-		desc, sdkmodule.New(), status(v), test(v, o),
+		desc, sdkmodule.New(), status(v), test(v),
 		sdkintegrations.WithConnectionConfigFromVars(v))
 }

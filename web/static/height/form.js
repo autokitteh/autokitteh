@@ -6,6 +6,7 @@ document.getElementById("origin").value = urlParams.get("origin") ?? "";
 
 // Show/hide fields based on the selected auth type.
 document.getElementById("authType").addEventListener("change", function () {
+  const isApiKey = this.value === "apiKey";
   const isOauthPrivate = this.value === "oauthPrivate";
 
   const privateOauthSection = document.getElementById("privateOauthSection");
@@ -16,4 +17,19 @@ document.getElementById("authType").addEventListener("change", function () {
   }
   document.getElementById("clientId").disabled = !isOauthPrivate;
   document.getElementById("clientSecret").disabled = !isOauthPrivate;
+
+  const apiKeySection = document.getElementById("apiKeySection");
+  if (isApiKey) {
+    apiKeySection.classList.remove("hidden");
+  } else {
+    apiKeySection.classList.add("hidden");
+  }
+  document.getElementById("apiKey").disabled = !isApiKey;
+
+  const submitButton = document.getElementById("submit");
+  if (this.value === "apiKey") {
+    submitButton.textContent = "Save Connection";
+  } else {
+    submitButton.textContent = "Start OAuth Flow";
+  }
 });

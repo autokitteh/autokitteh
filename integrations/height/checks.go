@@ -29,6 +29,8 @@ func status(v sdkservices.Vars) sdkintegrations.OptFn {
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 		case integrations.OAuthDefault, integrations.OAuthPrivate:
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using OAuth 2.0"), nil
+		case integrations.APIKey:
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using API key"), nil
 		default:
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil
 		}
@@ -37,7 +39,7 @@ func status(v sdkservices.Vars) sdkintegrations.OptFn {
 
 // test checks whether the connection is actually usable, i.e. the configured
 // authentication credentials are valid and can be used to make API calls.
-func test(v sdkservices.Vars, o sdkservices.OAuth) sdkintegrations.OptFn {
+func test(v sdkservices.Vars) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
 		if !cid.IsValid() {
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Init required"), nil
@@ -54,6 +56,8 @@ func test(v sdkservices.Vars, o sdkservices.OAuth) sdkintegrations.OptFn {
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 		case integrations.OAuthDefault, integrations.OAuthPrivate:
 			// TODO(INT-235): Implement.
+		case integrations.APIKey:
+			// TODO: Implement.
 		default:
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil
 		}
