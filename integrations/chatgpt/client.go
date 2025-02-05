@@ -7,37 +7,25 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-type integration struct{ vars sdkservices.Vars }
-
-var (
-	integrationID = sdktypes.NewIntegrationIDFromName("chatgpt")
-
-	apiKeyVar = sdktypes.NewSymbol("apiKey")
-	authType  = sdktypes.NewSymbol("authType")
+const (
+	integrationName = "chatgpt"
 )
 
-var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
-	IntegrationId: integrationID.String(),
-	UniqueName:    "chatgpt",
-	DisplayName:   "OpenAI ChatGPT",
-	Description:   "ChatGPT is a conversational AI model that can generates human-like responses based on prompts.",
-	LogoUrl:       "/static/images/chatgpt.svg",
-	UserLinks: map[string]string{
-		"1 OpenAI developer platform": "https://platform.openai.com/",
-		"2 Go client API":             "https://pkg.go.dev/github.com/sashabaranov/go-openai",
-	},
-	ConnectionUrl: "/chatgpt/connect",
-	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
-		RequiresConnectionInit: true,
-	},
-}))
+var (
+	desc = common.LegacyDescriptor(integrationName, "OpenAI ChatGPT", "/static/images/chatgpt.svg")
+
+	apiKeyVar   = sdktypes.NewSymbol("apiKey")
+	authTypeVar = sdktypes.NewSymbol("authType")
+)
+
+type integration struct{ vars sdkservices.Vars }
 
 func New(vars sdkservices.Vars) sdkservices.Integration {
 	i := &integration{vars: vars}
@@ -72,7 +60,7 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 			return sdktypes.InvalidStatus, err
 		}
 
-		at := vs.Get(authType)
+		at := vs.Get(authTypeVar)
 		if !at.IsValid() || at.Value() == "" {
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 		}

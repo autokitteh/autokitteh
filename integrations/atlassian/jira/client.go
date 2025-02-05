@@ -8,36 +8,32 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+const (
+	integrationName = "jira"
+)
+
+var (
+	IntegrationID = sdktypes.NewIntegrationIDFromName(integrationName)
+
+	desc = common.LegacyDescriptor(integrationName, "Atlassian Jira", "/static/images/jira.svg")
+)
+
 type integration struct {
 	vars sdkservices.Vars
 }
-
-var IntegrationID = sdktypes.NewIntegrationIDFromName("jira")
-
-var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
-	IntegrationId: IntegrationID.String(),
-	UniqueName:    "jira",
-	DisplayName:   "Atlassian Jira",
-	Description:   "Atlassian Jira is an issue tracking and project management system.",
-	LogoUrl:       "/static/images/jira.svg",
-	ConnectionUrl: "/jira/connect",
-	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
-		RequiresConnectionInit: true,
-	},
-}))
 
 func New(cvars sdkservices.Vars) sdkservices.Integration {
 	i := &integration{vars: cvars}
 	return sdkintegrations.NewIntegration(
 		desc,
-		sdkmodule.New( /* No exported functions for Starlark */ ),
+		sdkmodule.New(),
 		connStatus(i),
 		connTest(i),
 		sdkintegrations.WithConnectionConfigFromVars(cvars),

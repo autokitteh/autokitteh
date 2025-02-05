@@ -11,33 +11,29 @@ import (
 	googleoauth2 "google.golang.org/api/oauth2/v2"
 	"google.golang.org/api/option"
 
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/google/connections"
 	"go.autokitteh.dev/autokitteh/integrations/google/vars"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+const (
+	integrationName = "googleforms"
+)
+
+var (
+	IntegrationID = sdktypes.NewIntegrationIDFromName(integrationName)
+
+	desc = common.LegacyDescriptor(integrationName, "Google Forms", "/static/images/google_forms.svg")
+)
+
 type api struct {
 	vars sdkservices.Vars
 	cid  sdktypes.ConnectionID
 }
-
-var IntegrationID = sdktypes.NewIntegrationIDFromName("googleforms")
-
-var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
-	IntegrationId: IntegrationID.String(),
-	UniqueName:    "googleforms",
-	DisplayName:   "Google Forms",
-	Description:   "Google Forms is a survey administration software that part of the Google Workspace office suite.",
-	LogoUrl:       "/static/images/google_forms.svg",
-	ConnectionUrl: "/googleforms/connect",
-	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
-		RequiresConnectionInit: true,
-	},
-}))
 
 const (
 	// pubsubTopicEnvVar is the name of an environment variable that
@@ -48,7 +44,7 @@ const (
 func New(cvars sdkservices.Vars) sdkservices.Integration {
 	return sdkintegrations.NewIntegration(
 		desc,
-		sdkmodule.New( /* No exported functions for Starlark */ ),
+		sdkmodule.New(),
 		connections.ConnStatus(cvars),
 		connections.ConnTest(cvars),
 		sdkintegrations.WithConnectionConfigFromVars(cvars),

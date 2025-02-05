@@ -1,9 +1,9 @@
 package microsoft
 
 import (
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/microsoft/connection"
 	"go.autokitteh.dev/autokitteh/integrations/microsoft/teams"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -14,17 +14,7 @@ const (
 	integrationName = "microsoft"
 )
 
-var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
-	IntegrationId: sdktypes.NewIntegrationIDFromName(integrationName).String(),
-	UniqueName:    integrationName,
-	DisplayName:   "Microsoft (All APIs)",
-	LogoUrl:       "/static/images/microsoft.svg",
-	ConnectionUrl: "/microsoft",
-	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
-		RequiresConnectionInit: true,
-		SupportsConnectionTest: true,
-	},
-}))
+var desc = common.Descriptor(integrationName, "Microsoft (All APIs)", "/static/images/microsoft.svg")
 
 // New defines an AutoKitteh integration, which
 // is registered when the AutoKitteh server starts.

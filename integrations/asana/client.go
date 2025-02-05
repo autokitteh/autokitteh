@@ -8,36 +8,25 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-type integration struct{ vars sdkservices.Vars }
-
-var (
-	integrationID = sdktypes.NewIntegrationIDFromName("asana")
-
-	pat      = sdktypes.NewSymbol("pat")
-	authType = sdktypes.NewSymbol("authType")
+const (
+	integrationName = "asana"
 )
 
-var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
-	IntegrationId: integrationID.String(),
-	UniqueName:    "asana",
-	DisplayName:   "Asana",
-	Description:   "Asana is a web and mobile application designed to help teams organize, track, and manage their work.",
-	LogoUrl:       "/static/images/asana.svg",
-	UserLinks: map[string]string{
-		"Asana developer platform": "https://developers.asana.com/",
-	},
-	ConnectionUrl: "/asana/connect",
-	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
-		RequiresConnectionInit: true,
-	},
-}))
+var (
+	desc = common.LegacyDescriptor(integrationName, "Asana", "/static/images/asana.svg")
+
+	patVar      = sdktypes.NewSymbol("pat")
+	authTypeVar = sdktypes.NewSymbol("authType")
+)
+
+type integration struct{ vars sdkservices.Vars }
 
 func New(cvars sdkservices.Vars) sdkservices.Integration {
 	i := &integration{vars: cvars}
@@ -65,7 +54,7 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 			return sdktypes.InvalidStatus, err
 		}
 
-		at := vs.Get(authType)
+		at := vs.Get(authTypeVar)
 		if !at.IsValid() || at.Value() == "" {
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 		}
@@ -101,7 +90,7 @@ func connTest(i *integration) sdkintegrations.OptFn {
 			return sdktypes.InvalidStatus, err
 		}
 
-		pat := vs.Get(pat).Value()
+		pat := vs.Get(patVar).Value()
 		req.Header.Add("Authorization", "Bearer "+pat)
 
 		resp, err := http.DefaultClient.Do(req)

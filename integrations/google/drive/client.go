@@ -14,16 +14,24 @@ import (
 	googleoauth2 "google.golang.org/api/oauth2/v2"
 	"google.golang.org/api/option"
 
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/google/connections"
 	"go.autokitteh.dev/autokitteh/integrations/google/vars"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var IntegrationID = sdktypes.NewIntegrationIDFromName("googledrive")
+const (
+	integrationName = "googledrive"
+)
+
+var (
+	IntegrationID = sdktypes.NewIntegrationIDFromName(integrationName)
+
+	desc = common.LegacyDescriptor(integrationName, "Google Drive", "/static/images/google_drive.svg")
+)
 
 type api struct {
 	logger *zap.Logger
@@ -31,27 +39,10 @@ type api struct {
 	cid    sdktypes.ConnectionID
 }
 
-var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
-	IntegrationId: IntegrationID.String(),
-	UniqueName:    "googledrive",
-	DisplayName:   "Google Drive",
-	Description:   "Google Drive is a file-hosting service and synchronization service developed by Google.",
-	LogoUrl:       "/static/images/google_drive.svg",
-	UserLinks: map[string]string{
-		"1 REST API reference": "https://developers.google.com/drive/api/reference/rest/v3",
-		"2 Python client API":  "https://developers.google.com/resources/api-libraries/documentation/drive/v3/python/latest/",
-		"3 Python samples":     "https://github.com/googleworkspace/python-samples/tree/main/drive",
-	},
-	ConnectionUrl: "/googledrive/connect",
-	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
-		RequiresConnectionInit: true,
-	},
-}))
-
 func New(cvars sdkservices.Vars) sdkservices.Integration {
 	return sdkintegrations.NewIntegration(
 		desc,
-		sdkmodule.New( /* No exported functions for Starlark */ ),
+		sdkmodule.New(),
 		connections.ConnStatus(cvars),
 		connections.ConnTest(cvars),
 		sdkintegrations.WithConnectionConfigFromVars(cvars),

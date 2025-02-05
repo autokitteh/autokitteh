@@ -14,13 +14,23 @@ import (
 	googleoauth2 "google.golang.org/api/oauth2/v2"
 	"google.golang.org/api/option"
 
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/google/connections"
 	"go.autokitteh.dev/autokitteh/integrations/google/vars"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
+)
+
+const (
+	integrationName = "googlecalendar"
+)
+
+var (
+	IntegrationID = sdktypes.NewIntegrationIDFromName(integrationName)
+
+	desc = common.LegacyDescriptor(integrationName, "Google Calendar", "/static/images/google_calendar.svg")
 )
 
 type api struct {
@@ -29,24 +39,10 @@ type api struct {
 	cid    sdktypes.ConnectionID
 }
 
-var IntegrationID = sdktypes.NewIntegrationIDFromName("googlecalendar")
-
-var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
-	IntegrationId: IntegrationID.String(),
-	UniqueName:    "googlecalendar",
-	DisplayName:   "Google Calendar",
-	Description:   "Google Calendar is a time-management and scheduling calendar service developed by Google.",
-	LogoUrl:       "/static/images/google_calendar.svg",
-	ConnectionUrl: "/googlecalendar/connect",
-	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
-		RequiresConnectionInit: true,
-	},
-}))
-
 func New(cvars sdkservices.Vars) sdkservices.Integration {
 	return sdkintegrations.NewIntegration(
 		desc,
-		sdkmodule.New( /* No exported functions for Starlark */ ),
+		sdkmodule.New(),
 		connections.ConnStatus(cvars),
 		connections.ConnTest(cvars),
 		sdkintegrations.WithConnectionConfigFromVars(cvars),

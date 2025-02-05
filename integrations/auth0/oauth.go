@@ -72,7 +72,6 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 
 	// Tests OAuth0's Management API.
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("https://%s/api/v2/roles", d), nil)
-
 	if err != nil {
 		l.Error("Failed to create HTTP request", zap.Error(err))
 		c.AbortServerError("request creation error")
@@ -107,5 +106,5 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c.Finalize(sdktypes.NewVars(data.ToVars()...).
-		Append(sdktypes.NewVar(authType).SetValue(integrations.OAuth)))
+		Append(sdktypes.NewVar(authTypeVar).SetValue(integrations.OAuth)))
 }

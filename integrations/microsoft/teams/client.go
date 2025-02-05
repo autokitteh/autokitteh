@@ -1,29 +1,19 @@
 package teams
 
 import (
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/microsoft/connection"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 const (
 	IntegrationName = "microsoft_teams"
 )
 
-var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
-	IntegrationId: sdktypes.NewIntegrationIDFromName(IntegrationName).String(),
-	UniqueName:    IntegrationName,
-	DisplayName:   "Microsoft Teams",
-	LogoUrl:       "/static/images/microsoft_teams.svg",
-	ConnectionUrl: "/microsoft/teams",
-	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
-		RequiresConnectionInit: true,
-		SupportsConnectionTest: true,
-	},
-}))
+var desc = common.Descriptor(IntegrationName, "Microsoft Teams", "/static/images/microsoft_teams.svg").
+	WithConnectionURL("/microsoft/teams")
 
 // New defines an AutoKitteh integration, which
 // is registered when the AutoKitteh server starts.

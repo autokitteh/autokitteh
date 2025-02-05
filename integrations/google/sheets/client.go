@@ -11,9 +11,9 @@ import (
 	"google.golang.org/api/option"
 	"google.golang.org/api/sheets/v4"
 
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/google/connections"
 	"go.autokitteh.dev/autokitteh/integrations/google/vars"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -21,32 +21,17 @@ import (
 )
 
 const (
-	googleScope = "google"
+	integrationName = "googlesheets"
 )
+
+var desc = common.LegacyDescriptor(integrationName, "Google Sheets", "/static/images/google_sheets.svg")
 
 type api struct {
 	vars sdkservices.Vars
 }
 
-var integrationID = sdktypes.NewIntegrationIDFromName("googlesheets")
-
-var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
-	IntegrationId: integrationID.String(),
-	UniqueName:    "googlesheets",
-	DisplayName:   "Google Sheets",
-	Description:   "Google Sheets is a web-based spreadsheet application that is part of the Google Workspace office suite.",
-	LogoUrl:       "/static/images/google_sheets.svg",
-	ConnectionUrl: "/googlesheets/connect",
-	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
-		RequiresConnectionInit: true,
-	},
-}))
-
 func New(cvars sdkservices.Vars) sdkservices.Integration {
-	scope := googleScope
-
-	opts := ExportedFunctions(cvars, scope, false)
-
+	opts := ExportedFunctions(cvars, "google", false)
 	return sdkintegrations.NewIntegration(
 		desc,
 		sdkmodule.New(opts...),
