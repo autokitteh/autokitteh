@@ -8,7 +8,10 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var authTypeVar = sdktypes.NewSymbol("auth_type")
+var (
+	authTypeVar = sdktypes.NewSymbol("auth_type")
+	apiKeyVar   = sdktypes.NewSymbol("api_key")
+)
 
 // oauthData contains OAuth 2.0 token details.
 type oauthData struct {
