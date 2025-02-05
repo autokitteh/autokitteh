@@ -40,6 +40,9 @@ LDFLAGS+=-X '${VERSION_PKG_PATH}.Version=${VERSION}' -X '${VERSION_PKG_PATH}.Tim
 export AK_SYSTEST_USE_PROC_SVC=1
 export PYTHONPATH=$(PWD)/runtimes/pythonrt/py-sdk
 
+.PHONY: ak
+ak: webplatform bin/ak
+
 # 1. Detect unformatted Go files
 # 2. Run shellcheck (shell scripts linter)
 # 3. Download latest web platform
@@ -54,9 +57,6 @@ all: gofmt-check shellcheck webplatform proto lint build bin/ak test
 clean:
 	rm -rf $(OUTDIR)
 	make -C web/webplatform clean
-
-.PHONY: ak
-ak: webplatform bin/ak
 
 .PHONY: bin
 bin: bin/ak
