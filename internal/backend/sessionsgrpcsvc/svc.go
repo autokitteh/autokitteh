@@ -52,7 +52,7 @@ func (s *server) Start(ctx context.Context, req *connect.Request[sessionsv1.Star
 		Struct: &valuesv1.Struct{
 			Ctor: &valuesv1.Value{
 				Symbol: &valuesv1.Symbol{
-					Name: "startSession",
+					Name: "data",
 				},
 			},
 			Fields: make(map[string]*valuesv1.Value),
