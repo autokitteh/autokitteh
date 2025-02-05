@@ -626,6 +626,8 @@ func (o *oauth) applyIntegrationConfig(ctx context.Context, s *intgSetup) error 
 		}
 		s.cfg.Endpoint.AuthURL = strings.Replace(s.cfg.Endpoint.AuthURL, placeholder, appName, 1)
 
+	// case "height":
+
 	case "microsoft", "microsoft_teams":
 		if o.isCustomOAuth(s.vars) {
 			s.cfg.ClientID = s.vars.GetValueByString("private_client_id")
@@ -666,7 +668,13 @@ func (o *oauth) getConfigWithConnection(ctx context.Context, intg string, cid sd
 
 	if o.isCustomOAuth(vs) {
 		cfgCopy.ClientID = vs.GetValueByString("client_id")
+		if cfgCopy.ClientID == "" {
+			cfgCopy.ClientID = vs.GetValueByString("private_client_id")
+		}
 		cfgCopy.ClientSecret = vs.GetValueByString("client_secret")
+		if cfgCopy.ClientSecret == "" {
+			cfgCopy.ClientSecret = vs.GetValueByString("private_client_secret")
+		}
 	}
 
 	s := &intgSetup{
