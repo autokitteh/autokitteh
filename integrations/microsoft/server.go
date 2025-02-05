@@ -5,6 +5,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/microsoft/connection"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/web/static"
@@ -24,8 +25,10 @@ func Start(l *zap.Logger, muxes *muxes.Muxes, v sdkservices.Vars, o sdkservices.
 	muxes.Auth.HandleFunc("GET /microsoft/save", h.handleSave)
 	muxes.Auth.HandleFunc("GET /microsoft/oauth", h.handleOAuth)
 
-	// TODO(INT-170): Event webhooks (no AutoKitteh user authentication by definition, because
+	// Event webhooks (no AutoKitteh user authentication by definition, because
 	// these asynchronous requests are sent to us by third-party services).
+	muxes.NoAuth.HandleFunc("POST "+connection.ChangePath, h.handleEvent)
+	muxes.NoAuth.HandleFunc("POST "+connection.LifecyclePath, h.handleLifecycle)
 }
 
 // handler implements several HTTP webhooks to save authentication data, as

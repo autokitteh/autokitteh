@@ -36,7 +36,6 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		c.AbortBadRequest("invalid connection ID")
 		return
 	}
-	vsid := sdktypes.NewVarScopeID(cid)
 
 	// Handle OAuth errors (e.g. the user didn't authorize us), based on:
 	// https://developers.google.com/identity/protocols/oauth2/web-server#handlingresponse
@@ -56,8 +55,15 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Test the OAuth token's usability by getting the user info associated with it.
+	// Test the OAuth token's usability by getting the org and user info associated with it.
 	ctx := r.Context()
+	org, err := connection.GetOrgInfo(ctx, data.Token)
+	if err != nil {
+		l.Error("failed to fetch organization details", zap.Error(err))
+		c.AbortServerError("organization details error")
+		return
+	}
+
 	user, err := connection.GetUserInfo(ctx, data.Token)
 	if err != nil {
 		l.Error("failed to fetch authenticated user details", zap.Error(err))
@@ -65,11 +71,22 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.saveConnection(ctx, vsid, data.Token, user); err != nil {
+	vsid := sdktypes.NewVarScopeID(cid)
+	if err := h.saveConnection(ctx, vsid, data.Token, org, user); err != nil {
 		l.Error("failed to save OAuth connection details", zap.Error(err))
 		c.AbortServerError("failed to save connection details")
 		return
 	}
+
+	// Subscribe to receive asynchronous change notifications from
+	// Microsoft Graph, based on the connection's integration type.
+	svc := connection.NewServices(l, h.vars, h.oauth)
+	_ = errors.Join(connection.Subscribe(ctx, svc, cid, resources(c.Integration))...)
+	// TODO(INT-232): "Subscription operations for tenant-wide chats subscription is not allowed in 'OnBehalfOfUser' context."
+	// if err != nil {
+	// 	c.AbortServerError("failed to create/renew event subscriptions")
+	// 	return
+	// }
 
 	// Redirect the user back to the UI.
 	urlPath, err := c.FinalURL()
@@ -82,14 +99,14 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, urlPath, http.StatusFound)
 }
 
-// saveConnection saves OAuth token and user profile details as connection variables.
-func (h handler) saveConnection(ctx context.Context, vsid sdktypes.VarScopeID, t *oauth2.Token, u *connection.UserInfo) error {
+// saveConnection saves OAuth token, org, and user details as connection variables.
+func (h handler) saveConnection(ctx context.Context, vsid sdktypes.VarScopeID, t *oauth2.Token, o *connection.OrgInfo, u *connection.UserInfo) error {
 	if t == nil {
 		return errors.New("OAuth redirection missing token data")
 	}
 
 	vs := sdktypes.EncodeVars(connection.NewOAuthData(t))
+	vs = vs.Append(sdktypes.EncodeVars(o)...)
 	vs = vs.Append(sdktypes.EncodeVars(u)...)
-
 	return h.vars.Set(ctx, vs.WithScopeID(vsid)...)
 }
