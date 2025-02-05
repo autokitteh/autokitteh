@@ -1,21 +1,34 @@
 package zoom
 
 import (
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
+	"time"
+
 	"golang.org/x/oauth2"
+
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var (
-	clientIDName     = sdktypes.NewSymbol("client_id")
-	redirectURIName  = sdktypes.NewSymbol("redirect_uri")
-	clientSecretName = sdktypes.NewSymbol("client_secret")
-)
+var authTypeVar = sdktypes.NewSymbol("auth_type")
 
-var tokenResp struct {
-	AccessToken  string `json:"access_token"`
-	TokenType    string `json:"token_type"`
-	RefreshToken string `json:"refresh_token"`
-	ExpiresIn    int    `json:"expires_in"`
+// oauthData contains OAuth 2.0 token details.
+type oauthData struct {
+	AccessToken  string `var:"oauth_access_token,secret"`
+	Expiry       string `var:"oauth_expiry"`
+	RefreshToken string `var:"oauth_refresh_token,secret"`
+	TokenType    string `var:"oauth_token_type"`
 }
 
-func newOAuthData(t *oauth2.Token) {}
+func newOAuthData(t *oauth2.Token) oauthData {
+	return oauthData{
+		AccessToken:  t.AccessToken,
+		Expiry:       t.Expiry.Format(time.RFC3339),
+		RefreshToken: t.RefreshToken,
+		TokenType:    t.TokenType,
+	}
+}
+
+// privateOAuth contains the user-provided details of a private Zoom OAuth 2.0 app.
+type privateOAuth struct {
+	ClientID     string `var:"private_client_id"`
+	ClientSecret string `var:"private_client_secret,secret"`
+}

@@ -2,19 +2,28 @@ package zoom
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
 
+	"go.uber.org/zap"
+
+	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.uber.org/zap"
 )
 
+// handleSave saves connection variables for an AutoKitteh connection.
+// This may result in a fully-initialized and usable connection, or it
+// may be an intermediate step before starting a 3-legged OAuth 2.0 flow.
+// This handler accepts both GET and POST requests alike. Why GET? This
+// is the only option when the web UI opens a pop-up window for OAuth.
 func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, desc)
 
-	// Check "Content-Type" header.  //TODO: maybe this is unnacessary
+	// Check the "Content-Type" header in POST requests.
 	contentType := r.Header.Get("Content-Type")
 	expected := "application/x-www-form-urlencoded"
 	if r.Method == http.MethodPost && !strings.HasPrefix(contentType, expected) {
@@ -30,56 +39,78 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	clientID := r.FormValue("client_id")
-	clientSecret := r.FormValue("client_secret")
-	redirectURI := r.FormValue("redirect_uri")
-
-	if clientID == "" || redirectURI == "" {
-		c.AbortBadRequest("missing required fields: client_id or redirect_uri")
-		return
-	}
-
-	vs := sdktypes.NewVars().
-		Set(clientIDName, clientID, false).
-		Set(redirectURIName, redirectURI, false).
-		Set(clientSecretName, clientSecret, true)
-
-	if err := h.saveAuthCredentials(r.Context(), c, vs); err != nil {
-		l.Error("Failed to save Zoom OAuth credentials", zap.Error(err))
-		c.AbortServerError("failed to save credentials")
-		return
-	}
-
-	// Redirect to Zoom's OAuth authorization page.
-	startZoomOAuth(w, r, clientID, redirectURI, l)
-}
-
-func startZoomOAuth(w http.ResponseWriter, r *http.Request, clientID, redirectURI string, l *zap.Logger) {
-	zoomAuthURL := "https://zoom.us/oauth/authorize"
-
-	authURL := fmt.Sprintf(
-		"%s?response_type=code&client_id=%s&redirect_uri=%s",
-		zoomAuthURL, clientID, redirectURI,
-	)
-
-	l.Info("Redirecting to Zoom OAuth", zap.String("auth_url", authURL))
-	http.Redirect(w, r, authURL, http.StatusFound)
-}
-
-// saveAuthCredentials stores the Zoom OAuth credentials.
-func (h handler) saveAuthCredentials(ctx context.Context, c sdkintegrations.ConnectionInit, vs sdktypes.Vars) error {
+	// Sanity check: the connection ID is valid.
 	cid, err := sdktypes.StrictParseConnectionID(c.ConnectionID)
 	if err != nil {
-		return fmt.Errorf("invalid connection ID: %w", err)
+		l.Warn("save connection: invalid connection ID", zap.Error(err))
+		c.AbortBadRequest("invalid connection ID")
+		return
 	}
 
-	vsl := make([]sdktypes.Var, 0, len(vs))
-	for _, v := range vs {
-		vsl = append(vsl, v.WithScopeID(sdktypes.NewVarScopeID(cid)))
+	// Determine what to save and how to proceed.
+	vsid := sdktypes.NewVarScopeID(cid)
+	authType := h.saveAuthType(r.Context(), vsid, r.FormValue("auth_type"))
+
+	switch authType {
+	// Use the AutoKitteh server's default Zoom OAuth 2.0 app, i.e.
+	// immediately redirect to the 3-legged OAuth 2.0 flow's starting point.
+	case integrations.OAuthDefault:
+		startOAuth(w, r, c, l)
+
+	// First save the user-provided details of a private Zoom OAuth 2.0 app,
+	// and only then redirect to the 3-legged OAuth 2.0 flow's starting point.
+	case integrations.OAuthPrivate:
+		if err := h.savePrivateOAuth(r, vsid); err != nil {
+			l.Error("save connection: " + err.Error())
+			c.AbortServerError(err.Error())
+			return
+		}
+		startOAuth(w, r, c, l)
+
+	// Unknown/unrecognized mode - an error.
+	default:
+		l.Warn("save connection: unexpected auth type", zap.String("auth_type", authType))
+		c.AbortBadRequest(fmt.Sprintf("unexpected auth type %q", authType))
+	}
+}
+
+// saveAuthType saves the authentication type that the user selected for this connection.
+// This will be redundant if/when the only way to initialize connections is via the web UI.
+// Therefore, we do not care if this function fails to save it as a connection variable.
+func (h handler) saveAuthType(ctx context.Context, vsid sdktypes.VarScopeID, authType string) string {
+	v := sdktypes.NewVar(authTypeVar).SetValue(authType)
+	_ = h.vars.Set(ctx, v.WithScopeID(vsid))
+	return authType
+}
+
+// savePrivateOAuth saves the user-provided details of
+// a private Zoom OAuth 2.0 app as connection variables.
+func (h handler) savePrivateOAuth(r *http.Request, vsid sdktypes.VarScopeID) error {
+	app := privateOAuth{
+		ClientID:     r.FormValue("client_id"),
+		ClientSecret: r.FormValue("client_secret"),
 	}
 
-	if err := h.vars.Set(ctx, vsl...); err != nil {
-		return fmt.Errorf("failed to save credentials: %w", err)
+	// Sanity check: all the required details were provided, and are valid.
+	if app.ClientID == "" || app.ClientSecret == "" {
+		return errors.New("missing private OAuth 2.0 details")
 	}
-	return nil
+
+	return h.vars.Set(r.Context(), sdktypes.EncodeVars(app).WithScopeID(vsid)...)
+}
+
+// startOAuth redirects the user to the AutoKitteh server's
+// generic OAuth service, to start a 3-legged OAuth 2.0 flow.
+func startOAuth(w http.ResponseWriter, r *http.Request, c sdkintegrations.ConnectionInit, l *zap.Logger) {
+	// Security check: parameters must be alphanumeric strings,
+	// to prevent path traversal attacks and other issues.
+	re := regexp.MustCompile(`^\w+$`)
+	if !re.MatchString(c.ConnectionID + c.Origin) {
+		l.Warn("save connection: bad OAuth redirect URL")
+		c.AbortBadRequest("bad redirect URL")
+		return
+	}
+
+	urlPath := fmt.Sprintf("/oauth/start/zoom?cid=%s&origin=%s", c.ConnectionID, c.Origin)
+	http.Redirect(w, r, urlPath, http.StatusFound)
 }

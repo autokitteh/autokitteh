@@ -10,7 +10,7 @@ import (
 	"go.autokitteh.dev/autokitteh/web/static"
 )
 
-// Start initializes all the HTTP handlers of all the Height integrations. This
+// Start initializes all the HTTP handlers of the Height integration. This
 // includes connection UIs, connection initialization webhooks, and event webhooks.
 func Start(l *zap.Logger, muxes *muxes.Muxes, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.DispatchFunc) {
 	// Connection UI for authenticated AutoKitteh users (user authentication

@@ -12,10 +12,8 @@ const (
 	integrationName = "height"
 )
 
-var integrationID = sdktypes.NewIntegrationIDFromName(integrationName)
-
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
-	IntegrationId: integrationID.String(),
+	IntegrationId: sdktypes.NewIntegrationIDFromName(integrationName).String(),
 	UniqueName:    integrationName,
 	DisplayName:   "Height",
 	LogoUrl:       "/static/images/height.png",
@@ -26,6 +24,8 @@ var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.Integrati
 	},
 }))
 
+// New defines an AutoKitteh integration, which
+// is registered when the AutoKitteh server starts.
 func New(v sdkservices.Vars) sdkservices.Integration {
 	return sdkintegrations.NewIntegration(
 		desc, sdkmodule.New(), status(v), test(v),

@@ -12,25 +12,22 @@ const (
 	integrationName = "zoom"
 )
 
-var (
-	integrationID = sdktypes.NewIntegrationIDFromName(integrationName)
-	desc          = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
-		IntegrationId: integrationID.String(),
-		UniqueName:    integrationName,
-		DisplayName:   "Zoom",
-		LogoUrl:       "/static/images/zoom.svg",
-		ConnectionUrl: "/zoom",
-		ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
-			RequiresConnectionInit: true,
-		},
-	}))
-)
+var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
+	IntegrationId: sdktypes.NewIntegrationIDFromName(integrationName).String(),
+	UniqueName:    integrationName,
+	DisplayName:   "Zoom",
+	LogoUrl:       "/static/images/zoom.svg",
+	ConnectionUrl: "/zoom",
+	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
+		RequiresConnectionInit: true,
+		SupportsConnectionTest: true,
+	},
+}))
 
 // New defines an AutoKitteh integration, which
 // is registered when the AutoKitteh server starts.
-func New(v sdkservices.Vars, o sdkservices.OAuth) sdkservices.Integration {
+func New(v sdkservices.Vars) sdkservices.Integration {
 	return sdkintegrations.NewIntegration(
-		desc,
-		sdkmodule.New(),
+		desc, sdkmodule.New(), status(v), test(v),
 		sdkintegrations.WithConnectionConfigFromVars(v))
 }

@@ -532,10 +532,7 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 				RedirectURL: redirectURL + "zoom",
 				// https://developers.zoom.us/docs/integrations/oauth-scopes/
 				Scopes: []string{
-					"app:notification:write",
 					"calendar:write",
-					"chat:write",
-					"chat_channel:write",
 					"contact:read",
 					"meeting:write",
 					"meeting_summary:read",
@@ -543,7 +540,6 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 					"scheduler:write",
 					"user:read",
 					"whiteboard:read",
-					"workspace:write",
 				},
 			},
 		},
