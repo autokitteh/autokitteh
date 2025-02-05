@@ -1,4 +1,4 @@
-package height
+package zoom
 
 import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -9,15 +9,15 @@ import (
 )
 
 const (
-	integrationName = "height"
+	integrationName = "zoom"
 )
 
 var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
 	IntegrationId: sdktypes.NewIntegrationIDFromName(integrationName).String(),
 	UniqueName:    integrationName,
-	DisplayName:   "Height",
-	LogoUrl:       "/static/images/height.png",
-	ConnectionUrl: "/height",
+	DisplayName:   "Zoom",
+	LogoUrl:       "/static/images/zoom.svg",
+	ConnectionUrl: "/zoom",
 	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
 		RequiresConnectionInit: true,
 		SupportsConnectionTest: true,

@@ -75,3 +75,6 @@ var SlackWebContent embed.FS
 
 //go:embed twilio/connect
 var TwilioWebContent embed.FS
+
+//go:embed zoom
+var ZoomWebContent embed.FS

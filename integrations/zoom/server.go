@@ -1,4 +1,4 @@
-package linear
+package zoom
 
 import (
 	"net/http"
@@ -10,19 +10,19 @@ import (
 	"go.autokitteh.dev/autokitteh/web/static"
 )
 
-// Start initializes all the HTTP handlers of the Linear integration. This
+// Start initializes all the HTTP handlers of all the Zoom integrations. This
 // includes connection UIs, connection initialization webhooks, and event webhooks.
 func Start(l *zap.Logger, muxes *muxes.Muxes, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.DispatchFunc) {
 	// Connection UI for authenticated AutoKitteh users (user authentication
 	// isn't required, but it makes no sense to create a connection without it).
-	muxes.Auth.Handle("GET /linear/", http.FileServer(http.FS(static.LinearWebContent)))
+	muxes.Auth.Handle("GET /zoom/", http.FileServer(http.FS(static.ZoomWebContent)))
 
-	// // Connection initialization webhooks save connection variables (e.g. auth and
-	// // metadata), which requires an authenticated user context for database access.
+	// Connection initialization webhooks save connection variables (e.g. auth and
+	// metadata), which requires an authenticated user context for database access.
 	h := newHTTPHandler(l, v, o, d)
-	muxes.Auth.HandleFunc("POST /linear/save", h.handleSave)
-	muxes.Auth.HandleFunc("GET /linear/save", h.handleSave)
-	muxes.Auth.HandleFunc("GET /linear/oauth", h.handleOAuth)
+	muxes.Auth.HandleFunc("POST /zoom/save", h.handleSave)
+	muxes.Auth.HandleFunc("GET /zoom/save", h.handleSave)
+	muxes.Auth.HandleFunc("GET /zoom/oauth", h.handleOAuth)
 
 	// TODO: Event webhooks (no AutoKitteh user authentication by definition, because
 	// these asynchronous requests are sent to us by third-party services).

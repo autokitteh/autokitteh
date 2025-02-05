@@ -1,4 +1,4 @@
-package height
+package zoom
 
 import (
 	"context"
@@ -52,12 +52,12 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	authType := h.saveAuthType(r.Context(), vsid, r.FormValue("auth_type"))
 
 	switch authType {
-	// Use the AutoKitteh server's default Height OAuth 2.0 app, i.e.
+	// Use the AutoKitteh server's default Zoom OAuth 2.0 app, i.e.
 	// immediately redirect to the 3-legged OAuth 2.0 flow's starting point.
 	case integrations.OAuthDefault:
 		startOAuth(w, r, c, l)
 
-	// First save the user-provided details of a private Height OAuth 2.0 app,
+	// First save the user-provided details of a private Zoom OAuth 2.0 app,
 	// and only then redirect to the 3-legged OAuth 2.0 flow's starting point.
 	case integrations.OAuthPrivate:
 		if err := h.savePrivateOAuth(r, vsid); err != nil {
@@ -66,21 +66,6 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		startOAuth(w, r, c, l)
-
-	// Check and save user-provided details, no 3-legged OAuth 2.0 flow is needed.
-	case integrations.APIKey:
-		if err := h.saveAPIKey(r, vsid); err != nil {
-			l.Error("save connection: " + err.Error())
-			c.AbortServerError(err.Error())
-			return
-		}
-		urlPath, err := c.FinalURL()
-		if err != nil {
-			l.Error("failed to construct final OAuth URL", zap.Error(err))
-			c.AbortServerError("save connection: bad redirect URL")
-			return
-		}
-		http.Redirect(w, r, urlPath, http.StatusFound)
 
 	// Unknown/unrecognized mode - an error.
 	default:
@@ -98,8 +83,8 @@ func (h handler) saveAuthType(ctx context.Context, vsid sdktypes.VarScopeID, aut
 	return authType
 }
 
-// savePrivateOAuth saves the user-provided details of a
-// private Height OAuth 2.0 app as connection variables.
+// savePrivateOAuth saves the user-provided details of
+// a private Zoom OAuth 2.0 app as connection variables.
 func (h handler) savePrivateOAuth(r *http.Request, vsid sdktypes.VarScopeID) error {
 	app := privateOAuth{
 		ClientID:     r.FormValue("client_id"),
@@ -114,19 +99,6 @@ func (h handler) savePrivateOAuth(r *http.Request, vsid sdktypes.VarScopeID) err
 	return h.vars.Set(r.Context(), sdktypes.EncodeVars(app).WithScopeID(vsid)...)
 }
 
-// saveAPIKey saves a user-provided API key as a connection variable.
-func (h handler) saveAPIKey(r *http.Request, vsid sdktypes.VarScopeID) error {
-	apiKey := r.FormValue("api_key")
-	if apiKey == "" {
-		return errors.New("missing API key")
-	}
-
-	// TODO: Test the API key's usability.
-
-	v := sdktypes.NewVar(apiKeyVar).SetValue(apiKey).SetSecret(true)
-	return h.vars.Set(r.Context(), v.WithScopeID(vsid))
-}
-
 // startOAuth redirects the user to the AutoKitteh server's
 // generic OAuth service, to start a 3-legged OAuth 2.0 flow.
 func startOAuth(w http.ResponseWriter, r *http.Request, c sdkintegrations.ConnectionInit, l *zap.Logger) {
@@ -139,6 +111,6 @@ func startOAuth(w http.ResponseWriter, r *http.Request, c sdkintegrations.Connec
 		return
 	}
 
-	urlPath := fmt.Sprintf("/oauth/start/height?cid=%s&origin=%s", c.ConnectionID, c.Origin)
+	urlPath := fmt.Sprintf("/oauth/start/zoom?cid=%s&origin=%s", c.ConnectionID, c.Origin)
 	http.Redirect(w, r, urlPath, http.StatusFound)
 }

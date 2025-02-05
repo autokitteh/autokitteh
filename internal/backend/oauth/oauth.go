@@ -519,6 +519,29 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 					"users:read.email",
 				},
 			},
+
+			// Based on: https://developers.zoom.us/docs/integrations/oauth/
+			"zoom": {
+				ClientID:     os.Getenv("ZOOM_CLIENT_ID"),
+				ClientSecret: os.Getenv("ZOOM_CLIENT_SECRET"),
+				Endpoint: oauth2.Endpoint{
+					AuthURL:       "https://zoom.us/oauth/authorize",
+					TokenURL:      "https://zoom.us/oauth/token",
+					DeviceAuthURL: "https://zoom.us/oauth/devicecode",
+				},
+				RedirectURL: redirectURL + "zoom",
+				// https://developers.zoom.us/docs/integrations/oauth-scopes/
+				Scopes: []string{
+					"calendar:write",
+					"contact:read",
+					"meeting:write",
+					"meeting_summary:read",
+					"recording:read",
+					"scheduler:write",
+					"user:read",
+					"whiteboard:read",
+				},
+			},
 		},
 
 		opts: map[string]map[string]string{
