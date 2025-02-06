@@ -1,10 +1,14 @@
 import * as vm from 'vm';
 import * as fs from 'fs';
 import {transformAsync} from "@babel/core";
-import {EventEmitter} from "node:events";
+import {EventEmitter, once} from "node:events";
 import {patchCode} from "./ast_utils";
 import {listFiles} from "./file_utils";
 import path from "path";
+import {createGrpcTransport} from "@connectrpc/connect-node";
+import {createClient} from "@connectrpc/connect";
+import {HandlerService} from "./pb/autokitteh/user_code/v1/handler_svc_pb";
+import {resultsCache} from "./ak_call";
 
 async function transpile(code: string, filename: string): Promise<string> {
     const result = await transformAsync(code, {
@@ -30,6 +34,9 @@ async function patchDir(dir: string, outDir: string): Promise<void> {
 
     const files = await listFiles(dir)
     for (const file of files) {
+        if (!file.endsWith(".js") || file.endsWith(".ts")) {
+            continue
+        }
         let code = fs.readFileSync(file, "utf8");
         const bob = file
         code = await patchCode(code)
@@ -57,6 +64,14 @@ const defaultHook = (f: Function, args: any): any => {
 
 interface OriginalFunctions {
     [key: string]: Function
+}
+
+const done = async () => {
+    const transport = createGrpcTransport({
+        baseUrl: "http://localhost:9980",
+    });
+    const client = createClient(HandlerService, transport);
+    await client.done({runnerId: "runner_01jkd8ryv5eq3bqnq7m45c8edr", error: "", traceback: []});
 }
 
 export class Sandbox {
@@ -115,7 +130,7 @@ export class Sandbox {
         let parts = filePath.split("/");
         parts.pop();
         let dir = parts.join("/")
-        let out = "dist"
+        let out = dir + "/dist"
         await patchDir(dir, out)
 
         filePath = filePath.replace(dir, out).replace(".ts", ".js");
@@ -123,8 +138,9 @@ export class Sandbox {
         vm.runInContext(code, this.context);
     }
 
-    run(code: string): any {
-        return vm.runInContext(code, this.context);
+    async run(code: string): Promise<void> {
+        vm.runInContext(code, this.context);
+        await done()
     }
 
     async runOriginalFunction(name: string, args: any[]): Promise<any> {

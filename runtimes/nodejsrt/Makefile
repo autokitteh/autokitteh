@@ -55,5 +55,9 @@ check-sdk-docs-requirements:
 	git diff --name-only --exit-code
 
 clean-temporal:
-	killall -9 "temporal-cli-go-sdk-1.31.0" 
+	killall -9 "temporal-cli-go-sdk-1.31.0"
 	rm "/Users/adiludmer/Library/Application Support/autokitteh/temporal_dev.sqlite"
+	rm "/Users/adiludmer/Library/Application Support/autokitteh/autokitteh.sqlite"
+
+start-workflow:
+	curl -d'{"user": "joe", "action": "read"}' http://localhost:9980/webhooks/01jkd8ery3esatt9g035h9k1pf
