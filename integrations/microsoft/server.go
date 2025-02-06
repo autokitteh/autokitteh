@@ -1,10 +1,9 @@
 package microsoft
 
 import (
-	"net/http"
-
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/microsoft/connection"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -13,22 +12,17 @@ import (
 
 // Start initializes all the HTTP handlers of all the Microsoft integrations. This
 // includes connection UIs, connection initialization webhooks, and event webhooks.
-func Start(l *zap.Logger, muxes *muxes.Muxes, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.DispatchFunc) {
-	// Connection UI for authenticated AutoKitteh users (user authentication
-	// isn't required, but it makes no sense to create a connection without it).
-	muxes.Auth.Handle("GET /microsoft/", http.FileServer(http.FS(static.MicrosoftWebContent)))
+func Start(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.DispatchFunc) {
+	common.ServeStaticUI(m, desc, static.MicrosoftWebContent)
 
-	// Connection initialization webhooks save connection variables (e.g. auth and
-	// metadata), which requires an authenticated user context for database access.
 	h := newHTTPHandler(l, v, o, d)
-	muxes.Auth.HandleFunc("POST /microsoft/save", h.handleSave)
-	muxes.Auth.HandleFunc("GET /microsoft/save", h.handleSave)
-	muxes.Auth.HandleFunc("GET /microsoft/oauth", h.handleOAuth)
+	common.RegisterSaveHandler(m, desc, h.handleSave)
+	common.RegisterOAuthHandler(m, desc, h.handleOAuth)
 
 	// Event webhooks (no AutoKitteh user authentication by definition, because
 	// these asynchronous requests are sent to us by third-party services).
-	muxes.NoAuth.HandleFunc("POST "+connection.ChangePath, h.handleEvent)
-	muxes.NoAuth.HandleFunc("POST "+connection.LifecyclePath, h.handleLifecycle)
+	m.NoAuth.HandleFunc("POST "+connection.ChangePath, h.handleEvent)
+	m.NoAuth.HandleFunc("POST "+connection.LifecyclePath, h.handleLifecycle)
 }
 
 // handler implements several HTTP webhooks to save authentication data, as
