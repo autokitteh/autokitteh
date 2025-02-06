@@ -543,17 +543,7 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 					DeviceAuthURL: "https://zoom.us/oauth/devicecode",
 				},
 				RedirectURL: redirectURL + "zoom",
-				// https://developers.zoom.us/docs/integrations/oauth-scopes/
-				Scopes: []string{
-					"calendar:write",
-					"contact:read",
-					"meeting:write",
-					"meeting_summary:read",
-					"recording:read",
-					"scheduler:write",
-					"user:read",
-					"whiteboard:read",
-				},
+				Scopes:      []string{},
 			},
 		},
 
