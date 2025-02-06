@@ -5,8 +5,7 @@
   "scripts": {
     "test": "jest",
     "exports": "ts-node exports.ts",
-    "runner": "ts-node main.ts",
-    "runner2": "ts-node main2.ts"
+    "runner": "ts-node main.ts"
   },
   "keywords": [],
   "author": "",
@@ -31,6 +30,7 @@
     "@types/node": "^22.10.7",
     "@typescript-eslint/parser": "^8.19.1",
     "axios": "^1.7.9",
+    "commander": "^13.1.0",
     "eslint": "^9.18.0",
     "fastify": "^5.2.1",
     "jest": "^29.7.0",

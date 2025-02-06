@@ -66,20 +66,24 @@ interface OriginalFunctions {
     [key: string]: Function
 }
 
-const done = async () => {
+const done = async (runnerId: string, workerAddress: string) => {
     const transport = createGrpcTransport({
-        baseUrl: "http://localhost:9980",
+        baseUrl: workerAddress,
     });
     const client = createClient(HandlerService, transport);
-    await client.done({runnerId: "runner_01jkd8ryv5eq3bqnq7m45c8edr", error: "", traceback: []});
+    await client.done({runnerId, error: "", traceback: []});
 }
 
 export class Sandbox {
     context: Context
     hookFunc: Function
     emitter: EventEmitter
+    runnerId: string
+    workerAddress: string
 
-    constructor(hookFunc: Function) {
+    constructor(hookFunc: Function, runnerId: string, workerAddress: string) {
+        this.runnerId = runnerId;
+        this.workerAddress = workerAddress;
         this.context = {};
         this.hookFunc = hookFunc;
         this.emitter = new EventEmitter();
@@ -140,7 +144,7 @@ export class Sandbox {
 
     async run(code: string): Promise<void> {
         vm.runInContext(code, this.context);
-        await done()
+        await done(this.runnerId, this.workerAddress);
     }
 
     async runOriginalFunction(name: string, args: any[]): Promise<any> {
