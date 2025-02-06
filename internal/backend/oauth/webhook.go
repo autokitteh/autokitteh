@@ -84,6 +84,10 @@ func (s *svc) exchange(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if handled := s.handleGitHubMarketplace(w, r, intg, state); handled {
+		return
+	}
+
 	// Ensure the state parameter is well-formed.
 	sub := regexp.MustCompile(`^(.+)_([a-z]+)$`).FindStringSubmatch(state)
 	if len(sub) != 3 {
@@ -154,6 +158,15 @@ func (s *svc) exchange(w http.ResponseWriter, r *http.Request) {
 	}
 
 	redirect(w, r, intg, sub[1], sub[2], "oauth", oauthData)
+}
+
+func (s *svc) handleGitHubMarketplace(w http.ResponseWriter, r *http.Request, intg string, state string) bool {
+	if intg == "github" && state == "" {
+		// User came from Marketplace (no AK-generated state)
+		http.Redirect(w, r, "https://github.com/settings/installations/"+r.FormValue("installation_id"), http.StatusFound)
+		return true
+	}
+	return false
 }
 
 func abort(w http.ResponseWriter, r *http.Request, intg, cid, origin, err string) {
