@@ -19,6 +19,10 @@ message StartRequest {
 
   // Helper: if set, merged into and overwrites the session's inputs.
   map<string, string> json_inputs = 2;
+
+  // Helper: if set, merged into and overwrites the session's inputs.
+  // must be a dictionary.
+  string json_object_input = 3;
 }
 
 message StartResponse {
