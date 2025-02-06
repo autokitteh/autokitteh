@@ -44,7 +44,7 @@ func ConfigureWorkerGRPCHandler(l *zap.Logger, mux *http.ServeMux) {
 	w.log = l
 	srv := grpc.NewServer()
 	userCode.RegisterHandlerServiceServer(srv, &w)
-	path := fmt.Sprintf("/%s/2", userCode.HandlerService_ServiceDesc.ServiceName)
+	path := fmt.Sprintf("/%s/", userCode.HandlerService_ServiceDesc.ServiceName)
 	mux.Handle(path, srv)
 }
 
@@ -173,10 +173,10 @@ func (s *workerGRPCHandler) Activity(ctx context.Context, req *userCode.Activity
 	fnName := req.CallInfo.Function
 
 	runner.log.Info("activity", zap.String("function", fnName))
-	_, err := sdktypes.NewFunctionValue(runner.xid, fnName, req.Data, nil, pyModuleFunc)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "new function value: %s", err)
-	}
+	//_, err := sdktypes.NewFunctionValue(runner.xid, fnName, req.Data, nil, pyModuleFunc)
+	//if err != nil {
+	//	return nil, status.Errorf(codes.Internal, "new function value: %s", err)
+	//}
 
 	runner.channels.request <- req
 	return &userCode.ActivityResponse{}, nil

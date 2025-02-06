@@ -68,10 +68,10 @@ interface OriginalFunctions {
 
 const done = async (runnerId: string, workerAddress: string) => {
     const transport = createGrpcTransport({
-        baseUrl: workerAddress,
+        baseUrl: `http://${workerAddress}`,
     });
     const client = createClient(HandlerService, transport);
-    await client.done({runnerId, error: "", traceback: []});
+    await client.done({runnerId, error: "", traceback: [], result: {$typeName:"autokitteh.values.v1.Value", string: {$typeName:"autokitteh.values.v1.String", v:"yay"}}});
 }
 
 export class Sandbox {

@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 
@@ -102,13 +103,11 @@ func (r *LocalNodeJS) Start(pyExe string, tarData []byte, env map[string]string,
 		}
 	}()
 
-	//port, err := freePort()
-
-	r.port = 8080
-	//if err != nil {
-	//	return fmt.Errorf("cannot find free port: %w", err)
-	//}
-	//r.port = port
+	port, err := freePort()
+	if err != nil {
+		return fmt.Errorf("cannot find free port: %w", err)
+	}
+	r.port = port
 
 	userDir, err := os.MkdirTemp("", "ak-user-")
 	if err != nil {
@@ -141,7 +140,12 @@ func (r *LocalNodeJS) Start(pyExe string, tarData []byte, env map[string]string,
 	cmd := exec.Command(
 		"npm",
 		"run",
-		"runner2",
+		"runner",
+		"--",
+		"--worker-address", workerAddr,
+		"--port", strconv.Itoa(r.port),
+		"--runner-id", r.id,
+		"--code-dir", r.userDir,
 	)
 	cmd.Dir = "/Users/adiludmer/GolandProjects/autokitteh/runtimes/nodejsrt/runner"
 

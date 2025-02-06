@@ -17,7 +17,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	pbModule "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/module/v1"
 	pbUserCode "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/user_code/v1"
-	pbValues "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/values/v1"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -142,7 +141,7 @@ func New(cfg *Config, l *zap.Logger, getLocalAddr func() string) (*sdkruntimes.R
 }
 
 func newSvc(cfg *Config, l *zap.Logger) (sdkservices.Runtime, error) {
-	l = l.With(zap.String("runtime", "python"))
+	l = l.With(zap.String("runtime", "nodejs"))
 
 	svc := nodejsSvc{
 		cfg:       cfg,
@@ -164,16 +163,6 @@ func newSvc(cfg *Config, l *zap.Logger) (sdkservices.Runtime, error) {
 func (js *nodejsSvc) Get() sdktypes.Runtime { return desc }
 
 const archiveKey = "code.tar"
-
-// All Python handler function get all event information.
-var pyModuleFunc = kittehs.Must1(sdktypes.ModuleFunctionFromProto(&sdktypes.ModuleFunctionPB{
-	Input: []*sdktypes.ModuleFunctionFieldPB{
-		{Name: "created_at"},
-		{Name: "data"},
-		{Name: "event_id"},
-		{Name: "integration_id"},
-	},
-}))
 
 func entriesToValues(xid sdktypes.ExecutorID, entries []*pbUserCode.Export) (map[string]sdktypes.Value, error) {
 	values := make(map[string]sdktypes.Value)
@@ -232,13 +221,6 @@ func entryPointFileName(entryPoint string) string {
 	return entryPoint
 }
 
-/*
-Run starts a Python workflow.
-
-It'll load the Python module and set the list of exported names.
-mainPath is in the form `issues.py:on_issue`, Python will load the `issues` module.
-Run *does not* execute a function in the Python module, this happens in Call.
-*/
 func (js *nodejsSvc) Run(
 	ctx context.Context,
 	runID sdktypes.RunID,
@@ -261,8 +243,6 @@ func (js *nodejsSvc) Run(
 
 	js.cbs = cbs
 
-	// Load environment defined by user in the `vars` section of the manifest,
-	// these are injected to the Python subprocess environment.
 	env, err := cbs.Load(ctx, runID, "env")
 	if err != nil {
 		return nil, fmt.Errorf("can't load env : %w", err)
@@ -323,7 +303,7 @@ func (js *nodejsSvc) Run(
 	}
 	js.exports = exports
 
-	runnerOK = true // All is good, don't kill Python subprocess.
+	runnerOK = true
 
 	js.log.Info("run created")
 	return js, nil
@@ -338,8 +318,6 @@ func (js *nodejsSvc) Values() map[string]sdktypes.Value {
 
 func (js *nodejsSvc) Close() {
 	js.log.Info("closing (not really)")
-	// AK calls Close after `Run`, but we need the Python process running for `Call` as well.
-	// We kill the Python process once the initial `Call` is completed.
 }
 
 func (js *nodejsSvc) kwToEvent(kwargs map[string]sdktypes.Value) (map[string]any, error) {
@@ -391,7 +369,7 @@ func (js *nodejsSvc) call(ctx context.Context, val sdktypes.Value, args []sdktyp
 	}
 }
 
-func (js *nodejsSvc) setupCallbacksListeningLoop(ctx context.Context) chan (error) {
+func (js *nodejsSvc) setupCallbacksListeningLoop(ctx context.Context) chan error {
 	callbackErrChan := make(chan error, 1)
 	go func() {
 		for {
@@ -402,34 +380,6 @@ func (js *nodejsSvc) setupCallbacksListeningLoop(ctx context.Context) chan (erro
 			case p := <-js.channels.print:
 				js.cbs.Print(ctx, js.runID, p.message)
 				close(p.doneChannel)
-			case r := <-js.channels.request:
-				var (
-					fnName = "pyFunc"
-					args   []sdktypes.Value
-					kw     map[string]sdktypes.Value
-				)
-
-				if r.CallInfo != nil {
-					fnName = r.CallInfo.Function
-					args = kittehs.Transform(r.CallInfo.Args, func(v *pbValues.Value) sdktypes.Value {
-						// TODO(ENG-1838): What if there's an error?
-						val, _ := sdktypes.ValueFromProto(v)
-						return val
-					})
-					kw = kittehs.TransformMap(r.CallInfo.Kwargs, func(k string, v *pbValues.Value) (string, sdktypes.Value) {
-						// TODO(ENG-1838): What if there's an error?
-						val, _ := sdktypes.ValueFromProto(v)
-						return k, val
-					})
-				}
-
-				// it was already checked before we got here
-				fn, err := sdktypes.NewFunctionValue(js.xid, fnName, r.Data, nil, pyModuleFunc)
-				if err != nil {
-					callbackErrChan <- err
-					return
-				}
-				js.call(ctx, fn, args, kw)
 			case cb := <-js.channels.callback:
 				val, err := js.cbs.Call(ctx, js.runID, js.syscallFn, cb.args, cb.kwargs)
 				if err != nil {
@@ -496,8 +446,6 @@ func (js *nodejsSvc) setupHealthcheck(ctx context.Context) chan (error) {
 	return runnerHealthChan
 }
 
-// initialCall handles initial call from autokitteh, it does the message loop with Python.
-// We split it from Call since Call is also used to execute activities.
 func (js *nodejsSvc) initialCall(ctx context.Context, funcName string, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	if len(args) > 0 {
 		return sdktypes.InvalidValue, errors.New("initial call can't have positional args")
@@ -565,7 +513,6 @@ func (js *nodejsSvc) initialCall(ctx context.Context, funcName string, args []sd
 				return sdktypes.InvalidValue, errors.New("done result is nil")
 			}
 
-			done.Result.Custom.ExecutorId = js.xid.String()
 			return sdktypes.ValueFromProto(done.Result)
 		case <-ctx.Done():
 			return sdktypes.InvalidValue, fmt.Errorf("context expired - %w", ctx.Err())

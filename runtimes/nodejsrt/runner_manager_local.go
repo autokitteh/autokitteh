@@ -12,7 +12,7 @@ import (
 
 type localRunnerManager struct {
 	logger           *zap.Logger
-	pyExe            string
+	nodeExe          string
 	runnerIDToRunner map[string]*LocalNodeJS
 	mu               *sync.Mutex
 	workerAddress    string
@@ -62,7 +62,7 @@ func (l *localRunnerManager) Start(_ context.Context, sessionID sdktypes.Session
 		log.Info("worker address inferred", zap.String("workerAddress", l.workerAddress))
 	}
 
-	if err := r.Start(l.pyExe, buildArtifacts, vars, l.workerAddress); err != nil {
+	if err := r.Start(l.nodeExe, buildArtifacts, vars, l.workerAddress); err != nil {
 		return "", nil, err
 	}
 

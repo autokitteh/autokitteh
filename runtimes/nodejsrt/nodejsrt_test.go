@@ -296,7 +296,7 @@ func TestPythonFromEnv(t *testing.T) {
 
 	py, ok := runnerManager.(*localRunnerManager)
 	require.True(t, ok)
-	require.Equal(t, pyExe, py.pyExe)
+	require.Equal(t, pyExe, py.nodeExe)
 }
 
 func Test_pySvc_Build_PyCache(t *testing.T) {
