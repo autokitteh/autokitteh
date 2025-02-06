@@ -25,7 +25,7 @@ export class StartRequest extends Message<StartRequest> {
   jsonInputs: { [key: string]: string } = {};
 
   /**
-   * Helper: if set,  merged into and overwrites the session's inputs.
+   * Helper: if set, merged into and overwrites the session's inputs.
    * must be a dictionary.
    *
    * @generated from field: string json_object_input = 3;

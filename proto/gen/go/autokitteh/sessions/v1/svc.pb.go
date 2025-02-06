@@ -32,7 +32,7 @@ type StartRequest struct {
 	Session *Session `protobuf:"bytes,1,opt,name=session,proto3" json:"session,omitempty"`
 	// Helper: if set, merged into and overwrites the session's inputs.
 	JsonInputs map[string]string `protobuf:"bytes,2,rep,name=json_inputs,json=jsonInputs,proto3" json:"json_inputs,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	// Helper: if set,  merged into and overwrites the session's inputs.
+	// Helper: if set, merged into and overwrites the session's inputs.
 	// must be a dictionary.
 	JsonObjectInput string `protobuf:"bytes,3,opt,name=json_object_input,json=jsonObjectInput,proto3" json:"json_object_input,omitempty"`
 }
