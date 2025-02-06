@@ -52,7 +52,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	authType := h.saveAuthType(r.Context(), vsid, r.FormValue("auth_type"))
 
 	switch authType {
-	// Use the AutoKitteh's server's default Linear OAuth 2.0 app, i.e.
+	// Use the AutoKitteh server's default Linear OAuth 2.0 app, i.e.
 	// immediately redirect to the 3-legged OAuth 2.0 flow's starting point.
 	case integrations.OAuthDefault:
 		if err := h.saveActor(r, vsid); err != nil {
