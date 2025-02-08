@@ -269,10 +269,11 @@ class Runner(pb.runner_rpc.RunnerService):
     def ActivityReply(
         self, request: pb.runner.ActivityReplyRequest, context: grpc.ServicerContext
     ):
-        if not request.result.custom.data:
+        if request.error or not request.result.custom.data:
+            error = request.error or "activity reply not a Custom value"
             req = pb.handler.DoneRequest(
                 runner_id=self.id,
-                error="activity reply not a Custom value",
+                error=error,
             )
             try:
                 self.worker.Done(req)
