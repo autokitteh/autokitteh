@@ -2,7 +2,6 @@ package zoom
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -60,12 +59,45 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	// First save the user-provided details of a private Zoom OAuth 2.0 app,
 	// and only then redirect to the 3-legged OAuth 2.0 flow's starting point.
 	case integrations.OAuthPrivate:
-		if err := h.savePrivateOAuth(r, vsid); err != nil {
+		app, err := h.savePrivateApp(r, vsid)
+		if err != nil {
 			l.Error("save connection: " + err.Error())
 			c.AbortServerError(err.Error())
 			return
 		}
+		if app.ClientID == "" || app.ClientSecret == "" {
+			l.Error("save connection: missing private app details")
+			c.AbortBadRequest("missing private app details")
+			return
+		}
 		startOAuth(w, r, c, l)
+
+	// Same as a private OAuth 2.0 app, but without the OAuth 2.0 flow
+	// (it uses application permissions instead of user-delegated ones).
+	case integrations.ServerToServer:
+		app, err := h.savePrivateApp(r, vsid)
+		if err != nil {
+			l.Error("save connection: " + err.Error())
+			c.AbortServerError(err.Error())
+			return
+		}
+		if app.AccountID == "" || app.ClientID == "" || app.ClientSecret == "" {
+			l.Error("save connection: missing private app details")
+			c.AbortBadRequest("missing private app details")
+			return
+		}
+		if _, err := serverToken(r.Context(), app); err != nil {
+			l.Error("save connection: " + err.Error())
+			c.AbortServerError(err.Error())
+			return
+		}
+		urlPath, err := c.FinalURL()
+		if err != nil {
+			l.Error("failed to construct final URL", zap.Error(err))
+			c.AbortServerError("save connection: bad redirect URL")
+			return
+		}
+		http.Redirect(w, r, urlPath, http.StatusFound)
 
 	// Unknown/unrecognized mode - an error.
 	default:
@@ -83,20 +115,21 @@ func (h handler) saveAuthType(ctx context.Context, vsid sdktypes.VarScopeID, aut
 	return authType
 }
 
-// savePrivateOAuth saves the user-provided details of
-// a private Zoom OAuth 2.0 app as connection variables.
-func (h handler) savePrivateOAuth(r *http.Request, vsid sdktypes.VarScopeID) error {
-	app := privateOAuth{
+// savePrivateApp saves the user-provided details of a private Zoom
+// OAuth 2.0 app or Service-to-Service internal app as connection variables.
+func (h handler) savePrivateApp(r *http.Request, vsid sdktypes.VarScopeID) (*privateApp, error) {
+	app := privateApp{
+		AccountID:    r.FormValue("account_id"),
 		ClientID:     r.FormValue("client_id"),
 		ClientSecret: r.FormValue("client_secret"),
+		SecretToken:  r.FormValue("secret_token"),
 	}
 
-	// Sanity check: all the required details were provided, and are valid.
-	if app.ClientID == "" || app.ClientSecret == "" {
-		return errors.New("missing private OAuth 2.0 details")
+	if err := h.vars.Set(r.Context(), sdktypes.EncodeVars(app).WithScopeID(vsid)...); err != nil {
+		return nil, err
 	}
 
-	return h.vars.Set(r.Context(), sdktypes.EncodeVars(app).WithScopeID(vsid)...)
+	return &app, nil
 }
 
 // startOAuth redirects the user to the AutoKitteh server's

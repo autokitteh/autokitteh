@@ -29,6 +29,8 @@ func status(v sdkservices.Vars) sdkintegrations.OptFn {
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 		case integrations.OAuthDefault, integrations.OAuthPrivate:
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using OAuth 2.0"), nil
+		case integrations.ServerToServer:
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using S2S"), nil
 		default:
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil
 		}
@@ -53,7 +55,9 @@ func test(v sdkservices.Vars) sdkintegrations.OptFn {
 		case "":
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 		case integrations.OAuthDefault, integrations.OAuthPrivate:
-			// TODO: Implement (https://developers.zoom.us/docs/integrations/oauth/#the-me-context).
+			// TODO(INT-247): Implement.
+		case integrations.ServerToServer:
+			// TODO(INT-247): Implement.
 		default:
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil
 		}
