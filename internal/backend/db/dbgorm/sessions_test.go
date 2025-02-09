@@ -262,7 +262,7 @@ func TestDeleteSessionCallSpec(t *testing.T) {
 	assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
 
 	// Session call implicitly create session log records
-	_, n, err := f.gormdb.getSessionLogRecords(f.ctx, sdkservices.ListSessionLogRecordsFilter{SessionID: sdktypes.NewIDFromUUID[sdktypes.SessionID](s.SessionID)})
+	_, n, err := f.gormdb.getSessionLogRecords(f.ctx, sdkservices.SessionLogRecordsFilter{SessionID: sdktypes.NewIDFromUUID[sdktypes.SessionID](s.SessionID)})
 	assert.NoError(t, err)
 	assert.Equal(t, n, int64(0))
 }
@@ -287,7 +287,7 @@ func TestDeleteSessionCallAttempt(t *testing.T) {
 	assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
 
 	// Session call attempt create session log records
-	_, n, err := f.gormdb.getSessionLogRecords(f.ctx, sdkservices.ListSessionLogRecordsFilter{SessionID: sdktypes.NewIDFromUUID[sdktypes.SessionID](s.SessionID)})
+	_, n, err := f.gormdb.getSessionLogRecords(f.ctx, sdkservices.SessionLogRecordsFilter{SessionID: sdktypes.NewIDFromUUID[sdktypes.SessionID](s.SessionID)})
 	assert.NoError(t, err)
 	assert.Equal(t, n, int64(0))
 }
