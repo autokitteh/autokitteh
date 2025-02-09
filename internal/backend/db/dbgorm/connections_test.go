@@ -122,8 +122,8 @@ func TestDeleteConnectionAndVars(t *testing.T) {
 
 	f, p := preConnectionTest(t)
 
-	c1, c2, c3, c4 := f.newConnection(p), f.newConnection(p), f.newConnection(p), f.newConnection(p)
-	f.createConnectionsAndAssert(t, c1, c2, c3, c4)
+	c1, c2, c3 := f.newConnection(p), f.newConnection(p), f.newConnection(p)
+	f.createConnectionsAndAssert(t, c1, c2, c3)
 
 	// delete specific connectionID
 	assert.NoError(t, f.gormdb.deleteConnectionsAndVars(ctx, "connection_id", c1.ConnectionID))
@@ -132,12 +132,20 @@ func TestDeleteConnectionAndVars(t *testing.T) {
 	// delete all connections for specific projectID
 	assert.NoError(t, f.gormdb.deleteConnectionsAndVars(ctx, "project_id", p.ProjectID))
 	f.assertConnectionDeleted(t, c2, c3)
+}
 
-	trigger := f.newTrigger(c4, p)
+func TestCantDeleteConnectionWithTriggers(t *testing.T) {
+	ctx := context.Background()
+	f, p := preConnectionTest(t)
+
+	c := f.newConnection(p)
+	f.createConnectionsAndAssert(t, c)
+
+	trigger := f.newTrigger(c, p)
 	f.createTriggersAndAssert(t, trigger)
 
-	// Try deleting a connection that has associated triggers
-	err := f.gormdb.deleteConnectionsAndVars(ctx, "connection_id", c4.ConnectionID)
+	// Try deleting a connection that has associated triggers (should fail)
+	err := f.gormdb.deleteConnectionsAndVars(ctx, "connection_id", c.ConnectionID)
 	assert.Error(t, err)
 	assert.EqualError(t, err, "cannot delete a connection that has associated triggers")
 }
