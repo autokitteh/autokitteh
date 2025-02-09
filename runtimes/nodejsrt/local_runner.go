@@ -140,7 +140,7 @@ func (r *LocalNodeJS) Start(pyExe string, tarData []byte, env map[string]string,
 	cmd := exec.Command(
 		"npm",
 		"run",
-		"runner",
+		"proxy",
 		"--",
 		"--worker-address", workerAddr,
 		"--port", strconv.Itoa(r.port),

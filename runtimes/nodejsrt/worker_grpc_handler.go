@@ -170,9 +170,9 @@ func (s *workerGRPCHandler) Activity(ctx context.Context, req *userCode.Activity
 		return &userCode.ActivityResponse{Error: "unknown runner ID"}, nil
 	}
 
-	fnName := req.CallInfo.Function
-
-	runner.log.Info("activity", zap.String("function", fnName))
+	//fnName := req.CallInfo.Function
+	//
+	//runner.log.Info("activity", zap.String("function", fnName))
 	//_, err := sdktypes.NewFunctionValue(runner.xid, fnName, req.Data, nil, pyModuleFunc)
 	//if err != nil {
 	//	return nil, status.Errorf(codes.Internal, "new function value: %s", err)

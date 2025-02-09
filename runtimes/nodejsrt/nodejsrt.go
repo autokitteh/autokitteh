@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	pbValues "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/values/v1"
 	"maps"
 	"net"
 	"slices"
@@ -380,6 +381,34 @@ func (js *nodejsSvc) setupCallbacksListeningLoop(ctx context.Context) chan error
 			case p := <-js.channels.print:
 				js.cbs.Print(ctx, js.runID, p.message)
 				close(p.doneChannel)
+			case r := <-js.channels.request:
+				var (
+					fnName = "pyFunc"
+					args   []sdktypes.Value
+					kw     map[string]sdktypes.Value
+				)
+
+				if r.CallInfo != nil {
+					fnName = r.CallInfo.Function
+					args = kittehs.Transform(r.CallInfo.Args, func(v *pbValues.Value) sdktypes.Value {
+						// TODO(ENG-1838): What if there's an error?
+						val, _ := sdktypes.ValueFromProto(v)
+						return val
+					})
+					kw = kittehs.TransformMap(r.CallInfo.Kwargs, func(k string, v *pbValues.Value) (string, sdktypes.Value) {
+						// TODO(ENG-1838): What if there's an error?
+						val, _ := sdktypes.ValueFromProto(v)
+						return k, val
+					})
+				}
+
+				// it was already checked before we got here
+				fn, err := sdktypes.NewFunctionValue(js.xid, fnName, r.Data, nil, pyModuleFunc)
+				if err != nil {
+					callbackErrChan <- err
+					return
+				}
+				js.call(ctx, fn, args, kw)
 			case cb := <-js.channels.callback:
 				val, err := js.cbs.Call(ctx, js.runID, js.syscallFn, cb.args, cb.kwargs)
 				if err != nil {

@@ -60,12 +60,13 @@ export const createService = (codeDir: string, runnerId: string, workerAddress: 
 
       async start(req: StartRequest): Promise<StartResponse> {
           const decoder = new TextDecoder();
-          const args = [decoder.decode(req.event?.data)]
+          const args = decoder.decode(req.event?.data)
+          const parsedArgs = JSON.parse(args)
           const [fileName, functionName] = req.entryPoint.split(":")
 
-          const sandbox = new Sandbox(ak_call, runnerId, workerAddress)
+          const sandbox = new Sandbox(ak_call, parsedArgs.runnerId, workerAddress, codeDir)
           await sandbox.loadFile(`${codeDir}/${fileName}`)
-          const code = `${functionName}()`
+          const code = `arg = ${args}; ${functionName}(arg)`
 
           sandbox.run(code)
           return {$typeName: "autokitteh.user_code.v1.StartResponse", error:"", traceback: []}

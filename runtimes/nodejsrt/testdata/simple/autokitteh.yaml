@@ -5,7 +5,7 @@ project:
   triggers:
     - name: events
       event_type: post
-      call: simple.js:greet
+      call: main.ts:on_event
       webhook: {}
   vars:
     - name: USER

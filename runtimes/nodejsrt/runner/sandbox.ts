@@ -5,10 +5,12 @@ import {EventEmitter, once} from "node:events";
 import {patchCode} from "./ast_utils";
 import {listFiles} from "./file_utils";
 import path from "path";
-import {createGrpcTransport} from "@connectrpc/connect-node";
-import {createClient} from "@connectrpc/connect";
+import {createConnectTransport, createGrpcTransport} from "@connectrpc/connect-node";
+import {createClient, Client} from "@connectrpc/connect";
 import {HandlerService} from "./pb/autokitteh/user_code/v1/handler_svc_pb";
-import {resultsCache} from "./ak_call";
+import {functionsCache, resultsCache} from "./ak_call";
+import type {DescService} from "@bufbuild/protobuf";
+import {randomUUID} from "node:crypto";
 
 async function transpile(code: string, filename: string): Promise<string> {
     const result = await transformAsync(code, {
@@ -34,7 +36,7 @@ async function patchDir(dir: string, outDir: string): Promise<void> {
 
     const files = await listFiles(dir)
     for (const file of files) {
-        if (!file.endsWith(".js") || file.endsWith(".ts")) {
+        if (!file.endsWith(".js") && !file.endsWith(".ts")) {
             continue
         }
         let code = fs.readFileSync(file, "utf8");
@@ -66,35 +68,31 @@ interface OriginalFunctions {
     [key: string]: Function
 }
 
-const done = async (runnerId: string, workerAddress: string) => {
-    const transport = createGrpcTransport({
-        baseUrl: `http://${workerAddress}`,
-    });
-    const client = createClient(HandlerService, transport);
-    await client.done({runnerId, error: "", traceback: [], result: {$typeName:"autokitteh.values.v1.Value", string: {$typeName:"autokitteh.values.v1.String", v:"yay"}}});
-}
-
 export class Sandbox {
     context: Context
     hookFunc: Function
     emitter: EventEmitter
     runnerId: string
     workerAddress: string
+    codeDir: string
+    client: Client<typeof HandlerService>
 
-    constructor(hookFunc: Function, runnerId: string, workerAddress: string) {
+    constructor(hookFunc: Function, runnerId: string, workerAddress: string, codeDir: string) {
         this.runnerId = runnerId;
         this.workerAddress = workerAddress;
+        this.codeDir = codeDir;
         this.context = {};
         this.hookFunc = hookFunc;
         this.emitter = new EventEmitter();
         this.initContext()
+        this.client = this.initClient()
     }
 
     initContext() {
         this.context.exports = {}
         this.context.results = ""
         this.context.emmiter = this.emitter
-        this.context.ak_call = this.hookFunc
+        this.context.ak_call = this.ak_call
         this.context.originalFunction = {}
         this.context.workingDir = "."
         this.context.console = {
@@ -104,7 +102,7 @@ export class Sandbox {
         this.context.require = (moduleName: string) => {
 
             if (moduleName.startsWith(".")) {
-                moduleName =  "./dist/" + moduleName + ".js"
+                moduleName =  this.codeDir + "/dist/" + moduleName + ".js"
                 const code = fs.readFileSync(moduleName, "utf8")
                 vm.runInContext(code, this.context)
                 return this.context
@@ -144,13 +142,40 @@ export class Sandbox {
 
     async run(code: string): Promise<void> {
         vm.runInContext(code, this.context);
-        await done(this.runnerId, this.workerAddress);
+        // await this.client.done({runnerId: this.runnerId, result: {$typeName:"autokitteh.values.v1.Value", string: {$typeName:"autokitteh.values.v1.String", v:"yay"}}});
     }
 
-    async runOriginalFunction(name: string, args: any[]): Promise<any> {
-        const code = `originalFunction['${name}'](...${JSON.stringify(args)})`;
-        const out = await vm.runInContext(code, this.context);
-        this.emitter.emit("return", out);
-        return out
+    initClient() {
+        const transport = createGrpcTransport({
+            baseUrl: `http://${this.workerAddress}`,
+        });
+        return createClient(HandlerService, transport);
+    }
+
+    ak_call = async (...args: any) => {
+        let f = args[0];
+        let f_args = args.slice(1)
+
+        if (f.ak_call !== true) {
+            return await f(...f_args);
+        }
+
+        const uuid = randomUUID()
+        functionsCache[uuid] = f
+
+        let data = {
+            f: f.name,
+            f_args: ""
+        }
+
+        if (f_args) {
+            data.f_args = f_args
+        }
+
+        const serializedData = JSON.stringify(data)
+
+        const encoder = new TextEncoder()
+        await this.client.activity({runnerId: this.runnerId, data: encoder.encode(serializedData)});
+        return "aa"
     }
 }

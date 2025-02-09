@@ -5,7 +5,8 @@
   "scripts": {
     "test": "jest",
     "exports": "ts-node exports.ts",
-    "runner": "ts-node main.ts"
+    "runner": "ts-node main.ts",
+    "proxy": "ts-node proxy.ts"
   },
   "keywords": [],
   "author": "",
