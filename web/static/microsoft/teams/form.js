@@ -7,6 +7,8 @@ document.getElementById("origin").value = urlParams.get("origin") ?? "";
 // Show/hide fields based on the selected auth type.
 document.getElementById("authType").addEventListener("change", function () {
   const isDefaultApp = this.value === "oauthDefault";
+  const isOauthPrivate = this.value === "oauthPrivate";
+
   const privateAppSection = document.getElementById("privateAppSection");
   if (isDefaultApp) {
     privateAppSection.classList.add("hidden");
@@ -18,9 +20,9 @@ document.getElementById("authType").addEventListener("change", function () {
   document.getElementById("tenantId").disabled = isDefaultApp;
 
   const submitButton = document.getElementById("submit");
-  if (this.value === "daemonApp") {
-    submitButton.textContent = "Save Connection";
-  } else {
+  if (isDefaultApp || isOauthPrivate) {
     submitButton.textContent = "Start OAuth Flow";
+  } else {
+    submitButton.textContent = "Save Connection";
   }
 });

@@ -28,17 +28,13 @@ document.getElementById("authType").addEventListener("change", function () {
   document.getElementById("webhookSecret").disabled = !isOauthPrivate;
 
   const apiKeySection = document.getElementById("apiKeySection");
+  const submitButton = document.getElementById("submit");
   if (isApiKey) {
     apiKeySection.classList.remove("hidden");
-  } else {
-    apiKeySection.classList.add("hidden");
-  }
-  document.getElementById("apiKey").disabled = !isApiKey;
-
-  const submitButton = document.getElementById("submit");
-  if (this.value === "apiKey") {
     submitButton.textContent = "Save Connection";
   } else {
+    apiKeySection.classList.add("hidden");
     submitButton.textContent = "Start OAuth Flow";
   }
+  document.getElementById("apiKey").disabled = !isApiKey;
 });

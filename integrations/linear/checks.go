@@ -39,7 +39,7 @@ func status(v sdkservices.Vars) sdkintegrations.OptFn {
 
 // test checks whether the connection is actually usable, i.e. the configured
 // authentication credentials are valid and can be used to make API calls.
-func test(v sdkservices.Vars, o sdkservices.OAuth) sdkintegrations.OptFn {
+func test(v sdkservices.Vars) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
 		if !cid.IsValid() {
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Init required"), nil

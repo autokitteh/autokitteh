@@ -53,7 +53,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	authType := h.saveAuthType(r.Context(), vsid, r.FormValue("auth_type"))
 
 	switch authType {
-	// Use the AutoKitteh's server's default Microsoft OAuth 2.0 app, i.e.
+	// Use the AutoKitteh server's default Microsoft OAuth 2.0 app, i.e.
 	// immediately redirect to the 3-legged OAuth 2.0 flow's starting point.
 	case integrations.OAuthDefault:
 		startOAuth(w, r, c, l)
@@ -78,7 +78,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 		}
 		urlPath, err := c.FinalURL()
 		if err != nil {
-			l.Error("failed to construct final OAuth URL", zap.Error(err))
+			l.Error("failed to construct final URL", zap.Error(err))
 			c.AbortServerError("save connection: bad redirect URL")
 			return
 		}
@@ -101,7 +101,7 @@ func (h handler) saveAuthType(ctx context.Context, vsid sdktypes.VarScopeID, aut
 }
 
 // savePrivateApp saves the user-provided details of a private
-// Microsoft OAuth 2.0 or daemon app as connection variables.
+// Microsoft OAuth 2.0 app or daemon app as connection variables.
 func (h handler) savePrivateApp(r *http.Request, i sdktypes.Integration, cid sdktypes.ConnectionID) error {
 	tenantID := r.FormValue("tenant_id")
 	if tenantID == "" {
