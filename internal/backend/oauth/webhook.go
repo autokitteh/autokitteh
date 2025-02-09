@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"time"
 
@@ -84,7 +85,7 @@ func (s *svc) exchange(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if handled := s.handleGitHubMarketplace(w, r, intg, state); handled {
+	if handled := s.redirectToGitHub(w, r, intg, state); handled {
 		return
 	}
 
@@ -160,13 +161,28 @@ func (s *svc) exchange(w http.ResponseWriter, r *http.Request) {
 	redirect(w, r, intg, sub[1], sub[2], "oauth", oauthData)
 }
 
-func (s *svc) handleGitHubMarketplace(w http.ResponseWriter, r *http.Request, intg string, state string) bool {
-	if intg == "github" && state == "" {
-		// User came from Marketplace (no AK-generated state)
-		http.Redirect(w, r, "https://github.com/settings/installations/"+r.FormValue("installation_id"), http.StatusFound)
-		return true
+// redirectToGitHub redirects users to the GitHub App installation page when they
+// initiate OAuth without a state parameter, typically after installing from the
+// GitHub Marketplace. This ensures a smoother user experience.
+func (s *svc) redirectToGitHub(w http.ResponseWriter, r *http.Request, intg string, state string) bool {
+	if intg != "github" || state != "" {
+		return false
 	}
-	return false
+
+	githubAppName := os.Getenv("GITHUB_APP_NAME")
+	if githubAppName == "" {
+		githubAppName = "autokitteh"
+	}
+
+	enterpriseURL := os.Getenv("GITHUB_ENTERPRISE_URL")
+	if enterpriseURL == "" {
+		enterpriseURL = "https://github.com"
+	}
+
+	redirectURL := fmt.Sprintf("%s/apps/%s", enterpriseURL, githubAppName)
+	http.Redirect(w, r, redirectURL, http.StatusFound)
+
+	return true
 }
 
 func abort(w http.ResponseWriter, r *http.Request, intg, cid, origin, err string) {
