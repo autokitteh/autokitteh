@@ -86,7 +86,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 		}
 		urlPath, err := c.FinalURL()
 		if err != nil {
-			l.Error("failed to construct final OAuth URL", zap.Error(err))
+			l.Error("failed to construct final URL", zap.Error(err))
 			c.AbortServerError("save connection: bad redirect URL")
 			return
 		}
