@@ -22,7 +22,7 @@ const (
 var (
 	IntegrationID = sdktypes.NewIntegrationIDFromName(integrationName)
 
-	desc = common.LegacyDescriptor(integrationName, "Atlassian Jira", "/static/images/jira.svg")
+	desc = common.Descriptor(integrationName, "Atlassian Jira", "/static/images/jira.svg")
 )
 
 type integration struct {

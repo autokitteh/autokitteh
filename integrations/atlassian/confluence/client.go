@@ -22,7 +22,7 @@ const (
 var (
 	integrationID = sdktypes.NewIntegrationIDFromName(integrationName)
 
-	desc = common.LegacyDescriptor(integrationName, "Atlassian Confluence", "/static/images/confluence.svg")
+	desc = common.Descriptor(integrationName, "Atlassian Confluence", "/static/images/confluence.svg")
 )
 
 type integration struct {

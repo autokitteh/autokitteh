@@ -8,20 +8,10 @@ import (
 	"go.autokitteh.dev/autokitteh/web/static"
 )
 
-const (
-	// savePath is the URL path for our handler to save new
-	// connections, after users submit them via a web form.
-	savePath = "/asana/save"
-)
-
 // Start initializes all the HTTP handlers of the AWS integration.
 // This includes connection UIs and initialization webhooks.
 func Start(l *zap.Logger, m *muxes.Muxes) {
 	common.ServeStaticUI(m, desc, static.AsanaWebContent)
 
-	// Init webhooks save connection vars (via "c.Finalize" calls), so they need
-	// to have an authenticated user context, so the DB layer won't reject them.
-	// For this purpose, init webhooks are managed by the "auth" mux, which passes
-	// through AutoKitteh's auth middleware to extract the user ID from a cookie.
-	m.Auth.Handle(savePath, NewHTTPHandler(l))
+	common.RegisterSaveHandler(m, desc, NewHTTPHandler(l).ServeHTTP)
 }

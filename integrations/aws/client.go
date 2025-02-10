@@ -29,7 +29,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var desc = common.LegacyDescriptor("aws", "AWS (All APIs)", "/static/images/aws.svg")
+var desc = common.Descriptor("aws", "AWS (All APIs)", "/static/images/aws.svg")
 
 type integration struct {
 	vars sdkservices.Vars

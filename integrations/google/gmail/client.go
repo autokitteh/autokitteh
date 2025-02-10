@@ -27,7 +27,7 @@ const (
 var (
 	IntegrationID = sdktypes.NewIntegrationIDFromName(integrationName)
 
-	desc = common.LegacyDescriptor(integrationName, "Gmail", "/static/images/gmail.svg")
+	desc = common.Descriptor(integrationName, "Gmail", "/static/images/gmail.svg")
 )
 
 type api struct {

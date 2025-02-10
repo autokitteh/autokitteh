@@ -22,7 +22,7 @@ const (
 var (
 	integrationID = sdktypes.NewIntegrationIDFromName(integrationName)
 
-	desc = common.LegacyDescriptor(integrationName, "Discord", "/static/images/discord.svg")
+	desc = common.Descriptor(integrationName, "Discord", "/static/images/discord.svg")
 )
 
 type integration struct{ vars sdkservices.Vars }

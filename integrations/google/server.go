@@ -1,6 +1,7 @@
 package google
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -26,28 +27,26 @@ const (
 // Start initializes all the HTTP handlers of all the Google integrations.
 // This includes connection UIs, initialization webhooks, and event webhooks.
 func Start(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.DispatchFunc) {
-	uiPath := "GET " + desc.ConnectionURL().Path + "/"
-
-	// Connection UI.
-	m.NoAuth.Handle(uiPath, http.FileServer(http.FS(static.GoogleWebContent)))
+	common.ServeStaticUI(m, desc, static.GoogleWebContent)
+	uiPath := fmt.Sprintf("GET %s/", desc.ConnectionURL().Path)
 
 	urlPath := strings.ReplaceAll(uiPath, "google", "gmail")
-	m.NoAuth.Handle(urlPath, http.FileServer(http.FS(static.GmailWebContent)))
+	m.Auth.Handle(urlPath, http.FileServer(http.FS(static.GmailWebContent)))
 
 	urlPath = strings.ReplaceAll(uiPath, "google", "googlecalendar")
-	m.NoAuth.Handle(urlPath, http.FileServer(http.FS(static.GoogleCalendarWebContent)))
+	m.Auth.Handle(urlPath, http.FileServer(http.FS(static.GoogleCalendarWebContent)))
 
 	urlPath = strings.ReplaceAll(uiPath, "google", "googlechat")
-	m.NoAuth.Handle(urlPath, http.FileServer(http.FS(static.GoogleChatWebContent)))
+	m.Auth.Handle(urlPath, http.FileServer(http.FS(static.GoogleChatWebContent)))
 
 	urlPath = strings.ReplaceAll(uiPath, "google", "googledrive")
-	m.NoAuth.Handle(urlPath, http.FileServer(http.FS(static.GoogleDriveWebContent)))
+	m.Auth.Handle(urlPath, http.FileServer(http.FS(static.GoogleDriveWebContent)))
 
 	urlPath = strings.ReplaceAll(uiPath, "google", "googleforms")
-	m.NoAuth.Handle(urlPath, http.FileServer(http.FS(static.GoogleFormsWebContent)))
+	m.Auth.Handle(urlPath, http.FileServer(http.FS(static.GoogleFormsWebContent)))
 
 	urlPath = strings.ReplaceAll(uiPath, "google", "googlesheets")
-	m.NoAuth.Handle(urlPath, http.FileServer(http.FS(static.GoogleSheetsWebContent)))
+	m.Auth.Handle(urlPath, http.FileServer(http.FS(static.GoogleSheetsWebContent)))
 
 	h := NewHTTPHandler(l, o, v, d)
 	common.RegisterSaveHandler(m, desc, h.handleCreds)

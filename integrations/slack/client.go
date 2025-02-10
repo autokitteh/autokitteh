@@ -28,7 +28,7 @@ const (
 var (
 	integrationID = sdktypes.NewIntegrationIDFromName(integrationName)
 
-	desc = common.LegacyDescriptor(integrationName, "Slack", "/static/images/slack.svg")
+	desc = common.Descriptor(integrationName, "Slack", "/static/images/slack.svg")
 )
 
 func New(vs sdkservices.Vars) sdkservices.Integration {
