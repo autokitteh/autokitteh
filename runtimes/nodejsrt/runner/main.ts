@@ -3,6 +3,11 @@ import { fastifyConnectPlugin } from "@connectrpc/connect-fastify";
 import {createService} from "./server"
 import { Command} from "commander";
 const program = new Command();
+import {Sandbox} from "./sandbox";
+import {ak_call, ActivityWaiter} from "./ak_call";
+import {createClient} from "@connectrpc/connect";
+import {createGrpcTransport} from "@connectrpc/connect-node";
+import {HandlerService} from "./pb/autokitteh/user_code/v1/handler_svc_pb";
 
 program
     .requiredOption('--worker-address <TYPE>', 'worker address')
@@ -16,7 +21,16 @@ console.log(process.argv);
 
 program.parse(process.argv);
 
-let routes = createService(options.codeDir, options.runnerId, options.workerAddress);
+const transport = createGrpcTransport({
+    baseUrl: `http://${options.workerAddress}`,
+});
+
+const client = createClient(HandlerService, transport);
+const waiter = new ActivityWaiter(client, options.runnerId)
+const _ak_call = ak_call(waiter)
+const sandbox = new Sandbox(options.codeDir, _ak_call);
+const routes = createService(options.codeDir, options.runnerId, sandbox, waiter);
+
 
 async function main() {
     const server = fastify({http2: true});
