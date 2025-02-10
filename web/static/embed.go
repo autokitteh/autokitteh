@@ -55,9 +55,6 @@ var GoogleSheetsWebContent embed.FS
 //go:embed height
 var HeightWebContent embed.FS
 
-//go:embed i/http
-var HTTPWebContent embed.FS
-
 //go:embed hubspot
 var HubSpotWebContent embed.FS
 
