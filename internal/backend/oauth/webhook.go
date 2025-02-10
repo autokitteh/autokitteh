@@ -85,7 +85,12 @@ func (s *svc) exchange(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if handled := s.redirectToGitHub(w, r, intg, state); handled {
+	handled, err := s.redirectToGitHub(w, r, intg, state)
+	if err != nil {
+		l.Error("Failed to redirect to GitHub", zap.Error(err))
+		return
+	}
+	if handled {
 		return
 	}
 
@@ -164,14 +169,14 @@ func (s *svc) exchange(w http.ResponseWriter, r *http.Request) {
 // redirectToGitHub redirects users to the GitHub App installation page when they
 // initiate OAuth without a state parameter, typically after installing from the
 // GitHub Marketplace. This ensures a smoother user experience.
-func (s *svc) redirectToGitHub(w http.ResponseWriter, r *http.Request, intg string, state string) bool {
+func (s *svc) redirectToGitHub(w http.ResponseWriter, r *http.Request, intg string, state string) (bool, error) {
 	if intg != "github" || state != "" {
-		return false
+		return false, nil
 	}
 
-	githubAppName := os.Getenv("GITHUB_APP_NAME")
-	if githubAppName == "" {
-		githubAppName = "autokitteh"
+	appName := os.Getenv("GITHUB_APP_NAME")
+	if appName == "" {
+		appName = "autokitteh"
 	}
 
 	enterpriseURL := os.Getenv("GITHUB_ENTERPRISE_URL")
@@ -179,10 +184,14 @@ func (s *svc) redirectToGitHub(w http.ResponseWriter, r *http.Request, intg stri
 		enterpriseURL = "https://github.com"
 	}
 
-	redirectURL := fmt.Sprintf("%s/apps/%s", enterpriseURL, githubAppName)
+	redirectURL, err := url.JoinPath(enterpriseURL, "apps", appName)
+	if err != nil {
+		return false, fmt.Errorf("failed to construct redirect URL: %w", err)
+	}
+
 	http.Redirect(w, r, redirectURL, http.StatusFound)
 
-	return true
+	return true, nil
 }
 
 func abort(w http.ResponseWriter, r *http.Request, intg, cid, origin, err string) {
