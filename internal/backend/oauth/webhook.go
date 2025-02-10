@@ -87,7 +87,7 @@ func (s *svc) exchange(w http.ResponseWriter, r *http.Request) {
 
 	handled, err := s.redirectToGitHub(w, r, intg, state)
 	if err != nil {
-		l.Error("Failed to redirect to GitHub", zap.Error(err))
+		l.Warn("Failed to redirect to GitHub", zap.Error(err))
 		return
 	}
 	if handled {
