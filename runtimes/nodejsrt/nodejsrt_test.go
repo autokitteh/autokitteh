@@ -11,7 +11,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"path"
 	"strings"
 	"testing"
 	"time"
@@ -244,59 +243,6 @@ func Test_pySvc_Run(t *testing.T) {
 	}
 	_, err = run.Call(ctx, fn, nil, kwargs)
 	require.NoError(t, err, "call")
-}
-
-var isGoodVersionCasess = []struct {
-	version Version
-	ok      bool
-}{
-	{Version{2, 6}, false},
-	{Version{3, minPyVersion.Minor - 1}, false},
-	{Version{3, minPyVersion.Minor}, true},
-	{Version{3, minPyVersion.Minor + 1}, true},
-}
-
-func Test_isGoodVersion(t *testing.T) {
-	for _, tc := range isGoodVersionCasess {
-		name := fmt.Sprintf("%d.%d", tc.version.Major, tc.version.Minor)
-		t.Run(name, func(t *testing.T) {
-			ok := isGoodVersion(tc.version)
-			require.Equal(t, tc.ok, ok)
-		})
-	}
-}
-
-func TestNewBadVersion(t *testing.T) {
-	dirName := t.TempDir()
-	exe := path.Join(dirName, "python")
-
-	genExe(t, exe, minPyVersion.Major, minPyVersion.Minor-1)
-	t.Setenv(exeEnvKey, exe)
-
-	l := zap.New(nil)
-	err := configureLocalRunnerManager(l, LocalRunnerManagerConfig{})
-	require.Error(t, err)
-}
-
-func TestPythonFromEnv(t *testing.T) {
-	envDir := t.TempDir()
-	pyExe := path.Join(envDir, "pypy3")
-	t.Setenv(exeEnvKey, pyExe)
-
-	l := zap.New(nil)
-	err := configureLocalRunnerManager(l, LocalRunnerManagerConfig{})
-	require.Error(t, err)
-
-	genExe(t, pyExe, minPyVersion.Major, minPyVersion.Minor)
-	err = configureLocalRunnerManager(l, LocalRunnerManagerConfig{WorkerAddress: "0.0.0.0:0"})
-	require.NoError(t, err)
-
-	_, err = newSvc(Configs.Default, zap.NewNop())
-	require.NoError(t, err)
-
-	py, ok := runnerManager.(*localRunnerManager)
-	require.True(t, ok)
-	require.Equal(t, pyExe, py.nodeExe)
 }
 
 func Test_pySvc_Build_PyCache(t *testing.T) {

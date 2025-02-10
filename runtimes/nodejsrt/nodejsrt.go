@@ -370,6 +370,16 @@ func (js *nodejsSvc) call(ctx context.Context, val sdktypes.Value, args []sdktyp
 	}
 }
 
+// All Python handler function get all event information.
+var pyModuleFunc = kittehs.Must1(sdktypes.ModuleFunctionFromProto(&sdktypes.ModuleFunctionPB{
+	Input: []*sdktypes.ModuleFunctionFieldPB{
+		{Name: "created_at"},
+		{Name: "data"},
+		{Name: "event_id"},
+		{Name: "integration_id"},
+	},
+}))
+
 func (js *nodejsSvc) setupCallbacksListeningLoop(ctx context.Context) chan error {
 	callbackErrChan := make(chan error, 1)
 	go func() {

@@ -4,12 +4,9 @@ import {transformAsync} from "@babel/core";
 import {EventEmitter, once} from "node:events";
 import {patchCode} from "./ast_utils";
 import {listFiles} from "./file_utils";
-import path from "path";
-import {createConnectTransport, createGrpcTransport} from "@connectrpc/connect-node";
+import {createGrpcTransport} from "@connectrpc/connect-node";
 import {createClient, Client} from "@connectrpc/connect";
 import {HandlerService} from "./pb/autokitteh/user_code/v1/handler_svc_pb";
-import {functionsCache, resultsCache} from "./ak_call";
-import type {DescService} from "@bufbuild/protobuf";
 import {randomUUID} from "node:crypto";
 
 async function transpile(code: string, filename: string): Promise<string> {
@@ -64,28 +61,34 @@ const defaultHook = (f: Function, args: any): any => {
     return true;
 }
 
-interface OriginalFunctions {
+interface FunctionsCache {
     [key: string]: Function
+}
+
+interface ResultsCache {
+    [key: string]: EventEmitter;
 }
 
 export class Sandbox {
     context: Context
-    hookFunc: Function
     emitter: EventEmitter
     runnerId: string
     workerAddress: string
     codeDir: string
     client: Client<typeof HandlerService>
+    functionsCache: FunctionsCache
+    resultsCache: ResultsCache
 
-    constructor(hookFunc: Function, runnerId: string, workerAddress: string, codeDir: string) {
+    constructor(runnerId: string, workerAddress: string, codeDir: string) {
         this.runnerId = runnerId;
         this.workerAddress = workerAddress;
         this.codeDir = codeDir;
         this.context = {};
-        this.hookFunc = hookFunc;
         this.emitter = new EventEmitter();
         this.initContext()
         this.client = this.initClient()
+        this.functionsCache = {}
+        this.resultsCache = {}
     }
 
     initContext() {
@@ -98,6 +101,8 @@ export class Sandbox {
         this.context.console = {
             log: console.log,
         }
+        this.context.functionsCache = this.functionsCache
+        this.context.resultsCache = this.resultsCache
 
         this.context.require = (moduleName: string) => {
 
@@ -140,9 +145,33 @@ export class Sandbox {
         vm.runInContext(code, this.context);
     }
 
-    async run(code: string): Promise<void> {
-        vm.runInContext(code, this.context);
-        // await this.client.done({runnerId: this.runnerId, result: {$typeName:"autokitteh.values.v1.Value", string: {$typeName:"autokitteh.values.v1.String", v:"yay"}}});
+    async run(f: string, args: any, callDone: boolean = false): Promise<any> {
+        let code: string;
+
+        if (callDone) {
+            this.runnerId = args.runnerId;
+            code = `(async () => {return await ${f}(...[${JSON.stringify(args)}]);})();`
+            const p = vm.runInContext(code, this.context);
+            const r = await p;
+            this.client.done({runnerId: this.runnerId, result: {$typeName:"autokitteh.values.v1.Value", string: {$typeName:"autokitteh.values.v1.String", v:"yay"}}});
+            return r
+        } else {
+            code = `(async () => {
+                const results = await functionsCache[${f}](...[${JSON.stringify(args)}]);
+                resultsCache[${f}].emit('return', results);
+                })();`
+            try {
+                const p = vm.runInContext(code, this.context)
+                const a = await p;
+                console.log(a)
+            } catch (error) {
+                console.log(error)
+            }
+
+            // const results = await once(this.context.resultsCache[f], 'return');
+            // console.log(results)
+            // return results;
+        }
     }
 
     initClient() {
@@ -160,12 +189,14 @@ export class Sandbox {
             return await f(...f_args);
         }
 
-        const uuid = randomUUID()
-        functionsCache[uuid] = f
+        const uuid = "f_" + randomUUID().toString().replace(/-/g, "");
+        this.functionsCache[uuid] = f
+        this.resultsCache[uuid] = new EventEmitter()
+        console.log("adding function:", f.name, uuid)
 
         let data = {
-            f: f.name,
-            f_args: ""
+            f: uuid,
+            f_args: []
         }
 
         if (f_args) {
@@ -175,7 +206,14 @@ export class Sandbox {
         const serializedData = JSON.stringify(data)
 
         const encoder = new TextEncoder()
-        await this.client.activity({runnerId: this.runnerId, data: encoder.encode(serializedData)});
-        return "aa"
+        const resp = await this.client.activity({runnerId: this.runnerId, data: encoder.encode(serializedData), callInfo: {
+            function: uuid,
+            args: [],
+        }});
+        console.log("activity call resp", resp, "args", args);
+        // const results = await once(this.resultsCache[uuid], 'return');
+        // console.log("got results", results)
+        // return results;
+        return "yay";
     }
 }

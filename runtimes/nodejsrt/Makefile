@@ -60,4 +60,4 @@ clean-temporal:
 	rm "/Users/adiludmer/Library/Application Support/autokitteh/autokitteh.sqlite"
 
 start-workflow:
-	curl -d'{"user": "joe", "action": "read"}' http://localhost:9980/webhooks/01jkmq81wmfqh8fb4fak91gbnw
+	curl -d'{"user": "joe", "action": "read"}' http://localhost:9980/webhooks/01jkqmnr2xej29nze6wkv2j941
