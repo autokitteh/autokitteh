@@ -2,6 +2,8 @@ package dbgorm
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"maps"
 
 	"github.com/google/uuid"
@@ -32,6 +34,15 @@ func (gdb *gormdb) createConnection(ctx context.Context, conn *scheme.Connection
 
 func (gdb *gormdb) deleteConnectionsAndVars(ctx context.Context, what string, id uuid.UUID) error {
 	// should be transactional with context already applied
+	if what == "connection_id" {
+		hasTriggers, err := gdb.doesConnectionHaveTriggers(ctx, id)
+		if err != nil {
+			return translateError(err)
+		}
+		if hasTriggers {
+			return errors.New("cannot delete a connection that has associated triggers")
+		}
+	}
 
 	var ids []uuid.UUID
 	q := gdb.db.WithContext(ctx).Model(&scheme.Connection{})
@@ -46,6 +57,23 @@ func (gdb *gormdb) deleteConnectionsAndVars(ctx context.Context, what string, id
 	}
 
 	return nil
+}
+
+func (gdb *gormdb) doesConnectionHaveTriggers(ctx context.Context, connID uuid.UUID) (bool, error) {
+	var exists bool
+	q := gdb.db.WithContext(ctx)
+
+	q = q.Model(&scheme.Trigger{}).
+		Select("1").
+		Where("connection_id = ?", connID).
+		Where("deleted_at IS NULL").
+		Limit(1)
+
+	err := q.Find(&exists).Error
+	if err != nil {
+		return false, fmt.Errorf("checking active triggers: %w", err)
+	}
+	return exists, nil
 }
 
 func (gdb *gormdb) deleteConnection(ctx context.Context, id uuid.UUID) error {
