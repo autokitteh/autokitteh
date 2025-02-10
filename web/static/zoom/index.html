@@ -34,7 +34,7 @@
       <td>
         <img class="logo" src="/static/images/zoom.svg" alt="Logo" />
       </td>
-      <td><h1>Zoom - Initialize Connection</h1></td>
+      <td><h1>- Initialize Connection</h1></td>
     </table>
 
     <form method="post" action="/zoom/save">
@@ -56,11 +56,25 @@
         <select name="auth_type" id="authType">
           <option value="oauthDefault">Default OAuth 2.0</option>
           <option value="oauthPrivate">Private OAuth 2.0</option>
+          <option value="serverToServer">Private Server-to-Server</option>
         </select>
       </div>
 
-      <div id="privateOauthSection" class="hidden">
-        <h2>Private OAuth 2.0</h2>
+      <div id="privateAppSection" class="hidden">
+        <h2>Private App</h2>
+
+        <div id="privateS2SSection" class="form-group">
+          <label for="account_id">Account ID <i>(required)</i></label>
+          <input
+            type="text"
+            id="accountId"
+            name="account_id"
+            autocomplete="off"
+            spellcheck="false"
+            disabled
+            required
+          />
+        </div>
 
         <div class="form-group">
           <label for="client_id">Client ID <i>(required)</i></label>
@@ -85,6 +99,20 @@
             spellcheck="false"
             disabled
             required
+          />
+        </div>
+
+        <div id="privateOauthSection" class="form-group">
+          <label for="secret_token">
+            Secret Token <i>(required if you want to receive events)</i>
+          </label>
+          <input
+            type="text"
+            id="secretToken"
+            name="secret_token"
+            autocomplete="off"
+            spellcheck="false"
+            disabled
           />
         </div>
       </div>
