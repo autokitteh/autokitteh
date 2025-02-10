@@ -134,6 +134,22 @@ func TestDeleteConnectionAndVars(t *testing.T) {
 	f.assertConnectionDeleted(t, c2, c3)
 }
 
+func TestCantDeleteConnectionWithTriggers(t *testing.T) {
+	ctx := context.Background()
+	f, p := preConnectionTest(t)
+
+	c := f.newConnection(p)
+	f.createConnectionsAndAssert(t, c)
+
+	trigger := f.newTrigger(c, p)
+	f.createTriggersAndAssert(t, trigger)
+
+	// Try deleting a connection that has associated triggers (should fail)
+	err := f.gormdb.deleteConnectionsAndVars(ctx, "connection_id", c.ConnectionID)
+	assert.Error(t, err)
+	assert.EqualError(t, err, "cannot delete a connection that has associated triggers")
+}
+
 func TestGetConnection(t *testing.T) {
 	f, p := preConnectionTest(t)
 
@@ -176,4 +192,31 @@ func TestListConnection(t *testing.T) {
 	cc, err = f.gormdb.listConnections(f.ctx, sdkservices.ListConnectionsFilter{}, false)
 	assert.NoError(t, err)
 	assert.Len(t, cc, 0)
+}
+
+func TestDoesConnectionHaveTriggers(t *testing.T) {
+	f, p := preConnectionTest(t)
+
+	c := f.newConnection(p)
+	f.createConnectionsAndAssert(t, c)
+
+	// test doesConnectionHaveTriggers with no triggers
+	hasTriggers, err := f.gormdb.doesConnectionHaveTriggers(f.ctx, c.ConnectionID)
+	assert.NoError(t, err)
+	assert.False(t, hasTriggers)
+
+	trigger := f.newTrigger(c, p)
+	f.createTriggersAndAssert(t, trigger)
+
+	// test doesConnectionHaveTriggers with triggers
+	hasTriggers, err = f.gormdb.doesConnectionHaveTriggers(f.ctx, c.ConnectionID)
+	assert.NoError(t, err)
+	assert.True(t, hasTriggers)
+
+	assert.NoError(t, f.gormdb.deleteTrigger(f.ctx, trigger.TriggerID))
+
+	// test doesConnectionHaveTriggers after trigger delete
+	hasTriggers, err = f.gormdb.doesConnectionHaveTriggers(f.ctx, c.ConnectionID)
+	assert.NoError(t, err)
+	assert.False(t, hasTriggers)
 }
