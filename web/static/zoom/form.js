@@ -6,7 +6,25 @@ document.getElementById("origin").value = urlParams.get("origin") ?? "";
 
 // Show/hide fields based on the selected auth type.
 document.getElementById("authType").addEventListener("change", function () {
+  const isDefaultApp = this.value === "oauthDefault";
   const isOauthPrivate = this.value === "oauthPrivate";
+
+  const privateAppSection = document.getElementById("privateAppSection");
+  if (isDefaultApp) {
+    privateAppSection.classList.add("hidden");
+  } else {
+    privateAppSection.classList.remove("hidden");
+  }
+  document.getElementById("clientId").disabled = isDefaultApp;
+  document.getElementById("clientSecret").disabled = isDefaultApp;
+
+  const privateS2SSection = document.getElementById("privateS2SSection");
+  if (isDefaultApp || isOauthPrivate) {
+    privateS2SSection.classList.add("hidden");
+  } else {
+    privateS2SSection.classList.remove("hidden");
+  }
+  document.getElementById("accountId").disabled = isDefaultApp || isOauthPrivate;
 
   const privateOauthSection = document.getElementById("privateOauthSection");
   if (isOauthPrivate) {
@@ -14,6 +32,12 @@ document.getElementById("authType").addEventListener("change", function () {
   } else {
     privateOauthSection.classList.add("hidden");
   }
-  document.getElementById("clientId").disabled = !isOauthPrivate;
-  document.getElementById("clientSecret").disabled = !isOauthPrivate;
+  document.getElementById("secretToken").disabled = !isOauthPrivate;
+
+  const submitButton = document.getElementById("submit");
+  if (isDefaultApp || isOauthPrivate) {
+    submitButton.textContent = "Start OAuth Flow";
+  } else {
+    submitButton.textContent = "Save Connection";
+  }
 });
