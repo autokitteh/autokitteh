@@ -12,8 +12,7 @@ import {listExports} from "./ast_utils";
 import type { ConnectRouter } from "@connectrpc/connect";
 import {HealthRequest, HealthResponse} from "../../../proto/gen/ts/autokitteh/runner_manager/v1/runner_manager_svc_pb";
 
-export const createService = (codeDir: string, runnerId: string, workerAddress: string) => {
-    const sandbox = new Sandbox(runnerId, workerAddress, codeDir)
+export const createService = (codeDir: string, runnerId: string, sandbox: Sandbox) => {
     const decoder = new TextDecoder();
     const encoder = new TextEncoder();
 
@@ -44,8 +43,8 @@ export const createService = (codeDir: string, runnerId: string, workerAddress: 
               const data = decoder.decode(req.data)
               const execReq = JSON.parse(data)
               console.log("exec req:", execReq)
-              // let results = await sandbox.run(execReq.f, execReq.f_args)
-              let results = "yay"
+              // let results = JSON.stringify(await sandbox.run(execReq.f, execReq.f_args))
+              let results = JSON.stringify("yay")
               return {
                   $typeName: "autokitteh.user_code.v1.ExecuteResponse",
                   error: "",
@@ -54,7 +53,7 @@ export const createService = (codeDir: string, runnerId: string, workerAddress: 
                       custom: {
                           $typeName: "autokitteh.values.v1.Custom",
                           executorId: runnerId,
-                          data: encoder.encode(JSON.stringify({f: execReq.f})),
+                          data: encoder.encode(results),
                           value: {
                               $typeName:"autokitteh.values.v1.Value",
                               string: {
@@ -79,7 +78,7 @@ export const createService = (codeDir: string, runnerId: string, workerAddress: 
               const parsedArgs = JSON.parse(args)
               const [fileName, functionName] = req.entryPoint.split(":")
               await sandbox.loadFile(`${codeDir}/${fileName}`)
-              sandbox.run(functionName, parsedArgs, true).then((results) => {
+              sandbox.run(functionName, parsedArgs).then((results) => {
                   console.log(results);
               })
               return {$typeName: "autokitteh.user_code.v1.StartResponse", error:"", traceback: []}

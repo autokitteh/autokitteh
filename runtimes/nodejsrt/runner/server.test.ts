@@ -1,22 +1,37 @@
-import {functionsCache} from "./ak_call";
 import { createRouterTransport, createClient } from "@connectrpc/connect";
-import server from "./server";
+import { createService } from "./server";
 
 import {RunnerService } from "./pb/autokitteh/user_code/v1/runner_svc_pb";
-import { Value } from "./pb/autokitteh/values/v1/values_pb";
+import {Sandbox} from "./sandbox";
 
-test('xxx', async () => {
-    const mockTransport = createRouterTransport(server)
+const mockSandbox = new Sandbox("", async (f: Function, args: any) => { return await f(...args)})
+
+test('activity reply', async () => {
+    const mockTransport = createRouterTransport(createService("","",mockSandbox))
     const client = createClient(RunnerService, mockTransport);
-    let v: Value = { $typeName:"autokitteh.values.v1.Value", string: {$typeName:"autokitteh.values.v1.String", v:"a"}};
-    await client.activityReply({result: v, error: "a", $typeName:"autokitteh.user_code.v1.ActivityReplyRequest"});
+    const encoder = new TextEncoder()
+    await client.activityReply({
+        result: {
+            $typeName:"autokitteh.values.v1.Value",
+            custom: {
+                $typeName: "autokitteh.values.v1.Custom",
+                executorId: "runnerId",
+                data: encoder.encode(JSON.stringify({test: "test"})),
+                value: {
+                    $typeName:"autokitteh.values.v1.Value",
+                    string: {
+                        $typeName:"autokitteh.values.v1.String",
+                        v: "yay",
+                    }
+                }
+            }
+        }
+    });
 });
 
 test('listExports', async () => {
-    const mockTransport = createRouterTransport(server)
+    const mockTransport = createRouterTransport(createService("test_data/list_symbols","", mockSandbox))
     const client = createClient(RunnerService, mockTransport);
-    process.env["CODE_DIR"] = "test_data/list_symbols"
-
     const resp = await client.exports({fileName: "dep.js"})
     expect(resp.exports).toEqual([{
         "$typeName": "autokitteh.user_code.v1.Export",
@@ -29,14 +44,12 @@ test('listExports', async () => {
 
 
 test('execute', async () => {
-    functionsCache["sum"] = async (a: number, b: number) => {
-        return a + b;
-    }
     const encoder = new TextEncoder();
-    const mockTransport = createRouterTransport(server)
+    const decoder = new TextDecoder();
+    const mockTransport = createRouterTransport(createService("","", mockSandbox))
     const client = createClient(RunnerService, mockTransport);
     const req = JSON.stringify({"function": "sum", "args": [1,2]})
     const resp = await client.execute({data: encoder.encode(req)})
-    const results = JSON.parse(resp.result?.string?.v ?? '')
-    expect(results).toEqual(3)
+    const results = JSON.parse(decoder.decode(resp.result?.custom?.data))
+    expect(results).toEqual("yay")
 });
