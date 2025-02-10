@@ -30,14 +30,23 @@ test('ak_call', async () => {
         }
     }
 
+    let realFuncExecuted = false;
     const testFunc = async (a: number, b: number) => {
+        realFuncExecuted = true;
         return a + b
     }
 
     const waiter = new mockWaiter()
     const _ak_call = ak_call(waiter)
-    const p = _ak_call([testFunc, 1, 2])
+    let p = _ak_call([testFunc, 1, 2])
     await waiter.execute_signal()
     const r = await p;
     expect(r).toBe(3)
+    expect(realFuncExecuted).toBeTruthy()
+
+    realFuncExecuted = false;
+    p = _ak_call([testFunc, 1, 2])
+    await waiter.replay_signal(3)
+    expect(await p).toBe(3)
+    expect(realFuncExecuted).toBeFalsy()
 })
