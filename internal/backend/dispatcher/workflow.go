@@ -187,8 +187,6 @@ func (d *Dispatcher) signalWorkflow(wctx workflow.Context, wid string, sigid uui
 	}
 
 	sl.With("err", err).Errorf("signal workflow %v for %v: %v", wid, sigid, err)
-
-	return
 }
 
 func newSession(event sdktypes.Event, inputs map[string]sdktypes.Value, data sessionData) (sdktypes.Session, error) {
