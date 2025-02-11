@@ -153,7 +153,6 @@ func (d *Dispatcher) signalWorkflows(wctx workflow.Context, event sdktypes.Event
 		wg.Add(1)
 
 		workflow.Go(wctx, func(wctx workflow.Context) {
-			wctx = temporalclient.WithActivityOptions(wctx, taskQueueName, d.cfg.Activity)
 			d.signalWorkflow(wctx, signal.WorkflowID, signal.ID, eid)
 			wg.Done()
 		})
@@ -176,6 +175,8 @@ func (d *Dispatcher) signalWorkflow(wctx workflow.Context, wid string, sigid uui
 	var nferr *serviceerror.NotFound
 	if errors.As(err, &nferr) {
 		sl.Warnf("workflow %v not found for %v - removing signal", wid, sigid)
+
+		wctx := temporalclient.WithActivityOptions(wctx, taskQueueName, d.cfg.Activity)
 
 		if err := workflow.ExecuteActivity(wctx, removeSignalActivityName, sigid).Get(wctx, nil); err != nil {
 			sl.With("err", err).Errorf("remove signal %v: %v", sigid, err)
