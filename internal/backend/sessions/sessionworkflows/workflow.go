@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"maps"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"go.temporal.io/sdk/activity"
@@ -42,6 +43,7 @@ type sessionWorkflow struct {
 	l  *zap.Logger
 	ws *workflows
 
+	opts StartWorkflowOptions
 	data *sessiondata.Data
 
 	// All the members belows must be built deterministically by the workflow.
@@ -64,11 +66,12 @@ func runWorkflow(
 	wctx workflow.Context,
 	l *zap.Logger,
 	ws *workflows,
-	data *sessiondata.Data,
-) (prints []string, err error) {
+	params *sessionWorkflowParams,
+) (prints []sdkservices.SessionPrint, err error) {
 	w := &sessionWorkflow{
 		l:                         l,
-		data:                      data,
+		data:                      params.Data,
+		opts:                      params.Opts,
 		ws:                        ws,
 		lastReadEventSeqForSignal: make(map[uuid.UUID]uint64),
 	}
@@ -150,9 +153,10 @@ func (w *sessionWorkflow) call(ctx workflow.Context, _ sdktypes.RunID, v sdktype
 	w.callSeq++
 
 	result, err := w.ws.calls.Call(ctx, &sessioncalls.CallParams{
-		SessionID: w.data.Session.ID(),
-		CallSpec:  sdktypes.NewSessionCallSpec(v, args, kwargs, w.callSeq),
-		Executors: &w.executors,
+		SessionID:                 w.data.Session.ID(),
+		CallSpec:                  sdktypes.NewSessionCallSpec(v, args, kwargs, w.callSeq),
+		Executors:                 &w.executors,
+		UseTemporalForSessionLogs: w.opts.UseTemporalForSessionLogs,
 	})
 	if err != nil {
 		return sdktypes.InvalidValue, err
@@ -423,7 +427,7 @@ func (w *sessionWorkflow) removeEventSubscription(ctx context.Context, signalID 
 	delete(w.lastReadEventSeqForSignal, signalID)
 }
 
-func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []string, err error) {
+func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []sdkservices.SessionPrint, err error) {
 	sid := w.data.Session.ID()
 
 	newRunID := func() (runID sdktypes.RunID) {
@@ -481,26 +485,25 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []st
 			l := l.With(zap.Any("run_id", runID), zap.Bool("is_activity", isActivity))
 			l.Debug("print", zap.String("text", text))
 
-			prints = append(prints, text)
+			pv := sdktypes.NewStringValue(text)
 
-			if run == nil || isActivity {
-				// run == nil: Since initial run is running via temporalclient.LongRunning, we
-				// cannot use the workflow context to report prints.
-				//
-				// TODO(ENG-1554): we need to retry here.
-				err = w.ws.svcs.DB.AddSessionPrint(printCtx, sid, text)
+			var now time.Time
+
+			if isActivity {
+				now = kittehs.Now()
+
+				// TODO(ENG-1554): we might need to retry here.
+				err = w.ws.svcs.DB.AddSessionPrint(printCtx, sid, pv, w.callSeq)
 			} else {
-				// TODO(ENG-1467): Currently the python runtime is calling Print from a
-				//                 separate goroutine. This is a workaround to detect
-				//                 that behaviour and in that case just write the
-				//                 print directly into the DB since we cannot launch
-				//                 an activity from a separate goroutine.
-				if temporalclient.IsWorkflowContextAsGoContext(printCtx) {
-					err = workflow.ExecuteActivity(wctx, addSessionPrintActivityName, sid, text).Get(wctx, nil)
-				} else if !workflow.IsReplaying(wctx) {
-					err = w.ws.svcs.DB.AddSessionPrint(printCtx, sid, text)
-				}
+				now = workflow.Now(wctx)
+
+				err = workflow.ExecuteActivity(wctx, addSessionPrintActivityName, sid, pv, 0).Get(wctx, nil)
 			}
+
+			prints = append(prints, sdkservices.SessionPrint{
+				Timestamp: now,
+				Value:     pv,
+			})
 
 			// We do not consider print failure as a critical error, since we don't want to hold back the
 			// workflow for potential user debugging prints. Just log the error and move on. Nevertheless,
@@ -576,5 +579,11 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []st
 		}
 	}
 
-	return prints, w.updateState(wctx, sdktypes.NewSessionStateCompleted(prints, run.Values(), retVal))
+	return prints, w.updateState(
+		wctx,
+		sdktypes.NewSessionStateCompleted(
+			kittehs.Transform(prints, func(p sdkservices.SessionPrint) string { return p.Value.GetString().Value() }),
+			run.Values(),
+			retVal,
+		))
 }

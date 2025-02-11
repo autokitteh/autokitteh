@@ -155,10 +155,14 @@ class SessionLogRecord(_message.Message):
     TYPE_STATE: SessionLogRecord.Type
     TYPE_STOP_REQUEST: SessionLogRecord.Type
     class Print(_message.Message):
-        __slots__ = ["text"]
+        __slots__ = ["text", "value", "call_seq"]
         TEXT_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        CALL_SEQ_FIELD_NUMBER: _ClassVar[int]
         text: str
-        def __init__(self, text: _Optional[str] = ...) -> None: ...
+        value: _values_pb2.Value
+        call_seq: int
+        def __init__(self, text: _Optional[str] = ..., value: _Optional[_Union[_values_pb2.Value, _Mapping]] = ..., call_seq: _Optional[int] = ...) -> None: ...
     class StopRequest(_message.Message):
         __slots__ = ["reason"]
         REASON_FIELD_NUMBER: _ClassVar[int]

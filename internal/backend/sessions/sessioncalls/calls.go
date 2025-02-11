@@ -25,6 +25,8 @@ type CallParams struct {
 	SessionID sdktypes.SessionID
 	CallSpec  sdktypes.SessionCallSpec
 
+	UseTemporalForSessionLogs bool
+
 	Executors *sdkexecutor.Executors // needed for session specific calls (global modules, script functions).
 }
 
@@ -58,9 +60,7 @@ type calls struct {
 	executorsForSessions   map[sdktypes.SessionID]*sdkexecutor.Executors
 }
 
-const (
-	generalTaskQueueName = "session_call_activities"
-)
+const generalTaskQueueName = "session_call_activities"
 
 func uniqueWorkerCallTaskQueueName() string {
 	return fmt.Sprintf("%s_%s", generalTaskQueueName, fixtures.ProcessID())
@@ -109,26 +109,28 @@ func (cs *calls) Call(wctx workflow.Context, params *CallParams) (sdktypes.Sessi
 
 	wctx = workflow.WithActivityOptions(wctx, cs.config.activityConfig().ToOptions(generalTaskQueueName))
 
-	fut := workflow.ExecuteActivity(
-		wctx,
-		createSessionCallActivityName,
-		sid,
-		spec,
-	)
-	if err := fut.Get(wctx, nil); err != nil {
-		return sdktypes.InvalidSessionCallAttemptResult, fmt.Errorf("create_call: %w", err)
-	}
+	var attempt uint32 // relevant only if not using temporal for session logs.
 
-	var attempt uint32
+	if !params.UseTemporalForSessionLogs {
+		fut := workflow.ExecuteActivity(
+			wctx,
+			createSessionCallActivityName,
+			sid,
+			spec,
+		)
+		if err := fut.Get(wctx, nil); err != nil {
+			return sdktypes.InvalidSessionCallAttemptResult, fmt.Errorf("create_call: %w", err)
+		}
 
-	fut = workflow.ExecuteActivity(
-		wctx,
-		createSessionCallAttemptActivityName,
-		sid,
-		seq,
-	)
-	if err := fut.Get(wctx, &attempt); err != nil {
-		return sdktypes.InvalidSessionCallAttemptResult, fmt.Errorf("create_session_call_attempt: %w", err)
+		fut = workflow.ExecuteActivity(
+			wctx,
+			createSessionCallAttemptActivityName,
+			sid,
+			seq,
+		)
+		if err := fut.Get(wctx, &attempt); err != nil {
+			return sdktypes.InvalidSessionCallAttemptResult, fmt.Errorf("create_session_call_attempt: %w", err)
+		}
 	}
 
 	var result sdktypes.SessionCallAttemptResult
@@ -192,12 +194,12 @@ func (cs *calls) Call(wctx workflow.Context, params *CallParams) (sdktypes.Sessi
 
 			actx := workflow.WithActivityOptions(wctx, aopts)
 
-			var ret callActivityOutputs
+			var ret CallActivityOutputs
 
 			future := workflow.ExecuteActivity(
 				actx,
-				callActivityName,
-				&callActivityInputs{
+				CallActivityName,
+				&CallActivityInputs{
 					SessionID: sid,
 					CallSpec:  params.CallSpec,
 					Unique:    unique,
@@ -228,18 +230,20 @@ func (cs *calls) Call(wctx workflow.Context, params *CallParams) (sdktypes.Sessi
 		}
 	}
 
-	l.Debug("call returned", zap.Uint32("attempts", attempt+1))
+	l.Debug("call returned")
 
-	fut = workflow.ExecuteActivity(
-		wctx,
-		completeSessionCallAttemptActivityName,
-		sid,
-		seq,
-		attempt,
-		sdktypes.NewSessionCallAttemptComplete(true, 0, result),
-	)
-	if err := fut.Get(wctx, nil); err != nil {
-		return sdktypes.InvalidSessionCallAttemptResult, fmt.Errorf("complete_session_call_attempt: %w", err)
+	if !params.UseTemporalForSessionLogs {
+		fut := workflow.ExecuteActivity(
+			wctx,
+			completeSessionCallAttemptActivityName,
+			sid,
+			seq,
+			attempt,
+			sdktypes.NewSessionCallAttemptComplete(workflow.Now(wctx), true, result),
+		)
+		if err := fut.Get(wctx, nil); err != nil {
+			return sdktypes.InvalidSessionCallAttemptResult, fmt.Errorf("complete_session_call_attempt: %w", err)
+		}
 	}
 
 	return result, nil

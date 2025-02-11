@@ -109,7 +109,11 @@ func (s *svc) session(w http.ResponseWriter, r *http.Request) {
 	var prints string
 
 	for _, r := range log.Records {
-		if s, ok := r.GetPrint(); ok {
+		if p, ok := r.GetPrint(); ok {
+			s, err := p.ToString()
+			if err != nil {
+				s = fmt.Sprintf("error converting print to string: %v", err.Error())
+			}
 			prints += s + "\n"
 		}
 	}

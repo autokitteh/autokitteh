@@ -125,6 +125,7 @@ func (c *client) GetLog(ctx context.Context, filter sdkservices.SessionLogRecord
 		Skip:      filter.Skip,
 		PageToken: filter.PageToken,
 		Ascending: filter.Ascending,
+		Types:     filter.Types,
 	}))
 	if err != nil {
 		return nil, rpcerrors.ToSDKError(err)
