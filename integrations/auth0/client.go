@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	desc = common.LegacyDescriptor("auth0", "Auth0", "/static/images/auth0.svg")
+	desc = common.Descriptor("auth0", "Auth0", "/static/images/auth0.svg")
 
 	authTypeVar         = sdktypes.NewSymbol("auth_type")
 	clientIDNameVar     = sdktypes.NewSymbol("client_id")

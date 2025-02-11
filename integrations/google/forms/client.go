@@ -27,7 +27,7 @@ const (
 var (
 	IntegrationID = sdktypes.NewIntegrationIDFromName(integrationName)
 
-	desc = common.LegacyDescriptor(integrationName, "Google Forms", "/static/images/google_forms.svg")
+	desc = common.Descriptor(integrationName, "Google Forms", "/static/images/google_forms.svg")
 )
 
 type api struct {

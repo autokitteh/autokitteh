@@ -30,7 +30,7 @@ const (
 var (
 	IntegrationID = sdktypes.NewIntegrationIDFromName(integrationName)
 
-	desc = common.LegacyDescriptor(integrationName, "Google Calendar", "/static/images/google_calendar.svg")
+	desc = common.Descriptor(integrationName, "Google Calendar", "/static/images/google_calendar.svg")
 )
 
 type api struct {

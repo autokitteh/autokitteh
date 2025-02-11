@@ -7,61 +7,58 @@ import (
 //go:embed images/* *.png *.svg *.html *.ico *.txt *.webmanifest *.css *.js
 var RootWebContent embed.FS
 
-//go:embed asana/connect
+//go:embed asana
 var AsanaWebContent embed.FS
 
-//go:embed auth0/connect
+//go:embed auth0
 var Auth0WebContent embed.FS
 
-//go:embed aws/connect
+//go:embed aws
 var AWSWebContent embed.FS
 
-//go:embed chatgpt/connect
+//go:embed chatgpt
 var ChatGPTWebContent embed.FS
 
-//go:embed confluence/connect
+//go:embed confluence
 var ConfluenceWebContent embed.FS
 
-//go:embed discord/connect
+//go:embed discord
 var DiscordWebContent embed.FS
 
-//go:embed github/connect
+//go:embed github
 var GitHubWebContent embed.FS
 
-//go:embed gmail/connect
+//go:embed gmail
 var GmailWebContent embed.FS
 
-//go:embed google/connect
+//go:embed google
 var GoogleWebContent embed.FS
 
-//go:embed googlecalendar/connect
+//go:embed googlecalendar
 var GoogleCalendarWebContent embed.FS
 
-//go:embed google/connect
+//go:embed google
 var GoogleChatWebContent embed.FS
 
-//go:embed googledrive/connect
+//go:embed googledrive
 var GoogleDriveWebContent embed.FS
 
-//go:embed googleforms/connect
+//go:embed googleforms
 var GoogleFormsWebContent embed.FS
 
-//go:embed googlegemini/connect
+//go:embed googlegemini
 var GoogleGeminiWebContent embed.FS
 
-//go:embed googlesheets/connect
+//go:embed googlesheets
 var GoogleSheetsWebContent embed.FS
 
 //go:embed height
 var HeightWebContent embed.FS
 
-//go:embed i/http/connect
-var HTTPWebContent embed.FS
-
-//go:embed hubspot/connect
+//go:embed hubspot
 var HubSpotWebContent embed.FS
 
-//go:embed jira/connect
+//go:embed jira
 var JiraWebContent embed.FS
 
 //go:embed linear
@@ -70,10 +67,10 @@ var LinearWebContent embed.FS
 //go:embed microsoft
 var MicrosoftWebContent embed.FS
 
-//go:embed slack/connect
+//go:embed slack
 var SlackWebContent embed.FS
 
-//go:embed twilio/connect
+//go:embed twilio
 var TwilioWebContent embed.FS
 
 //go:embed zoom
