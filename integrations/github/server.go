@@ -1,7 +1,7 @@
 package github
 
 import (
-	"net/http"
+	"fmt"
 
 	"go.uber.org/zap"
 
@@ -9,7 +9,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/web/github/connect"
-	"go.autokitteh.dev/autokitteh/web/static"
 )
 
 const (
@@ -27,10 +26,9 @@ const (
 // Start initializes all the HTTP handlers of the GitHub integration.
 // This includes connection UIs, initialization webhooks, and event webhooks.
 func Start(l *zap.Logger, muxes *muxes.Muxes, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.DispatchFunc) {
-	// Connection UI.
-	uiPath := "GET " + desc.ConnectionURL().Path + "/"
-	muxes.NoAuth.HandleFunc(uiPath, connect.ServeHTTP)
-	muxes.NoAuth.Handle(uiPath+"{filename}", http.FileServer(http.FS(static.GitHubWebContent)))
+	// Non-typical dynamic connection UI, so we can't call "common.ServeStaticUI".
+	uiPath := fmt.Sprintf("GET %s/", desc.ConnectionURL().Path)
+	muxes.Auth.HandleFunc(uiPath, connect.ServeHTTP)
 
 	// Init webhooks save connection vars (via "c.Finalize" calls), so they need
 	// to have an authenticated user context, so the DB layer won't reject them.
