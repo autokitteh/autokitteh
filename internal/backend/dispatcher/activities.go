@@ -2,10 +2,8 @@ package dispatcher
 
 import (
 	"context"
-	"errors"
 
 	"github.com/google/uuid"
-	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/sdk/activity"
 	"go.temporal.io/sdk/worker"
 
@@ -21,7 +19,7 @@ const (
 	getEventSessionDataActivityName = "get_event_session_data"
 	startSessionActivityName        = "start_session"
 	listWaitingSignalsActivityName  = "list_waiting_signals"
-	signalWorkflowActivityName      = "signal_workflow"
+	removeSignalActivityName        = "remove_signal"
 )
 
 func (d *Dispatcher) registerActivities(w worker.Worker) {
@@ -41,8 +39,8 @@ func (d *Dispatcher) registerActivities(w worker.Worker) {
 	)
 
 	w.RegisterActivityWithOptions(
-		d.signalWorkflowActivity,
-		activity.RegisterOptions{Name: signalWorkflowActivityName},
+		d.removeSignalActivity,
+		activity.RegisterOptions{Name: removeSignalActivityName},
 	)
 }
 
@@ -204,27 +202,7 @@ func (d *Dispatcher) getEventSessionDataActivity(ctx context.Context, event sdkt
 	return sds, nil
 }
 
-func (d *Dispatcher) signalWorkflowActivity(ctx context.Context, wid string, sigid uuid.UUID, eid sdktypes.EventID) error {
-	sl := d.sl.With("workflow_id", wid, "signal_id", sigid, "event_id", eid)
-
-	if err := d.svcs.LazyTemporalClient().SignalWorkflow(ctx, wid, "", sigid.String(), eid); err != nil {
-		var nferr *serviceerror.NotFound
-		if errors.As(err, &nferr) {
-			sl.Warnf("workflow %v not found for %v - removing signal", wid, sigid)
-
-			if err := d.svcs.DB.RemoveSignal(ctx, sigid); err != nil {
-				sl.With("err", err).Error("db remove signal %v: %w", sigid, err)
-				return temporalclient.TranslateError(err, "remove signal %v", sigid)
-			}
-
-			// might be some race condition after workflow was done, not really an error.
-			return nil
-		}
-
-		sl.With("err", err).Errorf("signal workflow %v for %v: %v", wid, sigid, err)
-
-		return temporalclient.TranslateError(err, "signal workflow %v for %v", wid, sigid)
-	}
-
-	return nil
+func (d *Dispatcher) removeSignalActivity(ctx context.Context, sigid uuid.UUID) error {
+	err := d.svcs.DB.RemoveSignal(ctx, sigid)
+	return temporalclient.TranslateError(err, "remove signal %v", sigid)
 }

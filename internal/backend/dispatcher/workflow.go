@@ -1,9 +1,12 @@
 package dispatcher
 
 import (
+	"errors"
 	"fmt"
 	"maps"
 
+	"github.com/google/uuid"
+	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/sdk/workflow"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
@@ -150,21 +153,7 @@ func (d *Dispatcher) signalWorkflows(wctx workflow.Context, event sdktypes.Event
 		wg.Add(1)
 
 		workflow.Go(wctx, func(wctx workflow.Context) {
-			sl := sl.With("workflow_id", signal.WorkflowID, "signal_id", signal.ID)
-
-			err := workflow.ExecuteActivity(
-				wctx,
-				signalWorkflowActivityName,
-				signal.WorkflowID,
-				signal.ID,
-				eid,
-			).Get(wctx, nil)
-			if err != nil {
-				sl.With("err", err).Errorf("signal workflow %v with %v: %v", signal.WorkflowID, signal.ID, err)
-			} else {
-				sl.Infof("signaled workflow %v with %v", signal.WorkflowID, signal.ID)
-			}
-
+			d.signalWorkflow(wctx, signal.WorkflowID, signal.ID, eid)
 			wg.Done()
 		})
 
@@ -172,6 +161,33 @@ func (d *Dispatcher) signalWorkflows(wctx workflow.Context, event sdktypes.Event
 	}
 
 	return wids, nil
+}
+
+func (d *Dispatcher) signalWorkflow(wctx workflow.Context, wid string, sigid uuid.UUID, eid sdktypes.EventID) {
+	sl := d.sl.With("workflow_id", wid, "signal_id", sigid, "event_id", eid)
+
+	err := workflow.SignalExternalWorkflow(wctx, wid, "", sigid.String(), eid).Get(wctx, nil)
+	if err == nil {
+		sl.Infof("signalled workflow %v for %v with %v", wid, sigid, eid)
+		return
+	}
+
+	var nferr *serviceerror.NotFound
+	if errors.As(err, &nferr) {
+		sl.Warnf("workflow %v not found for %v - removing signal", wid, sigid)
+
+		wctx := temporalclient.WithActivityOptions(wctx, taskQueueName, d.cfg.Activity)
+
+		if err := workflow.ExecuteActivity(wctx, removeSignalActivityName, sigid).Get(wctx, nil); err != nil {
+			sl.With("err", err).Errorf("remove signal %v: %v", sigid, err)
+			return
+		}
+
+		// might be some race condition after workflow was done, not really an error.
+		return
+	}
+
+	sl.With("err", err).Errorf("signal workflow %v for %v: %v", wid, sigid, err)
 }
 
 func newSession(event sdktypes.Event, inputs map[string]sdktypes.Value, data sessionData) (sdktypes.Session, error) {
