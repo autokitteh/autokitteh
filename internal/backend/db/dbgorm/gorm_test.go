@@ -310,9 +310,9 @@ func (f *dbFixture) newSession(args ...any) scheme.Session {
 	return s
 }
 
-func (f *dbFixture) newSessionLogRecord() scheme.SessionLogRecord {
+func (f *dbFixture) newSessionLogRecord(sid uuid.UUID) scheme.SessionLogRecord {
 	return scheme.SessionLogRecord{
-		SessionID: testDummyID,
+		SessionID: sid,
 	}
 }
 
