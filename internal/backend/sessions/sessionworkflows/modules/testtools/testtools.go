@@ -1,4 +1,3 @@
-// This closely follows https://github.com/google/starlark-go/tree/master/lib/time.
 package testtools
 
 import (

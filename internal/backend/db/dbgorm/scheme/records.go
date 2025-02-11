@@ -170,10 +170,8 @@ type Event struct {
 	Seq       uint64 `gorm:"primaryKey;autoIncrement:true,index:idx_event_type_seq,priority:2"`
 
 	// enforce foreign keys
-	Connection *Connection
-	Trigger    *Trigger
-
-	DeletedAt gorm.DeletedAt `gorm:"index"`
+	Connection *Connection `gorm:"constraint:OnDelete:SET NULL"`
+	Trigger    *Trigger    `gorm:"constraint:OnDelete:SET NULL"`
 
 	Project *Project
 }
@@ -280,7 +278,7 @@ type SessionLogRecord struct {
 	Type      string `gorm:"index"`
 
 	// enforce foreign keys
-	Session *Session
+	Session *Session `gorm:"constraint:OnDelete:CASCADE"`
 }
 
 func ParseSessionLogRecord(c SessionLogRecord) (spec sdktypes.SessionLogRecord, err error) {
@@ -294,7 +292,7 @@ type SessionCallSpec struct {
 	Data      datatypes.JSON
 
 	// enforce foreign keys
-	Session *Session
+	Session *Session `gorm:"constraint:OnDelete:CASCADE"`
 }
 
 func ParseSessionCallSpec(c SessionCallSpec) (spec sdktypes.SessionCallSpec, err error) {
@@ -310,7 +308,7 @@ type SessionCallAttempt struct {
 	Complete  datatypes.JSON
 
 	// enforce foreign keys
-	Session *Session
+	Session *Session `gorm:"constraint:OnDelete:CASCADE"`
 }
 
 func ParseSessionCallAttemptStart(c SessionCallAttempt) (d sdktypes.SessionCallAttemptStart, err error) {
@@ -338,13 +336,12 @@ type Session struct {
 
 	UpdatedBy uuid.UUID `gorm:"type:uuid"`
 	UpdatedAt time.Time
-	DeletedAt gorm.DeletedAt `gorm:"index"`
 
 	// enforce foreign keys
 	Build      *Build
 	Deployment *Deployment
 	Project    *Project
-	Event      *Event `gorm:"references:EventID"`
+	Event      *Event `gorm:"references:EventID;constraint:OnDelete:SET NULL"`
 }
 
 func (Session) IDFieldName() string { return "session_id" }

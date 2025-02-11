@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"strconv"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -20,6 +21,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionsvcs"
 	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -33,14 +35,20 @@ const (
 	delayedTerminateSessionWorkflowName = "delayed_terminate_session"
 )
 
+type StartWorkflowOptions struct {
+	UseTemporalForSessionLogs bool
+}
+
 type Workflows interface {
 	StartWorkers(context.Context) error
-	StartWorkflow(ctx context.Context, session sdktypes.Session) error
+	StartWorkflow(ctx context.Context, session sdktypes.Session, opts StartWorkflowOptions) error
+	GetWorkflowLog(ctx context.Context, filter sdkservices.SessionLogRecordsFilter) (*sdkservices.GetLogResults, error)
 	StopWorkflow(ctx context.Context, sessionID sdktypes.SessionID, reason string, force bool, cancelTimeout time.Duration) error
 }
 
 type sessionWorkflowParams struct {
 	Data *sessiondata.Data
+	Opts StartWorkflowOptions
 }
 
 type workflows struct {
@@ -93,7 +101,7 @@ func (ws *workflows) StartWorkers(ctx context.Context) error {
 	return ws.worker.Start()
 }
 
-func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session) error {
+func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session, opts StartWorkflowOptions) error {
 	sessionID := session.ID()
 
 	l := ws.l.Sugar().With("session_id", sessionID)
@@ -104,15 +112,16 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 	}
 
 	memo := map[string]string{
-		"process_id":      fixtures.ProcessID(),
-		"session_id":      sessionID.Value().String(),
-		"session_uuid":    sessionID.UUIDValue().String(),
-		"deployment_id":   session.DeploymentID().String(),
-		"deployment_uuid": session.DeploymentID().UUIDValue().String(),
-		"project_id":      session.ProjectID().String(),
-		"project_uuid":    session.ProjectID().UUIDValue().String(),
-		"org_id":          oid.String(),
-		"org_uuid":        oid.UUIDValue().String(),
+		"use_temporal_for_session_logs": strconv.FormatBool(opts.UseTemporalForSessionLogs),
+		"process_id":                    fixtures.ProcessID(),
+		"session_id":                    sessionID.Value().String(),
+		"session_uuid":                  sessionID.UUIDValue().String(),
+		"deployment_id":                 session.DeploymentID().String(),
+		"deployment_uuid":               session.DeploymentID().UUIDValue().String(),
+		"project_id":                    session.ProjectID().String(),
+		"project_uuid":                  session.ProjectID().UUIDValue().String(),
+		"org_id":                        oid.String(),
+		"org_uuid":                      oid.UUIDValue().String(),
 	}
 
 	if session.ParentSessionID().IsValid() {
@@ -136,7 +145,7 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 			memo,
 		),
 		sessionWorkflowName,
-		&sessionWorkflowParams{Data: data},
+		&sessionWorkflowParams{Data: data, Opts: opts},
 	)
 	if err != nil {
 		return fmt.Errorf("execute session workflow: %w", err)
@@ -211,7 +220,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 	)
 
 	startTime := time.Now() // we want actual start time for metrics.
-	prints, err := runWorkflow(wctx, l, ws, params.Data)
+	prints, err := runWorkflow(wctx, l, ws, params)
 	duration := time.Since(startTime)
 
 	// from this point on we should not be doing anything really that should be cancelled.
@@ -244,7 +253,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 
 			ws.stopped(dwctx, sid)
 		} else {
-			ws.errored(dwctx, sid, err, prints)
+			ws.errored(dwctx, sid, err, kittehs.Transform(prints, func(p sdkservices.SessionPrint) string { return p.Value.GetString().Value() }))
 
 			if _, ok := sdktypes.FromError(err); ok {
 				// User level error (convertible to ProgramError).

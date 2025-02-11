@@ -8,7 +8,6 @@ import (
 	"io"
 	"os"
 	"regexp"
-	"slices"
 	"strings"
 
 	"github.com/hexops/gotextdiff"
@@ -123,29 +122,34 @@ var testCmd = common.StandardCommand(&cobra.Command{
 			return fmt.Errorf("start session: %w", err)
 		}
 		pageSize = 10
-		rs, err := sessionWatch(sid, sdktypes.SessionStateTypeUnspecified, "")
+		if _, err := sessionWatch(sid, sdktypes.SessionStateTypeUnspecified, ""); err != nil {
+			return err
+		}
+
+		rs, err := sessions().GetPrints(ctx, sid, sdktypes.PaginationRequest{
+			Ascending: true,
+		})
 		if err != nil {
 			return err
 		}
 
-		slices.SortFunc(rs, func(a, b sdktypes.SessionLogRecord) int {
-			return a.Timestamp().Compare(b.Timestamp())
-		})
-
 		var prints strings.Builder
 
-		for _, r := range rs {
-			if p, ok := r.GetPrint(); ok {
-				s := bufio.NewScanner(strings.NewReader(p))
-				for s.Scan() {
-					line := normalizePath(s.Text())
-					prints.WriteString(line)
-					prints.WriteRune('\n')
-				}
+		for _, r := range rs.Prints {
+			ps, err := r.Value.ToString()
+			if err != nil {
+				ps = ""
+			}
 
-				if err := s.Err(); err != nil {
-					return fmt.Errorf("scan print: %w", err)
-				}
+			s := bufio.NewScanner(strings.NewReader(ps))
+			for s.Scan() {
+				line := normalizePath(s.Text())
+				prints.WriteString(line)
+				prints.WriteRune('\n')
+			}
+
+			if err := s.Err(); err != nil {
+				return fmt.Errorf("scan print: %w", err)
 			}
 		}
 

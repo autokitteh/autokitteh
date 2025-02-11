@@ -2,6 +2,7 @@ package sessions
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -37,13 +38,13 @@ type sessions struct {
 
 var _ Sessions = (*sessions)(nil)
 
-func New(l *zap.Logger, config *Config, db db.DB, svcs sessionsvcs.Svcs, telemetry *telemetry.Telemetry) Sessions {
+func New(l *zap.Logger, config *Config, db db.DB, svcs sessionsvcs.Svcs, telemetry *telemetry.Telemetry) (Sessions, error) {
 	return &sessions{
 		config:    config,
 		svcs:      &svcs,
 		l:         l,
 		telemetry: telemetry,
-	}
+	}, nil
 }
 
 func (s *sessions) StartWorkers(ctx context.Context) error {
@@ -87,7 +88,7 @@ func (s *sessions) GetPrints(ctx context.Context, sid sdktypes.SessionID, pagina
 
 		return &sdkservices.SessionPrint{
 			Timestamp: r.Timestamp(),
-			Value:     sdktypes.NewStringValue(p),
+			Value:     p,
 		}
 	})
 
@@ -98,11 +99,24 @@ func (s *sessions) GetPrints(ctx context.Context, sid sdktypes.SessionID, pagina
 }
 
 func (s *sessions) GetLog(ctx context.Context, filter sdkservices.SessionLogRecordsFilter) (*sdkservices.GetLogResults, error) {
-	if err := authz.CheckContext(ctx, filter.SessionID, "read:get-log", authz.WithData("filter", filter), authz.WithConvertForbiddenToNotFound); err != nil {
+	if err := authz.CheckContext(
+		ctx,
+		filter.SessionID,
+		"read:get-log",
+		authz.WithData("filter", filter),
+		authz.WithConvertForbiddenToNotFound,
+	); err != nil {
 		return nil, err
 	}
 
-	return s.svcs.DB.GetSessionLog(ctx, filter)
+	rs, err := s.workflows.GetWorkflowLog(ctx, filter)
+	if errors.Is(err, sdkerrors.ErrNotFound) {
+		// If temporal already lost the workflow, use the log from the db.
+		// (This will not contain the calls log).
+		return s.svcs.DB.GetSessionLog(ctx, filter)
+	}
+
+	return rs, nil
 }
 
 func (s *sessions) Get(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.Session, error) {
@@ -204,7 +218,7 @@ func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktype
 		return sdktypes.InvalidSessionID, fmt.Errorf("start session: %w", err)
 	}
 
-	if err := s.workflows.StartWorkflow(ctx, session); err != nil {
+	if err := s.workflows.StartWorkflow(ctx, session, sessionworkflows.StartWorkflowOptions{UseTemporalForSessionLogs: !s.config.DBSessionLogs}); err != nil {
 		err = fmt.Errorf("start workflow: %w", err)
 		if uerr := s.svcs.DB.UpdateSessionState(ctx, session.ID(), sdktypes.NewSessionStateError(err, nil)); uerr != nil {
 			l.Sugar().With("err", err).Error("update session state: %v")
