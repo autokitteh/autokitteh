@@ -7,7 +7,7 @@ import {HandlerService} from "./pb/autokitteh/user_code/v1/handler_svc_pb";
 export interface Waiter {
     wait:  (f: Function, v: any, token: string) => Promise<any>
     execute_signal: (token: string) => Promise<any>
-    replay_signal: (token: string, value: any) => Promise<void>
+    reply_signal: (token: string, value: any) => Promise<void>
 }
 
 export class ActivityWaiter implements Waiter{
@@ -31,12 +31,10 @@ export class ActivityWaiter implements Waiter{
             throw new Error('tokens do not match')
         }
 
-        const v = await this.f(...this.a)
-        this.event.emit('return', v);
-        return v
+        return await this.f(...this.a)
     }
 
-    async replay_signal(token: string, value: any): Promise<void> {
+    async reply_signal(token: string, value: any): Promise<void> {
         if (token != this.token) {
             throw new Error('tokens do not match')
         }

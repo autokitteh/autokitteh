@@ -22,7 +22,7 @@ export const createService = (codeDir: string, runnerId: string, sandbox: Sandbo
           async activityReply(req: ActivityReplyRequest) : Promise<ActivityReplyResponse> {
               const data = req.result?.custom?.data
               const parsedData = JSON.parse(decoder.decode(data))
-              await waiter.replay_signal(parsedData.token, parsedData.results)
+              await waiter.reply_signal(parsedData.token, parsedData.results)
               console.log("activity reply req", req, "parsed data", parsedData);
               return {error: "", $typeName: "autokitteh.user_code.v1.ActivityReplyResponse"}
           },
