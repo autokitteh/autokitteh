@@ -77,7 +77,7 @@ message Call {
 
     message Complete {
       google.protobuf.Timestamp completed_at = 1 [(buf.validate.field).required = true];
-      google.protobuf.Duration retry_interval = 2;
+      google.protobuf.Duration retry_interval = 2; // deprecated.
       bool is_last = 3;
       Result result = 4;
     }
@@ -103,7 +103,12 @@ message SessionLogRecord {
   }
 
   message Print {
-    string text = 1;
+    string text = 1; // deprecated, use value instead.
+
+    values.v1.Value value = 2;
+
+    // for prints that happened inside an activity.
+    uint32 call_seq = 3;
   }
 
   message StopRequest {

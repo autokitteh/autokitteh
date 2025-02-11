@@ -11,6 +11,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -83,7 +84,7 @@ func TestCreateSession(t *testing.T) {
 	f.createSessionsAndAssert(t, s) // all session assets are optional and will be set to nil
 
 	// test getSessionLogRecords and ensure that session logs contain the only CREATED record
-	testLastLogRecord(t, f, 1, s.SessionID, sdktypes.NewStateSessionLogRecord(sdktypes.NewSessionStateCreated()))
+	testLastLogRecord(t, f, 1, s.SessionID, sdktypes.NewStateSessionLogRecord(kittehs.Now(), sdktypes.NewSessionStateCreated()))
 }
 
 func TestCreateSessionForeignKeys(t *testing.T) {
@@ -244,7 +245,7 @@ func TestAddSessionPrintLogRecord(t *testing.T) {
 	f, p, b := preSessionTest(t)
 
 	s := f.newSession(sdktypes.SessionStateTypeCompleted, p, b)
-	l := sdktypes.NewPrintSessionLogRecord("meow")
+	l := sdktypes.NewPrintSessionLogRecord(kittehs.Now(), sdktypes.NewStringValue("meow"), 0)
 	logr, err := toSessionLogRecord(s.SessionID, l)
 	assert.NoError(t, err)
 
@@ -258,7 +259,7 @@ func TestSessionLogRecordListOrder(t *testing.T) {
 	f, p, b := preSessionTest(t)
 
 	s := f.newSession(sdktypes.SessionStateTypeCompleted, p, b)
-	l := sdktypes.NewPrintSessionLogRecord("meow")
+	l := sdktypes.NewPrintSessionLogRecord(kittehs.Now(), sdktypes.NewStringValue("meow"), 0)
 	logr, err := toSessionLogRecord(s.SessionID, l)
 	assert.NoError(t, err)
 
@@ -299,7 +300,7 @@ func TestSessionLogRecordPageSizeAndTotalCount(t *testing.T) {
 	f, p, b := preSessionTest(t)
 
 	s := f.newSession(sdktypes.SessionStateTypeCompleted, p, b)
-	l := sdktypes.NewPrintSessionLogRecord("meow")
+	l := sdktypes.NewPrintSessionLogRecord(kittehs.Now(), sdktypes.NewStringValue("meow"), 0)
 	logr, err := toSessionLogRecord(s.SessionID, l)
 	assert.NoError(t, err)
 
@@ -322,7 +323,7 @@ func TestSessionLogRecordSkipAll(t *testing.T) {
 	f, p, b := preSessionTest(t)
 
 	s := f.newSession(sdktypes.SessionStateTypeCompleted, p, b)
-	l := sdktypes.NewPrintSessionLogRecord("meow")
+	l := sdktypes.NewPrintSessionLogRecord(kittehs.Now(), sdktypes.NewStringValue("meow"), 0)
 	logr, err := toSessionLogRecord(s.SessionID, l)
 	assert.NoError(t, err)
 
@@ -345,7 +346,7 @@ func TestSessionLogRecordSkip(t *testing.T) {
 	f, p, b := preSessionTest(t)
 
 	s := f.newSession(sdktypes.SessionStateTypeCompleted, p, b)
-	l := sdktypes.NewPrintSessionLogRecord("meow")
+	l := sdktypes.NewPrintSessionLogRecord(kittehs.Now(), sdktypes.NewStringValue("meow"), 0)
 	logr, err := toSessionLogRecord(s.SessionID, l)
 	assert.NoError(t, err)
 
@@ -368,7 +369,7 @@ func TestSessionLogRecordNextPageTokenEmpty(t *testing.T) {
 	f, p, b := preSessionTest(t)
 
 	s := f.newSession(sdktypes.SessionStateTypeCompleted, p, b)
-	l := sdktypes.NewPrintSessionLogRecord("meow")
+	l := sdktypes.NewPrintSessionLogRecord(kittehs.Now(), sdktypes.NewStringValue("meow"), 0)
 	logr, err := toSessionLogRecord(s.SessionID, l)
 	assert.NoError(t, err)
 
@@ -392,7 +393,7 @@ func TestSessionLogRecordNextPageTokenNotEmpty(t *testing.T) {
 	f, p, b := preSessionTest(t)
 
 	s := f.newSession(sdktypes.SessionStateTypeCompleted, p, b)
-	l := sdktypes.NewPrintSessionLogRecord("meow")
+	l := sdktypes.NewPrintSessionLogRecord(kittehs.Now(), sdktypes.NewStringValue("meow"), 0)
 	logr, err := toSessionLogRecord(s.SessionID, l)
 	assert.NoError(t, err)
 
