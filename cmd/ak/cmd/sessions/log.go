@@ -96,8 +96,12 @@ func printLogs(logs []sdktypes.SessionLogRecord) {
 
 		msg := ""
 		if printsOnly {
-			if txt, ok := r.GetPrint(); ok {
-				msg = txt
+			if p, ok := r.GetPrint(); ok {
+				s, err := p.ToString()
+				if err != nil {
+					s = fmt.Sprintf("error converting print to string: %v", err.Error())
+				}
+				msg = s
 			} else if state := r.GetState(); state.IsValid() && state.Type() == sdktypes.SessionStateTypeError {
 				if stateErr := state.GetError(); stateErr.IsValid() {
 					pe := stateErr.GetProgramError()
