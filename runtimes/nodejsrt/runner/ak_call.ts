@@ -9,6 +9,7 @@ export interface Waiter {
     execute_signal: (token: string) => Promise<any>
     reply_signal: (token: string, value: any) => Promise<void>
     setRunnerId: (id: string) => void
+    done: () => void
 }
 
 export class ActivityWaiter implements Waiter{
@@ -27,6 +28,22 @@ export class ActivityWaiter implements Waiter{
         this.runnerId = runnerId;
     }
 
+    async done(): Promise<void> {
+        const encoder = new TextEncoder();
+        await this.client.done({
+            runnerId: this.runnerId,
+            error: '',
+            traceback: [],
+            result: {
+                custom: {
+                    $typeName:"autokitteh.values.v1.Custom",
+                    data: encoder.encode(JSON.stringify({results: "yay"})),
+                    executorId: this.runnerId,
+                }
+            }
+        });
+    }
+
     setRunnerId(id: string): void {
         this.runnerId = id;
     }
@@ -36,7 +53,8 @@ export class ActivityWaiter implements Waiter{
             throw new Error('tokens do not match')
         }
 
-        return await this.f(...this.a)
+        // return await this.f(...this.a)
+        return "yay"
     }
 
     async reply_signal(token: string, value: any): Promise<void> {

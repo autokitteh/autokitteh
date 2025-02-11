@@ -20,10 +20,12 @@ export const createService = (codeDir: string, runnerId: string, sandbox: Sandbo
 
     return (router: ConnectRouter) => router.service(RunnerService, {
           async activityReply(req: ActivityReplyRequest) : Promise<ActivityReplyResponse> {
-              const data = req.result?.custom?.data
-              const parsedData = JSON.parse(decoder.decode(data))
-              await waiter.reply_signal(parsedData.token, parsedData.results)
-              console.log("activity reply req", req, "parsed data", parsedData);
+              if (req.error == '') {
+                  const data = req.result?.custom?.data
+                  const parsedData = JSON.parse(decoder.decode(data))
+                  await waiter.reply_signal(parsedData.token, parsedData.results)
+                  console.log("activity reply req", req, "parsed data", parsedData);
+              }
               return {error: "", $typeName: "autokitteh.user_code.v1.ActivityReplyResponse"}
           },
 
@@ -81,8 +83,9 @@ export const createService = (codeDir: string, runnerId: string, sandbox: Sandbo
               const [fileName, functionName] = req.entryPoint.split(":")
               await sandbox.loadFile(`${codeDir}/${fileName}`)
               waiter.setRunnerId(parsedArgs.runnerId)
-              sandbox.run(functionName, parsedArgs).then((results) => {
-                  console.log(results);
+              sandbox.run(functionName, parsedArgs, (results: any) => {
+                  waiter.done()
+                  console.log('done. results - ', results)
               })
               return {$typeName: "autokitteh.user_code.v1.StartResponse", error:"", traceback: []}
           }

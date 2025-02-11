@@ -58,6 +58,9 @@ clean-temporal:
 	killall -9 "temporal-cli-go-sdk-1.31.0"
 	rm "/Users/adiludmer/Library/Application Support/autokitteh/temporal_dev.sqlite"
 	rm "/Users/adiludmer/Library/Application Support/autokitteh/autokitteh.sqlite"
+	rm -rf "/Users/adiludmer/GolandProjects/autokitteh/runtimes/nodejsrt/testdata/simple/dist"
+
+webhook = $(shell ../../bin/ak trigger list | grep -o 'webhook_slug:"[^"]*"' | awk -F'"' '{print $2}' | cut -d '"' -f 2)
 
 start-workflow:
-	curl -d'{"user": "joe", "action": "read"}' http://localhost:9980/webhooks/01jkstnamkf1aaapwby03ak8r4
+	curl -d'{"user": "joe", "action": "read"}' http://localhost:9980/webhooks/$(webhook)

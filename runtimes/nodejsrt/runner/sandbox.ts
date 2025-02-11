@@ -108,10 +108,11 @@ export class Sandbox {
         vm.runInContext(code, this.context);
     }
 
-    async run(f: string, args: any): Promise<any> {
+    async run(f: string, args: any, callback: Function): Promise<any> {
         let code = `(async () => {
             return await ${f}(...[${JSON.stringify(args)}]);
         })();`
-        return await vm.runInContext(code, this.context)
+        const results = await vm.runInContext(code, this.context)
+        callback(results)
     }
 }
