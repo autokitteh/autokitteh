@@ -80,6 +80,7 @@ export const createService = (codeDir: string, runnerId: string, sandbox: Sandbo
               const parsedArgs = JSON.parse(args)
               const [fileName, functionName] = req.entryPoint.split(":")
               await sandbox.loadFile(`${codeDir}/${fileName}`)
+              waiter.setRunnerId(parsedArgs.runnerId)
               sandbox.run(functionName, parsedArgs).then((results) => {
                   console.log(results);
               })

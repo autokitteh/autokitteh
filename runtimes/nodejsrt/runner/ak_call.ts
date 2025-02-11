@@ -8,6 +8,7 @@ export interface Waiter {
     wait:  (f: Function, v: any, token: string) => Promise<any>
     execute_signal: (token: string) => Promise<any>
     reply_signal: (token: string, value: any) => Promise<void>
+    setRunnerId: (id: string) => void
 }
 
 export class ActivityWaiter implements Waiter{
@@ -24,6 +25,10 @@ export class ActivityWaiter implements Waiter{
         this.f = () => {}
         this.token = ""
         this.runnerId = runnerId;
+    }
+
+    setRunnerId(id: string): void {
+        this.runnerId = id;
     }
 
     async execute_signal(token: string): Promise<any> {
@@ -46,14 +51,14 @@ export class ActivityWaiter implements Waiter{
         this.f = f
         this.a = v
         this.token = token
-
-        await this.client.activity({})
-
-        if (v[0].runnerId != undefined) {
-            this.runnerId = v[0].runnerId
-        }
-
         const encoder = new TextEncoder()
+
+        await this.client.activity({
+            runnerId: this.runnerId,
+            data: encoder.encode(JSON.stringify({token}))
+        })
+
+
         const resp = await this.client.activity({
             runnerId: this.runnerId,
             data: encoder.encode(JSON.stringify({token: token})),
@@ -78,7 +83,7 @@ export const ak_call = (waiter: Waiter) => {
         }
 
 
-        if (f.ak_call == false) {
+        if (f.ak_call === undefined) {
             return await f(...f_args);
         }
 
