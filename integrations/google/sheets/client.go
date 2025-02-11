@@ -8,7 +8,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
 
-var desc = common.LegacyDescriptor("googlesheets", "Google Sheets", "/static/images/google_sheets.svg")
+var desc = common.Descriptor("googlesheets", "Google Sheets", "/static/images/google_sheets.svg")
 
 func New(cvars sdkservices.Vars) sdkservices.Integration {
 	return sdkintegrations.NewIntegration(

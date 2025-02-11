@@ -22,7 +22,7 @@ const (
 var (
 	integrationID = sdktypes.NewIntegrationIDFromName(integrationName)
 
-	desc = common.LegacyDescriptor(integrationName, "GitHub", "/static/images/github.svg")
+	desc = common.Descriptor(integrationName, "GitHub", "/static/images/github.svg")
 )
 
 type integration struct {

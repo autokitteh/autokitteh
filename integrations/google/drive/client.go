@@ -30,7 +30,7 @@ const (
 var (
 	IntegrationID = sdktypes.NewIntegrationIDFromName(integrationName)
 
-	desc = common.LegacyDescriptor(integrationName, "Google Drive", "/static/images/google_drive.svg")
+	desc = common.Descriptor(integrationName, "Google Drive", "/static/images/google_drive.svg")
 )
 
 type api struct {

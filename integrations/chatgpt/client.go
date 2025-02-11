@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	desc = common.LegacyDescriptor("chatgpt", "OpenAI ChatGPT", "/static/images/chatgpt.svg")
+	desc = common.Descriptor("chatgpt", "OpenAI ChatGPT", "/static/images/chatgpt.svg")
 
 	apiKeyVar   = sdktypes.NewSymbol("apiKey")
 	authTypeVar = sdktypes.NewSymbol("authType")

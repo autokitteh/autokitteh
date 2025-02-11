@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	desc = common.LegacyDescriptor("asana", "Asana", "/static/images/asana.svg")
+	desc = common.Descriptor("asana", "Asana", "/static/images/asana.svg")
 
 	patVar      = sdktypes.NewSymbol("pat")
 	authTypeVar = sdktypes.NewSymbol("authType")

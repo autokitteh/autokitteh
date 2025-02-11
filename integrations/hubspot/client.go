@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	desc = common.LegacyDescriptor("hubspot", "HubSpot", "/static/images/hubspot.svg")
+	desc = common.Descriptor("hubspot", "HubSpot", "/static/images/hubspot.svg")
 
 	authTypeVar = sdktypes.NewSymbol("auth_type")
 )

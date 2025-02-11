@@ -1,8 +1,6 @@
 package common
 
 import (
-	"fmt"
-
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -19,9 +17,4 @@ func Descriptor(uniqueName, displayName, logoURL string) sdktypes.Integration {
 			SupportsConnectionTest: true,
 		},
 	}))
-}
-
-func LegacyDescriptor(uniqueName, displayName, logoURL string) sdktypes.Integration {
-	u := fmt.Sprintf("/%s/connect", uniqueName)
-	return Descriptor(uniqueName, displayName, logoURL).WithConnectionURL(u)
 }
