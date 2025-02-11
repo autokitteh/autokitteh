@@ -125,8 +125,7 @@ func (db *gormdb) listDeploymentsWithStats(ctx context.Context, filter sdkservic
 		int32(sdktypes.SessionStateTypeError.ToProto()),     // which is an type alias to int32. But since it's a different type then int32
 		int32(sdktypes.SessionStateTypeCompleted.ToProto()), // PostgreSQL won't allow it to be inserted to bigint column,
 		int32(sdktypes.SessionStateTypeStopped.ToProto())).  // therefore we need to cust it to int32
-		Joins(`LEFT JOIN sessions on deployments.deployment_id = sessions.deployment_id
-	AND sessions.deleted_at IS NULL`).
+		Joins(`LEFT JOIN sessions on deployments.deployment_id = sessions.deployment_id`).
 		Group("deployments.deployment_id")
 
 	var ds []scheme.DeploymentWithStats
