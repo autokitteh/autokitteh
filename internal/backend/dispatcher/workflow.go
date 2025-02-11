@@ -168,7 +168,7 @@ func (d *Dispatcher) signalWorkflow(wctx workflow.Context, wid string, sigid uui
 
 	err := workflow.SignalExternalWorkflow(wctx, wid, "", sigid.String(), eid).Get(wctx, nil)
 	if err == nil {
-		sl.Errorf("signalled workflow %v for %v with %v", wid, sigid, eid)
+		sl.Infof("signalled workflow %v for %v with %v", wid, sigid, eid)
 		return
 	}
 
