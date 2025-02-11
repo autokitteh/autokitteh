@@ -13,7 +13,8 @@ on:
 jobs:
   build-and-test:
     name: Build + unit tests
-    runs-on: ubuntu-latest
+    runs-on:
+      group: large
     timeout-minutes: 15
     steps:
       - name: Check out code
@@ -37,7 +38,6 @@ jobs:
 
   static-analysis:
     name: Static analysis
-    runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - name: Check out code
@@ -60,7 +60,6 @@ jobs:
 
   test-opa:
     name: Run OPA tests
-    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: Check out code
@@ -74,7 +73,6 @@ jobs:
 
   test-runs:
     name: Run tests
-    runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: Check out code
@@ -89,7 +87,8 @@ jobs:
 
   test-sessions:
     name: Session tests
-    runs-on: ubuntu-latest
+    runs-on:
+      group: large
     timeout-minutes: 10
     steps:
       - name: Check out code
@@ -106,7 +105,6 @@ jobs:
         run: make bin/ak test-sessions
 
   verify-docker-builds:
-    runs-on: ubuntu-latest
     timeout-minutes: 30
     if: github.ref != 'refs/heads/main'
     steps:
