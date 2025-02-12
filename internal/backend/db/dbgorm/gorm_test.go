@@ -424,11 +424,11 @@ func (f *dbFixture) newConnection(args ...any) scheme.Connection {
 func (f *dbFixture) newEvent(args ...any) scheme.Event {
 	f.eventSequence++
 	e := scheme.Event{
-		EventID: newTestID(),
-		Base:    scheme.Base{CreatedAt: now},
-		Seq:     uint64(f.eventSequence),
-		Data:    kittehs.Must1(json.Marshal(struct{}{})),
-		Memo:    kittehs.Must1(json.Marshal(struct{}{})),
+		EventID:   newTestID(),
+		CreatedAt: now,
+		Seq:       uint64(f.eventSequence),
+		Data:      kittehs.Must1(json.Marshal(struct{}{})),
+		Memo:      kittehs.Must1(json.Marshal(struct{}{})),
 	}
 	for _, a := range args {
 		switch a := a.(type) {
