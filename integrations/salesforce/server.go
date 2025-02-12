@@ -10,19 +10,15 @@ import (
 	"go.autokitteh.dev/autokitteh/web/static"
 )
 
-// Start initializes all the HTTP handlers of all the Salesforce integrations. This
-// includes connection UIs, connection initialization webhooks, and event webhooks.
-func Start(l *zap.Logger, muxes *muxes.Muxes, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.DispatchFunc) {
-	// Connection UI for authenticated AutoKitteh users (user authentication
-	// isn't required, but it makes no sense to create a connection without it).
-	muxes.Auth.Handle("GET /salesforce/", http.FileServer(http.FS(static.SalesforceWebContent)))
+// Start initializes all the HTTP handlers of the integration.
+// This includes an internal connection UI, webhooks for AutoKitteh
+// connection initialization, and asynchronous event webhooks.
+func Start(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.DispatchFunc) {
+	common.ServeStaticUI(m, desc, static.SalesforceWebContent)
 
-	// Connection initialization webhooks save connection variables (e.g. auth and
-	// metadata), which requires an authenticated user context for database access.
 	h := newHTTPHandler(l, v, o, d)
-	muxes.Auth.HandleFunc("POST /salesforce/save", h.handleSave)
-	muxes.Auth.HandleFunc("GET /salesforce/save", h.handleSave)
-	muxes.Auth.HandleFunc("GET /salesforce/oauth", h.handleOAuth)
+	common.RegisterSaveHandler(m, desc, h.handleSave)
+	common.RegisterOAuthHandler(m, desc, h.handleOAuth)
 
 	// TODO: Event webhooks (no AutoKitteh user authentication by definition, because
 	// these asynchronous requests are sent to us by third-party services).

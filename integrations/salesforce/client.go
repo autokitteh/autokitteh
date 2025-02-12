@@ -9,31 +9,12 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-const (
-	integrationName = "salesforce"
-)
-
-var (
-	integrationID = sdktypes.NewIntegrationIDFromName(integrationName)
-
-	desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
-		IntegrationId: integrationID.String(),
-		UniqueName:    integrationName,
-		DisplayName:   "Salesforce",
-		LogoUrl:       "/static/images/salesforce.svg",
-		ConnectionUrl: "/salesforce",
-		ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
-			RequiresConnectionInit: true,
-			SupportsConnectionTest: true,
-		},
-	}))
-)
+var desc = common.Descriptor("salesforce", "Salesforce", "/static/images/salesforce.svg")
 
 // New defines an AutoKitteh integration, which
 // is registered when the AutoKitteh server starts.
 func New(v sdkservices.Vars, o sdkservices.OAuth) sdkservices.Integration {
 	return sdkintegrations.NewIntegration(
-		desc, sdkmodule.New(),
-		connection.Status(v), connection.Test(v, o),
+		desc, sdkmodule.New(), status(v), test(v, o),
 		sdkintegrations.WithConnectionConfigFromVars(v))
 }
