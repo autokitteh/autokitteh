@@ -13,12 +13,14 @@ from concurrent.futures import Future
 from subprocess import Popen, TimeoutExpired, run
 from unittest.mock import MagicMock
 
+import pytest
+from conftest import clear_module_cache, workflows
+
 import main
 import pb.autokitteh.user_code.v1.runner_svc_pb2 as runner_pb
 import pb.autokitteh.user_code.v1.user_code_pb2 as user_code
 import pb.autokitteh.values.v1.values_pb2 as pb_values
 import values
-from conftest import clear_module_cache, workflows
 
 
 def test_help():
@@ -148,12 +150,32 @@ class SlackError(Exception):
         super().__init__(message)
 
 
-def test_pickle_exception():
+class AuthError(Exception):
+    def __init__(self, message, *, response, body):
+        self.response = response
+        self.body = body
+        super().__init__(message)
+
+
+pickle_cases = [
+    pytest.param(
+        SlackError("cannot connect", response={"error": "bad token"}), id="args"
+    ),
+    pytest.param(
+        AuthError("bad creds", response={"error": "no password"}, body=b"banana"),
+        id="kw",
+    ),
+]
+
+
+@pytest.mark.parametrize("err", pickle_cases)
+def test_pickle_exception(err):
     def fn():
-        raise SlackError("cannot connect", response={"error": "bad token"})
+        raise err
 
     runner = new_test_runner("/tmp")
     result = runner._call(fn, [], {})
     data = pickle.dumps(result)
     result2 = pickle.loads(data)
-    assert isinstance(result2.error, SlackError)
+    error = main.restore_error(result2.error)
+    assert isinstance(error, err.__class__)

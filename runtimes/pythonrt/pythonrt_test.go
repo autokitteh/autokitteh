@@ -44,6 +44,12 @@ func validateTar(t *testing.T, tarData []byte, fsys fs.FS) {
 		}
 
 		require.NoError(t, err, "iterate tar")
+
+		// Ignore directories
+		if hdr.Name[len(hdr.Name)-1] == '/' {
+			continue
+		}
+
 		require.Truef(t, isFSFile(fsys, hdr.Name), "%q - not on fs", hdr.Name)
 		inTar[hdr.Name] = true
 	}
