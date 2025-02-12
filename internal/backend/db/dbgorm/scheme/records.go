@@ -528,7 +528,6 @@ type User struct {
 	UserID       uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
 	Email        string    `gorm:"uniqueIndex;not null"`
 	DisplayName  string
-	Disabled     bool      // deprecated, leave for backward compatibility.
 	Status       int32     `gorm:"index"`
 	DefaultOrgID uuid.UUID `gorm:"type:uuid"`
 
@@ -537,19 +536,9 @@ type User struct {
 }
 
 func ParseUser(r User) (sdktypes.User, error) {
-	s := sdktypes.UserStatusActive
-
-	if r.Status == 0 {
-		// legacy.
-		if r.Disabled {
-			s = sdktypes.UserStatusDisabled
-		}
-	} else {
-		var err error
-		s, err = sdktypes.UserStatusFromProto(sdktypes.UserStatusPB(r.Status))
-		if err != nil {
-			return sdktypes.InvalidUser, fmt.Errorf("invalid user status: %w", err)
-		}
+	s, err := sdktypes.UserStatusFromProto(sdktypes.UserStatusPB(r.Status))
+	if err != nil {
+		return sdktypes.InvalidUser, fmt.Errorf("invalid user status: %w", err)
 	}
 
 	return sdktypes.NewUser().
@@ -617,12 +606,4 @@ func ParseOrgMember(r OrgMember) (sdktypes.OrgMember, error) {
 		sdktypes.NewIDFromUUID[sdktypes.OrgID](r.OrgID),
 		sdktypes.NewIDFromUUID[sdktypes.UserID](r.UserID),
 	).WithStatus(s).WithRoles(roles...), nil
-}
-
-// TODO: Remove after migration to new ownership is done.
-type Ownership struct {
-	EntityID   uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
-	EntityType string    `gorm:"not null"`
-
-	UserID string `gorm:"not null"`
 }
