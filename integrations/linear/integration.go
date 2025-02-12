@@ -5,12 +5,25 @@ import (
 
 	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
+	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
+	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/web/static"
 )
 
-// Start initializes all the HTTP handlers of the Linear integration. This
-// includes connection UIs, connection initialization webhooks, and event webhooks.
+var desc = common.Descriptor("linear", "Linear", "/static/images/linear.svg")
+
+// New defines an AutoKitteh integration, which
+// is registered when the AutoKitteh server starts.
+func New(v sdkservices.Vars) sdkservices.Integration {
+	return sdkintegrations.NewIntegration(
+		desc, sdkmodule.New(), status(v), test(v),
+		sdkintegrations.WithConnectionConfigFromVars(v))
+}
+
+// Start initializes all the HTTP handlers of the integration.
+// This includes an internal connection UI, webhooks for AutoKitteh
+// connection initialization, and asynchronous event webhooks.
 func Start(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.DispatchFunc) {
 	common.ServeStaticUI(m, desc, static.LinearWebContent)
 
