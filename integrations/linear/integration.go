@@ -21,8 +21,9 @@ func New(v sdkservices.Vars) sdkservices.Integration {
 		sdkintegrations.WithConnectionConfigFromVars(v))
 }
 
-// Start initializes all the HTTP handlers of the Linear integration. This
-// includes connection UIs, connection initialization webhooks, and event webhooks.
+// Start initializes all the HTTP handlers of the integration.
+// This includes an internal connection UI, webhooks for AutoKitteh
+// connection initialization, and asynchronous event webhooks.
 func Start(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.DispatchFunc) {
 	common.ServeStaticUI(m, desc, static.LinearWebContent)
 
