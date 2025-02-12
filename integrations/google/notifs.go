@@ -286,7 +286,7 @@ func checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Logger) bool {
 	auth = strings.TrimPrefix(auth, "Bearer ")
 
 	// Download and cache Google's OAuth public keys.
-	rsaPublicKeys, err := fetchGoogleCerts()
+	rsaPublicKeys, err := fetchGoogleCerts(r.Context())
 	if err != nil {
 		l.Error("failed to fetch Google OAuth certs", zap.Error(err))
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -326,14 +326,19 @@ var (
 )
 
 // fetchGoogleCerts downloads Google's OAuth public keys and caches them.
-func fetchGoogleCerts() (map[string]*rsa.PublicKey, error) {
+func fetchGoogleCerts(ctx context.Context) (map[string]*rsa.PublicKey, error) {
 	// Return the cached results if they're still fresh.
 	if time.Now().Before(cacheDeadline) {
 		return cachedPublicKeys, nil
 	}
 
-	// Download JSON.
-	resp, err := http.Get(googleCertsURL)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, googleCertsURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request for Google OAuth certs: %w", err)
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching Google OAuth certs: %w", err)
 	}
