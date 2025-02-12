@@ -49,6 +49,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	// Determine what to save and how to proceed.
 	vsid := sdktypes.NewVarScopeID(cid)
 	authType := h.saveAuthType(r.Context(), vsid, r.FormValue("auth_type"))
+	l = l.With(zap.String("auth_type", authType))
 
 	switch authType {
 	// Use the AutoKitteh server's default Zoom OAuth 2.0 app, i.e.
@@ -93,15 +94,15 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 		}
 		urlPath, err := c.FinalURL()
 		if err != nil {
-			l.Error("failed to construct final URL", zap.Error(err))
-			c.AbortServerError("save connection: bad redirect URL")
+			l.Error("save connection: failed to construct final URL", zap.Error(err))
+			c.AbortServerError("bad redirect URL")
 			return
 		}
 		http.Redirect(w, r, urlPath, http.StatusFound)
 
 	// Unknown/unrecognized mode - an error.
 	default:
-		l.Warn("save connection: unexpected auth type", zap.String("auth_type", authType))
+		l.Warn("save connection: unexpected auth type")
 		c.AbortBadRequest(fmt.Sprintf("unexpected auth type %q", authType))
 	}
 }
