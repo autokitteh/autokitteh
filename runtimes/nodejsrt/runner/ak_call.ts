@@ -10,6 +10,7 @@ export interface Waiter {
     reply_signal: (token: string, value: any) => Promise<void>
     setRunnerId: (id: string) => void
     setRunId: (id: string) => void
+    getRunId: () => string
     done: () => void
 }
 
@@ -33,6 +34,10 @@ export class ActivityWaiter implements Waiter{
 
     setRunId(id: string): void {
         this.runId = id;
+    }
+
+    getRunId(): string {
+        return this.runId
     }
 
     async done(): Promise<void> {
@@ -63,8 +68,7 @@ export class ActivityWaiter implements Waiter{
             throw new Error('tokens do not match')
         }
 
-        // return await this.f(...this.a)
-        return "yay"
+        return await this.f(...this.a)
     }
 
     async reply_signal(token: string, value: any): Promise<void> {
