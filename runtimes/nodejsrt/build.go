@@ -102,8 +102,8 @@ func findExports(_ *zap.Logger, fsys fs.FS) ([]sdktypes.BuildExport, error) {
 		return nil, err
 	}
 
-	cmd := exec.Command("npm", "run", "exports", "--silent", codeDir)
-	cmd.Dir = "/Users/adiludmer/GolandProjects/autokitteh/runtimes/nodejsrt/runner"
+	cmd := exec.Command("node", "node_modules/ts-node/dist/bin.js", "exports.ts", codeDir)
+	cmd.Dir = runnerDir + "/runner"
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr

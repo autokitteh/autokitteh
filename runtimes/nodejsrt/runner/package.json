@@ -4,9 +4,9 @@
   "main": "index.ts",
   "scripts": {
     "test": "jest",
-    "exports": "ts-node exports.ts",
-    "runner": "ts-node main.ts",
-    "proxy": "ts-node proxy.ts"
+    "exports": "bin/ts-node exports.ts",
+    "runner": "node_modules/.bin/ts-node ts-node main.ts",
+    "proxy": "node_modules/.bin/ts-node proxy.ts"
   },
   "keywords": [],
   "author": "",

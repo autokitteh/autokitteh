@@ -7,7 +7,7 @@ import {
 
 
 import {ConnectRouter, createClient} from "@connectrpc/connect";
-import {HealthRequest, HealthResponse} from "../../../proto/gen/ts/autokitteh/runner_manager/v1/runner_manager_svc_pb";
+import {HealthRequest, HealthResponse} from "./pb/autokitteh/runner_manager/v1/runner_manager_svc_pb";
 import {createGrpcTransport} from "@connectrpc/connect-node";
 
 

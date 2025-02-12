@@ -10,7 +10,7 @@ import fs from "fs";
 import {listExports} from "./ast_utils";
 
 import type { ConnectRouter } from "@connectrpc/connect";
-import {HealthRequest, HealthResponse} from "../../../proto/gen/ts/autokitteh/runner_manager/v1/runner_manager_svc_pb";
+import {HealthRequest, HealthResponse} from "./pb/autokitteh/runner_manager/v1/runner_manager_svc_pb";
 import {Waiter} from "./ak_call";
 
 function getCircularReplacer() {

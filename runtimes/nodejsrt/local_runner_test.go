@@ -3,11 +3,9 @@ package nodejsrt
 import (
 	"bytes"
 	_ "embed"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
-	"path"
 	"regexp"
 	"strconv"
 	"testing"
@@ -16,52 +14,10 @@ import (
 	"go.uber.org/zap"
 )
 
-func skipIfNoPython(t *testing.T) {
-	pyExe, err := findPython()
-	if err != nil {
-		t.Skip("no python installed")
-	}
-
-	ctx, cancel := testCtx(t)
-	defer cancel()
-
-	_, err = pyExeInfo(ctx, pyExe)
-	if errors.Is(err, exec.ErrNotFound) {
-		t.Skip("no python installed")
-	}
-
-	if err != nil {
-		t.Logf("error getting Python info: %s", err)
-	}
-}
-
-func Test_createVEnv(t *testing.T) {
-	skipIfNoPython(t)
-
-	if testing.Short() {
-		t.Skip("short mode")
-	}
-
-	pyExe, err := findPython()
-	require.NoError(t, err)
-
-	ctx, cancel := testCtx(t)
-	defer cancel()
-
-	info, err := pyExeInfo(ctx, pyExe)
-	require.NoError(t, err)
-
-	venvPath := path.Join(t.TempDir(), "venv")
-	err = createVEnv(info.Exe, venvPath)
-	require.NoError(t, err)
-}
-
 //go:embed testdata/simple.tar
 var tarData []byte
 
 func TestRunner_Start(t *testing.T) {
-	skipIfNoPython(t)
-
 	log := zap.NewExample()
 	defer log.Sync() //nolint:all
 
@@ -117,44 +73,6 @@ func genExe(t *testing.T, path string, major, minor int) {
 	require.NoError(t, err)
 }
 
-func Test_findPython(t *testing.T) {
-	dirName := t.TempDir()
-	t.Setenv("PATH", dirName)
-
-	// No Python
-	_, err := findPython()
-	require.Error(t, err)
-
-	// python
-	pyExe := path.Join(dirName, "python")
-	genExe(t, pyExe, minPyVersion.Major, minPyVersion.Minor)
-	out, err := findPython()
-	require.NoError(t, err)
-	require.Equal(t, pyExe, out)
-
-	// python & python3, should be python3
-	py3Exe := path.Join(dirName, "python3")
-	genExe(t, py3Exe, minPyVersion.Major, minPyVersion.Minor)
-	out, err = findPython()
-	require.NoError(t, err)
-	require.Equal(t, py3Exe, out)
-
-	// Symlink
-	for _, name := range []string{pyExe, py3Exe} {
-		err = os.Remove(name)
-		require.NoError(t, err)
-	}
-
-	exe := path.Join(dirName, "python3.12")
-	genExe(t, exe, minPyVersion.Major, minPyVersion.Minor)
-	link := path.Join(dirName, "python3")
-	err = os.Symlink(exe, link)
-	require.NoError(t, err)
-	out, err = findPython()
-	require.NoError(t, err)
-	require.Equal(t, link, out)
-}
-
 var pyVersionCases = []struct {
 	version string
 	major   int
@@ -168,20 +86,6 @@ var pyVersionCases = []struct {
 	{"sl 1.2.3", 0, 0, true},
 	{"", 0, 0, true},
 	{"Python 3.10.13 (fc59e61cfbff, Jan 17 2024, 05:35:45)", 3, 10, false},
-}
-
-func Test_parsePyVersion(t *testing.T) {
-	for _, tc := range pyVersionCases {
-		major, minor, err := parsePyVersion(tc.version)
-		if tc.err {
-			require.Error(t, err)
-			continue
-		}
-
-		require.NoError(t, err)
-		require.Equal(t, tc.major, major)
-		require.Equal(t, tc.minor, minor)
-	}
 }
 
 // TODO: What to here

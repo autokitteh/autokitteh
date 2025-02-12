@@ -125,7 +125,7 @@ func (r *LocalNodeJS) Start(pyExe string, tarData []byte, env map[string]string,
 		return fmt.Errorf("create runner dir - %w", err)
 	}
 	r.runnerDir = runnerDir
-	r.log.Info("python root dir", zap.String("path", r.runnerDir))
+	r.log.Info("nodejs root dir", zap.String("path", r.runnerDir))
 
 	if err := copyFS(runnerJsCode, r.runnerDir); err != nil {
 		return fmt.Errorf("copy runner code - %w", err)
@@ -138,16 +138,15 @@ func (r *LocalNodeJS) Start(pyExe string, tarData []byte, env map[string]string,
 	r.id = id.String()
 
 	cmd := exec.Command(
-		"npm",
-		"run",
-		"proxy",
-		"--",
+		"node",
+		"node_modules/ts-node/dist/bin.js",
+		"proxy.ts",
 		"--worker-address", workerAddr,
 		"--port", strconv.Itoa(r.port),
 		"--runner-id", r.id,
 		"--code-dir", r.userDir,
 	)
-	cmd.Dir = "/Users/adiludmer/GolandProjects/autokitteh/runtimes/nodejsrt/runner"
+	cmd.Dir = r.runnerDir + "/runner"
 
 	if r.logRunnerCode {
 		r.stdoutRunnerLogger = &zapio.Writer{Log: r.log.With(zap.String("stream", "stdout")), Level: zap.InfoLevel}
@@ -167,7 +166,7 @@ func (r *LocalNodeJS) Start(pyExe string, tarData []byte, env map[string]string,
 
 	runOK = true // signal we're good to cleanup
 	r.proc = cmd.Process
-	r.log.Info("started python runner", zap.String("command", cmd.String()), zap.Int("pid", r.proc.Pid))
+	r.log.Info("started nodejs runner", zap.String("command", cmd.String()), zap.Int("pid", r.proc.Pid))
 	return nil
 }
 
@@ -257,28 +256,6 @@ func copyFS(fsys fs.FS, root string) error {
 type Version struct {
 	Major int
 	Minor int
-}
-
-type exeInfo struct {
-	Exe           string
-	VersionString string
-	Version       Version
-}
-
-func parsePyVersion(s string) (major, minor int, err error) {
-	// Python 3.12.2
-	const prefix = "Python "
-	if !strings.HasPrefix(s, prefix) {
-		return 0, 0, fmt.Errorf("bad python version prefix in: %q", s)
-	}
-
-	s = s[len(prefix):]
-	_, err = fmt.Sscanf(s, "%d.%d", &major, &minor)
-	if err != nil {
-		return 0, 0, err
-	}
-
-	return
 }
 
 // extractTar extracts a project deployment tar file into a random directory.
