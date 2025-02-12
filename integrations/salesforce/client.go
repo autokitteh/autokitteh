@@ -1,12 +1,10 @@
 package salesforce
 
 import (
-	"go.autokitteh.dev/autokitteh/integrations/microsoft/connection"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 var desc = common.Descriptor("salesforce", "Salesforce", "/static/images/salesforce.svg")

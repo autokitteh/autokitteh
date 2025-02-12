@@ -5,9 +5,21 @@ import (
 
 	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
+	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
+	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/web/static"
 )
+
+var desc = common.Descriptor("salesforce", "Salesforce", "/static/images/salesforce.png")
+
+// New defines an AutoKitteh integration, which
+// is registered when the AutoKitteh server starts.
+func New(v sdkservices.Vars, o sdkservices.OAuth) sdkservices.Integration {
+	return sdkintegrations.NewIntegration(
+		desc, sdkmodule.New(), status(v), test(v, o),
+		sdkintegrations.WithConnectionConfigFromVars(v))
+}
 
 // Start initializes all the HTTP handlers of the integration.
 // This includes an internal connection UI, webhooks for AutoKitteh
