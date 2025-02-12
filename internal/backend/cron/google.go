@@ -180,6 +180,10 @@ func (cr *Cron) checkGmailEventWatch(ctx context.Context, cid sdktypes.Connectio
 	}
 
 	e := vs.GetValue(vars.GmailWatchExpiration)
+	if e == "" {
+		return false // No watch to renew (e.g. deleted due to grant revocation).
+	}
+
 	t, err := time.Parse(time.RFC3339, e)
 	if err != nil {
 		l.Warn("invalid Gmail event watch expiration time during renewal check",
@@ -283,14 +287,11 @@ func (cr *Cron) renewGoogleEventWatchesActivity(ctx context.Context, cid sdktype
 
 	err := u(ctx, cr.vars, cid)
 	if err != nil {
-		l.Error("failed to renew Google event watches", zap.Error(err))
-
 		gerr := &googleapi.Error{}
-		if errors.As(err, &gerr) {
-			if gerr.Code >= 400 && gerr.Code <= 404 {
-				cr.forgetWatches(ctx, l, integ, sdktypes.NewVarScopeID(cid))
-				return nil
-			}
+		if ok := errors.As(err, &gerr); ok && gerr.Code >= 400 && gerr.Code < 500 {
+			l.Warn("failed to renew Google event watches", zap.Error(err))
+			cr.forgetWatches(ctx, l, integ, sdktypes.NewVarScopeID(cid))
+			return nil
 		}
 
 		return err
@@ -301,7 +302,7 @@ func (cr *Cron) renewGoogleEventWatchesActivity(ctx context.Context, cid sdktype
 }
 
 // forgetWatches deletes a connection's watche(s) if the user's
-// authorization for us is revoked, or the watched resource no longer exists.
+// authorization for us is revoked, or the resource no longer exists.
 func (cr *Cron) forgetWatches(ctx context.Context, l *zap.Logger, integ string, vsid sdktypes.VarScopeID) {
 	var symbols []sdktypes.Symbol
 	switch integ {
