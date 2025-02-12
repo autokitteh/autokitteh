@@ -17,6 +17,8 @@ type DockerRuntimeConfig struct {
 	WorkerAddressProvider func() string
 	LogRunnerCode         bool
 	LogBuildCode          bool
+	CPUPerContainer       float32
+	MemoryPerContainerMB  uint32
 }
 
 type dockerRunnerManager struct {
@@ -28,7 +30,7 @@ type dockerRunnerManager struct {
 }
 
 func configureDockerRunnerManager(log *zap.Logger, cfg DockerRuntimeConfig) error {
-	dc, err := NewDockerClient(log, cfg.LogRunnerCode, cfg.LogBuildCode)
+	dc, err := NewDockerClient(log, cfg.LogRunnerCode, cfg.LogBuildCode, cfg.CPUPerContainer, cfg.MemoryPerContainerMB)
 	if err != nil {
 		return err
 	}
