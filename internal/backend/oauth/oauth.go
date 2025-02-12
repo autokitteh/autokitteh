@@ -485,7 +485,8 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 					TokenURL: "https://login.salesforce.com/services/oauth2/token",
 				},
 				RedirectURL: redirectURL + "salesforce",
-				Scopes:      []string{"full"},
+				// https://help.salesforce.com/s/articleView?id=xcloud.remoteaccess_oauth_tokens_scopes.htm
+				Scopes: []string{"full"},
 			},
 
 			// Based on:

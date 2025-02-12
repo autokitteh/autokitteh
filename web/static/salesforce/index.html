@@ -53,23 +53,16 @@
       <h2>Authentication Type</h2>
 
       <div class="form-group">
-        <select name="auth_type" id="authType">
-          <option value="oauthPrivate">Private OAuth 2.0</option>
-        </select>
+        <input type="text" name="auth_type" value="oauthPrivate" readonly />
       </div>
 
-      <div id="oauthSection">
-        <h2>OAuth 2.0</h2>
-      </div>
-
-      <div id="privateOauthSection">
+      <div>
         <h2>Private OAuth 2.0</h2>
 
         <div class="form-group">
           <label for="client_id">Client ID <i>(required)</i></label>
           <input
             type="text"
-            id="clientId"
             name="client_id"
             autocomplete="off"
             spellcheck="false"
@@ -81,7 +74,6 @@
           <label for="client_secret">Client Secret <i>(required)</i></label>
           <input
             type="text"
-            id="clientSecret"
             name="client_secret"
             autocomplete="off"
             spellcheck="false"
@@ -93,7 +85,6 @@
           <label for="instance_url">Instance URL <i>(required)</i></label>
           <input
             type="text"
-            id="instanceUrl"
             name="instance_url"
             required
           />
