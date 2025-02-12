@@ -1,7 +1,7 @@
 import {randomUUID} from "node:crypto";
 import {EventEmitter, once} from "node:events";
 import { Client } from "@connectrpc/connect";
-import {HandlerService} from "./pb/autokitteh/user_code/v1/handler_svc_pb";
+import {HandlerService, DoneRequest} from "./pb/autokitteh/user_code/v1/handler_svc_pb";
 
 
 export interface Waiter {
@@ -9,6 +9,7 @@ export interface Waiter {
     execute_signal: (token: string) => Promise<any>
     reply_signal: (token: string, value: any) => Promise<void>
     setRunnerId: (id: string) => void
+    setRunId: (id: string) => void
     done: () => void
 }
 
@@ -19,6 +20,7 @@ export class ActivityWaiter implements Waiter{
     token: string
     client: Client<typeof HandlerService>
     runnerId: string
+    runId: string
 
     constructor(client: Client<typeof HandlerService>, runnerId: string) {
         this.client = client;
@@ -26,22 +28,30 @@ export class ActivityWaiter implements Waiter{
         this.f = () => {}
         this.token = ""
         this.runnerId = runnerId;
+        this.runId = ""
+    }
+
+    setRunId(id: string): void {
+        this.runId = id;
     }
 
     async done(): Promise<void> {
         const encoder = new TextEncoder();
-        await this.client.done({
+        const r: DoneRequest = {
+            $typeName:"autokitteh.user_code.v1.DoneRequest",
             runnerId: this.runnerId,
             error: '',
             traceback: [],
             result: {
+                $typeName: "autokitteh.values.v1.Value",
                 custom: {
                     $typeName:"autokitteh.values.v1.Custom",
                     data: encoder.encode(JSON.stringify({results: "yay"})),
-                    executorId: this.runnerId,
+                    executorId: this.runId,
                 }
             }
-        });
+        }
+        await this.client.done(r);
     }
 
     setRunnerId(id: string): void {

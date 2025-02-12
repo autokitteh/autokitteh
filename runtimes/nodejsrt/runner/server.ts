@@ -17,12 +17,16 @@ import {Waiter} from "./ak_call";
 export const createService = (codeDir: string, runnerId: string, sandbox: Sandbox, waiter: Waiter) => {
     const decoder = new TextDecoder();
     const encoder = new TextEncoder();
+    let rid = ""
 
     return (router: ConnectRouter) => router.service(RunnerService, {
           async activityReply(req: ActivityReplyRequest) : Promise<ActivityReplyResponse> {
               if (req.error == '') {
                   const data = req.result?.custom?.data
                   const parsedData = JSON.parse(decoder.decode(data))
+                  if (req.result?.custom?.executorId != undefined) {
+                      waiter.setRunId(req.result?.custom?.executorId)
+                  }
                   await waiter.reply_signal(parsedData.token, parsedData.results)
                   console.log("activity reply req", req, "parsed data", parsedData);
               }
@@ -56,7 +60,7 @@ export const createService = (codeDir: string, runnerId: string, sandbox: Sandbo
                       $typeName:"autokitteh.values.v1.Value",
                       custom: {
                           $typeName: "autokitteh.values.v1.Custom",
-                          executorId: runnerId,
+                          executorId: rid,
                           data: encoder.encode(JSON.stringify({token: execReq.token, results})),
                           value: {
                               $typeName:"autokitteh.values.v1.Value",
@@ -84,8 +88,10 @@ export const createService = (codeDir: string, runnerId: string, sandbox: Sandbo
               await sandbox.loadFile(`${codeDir}/${fileName}`)
               waiter.setRunnerId(parsedArgs.runnerId)
               sandbox.run(functionName, parsedArgs, (results: any) => {
-                  waiter.done()
-                  console.log('done. results - ', results)
+                  setTimeout(() => {
+                      waiter.done()
+                      console.log('done. results - ', results)
+                  }, 1000)
               })
               return {$typeName: "autokitteh.user_code.v1.StartResponse", error:"", traceback: []}
           }
