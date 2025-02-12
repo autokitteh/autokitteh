@@ -46,7 +46,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Test the PAT's usability
-	req, err := http.NewRequest(http.MethodGet, "https://app.asana.com/api/1.0/users/me", nil)
+	req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, "https://app.asana.com/api/1.0/users/me", nil)
 	if err != nil {
 		l.Error("Failed to create HTTP request", zap.Error(err))
 		c.AbortServerError("request creation error")

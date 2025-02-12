@@ -79,7 +79,7 @@ func connTest(i *integration) sdkintegrations.OptFn {
 
 		token := vs.GetValueByString("oauth_RefreshToken")
 		url := "https://api.hubapi.com/oauth/v1/refresh-tokens/" + token
-		req, err := http.NewRequest(http.MethodGet, url, nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 		if err != nil {
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 		}

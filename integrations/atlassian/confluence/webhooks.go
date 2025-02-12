@@ -2,6 +2,7 @@ package confluence
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -108,9 +109,9 @@ var webhookEvents = map[string][]string{
 // https://developer.atlassian.com/cloud/confluence/modules/webhook/
 // https://developer.atlassian.com/server/confluence/webhooks/
 // https://confluence.atlassian.com/doc/managing-webhooks-1021225606.html
-func getWebhook(l *zap.Logger, base, user, key, category string) (int, bool) {
+func getWebhook(ctx context.Context, l *zap.Logger, base, user, key, category string) (int, bool) {
 	// TODO(ENG-965): Support pagination.
-	req, err := http.NewRequest(http.MethodGet, base+restPath, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, base+restPath, nil)
 	if err != nil {
 		l.Warn("Failed to construct HTTP request to list Confluence webhooks", zap.Error(err))
 		return 0, false
@@ -166,7 +167,7 @@ func getWebhook(l *zap.Logger, base, user, key, category string) (int, bool) {
 // https://jira.atlassian.com/browse/CONFCLOUD-36613
 // https://developer.atlassian.com/cloud/jira/platform/webhooks/#registering-a-webhook-using-the-jira-rest-api--other-integrations-
 // https://developer.atlassian.com/cloud/confluence/modules/webhook/#confluence-webhook-events
-func registerWebhook(l *zap.Logger, base, user, key, category string) (int, string, error) {
+func registerWebhook(ctx context.Context, l *zap.Logger, base, user, key, category string) (int, string, error) {
 	l = l.With(zap.String("category", category))
 
 	webhookBase := os.Getenv("WEBHOOK_ADDRESS")
@@ -190,7 +191,7 @@ func registerWebhook(l *zap.Logger, base, user, key, category string) (int, stri
 	}
 
 	jsonReader := bytes.NewReader(body)
-	req, err := http.NewRequest(http.MethodPost, base+restPath, jsonReader)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, base+restPath, jsonReader)
 	if err != nil {
 		l.Warn("Failed to construct HTTP request to register Confluence webhook", zap.Error(err))
 		return 0, "", err
@@ -256,9 +257,9 @@ func extractIDSuffixFromURL(url string) (int, error) {
 	return i, nil
 }
 
-func deleteWebhook(l *zap.Logger, base, user, key string, id int) error {
+func deleteWebhook(ctx context.Context, l *zap.Logger, base, user, key string, id int) error {
 	url := fmt.Sprintf("%s%s/%d", base, restPath, id)
-	req, err := http.NewRequest(http.MethodDelete, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, url, nil)
 	if err != nil {
 		l.Error("Failed to construct HTTP request to delete Confluence webhook", zap.Error(err))
 		return err
