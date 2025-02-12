@@ -81,7 +81,7 @@ func connTest(i *integration) sdkintegrations.OptFn {
 			return sdktypes.InvalidStatus, err
 		}
 
-		req, err := http.NewRequest(http.MethodGet, "https://app.asana.com/api/1.0/users/me", nil)
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://app.asana.com/api/1.0/users/me", nil)
 		if err != nil {
 			return sdktypes.InvalidStatus, err
 		}

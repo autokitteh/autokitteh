@@ -54,7 +54,7 @@ func assertCalledWithUser(t *testing.T, expected sdktypes.UserID, given *sdktype
 }
 
 func newRequest(authHeader string, cookies []*http.Cookie) *http.Request {
-	req := kittehs.Must1(http.NewRequest(http.MethodGet, "/", nil))
+	req := kittehs.Must1(http.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil))
 
 	if authHeader != "" {
 		req.Header.Set("Authorization", authHeader)

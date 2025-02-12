@@ -171,7 +171,7 @@ func (cr *Cron) renewJiraEventWatchActivity(ctx context.Context, cid sdktypes.Co
 		)
 	}
 
-	newExp, ok := jira.ExtendWebhookLife(l, u, t.AccessToken, id)
+	newExp, ok := jira.ExtendWebhookLife(ctx, l, u, t.AccessToken, id)
 	if !ok {
 		l.Error("failed to renew Jira event watch")
 		return fmt.Errorf("failed to renew Jira event watch: %s", cid.String())
