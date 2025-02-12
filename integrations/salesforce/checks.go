@@ -9,7 +9,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-// Status checks the connection's initialization status (is it
+// status checks the connection's initialization status (is it
 // initialized? what type of authentication is configured?). This
 // ensures that the connection is at least theoretically usable.
 func status(v sdkservices.Vars) sdkintegrations.OptFn {
