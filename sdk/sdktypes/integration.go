@@ -66,6 +66,10 @@ func (p Integration) ConnectionURL() *url.URL {
 	return kittehs.Must1(url.Parse(p.m.ConnectionUrl))
 }
 
+func (p Integration) WithConnectionURL(u string) Integration {
+	return Integration{p.forceUpdate(func(pb *IntegrationPB) { pb.ConnectionUrl = u })}
+}
+
 func (p Integration) UpdateModule(m Module) Integration {
 	return Integration{p.forceUpdate(func(pb *IntegrationPB) { pb.Module = m.ToProto() })}
 }
@@ -92,8 +96,4 @@ func (p Integration) WithConnectionCapabilities(c ConnectionCapabilities) Integr
 
 func (p Integration) InitialConnectionStatus() Status {
 	return kittehs.Must1(StatusFromProto(p.read().InitialConnectionStatus))
-}
-
-func (p Integration) WithInitialConnectionStatus(s Status) Integration {
-	return Integration{p.forceUpdate(func(pb *IntegrationPB) { pb.InitialConnectionStatus = s.ToProto() })}
 }

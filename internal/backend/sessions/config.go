@@ -10,9 +10,10 @@ import (
 )
 
 type Config struct {
-	EnableWorker bool                    `koanf:"enable_worker"`
-	Workflows    sessionworkflows.Config `koanf:"workflows"`
-	Calls        sessioncalls.Config     `koanf:"calls"`
+	EnableWorker  bool                    `koanf:"enable_worker"`
+	Workflows     sessionworkflows.Config `koanf:"workflows"`
+	Calls         sessioncalls.Config     `koanf:"calls"`
+	DBSessionLogs bool                    `koanf:"db_session_logs"`
 }
 
 var defaultConfig = Config{

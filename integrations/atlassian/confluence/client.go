@@ -8,30 +8,26 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+const (
+	integrationName = "confluence"
+)
+
+var (
+	integrationID = sdktypes.NewIntegrationIDFromName(integrationName)
+
+	desc = common.Descriptor(integrationName, "Atlassian Confluence", "/static/images/confluence.svg")
+)
+
 type integration struct {
 	vars sdkservices.Vars
 }
-
-var integrationID = sdktypes.NewIntegrationIDFromName("confluence")
-
-var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
-	IntegrationId: integrationID.String(),
-	UniqueName:    "confluence",
-	DisplayName:   "Atlassian Confluence",
-	Description:   "Atlassian Confluence is a corporate wiki developed by Atlassian.",
-	LogoUrl:       "/static/images/confluence.svg",
-	ConnectionUrl: "/confluence/connect",
-	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
-		RequiresConnectionInit: true,
-	},
-}))
 
 func New(cvars sdkservices.Vars) sdkservices.Integration {
 	i := &integration{vars: cvars}

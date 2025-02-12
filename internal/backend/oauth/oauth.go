@@ -428,9 +428,10 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 					"ChatMember.ReadWrite", // Delegated-only.
 					// "ChatMember.ReadWrite.All", // App-only, alternative: WhereInstalled.
 					// "Group.ReadWrite.All", // Special: allow apps to update messages.
+					// "Organization.Read.All", // Optional, for daemon apps to get org info.
 					"Team.ReadBasic.All",
 					"TeamMember.ReadWrite.All",
-					// TODO: TeamsAppInstallation? TeamsTab?
+					// TODO: TeamsAppInstallation.ReadForXXX? TeamsTab?
 					// "Teamwork.Migrate.All", // Application-only.
 				},
 			},
@@ -467,9 +468,10 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 					"ChatMember.ReadWrite", // Delegated-only.
 					// "ChatMember.ReadWrite.All", // App-only, alternative: WhereInstalled.
 					// "Group.ReadWrite.All", // Special: allow apps to update messages.
+					// "Organization.Read.All", // Optional, for daemon apps to get org info.
 					"Team.ReadBasic.All",
 					"TeamMember.ReadWrite.All",
-					// TODO: TeamsAppInstallation? TeamsTab?
+					// TODO: TeamsAppInstallation.ReadForXXX? TeamsTab?
 					// "Teamwork.Migrate.All", // Application-only.
 				},
 			},
@@ -516,6 +518,19 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 					"users:read",
 					"users:read.email",
 				},
+			},
+
+			// Based on: https://developers.zoom.us/docs/integrations/oauth/
+			"zoom": {
+				ClientID:     os.Getenv("ZOOM_CLIENT_ID"),
+				ClientSecret: os.Getenv("ZOOM_CLIENT_SECRET"),
+				Endpoint: oauth2.Endpoint{
+					AuthURL:       "https://zoom.us/oauth/authorize",
+					TokenURL:      "https://zoom.us/oauth/token",
+					DeviceAuthURL: "https://zoom.us/oauth/devicecode",
+				},
+				RedirectURL: redirectURL + "zoom",
+				Scopes:      []string{},
 			},
 		},
 
@@ -666,6 +681,7 @@ func (o *oauth) getConfigWithConnection(ctx context.Context, intg string, cid sd
 		return nil, nil, err
 	}
 
+	// TODO(INT-202): Update MS endpoints ("common" --> tenant ID).
 	if o.isCustomOAuth(vs) {
 		cfgCopy.ClientID = vs.GetValueByString("client_id")
 		if cfgCopy.ClientID == "" {

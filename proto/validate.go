@@ -46,8 +46,8 @@ func parse(fds []protoreflect.FileDescriptor) func(proto.Message) error {
 	}
 
 	v, err := protovalidate.New(
-		protovalidate.WithDescriptors(descs...),
-		protovalidate.WithDisableLazy(true),
+		protovalidate.WithMessageDescriptors(descs...),
+		protovalidate.WithDisableLazy(),
 	)
 	if err != nil {
 		panic(fmt.Errorf("protovalidate.New: %w", err))

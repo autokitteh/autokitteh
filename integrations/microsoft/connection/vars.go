@@ -15,6 +15,7 @@ var (
 	oauthRefreshTokenVar = sdktypes.NewSymbol("oauth_refresh_token")
 	oauthTokenTypeVar    = sdktypes.NewSymbol("oauth_token_type")
 
+	orgIDVar               = sdktypes.NewSymbol("org_id")
 	privateClientIDVar     = sdktypes.NewSymbol("private_client_id")
 	privateClientSecretVar = sdktypes.NewSymbol("private_client_secret")
 	privateTenantIDVar     = sdktypes.NewSymbol("private_tenant_id")
@@ -37,9 +38,18 @@ func NewOAuthData(t *oauth2.Token) OAuthData {
 	}
 }
 
-// PrivateAppConfig contains the user-provided details
-// of a private Microsoft OAuth 2.0 app or daemon app.
-type PrivateAppConfig struct {
+// OrgInfo contains basic details about a Microsoft organization
+// (based on: https://learn.microsoft.com/en-us/graph/api/organization-get).
+// "VerifiedDomains" isn't included because it's an array, but it's available if needed.
+type OrgInfo struct {
+	ID          string `json:"id" var:"org_id"`
+	DisplayName string `json:"displayName" var:"org_display_name"`
+	TenantType  string `json:"tenantType" var:"org_tenant_type"`
+}
+
+// PrivateApp contains the user-provided details of
+// a private Microsoft OAuth 2.0 app or daemon app.
+type PrivateApp struct {
 	ClientID     string `var:"private_client_id"`
 	ClientSecret string `var:"private_client_secret,secret"`
 	Certificate  string `var:"private_certificate,secret"`

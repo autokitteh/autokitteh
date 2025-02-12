@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestOAuthURLX(t *testing.T) {
+func TestOAuthURL(t *testing.T) {
 	tests := []struct {
 		name   string
 		cid    string

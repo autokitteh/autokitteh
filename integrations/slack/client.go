@@ -6,6 +6,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations"
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/auth"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/bookmarks"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/bots"
@@ -14,31 +15,21 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/reactions"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/users"
 	"go.autokitteh.dev/autokitteh/integrations/slack/internal/vars"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var integrationID = sdktypes.NewIntegrationIDFromName("slack")
+const (
+	integrationName = "slack"
+)
 
-var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
-	IntegrationId: integrationID.String(),
-	UniqueName:    "slack",
-	DisplayName:   "Slack",
-	Description:   "Slack is a cloud-based team communication platform.",
-	LogoUrl:       "/static/images/slack.svg",
-	UserLinks: map[string]string{
-		"1 Web API reference":    "https://api.slack.com/methods",
-		"2 Events API reference": "https://api.slack.com/events?filter=Events",
-		"3 Python client API":    "https://slack.dev/python-slack-sdk/api-docs/slack_sdk/",
-	},
-	ConnectionUrl: "/slack/connect",
-	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
-		RequiresConnectionInit: true,
-	},
-}))
+var (
+	integrationID = sdktypes.NewIntegrationIDFromName(integrationName)
+
+	desc = common.Descriptor(integrationName, "Slack", "/static/images/slack.svg")
+)
 
 func New(vs sdkservices.Vars) sdkservices.Integration {
 	return sdkintegrations.NewIntegration(

@@ -11,7 +11,7 @@ from typing import ClassVar as _ClassVar, Iterable as _Iterable, Mapping as _Map
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class StartRequest(_message.Message):
-    __slots__ = ["session", "json_inputs"]
+    __slots__ = ["session", "json_inputs", "json_object_input"]
     class JsonInputsEntry(_message.Message):
         __slots__ = ["key", "value"]
         KEY_FIELD_NUMBER: _ClassVar[int]
@@ -21,9 +21,11 @@ class StartRequest(_message.Message):
         def __init__(self, key: _Optional[str] = ..., value: _Optional[str] = ...) -> None: ...
     SESSION_FIELD_NUMBER: _ClassVar[int]
     JSON_INPUTS_FIELD_NUMBER: _ClassVar[int]
+    JSON_OBJECT_INPUT_FIELD_NUMBER: _ClassVar[int]
     session: _session_pb2.Session
     json_inputs: _containers.ScalarMap[str, str]
-    def __init__(self, session: _Optional[_Union[_session_pb2.Session, _Mapping]] = ..., json_inputs: _Optional[_Mapping[str, str]] = ...) -> None: ...
+    json_object_input: str
+    def __init__(self, session: _Optional[_Union[_session_pb2.Session, _Mapping]] = ..., json_inputs: _Optional[_Mapping[str, str]] = ..., json_object_input: _Optional[str] = ...) -> None: ...
 
 class StartResponse(_message.Message):
     __slots__ = ["session_id"]

@@ -2,10 +2,10 @@ package discord
 
 import (
 	"context"
-	"net/http"
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/discord/internal/vars"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -21,10 +21,8 @@ const (
 
 // Start initializes all the HTTP handlers of the Discord integration.
 // This includes connection UIs, initialization webhooks, and event webhooks.
-func Start(l *zap.Logger, muxes *muxes.Muxes, v sdkservices.Vars, d sdkservices.DispatchFunc) {
-	// Connection UI.
-	uiPath := "GET " + desc.ConnectionURL().Path + "/"
-	muxes.NoAuth.Handle(uiPath, http.FileServer(http.FS(static.DiscordWebContent)))
+func Start(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, d sdkservices.DispatchFunc) {
+	common.ServeStaticUI(m, desc, static.DiscordWebContent)
 
 	// Init webhooks save connection vars (via "c.Finalize" calls), so they need
 	// to have an authenticated user context, so the DB layer won't reject them.
@@ -32,7 +30,7 @@ func Start(l *zap.Logger, muxes *muxes.Muxes, v sdkservices.Vars, d sdkservices.
 	// through AutoKitteh's auth middleware to extract the user ID from a cookie.
 	wsh := NewHandler(l, v, d, desc)
 
-	muxes.Auth.Handle("POST "+savePath, wsh)
+	m.Auth.Handle("POST "+savePath, wsh)
 
 	// Initialize WebSocket pool.
 	cids, err := v.FindConnectionIDs(context.Background(), integrationID, vars.BotToken, "")
