@@ -302,7 +302,7 @@ func (cr *Cron) renewGoogleEventWatchesActivity(ctx context.Context, cid sdktype
 }
 
 // forgetWatches deletes a connection's watche(s) if the user's
-// authorization for us is revoked, or the watched resource no longer exists.
+// authorization for us is revoked, or the resource no longer exists.
 func (cr *Cron) forgetWatches(ctx context.Context, l *zap.Logger, integ string, vsid sdktypes.VarScopeID) {
 	var symbols []sdktypes.Symbol
 	switch integ {
