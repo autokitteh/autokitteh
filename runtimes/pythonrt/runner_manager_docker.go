@@ -2,7 +2,6 @@ package pythonrt
 
 import (
 	"context"
-	"crypto/md5"
 	"errors"
 	"fmt"
 	"sync"
@@ -17,6 +16,10 @@ type DockerRuntimeConfig struct {
 	WorkerAddressProvider func() string
 	LogRunnerCode         bool
 	LogBuildCode          bool
+	RemoteRegistry        RemoteRegistryConfig
+
+	// DockerClientOptions
+	ClientOptions DockerClientOptions
 }
 
 type dockerRunnerManager struct {
@@ -28,7 +31,7 @@ type dockerRunnerManager struct {
 }
 
 func configureDockerRunnerManager(log *zap.Logger, cfg DockerRuntimeConfig) error {
-	dc, err := NewDockerClient(log, cfg.LogRunnerCode, cfg.LogBuildCode)
+	dc, err := NewDockerClient(log, cfg.ClientOptions)
 	if err != nil {
 		return err
 	}
@@ -83,21 +86,10 @@ func createStartCommand(entrypoint, workerAddress, runnerID string) []string {
 }
 
 func (rm *dockerRunnerManager) Start(ctx context.Context, sessionID sdktypes.SessionID, buildArtifacts []byte, vars map[string]string) (string, *RunnerClient, error) {
-	if len(buildArtifacts) == 0 {
-		return "", nil, errors.New("no build artifacts")
-	}
+	containerName := string(buildArtifacts)
 
-	codePath, err := prepareUserCode(buildArtifacts, false)
-	if err != nil {
-		return "", nil, fmt.Errorf("prepare user code: %w", err)
-	}
-
-	hash := md5.Sum(buildArtifacts)
-	version := fmt.Sprintf("u%x", hash)
-	containerName := "usercode:" + version
-
-	if err := rm.client.BuildImage(ctx, containerName, codePath); err != nil {
-		return "", nil, fmt.Errorf("build image: %w", err)
+	if containerName == "" {
+		return "", nil, errors.New("container name is empty")
 	}
 
 	rid, err := typeid.WithPrefix("runner")
