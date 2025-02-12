@@ -1,6 +1,6 @@
 [project]
 name = 'autokitteh'
-version = '0.3.9'
+version = '0.3.10'
 description = 'AutoKitteh Python SDK'
 readme = 'README.md'
 license = {file = 'LICENSE'}
@@ -28,6 +28,7 @@ all = [
 	"msgraph-sdk ~= 1.18",
 	"openai ~= 1.57",
 	"PyGithub @ git+https://github.com/PyGithub/PyGithub.git@b5f8f078f2b7fc0db6a041499c7a05b0bc7e750d",
+	"simple-salesforce ~= 1.12",
 	"slack-sdk ~= 3.33",
 	"twilio ~= 9.4",
 

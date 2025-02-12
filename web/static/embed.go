@@ -31,7 +31,7 @@ var GitHubWebContent embed.FS
 //go:embed gmail/connect
 var GmailWebContent embed.FS
 
-//go:embed google/connect
+//go:embed google
 var GoogleWebContent embed.FS
 
 //go:embed googlecalendar/connect
@@ -69,6 +69,9 @@ var LinearWebContent embed.FS
 
 //go:embed microsoft
 var MicrosoftWebContent embed.FS
+
+//go:embed salesforce
+var SalesforceWebContent embed.FS
 
 //go:embed slack/connect
 var SlackWebContent embed.FS

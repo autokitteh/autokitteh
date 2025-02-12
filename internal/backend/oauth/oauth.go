@@ -475,6 +475,18 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 					// "Teamwork.Migrate.All", // Application-only.
 				},
 			},
+			"salesforce": {
+				// Salesforce is a special case: environment variables are not supported.
+				// All authentication credentials must be stored in `vars`.
+				ClientID:     "",
+				ClientSecret: "",
+				Endpoint: oauth2.Endpoint{
+					AuthURL:  "https://login.salesforce.com/services/oauth2/authorize",
+					TokenURL: "https://login.salesforce.com/services/oauth2/token",
+				},
+				RedirectURL: redirectURL + "salesforce",
+				Scopes:      []string{"full"},
+			},
 
 			// Based on:
 			// https://api.slack.com/apps/A05F30M6W3H

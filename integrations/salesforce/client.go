@@ -1,7 +1,7 @@
 package salesforce
 
 import (
-	"go.autokitteh.dev/autokitteh/integrations/salesforce/connection"
+	"go.autokitteh.dev/autokitteh/integrations/microsoft/connection"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
