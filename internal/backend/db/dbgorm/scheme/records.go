@@ -174,6 +174,9 @@ type Event struct {
 	Trigger    *Trigger    `gorm:"constraint:OnDelete:SET NULL"`
 
 	Project *Project
+
+	// Redeclare here to create an index on created_at for sessions specifically
+	CreatedAt time.Time `gorm:"index"`
 }
 
 func (Event) IDFieldName() string { return "event_id" }
@@ -342,6 +345,9 @@ type Session struct {
 	Deployment *Deployment
 	Project    *Project
 	Event      *Event `gorm:"references:EventID;constraint:OnDelete:SET NULL"`
+
+	// Redeclare here to create an index on created_at for sessions specifically
+	CreatedAt time.Time `gorm:"index"`
 }
 
 func (Session) IDFieldName() string { return "session_id" }
