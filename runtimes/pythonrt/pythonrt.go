@@ -453,7 +453,6 @@ func (py *pySvc) setupCallbacksListeningLoop(ctx context.Context) chan (error) {
 }
 
 func (py *pySvc) startRequest(ctx context.Context, funcName string, eventData []byte) error {
-
 	req := pbUserCode.StartRequest{
 		EntryPoint: fmt.Sprintf("%s:%s", py.fileName, funcName),
 		Event: &pbUserCode.Event{
@@ -469,7 +468,6 @@ func (py *pySvc) startRequest(ctx context.Context, funcName string, eventData []
 }
 
 func (py *pySvc) setupHealthcheck(ctx context.Context) chan (error) {
-
 	runnerHealthChan := make(chan error, 1)
 	go func() {
 		for {
@@ -523,7 +521,7 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 	keys := slices.Collect(maps.Keys(event))
 	py.log.Info("event", zap.Any("keys", keys))
 
-	eventData, err := json.Marshal(event)
+	eventData, err := json.Marshal(map[string]any{"data": event})
 	if err != nil {
 		return sdktypes.InvalidValue, fmt.Errorf("marshal event: %w", err)
 	}

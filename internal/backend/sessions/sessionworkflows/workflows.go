@@ -114,7 +114,7 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 	memo := map[string]string{
 		"use_temporal_for_session_logs": strconv.FormatBool(opts.UseTemporalForSessionLogs),
 		"process_id":                    fixtures.ProcessID(),
-		"session_id":                    sessionID.Value().String(),
+		"session_id":                    sessionID.String(),
 		"session_uuid":                  sessionID.UUIDValue().String(),
 		"deployment_id":                 session.DeploymentID().String(),
 		"deployment_uuid":               session.DeploymentID().UUIDValue().String(),

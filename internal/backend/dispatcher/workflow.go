@@ -3,7 +3,6 @@ package dispatcher
 import (
 	"errors"
 	"fmt"
-	"maps"
 
 	"github.com/google/uuid"
 	"go.temporal.io/api/serviceerror"
@@ -38,26 +37,12 @@ func (d *Dispatcher) startSessions(wctx workflow.Context, event sdktypes.Event, 
 
 	sl := d.sl.With("event_id", eid)
 
-	// build session inputs.
-	// DO NOT PASS Memo. It is not intended for automation use, just auditing.
-	eventInputs := event.ToValues()
-	eventStruct, err := sdktypes.NewStructValue(eventInputsSymbolValue, eventInputs)
-	if err != nil {
-		sl.With("err", err).Panicf("could not create event struct: %v", err)
-		return nil, err
-	}
-
-	inputs := map[string]sdktypes.Value{
-		"event": eventStruct,
-		"data":  eventInputs["data"],
-	}
-
 	var started []sdktypes.SessionID
 
 	for _, sd := range sds {
 		sl := sl.With("deployment_id", sd.Deployment.ID(), "trigger_id", sd.Trigger.ID(), "entrypoint", sd.CodeLocation)
 
-		session, err := newSession(event, inputs, sd)
+		session, err := newSession(event, event.Data(), sd)
 		if err != nil {
 			sl.With("err", err).Errorf("could not initialize session: %v", err)
 			continue
@@ -200,21 +185,6 @@ func newSession(event sdktypes.Event, inputs map[string]sdktypes.Value, data ses
 	memo["event_destination_uuid"] = event.DestinationID().UUIDValue().String()
 
 	if t := data.Trigger; t.IsValid() {
-		inputs = maps.Clone(inputs)
-		triggerInputs := t.ToValues()
-
-		var err error
-
-		if inputs["trigger"], err = sdktypes.NewStructValue(triggerInputsSymbolValue, triggerInputs); err != nil {
-			return sdktypes.InvalidSession, fmt.Errorf("trigger: %w", err)
-		}
-
-		fs := inputs["data"].GetStruct().Fields()
-		maps.Copy(fs, triggerInputs["data"].GetStruct().Fields())
-		if inputs["data"], err = sdktypes.NewStructValue(dataSymbolValue, fs); err != nil {
-			return sdktypes.InvalidSession, fmt.Errorf("data: %w", err)
-		}
-
 		memo["trigger_id"] = t.ID().String()
 		memo["trigger_uuid"] = t.ID().UUIDValue().String()
 		memo["trigger_source_type"] = t.SourceType().String()
