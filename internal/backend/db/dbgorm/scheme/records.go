@@ -174,6 +174,9 @@ type Event struct {
 	Trigger    *Trigger    `gorm:"constraint:OnDelete:SET NULL"`
 
 	Project *Project
+
+	// Redeclare here to create an index on created_at for sessions specifically
+	CreatedAt time.Time `gorm:"index"`
 }
 
 func (Event) IDFieldName() string { return "event_id" }
@@ -206,7 +209,7 @@ func ParseEvent(e Event) (sdktypes.Event, error) {
 		EventType:     e.EventType,
 		Data:          kittehs.TransformMapValues(data, sdktypes.ToProto),
 		Memo:          memo,
-		CreatedAt:     timestamppb.New(e.CreatedAt),
+		CreatedAt:     timestamppb.New(e.Base.CreatedAt),
 		Seq:           e.Seq,
 		DestinationId: did.String(),
 	})
@@ -342,6 +345,9 @@ type Session struct {
 	Deployment *Deployment
 	Project    *Project
 	Event      *Event `gorm:"references:EventID;constraint:OnDelete:SET NULL"`
+
+	// Redeclare here to create an index on created_at for sessions specifically
+	CreatedAt time.Time `gorm:"index"`
 }
 
 func (Session) IDFieldName() string { return "session_id" }
@@ -374,7 +380,7 @@ func ParseSession(s Session) (sdktypes.Session, error) {
 		EventId:      sdktypes.NewIDFromUUIDPtr[sdktypes.EventID](s.EventID).String(),
 		Entrypoint:   ep.ToProto(),
 		Inputs:       kittehs.TransformMapValues(inputs, sdktypes.ToProto),
-		CreatedAt:    timestamppb.New(s.CreatedAt),
+		CreatedAt:    timestamppb.New(s.Base.CreatedAt),
 		UpdatedAt:    timestamppb.New(s.UpdatedAt),
 		State:        sessionsv1.SessionStateType(s.CurrentStateType),
 		Memo:         memo,

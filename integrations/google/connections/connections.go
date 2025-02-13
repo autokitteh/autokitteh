@@ -81,10 +81,16 @@ func ConnTest(cvars sdkservices.Vars) sdkintegrations.OptFn {
 		}
 
 		// Make a simple API call to verify credentials.
-		resp, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo?alt=json")
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://www.googleapis.com/oauth2/v2/userinfo?alt=json", nil)
 		if err != nil {
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 		}
+
+		resp, err := client.Do(req)
+		if err != nil {
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
+		}
+
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
