@@ -477,6 +477,22 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 			},
 
 			// Based on:
+			// https://help.salesforce.com/s/articleView?id=xcloud.remoteaccess_oauth_web_server_flow.htm
+			"salesforce": {
+				// Salesforce is a special case: environment variables are not supported.
+				// All authentication credentials must be stored in `vars`.
+				ClientID:     "",
+				ClientSecret: "",
+				Endpoint: oauth2.Endpoint{
+					AuthURL:  "https://login.salesforce.com/services/oauth2/authorize",
+					TokenURL: "https://login.salesforce.com/services/oauth2/token",
+				},
+				RedirectURL: redirectURL + "salesforce",
+				// https://help.salesforce.com/s/articleView?id=xcloud.remoteaccess_oauth_tokens_scopes.htm
+				Scopes: []string{""},
+			},
+
+			// Based on:
 			// https://api.slack.com/apps/A05F30M6W3H
 			"slack": {
 				ClientID:     os.Getenv("SLACK_CLIENT_ID"),
