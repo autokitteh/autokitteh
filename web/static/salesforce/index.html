@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>AutoKitteh - Salesforce</title>
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/static/apple-touch-icon.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/static/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/static/favicon-16x16.png"
+    />
+    <link rel="manifest" href="/static/site.webmanifest" />
+    <link rel="stylesheet" type="text/css" href="styles.css" />
+    <meta name="robots" content="noindex, nofollow" />
+    <script src="form.js" defer></script>
+  </head>
+
+  <body>
+    <a href="/" target="_self">
+      <img class="banner" src="/static/banner.svg" alt="AutoKitteh" />
+    </a>
+
+    <table class="title">
+      <td>
+        <img class="logo" src="/static/images/salesforce.svg" alt="Logo" />
+      </td>
+      <td><h1>Salesforce - Initialize Connection</h1></td>
+    </table>
+
+    <form method="post" action="/salesforce/save">
+      <h2>Query Params From the URL</h2>
+
+      <div class="form-group">
+        <label for="cid">Connection ID</label>
+        <input type="text" name="cid" id="cid" readonly />
+      </div>
+
+      <div class="form-group">
+        <label for="origin">Request Origin</label>
+        <input type="text" name="origin" id="origin" readonly />
+      </div>
+
+      <h2>Authentication Type</h2>
+
+      <div class="form-group">
+        <input type="text" name="auth_type" value="oauthPrivate" readonly />
+      </div>
+
+      <div>
+        <h2>Private OAuth 2.0</h2>
+
+        <div class="form-group">
+          <label for="client_id">Client ID <i>(required)</i></label>
+          <input
+            type="text"
+            name="client_id"
+            autocomplete="off"
+            spellcheck="false"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="client_secret">Client Secret <i>(required)</i></label>
+          <input
+            type="text"
+            name="client_secret"
+            autocomplete="off"
+            spellcheck="false"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="instance_url">Instance URL <i>(required)</i></label>
+          <input type="text" name="instance_url" required />
+        </div>
+      </div>
+
+      <button type="submit" class="submit-btn" id="submit">
+        Start OAuth Flow
+      </button>
+    </form>
+  </body>
+</html>

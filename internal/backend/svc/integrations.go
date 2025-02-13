@@ -28,6 +28,7 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/microsoft"
 	"go.autokitteh.dev/autokitteh/integrations/microsoft/teams"
 	"go.autokitteh.dev/autokitteh/integrations/redis"
+	"go.autokitteh.dev/autokitteh/integrations/salesforce"
 	"go.autokitteh.dev/autokitteh/integrations/slack"
 	"go.autokitteh.dev/autokitteh/integrations/twilio"
 	"go.autokitteh.dev/autokitteh/integrations/zoom"
@@ -108,6 +109,7 @@ func integrationsFXOption() fx.Option {
 		integration("microsoft", configset.Empty, microsoft.New),
 		integration("microsoft_teams", configset.Empty, teams.New),
 		integration("redis", configset.Empty, redis.New),
+		integration("salesforce", configset.Empty, salesforce.New),
 		integration("sheets", configset.Empty, sheets.New),
 		integration("slack", configset.Empty, slack.New),
 		integration("twilio", configset.Empty, twilio.New),
@@ -128,6 +130,7 @@ func integrationsFXOption() fx.Option {
 				jira.Start(l, muxes, vars, oauth, dispatch)
 				linear.Start(l, muxes, vars, oauth, dispatch)
 				microsoft.Start(l, muxes, vars, oauth, dispatch)
+				salesforce.Start(l, muxes, vars, oauth, dispatch)
 				slack.Start(l, muxes, vars, dispatch)
 				twilio.Start(l, muxes, vars, dispatch)
 				zoom.Start(l, muxes, vars, oauth, dispatch)

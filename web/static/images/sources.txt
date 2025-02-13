@@ -76,6 +76,10 @@ Slack:
 https://commons.wikimedia.org/wiki/File:Slack_icon_2022.svg
 https://upload.wikimedia.org/wikipedia/commons/3/3b/Slack_icon_2022.svg
 
+Salesforce:
+https://en.m.wikipedia.org/wiki/File:Salesforce.com_logo.svg
+https://upload.wikimedia.org/wikipedia/commons/f/f9/Salesforce.com_logo.svg
+
 Twilio:
 https://seeklogo.com/images/T/twilio-logo-341DD81BFB-seeklogo.com.png
 

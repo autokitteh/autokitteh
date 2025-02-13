@@ -67,6 +67,9 @@ var LinearWebContent embed.FS
 //go:embed microsoft
 var MicrosoftWebContent embed.FS
 
+//go:embed salesforce
+var SalesforceWebContent embed.FS
+
 //go:embed slack
 var SlackWebContent embed.FS
 
