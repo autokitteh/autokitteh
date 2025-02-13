@@ -21,6 +21,7 @@ import values
 
 # from audit import make_audit_hook  # TODO(ENG-1893): uncomment this.
 from autokitteh import AttrDict, connections
+from autokitteh.errors import AutoKittehError
 from call import AKCall, full_func_name
 from syscalls import SysCalls
 
@@ -334,7 +335,7 @@ class Runner(pb.runner_rpc.RunnerService):
                 error = restore_error(result.error)
             except (TypeError, ValueError) as err:
                 log.exception("can't restore error: %r", err)
-                error = Exception(repr(result.error))
+                error = AutoKittehError(repr(result.error))
             call.fut.set_exception(error)
         else:
             call.fut.set_result(result.value)
