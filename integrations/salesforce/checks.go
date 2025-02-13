@@ -40,6 +40,6 @@ func status(v sdkservices.Vars) sdkintegrations.OptFn {
 // TODO(INT-268): Implement this.
 func test(v sdkservices.Vars, o sdkservices.OAuth) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
-		return sdktypes.NewStatus(sdktypes.StatusCodeUnspecified, "Not implemented"), nil
+		return sdktypes.NewStatus(sdktypes.StatusCodeError, "Not implemented"), nil
 	})
 }
