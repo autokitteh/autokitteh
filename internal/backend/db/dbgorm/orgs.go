@@ -45,7 +45,22 @@ func (gdb *gormdb) DeleteOrg(ctx context.Context, oid sdktypes.OrgID) error {
 	}
 
 	return translateError(gdb.writeTransaction(ctx, func(tx *gormdb) error {
-		err := tx.writer.Where("org_id = ?", oid.UUIDValue()).Delete(&scheme.OrgMember{}).Error
+		hasProject, err := gdb.doesOrgHasProject(ctx, oid)
+		if err != nil {
+			return translateError(err)
+		}
+		if hasProject {
+			return errors.New("cannot delete an organization that has associated projects")
+		}
+
+		err = tx.writer.Where("org_id = ?", oid.UUIDValue()).Delete(&scheme.OrgMember{}).Error
+		if err != nil {
+			return translateError(err)
+		}
+
+		err = tx.writer.Model(&scheme.Org{}).
+			Where("org_id = ?", oid.UUIDValue()).
+			Update("name", oid.UUIDValue().String()).Error
 		if err != nil {
 			return translateError(err)
 		}
@@ -85,6 +100,23 @@ func (gdb *gormdb) CreateOrg(ctx context.Context, o sdktypes.Org) (sdktypes.OrgI
 	}
 
 	return oid, nil
+}
+
+func (gdb *gormdb) doesOrgHasProject(ctx context.Context, oid sdktypes.OrgID) (bool, error) {
+	var exist bool
+	q := gdb.writer.WithContext(ctx)
+
+	q = q.Model(&scheme.Project{}).
+		Select("1").
+		Where("org_id = ?", oid.UUIDValue()).
+		Where("deleted_at IS NULL").
+		Limit(1)
+
+	err := q.Find(&exist).Error
+	if err != nil {
+		return false, fmt.Errorf("failed to check projects in organization  %w", err) // TODO: check if there is a need for the error message
+	}
+	return exist, err
 }
 
 func (gdb *gormdb) UpdateOrg(ctx context.Context, o sdktypes.Org, fm *sdktypes.FieldMask) error {
