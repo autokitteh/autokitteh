@@ -1,0 +1,10 @@
+Log(level='INFO', message='kittens are soft')
+-- main.py:main --
+from collections import namedtuple
+
+Log = namedtuple('Log', 'level message')
+
+
+def main(event):
+	log = Log('INFO', 'kittens are soft')
+	print(log)

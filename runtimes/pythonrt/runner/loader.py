@@ -23,14 +23,33 @@ class Transformer(ast.NodeTransformer):
     def __init__(self, file_name, src):
         self.file_name = file_name
         self.code_lines = src.splitlines()
+        # Indent of class/function definition. -1 means top level code
+        self.fn_indent = -1
 
-    def visit_Call(self, node):
-        # Recurse, see https://docs.python.org/3/library/ast.html#ast.NodeVisitor.generic_visit
-        self.generic_visit(node)
+    def visit(self, node):
+        # Visit AST nodes. We keep track of functions and indent, in order not to patch
+        # module level calls.
+        indent = getattr(node, "col_offset", None)
+        if indent is None:  # Module and others don't have col_offset
+            self.generic_visit(node)
+            return node
+
+        if isinstance(node, (ast.FunctionDef, ast.ClassDef)) and self.fn_indent == -1:
+            self.fn_indent = indent
+            self.generic_visit(node)
+            return node
+
+        if indent <= self.fn_indent:
+            self.fn_indent = -1
+
+        if not isinstance(node, ast.Call) or self.fn_indent == -1:
+            self.generic_visit(node)
+            return node
 
         name = name_of(node.func, self.code_lines)
 
         if not name or name in BUILTIN:
+            self.generic_visit(node)
             return node
 
         log.info("%s:%d: patching %s with ak_call", self.file_name, node.lineno, name)
@@ -40,6 +59,7 @@ class Transformer(ast.NodeTransformer):
             args=[node.func] + node.args,
             keywords=node.keywords,
         )
+        self.generic_visit(node)
         return call
 
 
