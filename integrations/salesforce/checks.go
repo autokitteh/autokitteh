@@ -37,7 +37,7 @@ func status(v sdkservices.Vars) sdkintegrations.OptFn {
 
 // test checks whether the connection is actually usable, i.e. the configured
 // authentication credentials are valid and can be used to make API calls.
-// TODO: Implement this.
+// TODO(INT-268): Implement this.
 func test(v sdkservices.Vars, o sdkservices.OAuth) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
 		return sdktypes.NewStatus(sdktypes.StatusCodeUnspecified, "Not implemented"), nil

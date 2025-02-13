@@ -1,79 +1,79 @@
 body {
-    background-color: white;
-    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-    margin-left: 50px;
-  }
-  
-  img.banner {
-    margin: 50px 0px 32px;
-    width: 250px;
-    height: auto;
-  }
-  
-  img.logo {
-    height: 32px;
-    width: auto;
-  }
-  
-  table.title {
-    border: none;
-    border-collapse: collapse;
-    margin-bottom: 32px;
-  }
-  
-  td {
-    vertical-align: middle;
-    padding-right: 16px;
-  }
-  
-  h1 {
-    margin: 0px;
-  }
-  
-  h2 {
-    margin-bottom: 32px;
-  }
-  
-  .form-group {
-    margin-bottom: 32px;
-  }
-  
-  .form-group label {
-    display: block;
-    margin-bottom: 4px;
-  }
-  
-  .form-group input {
-    width: 320px;
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-  }
-  
-  .form-group select {
-    width: 338px;
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-  }
-  
-  .hidden {
-    display: none;
-  }
-  
-  .submit-btn {
-    display: inline-block;
-    margin-top: 32px;
-    padding: 10px 20px;
-    background-color: #3498db;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-    font-size: medium;
-  }
-  
-  .submit-btn:hover {
-    background-color: #2980b9;
-  }
+  background-color: white;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  margin-left: 50px;
+}
+
+img.banner {
+  margin: 50px 0px 32px;
+  width: 250px;
+  height: auto;
+}
+
+img.logo {
+  height: 32px;
+  width: auto;
+}
+
+table.title {
+  border: none;
+  border-collapse: collapse;
+  margin-bottom: 32px;
+}
+
+td {
+  vertical-align: middle;
+  padding-right: 16px;
+}
+
+h1 {
+  margin: 0px;
+}
+
+h2 {
+  margin-bottom: 32px;
+}
+
+.form-group {
+  margin-bottom: 32px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.form-group input {
+  width: 320px;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.form-group select {
+  width: 338px;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.hidden {
+  display: none;
+}
+
+.submit-btn {
+  display: inline-block;
+  margin-top: 32px;
+  padding: 10px 20px;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  font-size: medium;
+}
+
+.submit-btn:hover {
+  background-color: #2980b9;
+}

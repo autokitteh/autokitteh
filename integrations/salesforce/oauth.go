@@ -5,11 +5,12 @@ import (
 	"errors"
 	"net/http"
 
+	"go.uber.org/zap"
+	"golang.org/x/oauth2"
+
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.uber.org/zap"
-	"golang.org/x/oauth2"
 )
 
 // handleOAuth receives an incoming redirect request from AutoKitteh's

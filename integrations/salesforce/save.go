@@ -8,10 +8,11 @@ import (
 	"regexp"
 	"strings"
 
+	"go.uber.org/zap"
+
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.uber.org/zap"
 )
 
 // handleSave saves connection variables for an AutoKitteh connection.

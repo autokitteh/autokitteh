@@ -475,6 +475,9 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 					// "Teamwork.Migrate.All", // Application-only.
 				},
 			},
+
+			// Based on:
+			// https://help.salesforce.com/s/articleView?id=xcloud.remoteaccess_oauth_web_server_flow.htm&type=5
 			"salesforce": {
 				// Salesforce is a special case: environment variables are not supported.
 				// All authentication credentials must be stored in `vars`.
@@ -486,7 +489,7 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 				},
 				RedirectURL: redirectURL + "salesforce",
 				// https://help.salesforce.com/s/articleView?id=xcloud.remoteaccess_oauth_tokens_scopes.htm
-				Scopes: []string{"full"},
+				Scopes: []string{""},
 			},
 
 			// Based on:
