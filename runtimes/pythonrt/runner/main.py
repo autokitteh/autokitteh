@@ -21,6 +21,7 @@ import values
 
 # from audit import make_audit_hook  # TODO(ENG-1893): uncomment this.
 from autokitteh import AttrDict, connections
+from autokitteh.errors import AutoKittehError
 from call import AKCall, full_func_name
 from syscalls import SysCalls
 
@@ -110,7 +111,7 @@ def abort_with_exception(context, status, err):
 
 
 def set_exception_args(err):
-    """Make it possible to unpickle an error.
+    """Set exception "args" attribute to match __init__ signature so it can be un-pickled.
 
     See https://stackoverflow.com/questions/41808912/cannot-unpickle-exception-subclass
     """
@@ -138,6 +139,31 @@ def set_exception_args(err):
 
 Call = namedtuple("Call", "fn args kw fut")
 Result = namedtuple("Result", "value error traceback")
+
+
+def is_pickleable(err):
+    try:
+        data = pickle.dumps(err)
+        pickle.loads(data)
+        return True
+    except (TypeError, pickle.PickleError):
+        return False
+
+
+def restore_error(err):
+    if isinstance(err, Exception):
+        return err
+
+    if not isinstance(err, tuple):
+        raise TypeError("excepted a tuple, got %r", err)
+
+    if len(err) < 3:
+        raise ValueError("reduce tuple should be at least 3 elements, got %r", err)
+
+    cls, _, state = err[:3]
+    obj = cls.__new__(cls)
+    obj.__setstate__(state)
+    return obj
 
 
 class Runner(pb.runner_rpc.RunnerService):
@@ -305,7 +331,12 @@ class Runner(pb.runner_rpc.RunnerService):
             )
 
         if result.error:
-            call.fut.set_exception(result.error)
+            try:
+                error = restore_error(result.error)
+            except (TypeError, ValueError) as err:
+                log.exception("can't restore error: %r", err)
+                error = AutoKittehError(repr(result.error))
+            call.fut.set_exception(error)
         else:
             call.fut.set_result(result.value)
 
@@ -361,6 +392,10 @@ class Runner(pb.runner_rpc.RunnerService):
             tb = TracebackException.from_exception(err)
             error = err
             set_exception_args(error)
+
+        if not is_pickleable(error):
+            log.info("non pickleable: %r", error)
+            error = error.__reduce__()
 
         return Result(value, error, tb)
 
