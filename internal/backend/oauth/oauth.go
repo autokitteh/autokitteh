@@ -477,7 +477,7 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 			},
 
 			// Based on:
-			// https://help.salesforce.com/s/articleView?id=xcloud.remoteaccess_oauth_web_server_flow.htm&type=5
+			// https://help.salesforce.com/s/articleView?id=xcloud.remoteaccess_oauth_web_server_flow.htm
 			"salesforce": {
 				// Salesforce is a special case: environment variables are not supported.
 				// All authentication credentials must be stored in `vars`.
