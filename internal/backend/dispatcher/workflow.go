@@ -15,12 +15,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var (
-	eventInputsSymbolValue   = sdktypes.NewSymbolValue(sdktypes.NewSymbol("event"))
-	triggerInputsSymbolValue = sdktypes.NewSymbolValue(sdktypes.NewSymbol("trigger"))
-	dataSymbolValue          = sdktypes.NewSymbolValue(sdktypes.NewSymbol("data"))
-)
-
 // Events Workflow
 type eventsWorkflowInput struct {
 	Event   sdktypes.Event
