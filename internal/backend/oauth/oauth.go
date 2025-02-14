@@ -758,6 +758,22 @@ func (o *oauth) Exchange(ctx context.Context, integration string, cid sdktypes.C
 	if err != nil {
 		return nil, fmt.Errorf("failed to exchange code: %w", err)
 	}
+
+	if integration == "salesforce" {
+		instanceURL, ok := token.Extra("instance_url").(string)
+		if !ok {
+			return nil, errors.New("instance_url not found in token")
+		}
+
+		sid := sdktypes.NewVarScopeID(cid)
+		v := sdktypes.NewVar(sdktypes.NewSymbol("private_instance_url")).WithScopeID(sid).SetValue(instanceURL)
+
+		if err := o.vars.Set(authcontext.SetAuthnSystemUser(ctx), v); err != nil {
+			return nil, err
+		}
+
+	}
+
 	return token, nil
 }
 

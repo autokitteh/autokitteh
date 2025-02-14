@@ -79,11 +79,10 @@ func (h handler) savePrivateOAuth(r *http.Request, vsid sdktypes.VarScopeID) err
 	app := privateOAuth{
 		ClientID:     r.FormValue("client_id"),
 		ClientSecret: r.FormValue("client_secret"),
-		InstanceURL:  r.FormValue("instance_url"),
 	}
 
 	// Sanity check: all the required details were provided, and are valid.
-	if app.ClientID == "" || app.ClientSecret == "" || app.InstanceURL == "" {
+	if app.ClientID == "" || app.ClientSecret == "" {
 		return errors.New("missing private OAuth 2.0 details")
 	}
 
