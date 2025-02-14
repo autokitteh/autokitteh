@@ -57,7 +57,7 @@ func TestMain(m *testing.M) {
 	cfg, _ = cfg.Explicit()
 	db := setupDB(cfg)
 	z := kittehs.Must1(zap.NewDevelopment())
-	gormDB = gormdb{rdb: db, wdb: db, cfg: cfg, z: z}
+	gormDB = gormdb{reader: db, writer: db, cfg: cfg, z: z}
 
 	ctx := context.Background()
 	if err := gormDB.Setup(ctx); err != nil { // ensure migration/schemas
@@ -173,7 +173,7 @@ func TeardownDB(gormdb *gormdb, ctx context.Context) error {
 			return err
 		}
 	}
-	db := gormdb.wdb.WithContext(ctx).Scopes(NoDebug())
+	db := gormdb.writer.WithContext(ctx).Scopes(NoDebug())
 	if err := db.Migrator().DropTable(scheme.Tables...); err != nil {
 		return fmt.Errorf("droptable: %w", err)
 	}
@@ -195,7 +195,7 @@ func CleanupDB(gormdb *gormdb, ctx context.Context) error {
 		return err
 	}
 
-	db := gormdb.wdb.WithContext(ctx).Unscoped().Session(&gorm.Session{AllowGlobalUpdate: true})
+	db := gormdb.writer.WithContext(ctx).Unscoped().Session(&gorm.Session{AllowGlobalUpdate: true})
 	for _, model := range scheme.Tables {
 		modelType := reflect.TypeOf(model)
 		model := reflect.New(modelType).Interface()
@@ -220,7 +220,7 @@ func newDBFixture() *dbFixture {
 		log.Fatalf("Failed to cleanup gormdb: %v", err)
 	}
 	gormdb := gormDB
-	f := dbFixture{db: gormdb.wdb, gormdb: &gormdb, ctx: ctx}
+	f := dbFixture{db: gormdb.writer, gormdb: &gormdb, ctx: ctx}
 	return &f
 }
 
@@ -237,8 +237,8 @@ func (f *dbFixture) WithForeignKeysDisabled(fn func()) {
 // enable SQL logging
 func (f *dbFixture) WithDebug() *dbFixture {
 	f.db = f.db.Debug()
-	f.gormdb.wdb = f.db
-	f.gormdb.rdb = f.db
+	f.gormdb.writer = f.db
+	f.gormdb.reader = f.db
 	return f
 }
 
@@ -253,7 +253,7 @@ func NoDebug() func(*gorm.DB) *gorm.DB {
 
 func findAndAssertCount[T any](t *testing.T, f *dbFixture, expected int, where string, args ...any) []T {
 	var objs []T
-	res := f.gormdb.rdb.Where(where, args...).Find(&objs)
+	res := f.gormdb.reader.Where(where, args...).Find(&objs)
 	require.NoError(t, res.Error)
 	require.Equal(t, expected, len(objs))
 	require.Equal(t, int64(expected), res.RowsAffected)

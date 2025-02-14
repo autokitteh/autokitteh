@@ -15,19 +15,19 @@ import (
 )
 
 func (gdb *gormdb) saveEvent(ctx context.Context, event *scheme.Event) error {
-	return gdb.wdb.WithContext(ctx).Create(event).Error
+	return gdb.writer.WithContext(ctx).Create(event).Error
 }
 
 func (gdb *gormdb) deleteEvent(ctx context.Context, eventID uuid.UUID) error {
-	return gdb.wdb.WithContext(ctx).Delete(&scheme.Event{}, "event_id = ?", eventID).Error // NOTE: eventID isn't a primary key
+	return gdb.writer.WithContext(ctx).Delete(&scheme.Event{}, "event_id = ?", eventID).Error // NOTE: eventID isn't a primary key
 }
 
 func (gdb *gormdb) getEvent(ctx context.Context, eventID uuid.UUID) (*scheme.Event, error) {
-	return getOne[scheme.Event](gdb.rdb.WithContext(ctx), "event_id = ?", eventID)
+	return getOne[scheme.Event](gdb.reader.WithContext(ctx), "event_id = ?", eventID)
 }
 
 func (gdb *gormdb) listEvents(ctx context.Context, filter sdkservices.ListEventsFilter) ([]scheme.Event, error) {
-	q := gdb.rdb.WithContext(ctx)
+	q := gdb.reader.WithContext(ctx)
 
 	q = withProjectOrgID(q, filter.OrgID, "events")
 
@@ -126,7 +126,7 @@ func (db *gormdb) ListEvents(ctx context.Context, filter sdkservices.ListEventsF
 func (db *gormdb) GetLatestEventSequence(ctx context.Context) (uint64, error) {
 	// NOTE: called from workflow, not protected by user context
 	var s scheme.Event
-	if err := db.rdb.WithContext(ctx).Last(&s).Error; err != nil {
+	if err := db.reader.WithContext(ctx).Last(&s).Error; err != nil {
 		return 0, translateError(err)
 	}
 	return s.Seq, nil

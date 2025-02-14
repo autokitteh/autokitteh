@@ -3,7 +3,7 @@ package dbgorm
 import "fmt"
 
 func (db *gormdb) Report() error {
-	w, err := db.wdb.DB()
+	w, err := db.writer.DB()
 	if err != nil {
 		return fmt.Errorf("write db: %w", err)
 	}
@@ -12,7 +12,7 @@ func (db *gormdb) Report() error {
 		return fmt.Errorf("write db ping: %w", err)
 	}
 
-	r, err := db.wdb.DB()
+	r, err := db.writer.DB()
 	if err != nil {
 		return fmt.Errorf("read db: %w", err)
 	}

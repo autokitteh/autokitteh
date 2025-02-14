@@ -15,7 +15,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/gormkitteh"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/migrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
@@ -26,7 +25,7 @@ type gormdb struct {
 	z   *zap.Logger
 	cfg *Config
 
-	wdb, rdb *gorm.DB
+	writer, reader *gorm.DB
 }
 
 var _ db.DB = (*gormdb)(nil)
@@ -44,7 +43,7 @@ func New(z *zap.Logger, cfg *Config) (db.DB, error) {
 	return &gormdb{z: z, cfg: cfg}, nil
 }
 
-func (db *gormdb) GormDB() (r, w *gorm.DB) { return db.rdb, db.wdb }
+func (db *gormdb) GormDB() (r, w *gorm.DB) { return db.reader, db.writer }
 
 func connect(_ context.Context, z *zap.Logger, cfg *Config) (r *gorm.DB, w *gorm.DB, err error) {
 	gormCfgFn := func(cfg *gorm.Config) { cfg.SkipDefaultTransaction = true }
@@ -67,8 +66,9 @@ func connect(_ context.Context, z *zap.Logger, cfg *Config) (r *gorm.DB, w *gorm
 
 	sqlDB.SetMaxOpenConns(n)
 
-	// in memory db doesn't need any separation between writing and reading.
-	if cfg.Type != "sqlite" || strings.HasPrefix(cfg.DSN, ":memory:") {
+	// For in memory sqlite in memory database we will use the same connection for reads and writes
+	// since otherwise it will have two distinct databases for these.
+	if cfg.Type == "sqlite" && strings.HasPrefix(cfg.DSN, ":memory:") {
 		w = r
 		return
 	}
@@ -92,7 +92,7 @@ func connect(_ context.Context, z *zap.Logger, cfg *Config) (r *gorm.DB, w *gorm
 }
 
 func (db *gormdb) Connect(ctx context.Context) (err error) {
-	db.rdb, db.wdb, err = connect(ctx, db.z.Named("gorm"), db.cfg)
+	db.reader, db.writer, err = connect(ctx, db.z.Named("gorm"), db.cfg)
 	return
 }
 
@@ -139,13 +139,13 @@ func foreignKeys(gormdb *gormdb, enable bool) error {
 	}
 	stmt := fkStmtByDB[gormdb.cfg.Type][enable]
 
-	if err := gormdb.rdb.Exec(stmt).Error; err != nil {
-		return fmt.Errorf("exec %q failed on rdb: %w", stmt, err)
+	if err := gormdb.reader.Exec(stmt).Error; err != nil {
+		return fmt.Errorf("read exec: %q: %w", stmt, err)
 	}
 
-	if gormdb.wdb != gormdb.rdb {
-		if err := gormdb.wdb.Exec(stmt).Error; err != nil {
-			return fmt.Errorf("exec %q failed on wdb: %w", stmt, err)
+	if gormdb.writer != gormdb.reader {
+		if err := gormdb.writer.Exec(stmt).Error; err != nil {
+			return fmt.Errorf("write exec: %q: %w", stmt, err)
 		}
 	}
 
@@ -169,10 +169,12 @@ func initGoose(client *sql.DB, dialect string) (ver int64, err error) {
 func (db *gormdb) Migrate(ctx context.Context) error {
 	db.z.Info("migrating")
 
-	_, client := db.client(true)
-
-	_, err := initGoose(client, db.cfg.Type)
+	_, client, err := db.client(true)
 	if err != nil {
+		return err
+	}
+
+	if _, err = initGoose(client, db.cfg.Type); err != nil {
 		return err
 	}
 
@@ -185,7 +187,11 @@ func (db *gormdb) Migrate(ctx context.Context) error {
 }
 
 func (db *gormdb) MigrationRequired(ctx context.Context) (bool, int64, error) {
-	_, client := db.client(false)
+	_, client, err := db.client(false)
+	if err != nil {
+		return false, 0, err
+	}
+
 	dbversion, err := initGoose(client, db.cfg.Type)
 	if err != nil {
 		return false, 0, err
@@ -227,7 +233,7 @@ func (db *gormdb) seed(ctx context.Context) error {
 
 	db.z.Info("seeding")
 
-	cmd := db.wdb.WithContext(ctx).Debug().Exec(db.cfg.SeedCommands)
+	cmd := db.writer.WithContext(ctx).Debug().Exec(db.cfg.SeedCommands)
 
 	db.z.Info("done seeding", zap.Int64("rows_affected", cmd.RowsAffected))
 
@@ -262,9 +268,9 @@ func (db *gormdb) Setup(ctx context.Context) error {
 // TODO: not sure this will work with the connect method
 func (db *gormdb) Debug() db.DB {
 	return &gormdb{
-		z:   db.z,
-		rdb: db.rdb.Debug(),
-		wdb: db.wdb.Debug(),
+		z:      db.z,
+		reader: db.reader.Debug(),
+		writer: db.writer.Debug(),
 	}
 }
 
@@ -300,20 +306,22 @@ func delete[T any](db *gorm.DB, ctx context.Context, where string, args ...any) 
 	return nil
 }
 
-func (db *gormdb) client(debug bool) (r, w *sql.DB) {
-	q := db.rdb
+func (db *gormdb) client(debug bool) (r, w *sql.DB, err error) {
+	q := db.reader
 	if debug {
 		q = q.Debug()
 	}
 
-	r = kittehs.Must1(q.DB())
+	if r, err = q.DB(); err != nil {
+		return
+	}
 
-	q = db.wdb
+	q = db.writer
 	if debug {
 		q = q.Debug()
 	}
 
-	w = kittehs.Must1(q.DB())
+	w, err = q.DB()
 
 	return
 }
