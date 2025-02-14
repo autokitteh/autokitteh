@@ -124,14 +124,6 @@ func (p Trigger) CodeLocation() CodeLocation {
 	return forceFromProto[CodeLocation](p.read().CodeLocation)
 }
 
-func (p Trigger) ToValues() map[string]Value {
-	if !p.IsValid() {
-		return nil
-	}
-
-	return map[string]Value{"name": NewStringValue(p.read().Name)}
-}
-
 func (p Trigger) SourceType() TriggerSourceType {
 	return kittehs.Must1(EnumFromProto[TriggerSourceType](p.read().SourceType))
 }

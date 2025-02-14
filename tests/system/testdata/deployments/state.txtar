@@ -48,8 +48,8 @@ project:
       call: program.star:on_http_get
 
 -- program.star --
-def on_http_get(event):
-    if event.data.raw_url.endswith('short'):
+def on_http_get(raw_url):
+    if raw_url.endswith('short'):
       print(ak.is_deployment_active())
       return
 

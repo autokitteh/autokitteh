@@ -33,19 +33,17 @@ project:
       call: program.star:on_http
 
 -- program.star --
-def on_http(data, trigger, event):
-    print(data)
-    print(event.type)
-    print(trigger)
+def on_http(method, body):
+    print(method)
+    print(body)
 
 -- expected_without_path.json --
 {
     "state": {
         "completed": {
             "prints": [
-                "data(body = {\"form\": None, \"bytes\": None, \"json\": None}, headers = {\"Accept-Encoding\": \"gzip\", \"User-Agent\": \"Go-http-client/1.1\"}, method = \"GET\", raw_url = \"/webhooks/00000000000000000000000003/\", trailers = {}, url = {\"fragment\": \"\", \"raw_path\": \"\", \"query\": {}, \"raw_fragment\": \"\", \"raw_query\": \"\", \"path\": \"/webhooks/00000000000000000000000003/\"})",
-                "get",
-                "trigger(name = \"http\")"
+                "GET",
+                "{\"form\": None, \"bytes\": None, \"json\": None}"
             ],
             "exports": {
                 "on_http": {
@@ -55,13 +53,10 @@ def on_http(data, trigger, event):
                         "desc": {
                             "input": [
                                 {
-                                    "name": "data"
+                                    "name": "method"
                                 },
                                 {
-                                    "name": "trigger"
-                                },
-                                {
-                                    "name": "event"
+                                    "name": "body"
                                 }
                             ]
                         },
@@ -81,9 +76,8 @@ def on_http(data, trigger, event):
     "state": {
         "completed": {
             "prints": [
-                "data(body = {\"form\": None, \"bytes\": None, \"json\": None}, headers = {\"Accept-Encoding\": \"gzip\", \"User-Agent\": \"Go-http-client/1.1\", \"Content-Length\": \"0\"}, method = \"POST\", raw_url = \"/webhooks/00000000000000000000000003/test/aaa/bbb/ccc\", trailers = {}, url = {\"fragment\": \"\", \"raw_path\": \"\", \"query\": {}, \"raw_fragment\": \"\", \"raw_query\": \"\", \"path\": \"/webhooks/00000000000000000000000003/test/aaa/bbb/ccc\"})",
-                "post",
-                "trigger(name = \"http\")"
+                "POST",
+                "{\"form\": None, \"bytes\": None, \"json\": None}"
             ],
             "exports": {
                 "on_http": {
@@ -93,13 +87,10 @@ def on_http(data, trigger, event):
                         "desc": {
                             "input": [
                                 {
-                                    "name": "data"
+                                    "name": "method"
                                 },
                                 {
-                                    "name": "trigger"
-                                },
-                                {
-                                    "name": "event"
+                                    "name": "body"
                                 }
                             ]
                         },
