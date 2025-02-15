@@ -110,10 +110,14 @@ func (s *sessions) GetLog(ctx context.Context, filter sdkservices.SessionLogReco
 	}
 
 	rs, err := s.workflows.GetWorkflowLog(ctx, filter)
-	if errors.Is(err, sdkerrors.ErrNotFound) {
-		// If temporal already lost the workflow, use the log from the db.
-		// (This will not contain the calls log).
-		return s.svcs.DB.GetSessionLog(ctx, filter)
+	if err != nil {
+		if errors.Is(err, sdkerrors.ErrNotFound) {
+			// If temporal already lost the workflow, use the log from the db.
+			// (This will not contain the calls log).
+			return s.svcs.DB.GetSessionLog(ctx, filter)
+		}
+
+		return nil, err
 	}
 
 	return rs, nil

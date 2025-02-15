@@ -27,7 +27,7 @@ type reverseIter struct {
 	err error
 }
 
-func (i *reverseIter) HasNext() bool { return i.err == nil && len(i.rs) > 0 }
+func (i *reverseIter) HasNext() bool { return i.err != nil || len(i.rs) > 0 }
 
 func (i *reverseIter) Next() (*historypb.HistoryEvent, error) {
 	if i.err != nil {
