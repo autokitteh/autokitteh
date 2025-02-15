@@ -50,7 +50,7 @@ var BotEventHandlers = map[string]BotEventHandler{
 	"url_verification": events.URLVerificationHandler,
 }
 
-// handleBotEvent routes all asynchronous bot event notifications that our
+// HandleBotEvent routes all asynchronous bot event notifications that our
 // app subscribed to, to specific event handlers based on the event type.
 // See https://api.slack.com/apis/connections/events-api#responding.
 // Compare with the [websockets.handleBotEvent] implementation.

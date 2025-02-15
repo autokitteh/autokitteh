@@ -53,25 +53,7 @@ func Start(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, d sdkservices.Disp
 	m.NoAuth.HandleFunc("POST "+webhooks.SlashCommandPath, whh.HandleSlashCommand)
 	m.NoAuth.HandleFunc("POST "+webhooks.InteractionPath, whh.HandleInteraction)
 
-	// TODO: Initialize WebSocket pool for existing Socket Mode connections.
-	cids, err := v.FindConnectionIDs(context.Background(), iid, vars.AppTokenVar, "")
-	if err != nil {
-		l.Error("failed to list WebSocket-based connection IDs", zap.Error(err))
-		return
-	}
-
-	for _, cid := range cids {
-		data, err := v.Get(context.Background(), sdktypes.NewVarScopeID(cid))
-		if err != nil {
-			l.Error("missing data for Slack Socket Mode app", zap.Error(err))
-			continue
-		}
-
-		appID := data.GetValue(vars.AppIDVar)
-		appToken := data.GetValue(vars.AppTokenVar)
-		botToken := data.GetValue(vars.BotTokenVar)
-		wsh.OpenWebSocketConnection(appID, appToken, botToken)
-	}
+	reopenExistingWebSocketConnections(context.Background(), l, v, wsh)
 }
 
 // handler implements several HTTP webhooks to save authentication data, as
@@ -85,4 +67,31 @@ type handler struct {
 
 func newHTTPHandler(l *zap.Logger, v sdkservices.Vars, d sdkservices.DispatchFunc, h websockets.Handler) handler {
 	return handler{logger: l, vars: v, dispatch: d, webSockets: h}
+}
+
+// reopenExistingWebSocketConnections initializes a new WebSocket pool
+// for existing Socket Mode connections when the AutoKitteh server starts.
+func reopenExistingWebSocketConnections(ctx context.Context, l *zap.Logger, v sdkservices.Vars, h websockets.Handler) {
+	iid := sdktypes.NewIntegrationIDFromName(desc.UniqueName().String())
+	cids, err := v.FindConnectionIDs(ctx, iid, vars.AppTokenVar, "")
+	if err != nil {
+		l.Error("failed to list WebSocket-based connection IDs", zap.Error(err))
+		return
+	}
+
+	for _, cid := range cids {
+		data, err := v.Get(ctx, sdktypes.NewVarScopeID(cid))
+		if err != nil {
+			l.Error("can't restart Slack Socket Mode connection",
+				zap.String("connection_id", cid.String()),
+				zap.Error(err),
+			)
+			continue
+		}
+
+		appID := data.GetValue(vars.AppIDVar)
+		appToken := data.GetValue(vars.AppTokenVar)
+		botToken := data.GetValue(vars.BotTokenVar)
+		h.OpenWebSocketConnection(appID, appToken, botToken)
+	}
 }
