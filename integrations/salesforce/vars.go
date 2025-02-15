@@ -31,5 +31,4 @@ func newOAuthData(t *oauth2.Token) oauthData {
 type privateOAuth struct {
 	ClientID     string `var:"private_client_id"`
 	ClientSecret string `var:"private_client_secret,secret"`
-	InstanceURL  string `var:"private_instance_url"`
 }

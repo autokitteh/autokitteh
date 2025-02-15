@@ -3,6 +3,7 @@ package salesforce
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"go.uber.org/zap"
@@ -58,7 +59,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	vsid := sdktypes.NewVarScopeID(cid)
-	if err := h.saveConnection(ctx, vsid, data.Token); err != nil {
+	if err := h.saveConnection(ctx, vsid, data.Token, data.Extra); err != nil {
 		l.Error("failed to save OAuth connection details", zap.Error(err))
 		c.AbortServerError("failed to save connection details")
 		return
@@ -76,11 +77,15 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 }
 
 // saveConnection saves OAuth token details as connection variables.
-func (h handler) saveConnection(ctx context.Context, vsid sdktypes.VarScopeID, t *oauth2.Token) error {
+func (h handler) saveConnection(ctx context.Context, vsid sdktypes.VarScopeID, t *oauth2.Token, extra map[string]interface{}) error {
 	if t == nil {
 		return errors.New("OAuth redirection missing token data")
 	}
 
 	vs := sdktypes.EncodeVars(newOAuthData(t))
+	for k, v := range extra {
+		vs = vs.Append(sdktypes.NewVar(sdktypes.NewSymbol(k)).SetValue(fmt.Sprintf("%v", v)))
+	}
+
 	return h.vars.Set(ctx, vs.WithScopeID(vsid)...)
 }

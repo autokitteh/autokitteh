@@ -758,6 +758,7 @@ func (o *oauth) Exchange(ctx context.Context, integration string, cid sdktypes.C
 	if err != nil {
 		return nil, fmt.Errorf("failed to exchange code: %w", err)
 	}
+
 	return token, nil
 }
 
