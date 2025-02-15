@@ -12,17 +12,17 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/chat"
-	"go.autokitteh.dev/autokitteh/integrations/slack/internal/vars"
 	"go.autokitteh.dev/autokitteh/integrations/slack/webhooks"
+	"go.autokitteh.dev/autokitteh/integrations/slack2/vars"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-// HandleInteraction dispatches and acknowledges a user interaction callback
+// handleInteraction dispatches and acknowledges a user interaction callback
 // from Slack, e.g. shortcuts, interactive components in messages and modals,
 // and Slack workflow steps. See https://api.slack.com/messaging/interactivity
 // and https://api.slack.com/interactivity/handling. Compare this function
 // with the [webhooks.HandleInteraction] implementation.
-func (h handler) handleInteractiveEvent(e *socketmode.Event, c *socketmode.Client) {
+func (h Handler) handleInteractiveEvent(e *socketmode.Event, c *socketmode.Client) {
 	defer c.Ack(*e.Request)
 
 	// Reuse the Slack event's JSON payload instead of the struct.
@@ -51,7 +51,7 @@ func (h handler) handleInteractiveEvent(e *socketmode.Event, c *socketmode.Clien
 	}
 
 	// Retrieve all the relevant connections for this event.
-	cids, err := h.vars.FindConnectionIDs(context.Background(), h.integrationID, vars.AppTokenName, "")
+	cids, err := h.vars.FindConnectionIDs(context.Background(), h.integrationID, vars.AppTokenVar, "")
 	if err != nil {
 		h.logger.Error("Failed to find connection IDs", zap.Error(err))
 		return
@@ -68,8 +68,8 @@ func (h handler) handleInteractiveEvent(e *socketmode.Event, c *socketmode.Clien
 
 // updateMessage updates an interactive message after the interaction, to prevent
 // further interaction with the same message, and to reflect the user actions.
-// See: https://api.slack.com/interactivity/handling#updating_message_response.
-func (h handler) updateMessage(payload *webhooks.BlockActionsPayload, cids []sdktypes.ConnectionID) {
+// See https://api.slack.com/interactivity/handling#updating_message_response.
+func (h Handler) updateMessage(payload *webhooks.BlockActionsPayload, cids []sdktypes.ConnectionID) {
 	resp := webhooks.Response{
 		Text:            payload.Message.Text,
 		ResponseType:    "in_channel",
@@ -129,11 +129,11 @@ func (h handler) updateMessage(payload *webhooks.BlockActionsPayload, cids []sdk
 	}
 }
 
-// Return the Slack bot token of the first connection, if there is any.
-func (h handler) firstBotToken(cids []sdktypes.ConnectionID) string {
+// firstBotToken returns the Slack bot token of the first connection, if there is any.
+func (h Handler) firstBotToken(cids []sdktypes.ConnectionID) string {
 	for _, cid := range cids {
-		if data, err := h.vars.Get(context.Background(), sdktypes.NewVarScopeID(cid), vars.BotTokenName); err == nil {
-			return data.GetValue(vars.BotTokenName)
+		if data, err := h.vars.Get(context.Background(), sdktypes.NewVarScopeID(cid), vars.BotTokenVar); err == nil {
+			return data.GetValue(vars.BotTokenVar)
 		}
 	}
 	// This will result in a warning in the server's log,

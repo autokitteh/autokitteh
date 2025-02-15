@@ -229,7 +229,7 @@ func (h handler) HandleInteraction(w http.ResponseWriter, r *http.Request) {
 
 // updateMessage updates an interactive message after the interaction, to prevent
 // further interaction with the same message, and to reflect the user actions.
-// See: https://api.slack.com/interactivity/handling#updating_message_response.
+// See https://api.slack.com/interactivity/handling#updating_message_response.
 func (h handler) updateMessage(ctx context.Context, payload *BlockActionsPayload) {
 	resp := Response{
 		Text:            payload.Message.Text,

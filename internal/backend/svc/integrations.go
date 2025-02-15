@@ -29,7 +29,7 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/microsoft/teams"
 	"go.autokitteh.dev/autokitteh/integrations/redis"
 	"go.autokitteh.dev/autokitteh/integrations/salesforce"
-	"go.autokitteh.dev/autokitteh/integrations/slack"
+	"go.autokitteh.dev/autokitteh/integrations/slack2"
 	"go.autokitteh.dev/autokitteh/integrations/twilio"
 	"go.autokitteh.dev/autokitteh/integrations/zoom"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
@@ -111,7 +111,7 @@ func integrationsFXOption() fx.Option {
 		integration("redis", configset.Empty, redis.New),
 		integration("salesforce", configset.Empty, salesforce.New),
 		integration("sheets", configset.Empty, sheets.New),
-		integration("slack", configset.Empty, slack.New),
+		integration("slack", configset.Empty, slack2.New),
 		integration("twilio", configset.Empty, twilio.New),
 		integration("zoom", configset.Empty, zoom.New),
 		fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, muxes *muxes.Muxes, vars sdkservices.Vars, dispatch sdkservices.DispatchFunc, oauth sdkservices.OAuth) {
@@ -131,7 +131,7 @@ func integrationsFXOption() fx.Option {
 				linear.Start(l, muxes, vars, oauth, dispatch)
 				microsoft.Start(l, muxes, vars, oauth, dispatch)
 				salesforce.Start(l, muxes, vars, oauth, dispatch)
-				slack.Start(l, muxes, vars, dispatch)
+				slack2.Start(l, muxes, vars, dispatch)
 				twilio.Start(l, muxes, vars, dispatch)
 				zoom.Start(l, muxes, vars, oauth, dispatch)
 				return nil

@@ -11,11 +11,10 @@ import (
 	"time"
 
 	"go.uber.org/zap"
-	"golang.org/x/oauth2"
 
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
-	"go.autokitteh.dev/autokitteh/integrations/slack/internal/vars"
-	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
+	"go.autokitteh.dev/autokitteh/integrations/slack2/vars"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -42,48 +41,12 @@ type ctxKey string
 
 var OAuthTokenContextKey = ctxKey("OAuthTokenContext")
 
-// PostForm sends a short-lived HTTP POST request with an OAuth bearer token and
-// URL-encoded key/value payload, and then receives and parses the JSON response.
-func PostForm(ctx context.Context, vars sdkservices.Vars, kv url.Values, resp any, slackMethod string) error {
-	l := extrazap.ExtractLoggerFromContext(ctx).With(
-		zap.String("httpContent", "form"),
-		zap.String("slackMethod", slackMethod),
-	)
-	ctx = extrazap.AttachLoggerToContext(l, ctx)
-
-	// Construct the request URL.
-	u, err := url.JoinPath(slackURL, slackMethod)
-	if err != nil {
-		l.Error("Failed to construct Slack API URL",
-			zap.Error(err),
-			zap.String("base", slackURL),
-		)
-		return err
-	}
-
-	// Send an HTTP POST request with the URL-encoded payload.
-	body, err := post(ctx, vars, u, kv.Encode(), ContentTypeForm)
-	if err != nil {
-		return err
-	}
-
-	// Parse and return the JSON in the HTTP response.
-	if err := json.Unmarshal(body, resp); err != nil {
-		l.Error("Failed to parse JSON payload",
-			zap.ByteString("json", body),
-			zap.Error(err),
-		)
-		return err
-	}
-	return nil
-}
-
 // PostJSON sends a short-lived HTTP POST request with an OAuth bearer token
 // and JSON payload, and then receives and parses the JSON response.
 func PostJSON(ctx context.Context, vars sdkservices.Vars, req, resp any, slackMethod string) error {
 	l := extrazap.ExtractLoggerFromContext(ctx).With(
-		zap.String("httpContent", "json"),
-		zap.String("slackMethod", slackMethod),
+		zap.String("http_content", "json"),
+		zap.String("slack_method", slackMethod),
 	)
 	ctx = extrazap.AttachLoggerToContext(l, ctx)
 
@@ -199,14 +162,13 @@ func post(ctx context.Context, vars sdkservices.Vars, url, body, contentType str
 	return b, nil
 }
 
-func getConnection(ctx context.Context, varsSvc sdkservices.Vars) (*oauth2.Token, error) {
-	token, ok := ctx.Value(OAuthTokenContextKey).(string)
-	if ok {
-		return &oauth2.Token{AccessToken: token}, nil
+func getConnection(ctx context.Context, varsSvc sdkservices.Vars) (*common.OAuthData, error) {
+	if token, ok := ctx.Value(OAuthTokenContextKey).(string); ok {
+		return &common.OAuthData{AccessToken: token}, nil
 	}
 
 	if varsSvc == nil {
-		return &oauth2.Token{}, nil
+		return &common.OAuthData{}, nil
 	}
 
 	// Extract the connection ID from the given context.
@@ -220,21 +182,13 @@ func getConnection(ctx context.Context, varsSvc sdkservices.Vars) (*oauth2.Token
 		return nil, err
 	}
 
-	// Socket mode connection.
-	if bt := vs.GetValue(vars.BotTokenName); bt != "" {
-		return &oauth2.Token{AccessToken: bt}, nil
+	// Socket Mode app connection.
+	if bt := vs.GetValue(vars.BotTokenVar); bt != "" {
+		return &common.OAuthData{AccessToken: bt}, nil
 	}
 
-	// Not Socket mode, so maybe OAuth?
-	oauthData, err := sdkintegrations.DecodeOAuthData(vs.GetValue(vars.OAuthDataName))
-	if err != nil {
-		// No, we are using a temporary URL which was provided by Slack
-		// (https://hooks.slack.com/actions/...), so we don't have to attach
-		// an AutoKitteh connection's OAuth token to our outgoing request.
-		return &oauth2.Token{}, nil
-	}
-
-	// Yes, we are sending a regular Slack API request
-	// on behalf of an OAuth-based AutoKitteh connection.
-	return oauthData.Token, nil
+	// OAuth v2 app connection.
+	var oauthData common.OAuthData
+	vs.Decode(&oauthData)
+	return &oauthData, nil
 }

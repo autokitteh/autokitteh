@@ -8,15 +8,15 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations/slack/events"
-	"go.autokitteh.dev/autokitteh/integrations/slack/internal/vars"
 	"go.autokitteh.dev/autokitteh/integrations/slack/webhooks"
+	"go.autokitteh.dev/autokitteh/integrations/slack2/vars"
 )
 
-// HandleBotEvent routes all asynchronous bot event notifications that our Slack
+// handleBotEvent routes all asynchronous bot event notifications that our
 // app subscribed to, to specific event handlers based on the event type.
 // See https://api.slack.com/apis/connections/events-api#responding.
-// Compare this function with the [webhooks.HandleBotEvent] implementation.
-func (h handler) handleBotEvent(e *socketmode.Event, c *socketmode.Client) {
+// Compare with the [webhooks.HandleBotEvent] implementation.
+func (h Handler) handleBotEvent(e *socketmode.Event, c *socketmode.Client) {
 	defer c.Ack(*e.Request)
 
 	// Reuse the Slack event's JSON payload instead of the struct.
@@ -64,7 +64,7 @@ func (h handler) handleBotEvent(e *socketmode.Event, c *socketmode.Client) {
 	}
 
 	// Retrieve all the relevant connections for this event.
-	cids, err := h.vars.FindConnectionIDs(context.Background(), h.integrationID, vars.AppTokenName, "")
+	cids, err := h.vars.FindConnectionIDs(context.Background(), h.integrationID, vars.AppTokenVar, "")
 	if err != nil {
 		h.logger.Error("Failed to find connection IDs", zap.Error(err))
 		return

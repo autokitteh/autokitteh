@@ -8,14 +8,14 @@ import (
 	"github.com/slack-go/slack/socketmode"
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/integrations/slack/internal/vars"
 	"go.autokitteh.dev/autokitteh/integrations/slack/webhooks"
+	"go.autokitteh.dev/autokitteh/integrations/slack2/vars"
 )
 
-// HandleSlashCommand dispatches and acknowledges a user's slash command registered by our
+// handleSlashCommand dispatches and acknowledges a user's slash command registered by our
 // Slack app. See https://api.slack.com/interactivity/slash-commands#responding_to_commands.
 // Compare this function with the [webhooks.HandleSlashCommand] implementation.
-func (h handler) handleSlashCommand(e *socketmode.Event, c *socketmode.Client) {
+func (h Handler) handleSlashCommand(e *socketmode.Event, c *socketmode.Client) {
 	// This data casting is guaranteed to work, so no need to check it
 	d := e.Data.(slack.SlashCommand)
 
@@ -46,7 +46,7 @@ func (h handler) handleSlashCommand(e *socketmode.Event, c *socketmode.Client) {
 	}
 
 	// Retrieve all the relevant connections for this event.
-	cids, err := h.vars.FindConnectionIDs(context.Background(), h.integrationID, vars.AppTokenName, "")
+	cids, err := h.vars.FindConnectionIDs(context.Background(), h.integrationID, vars.AppTokenVar, "")
 	if err != nil {
 		h.logger.Error("Failed to find connection IDs", zap.Error(err))
 		c.Ack(*e.Request)

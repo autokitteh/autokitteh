@@ -20,27 +20,24 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api"
 	"go.autokitteh.dev/autokitteh/integrations/slack/events"
-	"go.autokitteh.dev/autokitteh/integrations/slack/internal/vars"
+	"go.autokitteh.dev/autokitteh/integrations/slack2/vars"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 const (
-	// signingSecretEnvVar is the name of an environment variable that contains
-	// a Slack app SECRET which is required to verify inbound request signatures.
-	signingSecretEnvVar = "SLACK_SIGNING_SECRET"
-
 	// The maximum shift/delay that we allow between an inbound request's
-	// timestamp, and our current timestamp.
+	// timestamp, and our current timestamp, to defend against replay attacks.
+	// See https://api.slack.com/authentication/verifying-requests-from-slack.
 	maxDifference = 5 * time.Minute
 
 	// Slack API implementation detail.
 	slackSigVersion = "v0"
 )
 
-// handler is a collection of autokitteh webhooks which implement [http.Handler]
-// to receive, dispatch, and acknowledge asynchronous event notifications.
+// handler implements several HTTP webhooks to receive and
+// dispatch third-party asynchronous event notifications.
 type handler struct {
 	logger        *zap.Logger
 	vars          sdkservices.Vars
@@ -48,13 +45,8 @@ type handler struct {
 	integrationID sdktypes.IntegrationID
 }
 
-func NewHandler(l *zap.Logger, vars sdkservices.Vars, d sdkservices.DispatchFunc, id sdktypes.IntegrationID) handler {
-	return handler{
-		logger:        l,
-		vars:          vars,
-		dispatch:      d,
-		integrationID: id,
-	}
+func NewHandler(l *zap.Logger, v sdkservices.Vars, d sdkservices.DispatchFunc, i sdktypes.IntegrationID) handler {
+	return handler{logger: l, vars: v, dispatch: d, integrationID: i}
 }
 
 // checkRequest checks that the given HTTP request has a valid content type and
@@ -132,7 +124,7 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Log
 		// If a custom OAuth signing key wasn't found, try to use
 		// the default one. If the request is fake, verifying its
 		// signature would still fail, so there's no security risk.
-		signingSecret = os.Getenv(signingSecretEnvVar)
+		signingSecret = os.Getenv(vars.SigningSecretEnvVar)
 	}
 
 	// Verify signature.
@@ -197,8 +189,8 @@ func transformEvent(l *zap.Logger, slackEvent any, eventType string) (sdktypes.E
 }
 
 func (h handler) listConnectionIDs(ctx context.Context, appID, enterpriseID, teamID string) ([]sdktypes.ConnectionID, error) {
-	key := vars.KeyValue(appID, enterpriseID, teamID)
-	return h.vars.FindConnectionIDs(ctx, h.integrationID, vars.KeyName, key)
+	ids := vars.InstallIDs(appID, enterpriseID, teamID)
+	return h.vars.FindConnectionIDs(ctx, h.integrationID, vars.InstallIDsVar, ids)
 }
 
 func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, cids []sdktypes.ConnectionID, e sdktypes.Event) {
@@ -217,8 +209,7 @@ func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, cids []sd
 	}
 }
 
-// extractIDs extracts the app ID, team ID, and enterprise ID from the given
-// request body.
+// extractIDs extracts the app ID, team ID, and enterprise ID from the given request body.
 func (h handler) extractIDs(body []byte, wantContentType string, l *zap.Logger) (string, string, string, error) {
 	// Option 1: JSON payloads.
 	if strings.HasPrefix(wantContentType, "application/json") {
@@ -284,5 +275,5 @@ func (h handler) getCustomOAuthSigningSecret(ctx context.Context, body []byte, w
 		return "", fmt.Errorf("failed to get signing secret: %w", err)
 	}
 
-	return secret.GetValue(vars.SigningSecret), nil
+	return secret.GetValue(vars.SigningSecretVar), nil
 }
