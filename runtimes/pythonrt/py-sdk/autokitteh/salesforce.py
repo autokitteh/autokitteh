@@ -25,7 +25,7 @@ def salesforce_client(connection: str, **kwargs) -> Salesforce:
     check_connection_name(connection)
 
     token = os.getenv(connection + "__oauth_access_token")
-    instance_url = os.getenv(connection + "__private_instance_url")
+    instance_url = os.getenv(connection + "__instance_url")
     if not token or not instance_url:
         raise ConnectionInitError(connection)
 

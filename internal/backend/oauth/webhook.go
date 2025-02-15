@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+	"golang.org/x/oauth2"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
@@ -157,7 +158,7 @@ func (s *svc) exchange(w http.ResponseWriter, r *http.Request) {
 	l.Info("OAuth token exchange successful")
 
 	// Pass the OAuth data back to the originating integration.
-	oauthData, err := sdkintegrations.OAuthData{Token: token, Params: r.URL.Query()}.Encode()
+	oauthData, err := sdkintegrations.OAuthData{Token: token, Params: r.URL.Query(), Extra: getExtra(token)}.Encode()
 	if err != nil {
 		abort(w, r, intg, sub[1], sub[2], "OAuth token encoding error")
 		return
@@ -208,4 +209,12 @@ func transformState(state string) string {
 		return state
 	}
 	return "con_" + state
+}
+
+func getExtra(token *oauth2.Token) map[string]interface{} {
+	extra := make(map[string]interface{})
+	if v := token.Extra("instance_url"); v != nil {
+		extra["instance_url"] = v // salesforce
+	}
+	return extra
 }
