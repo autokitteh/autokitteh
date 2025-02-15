@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -103,46 +104,50 @@ type authTestResponse struct {
 // Based on: https://api.slack.com/methods/bots.info
 // Required Slack app scope: https://api.slack.com/scopes/users:read
 func getBotInfo(ctx context.Context, botToken string, authTest *authTestResponse) (*botInfo, error) {
-	// Construct HTTP POST request.
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://slack.com/api/bots.info", nil)
+	// Construct HTTP GET request.
+	u := "https://slack.com/api/bots.info"
+	u = fmt.Sprintf("%s?bot=%s&team_id=%s", u, authTest.BotID, authTest.TeamID)
+	if authTest.IsEnterpriseInstall {
+		u = fmt.Sprintf("%s&enterprise_id=%s", u, authTest.EnterpriseID)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, http.NoBody)
 	if err != nil {
 		return nil, err
 	}
 
-	q := req.URL.Query()
-	q.Set("bot", authTest.BotID)
-	q.Set("team_id", authTest.TeamID)
+	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Authorization", "Bearer "+botToken)
 
 	// Send request to server.
 	c := &http.Client{Timeout: api.Timeout}
-	resp, err := c.Do(req)
+	httpResp, err := c.Do(req)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer httpResp.Body.Close()
 
 	// Parse HTTP response.
-	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New(resp.Status)
+	if httpResp.StatusCode != http.StatusOK {
+		return nil, errors.New(httpResp.Status)
 	}
-	b, err := io.ReadAll(resp.Body)
+	b, err := io.ReadAll(httpResp.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	i := &botInfoResponse{}
-	if err := json.Unmarshal(b, resp); err != nil {
+	jsonResp := &botInfoResponse{}
+	if err := json.Unmarshal(b, jsonResp); err != nil {
 		return nil, err
 	}
 
-	if !i.OK {
-		return nil, errors.New(i.Error)
+	if !jsonResp.OK {
+		return nil, errors.New(jsonResp.Error)
 	}
-	if i.Bot.AppID == "" {
+	if jsonResp.Bot.AppID == "" {
 		return nil, errors.New("empty response")
 	}
-	return &i.Bot, nil
+	return &jsonResp.Bot, nil
 }
 
 type botInfoResponse struct {
