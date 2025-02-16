@@ -25,14 +25,14 @@ const (
 )
 
 // slackURL is a var and not a const for unit-testing purposes.
-var slackURL = "https://slack.com/api/"
+var slackURL = "https://slack.com/api"
 
 // get is a helper function to make an HTTP GET request to the Slack API.
 // This is used by the [BotsInfo] function during connection initialization.
 func get(ctx context.Context, botToken, slackMethod string, jsonResp any) error {
 	// Construct the request URL (not using [url.JoinPath] because [slackMethod]
 	// may contain query parameters, which [url.JoinPath] will URL-encode).
-	u := slackURL + slackMethod
+	u := fmt.Sprintf("%s/%s", slackURL, slackMethod)
 
 	// Construct the request.
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, http.NoBody)
