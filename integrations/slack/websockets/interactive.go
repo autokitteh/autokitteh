@@ -11,8 +11,8 @@ import (
 
 	"go.autokitteh.dev/autokitteh/integrations/slack/api"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/chat"
+	"go.autokitteh.dev/autokitteh/integrations/slack/vars"
 	"go.autokitteh.dev/autokitteh/integrations/slack/webhooks"
-	"go.autokitteh.dev/autokitteh/integrations/slack2/vars"
 )
 
 // handleInteraction dispatches and acknowledges a user interaction callback

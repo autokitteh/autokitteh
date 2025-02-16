@@ -8,8 +8,8 @@ import (
 	"github.com/slack-go/slack/socketmode"
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/slack/vars"
 	"go.autokitteh.dev/autokitteh/integrations/slack/webhooks"
-	"go.autokitteh.dev/autokitteh/integrations/slack2/vars"
 )
 
 // handleSlashCommand dispatches and acknowledges a user's slash command registered by our

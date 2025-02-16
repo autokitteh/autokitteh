@@ -8,8 +8,8 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations/slack/events"
+	"go.autokitteh.dev/autokitteh/integrations/slack/vars"
 	"go.autokitteh.dev/autokitteh/integrations/slack/webhooks"
-	"go.autokitteh.dev/autokitteh/integrations/slack2/vars"
 )
 
 // handleBotEvent routes all asynchronous bot event notifications that our

@@ -1,4 +1,4 @@
-package slack2
+package slack
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/slack/webhooks"
 	"go.autokitteh.dev/autokitteh/integrations/slack/websockets"
-	"go.autokitteh.dev/autokitteh/integrations/slack2/vars"
+	"go.autokitteh.dev/autokitteh/integrations/slack/vars"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"

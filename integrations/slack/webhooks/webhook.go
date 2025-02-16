@@ -20,7 +20,7 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api"
 	"go.autokitteh.dev/autokitteh/integrations/slack/events"
-	"go.autokitteh.dev/autokitteh/integrations/slack2/vars"
+	"go.autokitteh.dev/autokitteh/integrations/slack/vars"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
