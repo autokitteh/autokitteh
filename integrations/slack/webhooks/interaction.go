@@ -277,13 +277,11 @@ func (h handler) updateMessage(ctx context.Context, payload *BlockActionsPayload
 
 	// Send the update to Slack's webhook.
 	meta := &chat.UpdateResponse{}
-	err := api.PostJSON(ctx, h.vars, resp, meta, payload.ResponseURL)
-	if err != nil {
-		l := extrazap.ExtractLoggerFromContext(ctx)
-		l.Warn("Error in reply to user via interaction webhook",
-			zap.Error(err),
+	if err := api.Post(ctx, "", payload.ResponseURL, resp, meta); err != nil {
+		h.logger.Warn("Error in reply to user via interaction webhook",
 			zap.String("url", payload.ResponseURL),
 			zap.Any("response", resp),
+			zap.Error(err),
 		)
 	}
 }

@@ -55,6 +55,8 @@ type InstallInfo struct {
 	InstallIDs string `var:"install_ids"`
 }
 
+// InstallIDs combines a Slack app's ID with its installation's enterprise and team IDs.
+// This is used to find all the relevant AutoKitteh connections for an incoming event.
 func InstallIDs(appID, enterpriseID, teamID string) string {
 	return fmt.Sprintf("%s/%s/%s", appID, enterpriseID, teamID)
 }

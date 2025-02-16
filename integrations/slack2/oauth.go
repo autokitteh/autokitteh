@@ -9,6 +9,7 @@ import (
 	"golang.org/x/oauth2"
 
 	"go.autokitteh.dev/autokitteh/integrations/common"
+	"go.autokitteh.dev/autokitteh/integrations/slack/api"
 	"go.autokitteh.dev/autokitteh/integrations/slack2/vars"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
@@ -58,14 +59,14 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 
 	// Test the token's usability and get authoritative installation details.
 	ctx := r.Context()
-	auth, err := testBotToken(ctx, data.Token.AccessToken)
+	auth, err := api.AuthTest(ctx, data.Token.AccessToken)
 	if err != nil {
 		l.Warn("Slack OAuth token auth test failed", zap.Error(err))
 		c.AbortBadRequest("token auth test failed")
 		return
 	}
 
-	bot, err := getBotInfo(ctx, data.Token.AccessToken, auth)
+	bot, err := api.BotsInfo(ctx, data.Token.AccessToken, auth)
 	if err != nil {
 		l.Warn("Slack OAuth bot info request failed", zap.Error(err))
 		c.AbortBadRequest("bot info request failed")

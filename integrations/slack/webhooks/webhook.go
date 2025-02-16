@@ -27,6 +27,9 @@ import (
 )
 
 const (
+	headerSlackTimestamp = "X-Slack-Request-Timestamp"
+	headerSlackSignature = "X-Slack-Signature"
+
 	// The maximum shift/delay that we allow between an inbound request's
 	// timestamp, and our current timestamp, to defend against replay attacks.
 	// See https://api.slack.com/authentication/verifying-requests-from-slack.
@@ -66,10 +69,10 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Log
 	}
 
 	// "X-Slack-Request-Timestamp" header.
-	ts := r.Header.Get(api.HeaderSlackTimestamp)
+	ts := r.Header.Get(headerSlackTimestamp)
 	if ts == "" {
 		l.Warn("Missing header",
-			zap.String("header", api.HeaderSlackTimestamp),
+			zap.String("header", headerSlackTimestamp),
 		)
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return nil
@@ -77,7 +80,7 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Log
 	secs, err := strconv.ParseInt(ts, 10, 64)
 	if err != nil {
 		l.Warn("Invalid header value",
-			zap.String("header", api.HeaderSlackTimestamp),
+			zap.String("header", headerSlackTimestamp),
 			zap.String("value", ts),
 		)
 		http.Error(w, "Forbidden", http.StatusForbidden)
@@ -86,7 +89,7 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Log
 	d := time.Since(time.Unix(secs, 0))
 	if d.Abs() > maxDifference {
 		l.Warn("Unacceptable header value",
-			zap.String("header", api.HeaderSlackTimestamp),
+			zap.String("header", headerSlackTimestamp),
 			zap.String("difference", fmt.Sprint(d)),
 		)
 		http.Error(w, "Forbidden", http.StatusForbidden)
@@ -94,10 +97,10 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Log
 	}
 
 	// "X-Slack-Signature" header.
-	sig := r.Header.Get(api.HeaderSlackSignature)
+	sig := r.Header.Get(headerSlackSignature)
 	if sig == "" {
 		l.Warn("Missing header",
-			zap.String("header", api.HeaderSlackSignature),
+			zap.String("header", headerSlackSignature),
 		)
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return nil

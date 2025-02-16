@@ -6,11 +6,13 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/common"
+	"go.autokitteh.dev/autokitteh/integrations/slack/api"
 	"go.autokitteh.dev/autokitteh/integrations/slack2/vars"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -123,26 +125,26 @@ func (h handler) saveSocketModeApp(r *http.Request, vsid sdktypes.VarScopeID) er
 
 	// Test the tokens' usability and get authoritative installation details.
 	ctx := r.Context()
-	auth, err := testBotToken(ctx, app.BotToken)
+	auth, err := api.AuthTest(ctx, app.BotToken)
 	if err != nil {
 		h.logger.Warn("Slack token auth test failed", zap.Error(err))
 		return errors.New("Slack token auth test failed")
 	}
 
-	bot, err := getBotInfo(ctx, app.BotToken, auth)
+	bot, err := api.BotsInfo(ctx, app.BotToken, auth)
 	if err != nil {
 		h.logger.Warn("Slack bot info request failed", zap.Error(err))
 		return errors.New("Slack bot info request failed")
 	}
 
-	_, err = tempWebSocketURL(ctx, app.AppToken)
+	_, err = api.AppsConnectionsOpen(ctx, app.AppToken)
 	if err != nil {
 		h.logger.Warn("Slack WebSocket connection opening failed", zap.Error(err))
 		return errors.New("Slack WebSocket connection opening failed")
 	}
 
 	// Open a new Socket Mode connection.
-	h.webSockets.OpenWebSocketConnection(bot.AppID, app.BotToken, app.AppToken)
+	h.webSockets.OpenWebSocketConnection(bot.AppID, app.AppToken, app.BotToken)
 
 	vs := sdktypes.EncodeVars(app)
 	vs = vs.Append(sdktypes.EncodeVars(encodeInstallInfo(auth, bot))...)
@@ -163,4 +165,22 @@ func startOAuth(w http.ResponseWriter, r *http.Request, c sdkintegrations.Connec
 
 	urlPath := fmt.Sprintf("/oauth/start/slack?cid=%s&origin=%s", c.ConnectionID, c.Origin)
 	http.Redirect(w, r, urlPath, http.StatusFound)
+}
+
+// encodeInstallInfo encodes a Slack app's installation into AutoKitteh connection variables.
+func encodeInstallInfo(auth *api.AuthTestResponse, bot *api.Bot) vars.InstallInfo {
+	return vars.InstallInfo{
+		EnterpriseID: auth.EnterpriseID,
+		Team:         auth.Team,
+		TeamID:       auth.TeamID,
+		User:         auth.User,
+		UserID:       auth.UserID,
+
+		BotName:    bot.Name,
+		BotID:      bot.ID,
+		BotUpdated: time.Unix(int64(bot.Updated), 0).UTC().Format(time.RFC3339),
+		AppID:      bot.AppID,
+
+		InstallIDs: vars.InstallIDs(bot.AppID, auth.EnterpriseID, auth.TeamID),
+	}
 }
