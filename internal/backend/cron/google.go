@@ -3,6 +3,7 @@ package cron
 import (
 	"context"
 	"errors"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -287,7 +288,13 @@ func (cr *Cron) renewGoogleEventWatchesActivity(ctx context.Context, cid sdktype
 
 	err := u(ctx, cr.vars, cid)
 	if err != nil {
-		gerr := &googleapi.Error{}
+		var uerr *url.Error
+		if ok := errors.As(err, &uerr); ok && !uerr.Temporary() {
+			l.Warn("can't renew Google event watches", zap.Error(err))
+			cr.forgetWatches(ctx, l, integ, sdktypes.NewVarScopeID(cid))
+			return nil
+		}
+		var gerr *googleapi.Error
 		if ok := errors.As(err, &gerr); ok && gerr.Code >= 400 && gerr.Code < 500 {
 			l.Warn("failed to renew Google event watches", zap.Error(err))
 			cr.forgetWatches(ctx, l, integ, sdktypes.NewVarScopeID(cid))
