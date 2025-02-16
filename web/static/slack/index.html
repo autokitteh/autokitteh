@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>AutoKitteh - Slack - New Connection</title>
+    <title>AutoKitteh - Slack</title>
     <link
       rel="apple-touch-icon"
       sizes="180x180"
@@ -32,177 +32,108 @@
 
     <table class="title">
       <td><img class="logo" src="/static/images/slack.svg" alt="Logo" /></td>
-      <td>
-        <h1>Slack - Create a New Connection</h1>
-      </td>
+      <td><h1>Slack - Initialize Connection</h1></td>
     </table>
 
-    <div class="toggle-container">
-      <button class="toggle" id="toggletab1" onclick="toggleTab('tab1')">
-        Socket Mode
-      </button>
-      <span class="toggle-sep"></span>
-      <button class="toggle" id="toggletab2" onclick="toggleTab('tab2')">
-        Default OAuth v2
-      </button>
-      <button class="toggle" id="toggletab3" onclick="toggleTab('tab3')">
-        Custom OAuth v2
-      </button>
-    </div>
+    <form method="post" action="/slack/save">
+      <h2>Query Params From the URL</h2>
 
-    <div class="tab" id="tab1">
-      <p class="info">Information:</p>
-      <ul class="links">
-        <li>
-          <a
-            href="https://docs.autokitteh.com/integrations/slack/connection"
-            target="_blank"
-            class="info"
-          >
-            AutoKitteh guide: initializing a Socket-Mode connection
-          </a>
-        </li>
-        <li>
-          <a
-            href="https://api.slack.com/apis/connections/socket"
-            target="_blank"
-            class="info"
-          >
-            Details about Slack's Socket Mode
-          </a>
-        </li>
-      </ul>
+      <div class="form-group">
+        <label for="cid">Connection ID</label>
+        <input type="text" name="cid" id="cid" readonly />
+      </div>
 
-      <form id="save-tokens-form" method="post" action="/slack/save">
-        <div class="form-group">
-          <label for="bot_token">Bot Token ("<samp>xoxb</samp>")</label>
-          <input
-            type="text"
-            name="bot_token"
-            autocomplete="off"
-            spellcheck="false"
-            required
-          />
-        </div>
+      <div class="form-group">
+        <label for="origin">Request Origin</label>
+        <input type="text" name="origin" id="origin" readonly />
+      </div>
+
+      <h2>Authentication Type</h2>
+
+      <div class="form-group">
+        <select name="auth_type" id="authType">
+          <option value="oauthDefault">Default OAuth v2</option>
+          <option value="oauthPrivate">Private OAuth v2</option>
+          <option value="socketMode">Private Socket Mode</option>
+        </select>
+      </div>
+
+      <div id="privateOauthSection" class="hidden">
+        <h2>Private OAuth v2</h2>
 
         <div class="form-group">
-          <label for="app_token">App-Level Token ("<samp>xapp</samp>")</label>
+          <label for="client_id">Client ID <i>(required)</i></label>
           <input
             type="text"
-            name="app_token"
-            autocomplete="off"
-            spellcheck="false"
-            required
-          />
-        </div>
-
-        <button type="submit" class="submit-btn">Save Connection</button>
-      </form>
-    </div>
-
-    <div class="tab" id="tab2">
-      <p class="info">Information:</p>
-      <ul class="links">
-        <li>
-          <a
-            href="https://docs.autokitteh.com/integrations/slack/config"
-            target="_blank"
-            class="info"
-          >
-            AutoKitteh guide: configuring the Slack integration
-          </a>
-        </li>
-        <li>
-          <a
-            href="https://api.slack.com/authentication/oauth-v2"
-            target="_blank"
-            class="info"
-          >
-            Background about installing Slack apps with OAuth
-          </a>
-        </li>
-      </ul>
-
-      <p class="info">
-        Click the button below to install and authorize<br />
-        the <b>AutoKitteh</b> app in your Slack workspace
-      </p>
-      <a id="oauth-link" href="/oauth/start/slack" class="clickable">Start OAuth Flow</a>
-    </div>
-
-    <div class="tab" id="tab3">
-      <p class="info">Information:</p>
-      <ul class="links">
-        <li>
-          <a
-            href="https://docs.autokitteh.com/integrations/slack/custom-oauth"
-            target="_blank"
-            class="info"
-          >
-            AutoKitteh guide: configuring a custom Slack app
-          </a>
-        </li>
-        <li>
-          <a
-            href="https://api.slack.com/authentication/oauth-v2"
-            target="_blank"
-            class="info"
-          >
-            Background about installing Slack apps with OAuth
-          </a>
-        </li>
-      </ul>
-
-      <form id="save-form-custom-oauth" method="post" action="/slack/custom-oauth">
-        <div class="form-group">
-          <label for="client_id">Client ID</label>
-          <input
-            type="text"
+            id="clientId"
             name="client_id"
             autocomplete="off"
             spellcheck="false"
+            disabled
             required
           />
         </div>
 
         <div class="form-group">
-          <label for="client_secret">Client Secret</label>
+          <label for="client_secret">Client Secret <i>(required)</i></label>
           <input
             type="text"
+            id="clientSecret"
             name="client_secret"
             autocomplete="off"
             spellcheck="false"
+            disabled
             required
           />
         </div>
 
         <div class="form-group">
-          <label for="signing_secret">Signing Secret</label>
+          <label for="signing_secret">Signing Secret <i>(required)</i></label>
           <input
             type="text"
+            id="signingSecret"
             name="signing_secret"
             autocomplete="off"
             spellcheck="false"
+            disabled
+            required
+          />
+        </div>
+      </div>
+
+      <div id="privateSocketModeSection" class="hidden">
+        <h2>Private Socket Mode</h2>
+
+        <div class="form-group">
+          <label for="bot_token">Bot token <i>("xoxb", required)</i></label>
+          <input
+            type="text"
+            id="botToken"
+            name="bot_token"
+            autocomplete="off"
+            spellcheck="false"
+            disabled
             required
           />
         </div>
 
-        <button type="submit" class="submit-btn">Start Custom OAuth Flow</button>
-      </form>
-    </div>
+        <div class="form-group">
+          <label for="app_token">App-Level Token <i>("xapp", required)</i></label>
+          <input
+            type="text"
+            id="appToken"
+            name="app_token"
+            autocomplete="off"
+            spellcheck="false"
+            disabled
+            required
+          />
+        </div>
+      </div>
 
-    <!-- TODO(ENG-799) -->
-    <script>
-      const queryString = window.location.search;
-      document
-        .getElementById("oauth-link")
-        .setAttribute("href", "/oauth/start/slack" + queryString);
-      document
-        .getElementById("save-tokens-form")
-        .setAttribute("action", "/slack/save" + queryString);
-      document
-        .getElementById("save-form-custom-oauth")
-        .setAttribute("action", "/slack/custom-oauth" + queryString);
-    </script>
+      <button type="submit" class="submit-btn" id="submit">
+        Start OAuth Flow
+      </button>
+    </form>
   </body>
 </html>
