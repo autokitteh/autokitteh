@@ -15,8 +15,8 @@ const (
 	SlashCommandPath = "/slack/command"
 )
 
-// See https://api.slack.com/interactivity/slash-commands#app_command_handling
-// and https://api.slack.com/types/event.
+// https://api.slack.com/interactivity/slash-commands#app_command_handling
+// https://api.slack.com/types/event
 type SlashCommand struct {
 	// Unique identifier of the Slack workspace where the event occurred.
 	TeamID string

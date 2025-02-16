@@ -1,22 +1,39 @@
-// Switch between 2 available modes: Socket Mode, and OAuth v2.
+// Copy the connection ID and origin query parameters from the URL to
+// the form, i.e. pass them through to the connection saving endpoint.
+const urlParams = new URLSearchParams(window.location.search);
+document.getElementById("cid").value = urlParams.get("cid") ?? "";
+document.getElementById("origin").value = urlParams.get("origin") ?? "";
 
-function toggleTab(id) {
-    // Update the toggle buttons.
-    const buttons = document.getElementsByClassName("toggle");
-    for (let i = 0; i < buttons.length; i++) {
-      buttons[i].classList.remove("active");
-    }
-    document.getElementById("toggle" + id).classList.add("active");
-  
-    // Update the tab contents.
-    const tabs = document.getElementsByClassName("tab");
-    for (let i = 0; i < tabs.length; i++) {
-      tabs[i].classList.remove("active");
-    }
-    document.getElementById(id).classList.add("active");
+// Show/hide fields based on the selected auth type.
+document.getElementById("authType").addEventListener("change", function () {
+  const isDefaultApp = this.value === "oauthDefault";
+  const isOauthPrivate = this.value === "oauthPrivate";
+
+  const privateOauthSection = document.getElementById("privateOauthSection");
+  if (isOauthPrivate) {
+    privateOauthSection.classList.remove("hidden");
+  } else {
+    privateOauthSection.classList.add("hidden");
   }
-  
-  window.onload = function () {
-    toggleTab("tab1");
-  };
-  
+  document.getElementById("clientId").disabled = !isOauthPrivate;
+  document.getElementById("clientSecret").disabled = !isOauthPrivate;
+  document.getElementById("signingSecret").disabled = !isOauthPrivate;
+
+  const privateSocketModeSection = document.getElementById(
+    "privateSocketModeSection"
+  );
+  if (isDefaultApp || isOauthPrivate) {
+    privateSocketModeSection.classList.add("hidden");
+  } else {
+    privateSocketModeSection.classList.remove("hidden");
+  }
+  document.getElementById("botToken").disabled = isDefaultApp || isOauthPrivate;
+  document.getElementById("appToken").disabled = isDefaultApp || isOauthPrivate;
+
+  const submitButton = document.getElementById("submit");
+  if (isDefaultApp || isOauthPrivate) {
+    submitButton.textContent = "Start OAuth Flow";
+  } else {
+    submitButton.textContent = "Save Connection";
+  }
+});

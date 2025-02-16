@@ -1,109 +1,104 @@
 package slack
 
 import (
+	"context"
 	"errors"
 	"net/http"
 
 	"go.uber.org/zap"
+	"golang.org/x/oauth2"
 
-	"go.autokitteh.dev/autokitteh/integrations"
-	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
-	"go.autokitteh.dev/autokitteh/integrations/slack/api/auth"
-	"go.autokitteh.dev/autokitteh/integrations/slack/api/bots"
-	"go.autokitteh.dev/autokitteh/integrations/slack/internal/vars"
+	"go.autokitteh.dev/autokitteh/integrations/common"
+	"go.autokitteh.dev/autokitteh/integrations/slack/api"
+	"go.autokitteh.dev/autokitteh/integrations/slack/vars"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
-	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-// handler is an autokitteh webhook which implements [http.Handler]
-// to receive and dispatch asynchronous event notifications.
-type handler struct {
-	logger *zap.Logger
-	vars   sdkservices.Vars
-}
-
-func NewHandler(l *zap.Logger, v sdkservices.Vars) handler {
-	return handler{logger: l, vars: v}
-}
-
-// ServeHTTP receives an inbound redirect request from autokitteh's OAuth
-// management service. This request contains an OAuth token (if the OAuth
-// flow was successful) and form parameters for debugging and validation
-// (either way). If all is well, it saves a new autokitteh connection.
-// Either way, it redirects the user to success or failure webpages.
-func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+// handleOAuth receives an incoming redirect request from AutoKitteh's
+// generic OAuth service, which contains an OAuth token (if the OAuth
+// flow was successful) and form parameters for debugging and validation.
+// This is the last step in a 3-legged OAuth 2.0 flow, in which we verify
+// the usability of the OAuth token, and save it as connection variables.
+func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, desc)
 
-	// Handle errors (e.g. the user didn't authorize us) based on:
-	// https://developers.google.com/identity/protocols/oauth2/web-server#handlingresponse
-	e := r.FormValue("error")
-	if e != "" {
-		l.Warn("OAuth redirect request reported an error", zap.Error(errors.New(e)))
-		c.AbortBadRequest(e)
+	// Parse the GET request's query params.
+	if err := r.ParseForm(); err != nil {
+		l.Warn("save connection after OAuth flow: failed to parse HTTP request", zap.Error(err))
+		c.AbortBadRequest("request parsing error")
 		return
 	}
 
-	raw, data, err := sdkintegrations.GetOAuthDataFromURL(r.URL)
-	if err != nil {
-		l.Warn("Invalid data in OAuth redirect request", zap.Error(err))
-		c.AbortBadRequest("invalid data parameter")
-		return
-	}
-
-	oauthToken := data.Token
-	if oauthToken == nil {
-		l.Warn("Missing token in OAuth redirect request", zap.Any("data", data))
-		c.AbortBadRequest("missing OAuth token")
-		return
-	}
-
-	// Test the OAuth token's usability and get authoritative installation details.
-	ctx := extrazap.AttachLoggerToContext(l, r.Context())
-	authTest, err := auth.TestWithToken(ctx, oauthToken.AccessToken)
-	if err != nil {
-		l.Warn("Slack OAuth token test failed", zap.Error(err))
-		e := "token auth test failed: " + err.Error()
-		c.AbortBadRequest(e)
-		return
-	}
-
-	botInfo, err := bots.InfoWithToken(ctx, oauthToken.AccessToken, authTest)
-	if err != nil {
-		l.Warn("Slack bot info request failed", zap.Error(err))
-		e := "bot info request failed: " + err.Error()
-		c.AbortBadRequest(e)
-		return
-	}
-
-	// Check if the connection is using a private OAuth app.
+	// Sanity check: the connection ID is valid.
 	cid, err := sdktypes.StrictParseConnectionID(c.ConnectionID)
 	if err != nil {
-		l.Warn("invalid connection ID", zap.Error(err))
+		l.Warn("save connection after OAuth flow: invalid connection ID", zap.Error(err))
 		c.AbortBadRequest("invalid connection ID")
 		return
 	}
 
-	vs, err := h.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
-	if err != nil {
-		l.Warn("Failed to get connection vars", zap.Error(err))
-		c.AbortBadRequest("failed to get connection vars")
+	// Handle OAuth errors (e.g. the user didn't authorize us), based on:
+	// https://developers.google.com/identity/protocols/oauth2/web-server#handlingresponse
+	e := r.FormValue("error")
+	if e != "" {
+		l.Warn("OAuth redirection reported an error", zap.Error(errors.New(e)))
+		c.AbortBadRequest(e)
 		return
 	}
 
-	at := integrations.OAuthDefault
-	if vs.GetValue(vars.ClientSecret) != "" {
-		at = integrations.OAuthPrivate
+	// Decode the OAuth token.
+	var data sdkintegrations.OAuthData
+	err = kittehs.DecodeURLData(r.FormValue("oauth"), &data)
+	if err != nil {
+		l.Error("OAuth redirection returned invalid results", zap.Error(err))
+		c.AbortServerError("invalid OAuth data")
+		return
 	}
 
-	key := vars.KeyValue(botInfo.Bot.AppID, authTest.EnterpriseID, authTest.TeamID)
-	c.Finalize(sdktypes.EncodeVars(vars.Vars{
-		AppID:        botInfo.Bot.AppID,
-		EnterpriseID: authTest.EnterpriseID,
-		TeamID:       authTest.TeamID,
-	}).
-		Set(vars.KeyName, key, false).
-		Set(vars.OAuthDataName, raw, true).
-		Set(vars.AuthType, at, false).
-		Append(data.ToVars()...))
+	// Test the token's usability and get authoritative installation details.
+	ctx := r.Context()
+	auth, err := api.AuthTest(ctx, data.Token.AccessToken)
+	if err != nil {
+		l.Warn("Slack OAuth token auth test failed", zap.Error(err))
+		c.AbortBadRequest("token auth test failed")
+		return
+	}
+
+	bot, err := api.BotsInfo(ctx, data.Token.AccessToken, auth)
+	if err != nil {
+		l.Warn("Slack OAuth bot info request failed", zap.Error(err))
+		c.AbortBadRequest("bot info request failed")
+		return
+	}
+
+	vsid := sdktypes.NewVarScopeID(cid)
+	info := encodeInstallInfo(auth, bot)
+	if err := h.saveConnection(ctx, vsid, data.Token, info); err != nil {
+		l.Error("failed to save OAuth connection details", zap.Error(err))
+		c.AbortServerError("failed to save connection details")
+		return
+	}
+
+	// Redirect the user back to the UI.
+	urlPath, err := c.FinalURL()
+	if err != nil {
+		l.Error("failed to construct final OAuth URL", zap.Error(err))
+		c.AbortServerError("bad redirect URL")
+		return
+	}
+
+	http.Redirect(w, r, urlPath, http.StatusFound)
+}
+
+// saveConnection saves OAuth token details as connection variables.
+func (h handler) saveConnection(ctx context.Context, vsid sdktypes.VarScopeID, t *oauth2.Token, i vars.InstallInfo) error {
+	if t == nil {
+		return errors.New("OAuth redirection missing token data")
+	}
+
+	vs := sdktypes.EncodeVars(common.EncodeOAuthData(t))
+	vs = vs.Append(sdktypes.EncodeVars(i)...)
+	return h.vars.Set(ctx, vs.WithScopeID(vsid)...)
 }

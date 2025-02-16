@@ -30,9 +30,13 @@ def slack_client(connection: str, **kwargs) -> WebClient:
     """
     check_connection_name(connection)
 
-    bot_token = os.getenv(connection + "__oauth_AccessToken")  # OAuth v2
+    bot_token = os.getenv(connection + "__oauth_access_token")  # OAuth v2
     if not bot_token:
-        bot_token = os.getenv(connection + "__BotToken")  # Socket Mode
+        bot_token = os.getenv(connection + "__private_bot_token")  # Socket Mode
+    if not bot_token:  # TODO(INT-267): Remove this old env var check.
+        bot_token = os.getenv(connection + "__oauth_AccessToken")
+    if not bot_token:  # TODO(INT-267): Remove this old env var check.
+        bot_token = os.getenv(connection + "__BotToken")
     if not bot_token:
         raise ConnectionInitError(connection)
 
