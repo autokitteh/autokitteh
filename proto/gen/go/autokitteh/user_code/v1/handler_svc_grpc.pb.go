@@ -28,6 +28,7 @@ const (
 	HandlerService_NextEvent_FullMethodName         = "/autokitteh.user_code.v1.HandlerService/NextEvent"
 	HandlerService_Unsubscribe_FullMethodName       = "/autokitteh.user_code.v1.HandlerService/Unsubscribe"
 	HandlerService_StartSession_FullMethodName      = "/autokitteh.user_code.v1.HandlerService/StartSession"
+	HandlerService_SysCall_FullMethodName           = "/autokitteh.user_code.v1.HandlerService/SysCall"
 	HandlerService_EncodeJWT_FullMethodName         = "/autokitteh.user_code.v1.HandlerService/EncodeJWT"
 	HandlerService_RefreshOAuthToken_FullMethodName = "/autokitteh.user_code.v1.HandlerService/RefreshOAuthToken"
 	HandlerService_Health_FullMethodName            = "/autokitteh.user_code.v1.HandlerService/Health"
@@ -52,6 +53,7 @@ type HandlerServiceClient interface {
 	NextEvent(ctx context.Context, in *NextEventRequest, opts ...grpc.CallOption) (*NextEventResponse, error)
 	Unsubscribe(ctx context.Context, in *UnsubscribeRequest, opts ...grpc.CallOption) (*UnsubscribeResponse, error)
 	StartSession(ctx context.Context, in *StartSessionRequest, opts ...grpc.CallOption) (*StartSessionResponse, error)
+	SysCall(ctx context.Context, in *SysCallRequest, opts ...grpc.CallOption) (*SysCallResponse, error)
 	// Utility functions
 	EncodeJWT(ctx context.Context, in *EncodeJWTRequest, opts ...grpc.CallOption) (*EncodeJWTResponse, error)
 	RefreshOAuthToken(ctx context.Context, in *RefreshRequest, opts ...grpc.CallOption) (*RefreshResponse, error)
@@ -157,6 +159,16 @@ func (c *handlerServiceClient) StartSession(ctx context.Context, in *StartSessio
 	return out, nil
 }
 
+func (c *handlerServiceClient) SysCall(ctx context.Context, in *SysCallRequest, opts ...grpc.CallOption) (*SysCallResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SysCallResponse)
+	err := c.cc.Invoke(ctx, HandlerService_SysCall_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *handlerServiceClient) EncodeJWT(ctx context.Context, in *EncodeJWTRequest, opts ...grpc.CallOption) (*EncodeJWTResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(EncodeJWTResponse)
@@ -215,6 +227,7 @@ type HandlerServiceServer interface {
 	NextEvent(context.Context, *NextEventRequest) (*NextEventResponse, error)
 	Unsubscribe(context.Context, *UnsubscribeRequest) (*UnsubscribeResponse, error)
 	StartSession(context.Context, *StartSessionRequest) (*StartSessionResponse, error)
+	SysCall(context.Context, *SysCallRequest) (*SysCallResponse, error)
 	// Utility functions
 	EncodeJWT(context.Context, *EncodeJWTRequest) (*EncodeJWTResponse, error)
 	RefreshOAuthToken(context.Context, *RefreshRequest) (*RefreshResponse, error)
@@ -256,6 +269,9 @@ func (UnimplementedHandlerServiceServer) Unsubscribe(context.Context, *Unsubscri
 }
 func (UnimplementedHandlerServiceServer) StartSession(context.Context, *StartSessionRequest) (*StartSessionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StartSession not implemented")
+}
+func (UnimplementedHandlerServiceServer) SysCall(context.Context, *SysCallRequest) (*SysCallResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SysCall not implemented")
 }
 func (UnimplementedHandlerServiceServer) EncodeJWT(context.Context, *EncodeJWTRequest) (*EncodeJWTResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method EncodeJWT not implemented")
@@ -452,6 +468,24 @@ func _HandlerService_StartSession_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _HandlerService_SysCall_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SysCallRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HandlerServiceServer).SysCall(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HandlerService_SysCall_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HandlerServiceServer).SysCall(ctx, req.(*SysCallRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _HandlerService_EncodeJWT_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(EncodeJWTRequest)
 	if err := dec(in); err != nil {
@@ -566,6 +600,10 @@ var HandlerService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "StartSession",
 			Handler:    _HandlerService_StartSession_Handler,
+		},
+		{
+			MethodName: "SysCall",
+			Handler:    _HandlerService_SysCall_Handler,
 		},
 		{
 			MethodName: "EncodeJWT",

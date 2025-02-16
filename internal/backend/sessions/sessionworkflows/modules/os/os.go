@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
+	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkexecutor"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
@@ -22,6 +23,8 @@ var (
 
 	retCtor = sdktypes.NewSymbolValue(kittehs.Must1(sdktypes.ParseSymbol("exec")))
 )
+
+func init() { modules.Register(ExecutorID) }
 
 func New() sdkexecutor.Executor {
 	return fixtures.NewBuiltinExecutor(

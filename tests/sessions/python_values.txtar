@@ -1,0 +1,8 @@
+meow
+
+-- main.py:main --
+import autokitteh as ak
+
+def main(event):
+    ak.set_value("cat", "meow")
+    print(ak.get_value("cat"))

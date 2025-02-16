@@ -518,7 +518,7 @@ func ParseSignal(r *Signal) (*types.Signal, error) {
 type Value struct {
 	Base
 
-	ProjectID uuid.UUID `gorm:"index;type:uuid;not null"`
+	ProjectID uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
 	Key       string    `gorm:"primaryKey;not null"`
 	Value     []byte
 

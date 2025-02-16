@@ -32,6 +32,17 @@ message DoneRequest {
 
 message DoneResponse {}
 
+message SysCallRequest {
+  string runner_id = 1;
+  repeated autokitteh.values.v1.Value args = 3;
+  map<string, autokitteh.values.v1.Value> kwargs = 4;
+}
+
+message SysCallResponse {
+  autokitteh.values.v1.Value value = 1;
+  string error = 2;
+}
+
 message SleepRequest {
   string runner_id = 1;
   int64 duration_ms = 2;
@@ -140,6 +151,7 @@ message HandlerHealthRequest {}
 message HandlerHealthResponse {
   string error = 1;
 }
+
 service HandlerService {
   // Runner starting activity
   rpc Activity(ActivityRequest) returns (ActivityResponse) {}
@@ -156,6 +168,7 @@ service HandlerService {
   rpc NextEvent(NextEventRequest) returns (NextEventResponse) {}
   rpc Unsubscribe(UnsubscribeRequest) returns (UnsubscribeResponse) {}
   rpc StartSession(StartSessionRequest) returns (StartSessionResponse) {}
+  rpc SysCall(SysCallRequest) returns (SysCallResponse) {}
 
   // Utility functions
   rpc EncodeJWT(EncodeJWTRequest) returns (EncodeJWTResponse) {}

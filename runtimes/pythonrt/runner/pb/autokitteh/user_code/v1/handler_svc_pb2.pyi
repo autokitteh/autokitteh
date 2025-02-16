@@ -57,6 +57,31 @@ class DoneResponse(_message.Message):
     __slots__ = []
     def __init__(self) -> None: ...
 
+class SysCallRequest(_message.Message):
+    __slots__ = ["runner_id", "args", "kwargs"]
+    class KwargsEntry(_message.Message):
+        __slots__ = ["key", "value"]
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: _values_pb2.Value
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[_Union[_values_pb2.Value, _Mapping]] = ...) -> None: ...
+    RUNNER_ID_FIELD_NUMBER: _ClassVar[int]
+    ARGS_FIELD_NUMBER: _ClassVar[int]
+    KWARGS_FIELD_NUMBER: _ClassVar[int]
+    runner_id: str
+    args: _containers.RepeatedCompositeFieldContainer[_values_pb2.Value]
+    kwargs: _containers.MessageMap[str, _values_pb2.Value]
+    def __init__(self, runner_id: _Optional[str] = ..., args: _Optional[_Iterable[_Union[_values_pb2.Value, _Mapping]]] = ..., kwargs: _Optional[_Mapping[str, _values_pb2.Value]] = ...) -> None: ...
+
+class SysCallResponse(_message.Message):
+    __slots__ = ["value", "error"]
+    VALUE_FIELD_NUMBER: _ClassVar[int]
+    ERROR_FIELD_NUMBER: _ClassVar[int]
+    value: _values_pb2.Value
+    error: str
+    def __init__(self, value: _Optional[_Union[_values_pb2.Value, _Mapping]] = ..., error: _Optional[str] = ...) -> None: ...
+
 class SleepRequest(_message.Message):
     __slots__ = ["runner_id", "duration_ms"]
     RUNNER_ID_FIELD_NUMBER: _ClassVar[int]

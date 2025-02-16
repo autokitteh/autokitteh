@@ -386,6 +386,37 @@ func (s *workerGRPCHandler) Unsubscribe(ctx context.Context, req *userCode.Unsub
 	}
 }
 
+func (s *workerGRPCHandler) SysCall(ctx context.Context, req *userCode.SysCallRequest) (*userCode.SysCallResponse, error) {
+	w.mu.Lock()
+	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
+	w.mu.Unlock()
+	if !ok {
+		w.log.Error("unknown runner ID", zap.String("id", req.RunnerId))
+		return &userCode.SysCallResponse{Error: "Unknown runner id"}, nil
+	}
+
+	args, err := kittehs.TransformError(req.Args, sdktypes.WrapValue)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "can't wrap args: %s", err)
+	}
+
+	kwargs, err := kittehs.TransformMapValuesError(req.Kwargs, sdktypes.WrapValue)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "can't wrap kwargs: %s", err)
+	}
+
+	msg := makeCallbackMessage(args, kwargs)
+	runner.channels.callback <- msg
+
+	select {
+	case err := <-msg.errorChannel:
+		err = status.Errorf(codes.Internal, "syscall(...) -> %s", err)
+		return &userCode.SysCallResponse{Error: err.Error()}, err
+	case v := <-msg.successChannel:
+		return &userCode.SysCallResponse{Value: v.ToProto()}, nil
+	}
+}
+
 func (s *workerGRPCHandler) EncodeJWT(ctx context.Context, req *userCode.EncodeJWTRequest) (*userCode.EncodeJWTResponse, error) {
 	// GitHub's JWTs must be signed using the RS256 algorithm:
 	// https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-a-json-web-token-jwt-for-a-github-app

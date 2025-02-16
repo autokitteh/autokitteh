@@ -10,6 +10,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncontext"
+	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkexecutor"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
@@ -17,6 +18,8 @@ import (
 )
 
 var ExecutorID = sdktypes.NewExecutorID(fixtures.NewBuiltinIntegrationID("testtools"))
+
+func init() { modules.Register(ExecutorID) }
 
 var (
 	// A soft error is a regular call error, can be interpreted as regular integration error.

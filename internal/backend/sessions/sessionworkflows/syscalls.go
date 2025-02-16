@@ -12,6 +12,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncontext"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -22,6 +23,7 @@ const (
 	subscribeOp   = "subscribe"
 	nextEventOp   = "next_event"
 	unsubscribeOp = "unsubscribe"
+	valueOp       = "value"
 )
 
 func (w *sessionWorkflow) syscall(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
@@ -48,9 +50,32 @@ func (w *sessionWorkflow) syscall(ctx context.Context, args []sdktypes.Value, kw
 		return w.nextEvent(ctx, args, kwargs)
 	case unsubscribeOp:
 		return w.unsubscribe(ctx, args, kwargs)
+	case valueOp:
+		return w.value(ctx, args, kwargs)
 	default:
 		return sdktypes.InvalidValue, fmt.Errorf("unknown op %q", op)
 	}
+}
+
+func (w *sessionWorkflow) value(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+	if len(args) < 1 {
+		return sdktypes.InvalidValue, sdkerrors.NewInvalidArgumentError("expecting more than a single arg")
+	}
+
+	op, args := args[0], args[1:]
+
+	if !op.IsString() {
+		return sdktypes.InvalidValue, sdkerrors.NewInvalidArgumentError("op must be a string")
+	}
+
+	opstr := op.GetString().Value()
+
+	v, ok := w.values.Values()[opstr]
+	if !ok {
+		return sdktypes.InvalidValue, sdkerrors.NewInvalidArgumentError("unknown op %q", opstr)
+	}
+
+	return w.values.Call(ctx, v, args, kwargs)
 }
 
 func (w *sessionWorkflow) sleep(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {

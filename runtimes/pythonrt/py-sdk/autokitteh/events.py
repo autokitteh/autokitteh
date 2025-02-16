@@ -34,3 +34,15 @@ def start(loc: str, data: dict[str, any], memo: dict[str, str] = None) -> str:
     """Start a new session."""
     # Dummy implementation for local development.
     pass
+
+
+def get_value(key: str) -> any:
+    """Get a stored value."""
+    # Dummy implementation for local development.
+    pass
+
+
+def set_value(key: str, value: any) -> any:
+    """Set a stored value."""
+    # Dummy implementation for local development.
+    pass

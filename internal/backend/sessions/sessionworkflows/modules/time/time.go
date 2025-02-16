@@ -10,12 +10,15 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncontext"
+	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules"
 	"go.autokitteh.dev/autokitteh/sdk/sdkexecutor"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 var ExecutorID = sdktypes.NewExecutorID(fixtures.NewBuiltinIntegrationID("time"))
+
+func init() { modules.Register(ExecutorID) }
 
 func New() sdkexecutor.Executor {
 	return fixtures.NewBuiltinExecutor(

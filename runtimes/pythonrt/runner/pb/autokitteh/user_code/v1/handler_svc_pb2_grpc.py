@@ -59,6 +59,11 @@ class HandlerServiceStub(object):
                 request_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StartSessionRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StartSessionResponse.FromString,
                 _registered_method=True)
+        self.SysCall = channel.unary_unary(
+                '/autokitteh.user_code.v1.HandlerService/SysCall',
+                request_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.SysCallRequest.SerializeToString,
+                response_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.SysCallResponse.FromString,
+                _registered_method=True)
         self.EncodeJWT = channel.unary_unary(
                 '/autokitteh.user_code.v1.HandlerService/EncodeJWT',
                 request_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.EncodeJWTRequest.SerializeToString,
@@ -143,6 +148,12 @@ class HandlerServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def SysCall(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def EncodeJWT(self, request, context):
         """Utility functions
         """
@@ -215,6 +226,11 @@ def add_HandlerServiceServicer_to_server(servicer, server):
                     servicer.StartSession,
                     request_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StartSessionRequest.FromString,
                     response_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StartSessionResponse.SerializeToString,
+            ),
+            'SysCall': grpc.unary_unary_rpc_method_handler(
+                    servicer.SysCall,
+                    request_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.SysCallRequest.FromString,
+                    response_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.SysCallResponse.SerializeToString,
             ),
             'EncodeJWT': grpc.unary_unary_rpc_method_handler(
                     servicer.EncodeJWT,
@@ -480,6 +496,33 @@ class HandlerService(object):
             '/autokitteh.user_code.v1.HandlerService/StartSession',
             autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StartSessionRequest.SerializeToString,
             autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StartSessionResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def SysCall(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/autokitteh.user_code.v1.HandlerService/SysCall',
+            autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.SysCallRequest.SerializeToString,
+            autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.SysCallResponse.FromString,
             options,
             channel_credentials,
             insecure,

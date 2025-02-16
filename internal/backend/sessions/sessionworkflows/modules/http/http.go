@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
+	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkexecutor"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
@@ -25,6 +26,8 @@ import (
 // https://github.com/qri-io/starlib/blob/master/http/http.go#L59)
 
 var ExecutorID = sdktypes.NewExecutorID(fixtures.NewBuiltinIntegrationID("http"))
+
+func init() { modules.Register(ExecutorID) }
 
 const (
 	authHeader        = "Authorization"

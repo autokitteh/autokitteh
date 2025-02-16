@@ -12,6 +12,7 @@ import log
 import pb.autokitteh.user_code.v1.handler_svc_pb2 as pb
 import pb.autokitteh.user_code.v1.handler_svc_pb2_grpc as rpc
 from autokitteh import AttrDict
+import values
 
 
 class SyscallError(Exception):
@@ -24,12 +25,12 @@ class SysCalls:
         self.worker: rpc.WorkerStub = worker
 
     def call(self, fn, args, kw):
-        method = getattr(self, "ak_" + fn.__name__, None)
+        method = getattr(self, "_ak_" + fn.__name__, None)
         if method is None:
             raise ValueError(f"unknown ak function: {fn.__name__!r}")
         return method(args, kw)
 
-    def ak_start(self, args, kw):
+    def _ak_start(self, args, kw):
         log.info("ak_start: %r %r", args, kw)
         (loc, data, memo) = extract_args(["loc", "data?", "memo?"], args, kw)
 
@@ -66,7 +67,7 @@ class SysCalls:
         resp = call_grpc("start", self.worker.StartSession, req)
         return resp.session_id
 
-    def ak_sleep(self, args, kw):
+    def _ak_sleep(self, args, kw):
         log.info("ak_sleep: %r %r", args, kw)
         (secs,) = extract_args(["secs"], args, kw)
         if secs < 0:
@@ -79,7 +80,7 @@ class SysCalls:
 
         call_grpc("sleep", self.worker.Sleep, req)
 
-    def ak_subscribe(self, args, kw):
+    def _ak_subscribe(self, args, kw):
         log.info("ak_subscribe: %r %r", args, kw)
         connection_id, filter = extract_args(["connection_name", "filter"], args, kw)
         if not connection_id or not filter:
@@ -91,7 +92,7 @@ class SysCalls:
         resp = call_grpc("subscribe", self.worker.Subscribe, req)
         return resp.signal_id
 
-    def ak_next_event(self, args, kw):
+    def _ak_next_event(self, args, kw):
         log.info("ak_next_event: %r %r", args, kw)
         (
             ids,
@@ -123,7 +124,7 @@ class SysCalls:
 
         return AttrDict(data) if isinstance(data, dict) else data
 
-    def ak_unsubscribe(self, args, kw):
+    def _ak_unsubscribe(self, args, kw):
         (id,) = extract_args(["subscription_id"], args, kw)
         if not id:
             raise ValueError("empty subscription_id")
@@ -131,6 +132,29 @@ class SysCalls:
         req = pb.UnsubscribeRequest(runner_id=self.runner_id, signal_id=id)
         call_grpc("unsubscribe", self.worker.Unsubscribe, req)
 
+    def _ak_set_value(self, args, kw):
+        wargs = [values.wrap(a) for a in args]
+        wkw = {k: values.wrap(v) for k, v in kw.items()}
+
+        call_grpc(
+            "set_value",
+            self.worker.SysCall,
+            pb.SysCallRequest(runner_id=self.runner_id, args=wargs, kwargs=wkw),
+        )
+
+    def _ak_get_value(self, args, kw):
+        wargs = [values.wrap(a) for a in args]
+        wkw = {k: values.wrap(v) for k, v in kw.items()}
+
+        resp = call_grpc(
+            "get_value",
+            self.worker.SysCall,
+            pb.SysCallRequest(runner_id=self.runner_id, args=wargs, kwargs=wkw),
+        )
+
+        return resp.value
+
+    # This does not go through `call`.
     def ak_encode_jwt(self, payload: dict[str, int], connection: str, algorithm: str):
         req = pb.EncodeJWTRequest(
             runner_id=self.runner_id,
@@ -143,6 +167,7 @@ class SysCalls:
             raise SyscallError(f"encode_jwt: {resp.error}")
         return resp.jwt
 
+    # This does not go through `call`.
     def ak_refresh_oauth(self, integration: str, connection: str):
         req = pb.RefreshRequest(
             runner_id=self.runner_id,

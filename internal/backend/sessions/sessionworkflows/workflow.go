@@ -19,9 +19,9 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessiondata"
 	httpmodule "go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/http"
 	osmodule "go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/os"
-	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/store"
 	testtoolsmodule "go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/testtools"
 	timemodule "go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/time"
+	valuesmodule "go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/values"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/backend/types"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -53,6 +53,8 @@ type sessionWorkflow struct {
 	globals   map[string]sdktypes.Value
 
 	callSeq uint32
+
+	values sdkexecutor.Executor
 
 	lastReadEventSeqForSignal map[uuid.UUID]uint64 // map signals to last read event seq num.
 }
@@ -257,11 +259,13 @@ func (w *sessionWorkflow) initConnections(wctx workflow.Context) (map[string]con
 }
 
 func (w *sessionWorkflow) initGlobalModules() (map[string]sdktypes.Value, error) {
+	w.values = valuesmodule.New(w.data.Session.ProjectID(), w.ws.svcs.DB)
+
 	execs := map[string]sdkexecutor.Executor{
-		"ak":    w.newModule(),
-		"time":  timemodule.New(),
-		"http":  httpmodule.New(),
-		"store": store.New(w.data.Session.ProjectID(), w.ws.svcs.RedisClient),
+		"ak":     w.newModule(),
+		"time":   timemodule.New(),
+		"http":   httpmodule.New(),
+		"values": w.values,
 	}
 
 	vs := make(map[string]sdktypes.Value, len(execs))
