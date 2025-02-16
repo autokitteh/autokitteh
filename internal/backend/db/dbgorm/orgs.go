@@ -48,17 +48,16 @@ func (gdb *gormdb) DeleteOrg(ctx context.Context, oid sdktypes.OrgID) error {
 
 	return translateError(gdb.writeTransaction(ctx, func(tx *gormdb) error {
 		var org scheme.Org
-		err := tx.writer.
+		err := tx.writer.Clauses(clause.Locking{Strength: "UPDATE"}).
 			Model(&scheme.Org{}).
-			Where("org_id = ?", oid.UUIDValue()).
-			Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("org_id = ? AND deleted_at IS NULL", oid.UUIDValue()).
 			First(&org).Error
 		if err != nil {
 			return err
 		}
 
 		result := tx.writer.Model(&scheme.Org{}).
-			Where("org_id = ? AND deleted_at IS NULL", oid.UUIDValue()).
+			Where("org_id = ?", oid.UUIDValue()).
 			Where("NOT EXISTS (SELECT 1 FROM projects p WHERE p.org_id = orgs.org_id AND p.deleted_at IS NULL)").
 			Updates(map[string]interface{}{
 				"name":       oid.UUIDValue().String(),
@@ -119,23 +118,6 @@ func (gdb *gormdb) CreateOrg(ctx context.Context, o sdktypes.Org) (sdktypes.OrgI
 	}
 
 	return oid, nil
-}
-
-func (gdb *gormdb) doesOrgHasProject(ctx context.Context, oid sdktypes.OrgID) (bool, error) {
-	var exist bool
-	q := gdb.writer.WithContext(ctx)
-
-	q = q.Model(&scheme.Project{}).
-		Select("1").
-		Where("org_id = ?", oid.UUIDValue()).
-		Where("deleted_at IS NULL").
-		Limit(1)
-
-	err := q.Find(&exist).Error
-	if err != nil {
-		return false, fmt.Errorf("failed to check projects in organization  %w", err) // TODO: check if there is a need for the error message
-	}
-	return exist, err
 }
 
 func (gdb *gormdb) UpdateOrg(ctx context.Context, o sdktypes.Org, fm *sdktypes.FieldMask) error {
