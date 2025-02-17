@@ -23,5 +23,5 @@ type Svcs struct {
 	Vars         sdkservices.Vars
 
 	RedisClient *redis.Client
-	Temporal    temporalclient.LazyTemporalClient
+	Temporal    temporalclient.Client
 }

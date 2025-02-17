@@ -2,7 +2,6 @@ package sessionworkflows
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -11,6 +10,7 @@ import (
 	enumspb "go.temporal.io/api/enums/v1"
 	historypb "go.temporal.io/api/history/v1"
 	"go.temporal.io/api/serviceerror"
+	"go.temporal.io/sdk/converter"
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
@@ -49,7 +49,7 @@ func (ws *workflows) GetWorkflowLog(ctx context.Context, filter sdkservices.Sess
 
 	var rs []sdktypes.SessionLogRecord
 
-	iter := ws.svcs.Temporal().GetWorkflowHistory(
+	iter := ws.svcs.Temporal.TemporalClient().GetWorkflowHistory(
 		ctx,
 		workflowID(filter.SessionID),
 		"",
@@ -116,7 +116,7 @@ func (ws *workflows) GetWorkflowLog(ctx context.Context, filter sdkservices.Sess
 
 		events[eid] = event
 
-		r, err := parseTemporalHistoryEvent(l, t, event, events, filter.Types)
+		r, err := parseTemporalHistoryEvent(l, t, event, events, filter.Types, ws.svcs.Temporal.DataConverter())
 		if err != nil {
 			return nil, fmt.Errorf("event %d: %w", event.GetEventId(), err)
 		}
@@ -156,7 +156,7 @@ func (ws *workflows) GetWorkflowLog(ctx context.Context, filter sdkservices.Sess
 	}, nil
 }
 
-func parseTemporalHistoryEvent(l *zap.Logger, t time.Time, event *historypb.HistoryEvent, events map[int64]*historypb.HistoryEvent, types sdktypes.SessionLogRecordType) (sdktypes.SessionLogRecord, error) {
+func parseTemporalHistoryEvent(l *zap.Logger, t time.Time, event *historypb.HistoryEvent, events map[int64]*historypb.HistoryEvent, types sdktypes.SessionLogRecordType, dc converter.DataConverter) (sdktypes.SessionLogRecord, error) {
 	switch a := event.Attributes.(type) {
 	case *historypb.HistoryEvent_WorkflowExecutionStartedEventAttributes:
 		if types != 0 && types&sdktypes.StateSessionLogRecordType == 0 {
@@ -229,7 +229,7 @@ func parseTemporalHistoryEvent(l *zap.Logger, t time.Time, event *historypb.Hist
 			}
 
 			var callInputs sessioncalls.CallActivityInputs
-			if err := json.Unmarshal(payloads[0].GetData(), &callInputs); err != nil {
+			if err := dc.FromPayload(payloads[0], &callInputs); err != nil {
 				return sdktypes.InvalidSessionLogRecord, temporalclient.TranslateError(err, "unmarshal activity input")
 			}
 
@@ -247,7 +247,7 @@ func parseTemporalHistoryEvent(l *zap.Logger, t time.Time, event *historypb.Hist
 			}
 
 			var state sdktypes.SessionState
-			if err := json.Unmarshal(payloads[1].GetData(), &state); err != nil {
+			if err := dc.FromPayload(payloads[1], &state); err != nil {
 				return sdktypes.InvalidSessionLogRecord, temporalclient.TranslateError(err, "unmarshal session state")
 			}
 
@@ -265,7 +265,7 @@ func parseTemporalHistoryEvent(l *zap.Logger, t time.Time, event *historypb.Hist
 			}
 
 			var v sdktypes.Value
-			if err := v.UnmarshalJSON(payloads[1].GetData()); err != nil {
+			if err := dc.FromPayload(payloads[1], &v); err != nil {
 				return sdktypes.InvalidSessionLogRecord, temporalclient.TranslateError(err, "unmarshal print text")
 			}
 
@@ -317,8 +317,7 @@ func parseTemporalHistoryEvent(l *zap.Logger, t time.Time, event *historypb.Hist
 		}
 
 		var callOutputs sessioncalls.CallActivityOutputs
-
-		if err := json.Unmarshal(payloads[0].GetData(), &callOutputs); err != nil {
+		if err := dc.FromPayload(payloads[0], &callOutputs); err != nil {
 			return sdktypes.InvalidSessionLogRecord, temporalclient.TranslateError(err, "unmarshal activity input")
 		}
 

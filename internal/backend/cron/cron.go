@@ -81,7 +81,7 @@ func (cr *Cron) Start(ctx context.Context, c sdkservices.Connections, v sdkservi
 	cr.oauth = o
 
 	// Configure a worker for the internal maintenance workflow.
-	w := temporalclient.NewWorker(cr.logger, cr.temporal.Temporal(), taskQueueName, cr.cfg.Worker)
+	w := temporalclient.NewWorker(cr.logger, cr.temporal.TemporalClient(), taskQueueName, cr.cfg.Worker)
 	if w == nil {
 		return nil
 	}
@@ -124,13 +124,13 @@ func (cr *Cron) Start(ctx context.Context, c sdkservices.Connections, v sdkservi
 }
 
 func (cr *Cron) scheduleAlreadyCreated(ctx context.Context) (client.ScheduleHandle, bool) {
-	h := cr.temporal.Temporal().ScheduleClient().GetHandle(ctx, scheduleID)
+	h := cr.temporal.TemporalClient().ScheduleClient().GetHandle(ctx, scheduleID)
 	_, err := h.Describe(ctx)
 	return h, err == nil
 }
 
 func (cr *Cron) createSchedule(ctx context.Context) error {
-	handle, err := cr.temporal.Temporal().ScheduleClient().Create(ctx, client.ScheduleOptions{
+	handle, err := cr.temporal.TemporalClient().ScheduleClient().Create(ctx, client.ScheduleOptions{
 		ID:      scheduleID,
 		Spec:    scheduleSpec,
 		Action:  scheduleAction,

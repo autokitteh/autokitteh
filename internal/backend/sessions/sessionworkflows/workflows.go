@@ -75,7 +75,7 @@ func New(
 }
 
 func (ws *workflows) StartWorkers(ctx context.Context) error {
-	ws.worker = temporalclient.NewWorker(ws.l.Named("sessionworkflowsworker"), ws.svcs.Temporal(), taskQueueName, ws.cfg.Worker)
+	ws.worker = temporalclient.NewWorker(ws.l.Named("sessionworkflowsworker"), ws.svcs.Temporal.TemporalClient(), taskQueueName, ws.cfg.Worker)
 	if ws.worker == nil {
 		return nil
 	}
@@ -136,7 +136,7 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 		return fmt.Errorf("get session data: %w", err)
 	}
 
-	r, err := ws.svcs.Temporal().ExecuteWorkflow(
+	r, err := ws.svcs.Temporal.TemporalClient().ExecuteWorkflow(
 		ctx,
 		ws.cfg.SessionWorkflow.ToStartWorkflowOptions(
 			taskQueueName,
@@ -330,7 +330,7 @@ func (ws *workflows) StopWorkflow(ctx context.Context, sessionID sdktypes.Sessio
 	//
 	// When the workflow is actually stopped, the session state will be updated to stopped by
 	// the workflow itself.
-	if err := ws.svcs.Temporal().CancelWorkflow(ctx, wid, ""); err != nil {
+	if err := ws.svcs.Temporal.TemporalClient().CancelWorkflow(ctx, wid, ""); err != nil {
 		var notFound *serviceerror.NotFound
 		if errors.As(err, &notFound) {
 			// workflow might have already ended?
@@ -362,7 +362,7 @@ func (ws *workflows) StopWorkflow(ctx context.Context, sessionID sdktypes.Sessio
 
 	// run the termination in a separate workflow to avoid having the workflow terminated but not updated in
 	// the db if the caller croaks.
-	r, err := ws.svcs.Temporal().ExecuteWorkflow(
+	r, err := ws.svcs.Temporal.TemporalClient().ExecuteWorkflow(
 		ctx,
 		ws.cfg.TerminationWorkflow.ToStartWorkflowOptions(
 			taskQueueName,

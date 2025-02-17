@@ -28,7 +28,7 @@ type Svcs struct {
 	fx.In
 
 	db.DB
-	temporalclient.LazyTemporalClient
+	Temporal temporalclient.Client
 
 	sdkservices.Connections
 	sdkservices.Deployments
@@ -75,7 +75,7 @@ func (d *Dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *s
 		"process_id":       fixtures.ProcessID(),
 	}
 
-	r, err := d.svcs.LazyTemporalClient().ExecuteWorkflow(
+	r, err := d.svcs.Temporal.TemporalClient().ExecuteWorkflow(
 		ctx,
 		d.cfg.Workflow.ToStartWorkflowOptions(
 			taskQueueName,
@@ -132,7 +132,7 @@ func (d *Dispatcher) Redispatch(ctx context.Context, eventID sdktypes.EventID, o
 }
 
 func (d *Dispatcher) Start(context.Context) error {
-	w := temporalclient.NewWorker(d.sl.Desugar(), d.svcs.LazyTemporalClient(), taskQueueName, d.cfg.Worker)
+	w := temporalclient.NewWorker(d.sl.Desugar(), d.svcs.Temporal.TemporalClient(), taskQueueName, d.cfg.Worker)
 	if w == nil {
 		return nil
 	}

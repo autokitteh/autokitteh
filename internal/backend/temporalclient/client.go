@@ -27,13 +27,13 @@ import (
 )
 
 type (
-	LazyTemporalClient = func() client.Client
-
 	Client interface {
 		Start(context.Context) error
 		Stop(context.Context) error
-		Temporal() client.Client
+		TemporalClient() client.Client
 		TemporalAddr() (frontend, ui string)
+		DataConverter() converter.DataConverter
+
 		healthreporter.HealthReporter
 	}
 )
@@ -48,15 +48,14 @@ type impl struct {
 	opts    client.Options
 }
 
-func NewFromClient(cfg *MonitorConfig, l *zap.Logger, tclient client.Client) (Client, LazyTemporalClient, error) {
+func NewFromTemporalClient(cfg *MonitorConfig, l *zap.Logger, tclient client.Client) (Client, error) {
 	if cfg == nil {
 		cfg = &MonitorConfig{}
 	}
-	return &impl{l: l, cfg: &Config{Monitor: *cfg}, client: tclient, done: make(chan struct{})},
-		func() client.Client { return tclient }, nil
+	return &impl{l: l, cfg: &Config{Monitor: *cfg}, client: tclient, done: make(chan struct{})}, nil
 }
 
-func New(cfg *Config, l *zap.Logger) (Client, LazyTemporalClient, error) {
+func New(cfg *Config, l *zap.Logger) (Client, error) {
 	var tlsConfig *tls.Config
 	if cfg.TLS.Enabled {
 		var cert tls.Certificate
@@ -67,18 +66,18 @@ func New(cfg *Config, l *zap.Logger) (Client, LazyTemporalClient, error) {
 		case cfg.TLS.CertFilePath != "" && cfg.TLS.KeyFilePath != "":
 			cert, err = tls.LoadX509KeyPair(cfg.TLS.CertFilePath, cfg.TLS.KeyFilePath)
 		default:
-			return nil, nil, errors.New("tls enabled without certificate or key")
+			return nil, errors.New("tls enabled without certificate or key")
 		}
 
 		if err != nil {
-			return nil, nil, fmt.Errorf("load x509 key pair: %w", err)
+			return nil, fmt.Errorf("load x509 key pair: %w", err)
 		}
 		tlsConfig = &tls.Config{Certificates: []tls.Certificate{cert}}
 	}
 
 	dc, err := NewDataConverter(l, &cfg.DataConverter, converter.GetDefaultDataConverter())
 	if err != nil {
-		return nil, nil, fmt.Errorf("new data converter: %w", err)
+		return nil, fmt.Errorf("new data converter: %w", err)
 	}
 
 	impl := &impl{
@@ -104,8 +103,10 @@ func New(cfg *Config, l *zap.Logger) (Client, LazyTemporalClient, error) {
 		},
 	}
 
-	return impl, impl.Temporal, nil
+	return impl, nil
 }
+
+func (c *impl) DataConverter() converter.DataConverter { return c.opts.DataConverter }
 
 func (c *impl) startDevServer(ctx context.Context) error {
 	var err error
@@ -160,7 +161,7 @@ func (c *impl) startDevServer(ctx context.Context) error {
 	return nil
 }
 
-func (c *impl) Temporal() client.Client { return c.client }
+func (c *impl) TemporalClient() client.Client { return c.client }
 
 func (c *impl) TemporalAddr() (frontend, ui string) {
 	if c.srv == nil {

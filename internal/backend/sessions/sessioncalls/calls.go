@@ -76,8 +76,9 @@ func New(l *zap.Logger, config Config, svcs *sessionsvcs.Svcs) Calls {
 }
 
 func (cs *calls) StartWorkers(ctx context.Context) error {
-	cs.generalWorker = temporalclient.NewWorker(cs.l.Named("sessionscallsworker"), cs.svcs.Temporal(), generalTaskQueueName, cs.config.GeneralWorker)
-	cs.uniqueWorker = temporalclient.NewWorker(cs.l.Named("sessionscallsworker"), cs.svcs.Temporal(), uniqueWorkerCallTaskQueueName(), cs.config.UniqueWorker)
+	tc := cs.svcs.Temporal.TemporalClient()
+	cs.generalWorker = temporalclient.NewWorker(cs.l.Named("sessionscallsworker"), tc, generalTaskQueueName, cs.config.GeneralWorker)
+	cs.uniqueWorker = temporalclient.NewWorker(cs.l.Named("sessionscallsworker"), tc, uniqueWorkerCallTaskQueueName(), cs.config.UniqueWorker)
 
 	cs.registerActivities()
 

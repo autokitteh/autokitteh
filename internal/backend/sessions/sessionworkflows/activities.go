@@ -252,7 +252,7 @@ func (ws *workflows) terminateSessionWorkflow(wctx workflow.Context, params term
 }
 
 func (ws *workflows) terminateWorkflowActivity(ctx context.Context, sid sdktypes.SessionID, reason string) error {
-	err := ws.svcs.Temporal().TerminateWorkflow(ctx, workflowID(sid), "", reason)
+	err := ws.svcs.Temporal.TemporalClient().TerminateWorkflow(ctx, workflowID(sid), "", reason)
 	if err != nil {
 		// might happen multiple times for some reason, give it a chance to update the state later on.
 		var notFound *serviceerror.NotFound
