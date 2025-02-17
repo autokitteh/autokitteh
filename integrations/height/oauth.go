@@ -8,6 +8,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -40,7 +41,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	// https://developers.google.com/identity/protocols/oauth2/web-server#handlingresponse
 	e := r.FormValue("error")
 	if e != "" {
-		l.Warn("OAuth redirection reported an error", zap.Error(errors.New(e)))
+		l.Warn("OAuth redirection reported an error", zap.String("error", e))
 		c.AbortBadRequest(e)
 		return
 	}
@@ -54,7 +55,8 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Test the OAuth token's usability.
+	// Test the token's usability and get authoritative installation details.
+	// TODO: Reuse "checks.go".
 	ctx := r.Context()
 
 	vsid := sdktypes.NewVarScopeID(cid)
@@ -81,6 +83,6 @@ func (h handler) saveConnection(ctx context.Context, vsid sdktypes.VarScopeID, t
 		return errors.New("OAuth redirection missing token data")
 	}
 
-	vs := sdktypes.EncodeVars(newOAuthData(t))
+	vs := sdktypes.EncodeVars(common.EncodeOAuthData(t))
 	return h.vars.Set(ctx, vs.WithScopeID(vsid)...)
 }

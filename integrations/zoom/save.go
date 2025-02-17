@@ -1,7 +1,6 @@
 package zoom
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -10,6 +9,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations"
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -48,7 +48,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 
 	// Determine what to save and how to proceed.
 	vsid := sdktypes.NewVarScopeID(cid)
-	authType := h.saveAuthType(r.Context(), vsid, r.FormValue("auth_type"))
+	authType := common.SaveAuthType(r, h.vars, vsid)
 	l = l.With(zap.String("auth_type", authType))
 
 	switch authType {
@@ -63,7 +63,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 		app, err := h.savePrivateApp(r, vsid)
 		if err != nil {
 			l.Error("save connection: " + err.Error())
-			c.AbortServerError(err.Error())
+			c.AbortBadRequest(err.Error())
 			return
 		}
 		if app.ClientID == "" || app.ClientSecret == "" {
@@ -79,7 +79,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 		app, err := h.savePrivateApp(r, vsid)
 		if err != nil {
 			l.Error("save connection: " + err.Error())
-			c.AbortServerError(err.Error())
+			c.AbortBadRequest(err.Error())
 			return
 		}
 		if app.AccountID == "" || app.ClientID == "" || app.ClientSecret == "" {
@@ -89,13 +89,13 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 		}
 		if _, err := serverToken(r.Context(), app); err != nil {
 			l.Error("save connection: " + err.Error())
-			c.AbortServerError(err.Error())
+			c.AbortBadRequest(err.Error())
 			return
 		}
 		urlPath, err := c.FinalURL()
 		if err != nil {
 			l.Error("save connection: failed to construct final URL", zap.Error(err))
-			c.AbortServerError("bad redirect URL")
+			c.AbortBadRequest("bad redirect URL")
 			return
 		}
 		http.Redirect(w, r, urlPath, http.StatusFound)
@@ -105,15 +105,6 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 		l.Warn("save connection: unexpected auth type")
 		c.AbortBadRequest(fmt.Sprintf("unexpected auth type %q", authType))
 	}
-}
-
-// saveAuthType saves the authentication type that the user selected for this connection.
-// This will be redundant if/when the only way to initialize connections is via the web UI.
-// Therefore, we do not care if this function fails to save it as a connection variable.
-func (h handler) saveAuthType(ctx context.Context, vsid sdktypes.VarScopeID, authType string) string {
-	v := sdktypes.NewVar(authTypeVar).SetValue(authType)
-	_ = h.vars.Set(ctx, v.WithScopeID(vsid))
-	return authType
 }
 
 // savePrivateApp saves the user-provided details of a private Zoom

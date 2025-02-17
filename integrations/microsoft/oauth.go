@@ -8,6 +8,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/microsoft/connection"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
@@ -41,7 +42,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	// https://developers.google.com/identity/protocols/oauth2/web-server#handlingresponse
 	e := r.FormValue("error")
 	if e != "" {
-		l.Warn("OAuth redirection reported an error", zap.Error(errors.New(e)))
+		l.Warn("OAuth redirection reported an error", zap.String("error", e))
 		c.AbortBadRequest(e)
 		return
 	}
@@ -55,19 +56,19 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Test the OAuth token's usability by getting the org and user info associated with it.
+	// Test the token's usability and get authoritative installation details.
 	ctx := r.Context()
 	org, err := connection.GetOrgInfo(ctx, data.Token)
 	if err != nil {
-		l.Error("failed to fetch organization details", zap.Error(err))
-		c.AbortServerError("organization details error")
+		l.Warn("MS organization details request failed", zap.Error(err))
+		c.AbortServerError("organization details request failed")
 		return
 	}
 
 	user, err := connection.GetUserInfo(ctx, data.Token)
 	if err != nil {
-		l.Error("failed to fetch authenticated user details", zap.Error(err))
-		c.AbortServerError("user details error")
+		l.Warn("MS user details request failed", zap.Error(err))
+		c.AbortServerError("user details request failed")
 		return
 	}
 
@@ -99,13 +100,13 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, urlPath, http.StatusFound)
 }
 
-// saveConnection saves OAuth token, org, and user details as connection variables.
+// saveConnection saves OAuth token details as connection variables.
 func (h handler) saveConnection(ctx context.Context, vsid sdktypes.VarScopeID, t *oauth2.Token, o *connection.OrgInfo, u *connection.UserInfo) error {
 	if t == nil {
 		return errors.New("OAuth redirection missing token data")
 	}
 
-	vs := sdktypes.EncodeVars(connection.NewOAuthData(t))
+	vs := sdktypes.EncodeVars(common.EncodeOAuthData(t))
 	vs = vs.Append(sdktypes.EncodeVars(o)...)
 	vs = vs.Append(sdktypes.EncodeVars(u)...)
 	return h.vars.Set(ctx, vs.WithScopeID(vsid)...)

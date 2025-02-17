@@ -1,7 +1,6 @@
 package salesforce
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -11,6 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations"
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -49,28 +49,25 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 
 	// Determine what to save and how to proceed.
 	vsid := sdktypes.NewVarScopeID(cid)
-	authType := h.saveAuthType(r.Context(), vsid, r.FormValue("auth_type"))
+	authType := common.SaveAuthType(r, h.vars, vsid)
+	l = l.With(zap.String("auth_type", authType))
 
 	switch authType {
+	// First save the user-provided details of a private Zoom OAuth 2.0 app,
+	// and only then redirect to the 3-legged OAuth 2.0 flow's starting point.
 	case integrations.OAuthPrivate:
 		if err := h.savePrivateOAuth(r, vsid); err != nil {
 			l.Error("save connection: " + err.Error())
-			c.AbortServerError(err.Error())
+			c.AbortBadRequest(err.Error())
 			return
 		}
 		startOAuth(w, r, c, l)
 
+	// Unknown/unrecognized mode - an error.
 	default:
 		l.Error("save connection: unknown auth type", zap.String("auth_type", authType))
 		c.AbortBadRequest("unknown auth type")
 	}
-}
-
-// saveAuthType saves the auth type for a connection.
-func (h handler) saveAuthType(ctx context.Context, vsid sdktypes.VarScopeID, authType string) string {
-	v := sdktypes.NewVar(authTypeVar).SetValue(authType)
-	_ = h.vars.Set(ctx, v.WithScopeID(vsid))
-	return authType
 }
 
 // savePrivateOAuth saves the user-provided details of a
