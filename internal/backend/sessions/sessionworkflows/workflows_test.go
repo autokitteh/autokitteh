@@ -45,7 +45,7 @@ type fakeTemporalClient struct {
 	t client.Client
 }
 
-func (f fakeTemporalClient) Temporal() client.Client { return f.t }
+func (f fakeTemporalClient) TemporalClient() client.Client { return f.t }
 
 type mockTemporalClient struct {
 	client.Client
