@@ -14,6 +14,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionsvcs"
+	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -38,6 +39,13 @@ func (m *mockDB) UpdateSessionState(ctx context.Context, sessionID sdktypes.Sess
 	args := m.Called(sessionID, state)
 	return args.Error(0)
 }
+
+type fakeTemporalClient struct {
+	temporalclient.Client
+	t client.Client
+}
+
+func (f fakeTemporalClient) Temporal() client.Client { return f.t }
 
 type mockTemporalClient struct {
 	client.Client
@@ -72,7 +80,7 @@ func setup(t *testing.T) (*workflows, *mockDB, *mockTemporalClient) {
 		l: zaptest.NewLogger(t),
 		svcs: &sessionsvcs.Svcs{
 			DB:       &db,
-			Temporal: func() client.Client { return &tc },
+			Temporal: fakeTemporalClient{t: &tc},
 		},
 	}
 
