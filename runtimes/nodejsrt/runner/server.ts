@@ -96,14 +96,19 @@ export const createService = (codeDir: string, runnerId: string, sandbox: Sandbo
               const args = decoder.decode(req.event?.data)
               const parsedArgs = JSON.parse(args)
               const [fileName, functionName] = req.entryPoint.split(":")
-              await sandbox.loadFile(`${codeDir}/${fileName}`)
-              waiter.setRunnerId(parsedArgs.runnerId)
-              sandbox.run(functionName, parsedArgs, (results: any) => {
-                  setTimeout(() => {
-                      waiter.done()
-                      console.log('done. results - ', results)
-                  }, 1000)
-              })
+              try {
+                  sandbox.setCodeDir(parsedArgs.codeDir)
+                  await sandbox.loadFile(`${parsedArgs.codeDir}/${fileName}`)
+                  waiter.setRunnerId(parsedArgs.runnerId)
+                  sandbox.run(functionName, parsedArgs, (results: any) => {
+                      setTimeout(() => {
+                          waiter.done()
+                          console.log('done. results - ', results)
+                      }, 1000)
+                  })
+              } catch (err) {
+                  console.log(err)
+              }
               return {$typeName: "autokitteh.user_code.v1.StartResponse", error:"", traceback: []}
           }
     });

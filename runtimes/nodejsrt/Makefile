@@ -55,7 +55,7 @@ check-sdk-docs-requirements:
 	git diff --name-only --exit-code
 
 clean-temporal:
-	killall -9 "temporal-cli-go-sdk-1.31.0"
+	killall -9 "temporal-cli-go-sdk-1.31.0" || true
 	rm "/Users/adiludmer/Library/Application Support/autokitteh/temporal_dev.sqlite"
 	rm "/Users/adiludmer/Library/Application Support/autokitteh/autokitteh.sqlite"
 	rm -rf "/Users/adiludmer/GolandProjects/autokitteh/runtimes/nodejsrt/testdata/simple/dist"

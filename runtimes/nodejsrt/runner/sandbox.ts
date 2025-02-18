@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import {transformAsync} from "@babel/core";
 import {patchCode} from "./ast_utils";
 import {listFiles} from "./file_utils";
+import {execSync} from "node:child_process";
 
 async function transpile(code: string, filename: string): Promise<string> {
     const result = await transformAsync(code, {
@@ -19,26 +20,27 @@ async function transpile(code: string, filename: string): Promise<string> {
     return result.code;
 }
 
-async function patchDir(dir: string, outDir: string): Promise<void> {
-    if (fs.existsSync(outDir)) {
-        fs.rmSync(outDir, {recursive: true});
-    }
-
-    fs.mkdirSync(outDir);
-
+async function patchDir(dir: string): Promise<void> {
     const files = await listFiles(dir)
     for (const file of files) {
+        if (file.includes("/node_modules/")) {
+            continue
+        }
+
         if (!file.endsWith(".js") && !file.endsWith(".ts")) {
             continue
         }
         let code = fs.readFileSync(file, "utf8");
-        const bob = file
-        code = await patchCode(code)
-        if (file.endsWith(".ts")) {
-            code = await transpile(code, file);
+        try {
+            code = await patchCode(code)
+            if (file.endsWith(".ts")) {
+                code = await transpile(code, file);
+            }
+            let newFile = file.replace(".ts", ".js")
+            fs.appendFileSync(newFile, code, 'utf-8');
+        } catch (err) {
+            console.error(err);
         }
-        let newFile = bob.replace(dir, outDir).replace(".ts", ".js")
-        fs.appendFileSync(newFile, code, 'utf-8');
     }
 }
 
@@ -59,6 +61,12 @@ export class Sandbox {
         this.initContext()
     }
 
+    setCodeDir(codeDir: string): void {
+        this.codeDir = codeDir;
+        let output = execSync(`cd ${this.codeDir}; npm install`).toString();
+        console.log(output);
+    }
+
     initContext() {
         this.context.exports = {}
         this.context.ak_call = this.ak_call
@@ -70,13 +78,19 @@ export class Sandbox {
         this.context.require = (moduleName: string) => {
 
             if (moduleName.startsWith(".")) {
-                moduleName =  this.codeDir + "/dist/" + moduleName + ".js"
+                moduleName =  this.codeDir + "/" + moduleName + ".js"
                 const code = fs.readFileSync(moduleName, "utf8")
                 vm.runInContext(code, this.context)
                 return this.context
             }
 
-            let mod =  require(moduleName)
+            let mod: any
+            try {
+                mod =  require(moduleName)
+            } catch (e) {
+                mod =  require(`${this.codeDir}/node_modules/${moduleName}`)
+            }
+
             for (let k in mod) {
                 if (typeof mod[k] === "function") {
                     mod[k].ak_call = true
@@ -100,10 +114,9 @@ export class Sandbox {
         let parts = filePath.split("/");
         parts.pop();
         let dir = parts.join("/")
-        let out = dir + "/dist"
-        await patchDir(dir, out)
+        await patchDir(dir)
 
-        filePath = filePath.replace(dir, out).replace(".ts", ".js");
+        filePath = filePath.replace(".ts", ".js");
         let code = fs.readFileSync(filePath, 'utf8');
         vm.runInContext(code, this.context);
     }

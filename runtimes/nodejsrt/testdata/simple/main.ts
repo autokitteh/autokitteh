@@ -7,6 +7,7 @@ async function on_event(args: any) {
     console.log("event args: ", args)
     console.log("getData results:", r)
     console.log("readdir:", (await promises.readdir(".")))
+    console.log("readdir:", (await promises.readdir(".")))
     return r
 }
 

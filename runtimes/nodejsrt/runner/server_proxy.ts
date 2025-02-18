@@ -41,6 +41,7 @@ export const createService = (codeDir: string, runnerId: string, workerAddress: 
           const encoder = new TextEncoder();
           const args = JSON.parse(decoder.decode(req.event?.data))
           args.runnerId = runnerId
+          args.codeDir = codeDir
 
           if (req.event) {
               req.event.data = encoder.encode(JSON.stringify(args))

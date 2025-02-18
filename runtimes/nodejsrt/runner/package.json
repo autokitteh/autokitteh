@@ -5,8 +5,8 @@
   "scripts": {
     "test": "jest",
     "exports": "bin/ts-node exports.ts",
-    "runner": "node_modules/.bin/ts-node ts-node main.ts",
-    "proxy": "node_modules/.bin/ts-node proxy.ts"
+    "runner": "ts-node ts-node main.ts",
+    "proxy": "ts-node proxy.ts"
   },
   "keywords": [],
   "author": "",
@@ -30,7 +30,6 @@
     "@types/jest": "^29.5.14",
     "@types/node": "^22.10.7",
     "@typescript-eslint/parser": "^8.19.1",
-    "axios": "^1.7.9",
     "commander": "^13.1.0",
     "eslint": "^9.18.0",
     "fastify": "^5.2.1",
