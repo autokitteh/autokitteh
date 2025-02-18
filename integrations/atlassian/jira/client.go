@@ -100,7 +100,7 @@ func connTest(i *integration) sdkintegrations.OptFn {
 				return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 			}
 		case integrations.APIToken:
-			err := apiTokenConnTest(nil, vs)
+			err := apiTokenConnTest(ctx, nil, vs)
 			if err != nil {
 				return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 			}
@@ -130,13 +130,13 @@ func oauthConnTest(vs sdktypes.Vars) error {
 // apiTokenConnTest verifies the connection for API key authentication.
 // It sends a request to the API to confirm credentials and access.
 // https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-myself/#api-group-myself
-func apiTokenConnTest(l *zap.Logger, vs sdktypes.Vars) error {
+func apiTokenConnTest(ctx context.Context, l *zap.Logger, vs sdktypes.Vars) error {
 	baseURL := vs.Get(baseURL).Value()
 	email := vs.Get(email).Value()
 	token := vs.Get(token).Value()
 
 	u := baseURL + "/rest/api/3/myself"
-	req, err := http.NewRequest(http.MethodGet, u, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
 		logWarnIfNotNil(l, "Failed to construct HTTP request for Jira API token test", zap.Error(err))
 		return err
