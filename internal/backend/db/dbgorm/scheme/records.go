@@ -380,7 +380,7 @@ func ParseSession(s Session) (sdktypes.Session, error) {
 		EventId:      sdktypes.NewIDFromUUIDPtr[sdktypes.EventID](s.EventID).String(),
 		Entrypoint:   ep.ToProto(),
 		Inputs:       kittehs.TransformMapValues(inputs, sdktypes.ToProto),
-		CreatedAt:    timestamppb.New(s.Base.CreatedAt),
+		CreatedAt:    timestamppb.New(s.CreatedAt),
 		UpdatedAt:    timestamppb.New(s.UpdatedAt),
 		State:        sessionsv1.SessionStateType(s.CurrentStateType),
 		Memo:         memo,
