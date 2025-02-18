@@ -43,7 +43,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	// https://developers.google.com/identity/protocols/oauth2/web-server#handlingresponse
 	e := r.FormValue("error")
 	if e != "" {
-		l.Warn("OAuth redirection reported an error", zap.Error(errors.New(e)))
+		l.Warn("OAuth redirection reported an error", zap.String("error", e))
 		c.AbortBadRequest(e)
 		return
 	}

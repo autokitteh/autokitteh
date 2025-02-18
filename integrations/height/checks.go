@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"go.autokitteh.dev/autokitteh/integrations"
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -14,17 +15,12 @@ import (
 // ensures that the connection is at least theoretically usable.
 func status(v sdkservices.Vars) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
-		if !cid.IsValid() {
-			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+		vs, errStatus, err := common.ReadConnectionVars(ctx, v, cid)
+		if errStatus.IsValid() || err != nil {
+			return errStatus, err
 		}
 
-		vs, err := v.Get(ctx, sdktypes.NewVarScopeID(cid), authTypeVar)
-		if err != nil {
-			return sdktypes.InvalidStatus, err // This is abnormal.
-		}
-
-		authType := vs.GetValue(authTypeVar)
-		switch authType {
+		switch common.ReadAuthType(vs) {
 		case "":
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 		case integrations.OAuthDefault, integrations.OAuthPrivate:
@@ -41,27 +37,23 @@ func status(v sdkservices.Vars) sdkintegrations.OptFn {
 // authentication credentials are valid and can be used to make API calls.
 func test(v sdkservices.Vars) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
-		if !cid.IsValid() {
-			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Init required"), nil
+		vs, errStatus, err := common.ReadConnectionVars(ctx, v, cid)
+		if errStatus.IsValid() || err != nil {
+			return errStatus, err
 		}
 
-		vs, err := v.Get(ctx, sdktypes.NewVarScopeID(cid))
-		if err != nil {
-			return sdktypes.InvalidStatus, err // This is abnormal.
-		}
-
-		authType := vs.GetValue(authTypeVar)
-		switch authType {
+		switch common.ReadAuthType(vs) {
 		case "":
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 		case integrations.OAuthDefault, integrations.OAuthPrivate:
 			// TODO(INT-235): Implement.
 		case integrations.APIKey:
-			// TODO: Implement.
+			// TODO(INT-235): Implement.
 		default:
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil
 		}
 
-		return sdktypes.NewStatus(sdktypes.StatusCodeOK, ""), nil
+		// TODO(INT-235): return sdktypes.NewStatus(sdktypes.StatusCodeOK, ""), nil
+		return sdktypes.NewStatus(sdktypes.StatusCodeError, "Not implemented"), nil
 	})
 }

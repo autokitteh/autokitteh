@@ -9,6 +9,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -41,8 +42,8 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	// https://developers.google.com/identity/protocols/oauth2/web-server#handlingresponse
 	e := r.FormValue("error")
 	if e != "" {
-		l.Warn("save connection after OAuth flow: OAuth error", zap.String("error", e))
-		c.AbortBadRequest("OAuth error")
+		l.Warn("OAuth redirection reported an error", zap.String("error", e))
+		c.AbortBadRequest(e)
 		return
 	}
 
@@ -50,12 +51,13 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	var data sdkintegrations.OAuthData
 	err = kittehs.DecodeURLData(r.FormValue("oauth"), &data)
 	if err != nil {
-		l.Error("save connection after OAuth flow: failed to decode OAuth data", zap.Error(err))
+		l.Error("OAuth redirection returned invalid results", zap.Error(err))
 		c.AbortServerError("invalid OAuth data")
 		return
 	}
 
-	// TODO: Test the OAuth token's usability.
+	// Test the token's usability and get authoritative installation details.
+	// TODO: Reuse "checks.go".
 	ctx := r.Context()
 
 	vsid := sdktypes.NewVarScopeID(cid)
@@ -77,12 +79,12 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 }
 
 // saveConnection saves OAuth token details as connection variables.
-func (h handler) saveConnection(ctx context.Context, vsid sdktypes.VarScopeID, t *oauth2.Token, extra map[string]interface{}) error {
+func (h handler) saveConnection(ctx context.Context, vsid sdktypes.VarScopeID, t *oauth2.Token, extra map[string]any) error {
 	if t == nil {
 		return errors.New("OAuth redirection missing token data")
 	}
 
-	vs := sdktypes.EncodeVars(newOAuthData(t))
+	vs := sdktypes.EncodeVars(common.EncodeOAuthData(t))
 	for k, v := range extra {
 		vs = vs.Append(sdktypes.NewVar(sdktypes.NewSymbol(k)).SetValue(fmt.Sprintf("%v", v)))
 	}

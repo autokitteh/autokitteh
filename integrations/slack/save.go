@@ -65,7 +65,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	// First save the user-provided details of a private Slack OAuth v2 app,
 	// and only then redirect to the 3-legged OAuth 2.0 flow's starting point.
 	case integrations.OAuthPrivate:
-		if err := h.savePrivateOAuth(r, vsid); err != nil {
+		if err := h.savePrivateOAuthApp(r, vsid); err != nil {
 			l.Error("save connection: " + err.Error())
 			c.AbortBadRequest(err.Error())
 			return
@@ -93,9 +93,9 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// savePrivateOAuth saves the user-provided details of
-// a private Slack OAuth v2 app as connection variables.
-func (h handler) savePrivateOAuth(r *http.Request, vsid sdktypes.VarScopeID) error {
+// savePrivateOAuthApp saves the user-provided details
+// of a private Slack OAuth v2 app as connection variables.
+func (h handler) savePrivateOAuthApp(r *http.Request, vsid sdktypes.VarScopeID) error {
 	app := vars.PrivateOAuth{
 		ClientID:      r.FormValue("client_id"),
 		ClientSecret:  r.FormValue("client_secret"),

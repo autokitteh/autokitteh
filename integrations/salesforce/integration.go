@@ -15,9 +15,9 @@ var desc = common.Descriptor("salesforce", "Salesforce", "/static/images/salesfo
 
 // New defines an AutoKitteh integration, which
 // is registered when the AutoKitteh server starts.
-func New(v sdkservices.Vars, o sdkservices.OAuth) sdkservices.Integration {
+func New(v sdkservices.Vars) sdkservices.Integration {
 	return sdkintegrations.NewIntegration(
-		desc, sdkmodule.New(), status(v), test(v, o),
+		desc, sdkmodule.New(), status(v), test(v),
 		sdkintegrations.WithConnectionConfigFromVars(v))
 }
 

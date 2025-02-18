@@ -14,6 +14,7 @@ import (
 	"golang.org/x/oauth2"
 
 	"go.autokitteh.dev/autokitteh/integrations"
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -23,9 +24,9 @@ import (
 // connection variables. If it's stale, we refresh it first.
 func oauthToken(ctx context.Context, vs sdktypes.Vars, o sdkservices.OAuth) *oauth2.Token {
 	t1 := &oauth2.Token{
-		AccessToken:  vs.GetValue(oauthAccessTokenVar),
-		RefreshToken: vs.GetValue(oauthRefreshTokenVar),
-		TokenType:    vs.GetValue(oauthTokenTypeVar),
+		AccessToken:  vs.GetValue(common.OAuthAccessTokenVar),
+		RefreshToken: vs.GetValue(common.OAuthRefreshTokenVar),
+		TokenType:    vs.GetValue(common.OAuthTokenTypeVar),
 	}
 	if t1.Valid() {
 		return t1
@@ -111,7 +112,7 @@ func bearerToken(ctx context.Context, l *zap.Logger, svc Services, cid sdktypes.
 		return ""
 	}
 
-	switch authType := vs.GetValue(AuthTypeVar); authType {
+	switch authType := common.ReadAuthType(vs); authType {
 	case integrations.OAuthDefault:
 		return "Bearer " + oauthToken(ctx, vs, svc.OAuth).AccessToken
 

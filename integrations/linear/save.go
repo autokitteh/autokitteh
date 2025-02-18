@@ -1,7 +1,6 @@
 package linear
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -11,6 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations"
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -49,7 +49,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 
 	// Determine what to save and how to proceed.
 	vsid := sdktypes.NewVarScopeID(cid)
-	authType := h.saveAuthType(r.Context(), vsid, r.FormValue("auth_type"))
+	authType := common.SaveAuthType(r, h.vars, vsid)
 	l = l.With(zap.String("auth_type", authType))
 
 	switch authType {
@@ -73,7 +73,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 		}
 		if err := h.savePrivateOAuth(r, vsid); err != nil {
 			l.Error("save connection: " + err.Error())
-			c.AbortServerError(err.Error())
+			c.AbortBadRequest(err.Error())
 			return
 		}
 		startOAuth(w, r, c, l)
@@ -82,13 +82,13 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	case integrations.APIKey:
 		if err := h.saveAPIKey(r, vsid); err != nil {
 			l.Error("save connection: " + err.Error())
-			c.AbortServerError(err.Error())
+			c.AbortBadRequest(err.Error())
 			return
 		}
 		urlPath, err := c.FinalURL()
 		if err != nil {
 			l.Error("save connection: failed to construct final URL", zap.Error(err))
-			c.AbortServerError("bad redirect URL")
+			c.AbortBadRequest("bad redirect URL")
 			return
 		}
 		http.Redirect(w, r, urlPath, http.StatusFound)
@@ -98,15 +98,6 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 		l.Warn("save connection: unexpected auth type")
 		c.AbortBadRequest(fmt.Sprintf("unexpected auth type %q", authType))
 	}
-}
-
-// saveAuthType saves the authentication type that the user selected for this connection.
-// This will be redundant if/when the only way to initialize connections is via the web UI.
-// Therefore, we do not care if this function fails to save it as a connection variable.
-func (h handler) saveAuthType(ctx context.Context, vsid sdktypes.VarScopeID, authType string) string {
-	v := sdktypes.NewVar(authTypeVar).SetValue(authType)
-	_ = h.vars.Set(ctx, v.WithScopeID(vsid))
-	return authType
 }
 
 // saveActor saves Linear's OAuth "actor" (user/app) parameter as a connection variable.
@@ -139,7 +130,7 @@ func (h handler) saveAPIKey(r *http.Request, vsid sdktypes.VarScopeID) error {
 		return errors.New("missing API key")
 	}
 
-	// TODO: Test the API key's usability.
+	// TODO: Test the API key's usability, reuse connection test.
 
 	v := sdktypes.NewVar(apiKeyVar).SetValue(apiKey).SetSecret(true)
 	return h.vars.Set(r.Context(), v.WithScopeID(vsid))
