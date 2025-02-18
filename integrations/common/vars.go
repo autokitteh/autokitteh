@@ -42,7 +42,7 @@ func EncodeOAuthData(t *oauth2.Token) OAuthData {
 // an error if the connection is not initialized or accessible.
 func ReadConnectionVars(ctx context.Context, vars sdkservices.Vars, cid sdktypes.ConnectionID) (sdktypes.Vars, sdktypes.Status, error) {
 	if !cid.IsValid() {
-		return nil, sdktypes.NewStatus(sdktypes.StatusCodeError, "Init required"), nil
+		return nil, sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 	}
 
 	vs, err := vars.Get(ctx, sdktypes.NewVarScopeID(cid))
