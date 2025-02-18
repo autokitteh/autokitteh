@@ -15,11 +15,11 @@ import (
 )
 
 func (gdb *gormdb) createDeployment(ctx context.Context, d *scheme.Deployment) error {
-	return gormErrNotFoundToForeignKey(gdb.db.WithContext(ctx).Create(d).Error)
+	return gormErrNotFoundToForeignKey(gdb.writer.WithContext(ctx).Create(d).Error)
 }
 
 func (gdb *gormdb) deleteDeployment(ctx context.Context, deploymentID uuid.UUID) error {
-	return gdb.transaction(ctx, func(tx *tx) error {
+	return gdb.writeTransaction(ctx, func(tx *gormdb) error {
 		return tx.deleteDeploymentsAndDependents(ctx, []uuid.UUID{deploymentID})
 	})
 }
@@ -31,7 +31,7 @@ func (gdb *gormdb) deleteDeploymentsAndDependents(ctx context.Context, depIDs []
 	if len(depIDs) == 0 {
 		return nil
 	}
-	db := gdb.db.WithContext(ctx)
+	db := gdb.writer.WithContext(ctx)
 
 	if err := db.Delete(&scheme.Session{}, "deployment_id IN ?", depIDs).Error; err != nil {
 		return err
@@ -62,15 +62,15 @@ func (gdb *gormdb) updateDeploymentState(
 	d := scheme.Deployment{DeploymentID: deploymentID}
 	var oldState int32 = 0
 
-	if err := gdb.transaction(ctx, func(tx *tx) error {
-		if err := tx.db.Model(&d).Select("state").First(&oldState).Error; err != nil {
+	if err := gdb.writeTransaction(ctx, func(tx *gormdb) error {
+		if err := tx.writer.Model(&d).Select("state").First(&oldState).Error; err != nil {
 			return err
 		}
 
 		data := updatedBaseColumns(ctx)
 		data["state"] = int32(state.ToProto())
 
-		if err := tx.db.Model(&d).UpdateColumns(data).Error; err != nil {
+		if err := tx.writer.Model(&d).UpdateColumns(data).Error; err != nil {
 			return err
 		}
 		return nil
@@ -82,11 +82,11 @@ func (gdb *gormdb) updateDeploymentState(
 }
 
 func (gdb *gormdb) getDeployment(ctx context.Context, deploymentID uuid.UUID) (*scheme.Deployment, error) {
-	return getOne[scheme.Deployment](gdb.db.WithContext(ctx), "deployment_id = ?", deploymentID)
+	return getOne[scheme.Deployment](gdb.reader.WithContext(ctx), "deployment_id = ?", deploymentID)
 }
 
 func (gdb *gormdb) listDeploymentsCommonQuery(ctx context.Context, filter sdkservices.ListDeploymentsFilter) *gorm.DB {
-	q := gdb.db.WithContext(ctx)
+	q := gdb.reader.WithContext(ctx)
 
 	q = withProjectID(q, "deployments", filter.ProjectID)
 
@@ -221,7 +221,7 @@ func (db *gormdb) DeploymentHasActiveSessions(ctx context.Context, id sdktypes.D
 var finalSessionStateTypes = kittehs.Transform(sdktypes.FinalSessionStateTypes, func(s sdktypes.SessionStateType) int { return s.ToInt() })
 
 func (db *gormdb) DeactivateAllDrainedDeployments(ctx context.Context) (int, error) {
-	q := db.db.WithContext(ctx).Exec(`UPDATE deployments
+	q := db.writer.WithContext(ctx).Exec(`UPDATE deployments
 SET state = ?
 WHERE state = ?
 AND NOT EXISTS (
@@ -240,7 +240,7 @@ AND NOT EXISTS (
 }
 
 func (db *gormdb) DeactivateDrainedDeployment(ctx context.Context, did sdktypes.DeploymentID) (bool, error) {
-	q := db.db.WithContext(ctx).Exec(`UPDATE deployments
+	q := db.writer.WithContext(ctx).Exec(`UPDATE deployments
 SET state = ?
 WHERE state = ? AND deployment_id = ?
 AND NOT EXISTS (
