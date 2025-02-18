@@ -209,7 +209,7 @@ func ParseEvent(e Event) (sdktypes.Event, error) {
 		EventType:     e.EventType,
 		Data:          kittehs.TransformMapValues(data, sdktypes.ToProto),
 		Memo:          memo,
-		CreatedAt:     timestamppb.New(e.Base.CreatedAt),
+		CreatedAt:     timestamppb.New(e.CreatedAt),
 		Seq:           e.Seq,
 		DestinationId: did.String(),
 	})
