@@ -112,7 +112,6 @@ func (gdb *gormdb) listSessions(ctx context.Context, f sdkservices.ListSessionsF
 	var rs []scheme.Session
 	// Double order in case we have two rows with the same created_at, then solve order by session_id
 	if err := q.
-		Order(clause.OrderByColumn{Column: clause.Column{Name: "sessions.created_at"}, Desc: true}).
 		Order(clause.OrderByColumn{Column: clause.Column{Name: "session_id"}, Desc: true}).
 		Omit("inputs").
 		Find(&rs).Error; err != nil {

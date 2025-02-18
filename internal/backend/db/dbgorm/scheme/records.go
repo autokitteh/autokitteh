@@ -345,9 +345,6 @@ type Session struct {
 	Deployment *Deployment
 	Project    *Project
 	Event      *Event `gorm:"references:EventID;constraint:OnDelete:SET NULL"`
-
-	// Redeclare here to create an index on created_at for sessions specifically
-	CreatedAt time.Time `gorm:"index"`
 }
 
 func (Session) IDFieldName() string { return "session_id" }

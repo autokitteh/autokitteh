@@ -1,4 +1,4 @@
-h1:s6F87AdYgsTv/xSg+eMxGl+RePrwbWmFiqF9K5zQyFw=
+h1:O4dMY9I1KVBmZ13rFWknCev9Wvv3K5EJHdocGsYsjAE=
 20240704121932_baseline.sql h1:1JS9FYe08Ef0wTpJIeeL4wIqHc8E/RXhuqmTI/FwkzY=
 20240714051207_no-db-user.sql h1:tx0AwepNeeL/XWD74sLRGwisrkNs4lyH/H4BG/663FQ=
 20240727114921_project-not-nil-name.sql h1:ZG3tDLzQSxd81S4BDe/IOMktltkurwyuFwu5gkqQvrA=
@@ -24,3 +24,4 @@ h1:s6F87AdYgsTv/xSg+eMxGl+RePrwbWmFiqF9K5zQyFw=
 20250120101358_events-sessions-hard-delete.sql h1:MszF4KAzves68R2sHxS1KmZ7gkNFrPNdvfjgS76qC0Y=
 20250212061806_kill-old-fields.sql h1:uOY1KWJ8C73tWmC70UyRnICeWlCrSJBcgoz3J7Sd+Cw=
 20250212092300_add-created-at-index-for-sessions-and-events.sql h1:4pFid3Qyv+kRivExZ32rTAqyYOKXT68wfv2MrqjmRvg=
+20250218053103_kill_sessions_double_created_at.sql h1:EJ7ISL7LD0IFkYkwJxby14RdQE4Q8/Pr4EFlpDKAu5g=
