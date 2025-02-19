@@ -141,3 +141,31 @@ def test_fn_args(code, args):
     tree = ast.parse(code)
     out = loader.fn_args(tree.body[0])
     assert out == args
+
+
+def test_mod_level_call():
+    """We shouldn't patch top level calls"""
+
+    code = """
+    from collections import namedtuple
+
+    def current_user():
+        return User('elliot', ['elliot', 'wheel'])
+
+
+    User = namedtuple('User', 'login groups')
+    """
+
+    expected = """\
+    from collections import namedtuple
+
+    def current_user():
+        return _ak_call(User, 'elliot', ['elliot', 'wheel'])
+    User = namedtuple('User', 'login groups')
+    """
+
+    tree = ast.parse(dedent(code))
+    nv = loader.Transformer("<stdin>", code)
+    out = nv.visit(tree)
+    patched = ast.unparse(out)
+    assert dedent(expected).strip() == patched
