@@ -673,7 +673,7 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 	return sdktypes.ValueFromProto(resp.Result)
 }
 
-// saflyGo spins a goroutine and guards against panic in it.
+// safelyGo spins a goroutine and guards against panic in it.
 // TODO: Should this be in internal/kittehs?
 func (py *pySvc) safelyGo(name string, fn func()) {
 	go func() {
