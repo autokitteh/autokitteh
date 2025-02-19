@@ -402,11 +402,6 @@ func (py *pySvc) sendDone(err error) {
 	py.channels.done <- &req
 }
 
-func isProgramError(err error) bool {
-	_, ok := sdktypes.FromError(err)
-	return ok
-}
-
 func (py *pySvc) setupCallbacksListeningLoop(ctx context.Context) chan (error) {
 	callbackErrChan := make(chan error, 1)
 	listenFn := func() {
@@ -448,7 +443,7 @@ func (py *pySvc) setupCallbacksListeningLoop(ctx context.Context) chan (error) {
 				py.call(ctx, fn, args, kw)
 			case cb := <-py.channels.callback:
 				val, err := py.cbs.Call(ctx, py.runID, py.syscallFn, cb.args, cb.kwargs)
-				if err != nil && !isProgramError(err) {
+				if err != nil {
 					cb.errorChannel <- err
 				} else {
 					cb.successChannel <- val
@@ -675,20 +670,7 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 	}
 
 	resp.Result.Custom.ExecutorId = py.xid.String()
-	if resp.Error != "" {
-		err = sdktypes.NewProgramError(
-			sdktypes.NewStringValue(resp.Error),
-			nil, // TODO: Change reply proto to include traceback
-			nil,
-		).ToError()
-	}
-
-	val, errv := sdktypes.ValueFromProto(resp.Result)
-	if errv != nil {
-		return sdktypes.InvalidValue, errv
-	}
-
-	return val, err
+	return sdktypes.ValueFromProto(resp.Result)
 }
 
 // saflyGo spins a goroutine and guards against panic in it.
