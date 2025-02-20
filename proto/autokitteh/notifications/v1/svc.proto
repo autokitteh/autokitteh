@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package autokitteh.notifications.v1;
+
+import "autokitteh/notifications/v1/notification.proto";
+import "buf/validate/validate.proto";
+
+message SendRequest {
+  Notification notification = 1 [(buf.validate.field).required = true];
+}
+
+message SendResponse {
+  string notification_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message ListRequest {
+  string recipient_id = 1 [(buf.validate.field).string.min_len = 1]; // org or user id.
+  string type = 2; // optional, if provided, only notifications of this type will be returned.
+  bool unread_only = 3;
+  bool count_only = 4;
+  int32 page_size = 5; // if 0, all notifications will be returned.
+}
+
+message ListResponse {
+  repeated Notification notifications = 1 [(buf.validate.field).repeated.items.required = true];
+}
+
+message MarkAsReadRequest {
+  string notification_id = 1; // if empty, all notifications for the recipient will be marked as read.
+}
+
+message MarkAsReadResponse {}
+
+service NotificationsService {
+  rpc Send(SendRequest) returns (SendResponse);
+  rpc List(ListRequest) returns (ListResponse);
+  rpc MarkAsRead(MarkAsReadRequest) returns (MarkAsReadResponse);
+}

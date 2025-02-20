@@ -19,6 +19,7 @@ import (
 	integration_registryv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/integration_registry/v1"
 	integrationsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/integrations/v1"
 	modulev1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/module/v1"
+	notificationsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/notifications/v1"
 	oauthv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/oauth/v1"
 	orgsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/orgs/v1"
 	programv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/program/v1"
@@ -99,6 +100,8 @@ var fds = []protoreflect.FileDescriptor{
 	valuesv1.File_autokitteh_values_v1_values_proto,
 	varsv1.File_autokitteh_vars_v1_svc_proto,
 	varsv1.File_autokitteh_vars_v1_var_proto,
+	notificationsv1.File_autokitteh_notifications_v1_svc_proto,
+	notificationsv1.File_autokitteh_notifications_v1_notification_proto,
 }
 
 var Validate = parse(fds)
