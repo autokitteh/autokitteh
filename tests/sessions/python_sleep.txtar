@@ -10,4 +10,4 @@ def main(event):
     print("woke up")
 
 -- calls.txt --
-# no activites are run, sleep is a naked call
+# no activities are run, sleep is a naked call
