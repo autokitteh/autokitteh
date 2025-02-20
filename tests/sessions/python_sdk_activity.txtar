@@ -7,7 +7,7 @@ hiss
 -- main.py main --
 from random import random
 
-from autokitteh.decorators import noactivity, inhibit_activites
+from autokitteh.decorators import noactivity
 from autokitteh.sdktest import *
 
 def main(event):
