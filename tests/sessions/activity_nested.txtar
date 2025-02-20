@@ -1,9 +1,12 @@
 (None, "nested activities are not supported")
 
--- main.star:main --
+-- main.star main --
 def foo(name):
     return activity(len).run(name)
 
 def main():
     ret = catch(activity(foo).run, "george")
     print(ret)
+
+-- calls.txt --
+foo

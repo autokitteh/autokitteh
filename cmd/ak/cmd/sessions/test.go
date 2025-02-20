@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"regexp"
 	"strings"
@@ -18,6 +19,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -88,13 +90,13 @@ var testCmd = common.StandardCommand(&cobra.Command{
 			a.Files[0].Name = ep.Path()
 		}
 
-		fs, err := kittehs.TxtarToFS(a)
+		txtarFS, err := kittehs.TxtarToFS(a)
 		if err != nil {
 			return fmt.Errorf("internal error: %w", err)
 		}
 
 		if !bid.IsValid() {
-			b, err := common.Build(common.Client().Runtimes(), fs, nil, nil)
+			b, err := common.Build(common.Client().Runtimes(), txtarFS, nil, nil)
 			if err != nil {
 				return err
 			}
@@ -110,6 +112,11 @@ var testCmd = common.StandardCommand(&cobra.Command{
 			if bid, err = common.Client().Builds().Save(ctx, sdktypes.NewBuild().WithProjectID(pid), buf.Bytes()); err != nil {
 				return fmt.Errorf("save build: %w", err)
 			}
+		}
+
+		expectedCallsTxt, err := fs.ReadFile(txtarFS, "calls.txt")
+		if err != nil && !errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("open calls.txt: %w", err)
 		}
 
 		s := sdktypes.NewSession(bid, ep, nil, nil).WithDeploymentID(did).WithProjectID(pid)
@@ -156,12 +163,41 @@ var testCmd = common.StandardCommand(&cobra.Command{
 		expected := strings.TrimSpace(string(a.Comment))
 		actual := strings.TrimSpace(prints.String())
 
+		var errs []error
+
 		if actual != expected {
 			edits := myers.ComputeEdits(span.URIFromPath("want"), expected, actual)
-			return errors.New(fmt.Sprint(gotextdiff.ToUnified("want", "got", expected, edits)))
+			errs = append(errs, errors.New(fmt.Sprint("output:\n", gotextdiff.ToUnified("want", "got", expected, edits))))
 		}
 
-		return nil
+		if expectedCallsTxt != nil {
+			results, err := sessions().GetLog(ctx, sdkservices.SessionLogRecordsFilter{
+				SessionID: sid,
+				Types:     sdktypes.CallSpecSessionLogRecordType,
+				PaginationRequest: sdktypes.PaginationRequest{
+					Ascending: true,
+				},
+			})
+			if err != nil {
+				return fmt.Errorf("get calls: %w", err)
+			}
+
+			var callsTxt strings.Builder
+			for _, r := range results.Records {
+				f, _, _ := r.GetCallSpec().Data()
+				fmt.Fprintf(&callsTxt, "%s\n", f.GetFunction().Name())
+			}
+
+			expected := strings.TrimSpace(kittehs.StringWithoutComments(string(expectedCallsTxt)))
+			actual := strings.TrimSpace(callsTxt.String())
+
+			if expected != actual {
+				edits := myers.ComputeEdits(span.URIFromPath("want"), expected, actual)
+				errs = append(errs, errors.New(fmt.Sprint("calls:\n", gotextdiff.ToUnified("want", "got", expected, edits))))
+			}
+		}
+
+		return errors.Join(errs...)
 	},
 })
 

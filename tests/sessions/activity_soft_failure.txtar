@@ -1,9 +1,12 @@
 (None, "soft test error")
 done
 
--- main.star:main --
+-- main.star main --
 load("testtools", "fail_activity")
 
 def main():
     print(catch(lambda: fail_activity(n=1)))
     print("done")
+
+-- calls.txt --
+fail_activity

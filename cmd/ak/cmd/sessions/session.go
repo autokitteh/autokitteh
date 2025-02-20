@@ -14,9 +14,7 @@ import (
 )
 
 // Default flag value shared by the "start", "restart", and "watch" subcommands.
-const (
-	defaultPollInterval = 1 * time.Second
-)
+const defaultPollInterval = 250 * time.Millisecond
 
 var (
 	// Flags shared by the "list" and "start" subcommands.

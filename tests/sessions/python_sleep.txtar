@@ -1,10 +1,13 @@
 sleeping
 woke up
 
--- main.py:main --
+-- main.py main --
 from time import sleep
 
 def main(event):
     print("sleeping")
     sleep(0.1)
     print("woke up")
+
+-- calls.txt --
+# no activites are run, sleep is a naked call
