@@ -114,3 +114,28 @@ func (w *IndentedStringWriter) Write(p []byte) (n int, err error) {
 
 	return
 }
+
+func StringWithoutComments(s string) string {
+	var (
+		buf strings.Builder
+		in  bool
+	)
+
+	for _, r := range s {
+		if in {
+			if r == '\n' {
+				in = false
+			}
+			continue
+		}
+
+		if r == '#' {
+			in = true
+			continue
+		}
+
+		buf.WriteRune(r)
+	}
+
+	return buf.String()
+}

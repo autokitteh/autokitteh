@@ -82,3 +82,19 @@ func TestNormalizeURL(t *testing.T) {
 		})
 	}
 }
+
+func TestStringWithoutComments(t *testing.T) {
+	tests := []struct{ in, out string }{
+		{"", ""},
+		{"#meow", ""},
+		{"#meow\nwoof", "woof"},
+		{"meow", "meow"},
+		{"meow\nwoof", "meow\nwoof"},
+		{"meow\n# woof", "meow\n"},
+		{"meow\n# woof\noink", "meow\noink"},
+	}
+
+	for _, test := range tests {
+		assert.Equal(t, test.out, StringWithoutComments(test.in))
+	}
+}
