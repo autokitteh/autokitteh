@@ -107,10 +107,18 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 		return int(f)
 	})
 
+	u, err := kittehs.NormalizeURL(jiraEvent["issue"].(map[string]any)["self"].(string), true)
+	if err != nil {
+		l.Warn("Invalid issue URL in Jira event", zap.Error(err))
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
+	// TODO: Validate the URL?
+
 	ctx := extrazap.AttachLoggerToContext(l, r.Context())
 	for _, id := range ids {
-		value := strconv.Itoa(id)
-		cids, err := h.vars.FindConnectionIDs(ctx, IntegrationID, WebhookID, value)
+		value := webhookKey(u, strconv.Itoa(id))
+		cids, err := h.vars.FindConnectionIDs(ctx, IntegrationID, WebhookKeySymbol, value)
 		if err != nil {
 			l.Error("Failed to find connection IDs", zap.Error(err))
 			break

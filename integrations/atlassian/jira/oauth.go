@@ -105,6 +105,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c.Finalize(sdktypes.NewVars(data.ToVars()...).Append(res[0].toVars()...).
+		Set(WebhookKeySymbol, webhookKey(res[0].URL, strconv.Itoa(id)), false).
 		Set(WebhookID, strconv.Itoa(id), false).
 		Set(WebhookExpiration, t.Format(time.RFC3339), false))
 }
