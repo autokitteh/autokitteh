@@ -66,3 +66,24 @@ func SaveAuthType(r *http.Request, vars sdkservices.Vars, vsid sdktypes.VarScope
 	_ = vars.Set(r.Context(), v)
 	return authType
 }
+
+// RenameVar renames a variable in the given connection scope.
+// This is useful for non-trivial data migrations.
+func RenameVar(ctx context.Context, v sdkservices.Vars, vsid sdktypes.VarScopeID, old, new sdktypes.Symbol) error {
+	vs, err := v.Get(ctx, vsid, old)
+	if err != nil {
+		return err
+	}
+
+	o := vs.Get(old)
+	if !o.IsValid() {
+		return nil
+	}
+
+	n := sdktypes.NewVar(new).SetValue(o.Value()).SetSecret(o.IsSecret())
+	if err := v.Set(ctx, n.WithScopeID(vsid)); err != nil {
+		return err
+	}
+
+	return v.Delete(ctx, vsid, old)
+}

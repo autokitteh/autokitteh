@@ -53,6 +53,9 @@ func Start(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, d sdkservices.Disp
 	m.NoAuth.HandleFunc("POST "+webhooks.SlashCommandPath, whh.HandleSlashCommand)
 	m.NoAuth.HandleFunc("POST "+webhooks.InteractionPath, whh.HandleInteraction)
 
+	// TODO(INT-167): Remove this after all cloud envs have v0.14.4+ deployed.
+	migrateOldConnectionVars(l, v)
+
 	reopenExistingWebSocketConnections(context.Background(), l, v, wsh)
 }
 
@@ -93,5 +96,40 @@ func reopenExistingWebSocketConnections(ctx context.Context, l *zap.Logger, v sd
 		appToken := data.GetValue(vars.AppTokenVar)
 		botToken := data.GetValue(vars.BotTokenVar)
 		h.OpenWebSocketConnection(appID, appToken, botToken)
+	}
+}
+
+// TODO(INT-167): Remove this after all cloud envs have v0.14.4+ deployed.
+func migrateOldConnectionVars(l *zap.Logger, v sdkservices.Vars) {
+	ctx := context.Background()
+	iid := sdktypes.NewIntegrationIDFromName(desc.UniqueName().String())
+	cids, err := v.FindConnectionIDs(ctx, iid, common.AuthTypeVar, "")
+	if err != nil {
+		l.Error("failed to list old Slack connection IDs", zap.Error(err))
+		return
+	}
+
+	for _, cid := range cids {
+		l := l.With(zap.String("connection_id", cid.String()))
+		l.Info("migrating old Slack connection")
+		vsid := sdktypes.NewVarScopeID(cid)
+
+		pairs := []struct{ old, new string }{
+			{"client_id", "private_client_id"},
+			{"client_secret", "private_client_secret"},
+			{"signing_secret", "private_signing_secret"},
+
+			{"AppToken", "private_app_token"},
+			{"BotToken", "private_bot_token"},
+
+			{"Key", "install_ids"},
+		}
+		for _, pair := range pairs {
+			o, n := sdktypes.NewSymbol(pair.old), sdktypes.NewSymbol(pair.new)
+			if err := common.RenameVar(ctx, v, vsid, o, n); err != nil {
+				l.Error("failed to rename old Slack connection var", zap.Error(err))
+				continue
+			}
+		}
 	}
 }
