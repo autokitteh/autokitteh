@@ -371,7 +371,7 @@ func (f *dbFixture) newOrg() uuid.UUID {
 	dbOrg := scheme.Org{
 		OrgID: org.ID().UUIDValue(),
 	}
-	if err := f.gormdb.db.Create(&dbOrg).Error; err != nil {
+	if err := f.gormdb.writer.Create(&dbOrg).Error; err != nil {
 		log.Fatalf("Failed to create org: %v", err)
 	}
 
