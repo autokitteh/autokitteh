@@ -155,10 +155,10 @@ func (a api) watchEvents(ctx context.Context, connID sdktypes.ConnectionID, user
 	watchID := connID.String() + "/events"
 	req := client.Changes.Watch(startToken.StartPageToken, &drive.Channel{
 		Id:         watchID,
-		Token:      userEmail + "/" + watchID,
+		Token:      userEmail + "/events",
 		Address:    fmt.Sprintf("https://%s/googledrive/notif", addr),
 		Type:       "web_hook",
-		Expiration: time.Now().Add(time.Hour*24).Unix() * 1000,
+		Expiration: time.Now().Add(time.Hour*24*7).Unix() * 1000,
 	})
 
 	// check if the channel already exists
