@@ -10,7 +10,6 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/drive/v3"
-	"google.golang.org/api/googleapi"
 	googleoauth2 "google.golang.org/api/oauth2/v2"
 	"google.golang.org/api/option"
 
@@ -151,8 +150,24 @@ func (a api) watchEvents(ctx context.Context, connID sdktypes.ConnectionID, user
 		return nil, err
 	}
 
-	addr := os.Getenv("WEBHOOK_ADDRESS")
 	watchID := connID.String() + "/events"
+	// Check if the channel already exists.
+	vs, err := a.vars.Get(ctx, sdktypes.NewVarScopeID(connID), vars.DriveEventsWatchID)
+	if err != nil {
+		return nil, err
+	}
+	if wid := vs.GetValue(vars.DriveEventsWatchID); wid != "" {
+		// Sanity check
+		if watchID != wid {
+			return nil, fmt.Errorf("watch ID mismatch: %s != %s", watchID, wid)
+		}
+		// Channel already exists; stop it.
+		if err := a.stopWatch(ctx, connID); err != nil {
+			return nil, fmt.Errorf("stop existing watch channel: %w", err)
+		}
+	}
+
+	addr := os.Getenv("WEBHOOK_ADDRESS")
 	req := client.Changes.Watch(startToken.StartPageToken, &drive.Channel{
 		Id:         watchID,
 		Token:      userEmail + "/events",
@@ -161,27 +176,9 @@ func (a api) watchEvents(ctx context.Context, connID sdktypes.ConnectionID, user
 		Expiration: time.Now().Add(time.Hour*24*7).Unix() * 1000,
 	})
 
-	// check if the channel already exists
-	vs, err := a.vars.Get(ctx, sdktypes.NewVarScopeID(connID), vars.DriveEventsWatchID)
-	if err != nil {
-		return nil, err
-	}
-	wid := vs.Get(vars.DriveEventsWatchID).Value()
-	if wid != "" {
-		// sanity check
-		if watchID != wid {
-			return nil, fmt.Errorf("watch ID mismatch: %s != %s", watchID, wid)
-		}
-		// channel already exists, stop it
-		if err := a.stopWatch(ctx, connID); err != nil {
-			return nil, fmt.Errorf("stop existing watch channel: %w", err)
-		}
-	}
-
 	resp, err := req.Do()
 	if err != nil {
-		gerr, _ := err.(*googleapi.Error)
-		a.logger.Warn("Google Drive watch channel creation error", zap.Any("googleApiError", gerr))
+		a.logger.Warn("Google Drive watch channel creation error", zap.Error(err))
 		return nil, err
 	}
 
@@ -247,7 +244,7 @@ func (a api) initializeChangeTracking(ctx context.Context) error {
 		}
 	}
 
-	// After processing all pages, save the newStartPageToken for future change requests
+	// After processing all pages, save the newStartPageToken for future change requests.
 	if resp.NewStartPageToken != "" {
 		v := sdktypes.NewVar(vars.DriveChangesStartPageToken).SetValue(resp.NewStartPageToken)
 		if err = a.vars.Set(ctx, v.WithScopeID(sdktypes.NewVarScopeID(a.cid))); err != nil {
@@ -281,7 +278,7 @@ func (a api) listChanges(ctx context.Context) ([]*drive.Change, error) {
 
 	var changes []*drive.Change
 
-	// Initial request with the stored page token
+	// Initial request with the stored page token.
 	req := a.createChangeListRequest(client, startPageToken)
 	resp, err := req.Do()
 	if err != nil {
@@ -304,7 +301,7 @@ func (a api) listChanges(ctx context.Context) ([]*drive.Change, error) {
 		changes = append(changes, resp.Changes...)
 	}
 
-	// Save the new start page token for future requests
+	// Save the new start page token for future requests.
 	if resp.NewStartPageToken != "" {
 		v := sdktypes.NewVar(vars.DriveChangesStartPageToken).SetValue(resp.NewStartPageToken)
 		if err := a.vars.Set(ctx, v.WithScopeID(sdktypes.NewVarScopeID(a.cid))); err != nil {
