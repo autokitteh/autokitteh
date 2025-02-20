@@ -1,6 +1,7 @@
 package pythonrt
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -8,6 +9,7 @@ import (
 	"maps"
 	"net"
 	"path"
+	"runtime"
 	"slices"
 	"strings"
 	"time"
@@ -388,17 +390,21 @@ func (py *pySvc) call(ctx context.Context, val sdktypes.Value, args []sdktypes.V
 
 	if _, err = py.runner.ActivityReply(ctx, &req); err != nil {
 		py.log.Error("activity reply error", zap.Error(err))
-		req := pbUserCode.DoneRequest{
-			RunnerId: py.runnerID,
-			Error:    err.Error(),
-		}
-		py.channels.done <- &req
+		py.sendDone(err)
 	}
+}
+
+func (py *pySvc) sendDone(err error) {
+	req := pbUserCode.DoneRequest{
+		RunnerId: py.runnerID,
+		Error:    err.Error(),
+	}
+	py.channels.done <- &req
 }
 
 func (py *pySvc) setupCallbacksListeningLoop(ctx context.Context) chan (error) {
 	callbackErrChan := make(chan error, 1)
-	go func() {
+	listenFn := func() {
 		for {
 			select {
 			case r := <-py.channels.log:
@@ -447,7 +453,8 @@ func (py *pySvc) setupCallbacksListeningLoop(ctx context.Context) chan (error) {
 				return
 			}
 		}
-	}()
+	}
+	py.safelyGo("listen", listenFn)
 
 	return callbackErrChan
 }
@@ -469,7 +476,7 @@ func (py *pySvc) startRequest(ctx context.Context, funcName string, eventData []
 
 func (py *pySvc) setupHealthcheck(ctx context.Context) chan (error) {
 	runnerHealthChan := make(chan error, 1)
-	go func() {
+	healthFn := func() {
 		for {
 			select {
 			case <-ctx.Done():
@@ -495,7 +502,8 @@ func (py *pySvc) setupHealthcheck(ctx context.Context) chan (error) {
 
 			}
 		}
-	}()
+	}
+	py.safelyGo("health", healthFn)
 	return runnerHealthChan
 }
 
@@ -633,7 +641,7 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 	done := make(chan struct{})
 	defer close(done)
 
-	go func() {
+	drainFn := func() {
 		for {
 			select {
 			case r := <-py.channels.log:
@@ -646,7 +654,8 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 				return
 			}
 		}
-	}()
+	}
+	py.safelyGo("drain", drainFn)
 
 	// If we're here, it's an activity call
 	req := pbUserCode.ExecuteRequest{
@@ -662,4 +671,47 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 
 	resp.Result.Custom.ExecutorId = py.xid.String()
 	return sdktypes.ValueFromProto(resp.Result)
+}
+
+// safelyGo spins a goroutine and guards against panic in it.
+// TODO: Should this be in internal/kittehs?
+func (py *pySvc) safelyGo(name string, fn func()) {
+	go func() {
+		defer func() {
+			cs := callStack()
+			if err := recover(); err != nil {
+				py.log.Error(
+					"unhandled panic",
+					zap.String("name", name),
+					zap.Any("error", err),
+					zap.Any("stack", cs),
+				)
+
+				err := fmt.Errorf("%s: %s\n%s", name, err, cs)
+				py.sendDone(err)
+			}
+		}()
+
+		fn()
+	}()
+}
+
+// callStack returns the current call stack as string.
+func callStack() string {
+	pcs := make([]uintptr, 256)
+	n := runtime.Callers(2, pcs)
+	pcs = pcs[:n]
+
+	var buf bytes.Buffer
+	frames := runtime.CallersFrames(pcs)
+	for {
+		frame, more := frames.Next()
+		fmt.Fprintf(&buf, "%s:%d %s\n", frame.File, frame.Line, frame.Function)
+
+		if !more {
+			break
+		}
+	}
+
+	return buf.String()
 }
