@@ -1,0 +1,9 @@
+-- main.py:main --
+from .something import foo
+
+def main():
+    pass
+
+-- something.py --
+def foo():
+    pass
