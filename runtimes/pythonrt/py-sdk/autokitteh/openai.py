@@ -6,8 +6,10 @@ from openai import OpenAI
 
 from .connections import check_connection_name
 from .errors import ConnectionInitError
+from .decorators import _noactivity
 
 
+@_noactivity
 def openai_client(connection: str) -> OpenAI:
     """Initialize an OpenAI client, based on an AutoKitteh connection.
 

@@ -17,3 +17,14 @@ def activity(fn: callable) -> callable:
     """
     setattr(fn, ACTIVITY_ATTR, True)
     return fn
+
+
+def _noactivity(fn: callable) -> callable:
+    """Decorator to mark a function as not a Temporal activity.
+
+    For SDK internal use only - as this does not prevent from a function
+    called from outside the sdk to run as an activity or starting other activities.
+    """
+
+    setattr(fn, ACTIVITY_ATTR, False)
+    return fn

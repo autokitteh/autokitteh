@@ -1,0 +1,32 @@
+oink
+meow
+woof
+moo
+hiss
+
+-- main.py main --
+from random import random
+
+from autokitteh.decorators import noactivity, inhibit_activites
+from autokitteh.sdktest import *
+
+def main(event):
+    # just to make sure random is called as an activity.
+    random()
+
+    print(test_default(ret="oink"))
+    print(test_activity(ret="meow"))
+    print(test_noactivity(ret="woof"))
+
+    # although test_default is called inside test_activity, it should not be 
+    # ran as an activity, as the loader does not scan the sdk.
+    print(test_noactivity_internal_call(ret="moo"))
+
+    # although random is called inside test_activity, it should not be ran as
+    # an activity, as the loader does not scan the sdk.
+    print(test_noactivity_external_call(ret="hiss"))
+
+-- calls.txt --
+random
+test_default
+test_activity

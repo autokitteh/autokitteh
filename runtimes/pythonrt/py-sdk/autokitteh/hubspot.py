@@ -6,8 +6,10 @@ from hubspot import HubSpot
 
 from .connections import check_connection_name, refresh_oauth
 from .errors import ConnectionInitError, OAuthRefreshError
+from .decorators import _noactivity
 
 
+@_noactivity
 def hubspot_client(connection: str, **kwargs) -> HubSpot:
     """Initialize a HubSpot client, based on an AutoKitteh connection.
 

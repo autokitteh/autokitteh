@@ -8,8 +8,10 @@ from github import Auth, Consts, Github, GithubIntegration
 
 from .connections import check_connection_name, encode_jwt
 from .errors import ConnectionInitError
+from .decorators import _noactivity
 
 
+@_noactivity
 def github_client(connection: str, **kwargs) -> Github:
     """Initialize a GitHub client, based on an AutoKitteh connection.
 

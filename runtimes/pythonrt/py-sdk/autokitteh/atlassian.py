@@ -9,11 +9,13 @@ from requests_oauthlib import OAuth2Session
 
 from .connections import check_connection_name
 from .errors import AtlassianOAuthError, ConnectionInitError, EnvVarError
+from .decorators import _noactivity
 
 
 __TOKEN_URL = "https://auth.atlassian.com/oauth/token"
 
 
+@_noactivity
 def jira_client(connection: str, **kwargs) -> Jira:
     """Initialize an Atlassian Jira client, based on an AutoKitteh connection.
 

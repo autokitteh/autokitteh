@@ -6,8 +6,10 @@ from simple_salesforce import Salesforce
 
 from .connections import check_connection_name
 from .errors import ConnectionInitError
+from .decorators import _noactivity
 
 
+@_noactivity
 def salesforce_client(connection: str, **kwargs) -> Salesforce:
     """Initialize a Salesforce client, based on an AutoKitteh connection.
 

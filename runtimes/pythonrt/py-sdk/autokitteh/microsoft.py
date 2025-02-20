@@ -9,12 +9,14 @@ from msgraph import GraphServiceClient
 
 from .connections import check_connection_name, refresh_oauth
 from .errors import ConnectionInitError
+from .decorators import _noactivity
 
 
 # Default buffer time to refresh OAuth tokens before they expire.
 DEFAULT_REFRESH_BUFFER_TIME = timedelta(minutes=5)
 
 
+@_noactivity
 def teams_client(connection: str, **kwargs) -> GraphServiceClient:
     """Initialize a Microsoft Teams client, based on an AutoKitteh connection.
 

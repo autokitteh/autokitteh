@@ -4,8 +4,10 @@ import asana
 
 from .connections import check_connection_name
 from .errors import ConnectionInitError
+from .decorators import _noactivity
 
 
+@_noactivity
 def asana_client(connection: str) -> asana.ApiClient:
     """Initialize an Asana client, based on an AutoKitteh connection.
 

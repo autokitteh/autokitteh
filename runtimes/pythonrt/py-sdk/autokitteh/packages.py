@@ -1,6 +1,7 @@
 import re
 import sys
 from subprocess import run
+from .decorators import _noactivity
 
 
 def _package_name(specifier):
@@ -40,6 +41,7 @@ def _install_package(specifier, import_name):
         )
 
 
+@_noactivity
 def install(*packages):
     """Install Python packages using pip.
 

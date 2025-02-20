@@ -6,8 +6,10 @@ from slack_sdk.web.client import WebClient
 
 from .connections import check_connection_name
 from .errors import ConnectionInitError
+from .decorators import _noactivity
 
 
+@_noactivity
 def slack_client(connection: str, **kwargs) -> WebClient:
     """Initialize a Slack client, based on an AutoKitteh connection.
 

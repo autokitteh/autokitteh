@@ -3,8 +3,10 @@
 from requests import Session
 
 from .oauth2_session import OAuth2Session
+from .decorators import _noactivity
 
 
+@_noactivity
 def zoom_client(connection: str) -> Session:
     """Initialize a Zoom client, based on an AutoKitteh connection.
 

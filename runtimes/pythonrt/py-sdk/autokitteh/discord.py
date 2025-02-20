@@ -4,8 +4,10 @@ import discord
 
 from .connections import check_connection_name
 from .errors import ConnectionInitError
+from .decorators import _noactivity
 
 
+@_noactivity
 def discord_client(connection: str, intents=None, **kwargs) -> discord.Client:
     """Initialize a Discord client, based on an AutoKitteh connection.
 

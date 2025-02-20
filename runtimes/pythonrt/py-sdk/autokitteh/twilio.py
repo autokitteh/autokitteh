@@ -6,8 +6,10 @@ from twilio.rest import Client
 
 from .connections import check_connection_name
 from .errors import ConnectionInitError
+from .decorators import _noactivity
 
 
+@_noactivity
 def twilio_client(connection: str) -> Client:
     """Initialize a Twilio client, based on an AutoKitteh connection.
 

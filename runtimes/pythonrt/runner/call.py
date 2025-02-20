@@ -19,9 +19,18 @@ AK_FUNCS = {
 }
 
 
-def is_marked_activity(fn):
-    """Return true if function is marked as an activity."""
-    return getattr(fn, decorators.ACTIVITY_ATTR, False)
+def get_activity_attr(fn):
+    """Return true if function is marked as an activity.
+
+    Returns:
+    None - not explicitly set.
+    True - explicitly set as activity.
+    False - explicitly set as non-activity.
+    """
+    if hasattr(fn, decorators.ACTIVITY_ATTR):
+        return getattr(fn, decorators.ACTIVITY_ATTR)
+
+    return None
 
 
 def callable_name(fn):
@@ -83,8 +92,9 @@ class AKCall:
         if self.in_activity or self.loading:
             return False
 
-        if is_marked_activity(fn):
-            return True
+        a = get_activity_attr(fn)
+        if a is not None:
+            return a
 
         if is_deterministic(fn):
             return False

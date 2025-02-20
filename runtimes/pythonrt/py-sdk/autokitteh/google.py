@@ -14,8 +14,10 @@ from googleapiclient.discovery import build
 
 from .connections import check_connection_name, refresh_oauth
 from .errors import ConnectionInitError, OAuthRefreshError
+from .decorators import _noactivity
 
 
+@_noactivity
 def gmail_client(connection: str, **kwargs):
     """Initialize a Gmail client, based on an AutoKitteh connection.
 
@@ -46,6 +48,7 @@ def gmail_client(connection: str, **kwargs):
     return build("gmail", "v1", credentials=creds, **kwargs)
 
 
+@_noactivity
 def google_calendar_client(connection: str, **kwargs):
     """Initialize a Google Calendar client, based on an AutoKitteh connection.
 
@@ -75,6 +78,7 @@ def google_calendar_client(connection: str, **kwargs):
     return build("calendar", "v3", credentials=creds, **kwargs)
 
 
+@_noactivity
 def google_drive_client(connection: str, **kwargs):
     """Initialize a Google Drive client, based on an AutoKitteh connection.
 
@@ -103,6 +107,7 @@ def google_drive_client(connection: str, **kwargs):
     return build("drive", "v3", credentials=creds, **kwargs)
 
 
+@_noactivity
 def google_forms_client(connection: str, **kwargs):
     """Initialize a Google Forms client, based on an AutoKitteh connection.
 
@@ -133,6 +138,7 @@ def google_forms_client(connection: str, **kwargs):
     return build("forms", "v1", credentials=creds, **kwargs)
 
 
+@_noactivity
 def gemini_client(connection: str, **kwargs) -> genai.GenerativeModel:
     """Initialize a Gemini generative AI client, based on an AutoKitteh connection.
 
@@ -167,6 +173,7 @@ def gemini_client(connection: str, **kwargs) -> genai.GenerativeModel:
     return genai.GenerativeModel(**kwargs)
 
 
+@_noactivity
 def google_sheets_client(connection: str, **kwargs):
     """Initialize a Google Sheets client, based on an AutoKitteh connection.
 
@@ -194,6 +201,7 @@ def google_sheets_client(connection: str, **kwargs):
     return build("sheets", "v4", credentials=creds, **kwargs)
 
 
+@_noactivity
 def google_creds(integration: str, connection: str, scopes: list[str], **kwargs):
     """Initialize credentials for a Google APIs client, for service discovery.
 
