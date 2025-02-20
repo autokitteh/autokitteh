@@ -152,39 +152,40 @@ func (a api) watchEvents(ctx context.Context, connID sdktypes.ConnectionID, user
 	}
 
 	addr := os.Getenv("WEBHOOK_ADDRESS")
+	watchID := connID.String() + "/events"
 	req := client.Changes.Watch(startToken.StartPageToken, &drive.Channel{
-		Id:         connID.String() + "/events",
-		Token:      userEmail + "/events",
-		Address:    fmt.Sprintf("https://%s/googledrive/notif", addr),
-		Type:       "web_hook",
-		Expiration: time.Now().Add(time.Hour*24*7).Unix() * 1000,
+		Id:      watchID,
+		Token:   userEmail + "/" + watchID,
+		Address: fmt.Sprintf("https://%s/googledrive/notif", addr),
+		Type:    "web_hook",
+		// Expiration: time.Now().Add(time.Hour*24*7).Unix() * 1000,
+		Expiration: time.Now().Add(time.Hour*24).Unix() * 1000,
 	})
 
-	resp, err := req.Do()
-	if err == nil {
-		return resp, nil
-	}
-
-	gerr, ok := err.(*googleapi.Error)
-	a.logger.Warn("Google Drive watch channel creation error", zap.Any("googleApiError", gerr))
-	if !ok || gerr.Code != 400 || len(gerr.Errors) != 1 {
-		return nil, err
-	}
-	if gerr.Errors[0].Reason != "channelIdNotUnique" {
-		return nil, err
-	}
-
-	// If the channel already exists, stop and recreate it.
-	a.logger.Info("Google Drive watch channel already exists - stopping and recreating")
-	if err := a.stopWatch(ctx, connID); err != nil {
-		return nil, fmt.Errorf("stop existing watch channel: %w", err)
-	}
-
-	resp, err = req.Do()
+	// check if the channel already exists
+	vs, err := a.vars.Get(ctx, sdktypes.NewVarScopeID(connID), vars.DriveEventsWatchID)
 	if err != nil {
-		return nil, fmt.Errorf("recreate watch channel: %w", err)
+		return nil, err
 	}
-	a.logger.Warn("Google Drive watch channel recreated", zap.Int64("expiration", resp.Expiration))
+	wid := vs.Get(vars.DriveEventsWatchID).Value()
+	if wid != "" {
+		// sanity check
+		if watchID != wid {
+			return nil, fmt.Errorf("watch ID mismatch: %s != %s", watchID, wid)
+		}
+		// channel already exists, stop it
+		if err := a.stopWatch(ctx, connID); err != nil {
+			return nil, fmt.Errorf("stop existing watch channel: %w", err)
+		}
+	}
+
+	resp, err := req.Do()
+	if err != nil {
+		gerr, _ := err.(*googleapi.Error)
+		a.logger.Warn("Google Drive watch channel creation error", zap.Any("googleApiError", gerr))
+		return nil, err
+	}
+
 	return resp, nil
 }
 
