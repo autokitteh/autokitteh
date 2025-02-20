@@ -120,7 +120,7 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Log
 
 	// Verify signature.
 	if !verifySignature(signingSecret, ts, sig, body) {
-		l.Error("signature verification failed",
+		l.Warn("signature verification failed",
 			zap.String("signature", sig),
 			zap.Bool("has_signing_secret", signingSecret != ""),
 			zap.String("app_id", aid),
@@ -154,7 +154,7 @@ func verifySignature(signingSecret, ts, want string, body []byte) bool {
 // Transform the received Slack event into an AutoKitteh event.
 func transformEvent(l *zap.Logger, slackEvent any, eventType string) (sdktypes.Event, error) {
 	l = l.With(
-		zap.String("eventType", eventType),
+		zap.String("event_type", eventType),
 		zap.Any("event", slackEvent),
 	)
 
@@ -195,8 +195,8 @@ func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, cids []sd
 	for _, cid := range cids {
 		eid, err := h.dispatch(ctx, e.WithConnectionDestinationID(cid), nil)
 		l := l.With(
-			zap.String("connectionID", cid.String()),
-			zap.String("eventID", eid.String()),
+			zap.String("connection_id", cid.String()),
+			zap.String("event_id", eid.String()),
 		)
 		if err != nil {
 			l.Error("event dispatch failed", zap.Error(err))

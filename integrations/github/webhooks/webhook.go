@@ -12,6 +12,7 @@ import (
 	"github.com/google/go-github/v60/github"
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/github/internal/vars"
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -38,7 +39,6 @@ type handler struct {
 	vars          sdkservices.Vars
 	dispatch      sdkservices.DispatchFunc
 	integrationID sdktypes.IntegrationID
-	webhookSecret string
 }
 
 func NewHandler(l *zap.Logger, vars sdkservices.Vars, d sdkservices.DispatchFunc, id sdktypes.IntegrationID) handler {
@@ -47,14 +47,13 @@ func NewHandler(l *zap.Logger, vars sdkservices.Vars, d sdkservices.DispatchFunc
 		vars:          vars,
 		dispatch:      d,
 		integrationID: id,
-		webhookSecret: os.Getenv(webhookSecretEnvVar),
 	}
 }
 
 // ServeHTTP dispatches to autokitteh an asynchronous event notification that our GitHub app subscribed
 // to. See https://github.com/organizations/autokitteh/settings/apps/autokitteh/permissions.
 func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	l := h.logger.With(zap.String("urlPath", r.URL.Path))
+	l := h.logger.With(zap.String("url_path", r.URL.Path))
 	var (
 		payload []byte
 		err     error
@@ -63,44 +62,50 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if strings.HasSuffix(r.URL.Path, "/github/webhook") {
 		// Validate that the inbound HTTP request has a valid content type
 		// and a valid signature header, and if so parse the received event.
-		whs, err := h.getWebHookSecret(w, r)
+		secret, err := h.webhookSecret(w, r)
 		if err != nil {
 			return
 		}
+		if secret == "" {
+			return // App ID not found, so we can't validate the payload.
+		}
 
-		payload, err = github.ValidatePayload(r, []byte(whs))
+		payload, err = github.ValidatePayload(r, []byte(secret))
 		if err != nil {
-			l.Warn("Received invalid app event payload", zap.Error(err))
-			http.Error(w, "Bad Request", http.StatusBadRequest)
+			l.Warn("received invalid app event payload",
+				zap.String("app_id", r.Header.Get(githubAppIDHeader)),
+				zap.Error(err),
+			)
+			common.HTTPError(w, http.StatusForbidden)
 			return
 		}
 	} else {
 		// This event is for a user-defined webhook, not an app.
 		webhookID := r.PathValue("id")
-		l := l.With(zap.String("webhookID", webhookID))
+		l := l.With(zap.String("webhook_id", webhookID))
 
 		ctx := r.Context()
 		cids, err := h.vars.FindConnectionIDs(ctx, h.integrationID, vars.PATKey, webhookID)
 		if err != nil {
-			l.Error("Failed to find connection IDs", zap.Error(err))
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			l.Error("failed to find connection IDs", zap.Error(err))
+			common.HTTPError(w, http.StatusInternalServerError)
 			return
 		}
 
 		for _, cid := range cids {
-			l := l.With(zap.String("connectionID", cid.String()))
+			l := l.With(zap.String("connection_id", cid.String()))
 
 			data, err := h.vars.Get(ctx, sdktypes.NewVarScopeID(cid), vars.PATSecret)
 			if err != nil {
-				l.Error("Unrecognized connection for user event payload", zap.Error(err))
-				http.Error(w, "Internal Server error", http.StatusInternalServerError)
+				l.Error("unrecognized connection for user event payload", zap.Error(err))
+				common.HTTPError(w, http.StatusInternalServerError)
 				return
 			}
 
 			payload, err = github.ValidatePayload(r, []byte(data.GetValue(vars.PATSecret)))
 			if err != nil {
-				l.Warn("Received invalid user event payload", zap.Error(err))
-				http.Error(w, "Bad Request", http.StatusBadRequest)
+				l.Warn("received invalid user event payload", zap.Error(err))
+				common.HTTPError(w, http.StatusBadRequest)
 				return
 			}
 
@@ -116,21 +121,21 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// fake (not from GitHub), or a relevant connection could not be found.
 		// Either way, we report success (HTTP 200) and do nothing.
 		if payload == nil {
-			l.Info("Received GitHub event from user webhook, but no relevant connection found")
+			l.Info("received GitHub event from user webhook, but no relevant connection found")
 			return
 		}
 	}
 
 	eventType := github.WebHookType(r)
-	l = l.With(zap.String("eventType", eventType))
+	l = l.With(zap.String("event_type", eventType))
 
 	ghEvent, err := github.ParseWebHook(eventType, payload)
 	if err != nil {
-		l.Warn("Received unrecognized event type",
+		l.Warn("received unrecognized event type",
 			zap.ByteString("payload", payload),
 			zap.Error(err),
 		)
-		http.Error(w, "Not Implemented", http.StatusNotImplemented)
+		common.HTTPError(w, http.StatusNotImplemented)
 		return
 	}
 
@@ -139,8 +144,8 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var installID string
 	if !userCID.IsValid() {
 		if installID, err = extractInstallationID(ghEvent); err != nil {
-			l.Error("Failed to extract installation ID and user", zap.Error(err))
-			http.Error(w, "no installation or user specified", http.StatusBadRequest)
+			l.Error("failed to extract installation ID and user", zap.Error(err))
+			common.HTTPError(w, http.StatusBadRequest)
 			return
 		}
 	}
@@ -150,8 +155,8 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var jsonEvent map[string]any
 	err = json.Unmarshal(payload, &jsonEvent)
 	if err != nil {
-		l.Error("Failed to unmarshal payload to map", zap.Error(err))
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		l.Error("failed to unmarshal payload to map", zap.Error(err))
+		common.HTTPError(w, http.StatusInternalServerError)
 		return
 	}
 
@@ -165,11 +170,11 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Data:      data,
 	})
 	if err != nil {
-		l.Error("Failed to convert protocol buffer to SDK event",
+		l.Error("failed to convert protocol buffer to SDK event",
 			zap.Any("data", data),
 			zap.Error(err),
 		)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		common.HTTPError(w, http.StatusInternalServerError)
 		return
 	}
 
@@ -185,8 +190,8 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		// App webhook.
 		icids, err := h.vars.FindConnectionIDs(ctx, h.integrationID, vars.InstallKey(appID, installID), "")
 		if err != nil {
-			l.Error("Failed to find connection IDs", zap.Error(err))
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			l.Error("failed to find connection IDs", zap.Error(err))
+			common.HTTPError(w, http.StatusInternalServerError)
 			return
 		}
 
@@ -199,33 +204,37 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Returning immediately without an error = acknowledgement of receipt.
 }
 
-func (h handler) getWebHookSecret(w http.ResponseWriter, r *http.Request) (string, error) {
+func (h handler) webhookSecret(w http.ResponseWriter, r *http.Request) (string, error) {
 	l := extrazap.ExtractLoggerFromContext(r.Context())
 
 	appID := r.Header.Get(githubAppIDHeader)
+	l = l.With(zap.String("app_id", appID))
+
 	cids, err := h.vars.FindConnectionIDs(r.Context(), h.integrationID, vars.AppID, appID)
 	if err != nil {
-		l.Error("Failed to find connection IDs", zap.Error(err))
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		l.Error("failed to find connection IDs", zap.Error(err))
+		common.HTTPError(w, http.StatusInternalServerError)
 		return "", err
 	}
 	if len(cids) == 0 {
-		l.Warn("Received GitHub event from app webhook, but no relevant connection found")
 		return "", nil
 	}
+
 	cid := cids[0]
-	vs, err := h.vars.Get(r.Context(), sdktypes.NewVarScopeID(cid))
+	vs, err := h.vars.Get(r.Context(), sdktypes.NewVarScopeID(cid), vars.ClientSecret)
 	if err != nil {
-		l.Warn("Failed to get GitHub app ID", zap.Error(err))
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		l.Warn("failed to get GitHub app ID", zap.Error(err))
+		common.HTTPError(w, http.StatusInternalServerError)
 		return "", err
 	}
-	whs := h.webhookSecret
-	// If the user has defined a custom GitHub App, use its secret instead of the environment variable.
+
+	// If the user has defined a private GitHub App,
+	// use its secret instead of the environment variable.
+	privateSecret := vs.GetValue(vars.ClientSecret)
 	if vs.GetValue(vars.ClientSecret) != "" {
-		whs = vs.GetValue(vars.WebhookSecret)
+		return privateSecret, nil
 	}
-	return whs, nil
+	return os.Getenv(webhookSecretEnvVar), nil
 }
 
 func extractInstallationID(event any) (inst string, err error) {
@@ -254,14 +263,14 @@ func extractInstallationID(event any) (inst string, err error) {
 func transformEvent(l *zap.Logger, w http.ResponseWriter, event any) (map[string]*sdktypes.ValuePB, error) {
 	wrapped, err := sdktypes.WrapValue(event)
 	if err != nil {
-		l.Error("Failed to wrap GitHub event", zap.Any("event", event), zap.Error(err))
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		l.Error("failed to wrap GitHub event", zap.Any("event", event), zap.Error(err))
+		common.HTTPError(w, http.StatusInternalServerError)
 		return nil, err
 	}
 	data, err := wrapped.ToStringValuesMap()
 	if err != nil {
-		l.Error("Failed to convert wrapped GitHub event", zap.Any("event", event), zap.Error(err))
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		l.Error("failed to convert wrapped GitHub event", zap.Any("event", event), zap.Error(err))
+		common.HTTPError(w, http.StatusInternalServerError)
 		return nil, err
 	}
 	return kittehs.TransformMapValues(data, sdktypes.ToProto), nil
@@ -272,8 +281,8 @@ func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, cids []sd
 	for _, cid := range cids {
 		eid, err := h.dispatch(ctx, e.WithConnectionDestinationID(cid), nil)
 		l := l.With(
-			zap.String("connectionID", cid.String()),
-			zap.String("eventID", eid.String()),
+			zap.String("connection_id", cid.String()),
+			zap.String("event_id", eid.String()),
 		)
 		if err != nil {
 			l.Error("Event dispatch failed", zap.Error(err))
