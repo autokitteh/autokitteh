@@ -22,7 +22,7 @@ import values
 # from audit import make_audit_hook  # TODO(ENG-1893): uncomment this.
 from autokitteh import AttrDict, connections
 from autokitteh.errors import AutoKittehError
-from call import AKCall, full_func_name
+from call import AKCall, full_func_name, is_marked_activity
 from syscalls import SysCalls
 
 # Timeouts are in seconds
@@ -261,6 +261,14 @@ class Runner(pb.runner_rpc.RunnerService):
         # hook = make_audit_hook(ak_call, self.code_dir)
         # sys.addaudithook(hook)
 
+        if is_marked_activity(fn):
+            orig_fn = fn
+
+            def handler(event):
+                return ak_call(orig_fn, event)
+
+            fn = handler
+
         self.executor.submit(self.on_event, fn, event)
 
         return pb.runner.StartResponse()
@@ -400,9 +408,11 @@ class Runner(pb.runner_rpc.RunnerService):
         return Result(value, error, tb)
 
     def on_event(self, fn, event):
-        log.info("start event: %s", full_func_name(fn))
+        func_name = full_func_name(fn)
+        log.info("start event: %s", func_name)
 
         result = self._call(fn, [event], {})
+
         log.info("event end: error=%r", result.error)
         req = pb.handler.DoneRequest(
             runner_id=self.id,

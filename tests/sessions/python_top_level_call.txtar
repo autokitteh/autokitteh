@@ -8,3 +8,5 @@ Log = namedtuple('Log', 'level message')
 def main(event):
 	log = Log('INFO', 'kittens are soft')
 	print(log)
+
+-- calls.txt --

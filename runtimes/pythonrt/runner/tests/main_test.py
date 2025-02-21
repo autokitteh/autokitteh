@@ -14,6 +14,7 @@ from subprocess import Popen, TimeoutExpired, run
 from unittest.mock import MagicMock
 
 import pytest
+
 from conftest import clear_module_cache, workflows
 
 import main

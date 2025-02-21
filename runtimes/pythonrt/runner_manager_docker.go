@@ -73,12 +73,9 @@ func createStartCommand(entrypoint, workerAddress, runnerID string) []string {
 	// ["main.py", "--code-dir", "workflow", "--worker-address", "host.docker.internal:9980"]
 	return []string{
 		entrypoint,
-		"--code-dir",
-		"/workflow",
-		"--worker-address",
-		workerAddress,
-		"--runner-id",
-		runnerID,
+		"--code-dir", "/workflow",
+		"--worker-address", workerAddress,
+		"--runner-id", runnerID,
 	}
 }
 
