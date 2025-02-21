@@ -44,7 +44,13 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	apiKey := r.Form.Get("key")
+	if err := validateApiKey(apiKey); err != nil {
+		c.AbortBadRequest("invalid API key")
+		return
+	}
+
 	c.Finalize(sdktypes.NewVars().
-		Set(apiKeyVar, r.Form.Get("key"), true).
+		Set(apiKeyVar, apiKey, true).
 		Set(authTypeVar, integrations.Init, false))
 }
