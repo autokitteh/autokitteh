@@ -1,8 +1,11 @@
 6
 
--- main.star:main --
+-- main.star main --
 lena = activity(len)
 
 def main():
     ret = lena.run("george")
     print(ret)
+
+-- calls.txt --
+len

@@ -13,3 +13,6 @@ def main(event):
 @autokitteh.activity
 def foo(x):
     print(x)
+
+-- calls.txt --
+foo

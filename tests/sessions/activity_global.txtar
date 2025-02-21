@@ -2,3 +2,5 @@
 
 -- main.star --
 print(catch(activity(len).run, "george"))
+
+-- calls.txt --

@@ -9,9 +9,10 @@ import (
 )
 
 const (
-	symbolSeparator = ","
-	pathSeparator   = ":"
-	rowColSeparator = "."
+	symbolSeparator  = ","
+	pathSeparator    = ":"
+	altPathSeparator = " "
+	rowColSeparator  = "."
 )
 
 type CodeLocation struct {
@@ -80,6 +81,10 @@ func ParseCodeLocation(s string) (CodeLocation, error) {
 	}
 
 	path, after, ok := strings.Cut(s, pathSeparator)
+	if !ok {
+		path, after, ok = strings.Cut(s, altPathSeparator)
+	}
+
 	if !ok {
 		return CodeLocationFromProto(&CodeLocationPB{Path: path})
 	}
