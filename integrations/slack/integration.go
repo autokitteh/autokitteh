@@ -115,21 +115,42 @@ func migrateOldConnectionVars(l *zap.Logger, v sdkservices.Vars) {
 		vsid := sdktypes.NewVarScopeID(cid)
 
 		pairs := []struct{ old, new string }{
+			{"Key", "install_ids"},
+
+			{"oauth_AccessToken", "oauth_access_token"},
+			{"oauth_TokenType", "oauth_expiry"},
+			{"oauth_RefreshToken", "oauth_refresh_token"},
+			{"oauth_Expiry", "oauth_token_type"},
+
 			{"client_id", "private_client_id"},
 			{"client_secret", "private_client_secret"},
 			{"signing_secret", "private_signing_secret"},
 
+			{"AppID", "app_id"},
+			{"EnterpriseID", "enterprise_id"},
+			{"TeamID", "team_id"},
+
 			{"AppToken", "private_app_token"},
 			{"BotToken", "private_bot_token"},
-
-			{"Key", "install_ids"},
 		}
 		for _, pair := range pairs {
 			o, n := sdktypes.NewSymbol(pair.old), sdktypes.NewSymbol(pair.new)
 			if err := common.RenameVar(ctx, v, vsid, o, n); err != nil {
-				l.Error("failed to rename old Slack connection var", zap.Error(err))
+				l.Error("failed to migrate Slack connection var name",
+					zap.String("old", pair.old),
+					zap.String("new", pair.new),
+					zap.Error(err),
+				)
 				continue
 			}
+		}
+
+		if err := common.MigrateAuthType(ctx, v, vsid); err != nil {
+			l.Error("failed to migrate Slack connection's auth type", zap.Error(err))
+		}
+
+		if err := common.MigrateDateTimeToRFC3339(ctx, v, vsid, common.OAuthExpiryVar); err != nil {
+			l.Error("failed to migrate Slack connection's OAuth expiry", zap.Error(err))
 		}
 	}
 }
