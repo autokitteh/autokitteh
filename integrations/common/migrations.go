@@ -45,7 +45,7 @@ func MigrateAuthType(ctx context.Context, v sdkservices.Vars, vsid sdktypes.VarS
 	}
 
 	if o.Value() == integrations.OAuth {
-		o.SetValue(integrations.OAuthDefault)
+		o = o.SetValue(integrations.OAuthDefault)
 		return v.Set(ctx, o.WithScopeID(vsid))
 	}
 
@@ -78,6 +78,6 @@ func MigrateDateTimeToRFC3339(ctx context.Context, v sdkservices.Vars, vsid sdkt
 		return err
 	}
 
-	o.SetValue(t.UTC().Format(time.RFC3339))
+	o = o.SetValue(t.UTC().Format(time.RFC3339))
 	return v.Set(ctx, o.WithScopeID(vsid))
 }

@@ -116,11 +116,12 @@ func migrateOldConnectionVars(l *zap.Logger, v sdkservices.Vars) {
 
 		pairs := []struct{ old, new string }{
 			{"Key", "install_ids"},
+			{"oauth_TokenTyp", "oauth_TokenType"},
 
 			{"oauth_AccessToken", "oauth_access_token"},
-			{"oauth_TokenType", "oauth_expiry"},
+			{"oauth_Expiry", "oauth_expiry"},
 			{"oauth_RefreshToken", "oauth_refresh_token"},
-			{"oauth_Expiry", "oauth_token_type"},
+			{"oauth_TokenType", "oauth_token_type"},
 
 			{"client_id", "private_client_id"},
 			{"client_secret", "private_client_secret"},
@@ -152,5 +153,7 @@ func migrateOldConnectionVars(l *zap.Logger, v sdkservices.Vars) {
 		if err := common.MigrateDateTimeToRFC3339(ctx, v, vsid, common.OAuthExpiryVar); err != nil {
 			l.Error("failed to migrate Slack connection's OAuth expiry", zap.Error(err))
 		}
+
+		_ = v.Delete(ctx, vsid, sdktypes.NewSymbol("authType"))
 	}
 }
