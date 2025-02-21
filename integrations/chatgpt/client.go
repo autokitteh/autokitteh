@@ -77,18 +77,24 @@ func connTest(i *integration) sdkintegrations.OptFn {
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Init required"), nil
 		}
 
-		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid), apiKeyVar)
 		if err != nil {
 			zap.L().Error("failed to read connection vars", zap.String("connection_id", cid.String()), zap.Error(err))
 			return sdktypes.InvalidStatus, err
 		}
 
-		apiKey := vs.Get(apiKeyVar).Value()
-		client := openai.NewClient(apiKey)
-		if _, err = client.ListModels(ctx); err != nil {
+		if err := validateApiKey(vs.GetValue(apiKeyVar)); err != nil {
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 		}
 
 		return sdktypes.NewStatus(sdktypes.StatusCodeOK, ""), nil
 	})
+}
+
+func validateApiKey(apiKey string) error {
+	client := openai.NewClient(apiKey)
+	if _, err := client.ListModels(context.Background()); err != nil {
+		return err
+	}
+	return nil
 }
