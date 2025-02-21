@@ -565,6 +565,7 @@ type Org struct {
 
 	UpdatedBy uuid.UUID `gorm:"type:uuid"`
 	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
 func ParseOrg(r Org) (sdktypes.Org, error) {

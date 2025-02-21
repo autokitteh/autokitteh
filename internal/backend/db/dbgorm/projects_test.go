@@ -54,10 +54,11 @@ func TestCreateDuplicatedProjectName(t *testing.T) {
 	f.createProjectsAndAssert(t, p)
 
 	// create different project with the same name
-	p2 := f.newProject()
+	p2 := f.newProject(p.OrgID)
 	p2.Name = p.Name
 	assert.Equal(t, p.Name, p2.Name)
 	assert.NotEqual(t, p.ProjectID, p2.ProjectID)
+	assert.Equal(t, p.OrgID, p2.OrgID)
 
 	// test create another project with the same name
 	assert.ErrorIs(t, f.gormdb.createProject(f.ctx, &p2), gorm.ErrDuplicatedKey)
