@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -107,10 +108,17 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 		return int(f)
 	})
 
+	u, err := transformIssueURL(jiraEvent, l)
+	if err != nil {
+		l.Error("Failed to transform Jira URL", zap.Error(err))
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
+
 	ctx := extrazap.AttachLoggerToContext(l, r.Context())
 	for _, id := range ids {
-		value := strconv.Itoa(id)
-		cids, err := h.vars.FindConnectionIDs(ctx, IntegrationID, WebhookID, value)
+		value := webhookKey(u, strconv.Itoa(id))
+		cids, err := h.vars.FindConnectionIDs(ctx, IntegrationID, WebhookKeySymbol, value)
 		if err != nil {
 			l.Error("Failed to find connection IDs", zap.Error(err))
 			break
@@ -121,6 +129,30 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Returning immediately without an error = acknowledgement of receipt.
+}
+
+// transformIssueURL is used to transform the issue URL in the Jira event
+// to a normalized URL that can be used for the webhook key.
+func transformIssueURL(jiraEvent map[string]any, l *zap.Logger) (string, error) {
+	issue, ok := jiraEvent["issue"].(map[string]any)
+	if !ok {
+		l.Warn("Invalid issue data in Jira event")
+		return "", errors.New("invalid issue data")
+	}
+
+	selfURL, ok := issue["self"].(string)
+	if !ok {
+		l.Warn("Invalid issue URL in Jira event")
+		return "", errors.New("invalid issue URL")
+	}
+
+	u, err := kittehs.NormalizeURL(selfURL, true)
+	if err != nil {
+		l.Warn("Invalid issue URL in Jira event", zap.Error(err))
+		return "", fmt.Errorf("normalize URL: %w", err)
+	}
+
+	return u, nil
 }
 
 // https://developer.atlassian.com/cloud/jira/platform/understanding-jwt-for-connect-apps/
