@@ -111,18 +111,23 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Log
 		return nil
 	}
 
-	signingSecret, info, err := h.oauthSigningSecret(r.Context(), l, body, wantContentType)
+	// Verify signature.
+	secret, info, err := h.signingSecret(r.Context(), l, body, wantContentType)
 	if err != nil {
-		l.Error("failed to get signing secret", zap.Error(err))
+		l.Error("failed to get Slack signing secret", zap.Error(err))
 		common.HTTPError(w, http.StatusInternalServerError)
 		return nil
 	}
+	if secret == "" {
+		// Slack is not configured, so there's no point
+		// in verifying or accepting the payload.
+		return nil
+	}
 
-	// Verify signature.
-	if !verifySignature(signingSecret, ts, sig, body) {
+	if !verifySignature(secret, ts, sig, body) {
 		l.Warn("signature verification failed",
 			zap.String("signature", sig),
-			zap.Bool("has_signing_secret", signingSecret != ""),
+			zap.Bool("has_signing_secret", secret != ""),
 			zap.String("app_id", info.AppID),
 			zap.String("enterprise_id", info.EnterpriseID),
 			zap.String("team_id", info.TeamID),
@@ -249,11 +254,11 @@ func (h handler) extractIDs(l *zap.Logger, body []byte, wantContentType string) 
 	return p.APIAppID, p.Enterprise.ID, p.Team.ID, nil
 }
 
-// oauthSigningSecret reads the signing secret from the connection's
-// variables, or uses the signing secret of the server's default Slack app.
+// signingSecret reads the signing secret from the private connection's
+// variable, or uses the signing secret of the server's default Slack app.
 // It also returns the app ID, team ID, and enterprise ID of the connection
 // (if there's a signature verification error they're useful for debugging).
-func (h handler) oauthSigningSecret(ctx context.Context, l *zap.Logger, body []byte, wantContentType string) (string, *vars.InstallInfo, error) {
+func (h handler) signingSecret(ctx context.Context, l *zap.Logger, body []byte, wantContentType string) (string, *vars.InstallInfo, error) {
 	appID, enterpriseID, teamID, err := h.extractIDs(l, body, wantContentType)
 	if err != nil {
 		return "", nil, fmt.Errorf("failed to extract IDs: %w", err)
@@ -267,16 +272,14 @@ func (h handler) oauthSigningSecret(ctx context.Context, l *zap.Logger, body []b
 		return "", nil, nil
 	}
 
-	vs, err := h.vars.Get(ctx, sdktypes.NewVarScopeID(cids[0]), vars.SigningSecretVar)
+	cid := cids[0] // Any connection will do, as they all share the same secret.
+	vs, err := h.vars.Get(ctx, sdktypes.NewVarScopeID(cid), vars.SigningSecretVar)
 	if err != nil {
-		return "", nil, fmt.Errorf("failed to get signing secret: %w", err)
+		return "", nil, fmt.Errorf("failed to read connection var: %w", err)
 	}
 
 	secret := vs.GetValue(vars.SigningSecretVar)
 	if secret == "" {
-		// If a custom OAuth signing key wasn't found, try to use
-		// the default one. If the request is fake, verifying its
-		// signature would still fail, so there's no security risk.
 		secret = os.Getenv(vars.SigningSecretEnvVar)
 	}
 

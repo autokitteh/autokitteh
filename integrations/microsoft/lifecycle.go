@@ -5,6 +5,8 @@ import (
 	"net/http"
 
 	"go.uber.org/zap"
+
+	"go.autokitteh.dev/autokitteh/integrations/common"
 )
 
 // handleLifecycle receives asynchronous events ("lifecycle notifications") from
@@ -30,7 +32,7 @@ func (h handler) handleLifecycle(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		h.logger.Warn("MS lifecycle notif: failed to read request body", zap.Error(err))
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		common.HTTPError(w, http.StatusBadRequest)
 		return
 	}
 	l.Warn("TODO: handle MS lifecycle notif", zap.ByteString("body", body))

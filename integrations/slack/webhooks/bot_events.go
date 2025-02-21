@@ -6,6 +6,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api"
 	"go.autokitteh.dev/autokitteh/integrations/slack/events"
@@ -69,7 +70,7 @@ func (h handler) HandleBotEvent(w http.ResponseWriter, r *http.Request) {
 			zap.ByteString("json", body),
 			zap.Error(err),
 		)
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+		common.HTTPError(w, http.StatusBadRequest)
 		return
 	}
 
@@ -85,7 +86,7 @@ func (h handler) HandleBotEvent(w http.ResponseWriter, r *http.Request) {
 			zap.ByteString("body", body),
 			zap.Any("callback", cb),
 		)
-		http.Error(w, "Not Implemented", http.StatusNotImplemented)
+		common.HTTPError(w, http.StatusNotImplemented)
 		return
 	}
 	slackEvent := f(l, w, body, cb)
@@ -96,7 +97,7 @@ func (h handler) HandleBotEvent(w http.ResponseWriter, r *http.Request) {
 	// Transform the received Slack event into an AutoKitteh event.
 	akEvent, err := transformEvent(l, slackEvent, cb.Event.Type)
 	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		common.HTTPError(w, http.StatusInternalServerError)
 		return
 	}
 
@@ -106,7 +107,7 @@ func (h handler) HandleBotEvent(w http.ResponseWriter, r *http.Request) {
 	cids, err := h.listConnectionIDs(ctx, cb.APIAppID, enterpriseID, cb.TeamID)
 	if err != nil {
 		l.Error("Failed to find connection IDs", zap.Error(err))
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		common.HTTPError(w, http.StatusInternalServerError)
 		return
 	}
 

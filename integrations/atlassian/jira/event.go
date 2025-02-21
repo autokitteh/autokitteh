@@ -14,6 +14,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -55,7 +56,7 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	token := r.Header.Get(headerAuthorization)
 	if !verifyJWT(l, strings.TrimPrefix(token, "Bearer ")) {
 		l.Warn("Incoming Jira event with bad Authorization header")
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		common.HTTPError(w, http.StatusUnauthorized)
 		return
 	}
 
@@ -63,7 +64,7 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	contentType := r.Header.Get(headerContentType)
 	if !strings.HasPrefix(contentType, contentTypeJSON) {
 		l.Warn("Incoming Jira event with bad header", zap.String(headerContentType, contentType))
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+		common.HTTPError(w, http.StatusBadRequest)
 		return
 	}
 
@@ -71,21 +72,21 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		l.Warn("Failed to read content of incoming Jira event", zap.Error(err))
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+		common.HTTPError(w, http.StatusBadRequest)
 		return
 	}
 
 	var jiraEvent map[string]any
 	if err := json.Unmarshal(body, &jiraEvent); err != nil {
 		l.Warn("Failed to unmarshal JSON in incoming Jira event", zap.Error(err))
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+		common.HTTPError(w, http.StatusBadRequest)
 		return
 	}
 
 	// Construct an AutoKitteh event from the Jira event.
 	akEvent, err := constructEvent(l, jiraEvent)
 	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		common.HTTPError(w, http.StatusInternalServerError)
 		return
 	}
 
@@ -93,7 +94,7 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	is, ok := jiraEvent["matchedWebhookIds"].([]any)
 	if !ok {
 		l.Warn("Invalid webhook IDs in Jira event", zap.Any("ids", jiraEvent["matchedWebhookIds"]))
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+		common.HTTPError(w, http.StatusBadRequest)
 		return
 	}
 

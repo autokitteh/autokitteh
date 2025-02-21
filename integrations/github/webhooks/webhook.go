@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"strconv"
@@ -62,12 +63,16 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if strings.HasSuffix(r.URL.Path, "/github/webhook") {
 		// Validate that the inbound HTTP request has a valid content type
 		// and a valid signature header, and if so parse the received event.
-		secret, err := h.webhookSecret(w, r)
+		secret, err := h.webhookSecret(r)
 		if err != nil {
+			l.Error("failed to get GitHub webhook secret", zap.Error(err))
+			common.HTTPError(w, http.StatusInternalServerError)
 			return
 		}
 		if secret == "" {
-			return // App ID not found, so we can't validate the payload.
+			// GitHub is not configured, so there's no point
+			// in validating or accepting the payload.
+			return
 		}
 
 		payload, err = github.ValidatePayload(r, []byte(secret))
@@ -204,37 +209,35 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Returning immediately without an error = acknowledgement of receipt.
 }
 
-func (h handler) webhookSecret(w http.ResponseWriter, r *http.Request) (string, error) {
-	l := extrazap.ExtractLoggerFromContext(r.Context())
-
+// webhookSecret reads the webhook secret from the private connection's
+// variable, or uses the webhook secret of the server's default GitHub app.
+func (h handler) webhookSecret(r *http.Request) (string, error) {
 	appID := r.Header.Get(githubAppIDHeader)
-	l = l.With(zap.String("app_id", appID))
+	if appID == "" {
+		return "", errors.New("missing GitHub app ID in event's HTTP header")
+	}
 
-	cids, err := h.vars.FindConnectionIDs(r.Context(), h.integrationID, vars.AppID, appID)
+	ctx := r.Context()
+	cids, err := h.vars.FindConnectionIDs(ctx, h.integrationID, vars.AppID, appID)
 	if err != nil {
-		l.Error("failed to find connection IDs", zap.Error(err))
-		common.HTTPError(w, http.StatusInternalServerError)
-		return "", err
+		return "", fmt.Errorf("failed to find connection IDs: %w", err)
 	}
 	if len(cids) == 0 {
 		return "", nil
 	}
 
-	cid := cids[0]
-	vs, err := h.vars.Get(r.Context(), sdktypes.NewVarScopeID(cid), vars.ClientSecret)
+	cid := cids[0] // Any connection will do, as they all share the same secret.
+	vs, err := h.vars.Get(ctx, sdktypes.NewVarScopeID(cid), vars.ClientSecret)
 	if err != nil {
-		l.Warn("failed to get GitHub app ID", zap.Error(err))
-		common.HTTPError(w, http.StatusInternalServerError)
-		return "", err
+		return "", fmt.Errorf("failed to read connection var: %w", err)
 	}
 
-	// If the user has defined a private GitHub App,
-	// use its secret instead of the environment variable.
-	privateSecret := vs.GetValue(vars.ClientSecret)
-	if vs.GetValue(vars.ClientSecret) != "" {
-		return privateSecret, nil
+	secret := vs.GetValue(vars.ClientSecret)
+	if secret == "" {
+		secret = os.Getenv(webhookSecretEnvVar)
 	}
-	return os.Getenv(webhookSecretEnvVar), nil
+
+	return secret, nil
 }
 
 func extractInstallationID(event any) (inst string, err error) {

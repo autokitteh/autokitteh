@@ -11,6 +11,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api/chat"
@@ -182,7 +183,7 @@ func (h handler) HandleInteraction(w http.ResponseWriter, r *http.Request) {
 			zap.ByteString("body", body),
 			zap.Error(err),
 		)
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+		common.HTTPError(w, http.StatusBadRequest)
 		return
 	}
 	j = strings.TrimPrefix(j, "payload=")
@@ -192,14 +193,14 @@ func (h handler) HandleInteraction(w http.ResponseWriter, r *http.Request) {
 			zap.String("json", j),
 			zap.Error(err),
 		)
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+		common.HTTPError(w, http.StatusBadRequest)
 		return
 	}
 
 	// Transform the received Slack event into an AutoKitteh event.
 	akEvent, err := transformEvent(l, payload, "interaction")
 	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		common.HTTPError(w, http.StatusInternalServerError)
 		return
 	}
 
@@ -212,7 +213,7 @@ func (h handler) HandleInteraction(w http.ResponseWriter, r *http.Request) {
 	cids, err := h.listConnectionIDs(ctx, payload.APIAppID, enterpriseID, payload.Team.ID)
 	if err != nil {
 		l.Error("Failed to find connection IDs", zap.Error(err))
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		common.HTTPError(w, http.StatusInternalServerError)
 		return
 	}
 

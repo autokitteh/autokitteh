@@ -11,6 +11,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -57,7 +58,7 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	contentType := r.Header.Get(headerContentType)
 	if !strings.HasPrefix(contentType, contentTypeJSON) {
 		l.Warn("Incoming Atlassian event with bad header", zap.String(headerContentType, contentType))
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+		common.HTTPError(w, http.StatusBadRequest)
 		return
 	}
 
@@ -65,14 +66,14 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		l.Warn("Failed to read content of incoming Atlassian event", zap.Error(err))
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+		common.HTTPError(w, http.StatusBadRequest)
 		return
 	}
 
 	var atlassianEvent map[string]any
 	if err := json.Unmarshal(body, &atlassianEvent); err != nil {
 		l.Warn("Failed to unmarshal JSON in incoming Atlassian event", zap.Error(err))
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+		common.HTTPError(w, http.StatusBadRequest)
 		return
 	}
 
@@ -80,7 +81,7 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	// of the event (unlike Jira, Confluence events don't have an event type field).
 	eventType, ok := extractEntityType(l, atlassianEvent, r.PathValue("category"))
 	if !ok {
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+		common.HTTPError(w, http.StatusBadRequest)
 		return
 	}
 
@@ -90,7 +91,7 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	// Construct an AutoKitteh event from the Atlassian event.
 	akEvent, err := constructEvent(l, atlassianEvent, eventType)
 	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		common.HTTPError(w, http.StatusInternalServerError)
 		return
 	}
 
