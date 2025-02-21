@@ -6,6 +6,7 @@ import (
 	"github.com/iancoleman/strcase"
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -30,7 +31,7 @@ func (h handler) HandleMessage(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		l.Warn("Failed to parse inbound HTTP request", zap.Error(err))
 		// Attack or network loss, so no need for user-friendliness.
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+		common.HTTPError(w, http.StatusBadRequest)
 		return
 	}
 
@@ -55,7 +56,7 @@ func (h handler) HandleMessage(w http.ResponseWriter, r *http.Request) {
 			zap.Any("data", data),
 			zap.Error(err),
 		)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		common.HTTPError(w, http.StatusInternalServerError)
 		return
 	}
 
@@ -64,7 +65,7 @@ func (h handler) HandleMessage(w http.ResponseWriter, r *http.Request) {
 	cids, err := h.vars.FindConnectionIDs(ctx, h.integrationID, sdktypes.NewSymbol("account_sid"), aid)
 	if err != nil {
 		l.Error("Failed to find connection IDs", zap.Error(err))
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		common.HTTPError(w, http.StatusInternalServerError)
 		return
 	}
 

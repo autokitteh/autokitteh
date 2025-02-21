@@ -17,6 +17,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api"
 	"go.autokitteh.dev/autokitteh/integrations/slack/events"
@@ -59,81 +60,79 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Log
 	// "Content-Type" header.
 	gotContentType := r.Header.Get(api.HeaderContentType)
 	if gotContentType == "" || gotContentType != wantContentType {
-		l.Error("Unexpected header value",
+		l.Error("unexpected header value",
 			zap.String("header", api.HeaderContentType),
 			zap.String("got", gotContentType),
 			zap.String("want", wantContentType),
 		)
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+		common.HTTPError(w, http.StatusBadRequest)
 		return nil
 	}
 
 	// "X-Slack-Request-Timestamp" header.
 	ts := r.Header.Get(headerSlackTimestamp)
 	if ts == "" {
-		l.Warn("Missing header",
-			zap.String("header", headerSlackTimestamp),
-		)
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		l.Warn("missing header", zap.String("header", headerSlackTimestamp))
+		common.HTTPError(w, http.StatusUnauthorized)
 		return nil
 	}
 	secs, err := strconv.ParseInt(ts, 10, 64)
 	if err != nil {
-		l.Warn("Invalid header value",
+		l.Warn("invalid header value",
 			zap.String("header", headerSlackTimestamp),
 			zap.String("value", ts),
 		)
-		http.Error(w, "Forbidden", http.StatusForbidden)
+		common.HTTPError(w, http.StatusForbidden)
 		return nil
 	}
 	d := time.Since(time.Unix(secs, 0))
 	if d.Abs() > maxDifference {
-		l.Warn("Unacceptable header value",
+		l.Warn("unacceptable header value",
 			zap.String("header", headerSlackTimestamp),
 			zap.String("difference", fmt.Sprint(d)),
 		)
-		http.Error(w, "Forbidden", http.StatusForbidden)
+		common.HTTPError(w, http.StatusForbidden)
 		return nil
 	}
 
 	// "X-Slack-Signature" header.
 	sig := r.Header.Get(headerSlackSignature)
 	if sig == "" {
-		l.Warn("Missing header",
-			zap.String("header", headerSlackSignature),
-		)
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		l.Warn("missing header", zap.String("header", headerSlackSignature))
+		common.HTTPError(w, http.StatusUnauthorized)
 		return nil
 	}
 
 	// Request body.
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		l.Error("Failed to read inbound HTTP request body",
-			zap.Error(err),
-		)
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+		l.Error("failed to read inbound HTTP request body", zap.Error(err))
+		common.HTTPError(w, http.StatusBadRequest)
 		return nil
-	}
-
-	signingSecret, err := h.getCustomOAuthSigningSecret(r.Context(), body, wantContentType, l)
-	if err != nil {
-		l.Error("Failed to get signing secret", zap.Error(err))
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return nil
-	}
-
-	if signingSecret == "" {
-		// If a custom OAuth signing key wasn't found, try to use
-		// the default one. If the request is fake, verifying its
-		// signature would still fail, so there's no security risk.
-		signingSecret = os.Getenv(vars.SigningSecretEnvVar)
 	}
 
 	// Verify signature.
-	if !verifySignature(signingSecret, ts, sig, body) {
-		l.Error("Signature verification failed")
-		http.Error(w, "Forbidden", http.StatusForbidden)
+	secret, info, err := h.signingSecret(r.Context(), l, body, wantContentType)
+	if err != nil {
+		l.Error("failed to get Slack signing secret", zap.Error(err))
+		common.HTTPError(w, http.StatusInternalServerError)
+		return nil
+	}
+	if secret == "" {
+		// Slack is not configured, so there's no point
+		// in verifying or accepting the payload.
+		return nil
+	}
+
+	if !verifySignature(secret, ts, sig, body) {
+		l.Warn("signature verification failed",
+			zap.String("signature", sig),
+			zap.Bool("has_signing_secret", secret != ""),
+			zap.String("app_id", info.AppID),
+			zap.String("enterprise_id", info.EnterpriseID),
+			zap.String("team_id", info.TeamID),
+		)
+		common.HTTPError(w, http.StatusForbidden)
 		return nil
 	}
 
@@ -160,19 +159,19 @@ func verifySignature(signingSecret, ts, want string, body []byte) bool {
 // Transform the received Slack event into an AutoKitteh event.
 func transformEvent(l *zap.Logger, slackEvent any, eventType string) (sdktypes.Event, error) {
 	l = l.With(
-		zap.String("eventType", eventType),
+		zap.String("event_type", eventType),
 		zap.Any("event", slackEvent),
 	)
 
 	wrapped, err := sdktypes.WrapValue(slackEvent)
 	if err != nil {
-		l.Error("Failed to wrap Slack event", zap.Error(err))
+		l.Error("failed to wrap Slack event", zap.Error(err))
 		return sdktypes.InvalidEvent, err
 	}
 
 	data, err := wrapped.ToStringValuesMap()
 	if err != nil {
-		l.Error("Failed to convert wrapped Slack event", zap.Error(err))
+		l.Error("failed to convert wrapped Slack event", zap.Error(err))
 		return sdktypes.InvalidEvent, err
 	}
 
@@ -181,7 +180,7 @@ func transformEvent(l *zap.Logger, slackEvent any, eventType string) (sdktypes.E
 		Data:      kittehs.TransformMapValues(data, sdktypes.ToProto),
 	})
 	if err != nil {
-		l.Error("Failed to convert protocol buffer to SDK event",
+		l.Error("failed to convert protocol buffer to SDK event",
 			zap.Any("data", data),
 			zap.Error(err),
 		)
@@ -201,82 +200,94 @@ func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, cids []sd
 	for _, cid := range cids {
 		eid, err := h.dispatch(ctx, e.WithConnectionDestinationID(cid), nil)
 		l := l.With(
-			zap.String("connectionID", cid.String()),
-			zap.String("eventID", eid.String()),
+			zap.String("connection_id", cid.String()),
+			zap.String("event_id", eid.String()),
 		)
 		if err != nil {
-			l.Error("Event dispatch failed", zap.Error(err))
+			l.Error("event dispatch failed", zap.Error(err))
 			return
 		}
-		l.Debug("Event dispatched")
+		l.Debug("event dispatched")
 	}
 }
 
 // extractIDs extracts the app ID, team ID, and enterprise ID from the given request body.
-func (h handler) extractIDs(body []byte, wantContentType string, l *zap.Logger) (string, string, string, error) {
+func (h handler) extractIDs(l *zap.Logger, body []byte, wantContentType string) (string, string, string, error) {
 	// Option 1: JSON payloads.
 	if strings.HasPrefix(wantContentType, "application/json") {
 		var cb events.Callback
 		if err := json.Unmarshal(body, &cb); err != nil {
-			l.Error("Failed to parse JSON for app/team IDs",
-				zap.Error(err),
-			)
+			l.Warn("failed to parse JSON for app/team IDs", zap.Error(err))
 			return "", "", "", err
 		}
-		return cb.APIAppID, cb.TeamID, "", nil
+		// TODO: add Enterprise support.
+		return cb.APIAppID, "", cb.TeamID, nil
 	}
 
 	// Option 2: URL-encoded web form payloads.
 	kv, err := url.ParseQuery(string(body))
 	if err != nil {
-		l.Error("Failed to parse URL-encoded form",
+		l.Warn("failed to parse URL-encoded form for app/team IDs",
 			zap.ByteString("body", body),
 			zap.Error(err),
 		)
 		return "", "", "", err
 	}
 
-	payload := kv.Get("payload")
 	// Regular form data (bot events and slash commands).
+	payload := kv.Get("payload")
 	if payload == "" {
-		return kv.Get("api_app_id"), kv.Get("team_id"), "", nil
+		// TODO: add Enterprise support.
+		return kv.Get("api_app_id"), "", kv.Get("team_id"), nil
 	}
 
 	// Interaction payloads.
 	var p BlockActionsPayload
 	if err := json.Unmarshal([]byte(payload), &p); err != nil {
-		l.Error("Failed to parse interaction payload",
+		l.Warn("failed to parse interaction payload for app/team IDs",
 			zap.String("payload", payload),
 			zap.Error(err),
 		)
 		return "", "", "", err
 	}
 
-	// TODO: add Enterprise support.
-	return p.APIAppID, p.Team.ID, "", nil
+	return p.APIAppID, p.Enterprise.ID, p.Team.ID, nil
 }
 
-// getCustomOAuthSigningSecret gets the signing secret from the connection's
-// variables for Custom OAuth.
-func (h handler) getCustomOAuthSigningSecret(ctx context.Context, body []byte, wantContentType string, l *zap.Logger) (string, error) {
-	appID, teamID, _, err := h.extractIDs(body, wantContentType, l)
+// signingSecret reads the signing secret from the private connection's
+// variable, or uses the signing secret of the server's default Slack app.
+// It also returns the app ID, team ID, and enterprise ID of the connection
+// (if there's a signature verification error they're useful for debugging).
+func (h handler) signingSecret(ctx context.Context, l *zap.Logger, body []byte, wantContentType string) (string, *vars.InstallInfo, error) {
+	appID, enterpriseID, teamID, err := h.extractIDs(l, body, wantContentType)
 	if err != nil {
-		return "", fmt.Errorf("failed to extract IDs: %w", err)
+		return "", nil, fmt.Errorf("failed to extract IDs: %w", err)
 	}
 
-	// TODO: add Enterprise support.
-	cids, err := h.listConnectionIDs(ctx, appID, "", teamID)
+	cids, err := h.listConnectionIDs(ctx, appID, enterpriseID, teamID)
 	if err != nil {
-		return "", fmt.Errorf("failed to list connection IDs: %w", err)
+		return "", nil, fmt.Errorf("failed to list connection IDs: %w", err)
 	}
 	if len(cids) == 0 {
-		return "", nil
+		return "", nil, nil
 	}
 
-	secret, err := h.vars.Get(ctx, sdktypes.NewVarScopeID(cids[0]))
+	cid := cids[0] // Any connection will do, as they all share the same secret.
+	vs, err := h.vars.Get(ctx, sdktypes.NewVarScopeID(cid), vars.SigningSecretVar)
 	if err != nil {
-		return "", fmt.Errorf("failed to get signing secret: %w", err)
+		return "", nil, fmt.Errorf("failed to read connection var: %w", err)
 	}
 
-	return secret.GetValue(vars.SigningSecretVar), nil
+	secret := vs.GetValue(vars.SigningSecretVar)
+	if secret == "" {
+		secret = os.Getenv(vars.SigningSecretEnvVar)
+	}
+
+	info := &vars.InstallInfo{
+		AppID:        appID,
+		EnterpriseID: enterpriseID,
+		TeamID:       teamID,
+	}
+
+	return secret, info, err
 }

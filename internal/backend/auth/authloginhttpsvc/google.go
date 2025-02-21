@@ -45,7 +45,7 @@ func registerGoogleOAuthRoutes(mux *http.ServeMux, cfg oauth2Config, onSuccess f
 		}
 
 		if gu.Id == "" || gu.Name == "" || gu.Email == "" {
-			http.Error(w, "google user missing data", http.StatusInternalServerError)
+			http.Error(w, "Google user missing data", http.StatusInternalServerError)
 			return
 		}
 

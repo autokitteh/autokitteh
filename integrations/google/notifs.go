@@ -16,6 +16,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/google/calendar"
 	"go.autokitteh.dev/autokitteh/integrations/google/drive"
 	"go.autokitteh.dev/autokitteh/integrations/google/forms"
@@ -51,19 +52,19 @@ func (h handler) handleCalNotification(w http.ResponseWriter, r *http.Request) {
 	cids, err := h.vars.FindConnectionIDs(ctx, calendar.IntegrationID, name, channelID)
 	if err != nil {
 		l.Error("Failed to find connection IDs", zap.Error(err))
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		common.HTTPError(w, http.StatusInternalServerError)
 		return
 	}
 
 	// Construct the event and dispatch it to all the connections.
 	akEvent, err := calendar.ConstructEvent(ctx, h.vars, cids)
 	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		common.HTTPError(w, http.StatusInternalServerError)
 		return
 	}
 
 	if err := h.dispatchAsyncEventsToConnections(ctx, cids, akEvent); err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		common.HTTPError(w, http.StatusInternalServerError)
 		return
 	}
 
@@ -98,20 +99,20 @@ func (h handler) handleDriveNotification(w http.ResponseWriter, r *http.Request)
 	cids, err := h.vars.FindConnectionIDs(ctx, drive.IntegrationID, name, channelID)
 	if err != nil {
 		l.Error("Failed to find connection IDs", zap.Error(err))
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		common.HTTPError(w, http.StatusInternalServerError)
 		return
 	}
 
 	events, err := drive.ConstructEvents(ctx, h.vars, cids)
 	l.Warn("Constructed events", zap.Int("events", len(events)))
 	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		common.HTTPError(w, http.StatusInternalServerError)
 		return
 	}
 
 	for _, event := range events {
 		if err := h.dispatchAsyncEventsToConnections(ctx, cids, event); err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			common.HTTPError(w, http.StatusInternalServerError)
 			return
 		}
 	}
@@ -151,7 +152,7 @@ func (h handler) handleFormsNotification(w http.ResponseWriter, r *http.Request)
 	cids, err := h.vars.FindConnectionIDs(ctx, forms.IntegrationID, name, watchID)
 	if err != nil {
 		l.Error("Failed to find connection IDs", zap.Error(err))
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		common.HTTPError(w, http.StatusInternalServerError)
 		return
 	}
 
@@ -164,12 +165,12 @@ func (h handler) handleFormsNotification(w http.ResponseWriter, r *http.Request)
 
 	akEvent, err := forms.ConstructEvent(ctx, h.vars, formsEvent, cids)
 	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		common.HTTPError(w, http.StatusInternalServerError)
 		return
 	}
 
 	if err := h.dispatchAsyncEventsToConnections(ctx, cids, akEvent); err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		common.HTTPError(w, http.StatusInternalServerError)
 		return
 	}
 
@@ -201,14 +202,14 @@ func (h handler) handleGmailNotification(w http.ResponseWriter, r *http.Request)
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		l.Warn("Failed to read request body", zap.Error(err))
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		common.HTTPError(w, http.StatusInternalServerError)
 		return
 	}
 
 	notif := gmailNotifBody{}
 	if err := json.Unmarshal(body, &notif); err != nil {
 		l.Warn("Failed to unmarshal request body", zap.Error(err))
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		common.HTTPError(w, http.StatusInternalServerError)
 		return
 	}
 
@@ -222,7 +223,7 @@ func (h handler) handleGmailNotification(w http.ResponseWriter, r *http.Request)
 	cids, err := h.vars.FindConnectionIDs(ctx, gmail.IntegrationID, vars.UserEmail, notif.EmailAddress)
 	if err != nil {
 		l.Error("Failed to find connection IDs", zap.Error(err))
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		common.HTTPError(w, http.StatusInternalServerError)
 		return
 	}
 
@@ -235,12 +236,12 @@ func (h handler) handleGmailNotification(w http.ResponseWriter, r *http.Request)
 
 	akEvent, err := gmail.ConstructEvent(ctx, h.vars, gmailEvent, cids)
 	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		common.HTTPError(w, http.StatusInternalServerError)
 		return
 	}
 
 	if err := h.dispatchAsyncEventsToConnections(ctx, cids, akEvent); err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		common.HTTPError(w, http.StatusInternalServerError)
 		return
 	}
 
@@ -273,13 +274,13 @@ func checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Logger) bool {
 	auth := r.Header.Get("Authorization")
 	if auth == "" {
 		l.Warn("missing authorization header in Google push notification")
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		common.HTTPError(w, http.StatusUnauthorized)
 		return false
 	}
 
 	if !strings.HasPrefix(auth, "Bearer ") {
 		l.Warn("invalid authorization header in Google push notification")
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		common.HTTPError(w, http.StatusUnauthorized)
 		return false
 	}
 
@@ -289,7 +290,7 @@ func checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Logger) bool {
 	rsaPublicKeys, err := fetchGoogleCerts(r.Context())
 	if err != nil {
 		l.Error("failed to fetch Google OAuth certs", zap.Error(err))
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		common.HTTPError(w, http.StatusInternalServerError)
 		return false
 	}
 
@@ -308,7 +309,7 @@ func checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Logger) bool {
 	})
 	if err != nil {
 		l.Error("failed to parse JWT in Google push notification", zap.Error(err))
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		common.HTTPError(w, http.StatusInternalServerError)
 		return false
 	}
 
