@@ -7,4 +7,5 @@ import autokitteh
 def main(event):
 	print('i can haz cheezburger?')
 
-# TODO: This don't check that main is in activity (@itayd - how can we?)
+-- calls.txt --
+main
