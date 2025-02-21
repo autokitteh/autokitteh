@@ -193,7 +193,8 @@ var testCmd = common.StandardCommand(&cobra.Command{
 
 			if expected != actual {
 				edits := myers.ComputeEdits(span.URIFromPath("want"), expected, actual)
-				errs = append(errs, errors.New(fmt.Sprint("calls:\n", gotextdiff.ToUnified("want", "got", expected, edits))))
+				diff := gotextdiff.ToUnified("want", "got", expected, edits)
+				errs = append(errs, errors.New(fmt.Sprint("calls:\n", diff)))
 			}
 		}
 

@@ -95,6 +95,8 @@ func TestStringWithoutComments(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		assert.Equal(t, test.out, StringWithoutComments(test.in))
+		t.Run(test.in, func(t *testing.T) {
+			assert.Equal(t, test.out, StringWithoutComments(test.in))
+		})
 	}
 }
