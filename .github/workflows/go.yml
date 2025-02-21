@@ -28,7 +28,7 @@ jobs:
         run: go install gotest.tools/gotestsum@latest
 
       - name: Build
-        run: go build -trimpath -ldflags="-s -w" ./...
+        run: go build -trimpath -ldflags="-s -w" -gcflags="all=-N -l" ./...
 
       # Only Go unit tests, no Python-related or long-running tests.
       - name: Test

@@ -25,7 +25,7 @@ jobs:
         run: go install gotest.tools/gotestsum@latest
 
       - name: Test
-        run: gotestsum -f testname -- ./runtime/pythonrt/...
+        run: gotestsum -f testname -- ./runtimes/pythonrt/...
 
   test-python:
     name: Python tests
@@ -43,7 +43,7 @@ jobs:
         run: make -C runtimes/pythonrt/runner install-deps
 
       - name: Test
-        run: cd runtimes/pythonrt/runner; pytest . -v
+        run: cd runtimes/pythonrt/runner && pytest . -v
 
   test-sessions:
     name: Session tests
@@ -62,7 +62,7 @@ jobs:
           python-version: "3.12"
 
       - name: Build
-        run: go build -trimpath -ldflags="-s -w" ./cmd/ak
+        run: go build -o bin/ak ./cmd/ak
 
       - name: Test
         run: ./tests/sessions/run.sh
