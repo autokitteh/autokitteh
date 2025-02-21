@@ -111,7 +111,7 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Log
 		return nil
 	}
 
-	signingSecret, aid, eid, tid, err := h.oauthSigningSecret(r.Context(), l, body, wantContentType)
+	signingSecret, info, err := h.oauthSigningSecret(r.Context(), l, body, wantContentType)
 	if err != nil {
 		l.Error("failed to get signing secret", zap.Error(err))
 		common.HTTPError(w, http.StatusInternalServerError)
@@ -123,9 +123,9 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Log
 		l.Warn("signature verification failed",
 			zap.String("signature", sig),
 			zap.Bool("has_signing_secret", signingSecret != ""),
-			zap.String("app_id", aid),
-			zap.String("enterprise_id", eid),
-			zap.String("team_id", tid),
+			zap.String("app_id", info.AppID),
+			zap.String("enterprise_id", info.EnterpriseID),
+			zap.String("team_id", info.TeamID),
 		)
 		common.HTTPError(w, http.StatusForbidden)
 		return nil
@@ -251,26 +251,28 @@ func (h handler) extractIDs(l *zap.Logger, body []byte, wantContentType string) 
 
 // oauthSigningSecret reads the signing secret from the connection's
 // variables, or uses the signing secret of the server's default Slack app.
-func (h handler) oauthSigningSecret(ctx context.Context, l *zap.Logger, body []byte, wantContentType string) (secret, appID, enterpriseID, teamID string, err error) {
-	appID, enterpriseID, teamID, err = h.extractIDs(l, body, wantContentType)
+// It also returns the app ID, team ID, and enterprise ID of the connection
+// (if there's a signature verification error they're useful for debugging).
+func (h handler) oauthSigningSecret(ctx context.Context, l *zap.Logger, body []byte, wantContentType string) (string, *vars.InstallInfo, error) {
+	appID, enterpriseID, teamID, err := h.extractIDs(l, body, wantContentType)
 	if err != nil {
-		return "", "", "", "", fmt.Errorf("failed to extract IDs: %w", err)
+		return "", nil, fmt.Errorf("failed to extract IDs: %w", err)
 	}
 
 	cids, err := h.listConnectionIDs(ctx, appID, enterpriseID, teamID)
 	if err != nil {
-		return "", "", "", "", fmt.Errorf("failed to list connection IDs: %w", err)
+		return "", nil, fmt.Errorf("failed to list connection IDs: %w", err)
 	}
 	if len(cids) == 0 {
-		return "", "", "", "", nil
+		return "", nil, nil
 	}
 
 	vs, err := h.vars.Get(ctx, sdktypes.NewVarScopeID(cids[0]), vars.SigningSecretVar)
 	if err != nil {
-		return "", "", "", "", fmt.Errorf("failed to get signing secret: %w", err)
+		return "", nil, fmt.Errorf("failed to get signing secret: %w", err)
 	}
 
-	secret = vs.GetValue(vars.SigningSecretVar)
+	secret := vs.GetValue(vars.SigningSecretVar)
 	if secret == "" {
 		// If a custom OAuth signing key wasn't found, try to use
 		// the default one. If the request is fake, verifying its
@@ -278,5 +280,11 @@ func (h handler) oauthSigningSecret(ctx context.Context, l *zap.Logger, body []b
 		secret = os.Getenv(vars.SigningSecretEnvVar)
 	}
 
-	return
+	info := &vars.InstallInfo{
+		AppID:        appID,
+		EnterpriseID: enterpriseID,
+		TeamID:       teamID,
+	}
+
+	return secret, info, err
 }
