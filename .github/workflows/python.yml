@@ -7,7 +7,7 @@ on:
 
 jobs:
   test-go:
-    name: Go tests
+    name: Python runtime Go tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -39,14 +39,17 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install deps
+      - name: Install dependencies
         run: make -C runtimes/pythonrt/runner install-deps
 
       - name: Test
-        run: cd runtimes/pythonrt/runner && pytest . -v
+        run: |
+          cd runtimes/pythonrt/runner
+          make install-deps
+          python -m pytest
 
   test-sessions:
-    name: Session tests
+    name: Python session tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
