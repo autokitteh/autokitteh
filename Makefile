@@ -61,7 +61,6 @@ clean:
 .PHONY: bin
 bin: bin/ak
 
-.PHONY: bin/ak
 bin/ak:
 	$(GO) build --tags "${TAGS}" -o "$@" -ldflags="$(LDFLAGS)" $(GO_BUILD_OPTS) ./cmd/$(shell basename $@)
 
@@ -121,20 +120,6 @@ test-dbgorm:
 		echo running for $$dbtype; \
 	go test -v ./internal/backend/db/dbgorm -dbtype $$dbtype ; \
 	done
-
-# Skip a few Go unit-tests under "runtimes/pythonrt/" - either because they
-# fails due to missing Python deps, or because they are very slow (20-30 sec).
-# Note that this affects only Go CI in GitHub (which runs "make test-unit"),
-# but not manual runs of "make" (which depend on "test-race"), or Python CI
-# in GitHub (which uses "runtimes/pythonrt/Makefile").
-.PHONY: test-unit
-test-unit:
-	$(GOTEST) ./... -skip "(pyExports|pySvc|createVEnv)"
-
-# Subset of "test-unit", for simplicity.
-.PHONY: test-system
-test-system:
-	$(GOTEST) ./tests/system
 
 .PHONY: test-runs
 test-runs:
