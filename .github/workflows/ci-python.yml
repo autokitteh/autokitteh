@@ -25,7 +25,7 @@ jobs:
         run: go install gotest.tools/gotestsum@latest
 
       - name: Test
-        run: gotestsum -f testname -- -trimpath ./runtimes/pythonrt/...
+        run: gotestsum -f testname -- -trimpath ./runtimes/pythonrt
 
   python-unit-tests:
     name: Python unit tests

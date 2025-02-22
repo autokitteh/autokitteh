@@ -31,7 +31,6 @@ jobs:
 
   go-system-tests:
     name: Go system tests
-    needs: [go-unit-tests]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
