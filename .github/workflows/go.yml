@@ -9,7 +9,7 @@ on:
     branches: [main]
 
 jobs:
-  build-and-test:
+  go-unit-tests:
     name: Go build + unit tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -20,29 +20,53 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
       - name: Install gotestsum
         run: go install gotest.tools/gotestsum@latest
 
-      - name: Cache Go modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-
-      - name: Download dependencies
-        run: go mod download
-
       - name: Build
-        run: go build -trimpath -ldflags="-s -w" -gcflags="all=-N -l" ./...
+        run: go build -trimpath ./...
 
       # Only Go unit tests, no Python-related or long-running tests.
       - name: Test
-        run: gotestsum -f testname -- $(go list ./... | grep -v -E "autokitteh/tests|runtimes/python")
+        run: gotestsum -f testname -- -trimpath $(go list ./... | grep -v -E "autokitteh/tests|runtimes/python")
+
+  go-session-tests:
+    name: Go session tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build
+        run: go build -trimpath -o bin/ak ./cmd/ak
+
+      - name: Test
+        run: PYTHON=skip ./tests/sessions/run.sh
+
+  static-analysis:
+    name: Go static analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Detect unformatted Go
+        run: make gofmt-check
+      - name: Run Go linters
+        uses: golangci/golangci-lint-action@v6
+        with:
+          # Keep the same version in "/Makefile"!
+          # See: https://github.com/golangci/golangci-lint
+          version: v1.64.5
+          # https://github.com/golangci/golangci-lint-action/issues/308
+          args: --timeout=5m
