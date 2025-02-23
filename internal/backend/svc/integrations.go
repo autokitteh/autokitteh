@@ -5,6 +5,7 @@ import (
 
 	"go.uber.org/fx"
 	"go.uber.org/zap"
+	"logur.dev/logur/integration/grpc"
 
 	"go.autokitteh.dev/autokitteh/integrations/asana"
 	"go.autokitteh.dev/autokitteh/integrations/atlassian/confluence"
@@ -21,13 +22,11 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/google/gemini"
 	"go.autokitteh.dev/autokitteh/integrations/google/gmail"
 	"go.autokitteh.dev/autokitteh/integrations/google/sheets"
-	"go.autokitteh.dev/autokitteh/integrations/grpc"
 	"go.autokitteh.dev/autokitteh/integrations/height"
 	"go.autokitteh.dev/autokitteh/integrations/hubspot"
 	"go.autokitteh.dev/autokitteh/integrations/linear"
 	"go.autokitteh.dev/autokitteh/integrations/microsoft"
 	"go.autokitteh.dev/autokitteh/integrations/microsoft/teams"
-	"go.autokitteh.dev/autokitteh/integrations/redis"
 	"go.autokitteh.dev/autokitteh/integrations/salesforce"
 	"go.autokitteh.dev/autokitteh/integrations/slack"
 	"go.autokitteh.dev/autokitteh/integrations/twilio"
@@ -108,7 +107,6 @@ func integrationsFXOption() fx.Option {
 		integration("linear", configset.Empty, linear.New),
 		integration("microsoft", configset.Empty, microsoft.New),
 		integration("microsoft_teams", configset.Empty, teams.New),
-		integration("redis", configset.Empty, redis.New),
 		integration("salesforce", configset.Empty, salesforce.New),
 		integration("sheets", configset.Empty, sheets.New),
 		integration("slack", configset.Empty, slack.New),
