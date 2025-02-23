@@ -1,7 +1,6 @@
 package sessionsvcs
 
 import (
-	"github.com/redis/go-redis/v9"
 	"go.uber.org/fx"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
@@ -22,6 +21,5 @@ type Svcs struct {
 	Triggers     sdkservices.Triggers
 	Vars         sdkservices.Vars
 
-	RedisClient *redis.Client
-	Temporal    temporalclient.Client
+	Temporal temporalclient.Client
 }

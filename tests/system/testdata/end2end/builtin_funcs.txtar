@@ -46,13 +46,6 @@ def on_http_get():
     # runtimes/starlarkrt/internal/bootstrap/bootstrap.star
     sleep(1)
 
-    # integrations/redis/redis.go
-    key = "builtin_funcs_test_key"
-    if store.set(key, "value", ttl = "1m") == "OK":
-        print("Store set = OK")
-    print("Store get = %s" % store.get(key))
-    print("Store del = %d" % store.delete(key))
-
     # backend/internal/akmodules/time/time.go
     print(time.now())
 
