@@ -38,6 +38,7 @@ require (
 	github.com/flosch/pongo2/v6 v6.0.0
 	github.com/fullstorydev/grpcurl v1.9.2
 	github.com/glebarez/sqlite v1.11.0
+	github.com/go-test/deep v1.1.0
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/google/cel-go v0.23.2
 	github.com/google/generative-ai-go v0.19.0
