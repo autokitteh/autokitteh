@@ -13,6 +13,7 @@ from threading import Lock, Thread, Timer
 from time import sleep
 from traceback import TracebackException, format_exception
 
+import autokitteh
 import grpc
 import loader
 import log
@@ -222,6 +223,18 @@ class Runner(pb.runner_rpc.RunnerService):
         log.error("could not verify if should keep running, killing self")
         self.server.stop(SERVER_GRACE_TIMEOUT)
 
+    def patch_ak_funcs(self):
+        connections.encode_jwt = self.syscalls.ak_encode_jwt
+        connections.refresh_oauth = self.syscalls.ak_refresh_oauth
+
+        autokitteh.start = self.syscalls.ak_start
+        autokitteh.next_event = self.syscalls.ak_next_event
+        autokitteh.subscribe = self.syscalls.ak_subscribe
+        autokitteh.unsubscribe = self.syscalls.ak_unsubscribe
+
+        # Not ak, but patching print as well
+        builtins.print = self.ak_print
+
     def Start(self, request: pb.runner.StartRequest, context: grpc.ServicerContext):
         if self._start_called:
             log.error("already called start before")
@@ -232,13 +245,11 @@ class Runner(pb.runner_rpc.RunnerService):
         self._start_called = True
         log.info("start request: %r", request.entry_point)
 
-        self.syscalls = SysCalls(self.id, self.worker)
+        self.syscalls = SysCalls(self.id, self.worker, log)
         mod_name, fn_name = parse_entry_point(request.entry_point)
 
-        # Monkey patch some functions, should come before we import user code.
-        builtins.print = self.ak_print
-        connections.encode_jwt = self.syscalls.ak_encode_jwt
-        connections.refresh_oauth = self.syscalls.ak_refresh_oauth
+        # Must be before we load user code
+        self.patch_ak_funcs()
 
         ak_call = AKCall(self, self.code_dir)
         mod = loader.load_code(self.code_dir, ak_call, mod_name)
@@ -434,9 +445,6 @@ class Runner(pb.runner_rpc.RunnerService):
             self.worker.Done(req)
         except grpc.RpcError as err:
             log.error("on_event: done send error: %r", err)
-
-    def syscall(self, fn, args, kw):
-        return self.syscalls.call(fn, args, kw)
 
     def ak_print(self, *objects, sep=" ", end="\n", file=None, flush=False):
         io = StringIO()
