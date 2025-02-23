@@ -6,26 +6,44 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var normCases = []struct {
-	path   string
-	normed string
-}{
-	{"", ""},
-	{
-		`File "/opt/hostedtoolcache/Python/3.12.8/x64/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result`,
-		`py-lib/concurrent/futures/_base.py, line XXX, in __get_result`,
-	},
-	{"/tmp/ak-user-2767870919/main.py:6.1,main", "main.py:6.1,main"},
-	{"/tmp/ak-runner-2767870918/main.py:6.1,main", "   ak-runner"},
-	{"runner/main.py:6.1,main, in _call", "   ak-runner"},
-	{"ERROR: bad token", "ERROR: bad token"},
-}
+func TestNormalizePath(t *testing.T) {
+	tests := []struct {
+		name string
+		path string
+		want string
+	}{
+		{"empty", "", ""},
+		{
+			"python_stdlib",
+			`File "/opt/hostedtoolcache/Python/3.12.8/x64/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result`,
+			`py-lib/concurrent/futures/_base.py, line XXX, in __get_result`,
+		},
+		{
+			"user_code",
+			"/tmp/ak-user-2767870919/main.py:6.1,main",
+			"main.py:6.1,main",
+		},
+		{
+			"ak_runner_main",
+			"/tmp/ak-runner-2767870918/main.py:6.1,main",
+			"   ak-runner",
+		},
+		{
+			"ak_runner_call",
+			"runner/main.py:6.1,main, in _call",
+			"   ak-runner",
+		},
+		{
+			"error",
+			"ERROR: bad token",
+			"ERROR: bad token",
+		},
+	}
 
-func Test_normalizePath(t *testing.T) {
-	for _, c := range normCases {
-		t.Run(c.path, func(t *testing.T) {
-			normed := normalizePath(c.path)
-			require.Equal(t, c.normed, normed)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := normalizePath(tt.path)
+			require.Equal(t, tt.want, got)
 		})
 	}
 }

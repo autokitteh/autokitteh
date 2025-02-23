@@ -3,6 +3,7 @@ package opapolicy
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -66,11 +67,11 @@ func TestPassthrough(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			v, err := d(context.Background(), "policy/"+test.name, test.in)
+	for i, tt := range tests {
+		t.Run(fmt.Sprintf("%s_%d", tt.name, i), func(t *testing.T) {
+			v, err := d(context.Background(), "policy/"+tt.name, tt.in)
 			if assert.NoError(t, err) {
-				assert.Equal(t, test.expected, v)
+				assert.Equal(t, tt.expected, v)
 			}
 		})
 	}
