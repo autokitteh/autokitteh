@@ -9,7 +9,7 @@ on:
 
 jobs:
   starlark-tests:
-    name: Starlark tests
+    name: Starlark system tests
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -20,7 +20,7 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Build
+      - name: Build AK
         run: go build -trimpath -o bin/ak ./cmd/ak
 
       - name: Test

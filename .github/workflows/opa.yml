@@ -15,10 +15,10 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v4
-      - name: Setup OPA
+      - name: Set up OPA
         uses: open-policy-agent/setup-opa@v2
         with:
           version: latest
 
-      - name: Run OPA tests
+      - name: Test
         run: opa test configs/opa_bundles -v
