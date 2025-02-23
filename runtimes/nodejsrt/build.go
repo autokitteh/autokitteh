@@ -35,7 +35,7 @@ func isBuildFile(entry fs.DirEntry) bool {
 // TODO: Move build to runner
 // TODO: optional, build manager like remote runner vs local runner
 func (js *nodejsSvc) Build(ctx context.Context, fsys fs.FS, path string, values []sdktypes.Symbol) (sdktypes.BuildArtifact, error) {
-	js.log.Info("build Python module", zap.String("path", path))
+	js.log.Info("build NodeJS module", zap.String("path", path))
 
 	ffs, err := kittehs.NewFilterFS(fsys, isBuildFile)
 	if err != nil {

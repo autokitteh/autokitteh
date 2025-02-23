@@ -74,6 +74,10 @@ export class Sandbox {
         this.context.console = {
             log: console.log,
         }
+        this.context.process = {
+            env: process.env,
+            cwd: () => this.codeDir
+        }
 
         this.context.require = (moduleName: string) => {
 
@@ -85,6 +89,7 @@ export class Sandbox {
             }
 
             let mod: any
+            console.log("resolving " + moduleName)
             try {
                 mod =  require(moduleName)
             } catch (e) {

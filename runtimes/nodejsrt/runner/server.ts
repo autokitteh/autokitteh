@@ -39,8 +39,10 @@ export const createService = (codeDir: string, runnerId: string, sandbox: Sandbo
                   }
                   await waiter.reply_signal(parsedData.token, parsedData.results)
                   console.log("activity reply req", req, "parsed data", parsedData);
+                  return {error: "", $typeName: "autokitteh.user_code.v1.ActivityReplyResponse"}
               }
-              return {error: "", $typeName: "autokitteh.user_code.v1.ActivityReplyResponse"}
+              console.log("activity reply err:", req.error)
+              return {error: req.error, $typeName: "autokitteh.user_code.v1.ActivityReplyResponse"}
           },
 
           async exports(req: ExportsRequest): Promise<ExportsResponse> {
@@ -62,7 +64,14 @@ export const createService = (codeDir: string, runnerId: string, sandbox: Sandbo
               const data = decoder.decode(req.data)
               const execReq = JSON.parse(data)
               console.log("exec req:", execReq)
-              let results = await waiter.execute_signal(execReq.token)
+              let results: any
+              try {
+                  results = await waiter.execute_signal(execReq.token)
+              }
+              catch (err) {
+                  console.log(err)
+              }
+
               const serialized = JSON.stringify({token: execReq.token, results}, getCircularReplacer())
               return {
                   $typeName: "autokitteh.user_code.v1.ExecuteResponse",

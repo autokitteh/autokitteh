@@ -1,0 +1,12 @@
+version: v1
+
+project:
+  name: js_simple
+  triggers:
+    - name: events
+      event_type: post
+      call: main.ts:on_event
+      webhook: {}
+  vars:
+    - name: USER
+      value: Garfield
