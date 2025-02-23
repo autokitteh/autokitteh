@@ -22,6 +22,8 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+      - name: Download Go modules
+        run: go mod download
       - name: Install gotestsum
         run: go install gotest.tools/gotestsum@latest
 
