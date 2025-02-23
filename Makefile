@@ -61,6 +61,7 @@ clean:
 .PHONY: bin
 bin: bin/ak
 
+.PHONY: bin/ak
 bin/ak:
 	$(GO) build --tags "${TAGS}" -o "$@" -ldflags="$(LDFLAGS)" $(GO_BUILD_OPTS) ./cmd/$(shell basename $@)
 
@@ -114,6 +115,27 @@ test-opa:
 		echo "opa not found, skipping OPA tests"; \
 	fi
 
+# Run only Go unit-tests, without checking for race conditions,
+# and without running long-running Python runtime and system tests.
+.PHONY: test-unit
+test-unit:
+	$(GOTEST) $(go list ./... | grep -v -E "autokitteh/tests|runtimes/python")
+
+# Run all Go tests (including Python runtime and system tests),
+# and check for race conditions while running each of them.
+.PHONY: test-race
+test-race:
+	$(GOTEST) -race ./...
+
+# Long-running subset of "test-unit", for simplicity.
+.PHONY: test-system
+test-system: bin/ak
+	$(GOTEST) ./tests/system
+
+.PHONY: test-sessions
+test-sessions:
+	./tests/sessions/run.sh
+
 .PHONY: test-dbgorm
 test-dbgorm:
 	for dbtype in sqlite postgres; do \
@@ -125,18 +147,10 @@ test-dbgorm:
 test-runs:
 	./tests/runs/run.sh
 
-.PHONY: test-sessions
-test-sessions:
-	./tests/sessions/run.sh
-
 .PHONY: test-cover
 test-cover:
 	$(GOTEST) -covermode=atomic -coverprofile=tmp/cover.out ./...
 	go tool cover -html=tmp/cover.out
-
-.PHONY: test-race
-test-race:
-	$(GOTEST) -race ./...
 
 .PHONY: proto
 proto:
