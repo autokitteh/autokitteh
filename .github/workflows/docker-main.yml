@@ -1,44 +1,16 @@
-# See also "main-branch.yml" and "manual-docker-image.yml" for Docker images.
-# https://github.com/marketplace/actions/goreleaser-action
+# See also "docker-pr.yml", "manual-docker-image.yml", and "release.yml".
 # https://github.com/marketplace/actions/configure-aws-credentials-action-for-github-actions
 # https://github.com/marketplace/actions/amazon-ecr-login-action-for-github-actions
 # https://github.com/marketplace/actions/build-and-push-docker-images
 
-name: Release
+name: CI - Docker (main)
 
-# https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#release
 on:
-  release:
-    types: [published]
+  push:
+    branches: [main]
 
 jobs:
-  goreleaser:
-    name: GoReleaser
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-
-      - name: Fetch web platform
-        run: make webplatform
-
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v6
-        with:
-          version: latest
-          args: release --clean
-        env:
-          GITHUB_TOKEN: ${{secrets.HOMEBREW_TAP_TOKEN}}
-
-  publish-stable-docker-image:
+  publish-latest-docker-image:
     name: Publish Docker image
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -74,6 +46,6 @@ jobs:
         with:
           context: .
           platforms: linux/amd64
-          tags: ${{steps.login-ecr.outputs.registry}}/autokitteh:${{github.ref_name}},${{steps.login-ecr.outputs.registry}}/autokitteh:stable
+          tags: ${{steps.login-ecr.outputs.registry}}/autokitteh:latest
           push: true
           provenance: false

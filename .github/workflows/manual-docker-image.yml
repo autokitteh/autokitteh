@@ -1,9 +1,11 @@
+# See also "docker-*.yml" and "release.yml" for Docker images CI.
+# https://github.com/marketplace/actions/configure-aws-credentials-action-for-github-actions
+# https://github.com/marketplace/actions/amazon-ecr-login-action-for-github-actions
+# https://github.com/marketplace/actions/build-and-push-docker-images
+
 name: manual_docker_image
 
 run-name: Publish image autokitteh:${{inputs.version}} to ECR
-
-env:
-  WORKING_DIRECTORY: .
 
 on:
   workflow_dispatch:
@@ -14,33 +16,36 @@ on:
         description: version to push
 
 jobs:
-  publish_docker_image:
+  publish-docker-image:
+    name: Publish Docker image
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 10
     permissions:
       id-token: write
       contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+
+      - name: Fetch web platform
+        run: make webplatform
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_GITHUB_ROLE }}
+          role-to-assume: ${{secrets.AWS_GITHUB_ROLE}}
           role-session-name: Github_Action_Release_Autokitteh
           aws-region: us-east-1
+
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
-      - name: Fetch web platform
-        run: make webplatform
-      - name: Build And Push
-        uses: docker/build-push-action@v4
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64
-          tags: ${{ steps.login-ecr.outputs.registry }}/autokitteh:${{inputs.version}}
+          tags: ${{steps.login-ecr.outputs.registry}}/autokitteh:${{inputs.version}}
           push: true
           provenance: false
