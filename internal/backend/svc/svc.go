@@ -58,8 +58,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/secrets"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessionsgrpcsvc"
-	"go.autokitteh.dev/autokitteh/internal/backend/store"
-	"go.autokitteh.dev/autokitteh/internal/backend/storegrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/backend/triggers"
@@ -217,7 +215,6 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			fx.Provide(func(s sessions.Sessions) sdkservices.Sessions { return s }),
 			fx.Invoke(func(lc fx.Lifecycle, s sessions.Sessions) { HookOnStart(lc, s.StartWorkers) }),
 		),
-		Component("store", store.Configs, fx.Provide(store.New)),
 		Component("builds", configset.Empty, fx.Provide(builds.New)),
 		Component("connections", configset.Empty, fx.Provide(connections.New)),
 		Component("deployments", deployments.Configs, fx.Provide(deployments.New)),
@@ -304,7 +301,6 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			sdkruntimessvc.Init(z, runtimes, muxes.Auth)
 		}),
 		fx.Invoke(sessionsgrpcsvc.Init),
-		fx.Invoke(storegrpcsvc.Init),
 		fx.Invoke(triggersgrpcsvc.Init),
 		fx.Invoke(varsgrpcsvc.Init),
 		Component("telemetry", telemetry.Configs, fx.Provide(telemetry.New)),

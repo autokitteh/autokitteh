@@ -1,8 +1,11 @@
 [None, "floating-point division by zero"]
 
--- main.star:main --
+-- main.star main --
 def foo():
     return catch(lambda: 1/0)
     
 def main():
     print(activity(foo).run())
+
+-- calls.txt --
+foo

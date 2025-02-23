@@ -1,18 +1,55 @@
-# Continuous Integration workflow for Go projects. For more information see:
 # https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+# https://github.com/marketplace/actions/setup-go-environment
 # https://golangci-lint.run/usage/install#github-actions
 
-name: Continuous Integration - Go
+name: CI - Go
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
+  push:
+    branches: [main]
 
 jobs:
-  build-and-test:
-    name: Build + unit tests
+  go-unit-tests:
+    name: Go build + unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Install gotestsum
+        run: go install gotest.tools/gotestsum@latest
+
+      - name: Build
+        run: go build -trimpath ./...
+
+      - name: Test
+        run: gotestsum -f testname -- -trimpath $(go list ./... | grep -v -E "autokitteh/tests|runtimes/python")
+
+  go-session-tests:
+    name: Go session tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build AK
+        run: go build -trimpath -o bin/ak ./cmd/ak
+
+      - name: Test
+        run: PYTHON=skip ./tests/sessions/run.sh
+
+  go-system-tests:
+    name: Go system tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -24,16 +61,12 @@ jobs:
           go-version-file: go.mod
       - name: Install gotestsum
         run: go install gotest.tools/gotestsum@latest
-      - name: Download modules
-        run: go mod download
-      - name: Build
-        run: make build bin
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11" # Should be in sync with runtimes/pythonrt/pythonrt.go:minPyVersion
+
+      - name: Build AK
+        run: go build -trimpath -o bin/ak ./cmd/ak
+
       - name: Test
-        run: make test-unit
+        run: gotestsum -f testname -- -trimpath ./tests/system
 
   static-analysis:
     name: Static analysis
@@ -57,53 +90,6 @@ jobs:
           version: v1.63.1
           # https://github.com/golangci/golangci-lint-action/issues/308
           args: --timeout=5m
-
-  test-opa:
-    name: Run OPA tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-      - name: Setup OPA
-        uses: open-policy-agent/setup-opa@v2
-        with:
-          version: latest
-      - name: Run tests
-        run: make test-opa
-
-  test-runs:
-    name: Run tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-
-      - name: Run tests
-        run: make bin/ak test-runs
-
-  test-sessions:
-    name: Session tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12" # Should be in sync with runtimes/pythonrt/pythonrt.go:minPyVersion
-      - name: Session tests
-        run: make bin/ak test-sessions
 
   verify-docker-builds:
     runs-on: ubuntu-latest
@@ -130,10 +116,10 @@ jobs:
 
   publish_docker_image:
     needs:
-      - test-sessions
-      - test-runs
+      - go-unit-tests
+      - go-session-tests
+      - go-system-tests
       - static-analysis
-      - build-and-test
     runs-on: ubuntu-latest
     timeout-minutes: 30
     if: github.ref == 'refs/heads/main'

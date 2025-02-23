@@ -48,13 +48,18 @@ project:
       call: program.star:on_http_get
 
 -- program.star --
-def on_http_get(raw_url):
-    if raw_url.endswith('short'):
+def on_http_get(data):
+    if data['raw_url'].endswith('short'):
       print(ak.is_deployment_active())
       return
 
     while ak.is_deployment_active():
         print("still alive!")
-        sleep(1)
+        sleep(5)
 
     print("done")
+
+-- test-config.yaml --
+server:
+    deployments.draining_deactivation_interval: 0
+    deployments.draining_deactivation_jitter: 0

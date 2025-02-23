@@ -5,6 +5,8 @@ import (
 	"net/http"
 
 	"go.uber.org/zap"
+
+	"go.autokitteh.dev/autokitteh/integrations/common"
 )
 
 // https://learn.microsoft.com/en-us/graph/api/resources/changenotificationcollection
@@ -39,7 +41,7 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	var notifs changeNotifs
 	if err := json.NewDecoder(r.Body).Decode(&notifs); err != nil {
 		h.logger.Warn("MS change notif: failed to parse request body", zap.Error(err))
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		common.HTTPError(w, http.StatusBadRequest)
 		return
 	}
 

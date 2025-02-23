@@ -104,16 +104,40 @@ ifneq ($(scripts),)
 endif
 
 .PHONY: test
-test: test-opa test-race test-runs test-sessions
+test: test-race test-opa test-starkark test-sessions
+
+# Run only Go unit-tests, without checking for race conditions,
+# and without running long-running Python runtime and system tests.
+.PHONY: test-unit
+test-unit:
+	$(GOTEST) $(go list ./... | grep -v -E "autokitteh/tests|runtimes/python")
+
+# Run all Go tests (including Python runtime and system tests),
+# and check for race conditions while running each of them.
+.PHONY: test-race
+test-race:
+	$(GOTEST) -race ./...
+
+# Long-running subset of "test-unit", for simplicity.
+.PHONY: test-system
+test-system: bin/ak
+	$(GOTEST) ./tests/system
 
 .PHONY: test-opa
 test-opa:
 	@if which opa > /dev/null; then \
-		cd configs/opa_bundles/default; \
-		opa test -v .; \
+		opa test configs/opa_bundles -v; \
 	else \
 		echo "opa not found, skipping OPA tests"; \
 	fi
+
+.PHONY: test-starlark
+test-starlark: bin/ak
+	./tests/starlark/run.sh
+
+.PHONY: test-sessions
+test-sessions: bin/ak
+	./tests/sessions/run.sh
 
 .PHONY: test-dbgorm
 test-dbgorm:
@@ -122,36 +146,10 @@ test-dbgorm:
 	go test -v ./internal/backend/db/dbgorm -dbtype $$dbtype ; \
 	done
 
-# Skip a few Go unit-tests under "runtimes/pythonrt/" - either because they
-# fails due to missing Python deps, or because they are very slow (20-30 sec).
-# Note that this affects only Go CI in GitHub (which runs "make test-unit"),
-# but not manual runs of "make" (which depend on "test-race"), or Python CI
-# in GitHub (which uses "runtimes/pythonrt/Makefile").
-.PHONY: test-unit
-test-unit:
-	$(GOTEST) ./... -skip "(pyExports|pySvc|createVEnv)"
-
-# Subset of "test-unit", for simplicity.
-.PHONY: test-system
-test-system:
-	$(GOTEST) ./tests/system
-
-.PHONY: test-runs
-test-runs:
-	./tests/runs/run.sh
-
-.PHONY: test-sessions
-test-sessions:
-	./tests/sessions/run.sh
-
 .PHONY: test-cover
 test-cover:
 	$(GOTEST) -covermode=atomic -coverprofile=tmp/cover.out ./...
 	go tool cover -html=tmp/cover.out
-
-.PHONY: test-race
-test-race:
-	$(GOTEST) -race ./...
 
 .PHONY: proto
 proto:

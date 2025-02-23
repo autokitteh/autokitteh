@@ -53,6 +53,9 @@ func Start(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, d sdkservices.Disp
 	m.NoAuth.HandleFunc("POST "+webhooks.SlashCommandPath, whh.HandleSlashCommand)
 	m.NoAuth.HandleFunc("POST "+webhooks.InteractionPath, whh.HandleInteraction)
 
+	// TODO(INT-167): Remove this after all cloud envs have v0.14.4+ deployed.
+	migrateOldConnectionVars(l, v)
+
 	reopenExistingWebSocketConnections(context.Background(), l, v, wsh)
 }
 
@@ -93,5 +96,64 @@ func reopenExistingWebSocketConnections(ctx context.Context, l *zap.Logger, v sd
 		appToken := data.GetValue(vars.AppTokenVar)
 		botToken := data.GetValue(vars.BotTokenVar)
 		h.OpenWebSocketConnection(appID, appToken, botToken)
+	}
+}
+
+// TODO(INT-167): Remove this after all cloud envs have v0.14.4+ deployed.
+func migrateOldConnectionVars(l *zap.Logger, v sdkservices.Vars) {
+	ctx := context.Background()
+	iid := sdktypes.NewIntegrationIDFromName(desc.UniqueName().String())
+	cids, err := v.FindConnectionIDs(ctx, iid, common.AuthTypeVar, "")
+	if err != nil {
+		l.Error("failed to list old Slack connection IDs", zap.Error(err))
+		return
+	}
+
+	for _, cid := range cids {
+		l := l.With(zap.String("connection_id", cid.String()))
+		l.Info("migrating old Slack connection")
+		vsid := sdktypes.NewVarScopeID(cid)
+
+		pairs := []struct{ old, new string }{
+			{"Key", "install_ids"},
+			{"oauth_TokenTyp", "oauth_TokenType"},
+
+			{"oauth_AccessToken", "oauth_access_token"},
+			{"oauth_Expiry", "oauth_expiry"},
+			{"oauth_RefreshToken", "oauth_refresh_token"},
+			{"oauth_TokenType", "oauth_token_type"},
+
+			{"client_id", "private_client_id"},
+			{"client_secret", "private_client_secret"},
+			{"signing_secret", "private_signing_secret"},
+
+			{"AppID", "app_id"},
+			{"EnterpriseID", "enterprise_id"},
+			{"TeamID", "team_id"},
+
+			{"AppToken", "private_app_token"},
+			{"BotToken", "private_bot_token"},
+		}
+		for _, pair := range pairs {
+			o, n := sdktypes.NewSymbol(pair.old), sdktypes.NewSymbol(pair.new)
+			if err := common.RenameVar(ctx, v, vsid, o, n); err != nil {
+				l.Error("failed to migrate Slack connection var name",
+					zap.String("old", pair.old),
+					zap.String("new", pair.new),
+					zap.Error(err),
+				)
+				continue
+			}
+		}
+
+		if err := common.MigrateAuthType(ctx, v, vsid); err != nil {
+			l.Error("failed to migrate Slack connection's auth type", zap.Error(err))
+		}
+
+		if err := common.MigrateDateTimeToRFC3339(ctx, v, vsid, common.OAuthExpiryVar); err != nil {
+			l.Error("failed to migrate Slack connection's OAuth expiry", zap.Error(err))
+		}
+
+		_ = v.Delete(ctx, vsid, sdktypes.NewSymbol("authType"))
 	}
 }

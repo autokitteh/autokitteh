@@ -8,6 +8,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api"
 )
 
@@ -71,7 +72,7 @@ func (h handler) HandleSlashCommand(w http.ResponseWriter, r *http.Request) {
 			zap.ByteString("body", body),
 			zap.Error(err),
 		)
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+		common.HTTPError(w, http.StatusBadRequest)
 		return
 	}
 
@@ -107,7 +108,7 @@ func (h handler) HandleSlashCommand(w http.ResponseWriter, r *http.Request) {
 	// Transform the received Slack event into an AutoKitteh event.
 	akEvent, err := transformEvent(l, cmd, "slash_command")
 	if err != nil {
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		common.HTTPError(w, http.StatusInternalServerError)
 		return
 	}
 
@@ -116,7 +117,7 @@ func (h handler) HandleSlashCommand(w http.ResponseWriter, r *http.Request) {
 	cids, err := h.listConnectionIDs(ctx, cmd.APIAppID, cmd.EnterpriseID, cmd.TeamID)
 	if err != nil {
 		l.Error("Failed to find connection IDs", zap.Error(err))
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		common.HTTPError(w, http.StatusInternalServerError)
 		return
 	}
 

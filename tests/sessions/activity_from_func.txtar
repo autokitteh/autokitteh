@@ -1,9 +1,12 @@
 hello, george
 
--- main.star:main --
+-- main.star main --
 def foo(name):
     return "hello, " + name
 
 def main():
     ret = activity(foo).run("george")
     print(ret)
+
+-- calls.txt --
+foo

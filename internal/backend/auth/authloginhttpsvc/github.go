@@ -44,7 +44,7 @@ func registerGithubOAuthRoutes(mux *http.ServeMux, cfg oauth2Config, onSuccess f
 		}
 
 		if gu.Login == nil || gu.ID == nil || gu.Name == nil || gu.Email == nil {
-			http.Error(w, "github user missing data", http.StatusInternalServerError)
+			http.Error(w, "GitHub user missing data", http.StatusInternalServerError)
 			return
 		}
 
