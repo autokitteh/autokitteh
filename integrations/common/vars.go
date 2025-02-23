@@ -38,6 +38,11 @@ func EncodeOAuthData(t *oauth2.Token) OAuthData {
 	}
 }
 
+// IsOAuthTokenEmpty returns true if the OAuth 2.0 token is empty.
+func IsOAuthTokenEmpty(vs sdktypes.Vars) bool {
+	return vs.GetValue(OAuthAccessTokenVar) == ""
+}
+
 // ReadConnectionVars returns the connection's variables, or
 // an error if the connection is not initialized or accessible.
 func ReadConnectionVars(ctx context.Context, vars sdkservices.Vars, cid sdktypes.ConnectionID) (sdktypes.Vars, sdktypes.Status, error) {

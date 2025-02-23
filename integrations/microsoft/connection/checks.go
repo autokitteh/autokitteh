@@ -32,6 +32,9 @@ func Status(v sdkservices.Vars) sdkintegrations.OptFn {
 		case "":
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 		case integrations.OAuthDefault, integrations.OAuthPrivate:
+			if common.IsOAuthTokenEmpty(vs) {
+				return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+			}
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using OAuth 2.0"), nil
 		case integrations.DaemonApp:
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using daemon app"), nil
