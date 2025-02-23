@@ -8,7 +8,7 @@ import "context"
 // with the key being a string and the value being any Go interface{}.
 type Store interface {
 	// Set stores the given value for the given key.
-	// The implementation automatically marshalls the value.
+	// The implementation automatically marshals the value.
 	// The marshalling format depends on the implementation. It can be JSON, gob etc.
 	// The key must not be "" and the value must not be nil.
 	Set(ctx context.Context, k string, v any) error
