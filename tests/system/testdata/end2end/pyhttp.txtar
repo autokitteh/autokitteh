@@ -1,0 +1,64 @@
+# Deploy project with HTTP triggers that check session data.
+ak deploy --manifest project.yaml
+return code == 0
+
+# Send HTTP GET request to trigger deployment to start new session.
+http get /webhooks/00000000000000000000000003/
+resp code == 202
+
+wait 5s for session ses_00000000000000000000000007
+
+ak session log my_project --no-timestamps --page-size 1 --order desc -J
+return code == 0
+output equals_json file expected_without_path.json
+
+-- project.yaml --
+version: v1
+
+project:
+  name: my_project
+  triggers:
+    - name: http
+      type: webhook
+      call: program.py:on_http
+
+-- program.py --
+def on_http(event):
+    print(event.data["method"])
+    print(event.session_id)
+
+-- expected_without_path.json --
+{
+    "state": {
+        "completed": {
+            "prints": [
+                "GET",
+                "ses_00000000000000000000000007"
+            ],
+            "exports": {
+                "on_http": {
+                    "function": {
+                        "executor_id": "run_00000000000000000000000008",
+                        "name": "on_http",
+                        "desc": {
+                            "input": [
+                                {
+                                    "name": "event"
+                                }
+                            ]
+                        }
+                    }
+                }
+            },
+            "return_value": {
+                "custom": {
+                    "executor_id": "run_00000000000000000000000008",
+                    "data": "gASVHgAAAAAAAACMCF9fbWFpbl9flIwGUmVzdWx0lJOUTk5Oh5SBlC4=",
+                    "value": {
+                        "nothing": {}
+                    }
+                }
+            }
+        }
+    }
+}

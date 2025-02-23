@@ -23,10 +23,10 @@ return code == 0
 output equals file last.txt
 
 -- main.star --
-def main(a, b, c):
-  print(a)
-  print(b)
-  print(c)
+def main(data):
+  print(data["a"])
+  print(data["b"])
+  print(data["c"])
   print("finished")
 
 -- last.txt --

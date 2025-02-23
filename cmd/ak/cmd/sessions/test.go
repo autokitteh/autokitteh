@@ -31,6 +31,9 @@ var (
 
 	// File "/opt/hostedtoolcache/Python/3.12.8/x64/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result`
 	pyLibRe = regexp.MustCompile(`File ".*/lib/python3\.\d+/(.*\.py)", line (\d+), in (.*)`)
+
+	// Some python version like to put an annoying ^^^^ marker to show where the error is.
+	pyAnnoyingErrorLocationMarkerRe = regexp.MustCompile(`^\s*~*\^+$`)
 )
 
 func normalizePath(p string) string {
@@ -151,6 +154,11 @@ var testCmd = common.StandardCommand(&cobra.Command{
 			s := bufio.NewScanner(strings.NewReader(ps))
 			for s.Scan() {
 				line := normalizePath(s.Text())
+
+				if pyAnnoyingErrorLocationMarkerRe.MatchString(line) {
+					continue
+				}
+
 				prints.WriteString(line)
 				prints.WriteRune('\n')
 			}
