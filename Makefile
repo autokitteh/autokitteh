@@ -104,16 +104,7 @@ ifneq ($(scripts),)
 endif
 
 .PHONY: test
-test: test-opa test-race test-runs test-sessions
-
-.PHONY: test-opa
-test-opa:
-	@if which opa > /dev/null; then \
-		cd configs/opa_bundles/default; \
-		opa test -v .; \
-	else \
-		echo "opa not found, skipping OPA tests"; \
-	fi
+test: test-race test-opa test-starkark test-sessions
 
 # Run only Go unit-tests, without checking for race conditions,
 # and without running long-running Python runtime and system tests.
@@ -132,6 +123,18 @@ test-race:
 test-system: bin/ak
 	$(GOTEST) ./tests/system
 
+.PHONY: test-opa
+test-opa:
+	@if which opa > /dev/null; then \
+		opa test configs/opa_bundles -v; \
+	else \
+		echo "opa not found, skipping OPA tests"; \
+	fi
+
+.PHONY: test-starlark
+test-starlark: bin/ak
+	./tests/starlark/run.sh
+
 .PHONY: test-sessions
 test-sessions:
 	./tests/sessions/run.sh
@@ -142,10 +145,6 @@ test-dbgorm:
 		echo running for $$dbtype; \
 	go test -v ./internal/backend/db/dbgorm -dbtype $$dbtype ; \
 	done
-
-.PHONY: test-runs
-test-runs:
-	./tests/runs/run.sh
 
 .PHONY: test-cover
 test-cover:
