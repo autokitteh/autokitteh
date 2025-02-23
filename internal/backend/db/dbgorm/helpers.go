@@ -45,7 +45,7 @@ func withProjectOrgID(q *gorm.DB, oid sdktypes.OrgID, table string) *gorm.DB {
 		return q
 	}
 
-	return q.Joins(fmt.Sprintf("INNER JOIN projects ON %s.project_id = projects.project_id AND projects.org_id = ?", table), oid.UUIDValue()).Distinct()
+	return q.Joins(fmt.Sprintf("RIGHT JOIN projects ON %s.project_id = projects.project_id AND projects.org_id = ?", table), oid.UUIDValue())
 }
 
 func based(ctx context.Context) scheme.Base {
