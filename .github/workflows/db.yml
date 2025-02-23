@@ -1,0 +1,34 @@
+# https://github.com/marketplace/actions/setup-go-environment
+
+name: CI - Databases
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/db.yml
+      - internal/backend/db/**
+  push:
+    branches: [main]
+
+jobs:
+  db-tests:
+    name: Database tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Install gotestsum
+        run: go install gotest.tools/gotestsum@latest
+
+      - name: Test PostgreSQL
+        run: gotestsum -f testname -- -trimpath ./internal/backend/db/... -dbtype postgres
+
+      # This is the default DB type, so it's already a part of the Go unit tests,
+      # but it doesn't hurt to run it again side-by-side with other database types.
+      - name: Test SQLite
+        run: gotestsum -f testname -- -trimpath ./internal/backend/db/... -dbtype sqlite
