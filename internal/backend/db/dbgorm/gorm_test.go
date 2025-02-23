@@ -365,10 +365,31 @@ func (f *dbFixture) newDeployment(args ...any) scheme.Deployment {
 	return d
 }
 
-func (f *dbFixture) newProject() scheme.Project {
+func (f *dbFixture) newOrg() uuid.UUID {
+	org := sdktypes.NewOrg().WithNewID()
+
+	dbOrg := scheme.Org{
+		OrgID: org.ID().UUIDValue(),
+	}
+	if err := f.gormdb.writer.Create(&dbOrg).Error; err != nil {
+		log.Fatalf("Failed to create org: %v", err)
+	}
+
+	return org.ID().UUIDValue()
+}
+
+func (f *dbFixture) newProject(orgID ...uuid.UUID) scheme.Project {
 	id := newTestID()
+	projectOrgID := f.newOrg()
+
+	// If orgID is provided, use it instead of creating a new org
+	if len(orgID) > 0 {
+		projectOrgID = orgID[0]
+	}
+
 	return scheme.Project{
 		ProjectID: id,
+		OrgID:     projectOrgID,
 		Name:      idToName(id, "prj"),
 		Resources: []byte{},
 	}
