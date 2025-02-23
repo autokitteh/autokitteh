@@ -30,6 +30,24 @@ jobs:
       - name: Test
         run: gotestsum -f testname -- -trimpath $(go list ./... | grep -v -E "autokitteh/tests|runtimes/python")
 
+  go-session-tests:
+    name: Go session tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build AK
+        run: go build -trimpath -o bin/ak ./cmd/ak
+
+      - name: Test
+        run: PYTHON=skip ./tests/sessions/run.sh
+
   go-system-tests:
     name: Go system tests
     runs-on: ubuntu-latest
@@ -73,24 +91,6 @@ jobs:
           # https://github.com/golangci/golangci-lint-action/issues/308
           args: --timeout=5m
 
-  test-sessions:
-    name: Session tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12" # Should be in sync with runtimes/pythonrt/pythonrt.go:minPyVersion
-      - name: Session tests
-        run: make bin/ak test-sessions
-
   verify-docker-builds:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -117,8 +117,8 @@ jobs:
   publish_docker_image:
     needs:
       - go-unit-tests
+      - go-session-tests
       - go-system-tests
-      - test-sessions
       - static-analysis
     runs-on: ubuntu-latest
     timeout-minutes: 30
