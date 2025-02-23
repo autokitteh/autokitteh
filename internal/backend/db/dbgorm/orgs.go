@@ -76,13 +76,6 @@ func (gdb *gormdb) DeleteOrg(ctx context.Context, oid sdktypes.OrgID) error {
 			return translateError(err)
 		}
 
-		err = tx.writer.Model(&scheme.Org{}).
-			Where("org_id = ?", oid.UUIDValue()).
-			Update("name", oid.UUIDValue().String()).Error
-		if err != nil {
-			return translateError(err)
-		}
-
 		return tx.writer.Where("org_id = ?", oid.UUIDValue()).Delete(&scheme.Org{}).Error
 	}))
 }
