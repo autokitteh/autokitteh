@@ -574,7 +574,12 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []sd
 			return prints, err
 		}
 
-		if retVal, err = run.Call(ctx, callValue, nil, w.data.Session.Inputs()); err != nil {
+		inputs := map[string]sdktypes.Value{
+			"data":       sdktypes.NewDictValueFromStringMap(w.data.Session.Inputs()),
+			"session_id": sdktypes.NewStringValue(sid.String()),
+		}
+
+		if retVal, err = run.Call(ctx, callValue, nil, inputs); err != nil {
 			return prints, err
 		}
 	}

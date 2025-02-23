@@ -175,10 +175,8 @@ const archiveKey = "code.tar"
 // All Python handler function get all event information.
 var pyModuleFunc = kittehs.Must1(sdktypes.ModuleFunctionFromProto(&sdktypes.ModuleFunctionPB{
 	Input: []*sdktypes.ModuleFunctionFieldPB{
-		{Name: "created_at"},
 		{Name: "data"},
-		{Name: "event_id"},
-		{Name: "integration_id"},
+		{Name: "session_id"},
 	},
 }))
 
@@ -529,7 +527,7 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 	keys := slices.Collect(maps.Keys(event))
 	py.log.Info("event", zap.Any("keys", keys))
 
-	eventData, err := json.Marshal(map[string]any{"data": event})
+	eventData, err := json.Marshal(event)
 	if err != nil {
 		return sdktypes.InvalidValue, fmt.Errorf("marshal event: %w", err)
 	}
