@@ -440,6 +440,7 @@ func (py *pySvc) setupCallbacksListeningLoop(ctx context.Context) chan (error) {
 				}
 				py.call(ctx, fn, args, kw)
 			case cb := <-py.channels.callback:
+				py.log.Info("syscall", zap.Any("func", cb.args[0]))
 				val, err := py.cbs.Call(ctx, py.runID, py.syscallFn, cb.args, cb.kwargs)
 				if err != nil {
 					cb.errorChannel <- err

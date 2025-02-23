@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	"go.temporal.io/sdk/workflow"
+	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncontext"
@@ -70,6 +71,7 @@ func (w *sessionWorkflow) sleep(ctx context.Context, args []sdktypes.Value, kwar
 }
 
 func (w *sessionWorkflow) start(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+	w.l.Info("syscalls:start", zap.Any("fn", args[0]))
 	var (
 		loc    string
 		inputs map[string]sdktypes.Value
