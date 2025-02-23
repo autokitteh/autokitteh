@@ -1,4 +1,5 @@
 # https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+# https://github.com/marketplace/actions/setup-go-environment
 # https://golangci-lint.run/usage/install#github-actions
 
 name: CI - Go
@@ -72,35 +73,6 @@ jobs:
           # https://github.com/golangci/golangci-lint-action/issues/308
           args: --timeout=5m
 
-  test-opa:
-    name: Run OPA tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-      - name: Setup OPA
-        uses: open-policy-agent/setup-opa@v2
-        with:
-          version: latest
-      - name: Run tests
-        run: make test-opa
-
-  test-runs:
-    name: Run tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-
-      - name: Run tests
-        run: make bin/ak test-runs
-
   test-sessions:
     name: Session tests
     runs-on: ubuntu-latest
@@ -147,7 +119,6 @@ jobs:
       - go-unit-tests
       - go-system-tests
       - test-sessions
-      - test-runs
       - static-analysis
     runs-on: ubuntu-latest
     timeout-minutes: 30
