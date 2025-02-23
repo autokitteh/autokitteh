@@ -33,9 +33,9 @@ project:
       call: program.star:on_http
 
 -- program.star --
-def on_http(method, body):
-    print(method)
-    print(body)
+def on_http(data):
+    print(data["method"])
+    print(data["body"])
 
 -- expected_without_path.json --
 {
@@ -53,10 +53,7 @@ def on_http(method, body):
                         "desc": {
                             "input": [
                                 {
-                                    "name": "method"
-                                },
-                                {
-                                    "name": "body"
+                                    "name": "data"
                                 }
                             ]
                         },
@@ -87,10 +84,7 @@ def on_http(method, body):
                         "desc": {
                             "input": [
                                 {
-                                    "name": "method"
-                                },
-                                {
-                                    "name": "body"
+                                    "name": "data"
                                 }
                             ]
                         },
