@@ -243,7 +243,9 @@ func Test_pySvc_Run(t *testing.T) {
 		"bytes": sdktypes.NewBytesValue([]byte(`{"user": "joe", "id": 7}`)),
 	})
 	kwargs := map[string]sdktypes.Value{
-		"body": body,
+		"data": sdktypes.NewDictValueFromStringMap(map[string]sdktypes.Value{
+			"body": body,
+		}),
 	}
 	_, err = run.Call(ctx, fn, nil, kwargs)
 	require.NoError(t, err, "call")
