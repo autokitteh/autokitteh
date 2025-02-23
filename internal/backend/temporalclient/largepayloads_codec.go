@@ -19,7 +19,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/kvstore/file"
 	"go.autokitteh.dev/autokitteh/internal/kvstore/gomap"
 	"go.autokitteh.dev/autokitteh/internal/kvstore/s3"
-
 	"go.autokitteh.dev/autokitteh/internal/xdg"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )

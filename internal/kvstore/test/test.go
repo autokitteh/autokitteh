@@ -310,14 +310,14 @@ func handleGetError(t *testing.T, err error, found bool) {
 func TestConcurrentInteractions(t *testing.T, goroutineCount int, store kvstore.Store) {
 	waitGroup := sync.WaitGroup{}
 	waitGroup.Add(goroutineCount) // Must be called before any goroutine is started
-	for i := 0; i < goroutineCount; i++ {
+	for i := range goroutineCount {
 		go InteractWithStore(store, strconv.Itoa(i), t, &waitGroup)
 	}
 	waitGroup.Wait()
 
 	// Now make sure that all values are in the store
 	expected := Foo{}
-	for i := 0; i < goroutineCount; i++ {
+	for i := range goroutineCount {
 		actualPtr := new(Foo)
 		found, err := store.Get(context.TODO(), strconv.Itoa(i), actualPtr)
 		if err != nil {
