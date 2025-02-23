@@ -104,7 +104,7 @@ ifneq ($(scripts),)
 endif
 
 .PHONY: test
-test: test-race test-opa test-starkark test-sessions
+test: test-race test-db test-opa test-starkark test-sessions
 
 # Run only Go unit-tests, without checking for race conditions,
 # and without running long-running Python runtime and system tests.
@@ -118,10 +118,24 @@ test-unit:
 test-race:
 	$(GOTEST) -race ./...
 
+# Generate a coverage report for all Go tests
+# (including Python runtime and system tests).
+.PHONY: test-cover
+test-cover:
+	$(GOTEST) -covermode=atomic -coverprofile=tmp/cover.out ./...
+	go tool cover -html=tmp/cover.out
+
 # Long-running subset of "test-unit", for simplicity.
 .PHONY: test-system
 test-system: bin/ak
 	$(GOTEST) ./tests/system
+
+.PHONY: test-db
+test-db:
+	for dbtype in sqlite postgres; do \
+		echo running for $$dbtype; \
+	$(GOTEST) ./internal/backend/db/... -dbtype $$dbtype ; \
+	done
 
 .PHONY: test-opa
 test-opa:
@@ -138,18 +152,6 @@ test-starlark: bin/ak
 .PHONY: test-sessions
 test-sessions: bin/ak
 	./tests/sessions/run.sh
-
-.PHONY: test-dbgorm
-test-dbgorm:
-	for dbtype in sqlite postgres; do \
-		echo running for $$dbtype; \
-	go test -v ./internal/backend/db/dbgorm -dbtype $$dbtype ; \
-	done
-
-.PHONY: test-cover
-test-cover:
-	$(GOTEST) -covermode=atomic -coverprofile=tmp/cover.out ./...
-	go tool cover -html=tmp/cover.out
 
 .PHONY: proto
 proto:
