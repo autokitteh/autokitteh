@@ -136,7 +136,7 @@ test-starlark: bin/ak
 	./tests/starlark/run.sh
 
 .PHONY: test-sessions
-test-sessions:
+test-sessions: bin/ak
 	./tests/sessions/run.sh
 
 .PHONY: test-dbgorm
