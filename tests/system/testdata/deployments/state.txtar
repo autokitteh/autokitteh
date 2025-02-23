@@ -55,6 +55,11 @@ def on_http_get(data):
 
     while ak.is_deployment_active():
         print("still alive!")
-        sleep(1)
+        sleep(5)
 
     print("done")
+
+-- test-config.yaml --
+server:
+    deployments.draining_deactivation_interval: 0
+    deployments.draining_deactivation_jitter: 0
