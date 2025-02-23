@@ -1,0 +1,24 @@
+# https://github.com/marketplace/actions/setup-opa
+
+name: CI - OPA
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  run-opa-tests:
+    name: OPA tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Setup OPA
+        uses: open-policy-agent/setup-opa@v2
+        with:
+          version: latest
+
+      - name: Run OPA tests
+        run: opa test configs/opa_bundles -v

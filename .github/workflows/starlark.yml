@@ -1,0 +1,27 @@
+# https://github.com/marketplace/actions/setup-go-environment
+
+name: CI - Starlark
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  starlark-tests:
+    name: Starlark tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build
+        run: go build -trimpath -o bin/ak ./cmd/ak
+
+      - name: Test
+        run: ./tests/starlark/run.sh
