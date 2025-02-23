@@ -58,6 +58,10 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12" # Should be in sync with runtimes/pythonrt/pythonrt.go:minPyVersion
-      - name: Python Session tests
-        run: PYTHON=only make bin/ak test-sessions
+          python-version: "3.12"
+
+      - name: Build AK
+        run: go build -trimpath -o bin/ak ./cmd/ak
+
+      - name: Test
+        run: PYTHON=only ./tests/sessions/run.sh
