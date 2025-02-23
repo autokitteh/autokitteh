@@ -1,18 +1,36 @@
-# Continuous Integration workflow for Go projects. For more information see:
 # https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
 # https://golangci-lint.run/usage/install#github-actions
 
-name: Continuous Integration - Go
+name: CI - Go
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
+  push:
+    branches: [main]
 
 jobs:
-  build-and-test:
-    name: Build + unit tests
+  go-unit-tests:
+    name: Go build + unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Install gotestsum
+        run: go install gotest.tools/gotestsum@latest
+
+      - name: Build
+        run: go build -trimpath ./...
+
+      - name: Test
+        run: gotestsum -f testname -- -trimpath $(go list ./... | grep -v -E "autokitteh/tests|runtimes/python")
+
+  go-system-tests:
+    name: Go system tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -24,16 +42,12 @@ jobs:
           go-version-file: go.mod
       - name: Install gotestsum
         run: go install gotest.tools/gotestsum@latest
-      - name: Download modules
-        run: go mod download
-      - name: Build
-        run: make build bin
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11" # Should be in sync with runtimes/pythonrt/pythonrt.go:minPyVersion
+
+      - name: Build AK
+        run: go build -trimpath -o bin/ak ./cmd/ak
+
       - name: Test
-        run: make test-unit
+        run: gotestsum -f testname -- -trimpath ./tests/system
 
   static-analysis:
     name: Static analysis
@@ -130,10 +144,11 @@ jobs:
 
   publish_docker_image:
     needs:
+      - go-unit-tests
+      - go-system-tests
       - test-sessions
       - test-runs
       - static-analysis
-      - build-and-test
     runs-on: ubuntu-latest
     timeout-minutes: 30
     if: github.ref == 'refs/heads/main'
