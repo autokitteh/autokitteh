@@ -4,6 +4,9 @@ name: CI - OPA
 
 on:
   pull_request:
+    paths:
+      - .github/workflows/opa.yml
+      - configs/opa_bundles/**
   push:
     branches: [main]
 
