@@ -19,6 +19,8 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+      - name: Download Go modules
+        run: go mod download
 
       - name: Build AK
         run: go build -trimpath -o bin/ak ./cmd/ak
