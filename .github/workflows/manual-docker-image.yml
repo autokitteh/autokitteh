@@ -16,7 +16,7 @@ on:
         description: version to push
 
 jobs:
-  publish-docker-image:
+  publish_docker_image:
     name: Publish Docker image
     runs-on: ubuntu-latest
     timeout-minutes: 10
