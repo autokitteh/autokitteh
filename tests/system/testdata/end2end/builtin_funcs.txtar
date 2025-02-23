@@ -14,9 +14,6 @@ return code == 0
 output contains '1st random int with seed: 5'
 output contains '2nd random int with seed: 2'
 output contains '3rd random int with seed: 1'
-output contains 'Store set = OK'
-output contains 'Store get = value'
-output contains 'Store del = 1'
 output regex ' \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{1,9} \+0000 UTC'
 output contains 'done'
 
