@@ -55,7 +55,7 @@ def on_http_get(data):
 
     while ak.is_deployment_active():
         print("still alive!")
-        sleep(1)
+        sleep(5)
 
     print("done")
 
