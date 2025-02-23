@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/backend/tar"
@@ -17,6 +18,15 @@ import (
 
 func (gdb *gormdb) createProject(ctx context.Context, project *scheme.Project) error {
 	return gdb.writeTransaction(ctx, func(tx *gormdb) error {
+		// lock project's org
+		var org scheme.Org
+		if err := tx.writer.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Model(&scheme.Org{}).
+			Where("org_id = ? AND deleted_at IS NULL", project.OrgID).
+			First(&org).Error; err != nil {
+			return translateError(err)
+		}
+
 		// ensure there is no active project with the same name (but allow deleted ones)
 		var count int64
 		if err := tx.writer.

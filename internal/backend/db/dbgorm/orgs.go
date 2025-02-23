@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -45,7 +47,31 @@ func (gdb *gormdb) DeleteOrg(ctx context.Context, oid sdktypes.OrgID) error {
 	}
 
 	return translateError(gdb.writeTransaction(ctx, func(tx *gormdb) error {
-		err := tx.writer.Where("org_id = ?", oid.UUIDValue()).Delete(&scheme.OrgMember{}).Error
+		var org scheme.Org
+		err := tx.writer.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Model(&scheme.Org{}).
+			Where("org_id = ? AND deleted_at IS NULL", oid.UUIDValue()).
+			First(&org).Error
+		if err != nil {
+			return err
+		}
+
+		result := tx.writer.Model(&scheme.Org{}).
+			Where("org_id = ?", oid.UUIDValue()).
+			Where("NOT EXISTS (SELECT 1 FROM projects p WHERE p.org_id = orgs.org_id AND p.deleted_at IS NULL)").
+			Updates(map[string]interface{}{
+				"name":       oid.UUIDValue().String(),
+				"deleted_at": time.Now(),
+			})
+		if result.Error != nil {
+			return translateError(result.Error)
+		}
+
+		if result.RowsAffected == 0 {
+			return errors.New("cannot delete an organization that has associated projects")
+		}
+
+		err = tx.writer.Where("org_id = ?", oid.UUIDValue()).Delete(&scheme.OrgMember{}).Error
 		if err != nil {
 			return translateError(err)
 		}
