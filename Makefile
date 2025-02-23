@@ -80,9 +80,9 @@ gofmt-check:
 
 golangci_lint=$(shell which golangci-lint)
 
-# https://golangci-lint.run/usage/install/#local-installation
-# Keep the same version in "/.github/workflows/ci-go.yml"!
-# See: https://github.com/golangci/golangci-lint
+# Based on: https://golangci-lint.run/welcome/install/#other-ci
+# Keep the same version in "/.github/workflows/go.yml"!
+# See: https://github.com/golangci/golangci-lint/releases
 $(OUTDIR)/tools/golangci-lint:
 	mkdir -p $(OUTDIR)/tools
 ifeq ($(golangci_lint),)
