@@ -28,7 +28,7 @@ jobs:
         run: go build -trimpath ./...
 
       - name: Test
-        run: gotestsum -f testname -- -trimpath $(go list ./... | grep -v -E "autokitteh/tests|runtimes/python")
+        run: gotestsum -f github-actions -- -trimpath $(go list ./... | grep -v -E "autokitteh/tests|runtimes/python")
 
   go-session-tests:
     name: Go session tests
@@ -66,7 +66,7 @@ jobs:
         run: go build -trimpath -o bin/ak ./cmd/ak
 
       - name: Test
-        run: gotestsum -f testname -- -trimpath ./tests/system/...
+        run: gotestsum -f github-actions -- -trimpath ./tests/system/...
 
   static-analysis:
     name: Static analysis
