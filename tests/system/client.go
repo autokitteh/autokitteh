@@ -5,11 +5,9 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
-	"testing"
 	"time"
 )
 
@@ -21,30 +19,6 @@ var (
 	sessionStateFinal = regexp.MustCompile(`state:SESSION_STATE_TYPE_(COMPLETED|ERROR|STOPPED)`)
 	sessionStateAll   = regexp.MustCompile(`state:SESSION_STATE_TYPE_`)
 )
-
-func buildAKBinary(t *testing.T) string {
-	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("failed to get current working directory: %v", err)
-	}
-	defer func() {
-		if err := os.Chdir(wd); err != nil {
-			t.Fatalf("failed to restore working directory: %v", err)
-		}
-	}()
-
-	akRootDir := filepath.Dir(filepath.Dir(wd))
-	if err := os.Chdir(akRootDir); err != nil {
-		t.Fatalf("failed to switch to parent directory: %v", err)
-	}
-
-	output, err := exec.Command("make", "ak").CombinedOutput()
-	if err != nil {
-		t.Fatalf("failed to build client: %v\n%s", err, output)
-	}
-
-	return filepath.Join(akRootDir, "bin", "ak")
-}
 
 func runClient(akPath string, args []string) (*akResult, error) {
 	// Running in a subprocess, not a goroutine (like the

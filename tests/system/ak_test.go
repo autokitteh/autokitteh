@@ -21,6 +21,8 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -35,9 +37,7 @@ const (
 
 func TestSuite(t *testing.T) {
 	akPath := setUpSuite(t)
-
 	tests := make(map[string]*testFile)
-
 	var exclusives []string
 
 	// Each .txtar file is a test-case, with potentially
@@ -90,12 +90,20 @@ func TestSuite(t *testing.T) {
 }
 
 func setUpSuite(t *testing.T) string {
-	akPath := buildAKBinary(t)
-
 	// https://docs.temporal.io/dev-guide/go/debugging
 	t.Setenv("TEMPORAL_DEBUG", "true")
 
-	return akPath
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get current working directory: %v", err)
+	}
+
+	path, err := filepath.Abs(filepath.Join(wd, "..", "..", "bin", "ak"))
+	if err != nil {
+		t.Fatalf("failed to construct ak binary file path: %v", err)
+	}
+
+	return path
 }
 
 func setUpTest(t *testing.T, akPath string, cfg map[string]any) string {
