@@ -252,7 +252,15 @@ class Runner(pb.runner_rpc.RunnerService):
         self.patch_ak_funcs()
 
         ak_call = AKCall(self, self.code_dir)
-        mod = loader.load_code(self.code_dir, ak_call, mod_name)
+        try:
+            mod = loader.load_code(self.code_dir, ak_call, mod_name)
+        except Exception as err:
+            self.ak_print(result_error(err))
+            context.abort(
+                grpc.StatusCode.INVALID_ARGUMENT,
+                f"can't load {mod_name} from {self.code_dir} - {err}",
+            )
+
         ak_call.set_module(mod)
 
         fn = getattr(mod, fn_name, None)
