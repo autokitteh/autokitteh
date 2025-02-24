@@ -99,7 +99,7 @@ export class ActivityWaiter implements Waiter{
                 args: [],
             }
         });
-        console.log("activity resp", resp)
+        console.log("activity resp", resp, "call", f.name)
         const r = (await once(this.event, 'return'))[0]
         console.log("got return value", r)
         return r
@@ -115,10 +115,12 @@ export const ak_call = (waiter: Waiter) => {
         }
 
 
-        if (f.ak_call === undefined) {
+        if (f.ak_call === undefined || f.name == "authenticate" || f.name === undefined || f.name == "all") {
+            console.log("direct call", f.name, f_args)
             return await f(...f_args);
         }
 
+        console.log("remote call", f.name, f_args);
         const results = await waiter.wait(f, f_args, randomUUID());
         console.log("got results", results)
         return results;

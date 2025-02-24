@@ -94,15 +94,20 @@ export async function patchCode(code: string, exclude: string[] = []): Promise<s
         CallExpression: function (path) {
             let originalFunc = "";
 
-            /*
-            TODO: support member expression with N levels
-            ex: a.b.c.d("param")
-            ATM we only support single level
-            ex: a.b("param")
-            */
-
             if (!isAwaitExpression(path.parent)) {
                 return;
+            }
+
+            let f_parts: string[] = []
+            const caller = path.node;
+            let callee = path.node.callee;
+
+            while (isMemberExpression(callee)) {
+                if (isIdentifier(callee.property)) {
+                    f_parts.push(callee.property.name);
+                }
+
+                callee = callee.object
             }
 
             if (isMemberExpression(path.node.callee)) {
@@ -111,20 +116,13 @@ export async function patchCode(code: string, exclude: string[] = []): Promise<s
                     path.node.callee = identifier("ak_call");
                 }
             }
-            else if (isIdentifier(path.node.callee)) {
-                originalFunc = path.node.callee.name;
-                path.node.callee.name =  "ak_call";
-            }
 
-            if (exclude.includes(originalFunc)) {
-                return;
+            if (isIdentifier(callee)) {
+                f_parts.push(callee.name);
+                originalFunc = f_parts.reverse().join(".");
+                caller.callee = identifier("ak_call");
+                caller.arguments.unshift(identifier(originalFunc));
             }
-
-            if (originalFunc == "") {
-                return;
-            }
-
-            path.node.arguments.unshift(identifier(originalFunc));
         },
     })
 

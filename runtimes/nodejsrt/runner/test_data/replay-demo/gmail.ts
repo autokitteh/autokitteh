@@ -13,6 +13,7 @@ export async function listSnippets(): Promise<string[]> {
         scopes: SCOPES,
         keyfilePath: CREDENTIALS_PATH,
     })
+
     const gmail = google.gmail({version: 'v1', auth});
     const res = await gmail.users.messages.list({
         userId: "me",
