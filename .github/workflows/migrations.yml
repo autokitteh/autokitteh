@@ -1,18 +1,19 @@
-name: Validate Migration Files
+name: CI - Migrations
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "internal/backend/db/dbgorm/scheme/**"
   pull_request:
     paths:
-      - "internal/backend/db/dbgorm/scheme/**"
+      - .github/workflows/migrations.yml
+      - internal/backend/db/dbgorm/scheme/**
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/migrations.yml
+      - internal/backend/db/dbgorm/scheme/**
 
 jobs:
-  validate:
-    name: Validate Migrations
+  validate-migrations:
+    name: Validate migration files
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -22,9 +23,11 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - uses: ariga/setup-atlas@v0
-        name: Setup Atlas
-      - name: Validate Sqlite Migrations
+
+      - name: Setup Atlas
+        uses: ariga/setup-atlas@v0
+
+      - name: Validate SQLite
         run: |
           OUTPUT=$(atlas migrate diff --env sqlite)
 
@@ -33,7 +36,8 @@ jobs:
               echo $OUTPUT
               exit 1
           fi
-      - name: Validate Postgres Migrations
+
+      - name: Validate PostgreSQL
         run: |
           OUTPUT=$(atlas migrate diff --env postgres)
 

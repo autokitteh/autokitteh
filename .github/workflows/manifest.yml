@@ -1,24 +1,23 @@
-name: Validate Manifest Schema is Up-to-Date
+name: CI - Manifest
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - ".github/workflows/ci-manifest.yml"
-      - "manifest.schema.yaml"
-      - "internal/manifest/manifest.go"
-      - "docs/autokitteh.yaml"
   pull_request:
     paths:
-      - ".github/workflows/ci-manifest.yml"
-      - "manifest.schema.yaml"
-      - "internal/manifest/manifest.go"
-      - "docs/autokitteh.yaml"
+      - .github/workflows/manifest.yml
+      - docs/autokitteh.yaml
+      - internal/manifest/manifest.go
+      - manifest.schema.yaml
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/manifest.yml
+      - docs/autokitteh.yaml
+      - internal/manifest/manifest.go
+      - manifest.schema.yaml
 
 jobs:
   test-schema:
-    name: Test Manifest Schema
+    name: Test manifest schema
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -28,8 +27,10 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+
       - name: Build AK
-        run: make bin/ak
+        run: go build -trimpath -o bin/ak ./cmd/ak
+
       - name: Verify Schema
         run: |
           ./bin/ak manifest schema > /tmp/schema.yaml
