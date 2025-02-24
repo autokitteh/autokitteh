@@ -21,7 +21,7 @@ import pb
 import values
 
 # from audit import make_audit_hook  # TODO(ENG-1893): uncomment this.
-from autokitteh import AttrDict, connections
+from autokitteh import AttrDict, Event, connections
 from autokitteh.errors import AutoKittehError
 from call import AKCall, full_func_name, is_marked_activity
 from syscalls import SysCalls
@@ -273,7 +273,7 @@ class Runner(pb.runner_rpc.RunnerService):
         event = json.loads(request.event.data)
 
         fix_http_body(event)
-        event = AttrDict(event)
+        event = Event(**event)
 
         # TODO(ENG-1893): Disabled temporarily due to issues with HubSpot client - need to investigate.
         # # Warn on I/O outside an activity. Should come after importing the user module
