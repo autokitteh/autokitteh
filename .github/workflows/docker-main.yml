@@ -27,9 +27,6 @@ jobs:
           echo "${GITHUB_REF_NAME}" > .version
           echo "${GITHUB_SHA}" > .commit
 
-      - name: Fetch web platform
-        run: make webplatform
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:

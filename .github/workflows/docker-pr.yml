@@ -15,15 +15,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup version info
-        run: |
-          # These are consumed in the Dockerfile.
-          echo "${GITHUB_REF_NAME}" > .version
-          echo "${GITHUB_SHA}" > .commit
-
-      - name: Fetch web platform
-        run: make webplatform
-
       - name: Build but don't push
         uses: docker/build-push-action@v6
         with:
