@@ -74,8 +74,8 @@ jobs:
       - name: Test
         run: gotestsum -f github-actions -- -trimpath ./tests/system/...
 
-  static-analysis:
-    name: Static analysis
+  go-static-analysis:
+    name: Go static analysis
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -88,6 +88,7 @@ jobs:
 
       - name: Detect unformatted Go
         run: make gofmt-check
+
       - name: Run Go linters
         uses: golangci/golangci-lint-action@v6
         with:
@@ -96,66 +97,3 @@ jobs:
           version: v1.64.5
           # https://github.com/golangci/golangci-lint-action/issues/308
           args: --timeout=7m
-
-  verify-docker-builds:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    if: github.ref != 'refs/heads/main'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Setup version info
-        run: |
-          # These are consumed in the Dockerfile.
-          echo "${GITHUB_REF#refs/tags/}" > .version
-          echo "${GITHUB_SHA}" > .commit
-      - name: Verify Image Builds
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          platforms: linux/amd64
-          tags: autokitteh:latest
-          push: false
-          provenance: false
-
-  publish_docker_image:
-    needs:
-      - go-unit-tests
-      - go-session-tests
-      - go-system-tests
-      - static-analysis
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    if: github.ref == 'refs/heads/main'
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Setup version info
-        run: |
-          # These are consumed in the Dockerfile.
-          echo "${GITHUB_REF#refs/tags/}" > .version
-          echo "${GITHUB_SHA}" > .commit
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_GITHUB_ROLE }}
-          role-session-name: Github_Action_Release_Autokitteh
-          aws-region: us-east-1
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-      - name: Build And Push
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          platforms: linux/amd64
-          tags: ${{ steps.login-ecr.outputs.registry }}/autokitteh:latest
-          push: true
-          provenance: false

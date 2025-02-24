@@ -1,15 +1,19 @@
-name: goreleaser
+# See also "main-branch.yml" and "manual-docker-image.yml" for Docker images.
+# https://github.com/marketplace/actions/goreleaser-action
+# https://github.com/marketplace/actions/configure-aws-credentials-action-for-github-actions
+# https://github.com/marketplace/actions/amazon-ecr-login-action-for-github-actions
+# https://github.com/marketplace/actions/build-and-push-docker-images
 
-env:
-  WORKING_DIRECTORY: .
+name: Release
 
+# https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#release
 on:
-  push:
-    tags:
-      - "v*"
+  release:
+    types: [published]
 
 jobs:
   goreleaser:
+    name: GoReleaser
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -19,55 +23,54 @@ jobs:
           fetch-depth: 0
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
-          cache-dependency-path: ${{env.WORKING_DIRECTORY}}/go.sum
-          go-version-file: ${{env.WORKING_DIRECTORY}}/go.mod
+          go-version-file: go.mod
 
       - name: Fetch web platform
         run: make webplatform
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v5
+        uses: goreleaser/goreleaser-action@v6
         with:
           version: latest
           args: release --clean
-          workdir: ${{env.WORKING_DIRECTORY}}
         env:
-          GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          GITHUB_TOKEN: ${{secrets.HOMEBREW_TAP_TOKEN}}
 
-  publish_docker_image:
+  publish-stable-docker-image:
+    name: Publish Docker image
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 10
     permissions:
       id-token: write
       contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+
       - name: Setup version info
         run: |
           # These are consumed in the Dockerfile.
-          echo "${GITHUB_REF#refs/tags/}" > .version
+          echo "${GITHUB_REF_NAME}" > .version
           echo "${GITHUB_SHA}" > .commit
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_GITHUB_ROLE }}
+          role-to-assume: ${{secrets.AWS_GITHUB_ROLE}}
           role-session-name: Github_Action_Release_Autokitteh
           aws-region: us-east-1
+
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
-      - name: Fetch web platform
-        run: make webplatform
-      - name: Build And Push
-        uses: docker/build-push-action@v4
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64
-          tags: ${{ steps.login-ecr.outputs.registry }}/autokitteh:${{github.ref_name}},${{ steps.login-ecr.outputs.registry }}/autokitteh:stable
+          tags: ${{steps.login-ecr.outputs.registry}}/autokitteh:${{github.ref_name}},${{steps.login-ecr.outputs.registry}}/autokitteh:stable
           push: true
           provenance: false
