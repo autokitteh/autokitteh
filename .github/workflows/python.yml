@@ -8,6 +8,7 @@ on:
     paths:
       - .github/workflows/python.yml
       - tests/**
+      - "**.go"
       - "**.py"
       - "**/pyproject.toml"
       - "**/requirements.txt"

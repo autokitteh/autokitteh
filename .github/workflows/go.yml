@@ -12,6 +12,7 @@ on:
       - go.mod
       - tests/**
       - "**.go"
+      - "**.py"
   push:
     branches: [main]
 
