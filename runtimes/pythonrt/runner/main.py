@@ -412,13 +412,14 @@ class Runner(pb.runner_rpc.RunnerService):
         value = error = tb = None
         try:
             value = fn(*args, **kw)
-            if isinstance(value, Exception):
-                set_exception_args(value)
-        except Exception as err:
+        except BaseException as err:
             log.error("%s raised: %s", func_name, err)
             tb = TracebackException.from_exception(err)
             error = err
             set_exception_args(error)
+
+        if isinstance(value, Exception):
+            set_exception_args(value)
 
         if not is_pickleable(error):
             log.info("non pickleable: %r", error)
