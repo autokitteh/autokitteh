@@ -1,13 +1,14 @@
-name: Continuous Integration - Shell
+name: CI - Shell
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "**.sh"
   pull_request:
     paths:
+      - .github/workflows/shell.yml
+      - "**.sh"
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/shell.yml
       - "**.sh"
 
 jobs:
@@ -18,5 +19,6 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v4
+
       - name: Run shellcheck
         run: shellcheck -a $(find . -name '*.sh')
