@@ -86,8 +86,8 @@ def result_error(err):
 
 
 # Go passes HTTP event.data.body.bytes as base64 encode string
-def fix_http_body(event):
-    data = event.get("data")
+def fix_http_body(inputs):
+    data = inputs.get("data")
     if not isinstance(data, dict):
         return
 
@@ -270,10 +270,10 @@ class Runner(pb.runner_rpc.RunnerService):
                 f"function {fn_name!r} not found",
             )
 
-        event = json.loads(request.event.data)
-
-        fix_http_body(event)
-        event = Event(**event)
+        inputs = json.loads(request.event.data)
+        fix_http_body(inputs)
+        inputs["data"] = AttrDict(inputs["data"])
+        event = Event(**inputs)
 
         # TODO(ENG-1893): Disabled temporarily due to issues with HubSpot client - need to investigate.
         # # Warn on I/O outside an activity. Should come after importing the user module
