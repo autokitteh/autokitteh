@@ -5,13 +5,6 @@ name: CI - Python
 
 on:
   pull_request:
-    paths:
-      - .github/workflows/python.yml
-      - tests/**
-      - "**.go"
-      - "**.py"
-      - "**/pyproject.toml"
-      - "**/requirements.txt"
   push:
     branches: [main]
 
