@@ -313,9 +313,6 @@ func (ps *Projects) exportManifest(ctx context.Context, projectID sdktypes.Proje
 			Secret: v.IsSecret(),
 		}
 
-		if !v.IsSecret() {
-			mv.Value = v.Value()
-		}
 		p.Vars = append(p.Vars, &mv)
 	}
 
