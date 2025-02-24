@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -108,17 +109,16 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 		return int(f)
 	})
 
-	u, err := transformIssueURL(jiraEvent, l)
-	if err != nil {
-		l.Error("Failed to transform Jira URL", zap.Error(err))
-		http.Error(w, "Bad Request", http.StatusBadRequest)
-		return
-	}
-
 	ctx := extrazap.AttachLoggerToContext(l, r.Context())
 	for _, id := range ids {
-		value := webhookKey(u, strconv.Itoa(id))
-		cids, err := h.vars.FindConnectionIDs(ctx, IntegrationID, WebhookKeySymbol, value)
+		u, err := transformIssueURL(jiraEvent, l)
+		if err != nil {
+			l.Error("Failed to transform Jira URL", zap.Error(err))
+			http.Error(w, "Bad Request", http.StatusBadRequest)
+			return
+		}
+		wk := webhookKey(u, strconv.Itoa(id))
+		cids, err := h.vars.FindConnectionIDs(ctx, IntegrationID, WebhookKeySymbol, wk)
 		if err != nil {
 			l.Error("Failed to find connection IDs", zap.Error(err))
 			break
@@ -132,7 +132,7 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 }
 
 // transformIssueURL is used to transform the issue URL in the Jira event
-// to a normalized URL that can be used for the webhook key.
+// to a string that can be used for the webhook key.
 func transformIssueURL(jiraEvent map[string]any, l *zap.Logger) (string, error) {
 	issue, ok := jiraEvent["issue"].(map[string]any)
 	if !ok {
@@ -152,7 +152,24 @@ func transformIssueURL(jiraEvent map[string]any, l *zap.Logger) (string, error) 
 		return "", fmt.Errorf("normalize URL: %w", err)
 	}
 
-	return u, nil
+	// Extract domain from the normalized URL
+	domain, err := extractDomain(u)
+	if err != nil {
+		l.Warn("Invalid issue URL in Jira event", zap.Error(err))
+		return "", fmt.Errorf("extract domain: %w", err)
+	}
+
+	return domain, nil
+}
+
+// extractDomain gets the subdomain from a Jira URL.
+// For example, from "https://example.atlassian.net/...", returns "example".
+func extractDomain(u string) (string, error) {
+	parts := strings.Split(u, ".")
+	if len(parts) < 2 {
+		return "", errors.New("invalid URL format")
+	}
+	return path.Base(parts[0]), nil
 }
 
 // https://developer.atlassian.com/cloud/jira/platform/understanding-jwt-for-connect-apps/
