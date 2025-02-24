@@ -48,6 +48,16 @@ func (gdb *gormdb) deleteProject(ctx context.Context, projectID uuid.UUID) error
 	return gdb.writeTransaction(ctx, func(tx *gormdb) error { return tx.deleteProjectAndDependents(ctx, projectID) })
 }
 
+func (gdb *gormdb) deleteSessionsAndEvents(ctx context.Context, projectID uuid.UUID) error {
+	if err := gdb.writer.WithContext(ctx).
+		Where("project_id = ?", projectID).
+		Delete(&scheme.Session{}).Error; err != nil {
+		return err
+	}
+
+	return gdb.writer.WithContext(ctx).Where("project_id = ?", projectID).Delete(&scheme.Event{}).Error
+}
+
 func (gdb *gormdb) deleteProjectVars(ctx context.Context, id uuid.UUID) error {
 	// NOTE: should be transactional
 	db := gdb.writer.WithContext(ctx)
@@ -110,6 +120,10 @@ func (gdb *gormdb) deleteProjectAndDependents(ctx context.Context, projectID uui
 	}
 
 	if err = gdb.deleteProjectVars(ctx, projectID); err != nil {
+		return err
+	}
+
+	if err = gdb.deleteSessionsAndEvents(ctx, projectID); err != nil {
 		return err
 	}
 
