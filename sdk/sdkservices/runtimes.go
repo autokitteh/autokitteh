@@ -3,6 +3,7 @@ package sdkservices
 import (
 	"context"
 	"io/fs"
+	"time"
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkbuildfile"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -46,22 +47,31 @@ type Runtime interface {
 }
 
 type (
-	RunLoadFunc  = func(ctx context.Context, rid sdktypes.RunID, path string) (map[string]sdktypes.Value, error)
-	RunCallFunc  = func(ctx context.Context, rid sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error)
-	RunPrintFunc = func(ctx context.Context, rid sdktypes.RunID, text string)
-	NewRunIDFunc = func() sdktypes.RunID
+	RunLoadFunc            = func(ctx context.Context, rid sdktypes.RunID, path string) (map[string]sdktypes.Value, error)
+	RunCallFunc            = func(ctx context.Context, rid sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error)
+	RunPrintFunc           = func(ctx context.Context, rid sdktypes.RunID, text string) error
+	NewRunIDFunc           = func() (sdktypes.RunID, error)
+	SleepFunc              = func(ctx context.Context, rid sdktypes.RunID, d time.Duration) error
+	NowFunc                = func(ctx context.Context, rid sdktypes.RunID) (time.Time, error)
+	StartFunc              = func(ctx context.Context, rid sdktypes.RunID, loc sdktypes.CodeLocation, inputs map[string]sdktypes.Value, memo map[string]string) (sdktypes.SessionID, error)
+	SubscribeFunc          = func(ctx context.Context, rid sdktypes.RunID, name, filter string) (string, error)
+	UnsubscribeFunc        = func(ctx context.Context, rid sdktypes.RunID, signalID string) error
+	NextEventFunc          = func(ctx context.Context, rid sdktypes.RunID, signalIDs []string, timeout time.Duration) (sdktypes.Value, error)
+	IsDeploymentActiveFunc = func(ctx context.Context) (bool, error)
 )
 
 type RunCallbacks struct {
-	// Returns sdktypes.ProgramErrorAsError if not internal error.
-	Load RunLoadFunc
-
-	// Returns sdktypes.ProgramErrorAsError if not internal error.
-	Call RunCallFunc
-
-	Print RunPrintFunc
-
-	NewRunID NewRunIDFunc
+	Load               RunLoadFunc // Returns sdktypes.ProgramErrorAsError if not internal error.
+	Call               RunCallFunc // Returns sdktypes.ProgramErrorAsError if not internal error.
+	Print              RunPrintFunc
+	NewRunID           NewRunIDFunc
+	Sleep              SleepFunc
+	Now                NowFunc
+	Start              StartFunc
+	Subscribe          SubscribeFunc
+	Unsubscribe        UnsubscribeFunc
+	NextEvent          NextEventFunc
+	IsDeploymentActive IsDeploymentActiveFunc
 }
 
 type Run interface {
@@ -88,12 +98,73 @@ func (rc *RunCallbacks) SafeCall(ctx context.Context, rid sdktypes.RunID, v sdkt
 	return rc.Call(ctx, rid, v, args, kwargs)
 }
 
-func (rc *RunCallbacks) SafePrint(ctx context.Context, rid sdktypes.RunID, text string) {
+func (rc *RunCallbacks) SafePrint(ctx context.Context, rid sdktypes.RunID, text string) error {
 	if rc == nil || rc.Print == nil {
-		return
+		return nil
 	}
 
-	rc.Print(ctx, rid, text)
+	return rc.Print(ctx, rid, text)
 }
 
-func (rc *RunCallbacks) SafeNewRunID() sdktypes.RunID { return sdktypes.NewRunID() }
+func (rc *RunCallbacks) SafeNewRunID() (sdktypes.RunID, error) { return sdktypes.NewRunID(), nil }
+
+func (rc *RunCallbacks) SafeSleep(ctx context.Context, rid sdktypes.RunID, d time.Duration) error {
+	if rc == nil || rc.Sleep == nil {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(d):
+			return nil
+		}
+	}
+
+	return rc.Sleep(ctx, rid, d)
+}
+
+func (rc *RunCallbacks) SafeNow(ctx context.Context, rid sdktypes.RunID) (time.Time, error) {
+	if rc == nil || rc.Now == nil {
+		return time.Now().UTC(), nil
+	}
+
+	return rc.Now(context.Background(), rid)
+}
+
+func (rc *RunCallbacks) SafeStart(ctx context.Context, rid sdktypes.RunID, loc sdktypes.CodeLocation, inputs map[string]sdktypes.Value, memo map[string]string) (sdktypes.SessionID, error) {
+	if rc == nil || rc.Start == nil {
+		return sdktypes.InvalidSessionID, sdkerrors.ErrNotImplemented
+	}
+
+	return rc.Start(ctx, rid, loc, inputs, memo)
+}
+
+func (rc *RunCallbacks) SafeNextEvent(ctx context.Context, rid sdktypes.RunID, signalIDs []string, timeout time.Duration) (sdktypes.Value, error) {
+	if rc == nil || rc.NextEvent == nil {
+		return sdktypes.InvalidValue, sdkerrors.ErrNotImplemented
+	}
+
+	return rc.NextEvent(ctx, rid, signalIDs, timeout)
+}
+
+func (rc *RunCallbacks) SafeSubscribe(ctx context.Context, rid sdktypes.RunID, name, filter string) (string, error) {
+	if rc == nil || rc.Subscribe == nil {
+		return "", sdkerrors.ErrNotImplemented
+	}
+
+	return rc.Subscribe(ctx, rid, name, filter)
+}
+
+func (rc *RunCallbacks) SafeUnsubscribe(ctx context.Context, rid sdktypes.RunID, signalID string) error {
+	if rc == nil || rc.Unsubscribe == nil {
+		return sdkerrors.ErrNotImplemented
+	}
+
+	return rc.Unsubscribe(ctx, rid, signalID)
+}
+
+func (rc *RunCallbacks) SafeIsDeploymentActive(ctx context.Context) (bool, error) {
+	if rc == nil || rc.IsDeploymentActive == nil {
+		return false, sdkerrors.ErrNotImplemented
+	}
+
+	return rc.IsDeploymentActive(ctx)
+}

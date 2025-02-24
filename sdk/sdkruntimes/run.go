@@ -39,7 +39,14 @@ func Run(ctx context.Context, params RunParams) (sdkservices.Run, error) {
 
 			return group.Call(ctx, v, args, kwargs)
 		},
-		NewRunID: params.FallthroughCallbacks.NewRunID,
+		NewRunID:           params.FallthroughCallbacks.NewRunID,
+		Sleep:              params.FallthroughCallbacks.SafeSleep,
+		Now:                params.FallthroughCallbacks.SafeNow,
+		Start:              params.FallthroughCallbacks.Start,
+		Subscribe:          params.FallthroughCallbacks.Subscribe,
+		Unsubscribe:        params.FallthroughCallbacks.Unsubscribe,
+		NextEvent:          params.FallthroughCallbacks.NextEvent,
+		IsDeploymentActive: params.FallthroughCallbacks.IsDeploymentActive,
 	}
 
 	cache := make(map[string]map[string]sdktypes.Value)
@@ -50,7 +57,10 @@ func Run(ctx context.Context, params RunParams) (sdkservices.Run, error) {
 			return exports, nil
 		}
 
-		loadRunID := params.FallthroughCallbacks.SafeNewRunID()
+		loadRunID, err := params.FallthroughCallbacks.SafeNewRunID()
+		if err != nil {
+			return nil, fmt.Errorf("new run id: %w", err)
+		}
 
 		runParams := params
 		runParams.Globals = nil // TODO: globals: figure out which values to pass here.

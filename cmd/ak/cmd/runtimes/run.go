@@ -121,11 +121,12 @@ func run(ctx context.Context, b *sdkbuildfile.BuildFile, path string) (map[strin
 	var prints []string
 
 	cbs := &sdkservices.RunCallbacks{
-		Print: func(_ context.Context, _ sdktypes.RunID, msg string) {
+		Print: func(_ context.Context, _ sdktypes.RunID, msg string) error {
 			if !quiet {
 				fmt.Println(msg)
 			}
 			prints = append(prints, msg)
+			return nil
 		},
 	}
 

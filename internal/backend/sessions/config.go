@@ -38,7 +38,6 @@ var Configs = configset.Set[Config]{
 	Default: &defaultConfig,
 	Dev: func() *Config {
 		c := defaultConfig
-		c.Workflows.OSModule = true
 		c.Workflows.Test = true
 		return &c
 	}(),
