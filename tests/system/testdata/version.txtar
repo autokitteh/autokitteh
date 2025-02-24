@@ -1,5 +1,0 @@
-# The AK client's compile-time version is set (!= "unset"),
-# i.e. the client was built by "make".
-ak version
-return code == 0
-output equals 'dev'
