@@ -27,10 +27,7 @@ func status(v sdkservices.Vars) sdkintegrations.OptFn {
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 		// TODO(INT-267): Remove [integrations.OAuth] once the web UI is migrated too.
 		case integrations.OAuth, integrations.OAuthDefault, integrations.OAuthPrivate:
-			if common.IsOAuthTokenEmpty(vs) {
-				return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
-			}
-			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using OAuth 2.0"), nil
+			return common.CheckOAuthToken(vs)
 		case integrations.SocketMode:
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using Socket Mode"), nil
 		default:

@@ -10,13 +10,12 @@ import (
 	"golang.org/x/oauth2/google"
 
 	"go.autokitteh.dev/autokitteh/integrations"
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/google/vars"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
-
-var AccessToken = sdktypes.NewSymbol("oauth_AccessToken")
 
 // connStatus is an optional connection status check provided by
 // the integration to AutoKitteh. The possible results are "Init
@@ -42,10 +41,7 @@ func ConnStatus(cvars sdkservices.Vars) sdkintegrations.OptFn {
 		case integrations.JSONKey:
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using JSON key"), nil
 		case integrations.OAuth:
-			if vs.GetValue(AccessToken) == "" {
-				return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
-			}
-			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using OAuth 2.0"), nil
+			return common.CheckLegacyOAuthToken(vs)
 		default:
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil
 		}
