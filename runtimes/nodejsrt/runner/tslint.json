@@ -1,0 +1,7 @@
+{
+  "extends": "tslint:recommended",
+  "rules": {
+    "semicolon": [true, "always"],
+    "quotemark": [true, "double"]
+  }
+}
