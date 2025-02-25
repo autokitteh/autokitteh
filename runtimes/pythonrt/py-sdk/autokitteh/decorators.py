@@ -1,7 +1,7 @@
 """Decorator to mark a function as a Temporal activity."""
 
 ACTIVITY_ATTR = "__activity__"
-INHIBIT_ACTIVITIES_ATTR = "__inhibit_activities__"
+INHIBIT_ACTIVITIES_ATTR = "__ak_inhibit_activities__"
 
 
 def activity(fn: callable) -> callable:
