@@ -51,6 +51,7 @@ class AKCall:
         self.code_dir = code_dir.resolve()
 
         self.in_activity = False
+        self.activities_inhibitions = 0  # Can be stacked. 0 means no inhibition.
         self.loading = True  # Loading module
         self.module = None  # Module for "local" function, filled by "run"
 
@@ -70,7 +71,7 @@ class AKCall:
         return mod_dir.is_relative_to(self.code_dir)
 
     def should_run_as_activity(self, fn):
-        if self.in_activity or self.loading:
+        if self.in_activity or self.loading or self.activities_inhibitions:
             return False
 
         if is_marked_activity(fn):
@@ -101,12 +102,23 @@ class AKCall:
             fn = time.sleep if self.in_activity else self.runner.syscalls.ak_sleep
             return fn(seconds)
 
+        inhibit = getattr(func, decorators.INHIBIT_ACTIVITIES_ATTR, False)
+        if inhibit:
+            self.activities_inhibitions += 1
+            log.info(f"inhibiting activities: {self.activities_inhibitions}")
+
         full_name = full_func_name(func)
         if not self.should_run_as_activity(func):
             log.info(
-                "calling %s directly (in_activity=%s)", full_name, self.in_activity
+                f"calling {full_name} directly (in_activity={self.in_activity}, inhibitions={self.activities_inhibitions})",
             )
-            return func(*args, **kw)
+
+            try:
+                return func(*args, **kw)
+            finally:
+                if inhibit:
+                    log.info(f"uninhibiting activities: {self.activities_inhibitions}")
+                    self.activities_inhibitions -= 1
 
         log.info("ACTION: activity call %s", full_name)
         self.in_activity = True
