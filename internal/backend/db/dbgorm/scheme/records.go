@@ -158,6 +158,7 @@ type Event struct {
 	Base
 
 	ProjectID     uuid.UUID  `gorm:"index;type:uuid"` // TODO(authz-migration): not null.
+	OrgID         uuid.UUID  `gorm:"index;type:uuid"` // use only for list.
 	EventID       uuid.UUID  `gorm:"uniqueIndex;type:uuid;not null"`
 	DestinationID uuid.UUID  `gorm:"index;type:uuid;not null"`
 	IntegrationID *uuid.UUID `gorm:"index;type:uuid"`
