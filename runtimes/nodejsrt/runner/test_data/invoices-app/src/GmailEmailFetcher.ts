@@ -42,9 +42,9 @@ class GmailEmailFetcher {
      * @throws {Error} If required environment variables are missing.
      */
     private initConnection(): void {
-        const clientId = process.env.GMAIL_CLIENT_ID;
-        const clientSecret = process.env.GMAIL_CLIENT_SECRET;
-        const refreshToken = process.env.GMAIL_REFRESH_TOKEN;
+        const clientId = process.env.GOOGLE_CLIENT_ID;
+        const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+        const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
         const user = process.env.GMAIL_USER;
 
         if (!clientId || !clientSecret || !refreshToken || !user) {
