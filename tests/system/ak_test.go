@@ -100,7 +100,11 @@ func setUpSuite(t *testing.T) string {
 
 	path, err := filepath.Abs(filepath.Join(wd, "..", "..", "bin", "ak"))
 	if err != nil {
-		t.Fatalf("failed to construct ak binary file path: %v", err)
+		t.Fatalf("failed to construct ak path: %v", err)
+	}
+
+	if _, err := os.Stat(path); err != nil {
+		t.Fatalf("failed to get ak file info: %v", err)
 	}
 
 	return path
