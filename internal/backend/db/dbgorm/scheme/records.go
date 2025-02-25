@@ -260,13 +260,19 @@ func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
 		srcType = sdktypes.TriggerSourceTypeConnection
 	}
 
+	filter := e.Filter
+	if filter == "." {
+		// HACK: "." is a signal for an empty filter.
+		filter = ""
+	}
+
 	return sdktypes.StrictTriggerFromProto(&sdktypes.TriggerPB{
 		TriggerId:    sdktypes.NewIDFromUUID[sdktypes.TriggerID](e.TriggerID).String(),
 		SourceType:   srcType.ToProto(),
 		ConnectionId: sdktypes.NewIDFromUUIDPtr[sdktypes.ConnectionID](e.ConnectionID).String(),
 		ProjectId:    sdktypes.NewIDFromUUID[sdktypes.ProjectID](e.ProjectID).String(),
 		EventType:    e.EventType,
-		Filter:       e.Filter,
+		Filter:       filter,
 		CodeLocation: loc.ToProto(),
 		Name:         e.Name,
 		WebhookSlug:  e.WebhookSlug,
