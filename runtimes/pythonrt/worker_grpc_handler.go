@@ -225,7 +225,7 @@ func (s *workerGRPCHandler) Sleep(ctx context.Context, req *userCode.SleepReques
 		return nil, status.Error(codes.InvalidArgument, "negative time")
 	}
 	fn := func(ctx context.Context, cbs *sdkservices.RunCallbacks, rid sdktypes.RunID) (any, error) {
-		return nil, cbs.SafeSleep(ctx, rid, time.Duration(req.DurationMs)*time.Millisecond)
+		return nil, cbs.Sleep(ctx, rid, time.Duration(req.DurationMs)*time.Millisecond)
 	}
 
 	resp, err := s.callback(ctx, req.RunnerId, "sleep", fn)
@@ -266,7 +266,7 @@ func (s *workerGRPCHandler) StartSession(ctx context.Context, req *userCode.Star
 	}
 
 	fn := func(ctx context.Context, cbs *sdkservices.RunCallbacks, rid sdktypes.RunID) (any, error) {
-		return cbs.SafeStart(ctx, rid, loc, vdata, memo)
+		return cbs.Start(ctx, rid, loc, vdata, memo)
 	}
 
 	resp, err := s.callback(ctx, req.RunnerId, "start", fn)
@@ -288,7 +288,7 @@ func (s *workerGRPCHandler) Subscribe(ctx context.Context, req *userCode.Subscri
 	}
 
 	fn := func(ctx context.Context, cbs *sdkservices.RunCallbacks, rid sdktypes.RunID) (any, error) {
-		return cbs.SafeSubscribe(ctx, rid, req.Connection, req.Filter)
+		return cbs.Subscribe(ctx, rid, req.Connection, req.Filter)
 	}
 
 	resp, err := s.callback(ctx, req.RunnerId, "subscribe", fn)
@@ -316,7 +316,7 @@ func (s *workerGRPCHandler) NextEvent(ctx context.Context, req *userCode.NextEve
 	}
 
 	fn := func(ctx context.Context, cbs *sdkservices.RunCallbacks, rid sdktypes.RunID) (any, error) {
-		return cbs.SafeNextEvent(ctx, rid, req.SignalIds, time.Duration(req.TimeoutMs)*time.Millisecond)
+		return cbs.NextEvent(ctx, rid, req.SignalIds, time.Duration(req.TimeoutMs)*time.Millisecond)
 	}
 
 	resp, err := s.callback(ctx, req.RunnerId, "next_event", fn)
@@ -350,7 +350,7 @@ func (s *workerGRPCHandler) NextEvent(ctx context.Context, req *userCode.NextEve
 
 func (s *workerGRPCHandler) Unsubscribe(ctx context.Context, req *userCode.UnsubscribeRequest) (*userCode.UnsubscribeResponse, error) {
 	fn := func(ctx context.Context, cbs *sdkservices.RunCallbacks, rid sdktypes.RunID) (any, error) {
-		return nil, cbs.SafeUnsubscribe(ctx, rid, req.SignalId)
+		return nil, cbs.Unsubscribe(ctx, rid, req.SignalId)
 	}
 
 	resp, err := s.callback(ctx, req.RunnerId, "unsubscribe", fn)

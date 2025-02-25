@@ -73,6 +73,6 @@ func LoadModules(seed int64) starlark.StringDict {
 func InitThread(th *starlark.Thread) {
 	starlarkTime.SetNow(th, func() (time.Time, error) {
 		tls := tls.Get(th)
-		return tls.Callbacks.SafeNow(tls.GoCtx, tls.RunID)
+		return tls.Callbacks.Now(tls.GoCtx, tls.RunID)
 	})
 }

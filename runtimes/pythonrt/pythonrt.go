@@ -385,6 +385,7 @@ func (py *pySvc) setupCallbacksListeningLoop(ctx context.Context) chan (error) {
 				close(r.doneChannel)
 			case p := <-py.channels.print:
 				if err := py.cbs.Print(ctx, py.runID, p.message); err != nil {
+					py.log.Error("print error", zap.Error(err))
 					callbackErrChan <- err
 				}
 				close(p.doneChannel)
@@ -620,7 +621,9 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 				py.log.Log(pyLevelToZap(r.level), r.message)
 				close(r.doneChannel)
 			case p := <-py.channels.print:
-				_ = py.cbs.Print(ctx, py.runID, p.message)
+				if err := py.cbs.Print(ctx, py.runID, p.message); err != nil {
+					py.log.Error("print error", zap.Error(err))
+				}
 				close(p.doneChannel)
 			case <-done:
 				return

@@ -45,13 +45,11 @@ func (w *sessionWorkflow) subscribe(ctx context.Context, _ sdktypes.RunID, name,
 		return t.Name().String() == name
 	})
 
-	if connection.IsValid() && trigger.IsValid() {
-		return "", errors.New("ambiguous source name - matching both a connection and a trigger")
-	}
-
 	var did sdktypes.EventDestinationID
 
 	switch {
+	case connection.IsValid() && trigger.IsValid():
+		return "", errors.New("ambiguous source name - matching both a connection and a trigger")
 	case connection.IsValid():
 		did = sdktypes.NewEventDestinationID(connection.ID())
 	case trigger.IsValid():
@@ -94,7 +92,7 @@ return this event
 */
 func (w *sessionWorkflow) nextEvent(ctx context.Context, rid sdktypes.RunID, signals []string, timeout time.Duration) (sdktypes.Value, error) {
 	if len(signals) == 0 {
-		return sdktypes.InvalidValue, errors.New("expecting at least one signal")
+		return sdktypes.Nothing, nil
 	}
 
 	signalUUIDs, err := kittehs.TransformError(signals, uuid.Parse)
@@ -144,16 +142,14 @@ func (w *sessionWorkflow) nextEvent(ctx context.Context, rid sdktypes.RunID, sig
 }
 
 func (w *sessionWorkflow) isDeploymentActive(ctx context.Context) (bool, error) {
-	state := sdktypes.DeploymentStateUnspecified
-
 	if did := w.data.Session.DeploymentID(); did.IsValid() {
 		d, err := w.ws.svcs.Deployments.Get(authcontext.SetAuthnSystemUser(ctx), did)
 		if err != nil {
 			return false, err
 		}
 
-		state = d.State()
+		return d.State() == sdktypes.DeploymentStateActive, nil
 	}
 
-	return state == sdktypes.DeploymentStateActive, nil
+	return false, nil
 }
