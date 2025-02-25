@@ -41,7 +41,12 @@ def test_start():
         server=None,
     )
 
-    event_data = json.dumps({"body": {"path": "/info", "method": "GET"}})
+    event_data = json.dumps(
+        {
+            "data": {"body": {"path": "/info", "method": "GET"}},
+            "session_id": "ses_meow",
+        }
+    )
     event = user_code.Event(data=event_data.encode())
     entry_point = f"{mod_name}.py:on_event"
     req = runner_pb.StartRequest(entry_point=entry_point, event=event)

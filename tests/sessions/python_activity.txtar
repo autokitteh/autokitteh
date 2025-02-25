@@ -5,7 +5,7 @@ done
 -- main.py:main --
 import autokitteh
 
-def main(event):
+def main(event: autokitteh.Event):
     print("main")
     foo("meow")
     print("done")

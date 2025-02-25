@@ -19,7 +19,7 @@ ZeroDivisionError: division by zero
 import autokitteh
 
 
-def main(event):
+def main(event: autokitteh.Event):
 	print('before')
 	step()
 	print('after')  # shouldn't get here

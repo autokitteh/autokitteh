@@ -4,7 +4,7 @@ import autokitteh
 
 
 @autokitteh.activity
-def main(event):
+def main(event: autokitteh.Event):
 	print('i can haz cheezburger?')
 
 -- calls.txt --
