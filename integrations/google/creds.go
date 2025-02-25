@@ -155,25 +155,25 @@ func (h handler) finalize(ctx context.Context, c sdkintegrations.ConnectionInit,
 
 	if err := calendar.UpdateWatches(ctx, h.vars, cid); err != nil {
 		l.Error("Google Calendar watches creation error", zap.Error(err))
-		c.AbortServerError("calendar watches creation error")
+		c.AbortServerError("calendar watches creation error: " + err.Error())
 		return
 	}
 
 	if err := drive.UpdateWatches(ctx, h.vars, cid); err != nil {
 		l.Error("Google Drive watches creation error", zap.Error(err))
-		c.AbortServerError("drive watches creation error")
+		c.AbortServerError("drive watches creation error: " + err.Error())
 		return
 	}
 
 	if err := forms.UpdateWatches(ctx, h.vars, cid); err != nil {
 		l.Error("Google Forms watches creation error", zap.Error(err))
-		c.AbortServerError("form watches creation error")
+		c.AbortServerError("form watches creation error: " + err.Error())
 		return
 	}
 
 	if err := gmail.UpdateWatch(ctx, h.vars, cid); err != nil {
 		l.Error("Gmail watch creation error", zap.Error(err))
-		c.AbortServerError("Gmail watch creation error")
+		c.AbortServerError("Gmail watch creation error: " + err.Error())
 		return
 	}
 
