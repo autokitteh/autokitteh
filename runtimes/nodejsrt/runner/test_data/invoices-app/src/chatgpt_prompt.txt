@@ -1,0 +1,4 @@
+Determine if the provided attachment content is an invoice.
+If invoice, extract invoice id, list of items with their amounts, VAT (if any) and compute the total.
+Return nust be a JSON object with the following structure:
+{isInvoice: boolean, invoiceId: string, items: [{description: string, amount: number}], vat: number, total: number }
