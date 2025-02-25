@@ -10,6 +10,7 @@ import (
 	"golang.org/x/oauth2/google"
 
 	"go.autokitteh.dev/autokitteh/integrations"
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/google/vars"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -40,7 +41,7 @@ func ConnStatus(cvars sdkservices.Vars) sdkintegrations.OptFn {
 		case integrations.JSONKey:
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using JSON key"), nil
 		case integrations.OAuth:
-			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using OAuth 2.0"), nil
+			return common.CheckLegacyOAuthToken(vs)
 		default:
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil
 		}
