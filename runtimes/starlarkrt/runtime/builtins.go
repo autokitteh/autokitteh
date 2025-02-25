@@ -3,6 +3,7 @@ package runtime
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
@@ -27,8 +28,33 @@ var (
 		"globals":      globalsBuiltinFunc,
 		"module":       starlarkstruct.MakeModule,
 		"struct":       starlarkstruct.Make,
+		"sleep":        sleep,
 	}
 )
+
+func sleep(th *starlark.Thread, bi *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
+	var v starlark.Value
+
+	if err := starlark.UnpackArgs(bi.Name(), args, kwargs, "duration", &v); err != nil {
+		return nil, err
+	}
+
+	t, ok := starlark.AsFloat(v)
+	if !ok {
+		return nil, fmt.Errorf("expected float or int, got %T", v)
+	}
+
+	tlsContext := tls.Get(th)
+	if tlsContext == nil {
+		return nil, errors.New("context is not set")
+	}
+
+	if err := tlsContext.Callbacks.Sleep(tlsContext.GoCtx, tlsContext.RunID, time.Duration(float64(time.Second)*t)); err != nil {
+		return nil, err
+	}
+
+	return starlark.None, nil
+}
 
 func runActivityBuiltinFunc(th *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 	if len(args) == 0 {

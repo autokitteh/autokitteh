@@ -65,7 +65,10 @@ func (c *client) Run(
 		}
 
 		if msg.Print != "" {
-			cbs.Print(ctx, rid, msg.Print)
+			if err := cbs.Print(ctx, rid, msg.Print); err != nil {
+				stream.Close()
+				return nil, fmt.Errorf("print: %w", err)
+			}
 		}
 
 		if msg.Result != nil {

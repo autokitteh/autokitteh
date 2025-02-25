@@ -4,6 +4,8 @@ const runIDKind = "run"
 
 type RunID = id[runIDTraits]
 
+var InvalidRunID RunID
+
 type runIDTraits struct{}
 
 func (runIDTraits) Prefix() string { return runIDKind }

@@ -30,16 +30,13 @@ func Run(ctx context.Context, params RunParams) (sdkservices.Run, error) {
 		runs:   make(map[sdktypes.ExecutorID]sdkservices.Run),
 	}
 
-	cbs := sdkservices.RunCallbacks{
-		Print: params.FallthroughCallbacks.SafePrint,
-		Call: func(ctx context.Context, runID sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
-			if xid := v.GetFunction().ExecutorID(); xid.IsValid() || group.runs[xid] == nil {
-				return params.FallthroughCallbacks.SafeCall(ctx, runID, v, args, kwargs)
-			}
+	cbs := params.FallthroughCallbacks
+	cbs.Call = func(ctx context.Context, runID sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+		if xid := v.GetFunction().ExecutorID(); xid.IsValid() || group.runs[xid] == nil {
+			return params.FallthroughCallbacks.Call(ctx, runID, v, args, kwargs)
+		}
 
-			return group.Call(ctx, v, args, kwargs)
-		},
-		NewRunID: params.FallthroughCallbacks.NewRunID,
+		return group.Call(ctx, v, args, kwargs)
 	}
 
 	cache := make(map[string]map[string]sdktypes.Value)
@@ -50,7 +47,10 @@ func Run(ctx context.Context, params RunParams) (sdkservices.Run, error) {
 			return exports, nil
 		}
 
-		loadRunID := params.FallthroughCallbacks.SafeNewRunID()
+		loadRunID, err := params.FallthroughCallbacks.NewRunID()
+		if err != nil {
+			return nil, fmt.Errorf("new run id: %w", err)
+		}
 
 		runParams := params
 		runParams.Globals = nil // TODO: globals: figure out which values to pass here.
@@ -61,7 +61,7 @@ func Run(ctx context.Context, params RunParams) (sdkservices.Run, error) {
 		r, err := run(ctx, runParams, path)
 		if err != nil {
 			if errors.Is(err, sdkerrors.ErrNotFound) {
-				return params.FallthroughCallbacks.SafeLoad(ctx, rid, path)
+				return params.FallthroughCallbacks.Load(ctx, rid, path)
 			}
 
 			return nil, err
