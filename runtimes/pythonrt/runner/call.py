@@ -3,6 +3,7 @@ import sys
 import time
 from pathlib import Path
 
+import autokitteh
 from autokitteh import decorators
 
 import log
@@ -75,6 +76,9 @@ class AKCall:
         mark = activity_marker(fn)
         if mark in (True, False):
             return mark
+
+        if fn.__module__ == autokitteh.__name__:
+            return False
 
         if is_deterministic(fn):
             return False
