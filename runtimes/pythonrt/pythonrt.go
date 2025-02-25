@@ -485,6 +485,7 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 	runnerHealthChan := py.setupHealthcheck(cancellableCtx)
 
 	// Wait for client Done message
+	// This *can't* run in an different goroutine since callbacks to temporal need to be in the same goroutine.
 	var done *pbUserCode.DoneRequest
 	for {
 		select {
