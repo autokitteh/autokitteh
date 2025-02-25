@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -13,6 +14,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncontext"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -23,6 +25,8 @@ const (
 	subscribeOp   = "subscribe"
 	nextEventOp   = "next_event"
 	unsubscribeOp = "unsubscribe"
+	signalOp      = "signal"
+	nextSignalOp  = "next_signal"
 )
 
 func (w *sessionWorkflow) syscall(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
@@ -49,6 +53,10 @@ func (w *sessionWorkflow) syscall(ctx context.Context, args []sdktypes.Value, kw
 		return w.nextEvent(ctx, args, kwargs)
 	case unsubscribeOp:
 		return w.unsubscribe(ctx, args, kwargs)
+	case signalOp:
+		return w.signal(ctx, args, kwargs)
+	case nextSignalOp:
+		return w.nextSignal(ctx, args, kwargs)
 	default:
 		return sdktypes.InvalidValue, fmt.Errorf("unknown op %q", op)
 	}
@@ -228,4 +236,128 @@ func (w *sessionWorkflow) unsubscribe(ctx context.Context, args []sdktypes.Value
 	w.removeEventSubscription(ctx, uuid)
 
 	return sdktypes.Nothing, nil
+}
+
+const userSignalNamePrefix = "user_"
+
+func userSignalName(name string) string               { return userSignalNamePrefix + name }
+func sessionSignalName(sid sdktypes.SessionID) string { return sid.String() }
+
+type signal struct {
+	Source sdktypes.SessionID `json:"source"`
+	Value  sdktypes.Value     `json:"value"`
+}
+
+func (w *sessionWorkflow) signal(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+	var (
+		v    sdktypes.Value
+		sid  string
+		name string
+	)
+
+	if err := sdkmodule.UnpackArgs(args, kwargs, "session_id", &sid, "name", &name, "value?", &v); err != nil {
+		return sdktypes.InvalidValue, err
+	}
+
+	wctx := sessioncontext.GetWorkflowContext(ctx)
+
+	if _, err := sdktypes.ParseSessionID(sid); err != nil {
+		return sdktypes.InvalidValue, sdkerrors.NewInvalidArgumentError("invalid session_id: %w", err)
+	}
+
+	if !v.IsValid() {
+		v = sdktypes.Nothing
+	}
+
+	signal := signal{Source: w.data.Session.ID(), Value: v}
+
+	if err := workflow.SignalExternalWorkflow(wctx, sid, "", userSignalName(name), &signal).Get(wctx, nil); err != nil {
+		return sdktypes.InvalidValue, err
+	}
+
+	return sdktypes.Nothing, nil
+}
+
+func (w *sessionWorkflow) nextSignal(ctx context.Context, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+	var timeout time.Duration
+
+	if err := sdkmodule.UnpackArgs(nil, kwargs, "timeout=?", &timeout); err != nil {
+		return sdktypes.InvalidValue, err
+	}
+
+	if len(args) == 0 {
+		return sdktypes.Nothing, nil
+	}
+
+	var names []string
+	for _, arg := range args {
+		if !arg.IsString() {
+			return sdktypes.InvalidValue, sdkerrors.NewInvalidArgumentError("expecting signal name as string, got %q", arg)
+		}
+
+		v := arg.GetString().Value()
+		name := userSignalName(v)
+
+		if strings.HasPrefix(arg.GetString().Value(), sdktypes.SessionIDKind+"_") {
+			sid, err := sdktypes.ParseSessionID(v)
+			if err != nil {
+				return sdktypes.InvalidValue, sdkerrors.NewInvalidArgumentError("invalid session_id %q: %w", arg, err)
+			}
+
+			name = sessionSignalName(sid)
+		}
+
+		names = append(names, name)
+	}
+
+	wctx := sessioncontext.GetWorkflowContext(ctx)
+
+	selector := workflow.NewSelector(wctx)
+
+	if timeout != 0 {
+		selector.AddFuture(workflow.NewTimer(wctx, timeout), func(workflow.Future) {})
+	}
+
+	var (
+		signal signal
+		rxName string
+	)
+
+	for _, name := range names {
+		selector.AddReceive(workflow.GetSignalChannel(wctx, name), func(c workflow.ReceiveChannel, _ bool) {
+			rxName = name
+
+			if !c.ReceiveAsync(&signal) {
+				w.l.Warn("next_signal: expected but not received", zap.String("name", name))
+			}
+		})
+	}
+
+	// Select doesn't respond to cancellations unless we add a receive on the context done channel.
+	var cancelled bool
+	selector.AddReceive(wctx.Done(), func(c workflow.ReceiveChannel, _ bool) { cancelled = true })
+
+	selector.Select(wctx)
+
+	if cancelled {
+		return sdktypes.InvalidValue, wctx.Err()
+	}
+
+	if !signal.Source.IsValid() {
+		return sdktypes.Nothing, nil
+	}
+
+	if !signal.Value.IsValid() {
+		signal.Value = sdktypes.Nothing
+	}
+
+	if strings.HasPrefix(rxName, userSignalNamePrefix) {
+		rxName = rxName[len(userSignalNamePrefix):]
+	}
+
+	return sdktypes.NewDictValueFromStringMap(map[string]sdktypes.Value{
+		"name":   sdktypes.NewStringValue(rxName),
+		"source": sdktypes.NewStringValue(signal.Source.String()),
+		"value":  signal.Value,
+	}), nil
 }
