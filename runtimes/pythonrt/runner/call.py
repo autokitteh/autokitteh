@@ -10,6 +10,9 @@ import log
 from deterministic import is_deterministic
 
 
+ak_mod_name = autokitteh.__name__
+
+
 def activity_marker(fn):
     return getattr(fn, decorators.ACTIVITY_ATTR, None)
 
@@ -77,7 +80,8 @@ class AKCall:
         if mark in (True, False):
             return mark
 
-        if fn.__module__ == autokitteh.__name__:
+        fnmod = fn.__module__
+        if fnmod == ak_mod_name or fnmod.startswith(ak_mod_name + "."):
             return False
 
         if is_deterministic(fn):
