@@ -308,14 +308,12 @@ func (ps *Projects) exportManifest(ctx context.Context, projectID sdktypes.Proje
 	}
 
 	for _, v := range vars {
-		if v.IsSecret() {
-			continue
+		mv := manifest.Var{
+			Name:   v.Name().String(),
+			Secret: v.IsSecret(),
 		}
-		v := manifest.Var{
-			Name:  v.Name().String(),
-			Value: v.Value(),
-		}
-		p.Vars = append(p.Vars, &v)
+
+		p.Vars = append(p.Vars, &mv)
 	}
 
 	m := manifest.Manifest{
