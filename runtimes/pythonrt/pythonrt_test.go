@@ -246,6 +246,7 @@ func Test_pySvc_Run(t *testing.T) {
 		"data": sdktypes.NewDictValueFromStringMap(map[string]sdktypes.Value{
 			"body": body,
 		}),
+		"session_id": sdktypes.NewStringValue("ses_meow"),
 	}
 	_, err = run.Call(ctx, fn, nil, kwargs)
 	require.NoError(t, err, "call")
@@ -381,9 +382,7 @@ func TestProgramError(t *testing.T) {
 	fn, err := sdktypes.NewFunctionValue(xid, "handle", nil, nil, mod)
 	require.NoError(t, err, "new function")
 
-	kwargs := map[string]sdktypes.Value{}
-
-	_, err = svc.Call(ctx, fn, nil, kwargs)
+	_, err = svc.Call(ctx, fn, nil, nil)
 	require.Error(t, err)
 	t.Logf("ERROR:\n%s", err)
 	// There no way to check that err is a ProgramError since it's wrapped by unexported programError
