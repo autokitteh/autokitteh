@@ -159,7 +159,7 @@ func newSvc(cfg *Config, l *zap.Logger) (sdkservices.Runtime, error) {
 			done:     make(chan *pbUserCode.DoneRequest, 1),
 			err:      make(chan string, 1),
 			request:  make(chan *pbUserCode.ActivityRequest, 1),
-			print:    make(chan *logMessage, 1),
+			print:    make(chan *logMessage, 1024),
 			log:      make(chan *logMessage, 1),
 			callback: make(chan *callbackMessage, 1),
 		},
@@ -400,64 +400,6 @@ func (py *pySvc) sendDone(err error) {
 	py.channels.done <- &req
 }
 
-func (py *pySvc) setupCallbacksListeningLoop(ctx context.Context) chan (error) {
-	callbackErrChan := make(chan error, 1)
-	listenFn := func() {
-		for {
-			select {
-			case r := <-py.channels.log:
-				py.log.Log(pyLevelToZap(r.level), r.message)
-				close(r.doneChannel)
-			case p := <-py.channels.print:
-				py.cbs.Print(ctx, py.runID, p.message)
-				close(p.doneChannel)
-			case r := <-py.channels.request:
-				var (
-					fnName = "pyFunc"
-					args   []sdktypes.Value
-					kw     map[string]sdktypes.Value
-				)
-
-				if r.CallInfo != nil {
-					fnName = r.CallInfo.Function
-					args = kittehs.Transform(r.CallInfo.Args, func(v *pbValues.Value) sdktypes.Value {
-						// TODO(ENG-1838): What if there's an error?
-						val, _ := sdktypes.ValueFromProto(v)
-						return val
-					})
-					kw = kittehs.TransformMap(r.CallInfo.Kwargs, func(k string, v *pbValues.Value) (string, sdktypes.Value) {
-						// TODO(ENG-1838): What if there's an error?
-						val, _ := sdktypes.ValueFromProto(v)
-						return k, val
-					})
-				}
-
-				// it was already checked before we got here
-				fn, err := sdktypes.NewFunctionValue(py.xid, fnName, r.Data, nil, pyModuleFunc)
-				if err != nil {
-					callbackErrChan <- err
-					return
-				}
-				py.call(ctx, fn, args, kw)
-			case cb := <-py.channels.callback:
-				py.log.Info("syscall", zap.Any("func", cb.args[0]))
-				val, err := py.cbs.Call(ctx, py.runID, py.syscallFn, cb.args, cb.kwargs)
-				if err != nil {
-					cb.errorChannel <- err
-				} else {
-					cb.successChannel <- val
-				}
-			case <-ctx.Done():
-				py.log.Debug("stopping callback handling loop")
-				return
-			}
-		}
-	}
-	py.safelyGo("listen", listenFn)
-
-	return callbackErrChan
-}
-
 func (py *pySvc) startRequest(ctx context.Context, funcName string, eventData []byte) error {
 	req := pbUserCode.StartRequest{
 		EntryPoint: fmt.Sprintf("%s:%s", py.fileName, funcName),
@@ -535,7 +477,6 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 
 	cancellableCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	callbackErrChan := py.setupCallbacksListeningLoop(cancellableCtx)
 
 	if err := py.startRequest(ctx, funcName, eventData); err != nil {
 		return sdktypes.InvalidValue, fmt.Errorf("start request: %w", err)
@@ -544,20 +485,59 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 	runnerHealthChan := py.setupHealthcheck(cancellableCtx)
 
 	// Wait for client Done message
+	// This *can't* run in an different goroutine since callbacks to temporal need to be in the same goroutine.
 	var done *pbUserCode.DoneRequest
 	for {
 		select {
+		case r := <-py.channels.log:
+			py.log.Log(pyLevelToZap(r.level), r.message)
+			close(r.doneChannel)
+		case p := <-py.channels.print:
+			py.log.Info("print", zap.String("message", p.message))
+			py.cbs.Print(ctx, py.runID, p.message)
+			close(p.doneChannel)
+		case r := <-py.channels.request:
+			var (
+				fnName = "pyFunc"
+				args   []sdktypes.Value
+				kw     map[string]sdktypes.Value
+			)
+
+			if r.CallInfo != nil {
+				fnName = r.CallInfo.Function
+				args = kittehs.Transform(r.CallInfo.Args, func(v *pbValues.Value) sdktypes.Value {
+					// TODO(ENG-1838): What if there's an error?
+					val, _ := sdktypes.ValueFromProto(v)
+					return val
+				})
+				kw = kittehs.TransformMap(r.CallInfo.Kwargs, func(k string, v *pbValues.Value) (string, sdktypes.Value) {
+					// TODO(ENG-1838): What if there's an error?
+					val, _ := sdktypes.ValueFromProto(v)
+					return k, val
+				})
+			}
+
+			// it was already checked before we got here
+			fn, err := sdktypes.NewFunctionValue(py.xid, fnName, r.Data, nil, pyModuleFunc)
+			if err != nil {
+				return sdktypes.InvalidValue, err
+			}
+			py.call(ctx, fn, args, kw)
+		case cb := <-py.channels.callback:
+			py.log.Info("syscall", zap.Any("func", cb.args[0]))
+			val, err := py.cbs.Call(ctx, py.runID, py.syscallFn, cb.args, cb.kwargs)
+			if err != nil {
+				cb.errorChannel <- err
+			} else {
+				cb.successChannel <- val
+			}
 		case healthErr := <-runnerHealthChan:
 			if healthErr != nil {
 				return sdktypes.InvalidValue, sdkerrors.NewRetryableErrorf("runner health: %w", healthErr)
 			}
-		case callbackErr := <-callbackErrChan:
-			return sdktypes.InvalidValue, callbackErr
 		case v := <-py.channels.done:
 			py.log.Info("done signal", zap.String("error", v.Error))
-			pCtx, cancel := context.WithTimeout(ctx, time.Second)
-			defer cancel()
-			py.drainPrints(pCtx)
+			py.drainPrints(ctx)
 
 			done = v
 			if done.Error != "" {
@@ -578,6 +558,7 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 			done.Result.Custom.ExecutorId = py.xid.String()
 			return sdktypes.ValueFromProto(done.Result)
 		case <-ctx.Done():
+			py.drainPrints(ctx)
 			return sdktypes.InvalidValue, fmt.Errorf("context expired - %w", ctx.Err())
 		}
 	}
@@ -585,6 +566,8 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 
 // drainPrints drains the print channel at the end of a run.
 func (py *pySvc) drainPrints(ctx context.Context) {
+	ctx, cancel := context.WithTimeout(ctx, time.Second)
+	defer cancel()
 	// flush the rest of the prints and logs.
 	for {
 		select {
@@ -636,25 +619,6 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 		py.firstCall = false
 		return py.initialCall(ctx, fnName, args, kwargs)
 	}
-
-	done := make(chan struct{})
-	defer close(done)
-
-	drainFn := func() {
-		for {
-			select {
-			case r := <-py.channels.log:
-				py.log.Log(pyLevelToZap(r.level), r.message)
-				close(r.doneChannel)
-			case p := <-py.channels.print:
-				py.cbs.Print(ctx, py.runID, p.message)
-				close(p.doneChannel)
-			case <-done:
-				return
-			}
-		}
-	}
-	py.safelyGo("drain", drainFn)
 
 	// If we're here, it's an activity call
 	req := pbUserCode.ExecuteRequest{
