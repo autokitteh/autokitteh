@@ -7,6 +7,10 @@ from .events import next_event, subscribe, unsubscribe, start
 from . import errors
 
 
+def nop():
+    pass
+
+
 __all__ = [
     "AttrDict",
     "Event",
@@ -16,4 +20,5 @@ __all__ = [
     "start",
     "subscribe",
     "unsubscribe",
+    "nop",
 ]
