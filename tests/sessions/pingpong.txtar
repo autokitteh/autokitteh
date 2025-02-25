@@ -1,0 +1,33 @@
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+
+-- main.star player1 --
+
+def player1(session_id):
+    p2 = start("main.star:player2", {"p1": session_id})
+
+    x = 0
+    while x < 10:
+        signal(p2, "ping", x)
+        x = next_signal("pong")["value"]
+        print(x)
+
+    signal(p2, "done")
+    next_signal(p2)["value"]
+    
+def player2(data):
+    p1 = data["p1"]
+
+    while True:
+        sig = next_signal("ping", "done")
+        if sig["name"] == "done":
+            return "meow"
+        signal(p1, "pong", sig["value"] + 1)

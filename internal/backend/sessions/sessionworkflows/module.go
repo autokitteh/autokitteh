@@ -20,14 +20,16 @@ func (w *sessionWorkflow) newModule() sdkexecutor.Executor {
 	return fixtures.NewBuiltinExecutor(
 		fixtures.ModuleExecutorID,
 		sdkmodule.ExportValue("timeout_error", sdkmodule.WithValue(fixtures.TimeoutError)),
-		sdkmodule.ExportFunction("syscall", w.syscall, flags),
+		sdkmodule.ExportFunction("callopts", callopts, flags),
+		sdkmodule.ExportFunction("is_deployment_active", w.isDeploymentActive),
+		sdkmodule.ExportFunction("next_event", w.nextEvent, flags),
+		sdkmodule.ExportFunction("next_signal", w.nextSignal, flags),
+		sdkmodule.ExportFunction("signal", w.signal, flags),
 		sdkmodule.ExportFunction("sleep", w.sleep, flags),
 		sdkmodule.ExportFunction("start", w.start, flags),
 		sdkmodule.ExportFunction("subscribe", w.subscribe, flags),
+		sdkmodule.ExportFunction("syscall", w.syscall, flags),
 		sdkmodule.ExportFunction("unsubscribe", w.unsubscribe, flags),
-		sdkmodule.ExportFunction("next_event", w.nextEvent, flags),
-		sdkmodule.ExportFunction("callopts", callopts, flags),
-		sdkmodule.ExportFunction("is_deployment_active", w.isDeploymentActive),
 	)
 }
 
