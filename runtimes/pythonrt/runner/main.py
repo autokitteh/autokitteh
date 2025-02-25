@@ -272,8 +272,8 @@ class Runner(pb.runner_rpc.RunnerService):
 
         inputs = json.loads(request.event.data)
         fix_http_body(inputs)
-        inputs["data"] = AttrDict(inputs["data"])
-        event = Event(**inputs)
+        session_id, data = inputs["session_id"], AttrDict(inputs["data"])
+        event = Event(session_id, data)
 
         # TODO(ENG-1893): Disabled temporarily due to issues with HubSpot client - need to investigate.
         # # Warn on I/O outside an activity. Should come after importing the user module
