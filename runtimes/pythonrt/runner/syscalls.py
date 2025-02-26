@@ -12,10 +12,17 @@ import grpc
 import log
 import pb.autokitteh.user_code.v1.handler_svc_pb2 as pb
 from autokitteh import AttrDict
+from autokitteh.decorators import ACTIVITY_ATTR
 
 
 class SyscallError(Exception):
     pass
+
+
+def mark_no_activity(fn):
+    """Mark that a function should not run as activity."""
+    setattr(fn, ACTIVITY_ATTR, False)
+    return fn
 
 
 class SysCalls:
@@ -23,6 +30,7 @@ class SysCalls:
         self.runner_id = runner_id
         self.worker = worker
         self.log = log
+        self.mark_ak_no_activity()
 
     def ak_start(self, loc: str, data: dict = None, memo: dict = None) -> str:
         self.log.info("ak_start: %r", loc)
@@ -127,6 +135,15 @@ class SysCalls:
         if resp.error:
             raise SyscallError(f"refresh_oauth: {resp.error}")
         return resp.token, resp.expires.ToDatetime()
+
+    @classmethod
+    def mark_ak_no_activity(cls):
+        """Mark ak_* methods as not activity."""
+        for attr, value in cls.__dict__.items():
+            if not attr.startswith("ak_") or not callable(value):
+                continue
+
+            mark_no_activity(value)
 
 
 def call_grpc(name, fn, args):
