@@ -9,9 +9,8 @@ import log
 from deterministic import is_deterministic
 
 
-def is_marked_activity(fn):
-    """Return true if function is marked as an activity."""
-    return getattr(fn, decorators.ACTIVITY_ATTR, False)
+def activity_marker(fn):
+    return getattr(fn, decorators.ACTIVITY_ATTR, None)
 
 
 def callable_name(fn):
@@ -74,8 +73,9 @@ class AKCall:
         if self.in_activity or self.loading or self.activities_inhibitions:
             return False
 
-        if is_marked_activity(fn):
-            return True
+        mark = activity_marker(fn)
+        if mark in (True, False):
+            return mark
 
         if is_deterministic(fn):
             return False

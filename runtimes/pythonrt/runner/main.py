@@ -23,8 +23,8 @@ import values
 # from audit import make_audit_hook  # TODO(ENG-1893): uncomment this.
 from autokitteh import AttrDict, Event, connections
 from autokitteh.errors import AutoKittehError
-from call import AKCall, full_func_name, is_marked_activity
-from syscalls import SysCalls
+from call import AKCall, full_func_name, activity_marker
+from syscalls import SysCalls, mark_no_activity
 
 # Timeouts are in seconds
 SERVER_GRACE_TIMEOUT = 3
@@ -284,7 +284,7 @@ class Runner(pb.runner_rpc.RunnerService):
         # hook = make_audit_hook(ak_call, self.code_dir)
         # sys.addaudithook(hook)
 
-        if is_marked_activity(fn):
+        if activity_marker(fn):
             orig_fn = fn
 
             def handler(event):
@@ -459,6 +459,7 @@ class Runner(pb.runner_rpc.RunnerService):
         except grpc.RpcError as err:
             log.error("on_event: done send error: %r", err)
 
+    @mark_no_activity
     def ak_print(self, *objects, sep=" ", end="\n", file=None, flush=False):
         io = StringIO()
         self._orig_print(*objects, sep=sep, end=end, flush=flush, file=io)

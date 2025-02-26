@@ -1,6 +1,6 @@
 """Decorator to mark a function as a Temporal activity."""
 
-ACTIVITY_ATTR = "__activity__"
+ACTIVITY_ATTR = "__ak_activity__"
 INHIBIT_ACTIVITIES_ATTR = "__ak_inhibit_activities__"
 
 
