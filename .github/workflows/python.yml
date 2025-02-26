@@ -82,7 +82,7 @@ jobs:
       - name: Warm up virtual environment
         run: |
           uv pip install -r runtimes/pythonrt/py-sdk/docs/requirements.txt
-          ls -lah
+          echo $VIRTUAL_ENV
         env:
           UV_SYSTEM_PYTHON: 1
 
