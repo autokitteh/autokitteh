@@ -149,7 +149,7 @@ test-opa:
 
 .PHONY: test-starlark
 test-starlark: bin/ak
-    $(GOTEST) ./tests/starlark/...
+	$(GOTEST) ./tests/starlark/...
 
 # TODO(ENG-2037): Re-enable timeout (default 10m or custom one).
 .PHONY: test-sessions
