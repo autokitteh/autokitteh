@@ -11,6 +11,7 @@ import (
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/backend/types"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -94,7 +95,7 @@ func (ws *workflows) updateSessionStateActivity(ctx context.Context, sid sdktype
 }
 
 func (ws *workflows) getDeploymentStateActivity(ctx context.Context, did sdktypes.DeploymentID) (sdktypes.DeploymentState, error) {
-	d, err := ws.svcs.Deployments.Get(ctx, did)
+	d, err := ws.svcs.Deployments.Get(authcontext.SetAuthnSystemUser(ctx), did)
 	if err != nil {
 		return sdktypes.DeploymentStateUnspecified, temporalclient.TranslateError(err, "%v: get deployment state", did)
 	}
