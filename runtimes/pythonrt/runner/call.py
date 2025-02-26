@@ -3,7 +3,6 @@ import sys
 import time
 from pathlib import Path
 
-import autokitteh
 from autokitteh import decorators
 
 import log
