@@ -81,7 +81,7 @@ class AKCall:
             return mark
 
         fnmod = fn.__module__
-        if fnmod == ak_mod_name or fnmod.startswith(ak_mod_name + "."):
+        if fnmod and (fnmod == ak_mod_name or fnmod.startswith(ak_mod_name + ".")):
             return False
 
         if is_deterministic(fn):
