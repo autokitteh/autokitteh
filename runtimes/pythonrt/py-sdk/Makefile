@@ -1,8 +1,9 @@
 default:
 	$(error please pick a target)
 
+.PHONY: build
 build:
-	rm -rf build
+	rm -rf build dist
 	python -m build
 
 # You need to set PYPI_TOKEN in your environment, see 1password to the token
