@@ -1,3 +1,4 @@
+# https://github.com/marketplace/actions/cache
 # https://github.com/marketplace/actions/setup-go-environment
 # https://github.com/marketplace/actions/setup-python
 
@@ -69,6 +70,13 @@ jobs:
 
       - name: Build AK
         run: go build -trimpath -o bin/ak ./cmd/ak
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       # TODO(ENG-2037): Re-enable timeout (default 10m or custom one).
       - name: New test
