@@ -39,6 +39,10 @@ func ConnStatus(cvars sdkservices.Vars) sdkintegrations.OptFn {
 
 		switch at.Value() {
 		case integrations.JSONKey:
+			_, err := google.JWTConfigFromJSON([]byte(vs.GetValue(vars.JSON)))
+			if err != nil {
+				return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+			}
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using JSON key"), nil
 		case integrations.OAuth:
 			return common.CheckLegacyOAuthToken(vs)
