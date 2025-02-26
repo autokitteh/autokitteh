@@ -1,5 +1,6 @@
 import ast
 import json
+import re
 from textwrap import dedent
 from unittest.mock import MagicMock
 
@@ -169,3 +170,69 @@ def test_mod_level_call():
     out = nv.visit(tree)
     patched = ast.unparse(out)
     assert dedent(expected).strip() == patched
+
+
+prog1 = """
+import autokitteh
+
+
+def main(event: autokitteh.Event):
+    print('main')
+    foo('meow')
+    bar()
+    print('done')
+
+
+@autokitteh.activity
+def foo(x):
+    print(x)
+
+
+def bar():
+    foo('bar')
+"""
+
+prog2 = """
+import autokitteh
+
+
+@autokitteh.activity
+def foo(x):
+    print(x)
+
+
+def bar():
+    foo('bar')
+
+
+def main(event: autokitteh.Event):
+    print('main')
+    foo('meow')
+    bar()
+    print('done')
+"""
+
+patch_order_params = [
+    pytest.param(prog1, id="prog1"),
+    pytest.param(prog2, id="prog2"),
+]
+
+
+@pytest.mark.parametrize("code", patch_order_params)
+def test_patch_order(code, caplog):
+    trans = loader.Transformer("<stdin>", code)
+    tree = ast.parse(code)
+    trans.visit(tree)
+    patches = {
+        "foo": 0,
+        "bar": 0,
+    }
+    for message in caplog.messages:
+        if match := re.search(r"patching (\w+) with", message):
+            patches[match[1]] += 1
+
+    expected = {
+        "foo": 2,
+        "bar": 1,
+    }
+    assert patches == expected
