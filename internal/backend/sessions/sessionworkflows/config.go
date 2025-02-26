@@ -12,12 +12,8 @@ type Config struct {
 
 	Activity temporalclient.ActivityConfig `koanf:"activity"`
 
-	Worker temporalclient.WorkerConfig `koanf:"worker"`
-
-	// Enable internal test functionality.
-	OSModule bool `koanf:"os_module"`
-
-	SlowOperationTimeout time.Duration `koanf:"slow_operation_timeout"`
+	Worker               temporalclient.WorkerConfig `koanf:"worker"`
+	SlowOperationTimeout time.Duration               `koanf:"slow_operation_timeout"`
 
 	// Enable test tools.
 	Test bool `koanf:"test"`
