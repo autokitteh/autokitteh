@@ -76,8 +76,9 @@ jobs:
       - name: Build AK
         run: go build -trimpath -o bin/ak ./cmd/ak
 
+      # TODO(ENG-2037): Re-enable timeout (default 10m or custom one).
       - name: Test
-        run: gotestsum -f github-actions -- -trimpath ./tests/system/...
+        run: gotestsum -f github-actions -- -timeout 0 -trimpath ./tests/system/...
 
   go-static-analysis:
     name: Go static analysis

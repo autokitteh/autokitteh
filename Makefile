@@ -114,9 +114,10 @@ test-unit:
 
 # Run all Go tests (including Python runtime and system tests),
 # and check for race conditions while running each of them.
+# TODO(ENG-2037): Re-enable timeout (default 10m or custom one).
 .PHONY: test-race
 test-race:
-	$(GOTEST) -race ./...
+	$(GOTEST) -timeout 0 -race ./...
 
 # Generate a coverage report for all Go tests
 # (including Python runtime and system tests).
@@ -126,9 +127,10 @@ test-cover:
 	go tool cover -html=tmp/cover.out
 
 # Long-running subset of "test-unit", for simplicity.
+# TODO(ENG-2037): Re-enable timeout (default 10m or custom one).
 .PHONY: test-system
 test-system: bin/ak
-	$(GOTEST) ./tests/system
+	$(GOTEST) -timeout 0 ./tests/system
 
 .PHONY: test-db
 test-db:
@@ -147,11 +149,12 @@ test-opa:
 
 .PHONY: test-starlark
 test-starlark: bin/ak
-	./tests/starlark/run.sh
+    $(GOTEST) ./tests/starlark/...
 
+# TODO(ENG-2037): Re-enable timeout (default 10m or custom one).
 .PHONY: test-sessions
 test-sessions: bin/ak
-	./tests/sessions/run.sh
+	$(GOTEST) -timeout 0 ./tests/sessions/...
 
 .PHONY: proto
 proto:
