@@ -51,11 +51,8 @@ jobs:
       - name: Build AK
         run: go build -trimpath -o bin/ak ./cmd/ak
 
-      - name: New test
+      - name: Test
         run: gotestsum -f github-actions -- -trimpath ./tests/sessions/... -skip /python
-
-      - name: Old test
-        run: PYTHON=skip ./tests/sessions/run.sh
 
   go-system-tests:
     name: Go system tests

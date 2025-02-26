@@ -51,7 +51,7 @@ jobs:
   python-session-tests:
     name: Python Session tests
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 10
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -75,8 +75,5 @@ jobs:
         run: go build -trimpath -o bin/ak ./cmd/ak
 
       # TODO(ENG-2037): Re-enable timeout (default 10m or custom one).
-      - name: New test
+      - name: Test
         run: gotestsum -f github-actions -- -timeout 0 -trimpath ./tests/sessions/... -run /python
-
-      - name: Old test
-        run: PYTHON=only ./tests/sessions/run.sh
