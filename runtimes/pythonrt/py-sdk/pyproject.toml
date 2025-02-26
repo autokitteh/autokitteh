@@ -10,6 +10,7 @@ requires-python = '>= 3.11'
 requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
+# Note: If you update these dependencies, run `gen-reqs.py` from the `docs` directory.
 [project.optional-dependencies]
 # The AutoKitteh environment when running workflows
 all = [
