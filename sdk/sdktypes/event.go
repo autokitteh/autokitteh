@@ -133,7 +133,8 @@ func VerifyEventFilter(filter string) error {
 }
 
 func eventFilterField(name string, expr string) error {
-	if expr == "" {
+	// HACK: "." is a signal for an empty filter.
+	if expr == "" || expr == "." {
 		return nil
 	}
 
