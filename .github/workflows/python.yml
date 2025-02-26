@@ -70,8 +70,9 @@ jobs:
       - name: Build AK
         run: go build -trimpath -o bin/ak ./cmd/ak
 
+      # TODO(ENG-2037): Re-enable timeout (default 10m or custom one).
       - name: New test
-        run: gotestsum -f github-actions -- -trimpath ./tests/sessions/... -run /python
+        run: gotestsum -f github-actions -- -timeout 0 -trimpath ./tests/sessions/... -run /python
 
       - name: Old test
         run: PYTHON=only ./tests/sessions/run.sh

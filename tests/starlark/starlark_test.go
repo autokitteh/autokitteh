@@ -19,7 +19,6 @@ var testFiles embed.FS
 
 func TestStarlark(t *testing.T) {
 	akPath := tests.AKPath(t)
-	t.Log("AK path:", akPath)
 
 	err := fs.WalkDir(testFiles, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
