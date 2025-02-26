@@ -1,6 +1,6 @@
-# https://github.com/marketplace/actions/cache
 # https://github.com/marketplace/actions/setup-go-environment
 # https://github.com/marketplace/actions/setup-python
+# https://github.com/actions/setup-python/blob/main/docs/advanced-usage.md
 
 name: CI - Python
 
@@ -63,6 +63,9 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            **/requirements.txt
       - name: Download Go modules
         run: go mod download
       - name: Install gotestsum
@@ -70,13 +73,6 @@ jobs:
 
       - name: Build AK
         run: go build -trimpath -o bin/ak ./cmd/ak
-
-      - uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
 
       # TODO(ENG-2037): Re-enable timeout (default 10m or custom one).
       - name: New test
