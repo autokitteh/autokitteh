@@ -62,7 +62,7 @@ func runWorkflow(
 	l *zap.Logger,
 	ws *workflows,
 	params *sessionWorkflowParams,
-) (prints []sdkservices.SessionPrint, err error) {
+) (prints []sdkservices.SessionPrint, rv sdktypes.Value, err error) {
 	w := &sessionWorkflow{
 		l:                         l,
 		data:                      params.Data,
@@ -85,7 +85,7 @@ func runWorkflow(
 		return
 	}
 
-	prints, err = w.run(wctx, l)
+	prints, rv, err = w.run(wctx, l)
 
 	// context might have been canceled, create a disconnected one.
 	wctx, cancel := workflow.NewDisconnectedContext(wctx)
@@ -400,7 +400,7 @@ func (w *sessionWorkflow) removeEventSubscription(wctx workflow.Context, signalI
 	delete(w.lastReadEventSeqForSignal, signalID)
 }
 
-func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []sdkservices.SessionPrint, err error) {
+func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []sdkservices.SessionPrint, retVal sdktypes.Value, err error) {
 	sid := w.data.Session.ID()
 
 	newRunID := func() (runID sdktypes.RunID, err error) {
@@ -512,15 +512,17 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []sd
 		Unsubscribe:        w.unsubscribe(wctx),
 		NextEvent:          w.nextEvent(wctx),
 		IsDeploymentActive: w.isDeploymentActive(wctx),
+		Signal:             w.signal(wctx),
+		NextSignal:         w.nextSignal(wctx),
 	}
 
 	runID, err := newRunID()
 	if err != nil {
-		return nil, fmt.Errorf("new run id: %w", err)
+		return nil, sdktypes.InvalidValue, fmt.Errorf("new run id: %w", err)
 	}
 
 	if err := w.updateState(wctx, sdktypes.NewSessionStateRunning(runID, sdktypes.InvalidValue)); err != nil {
-		return nil, err
+		return nil, sdktypes.InvalidValue, err
 	}
 
 	entryPoint := w.data.Session.EntryPoint()
@@ -546,12 +548,10 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []sd
 	)
 
 	if err != nil {
-		return nil, err
+		return nil, sdktypes.InvalidValue, err
 	}
 
 	kittehs.Must0(w.executors.AddExecutor(fmt.Sprintf("run_%s", run.ID().Value()), run))
-
-	var retVal sdktypes.Value
 
 	// Run call only if the entrypoint includes a name.
 	if epName := entryPoint.Name(); epName != "" {
@@ -559,21 +559,21 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []sd
 		if !ok {
 			// The user specified an entry point that does not exist.
 			// WrapError so it will be a program error and not considered as an internal error.
-			return prints, sdktypes.WrapError(fmt.Errorf("entry point %q not found after evaluation", epName)).ToError()
+			return prints, sdktypes.InvalidValue, sdktypes.WrapError(fmt.Errorf("entry point %q not found after evaluation", epName)).ToError()
 		}
 
 		if !callValue.IsFunction() {
 			// The user specified an entry point that is not a function.
 			// WrapError so it will be a program error and not considered as an internal error.
-			return prints, sdktypes.WrapError(fmt.Errorf("entry point %q is not a function", epName)).ToError()
+			return prints, sdktypes.InvalidValue, sdktypes.WrapError(fmt.Errorf("entry point %q is not a function", epName)).ToError()
 		}
 
 		if callValue.GetFunction().ExecutorID().ToRunID() != runID {
-			return prints, errors.New("entry point does not belong to main run")
+			return prints, sdktypes.InvalidValue, errors.New("entry point does not belong to main run")
 		}
 
 		if err := w.updateState(wctx, sdktypes.NewSessionStateRunning(runID, callValue)); err != nil {
-			return prints, err
+			return prints, sdktypes.InvalidValue, err
 		}
 
 		inputs := map[string]sdktypes.Value{
@@ -582,11 +582,11 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []sd
 		}
 
 		if retVal, err = run.Call(ctx, callValue, nil, inputs); err != nil {
-			return prints, err
+			return prints, sdktypes.InvalidValue, err
 		}
 	}
 
-	return prints, w.updateState(
+	return prints, retVal, w.updateState(
 		wctx,
 		sdktypes.NewSessionStateCompleted(
 			kittehs.Transform(prints, func(p sdkservices.SessionPrint) string { return p.Value.GetString().Value() }),

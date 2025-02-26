@@ -112,6 +112,10 @@ func (vctx *Context) ToStarlarkValue(v sdktypes.Value) (starlark.Value, error) {
 }
 
 func (vctx *Context) FromStarlarkValue(v starlark.Value) (sdktypes.Value, error) {
+	if v == nil {
+		return sdktypes.Nothing, nil
+	}
+
 	switch v := v.(type) {
 	case *starlark.Builtin:
 		return vctx.fromStarlarkBuiltin(v)

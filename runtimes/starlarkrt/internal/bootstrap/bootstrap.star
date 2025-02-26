@@ -34,6 +34,14 @@ def next_event(*args, **kwargs):
 def unsubscribe(*args, **kwargs):
     return ak.unsubscribe(*args, **kwargs)
 
+# EXPORT: next_signal
+def next_signal(*args, **kwargs):
+    return ak.next_signal(*args, **kwargs)
+
+# EXPORT: signal
+def signal(*args, **kwargs):
+    return ak.signal(*args, **kwargs)
+
 # EXPORT: test
 def test():
     for name, fn in globals().items():

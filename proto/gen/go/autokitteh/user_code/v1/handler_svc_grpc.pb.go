@@ -28,6 +28,8 @@ const (
 	HandlerService_NextEvent_FullMethodName         = "/autokitteh.user_code.v1.HandlerService/NextEvent"
 	HandlerService_Unsubscribe_FullMethodName       = "/autokitteh.user_code.v1.HandlerService/Unsubscribe"
 	HandlerService_StartSession_FullMethodName      = "/autokitteh.user_code.v1.HandlerService/StartSession"
+	HandlerService_Signal_FullMethodName            = "/autokitteh.user_code.v1.HandlerService/Signal"
+	HandlerService_NextSignal_FullMethodName        = "/autokitteh.user_code.v1.HandlerService/NextSignal"
 	HandlerService_EncodeJWT_FullMethodName         = "/autokitteh.user_code.v1.HandlerService/EncodeJWT"
 	HandlerService_RefreshOAuthToken_FullMethodName = "/autokitteh.user_code.v1.HandlerService/RefreshOAuthToken"
 	HandlerService_Health_FullMethodName            = "/autokitteh.user_code.v1.HandlerService/Health"
@@ -52,6 +54,8 @@ type HandlerServiceClient interface {
 	NextEvent(ctx context.Context, in *NextEventRequest, opts ...grpc.CallOption) (*NextEventResponse, error)
 	Unsubscribe(ctx context.Context, in *UnsubscribeRequest, opts ...grpc.CallOption) (*UnsubscribeResponse, error)
 	StartSession(ctx context.Context, in *StartSessionRequest, opts ...grpc.CallOption) (*StartSessionResponse, error)
+	Signal(ctx context.Context, in *SignalRequest, opts ...grpc.CallOption) (*SignalResponse, error)
+	NextSignal(ctx context.Context, in *NextSignalRequest, opts ...grpc.CallOption) (*NextSignalResponse, error)
 	// Utility functions
 	EncodeJWT(ctx context.Context, in *EncodeJWTRequest, opts ...grpc.CallOption) (*EncodeJWTResponse, error)
 	RefreshOAuthToken(ctx context.Context, in *RefreshRequest, opts ...grpc.CallOption) (*RefreshResponse, error)
@@ -157,6 +161,26 @@ func (c *handlerServiceClient) StartSession(ctx context.Context, in *StartSessio
 	return out, nil
 }
 
+func (c *handlerServiceClient) Signal(ctx context.Context, in *SignalRequest, opts ...grpc.CallOption) (*SignalResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SignalResponse)
+	err := c.cc.Invoke(ctx, HandlerService_Signal_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *handlerServiceClient) NextSignal(ctx context.Context, in *NextSignalRequest, opts ...grpc.CallOption) (*NextSignalResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(NextSignalResponse)
+	err := c.cc.Invoke(ctx, HandlerService_NextSignal_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *handlerServiceClient) EncodeJWT(ctx context.Context, in *EncodeJWTRequest, opts ...grpc.CallOption) (*EncodeJWTResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(EncodeJWTResponse)
@@ -215,6 +239,8 @@ type HandlerServiceServer interface {
 	NextEvent(context.Context, *NextEventRequest) (*NextEventResponse, error)
 	Unsubscribe(context.Context, *UnsubscribeRequest) (*UnsubscribeResponse, error)
 	StartSession(context.Context, *StartSessionRequest) (*StartSessionResponse, error)
+	Signal(context.Context, *SignalRequest) (*SignalResponse, error)
+	NextSignal(context.Context, *NextSignalRequest) (*NextSignalResponse, error)
 	// Utility functions
 	EncodeJWT(context.Context, *EncodeJWTRequest) (*EncodeJWTResponse, error)
 	RefreshOAuthToken(context.Context, *RefreshRequest) (*RefreshResponse, error)
@@ -256,6 +282,12 @@ func (UnimplementedHandlerServiceServer) Unsubscribe(context.Context, *Unsubscri
 }
 func (UnimplementedHandlerServiceServer) StartSession(context.Context, *StartSessionRequest) (*StartSessionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StartSession not implemented")
+}
+func (UnimplementedHandlerServiceServer) Signal(context.Context, *SignalRequest) (*SignalResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Signal not implemented")
+}
+func (UnimplementedHandlerServiceServer) NextSignal(context.Context, *NextSignalRequest) (*NextSignalResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method NextSignal not implemented")
 }
 func (UnimplementedHandlerServiceServer) EncodeJWT(context.Context, *EncodeJWTRequest) (*EncodeJWTResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method EncodeJWT not implemented")
@@ -452,6 +484,42 @@ func _HandlerService_StartSession_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _HandlerService_Signal_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SignalRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HandlerServiceServer).Signal(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HandlerService_Signal_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HandlerServiceServer).Signal(ctx, req.(*SignalRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HandlerService_NextSignal_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(NextSignalRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HandlerServiceServer).NextSignal(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HandlerService_NextSignal_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HandlerServiceServer).NextSignal(ctx, req.(*NextSignalRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _HandlerService_EncodeJWT_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(EncodeJWTRequest)
 	if err := dec(in); err != nil {
@@ -566,6 +634,14 @@ var HandlerService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "StartSession",
 			Handler:    _HandlerService_StartSession_Handler,
+		},
+		{
+			MethodName: "Signal",
+			Handler:    _HandlerService_Signal_Handler,
+		},
+		{
+			MethodName: "NextSignal",
+			Handler:    _HandlerService_NextSignal_Handler,
 		},
 		{
 			MethodName: "EncodeJWT",
