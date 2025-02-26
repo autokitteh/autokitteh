@@ -133,14 +133,17 @@ func requestToData(r *http.Request) (map[string]sdktypes.Value, error) {
 }
 
 func bodyData(body []byte, form url.Values) sdktypes.Value {
-	bytes := sdktypes.Nothing
+	text, bytes := sdktypes.Nothing, sdktypes.Nothing
+
 	if len(body) > 0 {
 		bytes = sdktypes.NewBytesValue(body)
+		text = sdktypes.NewStringValue(string(body))
 	}
 
 	return sdktypes.NewDictValueFromStringMap(
 		map[string]sdktypes.Value{
 			"bytes": bytes,
+			"text":  text,
 			"form":  formData(form),
 			"json":  jsonData(body),
 		},
