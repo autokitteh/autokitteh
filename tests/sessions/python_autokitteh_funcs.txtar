@@ -1,0 +1,10 @@
+-- main.py main --
+
+from autokitteh.connections import check_connection_name
+
+check_connection_name("meow")
+
+def main(_):
+    check_connection_name("woof")
+
+-- calls.txt --

@@ -68,14 +68,15 @@ class SysCalls:
 
         call_grpc("sleep", self.worker.Sleep, req)
 
-    def ak_subscribe(self, connection_id: str, filter: str) -> str:
-        log.info("ak_subscribe: %r %r", connection_id, filter)
-        if not connection_id or not filter:
-            raise ValueError("missing connection_id or filter")
+    def ak_subscribe(self, source: str, filter: str = "") -> str:
+        log.info("ak_subscribe: %r %r", source, filter)
+        if not source:
+            raise ValueError("missing source")
 
         req = pb.SubscribeRequest(
-            runner_id=self.runner_id, connection=connection_id, filter=filter
+            runner_id=self.runner_id, connection=source, filter=filter
         )
+
         resp = call_grpc("subscribe", self.worker.Subscribe, req)
         return resp.signal_id
 
