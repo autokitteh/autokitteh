@@ -147,6 +147,19 @@ func TestGetProjectDeployments(t *testing.T) {
 	// 	kittehs.Transform(ds, func(d DeploymentState) sdktypes.UUID { return d.DeploymentID }))
 }
 
+func TestDeleteEventWhenProjectDeleted(t *testing.T) {
+	f := preProjectTest(t)
+
+	p := f.newProject()
+	e := f.newEvent(p)
+	f.createProjectsAndAssert(t, p)
+	f.createEventsAndAssert(t, e)
+
+	assert.NoError(t, f.gormdb.deleteProject(f.ctx, p.ProjectID))
+	f.assertProjectDeleted(t, p)
+	f.assertEventsDeleted(t, e)
+}
+
 func TestDeleteProjectAndDependents(t *testing.T) {
 	f := preProjectTest(t)
 
