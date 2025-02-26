@@ -34,12 +34,14 @@ class Transformer(ast.NodeTransformer):
             self.generic_visit(node)
             return node
 
-        if isinstance(node, (ast.FunctionDef, ast.ClassDef)) and self.fn_indent == -1:
+        is_def = isinstance(node, (ast.FunctionDef, ast.ClassDef))
+        if is_def and self.fn_indent == -1:
             self.fn_indent = indent
             self.generic_visit(node)
             return node
 
-        if indent <= self.fn_indent:
+        # Dedent only if it's not another function definition
+        if indent <= self.fn_indent and not is_def:
             self.fn_indent = -1
 
         if not isinstance(node, ast.Call) or self.fn_indent == -1:
