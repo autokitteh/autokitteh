@@ -29,6 +29,7 @@ const (
 	legacyAddSessionPrintActivityName       = "add_session_print"
 	addSessionPrintActivityName             = "add_session_print_value"
 	deactivateDrainedDeploymentActivityName = "deactivate_drained_deployment"
+	getDeploymentStateActivityName          = "get_deployment_state"
 )
 
 func (ws *workflows) registerActivities() {
@@ -81,10 +82,24 @@ func (ws *workflows) registerActivities() {
 		ws.deactivateDrainedDeploymentActivity,
 		activity.RegisterOptions{Name: deactivateDrainedDeploymentActivityName},
 	)
+
+	ws.worker.RegisterActivityWithOptions(
+		ws.getDeploymentStateActivity,
+		activity.RegisterOptions{Name: getDeploymentStateActivityName},
+	)
 }
 
 func (ws *workflows) updateSessionStateActivity(ctx context.Context, sid sdktypes.SessionID, state sdktypes.SessionState) error {
 	return temporalclient.TranslateError(ws.svcs.DB.UpdateSessionState(ctx, sid, state), "%v: update session state", sid)
+}
+
+func (ws *workflows) getDeploymentStateActivity(ctx context.Context, did sdktypes.DeploymentID) (sdktypes.DeploymentState, error) {
+	d, err := ws.svcs.Deployments.Get(ctx, did)
+	if err != nil {
+		return sdktypes.DeploymentStateUnspecified, temporalclient.TranslateError(err, "%v: get deployment state", did)
+	}
+
+	return d.State(), nil
 }
 
 func (ws *workflows) addSessionPrintActivity(ctx context.Context, sid sdktypes.SessionID, v sdktypes.Value, callSeq uint32) error {

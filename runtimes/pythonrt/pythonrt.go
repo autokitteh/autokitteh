@@ -38,11 +38,15 @@ var (
 	venvPy   = path.Join(venvPath, "bin", "python")
 )
 
+type callbackResponse struct {
+	value any
+	err   error
+}
+
 type callbackMessage struct {
-	args           []sdktypes.Value
-	kwargs         map[string]sdktypes.Value
-	successChannel chan sdktypes.Value
-	errorChannel   chan error
+	name string
+	fn   func(context.Context, *sdkservices.RunCallbacks, sdktypes.RunID) (any, error)
+	ch   chan callbackResponse
 }
 
 type logMessage struct {
@@ -81,8 +85,6 @@ type pySvc struct {
 	firstCall bool // first call is the trigger, other calls are activities
 
 	channels comChannels
-
-	syscallFn sdktypes.Value
 }
 
 func (py *pySvc) cleanup(ctx context.Context) {
@@ -204,28 +206,6 @@ func entriesToValues(xid sdktypes.ExecutorID, entries []*pbUserCode.Export) (map
 	return values, nil
 }
 
-func loadSyscall(values map[string]sdktypes.Value) (sdktypes.Value, error) {
-	ak, ok := values["ak"]
-	if !ok {
-		// py.log.Warn("can't find `ak` in values")
-		return sdktypes.InvalidValue, nil
-	}
-
-	if !ak.IsStruct() {
-		return sdktypes.InvalidValue, errors.New("`ak` is not a struct")
-	}
-
-	syscall, ok := ak.GetStruct().Fields()["syscall"]
-	if !ok {
-		return sdktypes.InvalidValue, errors.New("`syscall` not found in `ak`")
-	}
-	if !syscall.IsFunction() {
-		return sdktypes.InvalidValue, errors.New("`syscall` is not a function")
-	}
-
-	return syscall, nil
-}
-
 // entryPointFileName strips the handler from the entry point
 // "program.py:on_event" -> "program.py"
 func entryPointFileName(entryPoint string) string {
@@ -279,11 +259,6 @@ func (py *pySvc) Run(
 	tarData := compiled[archiveKey]
 	if tarData == nil {
 		return nil, fmt.Errorf("%q note found in compiled data", archiveKey)
-	}
-
-	py.syscallFn, err = loadSyscall(values)
-	if err != nil {
-		return nil, fmt.Errorf("can't load syscall: %w", err)
 	}
 
 	runnerID, runner, err := runnerManager.Start(ctx, sessionID, tarData, py.envVars)
@@ -494,7 +469,9 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 			close(r.doneChannel)
 		case p := <-py.channels.print:
 			py.log.Info("print", zap.String("message", p.message))
-			py.cbs.Print(ctx, py.runID, p.message)
+			if err := py.cbs.Print(ctx, py.runID, p.message); err != nil {
+				py.log.Error("print error", zap.Error(err))
+			}
 			close(p.doneChannel)
 		case r := <-py.channels.request:
 			var (
@@ -524,13 +501,9 @@ func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktyp
 			}
 			py.call(ctx, fn, args, kw)
 		case cb := <-py.channels.callback:
-			py.log.Info("syscall", zap.Any("func", cb.args[0]))
-			val, err := py.cbs.Call(ctx, py.runID, py.syscallFn, cb.args, cb.kwargs)
-			if err != nil {
-				cb.errorChannel <- err
-			} else {
-				cb.successChannel <- val
-			}
+			py.log.Info("syscall", zap.String("name", cb.name))
+			val, err := cb.fn(ctx, py.cbs, py.runID)
+			cb.ch <- callbackResponse{value: val, err: err}
 		case healthErr := <-runnerHealthChan:
 			if healthErr != nil {
 				return sdktypes.InvalidValue, sdkerrors.NewRetryableErrorf("runner health: %w", healthErr)
@@ -576,7 +549,7 @@ func (py *pySvc) drainPrints(ctx context.Context) {
 		case r := <-py.channels.log:
 			py.log.Log(pyLevelToZap(r.level), r.message)
 		case r := <-py.channels.print:
-			py.cbs.Print(ctx, py.runID, r.message)
+			_ = py.cbs.Print(ctx, py.runID, r.message)
 			close(r.doneChannel)
 		}
 	}
@@ -621,9 +594,7 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 	}
 
 	// If we're here, it's an activity call
-	req := pbUserCode.ExecuteRequest{
-		Data: fn.Data(),
-	}
+	req := pbUserCode.ExecuteRequest{Data: fn.Data()}
 	resp, err := py.runner.Execute(ctx, &req)
 	switch {
 	case err != nil:

@@ -6,7 +6,7 @@ from uuid import uuid4
 from .attr_dict import AttrDict
 
 
-def subscribe(connection_name: str, filter: str) -> str:
+def subscribe(source: str, filter: str = "") -> str:
     """Subscribe to events on connection. Optional filter is a CEL expression."""
     # Dummy implementation for local development.
     return f"sig_{uuid4().hex}"
