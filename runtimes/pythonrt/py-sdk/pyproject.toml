@@ -27,9 +27,10 @@ all = [
 	"hubspot-api-client ~= 11.1",
 	"msgraph-sdk ~= 1.18",
 	"openai ~= 1.57",
-	"PyGithub @ git+https://github.com/PyGithub/PyGithub.git@b5f8f078f2b7fc0db6a041499c7a05b0bc7e750d",
+	"PyGithub ~= 2.6",
 	"simple-salesforce ~= 1.12",
 	"slack-sdk ~= 3.33",
+	"tenacity ~= 9.0",
 	"twilio ~= 9.4",
 
 	# General
