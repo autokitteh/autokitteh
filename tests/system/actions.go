@@ -5,12 +5,9 @@ import (
 	"errors"
 	"strings"
 	"testing"
-)
 
-type akResult struct {
-	output     string
-	returnCode int
-}
+	"go.autokitteh.dev/autokitteh/tests"
+)
 
 func splitToArgs(cmdArgs string) []string {
 	cmdArgs = strings.TrimSpace(cmdArgs)
@@ -30,9 +27,10 @@ func runAction(t *testing.T, akPath, akAddr string, i int, step string, cfg *tes
 	case "setenv":
 		return nil, setEnv(strings.TrimSpace(strings.TrimPrefix(step, match[1])))
 	case "ak":
-		args := append(serviceUrlArg(akAddr), cfg.AK.ExtraArgs...)
+		args := make([]string, len(cfg.AK.ExtraArgs))
+		copy(args, cfg.AK.ExtraArgs)
 		args = append(args, splitToArgs(match[3])...)
-		return runClient(akPath, args)
+		return tests.RunAKClient(akPath, akAddr, token, 0, args)
 	case "http get", "http post":
 		method := strings.ToUpper(match[2])
 		url, body, _ := strings.Cut(match[3], " ")

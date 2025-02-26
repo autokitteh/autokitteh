@@ -64,29 +64,6 @@ type testConfig struct {
 	AK akTestConfig `json:"ak" yaml:"ak"`
 }
 
-func useTempDir(t *testing.T) {
-	td := t.TempDir()
-
-	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("failed to get current working directory: %v", err)
-	}
-	t.Cleanup(func() {
-		if err := os.Chdir(wd); err != nil {
-			t.Fatalf("failed to restore working directory: %v", err)
-		}
-	})
-
-	if err := os.Chdir(td); err != nil {
-		t.Fatalf("failed to switch to temporary directory: %v", err)
-	}
-
-	// Don't use the user's "config.yaml" file, it may violate isolation
-	// by forcing tests to use shared and/or persistent resources.
-	t.Setenv("XDG_CONFIG_HOME", td)
-	t.Setenv("XDG_DATA_HOME", td)
-}
-
 func writeEmbeddedFiles(t *testing.T, fs []txtar.File) {
 	for _, f := range fs {
 		if err := os.MkdirAll(filepath.Dir(f.Name), tempDirPerm); err != nil {
