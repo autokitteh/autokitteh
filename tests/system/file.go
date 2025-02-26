@@ -1,7 +1,6 @@
 package systest
 
 import (
-	"embed"
 	"encoding/json"
 	"io/fs"
 	"path/filepath"
@@ -11,10 +10,9 @@ import (
 
 	"golang.org/x/tools/txtar"
 	"gopkg.in/yaml.v2"
-)
 
-//go:embed testdata/*
-var testDataFS embed.FS
+	"go.autokitteh.dev/autokitteh/tests"
+)
 
 type testFile struct {
 	steps  []string
@@ -22,8 +20,8 @@ type testFile struct {
 	a      *txtar.Archive
 }
 
-func readTestFile(t *testing.T, path string) (*testFile, error) {
-	bs, err := fs.ReadFile(testDataFS, path)
+func readTestFile(t *testing.T, testFiles fs.FS, path string) (*testFile, error) {
+	bs, err := fs.ReadFile(testFiles, path)
 	if err != nil {
 		t.Fatalf("failed to load file: %v", err)
 	}
@@ -45,7 +43,7 @@ func readTestFile(t *testing.T, path string) (*testFile, error) {
 }
 
 func prepTestFiles(t *testing.T, a *txtar.Archive) *testFile {
-	useTempDir(t)
+	tests.SwitchToTempDir(t) // For test isolation.
 	writeEmbeddedFiles(t, a.Files)
 	return parseTestFile(t, a)
 }

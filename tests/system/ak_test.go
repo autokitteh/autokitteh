@@ -19,15 +19,15 @@ package systest
 
 import (
 	"context"
+	"embed"
 	"fmt"
 	"io/fs"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/tests"
 )
 
 const (
@@ -35,14 +35,17 @@ const (
 	stopTimeout = 3 * time.Second
 )
 
-func TestSuite(t *testing.T) {
+//go:embed testdata/*
+var testFiles embed.FS
+
+func TestSystem(t *testing.T) {
 	akPath := setUpSuite(t)
 	tests := make(map[string]*testFile)
 	var exclusives []string
 
 	// Each .txtar file is a test-case, with potentially
 	// multiple actions, checks, and embedded files.
-	err := fs.WalkDir(testDataFS, rootDir, func(path string, d fs.DirEntry, err error) error {
+	err := fs.WalkDir(testFiles, rootDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -51,7 +54,7 @@ func TestSuite(t *testing.T) {
 			return nil // Skip directories and non-test files.
 		}
 
-		f, err := readTestFile(t, path)
+		f, err := readTestFile(t, testFiles, path)
 		if err != nil {
 			return err
 		}
@@ -93,21 +96,7 @@ func setUpSuite(t *testing.T) string {
 	// https://docs.temporal.io/dev-guide/go/debugging
 	t.Setenv("TEMPORAL_DEBUG", "true")
 
-	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("failed to get current working directory: %v", err)
-	}
-
-	path, err := filepath.Abs(filepath.Join(wd, "..", "..", "bin", "ak"))
-	if err != nil {
-		t.Fatalf("failed to construct ak path: %v", err)
-	}
-
-	if _, err := os.Stat(path); err != nil {
-		t.Fatalf("failed to get ak file info: %v", err)
-	}
-
-	return path
+	return tests.AKPath(t)
 }
 
 func setUpTest(t *testing.T, akPath string, cfg map[string]any) string {
@@ -137,7 +126,7 @@ func setUpTest(t *testing.T, akPath string, cfg map[string]any) string {
 func runTestSteps(t *testing.T, steps []string, akPath, akAddr string, cfg *testConfig) {
 	var (
 		actionIndex int
-		ak          *akResult
+		ak          *tests.AKResult
 		pendingReq  *httpRequest
 		httpResp    *httpResponse
 	)
@@ -181,7 +170,7 @@ func runTestSteps(t *testing.T, steps []string, akPath, akAddr string, cfg *test
 
 			if result != nil {
 				switch v := result.(type) {
-				case *akResult:
+				case *tests.AKResult:
 					ak = v
 				case *httpRequest:
 					pendingReq = v
