@@ -15,6 +15,7 @@ import (
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkbuildfile"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -121,12 +122,22 @@ func run(ctx context.Context, b *sdkbuildfile.BuildFile, path string) (map[strin
 	var prints []string
 
 	cbs := &sdkservices.RunCallbacks{
-		Print: func(_ context.Context, _ sdktypes.RunID, msg string) {
+		Print: func(_ context.Context, _ sdktypes.RunID, msg string) error {
 			if !quiet {
 				fmt.Println(msg)
 			}
 			prints = append(prints, msg)
+			return nil
 		},
+		Load: func(context.Context, sdktypes.RunID, string) (map[string]sdktypes.Value, error) {
+			return nil, sdkerrors.ErrNotFound
+		},
+		Call: func(context.Context, sdktypes.RunID, sdktypes.Value, []sdktypes.Value, map[string]sdktypes.Value) (sdktypes.Value, error) {
+			return sdktypes.InvalidValue, sdkerrors.ErrNotImplemented
+		},
+		NewRunID: func() (sdktypes.RunID, error) { return sdktypes.NewRunID(), nil },
+		Sleep:    func(_ context.Context, _ sdktypes.RunID, d time.Duration) error { time.Sleep(d); return nil },
+		Now:      func(context.Context, sdktypes.RunID) (time.Time, error) { return time.Now().UTC(), nil },
 	}
 
 	if tmo > 0 {

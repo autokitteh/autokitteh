@@ -15,6 +15,10 @@ import (
 )
 
 func (vctx *Context) ToStarlarkValue(v sdktypes.Value) (starlark.Value, error) {
+	if !v.IsValid() {
+		return starlark.None, nil
+	}
+
 	switch vv := v.Concrete().(type) {
 	case sdktypes.FunctionValue:
 		return vctx.functionToStarlark(v)
