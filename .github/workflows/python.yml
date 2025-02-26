@@ -1,6 +1,6 @@
-# https://github.com/marketplace/actions/setup-go-environment
 # https://github.com/marketplace/actions/setup-python
 # https://github.com/actions/setup-python/blob/main/docs/advanced-usage.md
+# https://github.com/marketplace/actions/setup-go-environment
 
 name: CI - Python
 
@@ -21,14 +21,15 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
       - name: Download Go modules
         run: go mod download
       - name: Install gotestsum
         run: go install gotest.tools/gotestsum@latest
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
       - name: Test
         run: gotestsum -f github-actions -- -trimpath ./runtimes/pythonrt/...
@@ -51,7 +52,7 @@ jobs:
   python-session-tests:
     name: Python Session tests
     runs-on: ubuntu-latest
-    timeout-minutes: 30  # TODO(ENG-2037): 10
+    timeout-minutes: 10
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -59,21 +60,18 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: pip
-          cache-dependency-path: |
-            **/requirements.txt
       - name: Download Go modules
         run: go mod download
       - name: Install gotestsum
         run: go install gotest.tools/gotestsum@latest
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       - name: Build AK
         run: go build -trimpath -o bin/ak ./cmd/ak
 
-      # TODO(ENG-2037): Re-enable timeout (default 10m or custom one).
       - name: Test
-        run: gotestsum -f github-actions -- -timeout 0 -trimpath ./tests/sessions/... -run /python
+        run: gotestsum -f github-actions -- -trimpath ./tests/sessions/... -run /python
