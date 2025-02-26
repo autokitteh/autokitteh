@@ -23,6 +23,8 @@ var testFiles embed.FS
 func TestSessions(t *testing.T) {
 	akPath := tests.AKPath(t)
 
+	tests.SwitchToTempDir(t) // TODO(ENG-2037): Bandaid for test runtime.
+
 	err := fs.WalkDir(testFiles, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -48,7 +50,7 @@ func runTest(t *testing.T, akPath, txtarPath string) {
 			t.Fatalf("failed to convert %q to absolute path: %v", txtarPath, err)
 		}
 
-		tests.SwitchToTempDir(t) // For test isolation.
+		// TODO(ENG-2037): tests.SwitchToTempDir(t) // For test isolation.
 
 		server, err := tests.StartAKServer(akPath)
 		defer server.Stop()
