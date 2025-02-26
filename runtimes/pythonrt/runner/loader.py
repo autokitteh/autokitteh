@@ -23,28 +23,19 @@ class Transformer(ast.NodeTransformer):
     def __init__(self, file_name, src):
         self.file_name = file_name
         self.code_lines = src.splitlines()
-        # Indent of class/function definition. -1 means top level code
-        self.fn_indent = -1
+        # We should patch only inside function/class
+        self.patch = False
 
     def visit(self, node):
         # Visit AST nodes. We keep track of functions and indent, in order not to patch
         # module level calls.
-        indent = getattr(node, "col_offset", None)
-        if indent is None:  # Module and others don't have col_offset
+        if isinstance(node, (ast.FunctionDef, ast.ClassDef)) and not self.patch:
+            self.patch = True
             self.generic_visit(node)
+            self.patch = False
             return node
 
-        is_def = isinstance(node, (ast.FunctionDef, ast.ClassDef))
-        if is_def and self.fn_indent == -1:
-            self.fn_indent = indent
-            self.generic_visit(node)
-            return node
-
-        # Dedent only if it's not another function definition
-        if indent <= self.fn_indent and not is_def:
-            self.fn_indent = -1
-
-        if not isinstance(node, ast.Call) or self.fn_indent == -1:
+        if not isinstance(node, ast.Call) or not self.patch:
             self.generic_visit(node)
             return node
 
