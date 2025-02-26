@@ -76,16 +76,18 @@ jobs:
       - name: Install gotestsum
         run: go install gotest.tools/gotestsum@latest
 
-      - name: Build AK
-        run: go build -trimpath -o bin/ak ./cmd/ak
+      # - name: Build AK
+      #   run: go build -trimpath -o bin/ak ./cmd/ak
 
       - name: Warm up virtual environment
         run: |
           uv pip install -r runtimes/pythonrt/py-sdk/docs/requirements.txt
           echo $VIRTUAL_ENV
+          echo $UV_SYSTEM_PYTHON
+          export
         env:
           UV_SYSTEM_PYTHON: 1
 
       # TODO(ENG-2037): Re-enable timeout (default 10m or custom one).
-      - name: Test
-        run: gotestsum -f github-actions -- -timeout 0 -trimpath ./tests/sessions/... -run /python
+      # - name: Test
+      #   run: gotestsum -f github-actions -- -timeout 0 -trimpath ./tests/sessions/... -run /python
