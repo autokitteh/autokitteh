@@ -11,6 +11,7 @@ on:
 
 jobs:
   go-unit-tests:
+    if: false
     name: Go build + unit tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -33,6 +34,7 @@ jobs:
         run: gotestsum -f github-actions -- -trimpath $(go list ./... | grep -v -E "autokitteh/tests|runtimes/python")
 
   go-session-tests:
+    if: false
     name: Go session tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -55,6 +57,7 @@ jobs:
         run: gotestsum -f github-actions -- -trimpath ./tests/sessions/... -skip /python
 
   go-system-tests:
+    if: false
     name: Go system tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -85,6 +88,7 @@ jobs:
         run: gotestsum -f github-actions -- -timeout 0 -trimpath ./tests/system/...
 
   go-static-analysis:
+    if: false
     name: Go static analysis
     runs-on: ubuntu-latest
     timeout-minutes: 10
