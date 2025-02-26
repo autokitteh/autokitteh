@@ -133,13 +133,10 @@ func requestToData(r *http.Request) (map[string]sdktypes.Value, error) {
 }
 
 func bodyData(body []byte, form url.Values) sdktypes.Value {
-	bytes := sdktypes.Nothing
+	text, bytes := sdktypes.Nothing, sdktypes.Nothing
+
 	if len(body) > 0 {
 		bytes = sdktypes.NewBytesValue(body)
-	}
-
-	text := sdktypes.Nothing
-	if body != nil {
 		text = sdktypes.NewStringValue(string(body))
 	}
 
