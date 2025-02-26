@@ -138,10 +138,15 @@ func bodyData(body []byte, form url.Values) sdktypes.Value {
 		bytes = sdktypes.NewBytesValue(body)
 	}
 
+	text := sdktypes.Nothing
+	if body != nil {
+		text = sdktypes.NewStringValue(string(body))
+	}
+
 	return sdktypes.NewDictValueFromStringMap(
 		map[string]sdktypes.Value{
 			"bytes": bytes,
-			"text":  sdktypes.NewStringValue(string(body)),
+			"text":  text,
 			"form":  formData(form),
 			"json":  jsonData(body),
 		},
