@@ -3,10 +3,14 @@ import sys
 import time
 from pathlib import Path
 
+import autokitteh
 from autokitteh import decorators
 
 import log
 from deterministic import is_deterministic
+
+
+ak_mod_name = autokitteh.__name__
 
 
 def activity_marker(fn):
@@ -76,6 +80,10 @@ class AKCall:
         mark = activity_marker(fn)
         if mark in (True, False):
             return mark
+
+        fnmod = fn.__module__
+        if fnmod and (fnmod == ak_mod_name or fnmod.startswith(ak_mod_name + ".")):
+            return False
 
         if is_deterministic(fn):
             return False
