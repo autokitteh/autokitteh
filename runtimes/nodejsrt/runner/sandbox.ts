@@ -30,14 +30,14 @@ async function patchDir(dir: string): Promise<void> {
         if (!file.endsWith(".js") && !file.endsWith(".ts")) {
             continue
         }
-        let code = fs.readFileSync(file, "utf8");
+        let code = await fs.promises.readFile(file, "utf8");
         try {
             code = await patchCode(code)
             if (file.endsWith(".ts")) {
                 code = await transpile(code, file);
             }
             let newFile = file.replace(".ts", ".js")
-            fs.appendFileSync(newFile, code, 'utf-8');
+            await fs.promises.writeFile(newFile, code, 'utf-8');
         } catch (err) {
             console.error(err);
         }
@@ -58,11 +58,11 @@ export class Sandbox {
         this.codeDir = codeDir;
         this.context = {};
         this.ak_call = ak_call;
+        this.prepareCodeDir();
         this.initContext()
     }
 
-    setCodeDir(codeDir: string): void {
-        this.codeDir = codeDir;
+    prepareCodeDir(): void {
         let output = execSync(`cd ${this.codeDir}; npm install`).toString();
         console.log(output);
     }

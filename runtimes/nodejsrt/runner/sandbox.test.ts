@@ -5,17 +5,11 @@ test('typescript hooking async', async () => {
     const hookFunc = async (...args: any): Promise<string> => {
         let f = args[0];
         let f_args = args.slice(1)
-
-        if (f.ak_call === true) {
-            hookCalled = true;
-            return "yay"
-        }
-
         return await f(...f_args);
     }
 
-    const sandbox = new Sandbox("test_data/demo_async", hookFunc);
-    await sandbox.loadFile("test_data/demo_async/main.ts");
+    const sandbox = new Sandbox("/Users/adiludmer/GolandProjects/autokitteh/runtimes/nodejsrt/runner/test_data/replay-demo", hookFunc);
+    await sandbox.loadFile("/Users/adiludmer/GolandProjects/autokitteh/runtimes/nodejsrt/runner/test_data/replay-demo/main.ts");
     await sandbox.run("on_event", [1], () => {})
     expect(hookCalled).toBe(true);
 });
