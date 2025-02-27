@@ -31,6 +31,7 @@ const (
 	addSessionPrintActivityName             = "add_session_print_value"
 	deactivateDrainedDeploymentActivityName = "deactivate_drained_deployment"
 	getDeploymentStateActivityName          = "get_deployment_state"
+	createSessionActivityName               = "create_session"
 )
 
 func (ws *workflows) registerActivities() {
@@ -88,6 +89,15 @@ func (ws *workflows) registerActivities() {
 		ws.getDeploymentStateActivity,
 		activity.RegisterOptions{Name: getDeploymentStateActivityName},
 	)
+
+	ws.worker.RegisterActivityWithOptions(
+		ws.createSessionActivity,
+		activity.RegisterOptions{Name: createSessionActivityName},
+	)
+}
+
+func (ws *workflows) createSessionActivity(ctx context.Context, session sdktypes.Session) error {
+	return temporalclient.TranslateError(ws.svcs.DB.CreateSession(ctx, session), "%v: create session", session.ID())
 }
 
 func (ws *workflows) updateSessionStateActivity(ctx context.Context, sid sdktypes.SessionID, state sdktypes.SessionState) error {
