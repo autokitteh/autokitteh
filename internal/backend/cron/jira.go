@@ -199,11 +199,12 @@ func (cr *Cron) deleteInvalidWatchID(ctx context.Context, cid sdktypes.Connectio
 }
 
 func parseTimeSafely(s string) time.Time {
-	// Remove unnecessary suffixes, e.g. "PST m=+3759.281638293".
-	s = regexp.MustCompile(`\s+[A-Z].*`).ReplaceAllString(s, "")
+	// Remove unnecessary suffixes: sub-seconds and "PST m=+3759.281638293".
+	s = regexp.MustCompile(` [A-Z].*`).ReplaceAllString(s, "")
+	s = regexp.MustCompile(`\.\d+`).ReplaceAllString(s, "")
 
 	// Go time format.
-	if t, err := time.Parse("2006-01-02 15:04:05.999999999 -0700", s); err == nil {
+	if t, err := time.Parse("2006-01-02 15:04:05 -0700", s); err == nil {
 		return t
 	}
 

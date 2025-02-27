@@ -72,7 +72,9 @@ func MigrateDateTimeToRFC3339(ctx context.Context, v sdkservices.Vars, vsid sdkt
 		return nil
 	}
 
+	// Remove unnecessary suffixes: sub-seconds and "PST m=+3759.281638293".
 	s = regexp.MustCompile(` [A-Z].*`).ReplaceAllString(s, "")
+	s = regexp.MustCompile(`\.\d+`).ReplaceAllString(s, "")
 	t, err := time.Parse("2006-01-02 15:04:05 -0700", s)
 	if err != nil {
 		return err
