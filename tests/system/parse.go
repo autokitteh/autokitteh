@@ -54,10 +54,11 @@ type akTestConfig struct {
 }
 
 type testConfig struct {
-	// Extra up configuration options.
+	// Extra "ak up" configuration options.
 	Server map[string]any `json:"server" yaml:"server"`
 
 	// If set, only this test will run.
+	// Same as the "-run" flag in "go test", but easier to use.
 	Exclusive bool `json:"exclusive" yaml:"exclusive"`
 
 	// General config for the test itself.

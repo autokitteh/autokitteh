@@ -21,12 +21,7 @@ const (
 var testFiles embed.FS
 
 func TestSessions(t *testing.T) {
-	akPath := tests.AKPath(t)
-
-	venvPath := tests.CreatePythonVenv(t)
-	t.Cleanup(func() {
-		tests.DeletePythonVenv(t, venvPath)
-	})
+	akPath, venvPath := setUpSuite(t)
 
 	err := fs.WalkDir(testFiles, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -45,24 +40,32 @@ func TestSessions(t *testing.T) {
 	}
 }
 
+func setUpSuite(t *testing.T) (akPath, venvPath string) {
+	// https://docs.temporal.io/dev-guide/go/debugging
+	t.Setenv("TEMPORAL_DEBUG", "true")
+
+	akPath = tests.AKPath(t)
+
+	venvPath = tests.CreatePythonVenv(t)
+	t.Cleanup(func() {
+		tests.DeletePythonVenv(t, venvPath)
+	})
+
+	return
+}
+
 func runTest(t *testing.T, akPath, venvPath, txtarPath string) {
 	t.Run(txtarPath, func(t *testing.T) {
-		// Start AK server.
-		absPath, err := filepath.Abs(txtarPath)
-		if err != nil {
-			t.Fatalf("failed to convert %q to absolute path: %v", txtarPath, err)
-		}
-
 		tests.SwitchToTempDir(t, venvPath) // For test isolation.
 
-		server, err := tests.StartAKServer(akPath)
-		defer server.Stop()
+		server, err := tests.StartAKServer(akPath, "dev")
+		t.Cleanup(server.Stop)
 		if err != nil {
 			server.PrintLog(t)
 			t.Fatal(err)
 		}
 
-		// Creaet project.
+		// Create project.
 		projName := fmt.Sprintf("test_%d", rand.Uint32())
 		args := []string{"project", "create", "--name", projName}
 		result, err := tests.RunAKClient(akPath, server.Addr, "", clientTimeout, args)
@@ -76,6 +79,11 @@ func runTest(t *testing.T, akPath, venvPath, txtarPath string) {
 		}
 
 		// Run session test.
+		absPath, err := filepath.Abs(txtarPath)
+		if err != nil {
+			t.Fatalf("failed to convert %q to absolute path: %v", txtarPath, err)
+		}
+
 		args = []string{"session", "test", absPath, "--project", projName}
 		result, err = tests.RunAKClient(akPath, server.Addr, "", clientTimeout, args)
 		if err != nil {

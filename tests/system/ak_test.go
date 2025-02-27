@@ -31,7 +31,6 @@ import (
 )
 
 const (
-	rootDir     = "testdata"
 	stopTimeout = 3 * time.Second
 )
 
@@ -39,13 +38,14 @@ const (
 var testFiles embed.FS
 
 func TestSystem(t *testing.T) {
-	akPath := setUpSuite(t)
-	tests := make(map[string]*testFile)
+	akPath, venvPath := setUpSuite(t)
+
+	testCases := make(map[string]*testFile)
 	var exclusives []string
 
 	// Each .txtar file is a test-case, with potentially
 	// multiple actions, checks, and embedded files.
-	err := fs.WalkDir(testFiles, rootDir, func(path string, d fs.DirEntry, err error) error {
+	err := fs.WalkDir(testFiles, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -59,10 +59,10 @@ func TestSystem(t *testing.T) {
 			return err
 		}
 
-		path = strings.TrimPrefix(path, rootDir+"/")
+		path = strings.TrimPrefix(path, "testdata/")
+		testCases[path] = f
 
-		tests[path] = f
-
+		// Same as the "-run" flag in "go test", but easier to use.
 		if f.config.Exclusive {
 			exclusives = append(exclusives, path)
 		}
@@ -73,18 +73,20 @@ func TestSystem(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Same as the "-run" flag in "go test", but easier to use.
 	filter := func(string) bool { return true }
 	if len(exclusives) > 0 {
 		filter = kittehs.ContainedIn(exclusives...)
 	}
 
-	for path, test := range tests {
+	for path, test := range testCases {
 		t.Run(path, func(t *testing.T) {
 			if !filter(path) {
 				t.Skip("skipping")
 			}
 
-			prepTestFiles(t, test.a)
+			tests.SwitchToTempDir(t, venvPath) // For test isolation.
+			writeEmbeddedFiles(t, test.a.Files)
 
 			akAddr := setUpTest(t, akPath, test.config.Server)
 			runTestSteps(t, test.steps, akPath, akAddr, &test.config)
@@ -92,16 +94,21 @@ func TestSystem(t *testing.T) {
 	}
 }
 
-func setUpSuite(t *testing.T) string {
+func setUpSuite(t *testing.T) (akPath, venvPath string) {
 	// https://docs.temporal.io/dev-guide/go/debugging
 	t.Setenv("TEMPORAL_DEBUG", "true")
 
-	return tests.AKPath(t)
+	akPath = tests.AKPath(t)
+
+	venvPath = tests.CreatePythonVenv(t)
+	t.Cleanup(func() {
+		tests.DeletePythonVenv(t, venvPath)
+	})
+
+	return
 }
 
 func setUpTest(t *testing.T, akPath string, cfg map[string]any) string {
-	// TODO: Replace "/backend/internal/temporalclient/client.go"?
-
 	setFirstUser()
 
 	// Start the AK server.

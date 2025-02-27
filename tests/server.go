@@ -17,7 +17,6 @@ type AKServer struct {
 }
 
 const (
-	serverMode   = "dev"
 	addrFilename = "ak_addr"
 	logFilename  = "ak_server.log"
 	startTimeout = 10 * time.Second
@@ -27,8 +26,8 @@ const (
 // If the server started but isn't responding, we still return
 // the process details, so the caller can kill the entire process group.
 // It is assumed that the working directory is temporary and isolated.
-func StartAKServer(akPath string) (*AKServer, error) {
-	cmd := exec.Command(akPath, "up", "--mode", serverMode)
+func StartAKServer(akPath, akMode string) (*AKServer, error) {
+	cmd := exec.Command(akPath, "up", "--mode", akMode)
 
 	// Associate AK's child processes (e.g. Temporal) with the
 	// same process group as AK, to kill them all together.

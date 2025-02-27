@@ -10,8 +10,6 @@ import (
 
 	"golang.org/x/tools/txtar"
 	"gopkg.in/yaml.v2"
-
-	"go.autokitteh.dev/autokitteh/tests"
 )
 
 type testFile struct {
@@ -40,12 +38,6 @@ func readTestFile(t *testing.T, testFiles fs.FS, path string) (*testFile, error)
 	}
 
 	return parseTestFile(t, a), nil
-}
-
-func prepTestFiles(t *testing.T, a *txtar.Archive) *testFile {
-	tests.SwitchToTempDir(t) // For test isolation.
-	writeEmbeddedFiles(t, a.Files)
-	return parseTestFile(t, a)
 }
 
 func parseTestFile(t *testing.T, a *txtar.Archive) *testFile {
