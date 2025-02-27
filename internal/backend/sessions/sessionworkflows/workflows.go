@@ -328,10 +328,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 			pid.String(),
 			"",
 			sessionSignalName(session.ID()),
-			&sdkservices.RunSignal{
-				Source:  session.ID(),
-				Payload: sdktypes.NewDictValueFromStringMap(payload),
-			},
+			sdktypes.NewDictValueFromStringMap(payload),
 		).Get(dwctx, nil); err != nil {
 			l.With(zap.Error(err)).Sugar().Errorf("signal parent session: %v", err)
 		}

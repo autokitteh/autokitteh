@@ -122,22 +122,22 @@ class UnsubscribeResponse(_message.Message):
     def __init__(self, error: _Optional[str] = ...) -> None: ...
 
 class Signal(_message.Message):
-    __slots__ = ["session_id", "name", "payload"]
-    SESSION_ID_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ["name", "payload"]
     NAME_FIELD_NUMBER: _ClassVar[int]
     PAYLOAD_FIELD_NUMBER: _ClassVar[int]
-    session_id: str
     name: str
     payload: _values_pb2.Value
-    def __init__(self, session_id: _Optional[str] = ..., name: _Optional[str] = ..., payload: _Optional[_Union[_values_pb2.Value, _Mapping]] = ...) -> None: ...
+    def __init__(self, name: _Optional[str] = ..., payload: _Optional[_Union[_values_pb2.Value, _Mapping]] = ...) -> None: ...
 
 class SignalRequest(_message.Message):
-    __slots__ = ["runner_id", "signal"]
+    __slots__ = ["runner_id", "signal", "session_id"]
     RUNNER_ID_FIELD_NUMBER: _ClassVar[int]
     SIGNAL_FIELD_NUMBER: _ClassVar[int]
+    SESSION_ID_FIELD_NUMBER: _ClassVar[int]
     runner_id: str
     signal: Signal
-    def __init__(self, runner_id: _Optional[str] = ..., signal: _Optional[_Union[Signal, _Mapping]] = ...) -> None: ...
+    session_id: str
+    def __init__(self, runner_id: _Optional[str] = ..., signal: _Optional[_Union[Signal, _Mapping]] = ..., session_id: _Optional[str] = ...) -> None: ...
 
 class SignalResponse(_message.Message):
     __slots__ = ["error"]

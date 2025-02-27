@@ -78,7 +78,6 @@ type Run interface {
 }
 
 type RunSignal struct {
-	Name    string             `json:"name"`
-	Source  sdktypes.SessionID `json:"source"`
-	Payload sdktypes.Value     `json:"payload"`
+	Name    string         `json:"name"`
+	Payload sdktypes.Value `json:"payload"`
 }
