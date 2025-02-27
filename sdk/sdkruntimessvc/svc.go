@@ -139,10 +139,12 @@ func (s *svc) Run(ctx context.Context, req *connect.Request[runtimesv1.RunReques
 	}
 
 	cbs := &sdkservices.RunCallbacks{
-		Print: func(_ context.Context, _ sdktypes.RunID, msg string) {
-			if err := stream.Send(&runtimesv1.RunResponse{Print: msg}); err != nil {
+		Print: func(_ context.Context, _ sdktypes.RunID, msg string) (err error) {
+			if err = stream.Send(&runtimesv1.RunResponse{Print: msg}); err != nil {
 				s.z.Error("failed to send print message", zap.Error(err))
 			}
+
+			return
 		},
 	}
 

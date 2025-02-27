@@ -3,30 +3,20 @@
 # All exported symbols must be declared using "# EXPORT:" comments.
 
 # The followings are always supplied by the runtime: {
-# EXPORT: run_activity
+# EXPORT: ak
 # EXPORT: catch
 # EXPORT: fail
 # EXPORT: globals
 # EXPORT: module
-# EXPORT: struct
-# }
-#
-# TODO: Move the below to be supplied by the project build.
-# The followings are always supplied by the session: {
-# EXPORT: ak
-# EXPORT: os
 # EXPORT: rand
-# EXPORT: store
-# EXPORT: time
+# EXPORT: run_activity
+# EXPORT: sleep
+# EXPORT: struct
 # }
 
 # EXPORT: nop
 def nop():
     pass
-
-# EXPORT: sleep
-def sleep(*args, **kwargs):
-    return ak.sleep(*args, **kwargs)
 
 # EXPORT: start
 def start(*args, **kwargs):
@@ -43,6 +33,14 @@ def next_event(*args, **kwargs):
 # EXPORT: unsubscribe
 def unsubscribe(*args, **kwargs):
     return ak.unsubscribe(*args, **kwargs)
+
+# EXPORT: next_signal
+def next_signal(*args, **kwargs):
+    return ak.next_signal(*args, **kwargs)
+
+# EXPORT: signal
+def signal(*args, **kwargs):
+    return ak.signal(*args, **kwargs)
 
 # EXPORT: test
 def test():

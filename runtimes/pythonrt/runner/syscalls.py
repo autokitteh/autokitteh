@@ -11,8 +11,9 @@ from datetime import timedelta
 import grpc
 import log
 import pb.autokitteh.user_code.v1.handler_svc_pb2 as pb
-from autokitteh import AttrDict
+from autokitteh import AttrDict, Signal
 from autokitteh.decorators import ACTIVITY_ATTR
+import values
 
 
 class SyscallError(Exception):
@@ -23,6 +24,18 @@ def mark_no_activity(fn):
     """Mark that a function should not run as activity."""
     setattr(fn, ACTIVITY_ATTR, False)
     return fn
+
+
+def _timeout_arg_into_ms(timeout: timedelta | int | float) -> int:
+    if not timeout:
+        return 0
+
+    if isinstance(timeout, int | float):
+        return int(timeout * 1000)
+    elif isinstance(timeout, timedelta):
+        return int(timeout.total_seconds() * 1000)
+
+    raise TypeError(f"timeout {timeout!r} should be a timedelta or number of seconds")
 
 
 class SysCalls:
@@ -68,14 +81,15 @@ class SysCalls:
 
         call_grpc("sleep", self.worker.Sleep, req)
 
-    def ak_subscribe(self, connection_id: str, filter: str) -> str:
-        log.info("ak_subscribe: %r %r", connection_id, filter)
-        if not connection_id or not filter:
-            raise ValueError("missing connection_id or filter")
+    def ak_subscribe(self, source: str, filter: str = "") -> str:
+        log.info("ak_subscribe: %r %r", source, filter)
+        if not source:
+            raise ValueError("missing source")
 
         req = pb.SubscribeRequest(
-            runner_id=self.runner_id, connection=connection_id, filter=filter
+            runner_id=self.runner_id, connection=source, filter=filter
         )
+
         resp = call_grpc("subscribe", self.worker.Subscribe, req)
         return resp.signal_id
 
@@ -86,16 +100,11 @@ class SysCalls:
         if isinstance(ids, str):
             ids = [ids]
 
-        req = pb.NextEventRequest(runner_id=self.runner_id, signal_ids=ids)
-        if timeout:
-            if isinstance(timeout, int | float):
-                req.timeout_ms = int(timeout * 1000)
-            elif isinstance(timeout, timedelta):
-                req.timeout_ms = int(timeout.total_seconds() * 1000)
-            else:
-                raise TypeError(
-                    f"timeout {timeout!r} should be a timedelta or number of seconds"
-                )
+        req = pb.NextEventRequest(
+            runner_id=self.runner_id,
+            signal_ids=ids,
+            timeout_ms=_timeout_arg_into_ms(timeout),
+        )
 
         resp = call_grpc("next_event", self.worker.NextEvent, req)
 
@@ -135,6 +144,48 @@ class SysCalls:
         if resp.error:
             raise SyscallError(f"refresh_oauth: {resp.error}")
         return resp.token, resp.expires.ToDatetime()
+
+    def ak_signal(self, session_id: str, name: str, payload: any = None) -> None:
+        log.info("signal: %r %r", session_id, name)
+
+        req = pb.SignalRequest(
+            runner_id=self.runner_id,
+            signal=pb.Signal(
+                session_id=session_id,
+                name=name,
+                payload=values.wrap(payload),
+            ),
+        )
+
+        call_grpc("signal", self.worker.Signal, req)
+
+    def ak_next_signal(
+        self, name: str | list[str], *, timeout: timedelta | int | float = None
+    ) -> Signal:
+        log.info("ak_next_signal: %r %r", name, timeout)
+
+        names = name
+        if isinstance(names, str):
+            names = [names]
+
+        req = pb.NextSignalRequest(
+            runner_id=self.runner_id,
+            names=names,
+            timeout_ms=_timeout_arg_into_ms(timeout),
+        )
+
+        resp = call_grpc("next_signal", self.worker.NextSignal, req)
+
+        sig = resp.signal
+
+        if not sig.name:
+            return None
+
+        return Signal(
+            name=sig.name,
+            source=sig.session_id,
+            payload=values.unwrap(sig.payload),
+        )
 
     @classmethod
     def mark_ak_no_activity(cls):

@@ -176,7 +176,7 @@ def unwrap(v: pb.Value, custom: Callable[[pb.Value], Any] = None) -> Any:
     True
     """
 
-    if v.HasField("nothing"):
+    if v is None or v.HasField("nothing"):
         return None
     if v.HasField("integer"):
         return v.integer.v

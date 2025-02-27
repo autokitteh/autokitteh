@@ -42,6 +42,9 @@ type ValueWrapper struct {
 	// Unwrap: transform duration into microseconds, do not convert to string.
 	RawDuration bool
 
+	// Unwrap: if true, add a "__ctor" field to struct values.
+	UnwrapStructCtor bool
+
 	// Unwrap: Transform value before unwrapping. If returns InvalidValue, ignore value.
 	Preunwrap func(Value) (Value, error)
 

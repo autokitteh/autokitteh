@@ -160,7 +160,7 @@ func newCallbacks(svc *pySvc) *sdkservices.RunCallbacks {
 		Load: func(ctx context.Context, rid sdktypes.RunID, path string) (map[string]sdktypes.Value, error) {
 			return map[string]sdktypes.Value{}, nil
 		},
-		Print: func(ctx context.Context, rid sdktypes.RunID, msg string) {},
+		Print: func(ctx context.Context, rid sdktypes.RunID, msg string) error { return nil },
 	}
 
 	return &cbs
