@@ -52,15 +52,21 @@ type RunCallbacks struct {
 	// Returns sdktypes.ProgramErrorAsError if not internal error.
 	Call func(ctx context.Context, rid sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error)
 
-	Print              func(ctx context.Context, rid sdktypes.RunID, text string) error
-	NewRunID           func() (sdktypes.RunID, error)
-	Sleep              func(ctx context.Context, rid sdktypes.RunID, d time.Duration) error
-	Now                func(ctx context.Context, rid sdktypes.RunID) (time.Time, error)
-	Start              func(ctx context.Context, rid sdktypes.RunID, loc sdktypes.CodeLocation, inputs map[string]sdktypes.Value, memo map[string]string) (sdktypes.SessionID, error)
-	Subscribe          func(ctx context.Context, rid sdktypes.RunID, name, filter string) (string, error)
-	Unsubscribe        func(ctx context.Context, rid sdktypes.RunID, signalID string) error
-	NextEvent          func(ctx context.Context, rid sdktypes.RunID, signalIDs []string, timeout time.Duration) (sdktypes.Value, error)
 	IsDeploymentActive func(ctx context.Context) (bool, error)
+	NewRunID           func() (sdktypes.RunID, error)
+	Now                func(ctx context.Context, rid sdktypes.RunID) (time.Time, error)
+	Print              func(ctx context.Context, rid sdktypes.RunID, text string) error
+	Sleep              func(ctx context.Context, rid sdktypes.RunID, d time.Duration) error
+	Start              func(ctx context.Context, rid sdktypes.RunID, loc sdktypes.CodeLocation, inputs map[string]sdktypes.Value, memo map[string]string) (sdktypes.SessionID, error)
+
+	// Events
+	Subscribe   func(ctx context.Context, rid sdktypes.RunID, name, filter string) (string, error)
+	Unsubscribe func(ctx context.Context, rid sdktypes.RunID, signalID string) error
+	NextEvent   func(ctx context.Context, rid sdktypes.RunID, signalIDs []string, timeout time.Duration) (sdktypes.Value, error)
+
+	// Signals
+	Signal     func(ctx context.Context, rid sdktypes.RunID, sid sdktypes.SessionID, name string, payload sdktypes.Value) error
+	NextSignal func(ctx context.Context, rid sdktypes.RunID, names []string, timeout time.Duration) (*RunSignal, error)
 }
 
 type Run interface {
@@ -69,4 +75,10 @@ type Run interface {
 	Close()
 
 	sdkexecutor.Executor
+}
+
+type RunSignal struct {
+	Name    string             `json:"name"`
+	Source  sdktypes.SessionID `json:"source"`
+	Payload sdktypes.Value     `json:"payload"`
 }

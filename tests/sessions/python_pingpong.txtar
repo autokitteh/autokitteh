@@ -1,0 +1,37 @@
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+
+-- main.py player1 --
+from autokitteh import start, signal, next_signal
+
+def player1(event):
+    p2 = start("main.py:player2", {"p1": event.session_id})
+
+    x = 0
+    while True:
+        signal(p2, "ping", x)
+
+        sig = next_signal(["pong", p2])
+
+        x = sig.payload
+        if sig.name == p2:
+            return
+
+        print(x)
+
+def player2(event):
+    p1 = event.data["p1"]
+
+    while True:
+        sig = next_signal(["ping", "done"])
+        if sig.payload == 10:
+            return
+        signal(p1, "pong", sig.payload + 1)

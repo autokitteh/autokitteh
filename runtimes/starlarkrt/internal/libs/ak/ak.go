@@ -6,20 +6,24 @@ import (
 	"time"
 
 	"go.starlark.net/starlark"
+	"go.starlark.net/starlarkstruct"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/runtimes/starlarkrt/internal/tls"
 	"go.autokitteh.dev/autokitteh/runtimes/starlarkrt/internal/values"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 func LoadModule() starlark.StringDict {
 	return starlark.StringDict{
+		"is_deployment_active": starlark.NewBuiltin("is_deployment_active", IsDeploymentActive),
+		"next_event":           starlark.NewBuiltin("next_event", nextEvent),
+		"next_signal":          starlark.NewBuiltin("next_signal", nextSignal),
+		"signal":               starlark.NewBuiltin("signal", signal),
 		"start":                starlark.NewBuiltin("start", start),
 		"subscribe":            starlark.NewBuiltin("subscribe", subscribe),
 		"unsubscribe":          starlark.NewBuiltin("unsubscribe", unsubscribe),
-		"next_event":           starlark.NewBuiltin("next_event", nextEvent),
-		"is_deployment_active": starlark.NewBuiltin("is_deployment_active", IsDeploymentActive),
 	}
 }
 
@@ -40,17 +44,24 @@ func start(th *starlark.Thread, bi *starlark.Builtin, args starlark.Tuple, kwarg
 
 	vctx := values.FromTLS(th)
 
-	sdkInputs := make(map[string]sdktypes.Value, inputs.Len())
+	var sdkInputs map[string]sdktypes.Value
 	if inputs != nil {
+		sdkInputs = make(map[string]sdktypes.Value, inputs.Len())
 		for _, item := range inputs.Items() {
-			if sdkInputs[item[0].String()], err = vctx.FromStarlarkValue(item[1]); err != nil {
-				return nil, fmt.Errorf("value for %v: %w", item[0].String(), err)
+			k, ok := item[0].(starlark.String)
+			if !ok {
+				return nil, errors.New("memo: key must be a string")
+			}
+
+			if sdkInputs[k.GoString()], err = vctx.FromStarlarkValue(item[1]); err != nil {
+				return nil, fmt.Errorf("value for %v: %w", k, err)
 			}
 		}
 	}
 
-	sdkMemo := make(map[string]string, memo.Len())
+	var sdkMemo map[string]string
 	if memo != nil {
+		sdkMemo = make(map[string]string, memo.Len())
 		for _, item := range memo.Items() {
 			k, ok := item[0].(starlark.String)
 			if !ok {
@@ -166,4 +177,96 @@ func IsDeploymentActive(th *starlark.Thread, bi *starlark.Builtin, args starlark
 	}
 
 	return starlark.Bool(active), nil
+}
+
+func signal(th *starlark.Thread, bi *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
+	var (
+		sid, name string
+		payload   starlark.Value
+	)
+
+	if err := starlark.UnpackArgs(bi.Name(), args, kwargs, "session_id", &sid, "name", &name, "payload?", &payload); err != nil {
+		return nil, err
+	}
+
+	sdkSessionID, err := sdktypes.ParseSessionID(sid)
+	if err != nil {
+		return nil, sdkerrors.NewInvalidArgumentError("session_id: %w", err)
+	}
+
+	v, err := values.FromTLS(th).FromStarlarkValue(payload)
+	if err != nil {
+		return nil, sdkerrors.NewInvalidArgumentError("payload: %w", err)
+	}
+
+	tls := tls.Get(th)
+
+	if err := tls.Callbacks.Signal(tls.GoCtx, tls.RunID, sdkSessionID, name, v); err != nil {
+		return nil, err
+	}
+
+	return starlark.None, nil
+}
+
+func nextSignal(th *starlark.Thread, bi *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
+	var timeout starlark.Value
+
+	if err := starlark.UnpackArgs(bi.Name(), nil, kwargs, "timeout?", &timeout); err != nil {
+		return nil, err
+	}
+
+	names, err := kittehs.TransformError(args, func(v starlark.Value) (string, error) {
+		s, ok := v.(starlark.String)
+		if !ok {
+			return "", errors.New("names: value must be a list of strings")
+		}
+
+		return s.GoString(), nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var duration time.Duration
+	if timeout != nil {
+		errInvalid := errors.New("timeout: value must be a valid integer or float")
+
+		switch t := timeout.(type) {
+		case starlark.NoneType:
+		case starlark.Int:
+			ui64, ok := t.Int64()
+			if !ok {
+				return nil, errInvalid
+			}
+			duration = time.Duration(ui64) * time.Second
+		case starlark.Float:
+			duration = time.Duration(float64(time.Second) * float64(t))
+		default:
+			return nil, errInvalid
+		}
+	}
+
+	tls := tls.Get(th)
+	sig, err := tls.Callbacks.NextSignal(tls.GoCtx, tls.RunID, names, duration)
+	if err != nil {
+		return nil, err
+	}
+
+	if sig == nil {
+		return starlark.None, nil
+	}
+
+	payload, err := values.FromTLS(th).ToStarlarkValue(sig.Payload)
+	if err != nil {
+		return nil, fmt.Errorf("payload: %w", err)
+	}
+
+	return starlarkstruct.FromStringDict(
+		starlark.String("RunSignal"),
+		map[string]starlark.Value{
+			"name":    starlark.String(sig.Name),
+			"source":  starlark.String(sig.Source.String()),
+			"payload": payload,
+		},
+	), nil
 }
