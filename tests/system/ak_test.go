@@ -101,6 +101,7 @@ func setUpSuite(t *testing.T) (akPath, venvPath string) {
 
 	akPath = tests.AKPath(t)
 
+	tests.SetPythonPath(t)
 	venvPath = tests.CreatePythonVenv(t)
 	t.Cleanup(func() {
 		tests.DeletePythonVenv(t, venvPath)
