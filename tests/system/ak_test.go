@@ -34,7 +34,7 @@ const (
 	stopTimeout = 3 * time.Second
 )
 
-//go:embed testdata/*
+//go:embed *
 var testFiles embed.FS
 
 func TestSystem(t *testing.T) {
@@ -86,9 +86,10 @@ func TestSystem(t *testing.T) {
 			}
 
 			tests.SwitchToTempDir(t, venvPath) // For test isolation.
+			akAddr := setUpTest(t, akPath, test.config.Server)
+
 			writeEmbeddedFiles(t, test.a.Files)
 
-			akAddr := setUpTest(t, akPath, test.config.Server)
 			runTestSteps(t, test.steps, akPath, akAddr, &test.config)
 		})
 	}

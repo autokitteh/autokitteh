@@ -66,6 +66,14 @@ type testConfig struct {
 }
 
 func writeEmbeddedFiles(t *testing.T, fs []txtar.File) {
+	if err := os.Mkdir("archive", tempDirPerm); err != nil {
+		t.Fatal("failed to create directory 'archive':", err)
+	}
+
+	if err := os.Chdir("archive"); err != nil {
+		t.Fatal("failed to change working directory to 'archive':", err)
+	}
+
 	for _, f := range fs {
 		if err := os.MkdirAll(filepath.Dir(f.Name), tempDirPerm); err != nil {
 			t.Fatalf("failed to create directory for embedded file %q: %v", f.Name, err)
