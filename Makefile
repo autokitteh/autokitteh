@@ -153,7 +153,7 @@ test-starlark: bin/ak
 
 .PHONY: test-sessions
 test-sessions: bin/ak
-	$(GOTEST) ./tests/sessions/...
+	$(GOTEST) -timeout 0 ./tests/sessions/...
 
 .PHONY: proto
 proto:

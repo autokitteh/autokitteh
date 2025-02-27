@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	clientTimeout = 20 * time.Second
+	clientTimeout = 15 * time.Second
 )
 
 //go:embed *

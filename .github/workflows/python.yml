@@ -79,4 +79,4 @@ jobs:
         run: go build -trimpath -o bin/ak ./cmd/ak
 
       - name: Test
-        run: gotestsum -f github-actions -- -trimpath ./tests/sessions/... -run /python
+        run: gotestsum -f github-actions -- -timeout 0 -trimpath ./tests/sessions/... -run /python
