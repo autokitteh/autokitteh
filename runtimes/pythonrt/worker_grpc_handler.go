@@ -306,8 +306,11 @@ func (s *workerGRPCHandler) Subscribe(ctx context.Context, req *userCode.Subscri
 
 func (s *workerGRPCHandler) NextEvent(ctx context.Context, req *userCode.NextEventRequest) (*userCode.NextEventResponse, error) {
 	if len(req.SignalIds) == 0 {
-		w.log.Error("empty signal ID")
-		return nil, status.Error(codes.InvalidArgument, "at least one signal ID required")
+		return &userCode.NextEventResponse{
+			Event: &userCode.Event{
+				Data: []byte("null"),
+			},
+		}, nil
 	}
 
 	if req.TimeoutMs < 0 {
@@ -432,5 +435,73 @@ func (s *workerGRPCHandler) RefreshOAuthToken(ctx context.Context, req *userCode
 	return &userCode.RefreshResponse{
 		Token:   t.AccessToken,
 		Expires: timestamppb.New(t.Expiry),
+	}, nil
+}
+
+func (s *workerGRPCHandler) Signal(ctx context.Context, req *userCode.SignalRequest) (*userCode.SignalResponse, error) {
+	pbsig := req.Signal
+
+	sid, err := sdktypes.ParseSessionID(pbsig.SessionId)
+	if err != nil {
+		return &userCode.SignalResponse{Error: fmt.Sprintf("invalid session id: %v", err)}, nil
+	}
+
+	payload, err := sdktypes.ValueFromProto(pbsig.Payload)
+	if err != nil {
+		return &userCode.SignalResponse{Error: fmt.Sprintf("invalid payload: %v", err)}, nil
+	}
+
+	fn := func(ctx context.Context, cbs *sdkservices.RunCallbacks, rid sdktypes.RunID) (any, error) {
+		return nil, cbs.Signal(ctx, rid, sid, pbsig.Name, payload)
+	}
+
+	resp, err := s.callback(ctx, req.RunnerId, "signal", fn)
+	if err != nil {
+		return &userCode.SignalResponse{Error: err.Error()}, nil
+	}
+
+	if resp.err != nil {
+		err = status.Errorf(codes.Internal, "signal(%s,%s) -> %s", pbsig.Name, sid.String(), err)
+		return &userCode.SignalResponse{Error: err.Error()}, nil
+	}
+
+	return &userCode.SignalResponse{}, nil
+}
+
+func (s *workerGRPCHandler) NextSignal(ctx context.Context, req *userCode.NextSignalRequest) (*userCode.NextSignalResponse, error) {
+	if len(req.Names) == 0 {
+		return &userCode.NextSignalResponse{}, nil
+	}
+
+	if req.TimeoutMs < 0 {
+		w.log.Error("bad timeout", zap.Int64("timeout", req.TimeoutMs))
+		return nil, status.Error(codes.InvalidArgument, "timeout < 0")
+	}
+
+	fn := func(ctx context.Context, cbs *sdkservices.RunCallbacks, rid sdktypes.RunID) (any, error) {
+		return cbs.NextSignal(ctx, rid, req.Names, time.Duration(req.TimeoutMs)*time.Millisecond)
+	}
+
+	resp, err := s.callback(ctx, req.RunnerId, "next_signal", fn)
+	if err != nil {
+		return &userCode.NextSignalResponse{Error: err.Error()}, nil
+	}
+
+	if resp.err != nil {
+		err = status.Errorf(codes.Internal, "next_signal(%v, %d) -> %s", req.Names, req.TimeoutMs, err)
+		return &userCode.NextSignalResponse{Error: err.Error()}, nil
+	}
+
+	sig := resp.value.(*sdkservices.RunSignal)
+	if sig == nil {
+		return &userCode.NextSignalResponse{}, nil
+	}
+
+	return &userCode.NextSignalResponse{
+		Signal: &userCode.Signal{
+			SessionId: sig.Source.String(),
+			Name:      sig.Name,
+			Payload:   sig.Payload.ToProto(),
+		},
 	}, nil
 }
