@@ -37,7 +37,6 @@ endif
 VERSION_PKG_PATH="go.autokitteh.dev/autokitteh/internal/version"
 LDFLAGS+=-X '${VERSION_PKG_PATH}.Version=${VERSION}' -X '${VERSION_PKG_PATH}.Time=${TIMESTAMP}' -X '${VERSION_PKG_PATH}.Commit=${COMMIT}' -X '${VERSION_PKG_PATH}.User=$(shell whoami)' -X '${VERSION_PKG_PATH}.Host=$(shell hostname)'
 
-export AK_SYSTEST_USE_PROC_SVC=1
 export PYTHONPATH=$(PWD)/runtimes/pythonrt/py-sdk
 
 .PHONY: ak
@@ -122,7 +121,7 @@ test-cover:
 # Long-running subset of "test-unit", for simplicity.
 .PHONY: test-system
 test-system: bin/ak
-	$(GOTEST) -timeout 0 ./tests/system
+	AK_SYSTEST_USE_PROC_SVC=1 $(GOTEST) -timeout 0 ./tests/system
 
 .PHONY: test-db
 test-db:
