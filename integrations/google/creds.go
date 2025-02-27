@@ -130,7 +130,7 @@ func (h handler) saveFormID(ctx context.Context, c sdkintegrations.ConnectionIni
 
 // restoreJSONKey updates the JSON key value after a connection setup fails.
 // If a previous JSON key existed, it's restored; otherwise, it's set to empty.
-func (h handler) restoreJSONKey(ctx context.Context, cid sdktypes.ConnectionID, prevKey string) error { // TODO: change name to restore original or som
+func (h handler) restoreJSONKey(ctx context.Context, cid sdktypes.ConnectionID, prevKey string) error {
 	v := sdktypes.NewVar(vars.JSON).SetValue(prevKey).WithScopeID(sdktypes.NewVarScopeID(cid))
 	if err := h.vars.Set(ctx, v); err != nil {
 		return err
