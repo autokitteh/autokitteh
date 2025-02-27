@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	clientTimeout = 75 * time.Second // TODO: Python runner bug, should be 15s.
+	clientTimeout = 20 * time.Second
 )
 
 //go:embed *
@@ -22,6 +22,11 @@ var testFiles embed.FS
 
 func TestSessions(t *testing.T) {
 	akPath := tests.AKPath(t)
+
+	venvPath := tests.CreatePythonVenv(t)
+	t.Cleanup(func() {
+		tests.DeletePythonVenv(t, venvPath)
+	})
 
 	err := fs.WalkDir(testFiles, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -32,7 +37,7 @@ func TestSessions(t *testing.T) {
 			return nil // Skip directories and non-test files.
 		}
 
-		runTest(t, akPath, path)
+		runTest(t, akPath, venvPath, path)
 		return nil
 	})
 	if err != nil {
@@ -40,7 +45,7 @@ func TestSessions(t *testing.T) {
 	}
 }
 
-func runTest(t *testing.T, akPath, txtarPath string) {
+func runTest(t *testing.T, akPath, venvPath, txtarPath string) {
 	t.Run(txtarPath, func(t *testing.T) {
 		// Start AK server.
 		absPath, err := filepath.Abs(txtarPath)
@@ -48,7 +53,7 @@ func runTest(t *testing.T, akPath, txtarPath string) {
 			t.Fatalf("failed to convert %q to absolute path: %v", txtarPath, err)
 		}
 
-		tests.SwitchToTempDir(t) // For test isolation.
+		tests.SwitchToTempDir(t, venvPath) // For test isolation.
 
 		server, err := tests.StartAKServer(akPath)
 		defer server.Stop()

@@ -17,7 +17,7 @@ type AKServer struct {
 }
 
 const (
-	serverMode   = "test"
+	serverMode   = "dev"
 	addrFilename = "ak_addr"
 	logFilename  = "ak_server.log"
 	startTimeout = 10 * time.Second
@@ -36,14 +36,14 @@ func StartAKServer(akPath string) (*AKServer, error) {
 
 	// Server configuration.
 	cmd.Env = os.Environ()
-	cmd.Env = append(cmd.Env, "AK_HTTP__ADDR=:0")
-	cmd.Env = append(cmd.Env, "AK_HTTP__ADDR_FILENAME="+addrFilename)
-
 	cmd.Env = append(cmd.Env, "AK_DB__TYPE=sqlite")
 	cmd.Env = append(cmd.Env, "AK_DB__DSN=file:autokitteh.sqlite")
-
+	cmd.Env = append(cmd.Env, "AK_HTTP__ADDR=:0")
+	cmd.Env = append(cmd.Env, "AK_HTTP__ADDR_FILENAME="+addrFilename)
 	cmd.Env = append(cmd.Env, "AK_PPROF__ENABLE=false")
-	cmd.Env = append(cmd.Env, "AK_RUNTIMES__LAZY_LOAD_LOCAL_VENV=true")
+	cmd.Env = append(cmd.Env, "AK_PYTHONRT__LAZY_LOAD_LOCAL_VENV=false")
+	cmd.Env = append(cmd.Env, "AK_TEMPORALCLIENT__ALWAYS_START_DEV_SERVER=true")
+	cmd.Env = append(cmd.Env, "AK_WEBPLATFORM__PORT=0")
 
 	// Capture stdout and stderr in a log file.
 	log, err := os.OpenFile(logFilename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
