@@ -56,6 +56,12 @@ func setUpSuite(t *testing.T) (akPath, venvPath string) {
 
 func runTest(t *testing.T, akPath, venvPath, txtarPath string) {
 	t.Run(txtarPath, func(t *testing.T) {
+		absPath, err := filepath.Abs(txtarPath)
+		if err != nil {
+			t.Fatalf("failed to convert %q to absolute path: %v", txtarPath, err)
+		}
+
+		// Start AK server.
 		tests.SwitchToTempDir(t, venvPath) // For test isolation.
 
 		server, err := tests.StartAKServer(akPath, "dev")
@@ -79,11 +85,6 @@ func runTest(t *testing.T, akPath, venvPath, txtarPath string) {
 		}
 
 		// Run session test.
-		absPath, err := filepath.Abs(txtarPath)
-		if err != nil {
-			t.Fatalf("failed to convert %q to absolute path: %v", txtarPath, err)
-		}
-
 		args = []string{"session", "test", absPath, "--project", projName}
 		result, err = tests.RunAKClient(akPath, server.Addr, "", clientTimeout, args)
 		if err != nil {
