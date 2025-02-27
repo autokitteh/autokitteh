@@ -29,7 +29,9 @@ func (gdb *gormdb) getEvent(ctx context.Context, eventID uuid.UUID) (*scheme.Eve
 func (gdb *gormdb) listEvents(ctx context.Context, filter sdkservices.ListEventsFilter) ([]scheme.Event, error) {
 	q := gdb.reader.WithContext(ctx)
 
-	q = withProjectOrgID(q, filter.OrgID, "events")
+	if filter.OrgID.IsValid() {
+		q = q.Where("org_id = ?", filter.OrgID.UUIDValue())
+	}
 
 	if filter.ProjectID.IsValid() {
 		q = q.Where("project_id = ?", filter.ProjectID.UUIDValue())
@@ -78,9 +80,15 @@ func (db *gormdb) SaveEvent(ctx context.Context, event sdktypes.Event) error {
 		return fmt.Errorf("get project id: %w", err)
 	}
 
+	oid, err := db.GetOrgIDOf(ctx, pid)
+	if err != nil {
+		return fmt.Errorf("get org id: %w", err)
+	}
+
 	e := scheme.Event{
 		Base:          based(ctx),
 		ProjectID:     pid.UUIDValue(),
+		OrgID:         oid.UUIDValuePtr(),
 		EventID:       event.ID().UUIDValue(),
 		DestinationID: event.DestinationID().UUIDValue(),
 		ConnectionID:  uuidPtrOrNil(connectionID),

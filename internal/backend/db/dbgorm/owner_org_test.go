@@ -26,8 +26,7 @@ func TestGetOwnerOrgID(t *testing.T) {
 
 	ctx := context.Background()
 	require.NoError(t, db.Connect(ctx))
-	// No need for migrations inside unit tests:
-	// require.NoError(t, db.Setup(ctx))
+	require.NoError(t, db.Setup(ctx))
 
 	_, err = db.CreateOrg(ctx, sdktypes.NewOrg().WithID(oid))
 	require.NoError(t, err)
