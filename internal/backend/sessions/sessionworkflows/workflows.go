@@ -128,7 +128,7 @@ func memo(session sdktypes.Session, data sessiondata.Data) map[string]string {
 func (ws *workflows) StartChildWorkflow(wctx workflow.Context, childSession sdktypes.Session, parentSessionData *sessiondata.Data) (workflow.ChildWorkflowFuture, error) {
 	childSessionID := childSession.ID()
 
-	l := ws.l.Sugar().With("session_id", childSessionID)
+	l := ws.l.With(zap.Any("child_session_id", childSessionID))
 
 	data := *parentSessionData
 	data.Session = childSession
@@ -154,7 +154,7 @@ func (ws *workflows) StartChildWorkflow(wctx workflow.Context, childSession sdkt
 		return nil, fmt.Errorf("child workflow execution: %w", err)
 	}
 
-	l.With("workflow_id", r.ID, "run_id", r.RunID, "memo", memo).Infof("initiated child session workflow %v", r.ID)
+	l.With(zap.String("workflow_id", r.ID), zap.String("run_id", r.RunID), zap.Any("memo", memo)).Info("initiated child session workflow")
 
 	return f, nil
 }
