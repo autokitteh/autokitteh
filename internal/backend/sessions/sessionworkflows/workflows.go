@@ -220,7 +220,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 	)
 
 	startTime := time.Now() // we want actual start time for metrics.
-	prints, err := runWorkflow(wctx, l, ws, params)
+	prints, retVal, err := runWorkflow(wctx, l, ws, params)
 	duration := time.Since(startTime)
 
 	// from this point on we should not be doing anything really that should be cancelled.
@@ -243,6 +243,8 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 		}
 	}
 
+	workflowErr := err
+
 	if err != nil {
 		l := l.With(zap.Error(err))
 
@@ -261,7 +263,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 				sessionsProgramErrorsCounter.Add(metricsCtx, 1)
 
 				// No need to indicate the workflow as errored.
-				err = nil
+				workflowErr = nil
 			} else {
 				l.Sugar().Errorf("session workflow error: %v", err)
 				if sdkerrors.IsRetryableError(err) {
@@ -276,9 +278,33 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 		l.Info("session workflow completed with no errors")
 	}
 
+	// Signal parent session on completion.
+	if pid := session.ParentSessionID(); pid.IsValid() {
+		payload := map[string]sdktypes.Value{
+			"completed": sdktypes.NewBooleanValue(err == nil),
+		}
+
+		if err == nil {
+			payload["value"] = retVal
+		}
+
+		if err := workflow.SignalExternalWorkflow(
+			dwctx,
+			pid.String(),
+			"",
+			sessionSignalName(session.ID()),
+			&sdkservices.RunSignal{
+				Source:  session.ID(),
+				Payload: sdktypes.NewDictValueFromStringMap(payload),
+			},
+		).Get(dwctx, nil); err != nil {
+			l.With(zap.Error(err)).Sugar().Errorf("signal parent session: %v", err)
+		}
+	}
+
 	_ = workflow.ExecuteActivity(wctx, deactivateDrainedDeploymentActivityName, session.DeploymentID()).Get(wctx, nil)
 
-	return err
+	return workflowErr
 }
 
 // workflow is stopped, so this assumes the given wctx is a disconnected context.

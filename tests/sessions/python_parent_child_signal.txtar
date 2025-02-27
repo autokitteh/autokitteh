@@ -1,0 +1,36 @@
+{'completed': True, 'value': 2}
+{'completed': False}
+None
+{'completed': True, 'value': 2}
+{'completed': True, 'value': None}
+None
+
+-- main.py main --
+from time import sleep
+from autokitteh import start, signal, next_signal
+
+def main(_):
+    sid = start("main.py:fast", {"x": 1})
+    print(next_signal(sid).payload)
+
+    sid = start("main.py:naughty")
+    print(next_signal(sid).payload)
+
+    sid = start("main.py:slow", {"x": 1})
+    print(next_signal(sid, timeout=1))
+
+    sid1 = start("main.py:fast", {"x": 1})
+    sid2 = start("main.py:slow")
+    print(next_signal([sid1, sid2]).payload)
+    print(next_signal(sid2).payload)
+
+    print(next_signal(sid1, timeout=1))
+
+def fast(event):
+    return event.data.get("x") + 1
+
+def slow(_):
+    sleep(5)
+
+def naughty(_):
+    1/0

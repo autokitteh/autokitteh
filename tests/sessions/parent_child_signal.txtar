@@ -1,0 +1,34 @@
+{"completed": True, "value": 2}
+{"completed": False}
+None
+{"completed": True, "value": 2}
+{"completed": True, "value": None}
+None
+
+-- main.star main --
+
+def main():
+    sid = start("main.star:fast", {"x": 1})
+    print(next_signal(sid).payload)
+
+    sid = start("main.star:naughty")
+    print(next_signal(sid).payload)
+
+    sid = start("main.star:slow", {"x": 1})
+    print(next_signal(sid, timeout=1))
+
+    sid1 = start("main.star:fast", {"x": 1})
+    sid2 = start("main.star:slow")
+    print(next_signal(sid1, sid2).payload)
+    print(next_signal(sid2).payload)
+
+    print(next_signal(sid1, timeout=1))
+
+def fast(data):
+    return data.get("x") + 1
+
+def slow():
+    sleep(5)
+
+def naughty():
+    1/0

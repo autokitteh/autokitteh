@@ -227,8 +227,10 @@ class Runner(pb.runner_rpc.RunnerService):
         connections.encode_jwt = self.syscalls.ak_encode_jwt
         connections.refresh_oauth = self.syscalls.ak_refresh_oauth
 
-        autokitteh.start = self.syscalls.ak_start
         autokitteh.next_event = self.syscalls.ak_next_event
+        autokitteh.next_signal = self.syscalls.ak_next_signal
+        autokitteh.signal = self.syscalls.ak_signal
+        autokitteh.start = self.syscalls.ak_start
         autokitteh.subscribe = self.syscalls.ak_subscribe
         autokitteh.unsubscribe = self.syscalls.ak_unsubscribe
 
