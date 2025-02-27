@@ -157,7 +157,8 @@ type Secret struct {
 type Event struct {
 	Base
 
-	ProjectID     uuid.UUID  `gorm:"index;type:uuid"` // TODO(authz-migration): not null.
+	ProjectID     uuid.UUID  `gorm:"index;type:uuid"`                      // TODO(authz-migration): not null.
+	OrgID         *uuid.UUID `gorm:"index;index:idx_org_id_seq;type:uuid"` // use only for list.
 	EventID       uuid.UUID  `gorm:"uniqueIndex;type:uuid;not null"`
 	DestinationID uuid.UUID  `gorm:"index;type:uuid;not null"`
 	IntegrationID *uuid.UUID `gorm:"index;type:uuid"`
@@ -167,13 +168,14 @@ type Event struct {
 	EventType string `gorm:"index:idx_event_type_seq,priority:1;index:idx_event_type"`
 	Data      datatypes.JSON
 	Memo      datatypes.JSON
-	Seq       uint64 `gorm:"primaryKey;autoIncrement:true,index:idx_event_type_seq,priority:2"`
+	Seq       uint64 `gorm:"primaryKey;autoIncrement:true;index:idx_event_type_seq,priority:2;index:idx_org_id_seq"`
 
 	// enforce foreign keys
 	Connection *Connection `gorm:"constraint:OnDelete:SET NULL"`
 	Trigger    *Trigger    `gorm:"constraint:OnDelete:SET NULL"`
 
 	Project *Project
+	Org     *Org
 
 	// Redeclare here to create an index on created_at for sessions specifically
 	CreatedAt time.Time `gorm:"index"`
