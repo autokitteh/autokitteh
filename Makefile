@@ -47,11 +47,10 @@ ak: webplatform bin/ak
 # 2. Run shellcheck (shell scripts linter)
 # 3. Download latest web platform
 # 4. Rebuild protocol buffer stubs
-# 5. Build the entire Go codebase
-# 6. Run golangci-lint (Go linters)
-# 7. Build AK binary with version and/or debug info
-# 8. Run all automated tests (unit + integration)
-all: gofmt-check shellcheck webplatform proto lint build bin/ak test
+# 5. Run golangci-lint (Go linters)
+# 6. Build AK binary with version and/or debug info
+# 7. Run all automated tests (unit + integration)
+all: gofmt-check shellcheck webplatform proto lint bin/ak test
 
 .PHONY: clean
 clean:
@@ -64,11 +63,6 @@ bin: bin/ak
 .PHONY: bin/ak
 bin/ak:
 	$(GO) build --tags "${TAGS}" -o "$@" -ldflags="$(LDFLAGS)" $(GO_BUILD_OPTS) ./cmd/$(shell basename $@)
-
-.PHONY: build
-build:
-	mkdir -p $(OUTDIR)
-	$(GO) build $(GO_BUILD_OPTS) ./...
 
 .PHONY: debug
 debug:
@@ -114,7 +108,6 @@ test-unit:
 
 # Run all Go tests (including Python runtime and system tests),
 # and check for race conditions while running each of them.
-# TODO(ENG-2037): Re-enable timeout (default 10m or custom one).
 .PHONY: test-race
 test-race:
 	$(GOTEST) -timeout 0 -race ./...
@@ -123,11 +116,10 @@ test-race:
 # (including Python runtime and system tests).
 .PHONY: test-cover
 test-cover:
-	$(GOTEST) -covermode=atomic -coverprofile=tmp/cover.out ./...
+	$(GOTEST) -covermode=atomic -coverprofile=tmp/cover.out -timeout 0 ./...
 	go tool cover -html=tmp/cover.out
 
 # Long-running subset of "test-unit", for simplicity.
-# TODO(ENG-2037): Re-enable timeout (default 10m or custom one).
 .PHONY: test-system
 test-system: bin/ak
 	$(GOTEST) -timeout 0 ./tests/system
@@ -153,7 +145,7 @@ test-starlark: bin/ak
 
 .PHONY: test-sessions
 test-sessions: bin/ak
-	$(GOTEST) -timeout 0 ./tests/sessions/...
+	$(GOTEST) ./tests/sessions/...
 
 .PHONY: proto
 proto:
