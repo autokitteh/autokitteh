@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
-import config from './config.js';
-import Storage from './InvoiceStorage.js';
+import config from './config';
+import Storage from './InvoiceStorage';
 
 /**
  * Interface representing the storage with methods for retrieving invoice data and total amount.

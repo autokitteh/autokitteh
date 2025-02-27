@@ -1,9 +1,9 @@
-import config from './config.js';
-import GmailEmailFetcher from './GmailEmailFetcher.js';
-import ChatGPTClient from './ChatGPTClient.js';
-import InvoiceStorage from './InvoiceStorage.js';
-import InvoiceProcessor from './InvoiceProcessor.js';
-import startServer from './server.js';
+import config from './config';
+import GmailClient from './GmailClient';
+import ChatGPTClient from './ChatGPTClient';
+import InvoiceStorage from './InvoiceStorage';
+import InvoiceProcessor from './InvoiceProcessor';
+import startServer from './server';
 
 /**
  * The main entry point for the application. This function initializes necessary components
@@ -16,7 +16,8 @@ import startServer from './server.js';
  */
 async function main(): Promise<void> {
     const storage = new InvoiceStorage();
-    const emailFetcher = new GmailEmailFetcher();
+    const emailFetcher = new GmailClient();
+    await emailFetcher.initialize();
     const chatGPTClient = new ChatGPTClient(config.chatGPT.promptTemplate);
     const processor = new InvoiceProcessor(emailFetcher, chatGPTClient, storage);
 
@@ -24,9 +25,14 @@ async function main(): Promise<void> {
 
     while (true) {
         console.log("Checking for new emails...");
-        await processor.processNewEmails();
-        console.log(`Waiting ${config.sleepIntervalMs / 1000} seconds...`);
-        await new Promise(resolve => setTimeout(resolve, config.sleepIntervalMs));
+        try {
+            await processor.processNewEmails();
+            console.log("Processing complete");
+        } catch (error) {
+            console.error("Error processing email:", error);
+        }
+        console.log(`Waiting ${config.sleepIntervalSec} seconds...`);
+        await new Promise(resolve => setTimeout(resolve, config.sleepIntervalSec * 1000));
     }
 }
 

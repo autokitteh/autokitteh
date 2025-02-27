@@ -1,10 +1,12 @@
 import * as dotenv from 'dotenv';
+dotenv.config();
 import * as fs from 'fs';
 import * as path from 'path';
-dotenv.config();
+
 
 interface GmailConfig {
-    credentials: string;
+    credentialsPath: string;
+    tokenPath: string;
     subjectFilter: string;
 }
 
@@ -19,16 +21,17 @@ interface ServerConfig {
 }
 
 interface Config {
-    sleepIntervalMs: number;
+    sleepIntervalSec: number;
     gmail: GmailConfig;
     chatGPT: ChatGPTConfig;
     server: ServerConfig;
 }
 
 const config: Config = {
-    sleepIntervalMs: Number(process.env.SLEEP_INTERVAL_MS) || 60000,
+    sleepIntervalSec: Number(process.env.SLEEP_INTERVAL_SEC) || 60,
     gmail: {
-        credentials: process.env.GMAIL_CREDENTIALS || '',
+        credentialsPath: process.env.GMAIL_CREDENTIALS_PATH || '',
+        tokenPath: process.env.GMAIL_TOKEN_PATH || '',
         subjectFilter: process.env.SUBJECT_FILTER || '.*invoice.*',
     },
     chatGPT: {

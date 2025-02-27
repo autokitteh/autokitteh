@@ -1,15 +1,19 @@
-import config from "./config.js";
-import path from "path";
-import os from "os";
 import fs from "fs";
-
+import os from "os";
+import path from "path";
 import {google, gmail_v1} from "googleapis";
-import {OAuth2Client} from "google-auth-library";
+import {authenticate} from "@google-cloud/local-auth";
+import config from "./config";
+
+const SCOPES = ['https://www.googleapis.com/auth/gmail.readonly'];
+const CREDENTIALS_PATH = config.gmail.credentialsPath;
+const TOKEN_PATH = config.gmail.tokenPath;
 
 export interface EmailAttachment {
     id: string;
-    filePath: string;
+    filePath?: string;
     fileName: string;
+    fileBuffer?: Buffer;
 }
 
 export interface EmailMessage {
@@ -22,40 +26,46 @@ export interface EmailMessage {
  * Class to fetch new emails with attachments from a Gmail account using the Gmail API.
  * Handles email retrieval based on a start timestamp and processes attachments found in the emails.
  */
-class GmailEmailFetcher {
-    private oauth2Client!: OAuth2Client;
-    private gmail!: gmail_v1.Gmail;
+class GmailClient {
     private lastProcessedTime: number;
     private subjectRegex: RegExp;
+    private gmail: gmail_v1.Gmail | null = null;
 
     constructor(
         startTimestamp: number = 0,
         subjectRegex: string = config.gmail.subjectFilter
     ) {
-        this.initConnection();
         this.lastProcessedTime = startTimestamp;
         this.subjectRegex = new RegExp(subjectRegex, "i");
     }
 
-    /**
-     * Initializes a connection to the Gmail API using OAuth2 credentials.
-     * @throws {Error} If required environment variables are missing.
-     */
-    private initConnection(): void {
-        const clientId = process.env.GOOGLE_CLIENT_ID;
-        const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-        const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
-        const user = process.env.GMAIL_USER;
-
-        if (!clientId || !clientSecret || !refreshToken || !user) {
-            throw new Error(
-                "Missing Gmail API credentials. Please set GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REFRESH_TOKEN, and GMAIL_USER in your environment."
-            );
-        }
-        this.oauth2Client = new OAuth2Client(clientId, clientSecret);
-        this.oauth2Client.setCredentials({refresh_token: refreshToken});
-        this.gmail = google.gmail({version: "v1", auth: this.oauth2Client});
+    async initialize(): Promise<void> {
+        const authClient = await this.authenticate();
+        this.gmail = google.gmail({version: 'v1', auth: authClient});
     }
+
+    private async authenticate() {
+        if (!fs.existsSync(CREDENTIALS_PATH)) {
+            throw new Error('credentials.json file not found. Please provide it in the application directory.');
+        }
+        let authClient;
+        if (fs.existsSync(TOKEN_PATH)) {
+            const token = JSON.parse(fs.readFileSync(TOKEN_PATH, 'utf-8'));
+            authClient = new google.auth.OAuth2();
+            authClient.setCredentials(token);
+            console.log('Using saved token for authentication.');
+        } else {
+            authClient = await authenticate({keyfilePath: CREDENTIALS_PATH, scopes: SCOPES});
+            // Save token for future use
+            const credentials = authClient.credentials;
+            if (credentials) {
+                fs.writeFileSync(TOKEN_PATH, JSON.stringify(credentials));
+                console.log('Token stored to', TOKEN_PATH);
+            }
+        }
+        return authClient;
+    }
+
 
     /**
      * Checks if the provided message's subject matches the defined regular expression.
@@ -73,6 +83,21 @@ class GmailEmailFetcher {
         return this.subjectRegex.test(subject);
     }
 
+    getMessageDate(message: gmail_v1.Schema$Message): number {
+        let date = parseInt(message.internalDate || "0", 10);
+        return date;
+        // const dateHeader = message.payload?.headers?.find(
+        //     (header) => header.name === "Date"
+        // );
+        // return new Date(dateHeader?.value || "").getTime();
+    }
+    updateLastProcessedTime(message: gmail_v1.Schema$Message) {
+        const date = this.getMessageDate(message);
+        console.log('Message date:', date);
+        this.lastProcessedTime = Math.max(this.lastProcessedTime, date);
+        console.log(`Last processed time: ${this.lastProcessedTime}`);
+    }
+
     /**
      * Fetches new emails from the Gmail inbox, optionally filtering for attachments and messages
      * received after the last processed time.
@@ -83,7 +108,7 @@ class GmailEmailFetcher {
         const query = [
             "in:inbox",
             "has:attachment",
-            ...(this.lastProcessedTime ? [`after:${this.lastProcessedTime}`] : []),
+            ...(this.lastProcessedTime ? [`after:${5+ Math.floor(this.lastProcessedTime / 1000)}`] : []),
         ].join(" ");
 
         console.log(`Fetching emails with query: ${query}`);
@@ -91,6 +116,8 @@ class GmailEmailFetcher {
             userId: "me",
             q: query,
         });
+
+        console.log('emails fetched:', listRes.data.messages?.length || '')
 
         return listRes.data.messages || [];
     }
@@ -115,14 +142,16 @@ class GmailEmailFetcher {
             format: "full",
         });
 
+
         if (!message || !(await this.isRelevant(message))) {
-            return undefined;
+            this.updateLastProcessedTime(message);
+            return null;
         }
 
         // Process attachments and metadata
         const attachments: EmailAttachment[] = [];
-
         const parts = message.payload?.parts || [];
+
         for (const part of parts) {
             if (part.filename && part.filename.endsWith('.pdf') && part.body?.attachmentId) {
                 const attachId = part.body.attachmentId;
@@ -132,6 +161,7 @@ class GmailEmailFetcher {
                     id: attachId,
                 });
 
+                // write to temp file TODO in-memory
                 const filePath = path.join(os.tmpdir(), part.filename);
                 fs.writeFileSync(filePath, attachmentData.data, "base64");
 
@@ -143,24 +173,11 @@ class GmailEmailFetcher {
             }
         }
 
-        const dateHeader = message.payload?.headers?.find(
-            (header) => header.name === "Date"
-        );
-        // const date = new Date(dateHeader?.value || "").getTime();
-        let date = parseInt(message.internalDate || "0", 10);
+        this.updateLastProcessedTime(message);
+        const date = this.getMessageDate(message);
 
-        // Update last process time
-        console.log('internalDate', message.internalDate);
-        console.log(`Processing email ${msgId} with date ${date}`);
-        this.lastProcessedTime = Math.max(this.lastProcessedTime, date);
-        console.log(`Last processed time: ${this.lastProcessedTime}`);
-
-        return {
-            id: msgId,
-            date,
-            attachments,
-        };
+        return {id: msgId,  date, attachments};
     }
 }
 
-export default GmailEmailFetcher;
+export default GmailClient;

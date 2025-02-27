@@ -1,16 +1,16 @@
 import { promises as fs } from 'fs';
-import GmailEmailFetcher from "./GmailEmailFetcher.js";
-import {EmailMessage} from "./GmailEmailFetcher.js";
-import ChatGPTClient from "./ChatGPTClient.js";
-import InvoiceStorage from "./InvoiceStorage.js";
-import {InvoiceData} from "./InvoiceStorage.js";
+import GmailClient from "./GmailClient";
+import {EmailMessage} from "./GmailClient";
+import ChatGPTClient from "./ChatGPTClient";
+import InvoiceStorage from "./InvoiceStorage";
+import {InvoiceData} from "./InvoiceStorage";
 
 export class InvoiceProcessor {
-    private gmailClient: GmailEmailFetcher;
+    private gmailClient: GmailClient;
     private chatGPTClient: ChatGPTClient;
     private storage: InvoiceStorage;
 
-    constructor(gmailClient: GmailEmailFetcher, chatGPTClient: ChatGPTClient, storage: InvoiceStorage) {
+    constructor(gmailClient: GmailClient, chatGPTClient: ChatGPTClient, storage: InvoiceStorage) {
         this.gmailClient = gmailClient;
         this.chatGPTClient = chatGPTClient;
         this.storage = storage;
@@ -50,15 +50,18 @@ export class InvoiceProcessor {
      * and passing the data to a processing function.
      */
     async processNewEmails(): Promise<void> {
-        const emails = await this.gmailClient.fetchNewEmails();
+        let emails = (await this.gmailClient.fetchNewEmails())?.map(email => email.id);
+        emails = this.storage.filterProcessed(emails)
+
         await Promise.all(
             (emails || []).map(async (email) => {
-                console.log(`Processing email: ${email.id}`);
-                if (email.id) {
-                    const emailData = await this.gmailClient.fetchMessage(email.id);
+                if (email) {
+                    const emailData = await this.gmailClient.fetchMessage(email);
                     if (emailData) {
                         await this.processEmail(emailData);
                     }
+                    this.storage.markProcessed(email)
+                    console.log(`Processed email: ${email}`);
                 }
             })
         );

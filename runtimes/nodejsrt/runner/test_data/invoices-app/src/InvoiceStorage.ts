@@ -1,3 +1,20 @@
+
+/**
+ * Interface defining the structure of an invoice object.
+ */
+export interface InvoiceData {
+    invoiceId: string;
+    items: InvoiceItem[];
+    vat: number;
+    total: number;
+    date?: number;
+}
+
+export interface InvoiceItem {
+    description: string;
+    amount: number;
+}
+
 /**
  * A class for storing and managing invoices. The InvoiceStorage class provides
  * functionality for adding or updating invoices, retrieving a specific invoice,
@@ -5,6 +22,7 @@
  */
 class InvoiceStorage {
     private invoices: Map<string, InvoiceData>;
+    private processedEmails: Set<string> = new Set();
 
     constructor() {
         this.invoices = new Map<string, InvoiceData>();
@@ -23,6 +41,17 @@ class InvoiceStorage {
         if (!existing || invoice.date > existing.date) {
             this.invoices.set(invoice.invoiceId, invoice);
         }
+    }
+
+    markProcessed(emailId: string) {
+        this.processedEmails.add(emailId);
+    }
+    isProcessed(emailId: string) {
+        return this.processedEmails.has(emailId);
+    }
+
+    filterProcessed(emailIds: string[]): string[] {
+        return emailIds.filter(emailId => !this.isProcessed(emailId));
     }
 
     /**
@@ -52,19 +81,4 @@ class InvoiceStorage {
     }
 }
 
-/**
- * Interface defining the structure of an invoice object.
- */
-export interface InvoiceData {
-    invoiceId: string;
-    items: InvoiceItem[];
-    vat: number;
-    total: number;
-    date?: number;
-}
-
-export interface InvoiceItem {
-    description: string;
-    amount: number;
-}
 export default InvoiceStorage;
