@@ -1,7 +1,7 @@
 import traverse from "@babel/traverse";
 import {parse} from "@babel/parser";
 import generate from "@babel/generator";
-import {isMemberExpression, identifier, isIdentifier, isAwaitExpression, isVariableDeclarator} from "@babel/types";
+import {isMemberExpression, identifier, isIdentifier, isAwaitExpression, isVariableDeclarator, stringLiteral} from "@babel/types";
 import {listFiles} from "./file_utils";
 import fs from "fs"
 import {Export} from "./pb/autokitteh/user_code/v1/runner_svc_pb";
@@ -121,7 +121,7 @@ export async function patchCode(code: string, exclude: string[] = []): Promise<s
                 f_parts.push(callee.name);
                 originalFunc = f_parts.reverse().join(".");
                 caller.callee = identifier("ak_call");
-                caller.arguments.unshift(identifier(originalFunc));
+                caller.arguments.unshift(stringLiteral(originalFunc));
             }
         },
     })

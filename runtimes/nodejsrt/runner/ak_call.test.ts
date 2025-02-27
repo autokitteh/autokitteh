@@ -1,5 +1,6 @@
 import {Waiter, ak_call} from "./ak_call";
 import {EventEmitter, once} from "node:events";
+import {toReaderCall} from "ts-proto/build/src/types";
 
 class mockWaiter implements Waiter{
     event: EventEmitter;
@@ -36,6 +37,19 @@ class mockWaiter implements Waiter{
         const r = await once(this.event, 'return')
         return r[0]
     }
+
+    done(): void {
+    }
+
+    getRunId(): string {
+        return "";
+    }
+
+    setRunId(id: string): void {
+    }
+
+    setRunnerId(id: string): void {
+    }
 }
 
 test('ak_call execute and reply', async () => {
@@ -64,6 +78,8 @@ test('ak_call reply only', async () => {
         realFuncExecuted = true;
         return a + b
     }
+
+    testFunc.ak_call = true;
 
     const waiter = new mockWaiter()
     const _ak_call = ak_call(waiter)

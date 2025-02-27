@@ -16,7 +16,7 @@ test('typescript hooking async', async () => {
 
     const sandbox = new Sandbox("test_data/demo_async", hookFunc);
     await sandbox.loadFile("test_data/demo_async/main.ts");
-    await sandbox.run("on_event", [1])
+    await sandbox.run("on_event", [1], () => {})
     expect(hookCalled).toBe(true);
 });
 
