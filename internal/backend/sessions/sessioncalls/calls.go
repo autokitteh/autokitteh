@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	enumspb "go.temporal.io/api/enums/v1"
+	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/worker"
 	"go.temporal.io/sdk/workflow"
@@ -31,8 +32,9 @@ type CallParams struct {
 }
 
 type Calls interface {
-	StartWorkers(context.Context) error
+	StartWorkers(context.Context, client.Client) error
 	Call(ctx workflow.Context, params *CallParams) (sdktypes.SessionCallAttemptResult, error)
+	RegisterSessionCallActivity(r worker.ActivityRegistry)
 }
 
 type calls struct {
@@ -62,7 +64,7 @@ type calls struct {
 
 const generalTaskQueueName = "session_call_activities"
 
-func uniqueWorkerCallTaskQueueName() string {
+func UniqueWorkerCallTaskQueueName() string {
 	return fmt.Sprintf("%s_%s", generalTaskQueueName, fixtures.ProcessID())
 }
 
@@ -75,10 +77,13 @@ func New(l *zap.Logger, config Config, svcs *sessionsvcs.Svcs) Calls {
 	}
 }
 
-func (cs *calls) StartWorkers(ctx context.Context) error {
-	tc := cs.svcs.Temporal.TemporalClient()
-	cs.generalWorker = temporalclient.NewWorker(cs.l.Named("sessionscallsworker"), tc, generalTaskQueueName, cs.config.GeneralWorker)
-	cs.uniqueWorker = temporalclient.NewWorker(cs.l.Named("sessionscallsworker"), tc, uniqueWorkerCallTaskQueueName(), cs.config.UniqueWorker)
+func (cs *calls) StartWorkers(ctx context.Context, temporal client.Client) error {
+	if temporal == nil {
+		temporal = cs.svcs.Temporal.TemporalClient()
+	}
+
+	cs.generalWorker = temporalclient.NewWorker(cs.l.Named("sessionscallsworker"), temporal, generalTaskQueueName, cs.config.GeneralWorker)
+	cs.uniqueWorker = temporalclient.NewWorker(cs.l.Named("sessionscallsworker"), temporal, UniqueWorkerCallTaskQueueName(), cs.config.UniqueWorker)
 
 	cs.registerActivities()
 
@@ -112,7 +117,7 @@ func (cs *calls) Call(wctx workflow.Context, params *CallParams) (sdktypes.Sessi
 
 	var attempt uint32 // relevant only if not using temporal for session logs.
 
-	if !params.UseTemporalForSessionLogs {
+	if !params.UseTemporalForSessionLogs && cs.svcs != nil && cs.svcs.DB != nil {
 		fut := workflow.ExecuteActivity(
 			wctx,
 			createSessionCallActivityName,
@@ -180,7 +185,7 @@ func (cs *calls) Call(wctx workflow.Context, params *CallParams) (sdktypes.Sessi
 				// When a local execution is required, it is scheduled on a unique worker. These local executions
 				// need access to the state that is built by the workflow.
 
-				uniqueTaskQueueName := uniqueWorkerCallTaskQueueName()
+				uniqueTaskQueueName := UniqueWorkerCallTaskQueueName()
 				if uniqueTaskQueueName == "" {
 					return sdktypes.InvalidSessionCallAttemptResult, errors.New("local session worker for activities is not registered")
 				}
@@ -233,7 +238,7 @@ func (cs *calls) Call(wctx workflow.Context, params *CallParams) (sdktypes.Sessi
 
 	l.Debug("call returned")
 
-	if !params.UseTemporalForSessionLogs {
+	if !params.UseTemporalForSessionLogs && cs.svcs != nil && cs.svcs.DB != nil {
 		fut := workflow.ExecuteActivity(
 			wctx,
 			completeSessionCallAttemptActivityName,
