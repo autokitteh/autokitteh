@@ -1,4 +1,4 @@
-package svc
+package aksvc
 
 import (
 	_ "embed"
