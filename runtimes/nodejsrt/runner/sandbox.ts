@@ -102,6 +102,7 @@ export class Sandbox {
                 }
 
                 if (typeof mod[k] === "object") {
+                    mod[k].ak_call = true
                     for (let m in mod[k]) {
                         if (typeof mod[k][m] === "function") {
                             mod[k][m].ak_call = true
