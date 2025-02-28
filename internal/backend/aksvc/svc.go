@@ -1,15 +1,12 @@
-package svc
+package aksvc
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	_ "net/http/pprof"
 	"os"
-	goruntime "runtime"
 	"strings"
-	"sync/atomic"
 	"time"
 
 	"github.com/fatih/color"
@@ -42,11 +39,8 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/events"
 	"go.autokitteh.dev/autokitteh/internal/backend/eventsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
-	"go.autokitteh.dev/autokitteh/internal/backend/health/healthchecker"
-	"go.autokitteh.dev/autokitteh/internal/backend/health/healthreporter"
 	"go.autokitteh.dev/autokitteh/internal/backend/httpsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/integrationsgrpcsvc"
-	"go.autokitteh.dev/autokitteh/internal/backend/logger"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/internal/backend/oauth"
 	"go.autokitteh.dev/autokitteh/internal/backend/orgs"
@@ -58,6 +52,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/secrets"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessionsgrpcsvc"
+	"go.autokitteh.dev/autokitteh/internal/backend/svccommon"
 	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/backend/triggers"
@@ -87,27 +82,15 @@ func printModeWarning(mode configset.Mode) {
 	)
 }
 
-func LoggerFxOpt(silent bool) fx.Option {
-	if silent {
-		return fx.Supply(zap.NewNop())
-	}
-
-	return fx.Module(
-		"logger",
-		fx.Provide(fxGetConfig("logger", kittehs.Must1(chooseConfig(logger.Configs)))),
-		fx.Provide(logger.New),
-	)
-}
-
 func DBFxOpt() fx.Option {
 	return fx.Options(
-		Component(
+		svccommon.Component(
 			"db",
 			dbfactory.Configs,
 			fx.Provide(dbfactory.New),
 			fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, gdb db.DB, cfg *svcConfig) error {
-				HookOnStart(lc, gdb.Connect)
-				HookOnStart(lc, gdb.Setup)
+				svccommon.HookOnStart(lc, gdb.Connect)
+				svccommon.HookOnStart(lc, gdb.Setup)
 
 				if path := cfg.SeedObjectsPath; path != "" {
 					bs, err := os.ReadFile(path)
@@ -121,7 +104,7 @@ func DBFxOpt() fx.Option {
 						return fmt.Errorf("unmarshal seed objects: %w", err)
 					}
 
-					HookOnStart(lc, func(ctx context.Context) error {
+					svccommon.HookOnStart(lc, func(ctx context.Context) error {
 						if len(objs) == 0 {
 							return nil
 						}
@@ -137,49 +120,37 @@ func DBFxOpt() fx.Option {
 	)
 }
 
-type pprofConfig struct {
-	Enable bool `koanf:"enable"`
-	Port   int  `koanf:"port"`
-}
-
-var pprofConfigs = configset.Set[pprofConfig]{
-	Default: &pprofConfig{Enable: true, Port: 6060},
-}
-
 type HTTPServerAddr string
 
-func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
-	return []fx.Option{
-		fx.Supply(cfg),
+func makeFxOpts(cfg *svccommon.Config, opts RunOptions) []fx.Option {
+	return append(svccommon.FXCommonComponents(cfg, false),
+		svccommon.SupplyConfig("svc", svcConfigs),
 
-		SupplyConfig("svc", svcConfigs),
-
-		LoggerFxOpt(opts.Silent),
 		DBFxOpt(),
 
-		Component("auth", configset.Empty, fx.Provide(authsvc.New)),
-		Component("authjwttokens", authjwttokens.Configs, fx.Provide(authjwttokens.New)),
-		Component("authsessions", authsessions.Configs, fx.Provide(authsessions.New)),
-		Component(
+		svccommon.Component("auth", configset.Empty, fx.Provide(authsvc.New)),
+		svccommon.Component("authjwttokens", authjwttokens.Configs, fx.Provide(authjwttokens.New)),
+		svccommon.Component("authsessions", authsessions.Configs, fx.Provide(authsessions.New)),
+		svccommon.Component(
 			"authhttpmiddleware",
 			configset.Empty,
 			fx.Provide(authhttpmiddleware.New),
 			fx.Provide(authhttpmiddleware.AuthorizationHeaderExtractor),
 		),
-		Component("orgs", configset.Empty, fx.Provide(orgs.New)),
-		Component(
+		svccommon.Component("orgs", configset.Empty, fx.Provide(orgs.New)),
+		svccommon.Component(
 			"users",
 			users.Configs,
 			fx.Provide(users.New),
 			fx.Provide(func(u users.Users) sdkservices.Users { return u }),
 			fx.Invoke(func(lc fx.Lifecycle, u users.Users) {
-				HookOnStart(lc, u.Setup)
+				svccommon.HookOnStart(lc, u.Setup)
 			}),
 		),
-		Component("opapolicy", opapolicy.Configs, fx.Provide(opapolicy.New)),
-		Component("authz", configset.Empty, fx.Provide(authz.NewPolicyCheckFunc)),
+		svccommon.Component("opapolicy", opapolicy.Configs, fx.Provide(opapolicy.New)),
+		svccommon.Component("authz", configset.Empty, fx.Provide(authz.NewPolicyCheckFunc)),
 
-		Component(
+		svccommon.Component(
 			"temporalclient",
 			temporalclient.Configs,
 			fx.Provide(func(cfg *temporalclient.Config, z *zap.Logger) (temporalclient.Client, error) {
@@ -190,8 +161,8 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				return temporalclient.NewFromTemporalClient(&cfg.Monitor, z, opts.TemporalClient)
 			}),
 			fx.Invoke(func(lc fx.Lifecycle, c temporalclient.Client) {
-				HookOnStart(lc, c.Start)
-				HookOnStop(lc, c.Stop)
+				svccommon.HookOnStart(lc, c.Start)
+				svccommon.HookOnStop(lc, c.Stop)
 			}),
 			fx.Invoke(func(cfg *temporalclient.Config, tclient temporalclient.Client, muxes *muxes.Muxes) {
 				if !cfg.EnableHelperRedirect {
@@ -208,80 +179,79 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				})
 			}),
 		),
-		Component(
+		svccommon.Component(
 			"sessions",
 			sessions.Configs,
 			fx.Provide(sessions.New),
 			fx.Provide(func(s sessions.Sessions) sdkservices.Sessions { return s }),
-			fx.Invoke(func(lc fx.Lifecycle, s sessions.Sessions) { HookOnStart(lc, s.StartWorkers) }),
+			fx.Invoke(func(lc fx.Lifecycle, s sessions.Sessions) { svccommon.HookOnStart(lc, s.StartWorkers) }),
 		),
-		Component("builds", configset.Empty, fx.Provide(builds.New)),
-		Component("connections", configset.Empty, fx.Provide(connections.New)),
-		Component("deployments", deployments.Configs, fx.Provide(deployments.New)),
-		Component("projects", configset.Empty, fx.Provide(projects.New)),
-		Component("projectsgrpcsvc", projectsgrpcsvc.Configs, fx.Provide(projectsgrpcsvc.New)),
-		Component(
+		svccommon.Component("builds", configset.Empty, fx.Provide(builds.New)),
+		svccommon.Component("connections", configset.Empty, fx.Provide(connections.New)),
+		svccommon.Component("deployments", deployments.Configs, fx.Provide(deployments.New)),
+		svccommon.Component("projects", configset.Empty, fx.Provide(projects.New)),
+		svccommon.Component("projectsgrpcsvc", projectsgrpcsvc.Configs, fx.Provide(projectsgrpcsvc.New)),
+		svccommon.Component(
 			"vars",
 			vars.Configs,
 			fx.Provide(vars.New),
 			fx.Provide(func(v *vars.Vars) sdkservices.Vars { return v }),
 			fx.Invoke(func(v *vars.Vars, c sdkservices.Connections) { v.SetConnections(c) }),
 		),
-		Component("secrets", secrets.Configs, fx.Provide(secrets.New)),
-		Component("events", configset.Empty, fx.Provide(events.New)),
-		Component("triggers", configset.Empty, fx.Provide(triggers.New)),
-		Component("oauth", configset.Empty, fx.Provide(oauth.New)),
-		runtimesFXOption(),
-		Component("healthcheck", configset.Empty, fx.Provide(healthchecker.New)),
-		Component(
+		svccommon.Component("secrets", secrets.Configs, fx.Provide(secrets.New)),
+		svccommon.Component("events", configset.Empty, fx.Provide(events.New)),
+		svccommon.Component("triggers", configset.Empty, fx.Provide(triggers.New)),
+		svccommon.Component("oauth", configset.Empty, fx.Provide(oauth.New)),
+		svccommon.FXRuntimes(),
+		svccommon.Component(
 			"scheduler",
 			scheduler.Configs,
 			fx.Provide(scheduler.New),
 			fx.Invoke(
 				func(lc fx.Lifecycle, sch *scheduler.Scheduler, d sdkservices.Dispatcher, ts sdkservices.Triggers) {
-					HookOnStart(lc, func(ctx context.Context) error {
+					svccommon.HookOnStart(lc, func(ctx context.Context) error {
 						return sch.Start(ctx, d, ts)
 					})
 				},
 			),
 		),
-		Component(
+		svccommon.Component(
 			"cron",
 			cron.Configs,
 			fx.Provide(cron.New),
 			fx.Invoke(
 				func(lc fx.Lifecycle, ct *cron.Cron, c sdkservices.Connections, v sdkservices.Vars, o sdkservices.OAuth) {
-					HookOnStart(lc, func(ctx context.Context) error {
+					svccommon.HookOnStart(lc, func(ctx context.Context) error {
 						return ct.Start(ctx, c, v, o)
 					})
 				},
 			),
 		),
-		Component(
+		svccommon.Component(
 			"dispatcher",
 			dispatcher.Configs,
 			fx.Provide(func(lc fx.Lifecycle, l *zap.Logger, cfg *dispatcher.Config, svcs dispatcher.Svcs) (sdkservices.Dispatcher, sdkservices.DispatchFunc) {
 				d := dispatcher.New(l, cfg, svcs)
-				HookOnStart(lc, d.Start)
+				svccommon.HookOnStart(lc, d.Start)
 				return d, d.Dispatch
 			}),
 		),
-		Component(
+		svccommon.Component(
 			"webtools",
 			webtools.Configs,
 			fx.Provide(webtools.New),
-			fx.Invoke(func(lc fx.Lifecycle, muxes *muxes.Muxes, svc webtools.Svc) {
-				svc.Init(muxes)
-				HookOnStart(lc, svc.Setup)
+			fx.Invoke(func(lc fx.Lifecycle, muxes *muxes.Muxes, web webtools.Svc) {
+				web.Init(muxes)
+				svccommon.HookOnStart(lc, web.Setup)
 			}),
 		),
-		Component(
+		svccommon.Component(
 			"webplatform",
 			webplatform.Configs,
 			fx.Provide(webplatform.New),
-			fx.Invoke(func(lc fx.Lifecycle, svc *webplatform.Svc) {
-				HookOnStart(lc, svc.Start)
-				HookOnStop(lc, svc.Stop)
+			fx.Invoke(func(lc fx.Lifecycle, web *webplatform.Svc) {
+				svccommon.HookOnStart(lc, web.Start)
+				svccommon.HookOnStop(lc, web.Stop)
 			}),
 		),
 		fx.Provide(func(s sdkservices.ServicesStruct) sdkservices.Services { return &s }),
@@ -303,8 +273,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		fx.Invoke(sessionsgrpcsvc.Init),
 		fx.Invoke(triggersgrpcsvc.Init),
 		fx.Invoke(varsgrpcsvc.Init),
-		Component("telemetry", telemetry.Configs, fx.Provide(telemetry.New)),
-		Component(
+		svccommon.Component(
 			"http",
 			httpsvc.Configs,
 			fx.Provide(func(lc fx.Lifecycle, z *zap.Logger, cfg *httpsvc.Config,
@@ -344,19 +313,19 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				return
 			}),
 		),
-		Component("authloginhttpsvc", authloginhttpsvc.Configs, fx.Invoke(authloginhttpsvc.Init)),
+		svccommon.Component("authloginhttpsvc", authloginhttpsvc.Configs, fx.Invoke(authloginhttpsvc.Init)),
 		fx.Invoke(func(muxes *muxes.Muxes, h integrationsweb.Handler) {
 			muxes.NoAuth.Handle("GET /i/{$}", &h)
 		}),
 		fx.Invoke(dashboardsvc.Init),
 		fx.Invoke(oauth.InitWebhook),
 		fx.Invoke(connectionsinitsvc.Init),
-		Component(
+		svccommon.Component(
 			"webhooks",
 			configset.Empty,
 			fx.Provide(webhookssvc.New),
 			fx.Invoke(func(lc fx.Lifecycle, w *webhookssvc.Service, muxes *muxes.Muxes) {
-				HookSimpleOnStart(lc, func() { w.Start(muxes) })
+				svccommon.HookSimpleOnStart(lc, func() { w.Start(muxes) })
 			}),
 		),
 		integrationsFXOption(),
@@ -369,11 +338,11 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			muxes.NoAuth.Handle("GET /robots.txt", srv)
 			muxes.NoAuth.Handle("GET /site.webmanifest", srv)
 		}),
-		Component(
+		svccommon.Component(
 			"banner",
 			bannerConfigs,
 			fx.Invoke(func(cfg *bannerConfig, lc fx.Lifecycle, z *zap.Logger, httpsvc httpsvc.Svc, tclient temporalclient.Client, wp *webplatform.Svc) {
-				HookSimpleOnStart(lc, func() {
+				svccommon.HookSimpleOnStart(lc, func() {
 					temporalFrontendAddr, temporalUIAddr := tclient.TemporalAddr()
 					printBanner(cfg, opts, httpsvc.Addr(), wp.Addr(), wp.Version(), temporalFrontendAddr, temporalUIAddr)
 				})
@@ -416,56 +385,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				kittehs.Must0(json.NewEncoder(w).Encode(resp))
 			})
 		}),
-		Component(
-			"pprof",
-			pprofConfigs,
-			fx.Invoke(func(cfg *pprofConfig, lc fx.Lifecycle, z *zap.Logger) {
-				if !cfg.Enable {
-					return
-				}
-
-				HookSimpleOnStart(lc, func() {
-					go func() {
-						addr := fmt.Sprintf("localhost:%d", cfg.Port)
-						if err := http.ListenAndServe(addr, nil); err != nil {
-							z.Error("listen", zap.Error(err))
-						}
-					}()
-				})
-			}),
-		),
-		fx.Invoke(func(z *zap.Logger, lc fx.Lifecycle, muxes *muxes.Muxes, h healthreporter.HealthReporter) {
-			var ready atomic.Bool
-
-			healthz := func(w http.ResponseWriter, r *http.Request) {
-				if err := h.Report(); err != nil {
-					w.WriteHeader(http.StatusInternalServerError)
-					return
-				}
-				w.WriteHeader(http.StatusOK)
-			}
-
-			muxes.NoAuth.HandleFunc("GET /healthz", healthz)
-			muxes.NoAuth.HandleFunc("GET /internal/healthz", healthz)
-
-			readyz := func(w http.ResponseWriter, r *http.Request) {
-				if !ready.Load() {
-					w.WriteHeader(http.StatusServiceUnavailable)
-					return
-				}
-
-				w.WriteHeader(http.StatusOK)
-			}
-
-			muxes.NoAuth.HandleFunc("GET /readyz", readyz)
-			muxes.NoAuth.HandleFunc("GET /internal/readyz", readyz)
-
-			HookSimpleOnStart(lc, func() {
-				ready.Store(true)
-				z.Info("ready", zap.String("version", version.Version), zap.String("id", fixtures.ProcessID()), zap.Int("gomaxprocs", goruntime.GOMAXPROCS(0)))
-			})
-		}),
-	}
+	)
 }
 
 type RunOptions struct {
@@ -474,15 +394,15 @@ type RunOptions struct {
 	TemporalClient client.Client // use this instead of creating a new temporal client.
 }
 
-func NewOpts(cfg *Config, ropts RunOptions) []fx.Option {
-	setFXRunOpts(ropts)
+func NewOpts(cfg *svccommon.Config, ropts RunOptions) []fx.Option {
+	svccommon.SetMode(ropts.Mode)
 
 	opts := makeFxOpts(cfg, ropts)
 
 	if ropts.Silent {
 		opts = append(opts, fx.NopLogger)
 	} else {
-		opts = append(opts, fx.WithLogger(fxLogger))
+		opts = append(opts, fx.WithLogger(svccommon.FXLogger))
 	}
 
 	if ropts.Mode.IsTest() {
@@ -498,14 +418,14 @@ func NewOpts(cfg *Config, ropts RunOptions) []fx.Option {
 	return append(opts, fx.Populate(svcs))
 }
 
-func StartDB(ctx context.Context, cfg *Config, ropt RunOptions) (db.DB, error) {
-	setFXRunOpts(ropt)
+func StartDB(ctx context.Context, cfg *svccommon.Config, ropt RunOptions) (db.DB, error) {
+	svccommon.SetMode(ropt.Mode)
 
 	var db db.DB
 
 	if err := fx.New(
 		fx.Supply(cfg),
-		LoggerFxOpt(ropt.Silent),
+		svccommon.LoggerFxOpt(ropt.Silent),
 		DBFxOpt(),
 		fx.Populate(&db),
 	).Start(ctx); err != nil {

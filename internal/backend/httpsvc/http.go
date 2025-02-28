@@ -60,7 +60,10 @@ func New(lc fx.Lifecycle, z *zap.Logger, cfg *Config, authzCheckFunc authz.Check
 	}
 
 	var h http.Handler = rootMux
-	h = authz.HTTPInterceptor(authzCheckFunc, h)
+
+	if authzCheckFunc != nil {
+		h = authz.HTTPInterceptor(authzCheckFunc, h)
+	}
 
 	server := http.Server{
 		Addr:    cfg.Addr,

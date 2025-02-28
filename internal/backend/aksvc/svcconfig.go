@@ -1,4 +1,4 @@
-package svc
+package aksvc
 
 import "go.autokitteh.dev/autokitteh/internal/backend/configset"
 

@@ -9,6 +9,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
+	"go.uber.org/automaxprocs/maxprocs"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/auth"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/builds"
@@ -86,6 +87,11 @@ func Execute() {
 }
 
 func init() {
+	_, err := maxprocs.Set()
+	if err != nil {
+		panic(fmt.Errorf("maxprocs set: %w", err))
+	}
+
 	// Global flags for all commands.
 	RootCmd.PersistentFlags().StringArrayVarP(&configs, "config", "C", nil, `temporary "key=value" configurations`)
 
@@ -100,6 +106,7 @@ func init() {
 	RootCmd.AddCommand(deployCmd)
 	RootCmd.AddCommand(upCmd)
 	RootCmd.AddCommand(versionCmd)
+	RootCmd.AddCommand(tempokittehCmd)
 
 	// Top-level parent commands.
 	auth.AddSubcommands(RootCmd)

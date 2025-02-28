@@ -1,22 +1,23 @@
-package svc
+package aksvc
 
 import (
 	"context"
 
 	"go.uber.org/fx"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/aksvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/httpsvc"
-	"go.autokitteh.dev/autokitteh/internal/backend/svc"
+	"go.autokitteh.dev/autokitteh/internal/backend/svccommon"
 )
 
 type (
-	RunOptions = svc.RunOptions
-	Config     = svc.Config
+	RunOptions = aksvc.RunOptions
+	Config     = svccommon.Config
 )
 
 var (
-	LoadConfig = svc.LoadConfig
-	StartDB    = svc.StartDB
+	LoadConfig = svccommon.LoadConfig
+	StartDB    = aksvc.StartDB
 )
 
 type ShutdownSignal = fx.ShutdownSignal
@@ -40,7 +41,7 @@ func New(cfg *Config, ropts RunOptions) (Service, error) {
 	var service service
 
 	opts := append(
-		svc.NewOpts(cfg, ropts),
+		aksvc.NewOpts(cfg, ropts),
 		fx.Populate(&service.httpSvc),
 	)
 

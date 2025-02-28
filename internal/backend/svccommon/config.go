@@ -1,4 +1,4 @@
-package svc
+package svccommon
 
 import (
 	"errors"
