@@ -8,6 +8,7 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	enumspb "go.temporal.io/api/enums/v1"
 	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/sdk/worker"
 	"go.temporal.io/sdk/workflow"
@@ -135,16 +136,17 @@ func (ws *workflows) StartChildWorkflow(wctx workflow.Context, childSession sdkt
 
 	memo := memo(childSession, data)
 
+	opts := ws.cfg.SessionWorkflow.ToChildWorkflowOptions(
+		taskQueueName,
+		workflowID(childSessionID),
+		fmt.Sprintf("session %v", childSessionID),
+		memo,
+	)
+
+	opts.ParentClosePolicy = enumspb.PARENT_CLOSE_POLICY_ABANDON
+
 	f := workflow.ExecuteChildWorkflow(
-		workflow.WithChildOptions(
-			wctx,
-			ws.cfg.SessionWorkflow.ToChildWorkflowOptions(
-				taskQueueName,
-				workflowID(childSessionID),
-				fmt.Sprintf("session %v", childSessionID),
-				memo,
-			),
-		),
+		workflow.WithChildOptions(wctx, opts),
 		sessionWorkflowName,
 		&sessionWorkflowParams{Data: &data},
 	)

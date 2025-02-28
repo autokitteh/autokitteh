@@ -45,7 +45,6 @@ type sessionWorkflow struct {
 	// They are not persisted in the database.
 
 	executors sdkexecutor.Executors
-	globals   map[string]sdktypes.Value
 
 	callSeq uint32
 
@@ -84,11 +83,12 @@ func runWorkflow(
 		return
 	}
 
-	if w.globals, err = w.initGlobalModules(wctx); err != nil {
+	globals, err := w.initGlobalModules(wctx)
+	if err != nil {
 		return
 	}
 
-	prints, rv, err = w.run(wctx, l)
+	prints, rv, err = w.run(wctx, l, globals)
 
 	// context might have been canceled, create a disconnected one.
 	wctx, cancel := workflow.NewDisconnectedContext(wctx)
@@ -403,7 +403,7 @@ func (w *sessionWorkflow) removeEventSubscription(wctx workflow.Context, signalI
 	delete(w.lastReadEventSeqForSignal, signalID)
 }
 
-func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []sdkservices.SessionPrint, retVal sdktypes.Value, err error) {
+func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger, globals map[string]sdktypes.Value) (prints []sdkservices.SessionPrint, retVal sdktypes.Value, err error) {
 	sid := w.data.Session.ID()
 
 	newRunID := func() (runID sdktypes.RunID, err error) {
@@ -540,7 +540,7 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []sd
 				sdkruntimes.RunParams{
 					Runtimes:             w.ws.svcs.Runtimes,
 					BuildFile:            w.data.BuildFile,
-					Globals:              w.globals,
+					Globals:              globals,
 					RunID:                runID,
 					FallthroughCallbacks: cbs,
 					EntryPointPath:       entryPoint.Path(),
