@@ -51,6 +51,47 @@ func (ValueTraits) StrictValidate(m *ValuePB) error { return oneOfMessage(m) }
 func ValueFromProto(m *ValuePB) (Value, error)       { return FromProto[Value](m) }
 func StrictValueFromProto(m *ValuePB) (Value, error) { return Strict(ValueFromProto(m)) }
 
+func GetValueTypeFromProto(m *ValuePB) string {
+	switch {
+	case m == nil:
+		return "nil"
+	case m.Nothing != nil:
+		return "nothing"
+	case m.Integer != nil:
+		return "integer"
+	case m.Float != nil:
+		return "float"
+	case m.Boolean != nil:
+		return "boolean"
+	case m.String_ != nil:
+		return "string"
+	case m.Bytes != nil:
+		return "bytes"
+	case m.Duration != nil:
+		return "duration"
+	case m.Time != nil:
+		return "time"
+	case m.Symbol != nil:
+		return "symbol"
+	case m.List != nil:
+		return "list"
+	case m.Set != nil:
+		return "set"
+	case m.Dict != nil:
+		return "dict"
+	case m.Struct != nil:
+		return "struct"
+	case m.Module != nil:
+		return "module"
+	case m.Function != nil:
+		return "function"
+	case m.Custom != nil:
+		return "custom"
+	default:
+		return "unknown"
+	}
+}
+
 func NewValue(cv concreteValue) Value {
 	switch cv := cv.(type) {
 	case NothingValue:

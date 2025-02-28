@@ -150,7 +150,7 @@ test-starlark: bin/ak
 	./tests/starlark/run.sh
 
 .PHONY: test-sessions
-test-sessions: bin/ak
+test-sessions: 
 	./tests/sessions/run.sh
 
 .PHONY: proto

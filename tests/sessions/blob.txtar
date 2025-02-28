@@ -1,0 +1,22 @@
+83886080
+True
+True
+4194304
+
+-- main.star:main --
+MB = 1024 * 1024
+XS = "x" * 80 * MB
+YS = "y" * 4 * MB
+
+def main():
+    ys = activity(foo).run(XS)
+    print(ys == YS)
+    print(len(ys))
+
+def foo(xs):
+    print(len(xs))
+    print(xs == XS)
+    return YS
+
+-- calls.txt --
+foo
