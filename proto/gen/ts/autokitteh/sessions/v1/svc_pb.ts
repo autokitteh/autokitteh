@@ -446,6 +446,14 @@ export class GetLogRequest extends Message<GetLogRequest> {
   types = SessionLogRecord_Type.UNSPECIFIED;
 
   /**
+   * Values with size bigger than max_value_size will be reducted.
+   * Default is 8K.
+   *
+   * @generated from field: int32 max_value_size = 4;
+   */
+  maxValueSize = 0;
+
+  /**
    * @generated from field: bool ascending = 11;
    */
   ascending = false;
@@ -476,6 +484,7 @@ export class GetLogRequest extends Message<GetLogRequest> {
     { no: 1, name: "session_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "json_values", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 3, name: "types", kind: "enum", T: proto3.getEnumType(SessionLogRecord_Type) },
+    { no: 4, name: "max_value_size", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 11, name: "ascending", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 20, name: "page_size", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 21, name: "skip", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
