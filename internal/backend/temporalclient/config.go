@@ -62,10 +62,21 @@ var (
 				Encryption: DataConverterEncryptionConfig{
 					Encrypt: true,
 				},
+				LargePayload: LargePayloadConfig{
+					StoreType:     "none",
+					MaxSize:       100 * 1024 * 1024, // 100MB
+					ThresholdSize: 3 * 1024 * 1024,   // 3MB
+				},
 			},
 		},
 		Dev: &Config{
-			Monitor:               defaultMonitorConfig,
+			Monitor: defaultMonitorConfig,
+			DataConverter: DataConverterConfig{
+				LargePayload: LargePayloadConfig{
+					ThresholdSize: 3 * 1024 * 1024, // 3MB
+					StoreType:     "file",
+				},
+			},
 			StartDevServerIfNotUp: true,
 			DevServer: testsuite.DevServerOptions{
 				LogLevel:   zapcore.WarnLevel.String(),
@@ -77,7 +88,13 @@ var (
 			EnableHelperRedirect:      true,
 		},
 		Test: &Config{
-			Monitor:              defaultMonitorConfig,
+			Monitor: defaultMonitorConfig,
+			DataConverter: DataConverterConfig{
+				LargePayload: LargePayloadConfig{
+					ThresholdSize: 3 * 1024 * 1024, // 3MB
+					StoreType:     "inmem",
+				},
+			},
 			AlwaysStartDevServer: true,
 			DevServer: testsuite.DevServerOptions{
 				LogLevel: zapcore.WarnLevel.String(),

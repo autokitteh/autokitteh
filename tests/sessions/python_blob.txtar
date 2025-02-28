@@ -1,0 +1,25 @@
+10485760
+True
+52428800
+True
+
+-- main.py:main --
+import autokitteh
+
+MB = 1024 * 1024
+XS = "x" * 80 * MB
+YS = "y" * 4 * MB
+
+def main(event):
+    ys = foo(XS)
+    #print(ys == YS)
+    #print(len(ys))
+
+@autokitteh.activity
+def foo(xs):
+    print(len(xs))
+    print(xs == XS)
+    # return YS
+
+-- calls.txt --
+foo

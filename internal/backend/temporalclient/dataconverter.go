@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"go.temporal.io/sdk/converter"
+	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
 )
 
@@ -24,8 +25,9 @@ type DataConverterEncryptionConfig struct {
 }
 
 type DataConverterConfig struct {
-	Compress   bool                          `koanf:"compress"`
-	Encryption DataConverterEncryptionConfig `koanf:"encryption"`
+	Compress     bool                          `koanf:"compress"`
+	Encryption   DataConverterEncryptionConfig `koanf:"encryption"`
+	LargePayload LargePayloadConfig            `koanf:"large_payload"`
 }
 
 var (
@@ -84,7 +86,24 @@ func NewDataConverter(l *zap.Logger, cfg *DataConverterConfig, parent converter.
 		codecs = append(codecs, converter.NewZlibCodec(converter.ZlibCodecOptions{AlwaysEncode: true}))
 	}
 
-	return converter.NewCodecDataConverter(parent, codecs...), nil
+	loCodec, err := newLargePayloadCodec(l.Named("blob"), cfg.LargePayload)
+	if err != nil {
+		return nil, fmt.Errorf("new large payload codec: %w", err)
+	}
+
+	if loCodec != nil {
+		codecs = append(codecs, loCodec)
+	}
+
+	cvt := converter.NewCodecDataConverter(parent, codecs...)
+
+	if loCodec != nil {
+		// LargePayloadConfig is enabled, so we need to wrap the data converter
+		// with a deadlock detection as it might be time consuming to store large payloads.
+		cvt = workflow.DataConverterWithoutDeadlockDetection(cvt)
+	}
+
+	return cvt, nil
 }
 
 func newCipher(hexKey string) (cipher.AEAD, error) {
