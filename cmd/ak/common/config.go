@@ -4,7 +4,7 @@ import (
 	"net/url"
 	"path/filepath"
 
-	"go.autokitteh.dev/autokitteh/backend/svc"
+	"go.autokitteh.dev/autokitteh/internal/backend/svccommon"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkclient"
 )
@@ -15,7 +15,7 @@ const (
 )
 
 var (
-	cfg       *svc.Config
+	cfg       *svccommon.Config
 	serverURL *url.URL
 )
 
@@ -25,7 +25,7 @@ func ConfigYAMLFilePath() string {
 
 func InitConfig(confmap map[string]any) (err error) {
 	// Reminder: cfg is a package-scoped variable, not function-scoped.
-	if cfg, err = svc.LoadConfig(EnvVarPrefix, confmap, ConfigYAMLFilePath()); err != nil {
+	if cfg, err = svccommon.LoadConfig(EnvVarPrefix, confmap, ConfigYAMLFilePath()); err != nil {
 		return
 	}
 
@@ -34,7 +34,7 @@ func InitConfig(confmap map[string]any) (err error) {
 	return
 }
 
-func Config() *svc.Config { return cfg }
+func Config() *svccommon.Config { return cfg }
 
 func ServerURL() *url.URL { return serverURL }
 

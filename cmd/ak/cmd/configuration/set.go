@@ -12,7 +12,7 @@ import (
 	"go.uber.org/dig"
 	"gopkg.in/yaml.v3"
 
-	"go.autokitteh.dev/autokitteh/backend/svc"
+	"go.autokitteh.dev/autokitteh/backend/aksvc"
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
 )
@@ -103,7 +103,7 @@ func currentConfig() (map[string]any, error) {
 }
 
 func setKeyValue(cfg map[string]any, key, val string) error {
-	keyFields := strings.Split(key, svc.ConfigDelim)
+	keyFields := strings.Split(key, aksvc.ConfigDelim)
 
 	cfgPtr := cfg
 	for i, field := range keyFields {
