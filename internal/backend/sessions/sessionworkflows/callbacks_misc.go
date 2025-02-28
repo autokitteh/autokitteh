@@ -10,8 +10,8 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func (w *sessionWorkflow) start(wctx workflow.Context) func(context.Context, sdktypes.RunID, sdktypes.CodeLocation, map[string]sdktypes.Value, map[string]string) (sdktypes.SessionID, error) {
-	return func(ctx context.Context, rid sdktypes.RunID, loc sdktypes.CodeLocation, inputs map[string]sdktypes.Value, memo map[string]string) (sdktypes.SessionID, error) {
+func (w *sessionWorkflow) start(wctx workflow.Context) func(context.Context, sdktypes.RunID, sdktypes.CodeLocation, map[string]sdktypes.Value, map[string]string) (string, error) {
+	return func(ctx context.Context, rid sdktypes.RunID, loc sdktypes.CodeLocation, inputs map[string]sdktypes.Value, memo map[string]string) (string, error) {
 		l := w.l.With(zap.Any("rid", rid), zap.Any("loc", loc), zap.Any("inputs", inputs), zap.Any("memo", memo))
 
 		l.Info("child session start requested")
@@ -23,12 +23,12 @@ func (w *sessionWorkflow) start(wctx workflow.Context) func(context.Context, sdk
 			WithNewID()
 
 		if err := workflow.ExecuteActivity(wctx, createSessionActivityName, session).Get(wctx, nil); err != nil {
-			return sdktypes.InvalidSessionID, err
+			return "", err
 		}
 
 		f, err := w.ws.StartChildWorkflow(wctx, session, w.data)
 		if err != nil {
-			return sdktypes.InvalidSessionID, err
+			return "", err
 		}
 
 		sid := session.ID()
@@ -37,7 +37,7 @@ func (w *sessionWorkflow) start(wctx workflow.Context) func(context.Context, sdk
 
 		w.l.Info("child session started", zap.Any("child", sid), zap.Any("parent", w.data.Session.ID()))
 
-		return sid, nil
+		return sid.String(), nil
 	}
 }
 
