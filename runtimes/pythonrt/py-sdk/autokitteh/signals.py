@@ -9,7 +9,6 @@ from autokitteh import AttrDict
 @dataclass
 class Signal:
     name: str
-    source: str
     payload: any = None
 
 

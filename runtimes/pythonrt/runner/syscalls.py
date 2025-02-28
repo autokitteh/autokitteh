@@ -150,8 +150,8 @@ class SysCalls:
 
         req = pb.SignalRequest(
             runner_id=self.runner_id,
+            session_id=session_id,
             signal=pb.Signal(
-                session_id=session_id,
                 name=name,
                 payload=values.wrap(payload),
             ),
@@ -178,14 +178,13 @@ class SysCalls:
 
         sig = resp.signal
 
-        if not sig.name:
-            return None
+        if sig and sig.name:
+            return Signal(
+                name=sig.name,
+                payload=values.unwrap(sig.payload),
+            )
 
-        return Signal(
-            name=sig.name,
-            source=sig.session_id,
-            payload=values.unwrap(sig.payload),
-        )
+        return None
 
     @classmethod
     def mark_ak_no_activity(cls):
