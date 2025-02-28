@@ -119,7 +119,7 @@ export const ak_call = (waiter: Waiter) => {
                     }
 
 
-                    if (o.ak_call === undefined) {
+                    if (o._ak_direct_call === true) {
                         console.log("direct obj call", o.name, m ,m_args)
                         return await o[m](...m_args);
                     }
@@ -139,7 +139,7 @@ export const ak_call = (waiter: Waiter) => {
         }
 
 
-        if (f.ak_call === undefined || f.name == "authenticate") {
+        if (f._ak_direct_call === true) {
             console.log("direct call", f.name, f_args)
             return await f(...f_args);
         }

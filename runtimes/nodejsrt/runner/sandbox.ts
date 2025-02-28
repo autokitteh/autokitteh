@@ -84,7 +84,10 @@ export class Sandbox {
             if (moduleName.startsWith(".")) {
                 moduleName =  this.codeDir + "/" + moduleName + ".js"
                 const code = fs.readFileSync(moduleName, "utf8")
-                vm.runInContext(code, this.context)
+                let o = vm.runInContext(code, this.context)
+                if (typeof o === "function") {
+                    o._ak_direct_call = true
+                }
                 return this.context
             }
 
@@ -95,22 +98,6 @@ export class Sandbox {
             } catch (e) {
                 mod =  require(`${this.codeDir}/node_modules/${moduleName}`)
             }
-
-            for (let k in mod) {
-                if (typeof mod[k] === "function") {
-                    mod[k].ak_call = true
-                }
-
-                if (typeof mod[k] === "object") {
-                    mod[k].ak_call = true
-                    for (let m in mod[k]) {
-                        if (typeof mod[k][m] === "function") {
-                            mod[k][m].ak_call = true
-                        }
-                    }
-                }
-            }
-
             return mod
         }
         vm.createContext(this.context);

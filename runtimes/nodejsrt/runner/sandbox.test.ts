@@ -3,7 +3,11 @@ import {Sandbox} from "./sandbox";
 test('typescript hooking async', async () => {
     let hookCalled = false
     const hookFunc = async (...args: any): Promise<any> => {
+        hookCalled = true
         let f = args[0];
+        if (f._ak_direct_call === true) {
+            console.log("direct call", f.name)
+        }
         if (typeof f === "function") {
             let f_args = args.slice(1)
             let out = await f(...f_args);
