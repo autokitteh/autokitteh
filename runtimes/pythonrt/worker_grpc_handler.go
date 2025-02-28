@@ -441,7 +441,7 @@ func (s *workerGRPCHandler) RefreshOAuthToken(ctx context.Context, req *userCode
 func (s *workerGRPCHandler) Signal(ctx context.Context, req *userCode.SignalRequest) (*userCode.SignalResponse, error) {
 	pbsig := req.Signal
 
-	sid, err := sdktypes.ParseSessionID(pbsig.SessionId)
+	sid, err := sdktypes.ParseSessionID(req.SessionId)
 	if err != nil {
 		return &userCode.SignalResponse{Error: fmt.Sprintf("invalid session id: %v", err)}, nil
 	}
@@ -499,9 +499,8 @@ func (s *workerGRPCHandler) NextSignal(ctx context.Context, req *userCode.NextSi
 
 	return &userCode.NextSignalResponse{
 		Signal: &userCode.Signal{
-			SessionId: sig.Source.String(),
-			Name:      sig.Name,
-			Payload:   sig.Payload.ToProto(),
+			Name:    sig.Name,
+			Payload: sig.Payload.ToProto(),
 		},
 	}, nil
 }

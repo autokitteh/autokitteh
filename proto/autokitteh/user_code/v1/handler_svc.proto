@@ -73,7 +73,6 @@ message UnsubscribeResponse {
 }
 
 message Signal {
-  string session_id = 1;
   string name = 2;
   autokitteh.values.v1.Value payload = 3;
 }
@@ -81,6 +80,7 @@ message Signal {
 message SignalRequest {
   string runner_id = 1;
   Signal signal = 2;
+  string session_id = 3;
 }
 
 message SignalResponse {

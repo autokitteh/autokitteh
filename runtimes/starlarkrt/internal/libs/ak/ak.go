@@ -265,7 +265,6 @@ func nextSignal(th *starlark.Thread, bi *starlark.Builtin, args starlark.Tuple, 
 		starlark.String("RunSignal"),
 		map[string]starlark.Value{
 			"name":    starlark.String(sig.Name),
-			"source":  starlark.String(sig.Source.String()),
 			"payload": payload,
 		},
 	), nil

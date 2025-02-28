@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"maps"
-	"strconv"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -42,6 +40,7 @@ type StartWorkflowOptions struct {
 type Workflows interface {
 	StartWorkers(context.Context) error
 	StartWorkflow(ctx context.Context, session sdktypes.Session, opts StartWorkflowOptions) error
+	StartChildWorkflow(wctx workflow.Context, childSession sdktypes.Session, parentSessionData *sessiondata.Data) (workflow.ChildWorkflowFuture, error)
 	GetWorkflowLog(ctx context.Context, filter sdkservices.SessionLogRecordsFilter) (*sdkservices.GetLogResults, error)
 	StopWorkflow(ctx context.Context, sessionID sdktypes.SessionID, reason string, force bool, cancelTimeout time.Duration) error
 }
@@ -101,27 +100,17 @@ func (ws *workflows) StartWorkers(ctx context.Context) error {
 	return ws.worker.Start()
 }
 
-func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session, opts StartWorkflowOptions) error {
-	sessionID := session.ID()
-
-	l := ws.l.Sugar().With("session_id", sessionID)
-
-	oid, err := ws.svcs.DB.GetOrgIDOf(ctx, session.ProjectID())
-	if err != nil {
-		return fmt.Errorf("get org id: %w", err)
-	}
-
+func memo(session sdktypes.Session, data sessiondata.Data) map[string]string {
 	memo := map[string]string{
-		"use_temporal_for_session_logs": strconv.FormatBool(opts.UseTemporalForSessionLogs),
-		"process_id":                    fixtures.ProcessID(),
-		"session_id":                    sessionID.String(),
-		"session_uuid":                  sessionID.UUIDValue().String(),
-		"deployment_id":                 session.DeploymentID().String(),
-		"deployment_uuid":               session.DeploymentID().UUIDValue().String(),
-		"project_id":                    session.ProjectID().String(),
-		"project_uuid":                  session.ProjectID().UUIDValue().String(),
-		"org_id":                        oid.String(),
-		"org_uuid":                      oid.UUIDValue().String(),
+		"process_id":      fixtures.ProcessID(),
+		"session_id":      session.ID().String(),
+		"session_uuid":    session.ID().UUIDValue().String(),
+		"deployment_id":   session.DeploymentID().String(),
+		"deployment_uuid": session.DeploymentID().UUIDValue().String(),
+		"project_id":      session.ProjectID().String(),
+		"project_uuid":    session.ProjectID().UUIDValue().String(),
+		"org_id":          data.OrgID.String(),
+		"org_uuid":        data.OrgID.UUIDValue().String(),
 	}
 
 	if session.ParentSessionID().IsValid() {
@@ -129,12 +118,58 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 		memo["parent_session_uuid"] = session.ParentSessionID().UUIDValue().String()
 	}
 
-	maps.Copy(memo, session.Memo())
+	for k, v := range session.Memo() {
+		memo["session__"+k] = v
+	}
+
+	return memo
+}
+
+func (ws *workflows) StartChildWorkflow(wctx workflow.Context, childSession sdktypes.Session, parentSessionData *sessiondata.Data) (workflow.ChildWorkflowFuture, error) {
+	childSessionID := childSession.ID()
+
+	l := ws.l.With(zap.Any("child_session_id", childSessionID))
+
+	data := *parentSessionData
+	data.Session = childSession
+
+	memo := memo(childSession, data)
+
+	f := workflow.ExecuteChildWorkflow(
+		workflow.WithChildOptions(
+			wctx,
+			ws.cfg.SessionWorkflow.ToChildWorkflowOptions(
+				taskQueueName,
+				workflowID(childSessionID),
+				fmt.Sprintf("session %v", childSessionID),
+				memo,
+			),
+		),
+		sessionWorkflowName,
+		&sessionWorkflowParams{Data: &data},
+	)
+
+	var r workflow.Execution
+	if err := f.GetChildWorkflowExecution().Get(wctx, &r); err != nil {
+		return nil, fmt.Errorf("child workflow execution: %w", err)
+	}
+
+	l.With(zap.String("workflow_id", r.ID), zap.String("run_id", r.RunID), zap.Any("memo", memo)).Info("initiated child session workflow")
+
+	return f, nil
+}
+
+func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session, opts StartWorkflowOptions) error {
+	sessionID := session.ID()
+
+	l := ws.l.Sugar().With("session_id", sessionID)
 
 	data, err := sessiondata.Get(ctx, ws.svcs, session)
 	if err != nil {
 		return fmt.Errorf("get session data: %w", err)
 	}
+
+	memo := memo(session, *data)
 
 	r, err := ws.svcs.Temporal.TemporalClient().ExecuteWorkflow(
 		ctx,
@@ -293,10 +328,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 			pid.String(),
 			"",
 			sessionSignalName(session.ID()),
-			&sdkservices.RunSignal{
-				Source:  session.ID(),
-				Payload: sdktypes.NewDictValueFromStringMap(payload),
-			},
+			sdktypes.NewDictValueFromStringMap(payload),
 		).Get(dwctx, nil); err != nil {
 			l.With(zap.Error(err)).Sugar().Errorf("signal parent session: %v", err)
 		}

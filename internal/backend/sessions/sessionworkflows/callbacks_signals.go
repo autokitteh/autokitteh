@@ -24,9 +24,16 @@ func (w *sessionWorkflow) signal(wctx workflow.Context) func(context.Context, sd
 			v = sdktypes.Nothing
 		}
 
-		signal := sdkservices.RunSignal{Source: w.data.Session.ID(), Payload: v}
+		var f workflow.Future
 
-		if err := workflow.SignalExternalWorkflow(wctx, sid.String(), "", userSignalName(name), &signal).Get(wctx, nil); err != nil {
+		childFuture, ok := w.children[sid]
+		if ok {
+			f = childFuture.SignalChildWorkflow(wctx, userSignalName(name), v)
+		} else {
+			f = workflow.SignalExternalWorkflow(wctx, sid.String(), "", userSignalName(name), v)
+		}
+
+		if err := f.Get(wctx, nil); err != nil {
 			return err
 		}
 
@@ -59,15 +66,20 @@ func (w *sessionWorkflow) nextSignal(wctx workflow.Context) func(context.Context
 			selector.AddFuture(workflow.NewTimer(wctx, timeout), func(workflow.Future) {})
 		}
 
-		var signal sdkservices.RunSignal
+		var signal *sdkservices.RunSignal
 
 		for _, name := range names {
 			selector.AddReceive(workflow.GetSignalChannel(wctx, name), func(c workflow.ReceiveChannel, _ bool) {
-				if !c.ReceiveAsync(&signal) {
+				var v sdktypes.Value
+
+				if !c.ReceiveAsync(&v) {
 					w.l.Warn("next_signal: expected but not received", zap.String("name", name))
 				}
 
-				signal.Name = strings.TrimPrefix(name, userSignalNamePrefix)
+				signal = &sdkservices.RunSignal{
+					Payload: v,
+					Name:    strings.TrimPrefix(name, userSignalNamePrefix),
+				}
 			})
 		}
 
@@ -81,7 +93,7 @@ func (w *sessionWorkflow) nextSignal(wctx workflow.Context) func(context.Context
 			return nil, wctx.Err()
 		}
 
-		if !signal.Source.IsValid() {
+		if signal == nil {
 			return nil, nil
 		}
 
@@ -89,6 +101,6 @@ func (w *sessionWorkflow) nextSignal(wctx workflow.Context) func(context.Context
 			signal.Payload = sdktypes.Nothing
 		}
 
-		return &signal, nil
+		return signal, nil
 	}
 }
