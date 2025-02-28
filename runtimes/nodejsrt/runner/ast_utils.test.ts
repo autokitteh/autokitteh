@@ -126,7 +126,7 @@ test('patch async nested member call', async () => {
 
     const expected = `import { a } from "lib";
 async function some_func() {
-  await ak_call(a.b.c.d, "test");
+  await ak_call(a.b.c, "d", "test");
 }`
     const patch = await patchCode(code)
     expect(patch).toEqual(expected);

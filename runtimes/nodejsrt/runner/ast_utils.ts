@@ -1,10 +1,12 @@
-import traverse from "@babel/traverse";
+import traverse, {NodePath} from "@babel/traverse";
 import {parse} from "@babel/parser";
 import generate from "@babel/generator";
-import {isMemberExpression, identifier, isIdentifier, isAwaitExpression, isVariableDeclarator} from "@babel/types";
+import { Expression, isMemberExpression, identifier, isIdentifier, isAwaitExpression, isVariableDeclarator, stringLiteral, MemberExpression, Identifier, CallExpression } from "@babel/types";
+
 import {listFiles} from "./file_utils";
 import fs from "fs"
 import {Export} from "./pb/autokitteh/user_code/v1/runner_svc_pb";
+import {ParserOptions} from "@babel/core";
 
 export interface Symbol {
     file: string;
@@ -88,45 +90,54 @@ export async function listExportsInDirectory(dirPath: string): Promise<Export[]>
 }
 
 export async function patchCode(code: string, exclude: string[] = []): Promise<string> {
-    const ast = parse(code, {sourceType: "module", plugins: ["typescript", "asyncGenerators", "topLevelAwait"]});
+    const parserOptions: ParserOptions = { sourceType: "module", plugins: ["typescript", "asyncGenerators", "topLevelAwait"] };
+    const ast = parse(code, parserOptions);
 
     traverse(ast, {
-        CallExpression: function (path) {
-            let originalFunc = "";
-
-            /*
-            TODO: support member expression with N levels
-            ex: a.b.c.d("param")
-            ATM we only support single level
-            ex: a.b("param")
-            */
+        CallExpression: function (path: NodePath<CallExpression>) {
+            let originalFunc: string = "";
 
             if (!isAwaitExpression(path.parent)) {
                 return;
             }
 
-            if (isMemberExpression(path.node.callee)) {
-                if (isIdentifier(path.node.callee.object) && isIdentifier(path.node.callee.property)) {
-                    originalFunc = path.node.callee.object.name + "." + path.node.callee.property.name;
-                    path.node.callee = identifier("ak_call");
+            function getFullMemberExpressionParts(memberExpr: Expression): { object: Identifier; method: string } | null {
+                let parts: string[] = [];
+                while (isMemberExpression(memberExpr)) {
+                    if (isIdentifier(memberExpr.property)) {
+                        parts.unshift(memberExpr.property.name);
+                    } else {
+                        return null;
+                    }
+                    memberExpr = memberExpr.object as MemberExpression;
                 }
+                if (isIdentifier(memberExpr)) {
+                    parts.unshift(memberExpr.name);
+                    const method = parts.pop()!
+                    const obj = parts.join(".")
+                    return { object: identifier(obj), method: method };
+                }
+                return null;
             }
-            else if (isIdentifier(path.node.callee)) {
+
+            if (isMemberExpression(path.node.callee)) {
+                const parts = getFullMemberExpressionParts(path.node.callee);
+                if (parts) {
+                    originalFunc = parts.object.name + "." + parts.method;
+                    path.node.callee = identifier("ak_call");
+                    path.node.arguments = [parts.object, stringLiteral(parts.method), ...path.node.arguments];
+                }
+            } else if (isIdentifier(path.node.callee)) {
                 originalFunc = path.node.callee.name;
-                path.node.callee.name =  "ak_call";
+                path.node.callee.name = "ak_call";
+                path.node.arguments.unshift(identifier(originalFunc));
             }
 
-            if (exclude.includes(originalFunc)) {
+            if (exclude.includes(originalFunc) || originalFunc === "") {
                 return;
             }
-
-            if (originalFunc == "") {
-                return;
-            }
-
-            path.node.arguments.unshift(identifier(originalFunc));
         },
-    })
+    });
 
     return generate(ast).code;
 }
