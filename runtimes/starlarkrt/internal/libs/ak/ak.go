@@ -82,7 +82,7 @@ func start(th *starlark.Thread, bi *starlark.Builtin, args starlark.Tuple, kwarg
 		return nil, err
 	}
 
-	return starlark.String(sid.String()), nil
+	return starlark.String(sid), nil
 }
 
 func subscribe(th *starlark.Thread, bi *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
@@ -181,17 +181,12 @@ func IsDeploymentActive(th *starlark.Thread, bi *starlark.Builtin, args starlark
 
 func signal(th *starlark.Thread, bi *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 	var (
-		sid, name string
+		dst, name string
 		payload   starlark.Value
 	)
 
-	if err := starlark.UnpackArgs(bi.Name(), args, kwargs, "session_id", &sid, "name", &name, "payload?", &payload); err != nil {
+	if err := starlark.UnpackArgs(bi.Name(), args, kwargs, "dst", &dst, "name", &name, "payload?", &payload); err != nil {
 		return nil, err
-	}
-
-	sdkSessionID, err := sdktypes.ParseSessionID(sid)
-	if err != nil {
-		return nil, sdkerrors.NewInvalidArgumentError("session_id: %w", err)
 	}
 
 	v, err := values.FromTLS(th).FromStarlarkValue(payload)
@@ -201,7 +196,7 @@ func signal(th *starlark.Thread, bi *starlark.Builtin, args starlark.Tuple, kwar
 
 	tls := tls.Get(th)
 
-	if err := tls.Callbacks.Signal(tls.GoCtx, tls.RunID, sdkSessionID, name, v); err != nil {
+	if err := tls.Callbacks.Signal(tls.GoCtx, tls.RunID, dst, name, v); err != nil {
 		return nil, err
 	}
 
