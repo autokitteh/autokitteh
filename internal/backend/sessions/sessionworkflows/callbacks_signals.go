@@ -18,13 +18,18 @@ const userSignalNamePrefix = "user_"
 func userSignalName(name string) string               { return userSignalNamePrefix + name }
 func sessionSignalName(sid sdktypes.SessionID) string { return sid.String() }
 
-func (w *sessionWorkflow) signal(wctx workflow.Context) func(context.Context, sdktypes.RunID, sdktypes.SessionID, string, sdktypes.Value) error {
-	return func(_ context.Context, _ sdktypes.RunID, sid sdktypes.SessionID, name string, v sdktypes.Value) error {
+func (w *sessionWorkflow) signal(wctx workflow.Context) func(context.Context, sdktypes.RunID, string, string, sdktypes.Value) error {
+	return func(_ context.Context, _ sdktypes.RunID, dst string, name string, v sdktypes.Value) error {
 		if !v.IsValid() {
 			v = sdktypes.Nothing
 		}
 
 		var f workflow.Future
+
+		sid, err := sdktypes.ParseSessionID(dst)
+		if err != nil {
+			return sdkerrors.NewInvalidArgumentError("invalid session id %q: %w", dst, err)
+		}
 
 		childFuture, ok := w.children[sid]
 		if ok {
@@ -93,8 +98,14 @@ func (w *sessionWorkflow) nextSignal(wctx workflow.Context) func(context.Context
 			return nil, wctx.Err()
 		}
 
-		if signal == nil {
+		if signal == nil || signal.Name == "" {
 			return nil, nil
+		}
+
+		if sid, err := sdktypes.ParseSessionID(signal.Name); err == nil {
+			// If we don't wait for the workflow to end, for some reason Temporal
+			// have an "unknown command" meltdown and complains about non-determinism.
+			_ = w.children[sid].Get(wctx, nil)
 		}
 
 		if !signal.Payload.IsValid() {

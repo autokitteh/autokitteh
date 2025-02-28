@@ -57,7 +57,7 @@ type RunCallbacks struct {
 	Now                func(ctx context.Context, rid sdktypes.RunID) (time.Time, error)
 	Print              func(ctx context.Context, rid sdktypes.RunID, text string) error
 	Sleep              func(ctx context.Context, rid sdktypes.RunID, d time.Duration) error
-	Start              func(ctx context.Context, rid sdktypes.RunID, loc sdktypes.CodeLocation, inputs map[string]sdktypes.Value, memo map[string]string) (sdktypes.SessionID, error)
+	Start              func(ctx context.Context, rid sdktypes.RunID, loc sdktypes.CodeLocation, inputs map[string]sdktypes.Value, memo map[string]string) (string, error)
 
 	// Events
 	Subscribe   func(ctx context.Context, rid sdktypes.RunID, name, filter string) (string, error)
@@ -65,7 +65,7 @@ type RunCallbacks struct {
 	NextEvent   func(ctx context.Context, rid sdktypes.RunID, signalIDs []string, timeout time.Duration) (sdktypes.Value, error)
 
 	// Signals
-	Signal     func(ctx context.Context, rid sdktypes.RunID, sid sdktypes.SessionID, name string, payload sdktypes.Value) error
+	Signal     func(ctx context.Context, rid sdktypes.RunID, dst, name string, payload sdktypes.Value) error
 	NextSignal func(ctx context.Context, rid sdktypes.RunID, names []string, timeout time.Duration) (*RunSignal, error)
 }
 
