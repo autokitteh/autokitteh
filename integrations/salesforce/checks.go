@@ -2,6 +2,9 @@ package salesforce
 
 import (
 	"context"
+	"encoding/json"
+	"io"
+	"net/http"
 
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/common"
@@ -54,4 +57,45 @@ func test(v sdkservices.Vars) sdkintegrations.OptFn {
 		// TODO(INT-235): return sdktypes.NewStatus(sdktypes.StatusCodeOK, ""), nil
 		return sdktypes.NewStatus(sdktypes.StatusCodeError, "Not implemented"), nil
 	})
+}
+
+func getUserInfo(ctx context.Context, v sdkservices.Vars, cid sdktypes.ConnectionID) (map[string]interface{}, error) {
+	vs, errStatus, err := common.ReadConnectionVars(ctx, v, cid)
+	if errStatus.IsValid() || err != nil {
+		return nil, err
+	}
+
+	instanceURL := vs.GetValue(instanceURLVar)
+	accessToken := vs.GetValue(oauthAccessTokenVar)
+
+	// Create the request
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, instanceURL+"/services/oauth2/userinfo", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set headers
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	// Make the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	// Read and print the response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var userInfo map[string]interface{}
+	if err := json.Unmarshal(body, &userInfo); err != nil {
+		return nil, err
+	}
+
+	return userInfo, nil
 }

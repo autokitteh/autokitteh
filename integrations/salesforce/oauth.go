@@ -57,11 +57,19 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Test the token's usability and get authoritative installation details.
-	// TODO: Reuse "checks.go".
+	userInfo, err := getUserInfo(r.Context(), h.vars, cid)
+	if err != nil {
+		l.Error("failed to get user info", zap.Error(err))
+		c.AbortServerError("failed to get user info")
+		return
+	}
+	orgID := userInfo["organization_id"].(string)
+
+	// TODO: handle multiple topics + support for custom topics
 	ctx := r.Context()
 
 	vsid := sdktypes.NewVarScopeID(cid)
-	if err := h.saveConnection(ctx, vsid, data.Token, data.Extra); err != nil {
+	if err := h.saveConnection(ctx, vsid, data.Token, data.Extra, orgID); err != nil {
 		l.Error("failed to save OAuth connection details", zap.Error(err))
 		c.AbortServerError("failed to save connection details")
 		return
@@ -76,10 +84,13 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, urlPath, http.StatusFound)
+
+	// TODO: should I go to vars? check to make sure it's not empty?
+	h.Subscribe(data.Extra["instance_url"].(string), orgID, data.Token.AccessToken)
 }
 
 // saveConnection saves OAuth token details as connection variables.
-func (h handler) saveConnection(ctx context.Context, vsid sdktypes.VarScopeID, t *oauth2.Token, extra map[string]any) error {
+func (h handler) saveConnection(ctx context.Context, vsid sdktypes.VarScopeID, t *oauth2.Token, extra map[string]any, orgID string) error {
 	if t == nil {
 		return errors.New("OAuth redirection missing token data")
 	}
@@ -88,6 +99,7 @@ func (h handler) saveConnection(ctx context.Context, vsid sdktypes.VarScopeID, t
 	for k, v := range extra {
 		vs = vs.Append(sdktypes.NewVar(sdktypes.NewSymbol(k)).SetValue(fmt.Sprintf("%v", v)))
 	}
+	vs = vs.Append(sdktypes.NewVar(orgIDVar).SetValue(orgID))
 
 	return h.vars.Set(ctx, vs.WithScopeID(vsid)...)
 }
