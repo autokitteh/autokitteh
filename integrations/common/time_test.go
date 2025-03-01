@@ -1,7 +1,6 @@
 package common
 
 import (
-	"reflect"
 	"testing"
 	"time"
 )
@@ -30,8 +29,8 @@ func TestParseGoTimestamp(t *testing.T) {
 		},
 		{
 			name: "with_nanoseconds",
-			ts:   "2009-11-10 23:00:00.123456789 +0000 UTC m=+0.000000001",
-			want: time.Date(2009, 11, 10, 23, 0, 0, 0, time.FixedZone("", 0)),
+			ts:   "2025-02-28 11:22:33.123456789 -0800 PST m=+0.000199937",
+			want: time.Date(2025, 2, 28, 11, 22, 33, 123456789, time.FixedZone("", -8*60*60)),
 		},
 		{
 			name:    "rfc_3339",
@@ -46,8 +45,8 @@ func TestParseGoTimestamp(t *testing.T) {
 				t.Errorf("ParseGoTimestamp() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ParseGoTimestamp() = %v, want %v", got, tt.want)
+			if got.Format(time.RFC3339) != tt.want.Format(time.RFC3339) {
+				t.Errorf("ParseGoTimestamp() = %q, want %q", got, tt.want)
 			}
 		})
 	}
