@@ -108,6 +108,30 @@ export class ActivityWaiter implements Waiter{
 
 export const ak_call = (waiter: Waiter) => {
     return async (...args: any) => {
+        if (typeof args[0] === "object") {
+            const ak_call_obj = () => {
+                return async (...args: any) => {
+                    let o = args[0];
+                    let m = args[1];
+                    let m_args: any = []
+                    if (args.length > 2) {
+                        m_args = args.slice(1);
+                    }
+
+
+                    if (o._ak_direct_call === true) {
+                        console.log("direct obj call", o.name, m ,m_args)
+                        return await o[m](...m_args);
+                    }
+
+                    console.log("remote obj call", f.name, f_args);
+                    const results = await waiter.wait(f, f_args, randomUUID());
+                    console.log("got obj call results", results)
+                    return results;
+                }
+            }
+            return ak_call_obj()(...args);
+        }
         let f = args[0];
         let f_args: any = []
         if (args.length > 1) {
@@ -115,14 +139,14 @@ export const ak_call = (waiter: Waiter) => {
         }
 
 
-        if (f.ak_call === undefined || f.name == "authenticate" || f.name === undefined || f.name == "all") {
+        if (f._ak_direct_call === true) {
             console.log("direct call", f.name, f_args)
             return await f(...f_args);
         }
 
-        console.log("remote call", f.name, f_args);
+        console.log("remote func call", f.name, f_args);
         const results = await waiter.wait(f, f_args, randomUUID());
-        console.log("got results", results)
+        console.log("got func results", results)
         return results;
     }
 }
