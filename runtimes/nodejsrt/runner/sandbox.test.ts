@@ -11,7 +11,8 @@ test('typescript hooking async', async () => {
         if (typeof f === "function") {
             let f_args = args.slice(1)
             let out = await f(...f_args);
-            console.log(out)
+            let s = JSON.stringify(out)
+            console.log("out:", f.name, s)
             return out;
         }
         else if (typeof f === "object") {
@@ -19,7 +20,10 @@ test('typescript hooking async', async () => {
             let m = args[1];
             let m_args = args.slice(2)
             let out = await o[m](...m_args);
-            console.log(out)
+            let s = JSON.stringify(out)
+
+
+            console.log("out:", o.constructor.name.toString(), m, s)
             return out;
         }
     }
