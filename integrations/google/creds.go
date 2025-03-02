@@ -128,6 +128,16 @@ func (h handler) saveFormID(ctx context.Context, c sdkintegrations.ConnectionIni
 	return nil
 }
 
+// restoreJSONKey updates the JSON key value after a connection setup fails.
+// If a previous JSON key existed, it's restored; otherwise, it's set to empty.
+func (h handler) restoreJSONKey(ctx context.Context, cid sdktypes.ConnectionID, prevKey string) error {
+	v := sdktypes.NewVar(vars.JSON).SetValue(prevKey).SetSecret(true).WithScopeID(sdktypes.NewVarScopeID(cid))
+	if err := h.vars.Set(ctx, v); err != nil {
+		return err
+	}
+	return nil
+}
+
 // finalize saves the user-submitted JSON key and optional Google Forms ID.
 // It also initializes watches for Gmail and Google Forms, if needed.
 func (h handler) finalize(ctx context.Context, c sdkintegrations.ConnectionInit, vs sdktypes.Vars) {
@@ -140,6 +150,14 @@ func (h handler) finalize(ctx context.Context, c sdkintegrations.ConnectionInit,
 		c.AbortBadRequest("invalid connection ID")
 		return
 	}
+
+	prevVs, err := h.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+	if err != nil {
+		l.Error("Previous JSON key retrieval error", zap.Error(err))
+		c.AbortServerError("previous JSON key retrieval error")
+		return
+	}
+	prevKey := prevVs.GetValue(vars.JSON)
 
 	// Unique step for Google integrations (specifically Calendar, Forms, and
 	// Gmail): save the auth data before creating/updating event watches.
@@ -154,31 +172,38 @@ func (h handler) finalize(ctx context.Context, c sdkintegrations.ConnectionInit,
 	}
 
 	if err := calendar.UpdateWatches(ctx, h.vars, cid); err != nil {
-		l.Error("Google Calendar watches creation error", zap.Error(err))
-		c.AbortServerError("calendar watches creation error")
+		h.handleWatchError(ctx, c, cid, prevKey, err, "Calendar")
 		return
 	}
 
 	if err := drive.UpdateWatches(ctx, h.vars, cid); err != nil {
-		l.Error("Google Drive watches creation error", zap.Error(err))
-		c.AbortServerError("drive watches creation error")
+		h.handleWatchError(ctx, c, cid, prevKey, err, "Drive")
 		return
 	}
 
 	if err := forms.UpdateWatches(ctx, h.vars, cid); err != nil {
-		l.Error("Google Forms watches creation error", zap.Error(err))
-		c.AbortServerError("form watches creation error")
+		h.handleWatchError(ctx, c, cid, prevKey, err, "Forms")
 		return
 	}
 
 	if err := gmail.UpdateWatch(ctx, h.vars, cid); err != nil {
-		l.Error("Gmail watch creation error", zap.Error(err))
-		c.AbortServerError("Gmail watch creation error")
+		h.handleWatchError(ctx, c, cid, prevKey, err, "Gmail")
 		return
 	}
 
 	// Redirect to the post-init handler to finish the connection setup.
 	c.Finalize(vs)
+}
+
+func (h handler) handleWatchError(ctx context.Context, c sdkintegrations.ConnectionInit, cid sdktypes.ConnectionID, prevKey string, err error, watchName string) {
+	l := extrazap.ExtractLoggerFromContext(ctx)
+	l.Error(fmt.Sprintf("Google %s watches creation error", watchName), zap.Error(err))
+	c.AbortServerError(watchName + " watches creation error")
+	jsonErr := h.restoreJSONKey(ctx, cid, prevKey)
+	if jsonErr != nil {
+		l.Error("JSON key deletion error", zap.Error(jsonErr))
+		c.AbortServerError("JSON key deletion error")
+	}
 }
 
 func oauthURL(form url.Values, c sdkintegrations.ConnectionInit) string {

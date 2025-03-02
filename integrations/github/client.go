@@ -64,6 +64,9 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 			}
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 		case integrations.PAT:
+			if vs.GetValue(vars.PAT) == "" {
+				return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+			}
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using PAT + webhook"), nil
 		default:
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil

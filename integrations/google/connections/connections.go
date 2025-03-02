@@ -39,6 +39,9 @@ func ConnStatus(cvars sdkservices.Vars) sdkintegrations.OptFn {
 
 		switch at.Value() {
 		case integrations.JSONKey:
+			if vs.GetValue(vars.JSON) == "" {
+				return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+			}
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using JSON key"), nil
 		case integrations.OAuth:
 			return common.CheckLegacyOAuthToken(vs)
