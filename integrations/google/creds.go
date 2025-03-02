@@ -157,7 +157,7 @@ func (h handler) finalize(ctx context.Context, c sdkintegrations.ConnectionInit,
 		c.AbortServerError("previous JSON key retrieval error")
 		return
 	}
-	prevkey := prevVs.Get(vars.JSON).Value()
+	prevKey := prevVs.GetValue(vars.JSON)
 
 	// Unique step for Google integrations (specifically Calendar, Forms, and
 	// Gmail): save the auth data before creating/updating event watches.
