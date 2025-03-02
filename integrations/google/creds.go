@@ -168,7 +168,7 @@ func (h handler) finalize(ctx context.Context, c sdkintegrations.ConnectionInit,
 	handleWatchError := func(err error, watchName string) {
 		l.Error(fmt.Sprintf("Google %s watches creation error", watchName), zap.Error(err))
 		c.AbortServerError(watchName + " watches creation error")
-		jsonErr := h.restoreJSONKey(ctx, cid, prevkey)
+		jsonErr := h.restoreJSONKey(ctx, cid, prevKey)
 		if err != nil {
 			l.Error("JSON key deletion error", zap.Error(jsonErr))
 			c.AbortServerError("JSON key deletion error")
