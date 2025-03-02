@@ -1,4 +1,4 @@
-package svc
+package aksvc
 
 import (
 	"context"
@@ -35,6 +35,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/backend/integrations"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
+	"go.autokitteh.dev/autokitteh/internal/backend/svccommon"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -50,7 +51,7 @@ var integrationConfigs = configset.Set[integrationsConfig]{
 }
 
 func integration[T any](name string, cfg configset.Set[T], init any) fx.Option {
-	return Component(name, cfg, fx.Provide(
+	return svccommon.Component(name, cfg, fx.Provide(
 		fx.Annotate(
 			init,
 			fx.ResultTags(`group:"integrations"`),
@@ -113,7 +114,7 @@ func integrationsFXOption() fx.Option {
 		integration("twilio", configset.Empty, twilio.New),
 		integration("zoom", configset.Empty, zoom.New),
 		fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, muxes *muxes.Muxes, vars sdkservices.Vars, dispatch sdkservices.DispatchFunc, oauth sdkservices.OAuth) {
-			HookOnStart(lc, func(ctx context.Context) error {
+			svccommon.HookOnStart(lc, func(ctx context.Context) error {
 				asana.Start(l, muxes)
 				auth0.Start(l, muxes, vars)
 				aws.Start(l, muxes)
@@ -135,7 +136,7 @@ func integrationsFXOption() fx.Option {
 				return nil
 			})
 		}),
-		Component(
+		svccommon.Component(
 			"integrations",
 			integrationConfigs,
 			fx.Provide(
