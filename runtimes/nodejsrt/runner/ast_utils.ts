@@ -44,6 +44,10 @@ export async function listExports(code: string, file: string): Promise<Export[]>
                 line = path.node.loc.start.line;
             }
 
+            if (name === "") {
+                return;
+            }
+
             exports.push({args: params, line: line, name: name, file: file, $typeName:"autokitteh.user_code.v1.Export"});
         },
         ArrowFunctionExpression: function (path) {
@@ -67,6 +71,10 @@ export async function listExports(code: string, file: string): Promise<Export[]>
                 line = path.node.loc.start.line;
             }
 
+            if (name === "") {
+                return
+            }
+
             exports.push({args: params, line: line, name: name, file: file, $typeName:"autokitteh.user_code.v1.Export"});
         },
     })
@@ -78,12 +86,17 @@ export async function listExportsInDirectory(dirPath: string): Promise<Export[]>
     const files = await listFiles(dirPath);
     let exports: Export[] = []
     for (const file of files) {
-        if (!file.endsWith(".js") && !file.endsWith(".ts")) {
+        if (file.includes("node_modules")) {
+            continue
+        }
+
+        if (!file.endsWith(".ts")) {
             continue;
         }
 
         let code = fs.readFileSync(file, "utf8");
-        exports = exports.concat(exports, await listExports(code, file))
+        let new_exports = await listExports(code, file)
+        exports.push(...new_exports)
     }
 
     return exports;
