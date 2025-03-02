@@ -57,21 +57,26 @@ func SwitchToTempDir(t *testing.T, venvPath string) string {
 	// a symbolic link from the test suite's reusable Python virtual environment,
 	// created by [CreatePythonVenv], to this new temporary directory).
 	if err := os.Mkdir("autokitteh", 0o755); err != nil {
-		t.Fatal("failed to create Python venv parent directory:", err)
+		t.Fatal("failed to create AK config & data directory:", err)
 	}
-	if err := os.Symlink(venvPath, "autokitteh/venv"); err != nil {
-		t.Fatal("failed to link Python venv:", err)
+	t.Cleanup(func() {
+		if err := os.RemoveAll("autokitteh"); err != nil {
+			t.Error("failed to remove temporary AK config & data directory:", err)
+		}
+	})
+	if err := os.Symlink(venvPath, filepath.Join("autokitteh", "venv")); err != nil {
+		t.Fatal("failed to link Python venv in temporary directory:", err)
 	}
 
 	return tmpPath
 }
 
 // createPythonVenv creates a reusable Python virtual environment (assumed to
-// be in the test suite's original directory) for all the test cases, to avoid
+// be in the AK Python runner directory) for all the test cases, to avoid
 // AK server startup delays. This is removed during test-suite cleanup.
 func CreatePythonVenv(t *testing.T) string {
 	// https://docs.astral.sh/uv/reference/cli/#uv-sync
-	cmd := exec.Command("uv", "sync", "--project", runnerPath, "--all-extras")
+	cmd := exec.Command("uv", "sync", "--project", runnerPath, "--compile-bytecode")
 	if log, err := cmd.CombinedOutput(); err != nil {
 		t.Log(string(log))
 		t.Fatal("uv sync error:", err)

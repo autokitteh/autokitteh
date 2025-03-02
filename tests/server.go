@@ -39,6 +39,7 @@ func StartAKServer(akPath, akMode string) (*AKServer, error) {
 	cmd.Env = append(cmd.Env, "AK_DB__DSN=file:autokitteh.sqlite")
 	cmd.Env = append(cmd.Env, "AK_HTTP__ADDR=:0")
 	cmd.Env = append(cmd.Env, "AK_HTTP__ADDR_FILENAME="+addrFilename)
+	cmd.Env = append(cmd.Env, "AK_LOGGER__LEVEL=info")
 	cmd.Env = append(cmd.Env, "AK_PPROF__ENABLE=false")
 	cmd.Env = append(cmd.Env, "AK_PYTHONRT__LAZY_LOAD_LOCAL_VENV=false")
 	cmd.Env = append(cmd.Env, "AK_TEMPORALCLIENT__ALWAYS_START_DEV_SERVER=true")

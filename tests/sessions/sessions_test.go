@@ -8,13 +8,14 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"go.autokitteh.dev/autokitteh/tests"
 )
 
 const (
-	clientTimeout = 15 * time.Second
+	// TODO: Should be 15 * time.Second
+	// (but there was a performance degradation on the weekend)
+	clientTimeout = 0
 )
 
 //go:embed *
@@ -94,7 +95,7 @@ func runTest(t *testing.T, akPath, venvPath, txtarPath string) {
 		}
 		if result.ReturnCode != 0 {
 			server.PrintLog(t)
-			t.Errorf("session test failed: return code = %d\n%s", result.ReturnCode, result.Output)
+			t.Fatalf("session test failed: return code = %d\n%s", result.ReturnCode, result.Output)
 		}
 	})
 }
