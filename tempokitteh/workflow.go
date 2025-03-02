@@ -40,7 +40,7 @@ type tkworkflow struct {
 	children map[string]workflow.ChildWorkflowFuture
 }
 
-func (tk *tk) workflow(wctx workflow.Context, args map[string]any) (any, error) {
+func (tk *tk) workflow(wctx workflow.Context, arg any) (any, error) {
 	tkw := &tkworkflow{tk: tk, sessionID: sdktypes.NewSessionID(), children: make(map[string]workflow.ChildWorkflowFuture)}
 
 	globals, err := tkw.globals()
@@ -48,7 +48,7 @@ func (tk *tk) workflow(wctx workflow.Context, args map[string]any) (any, error) 
 		return sdktypes.InvalidValue, err
 	}
 
-	sdkArgs, err := kittehs.TransformMapValuesError(args, sdktypes.WrapValue)
+	sdkArg, err := sdktypes.WrapValue(arg)
 	if err != nil {
 		return sdktypes.InvalidValue, fmt.Errorf("args: %w", err)
 	}
@@ -64,7 +64,7 @@ func (tk *tk) workflow(wctx workflow.Context, args map[string]any) (any, error) 
 
 	var unwRetVal any
 
-	retVal, err := tkw.run(wctx, globals, sdkArgs, ep)
+	retVal, err := tkw.run(wctx, globals, sdkArg, ep)
 	if err != nil {
 		return nil, err
 	} else if unwRetVal, err = vw.Unwrap(retVal); err != nil {
@@ -131,7 +131,7 @@ func (w *tkworkflow) newRunID(wctx workflow.Context) (runID sdktypes.RunID, err 
 func (w *tkworkflow) run(
 	wctx workflow.Context,
 	globals map[string]sdktypes.Value,
-	args map[string]sdktypes.Value,
+	arg sdktypes.Value,
 	entrypoint sdktypes.CodeLocation,
 ) (sdktypes.Value, error) {
 	runID, err := w.newRunID(wctx)
@@ -191,7 +191,7 @@ func (w *tkworkflow) run(
 		}
 
 		inputs := map[string]sdktypes.Value{
-			"data":       sdktypes.NewDictValueFromStringMap(args),
+			"data":       arg,
 			"session_id": sdktypes.NewStringValue(workflow.GetInfo(wctx).WorkflowExecution.ID),
 		}
 
