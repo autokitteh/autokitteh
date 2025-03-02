@@ -1,3 +1,4 @@
+import './akLocal'
 import config from './config';
 import GmailClient from './GmailClient';
 import ChatGPTClient from './ChatGPTClient';

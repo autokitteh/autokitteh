@@ -11,17 +11,13 @@
     "test": "jest"
   },
   "dependencies": {
+    "@bufbuild/protobuf": "^2.2.3",
+    "@connectrpc/connect": "^2.0.2",
     "@google-cloud/local-auth": "^3.0.1",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "google-auth-library": "^9.15.1",
     "googleapis": "^144.0.0",
     "openai": "^4.85.4",
-    "pdf-lib": "^1.17.1",
-    "pdf-parse": "^1.1.1",
-    "pdf-ts": "^0.0.2",
-    "pdf.js": "^0.1.0",
-    "pdf2json": "^3.1.5",
     "pdfkit": "^0.16.0"
   },
   "devDependencies": {
