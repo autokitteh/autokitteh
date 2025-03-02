@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authusers"
+	"go.autokitteh.dev/autokitteh/tests"
 )
 
 var (
@@ -29,13 +30,13 @@ var (
 	captures = make(map[string]string)
 )
 
-func captureJQ(t *testing.T, step string, ak *akResult, _ *httpResponse) error {
+func captureJQ(t *testing.T, step string, ak *tests.AKResult, _ *httpResponse) error {
 	match := jqCheck.FindStringSubmatch(step)
 	name, query := match[1], match[2]
 
-	v, err := jq(ak.output, query)
+	v, err := jq(ak.Output, query)
 	if err != nil {
-		return fmt.Errorf("%w. input: %s", err, ak.output)
+		return fmt.Errorf("%w. input: %s", err, ak.Output)
 	}
 
 	t.Logf("captured %q into %q", v, name)
@@ -45,7 +46,7 @@ func captureJQ(t *testing.T, step string, ak *akResult, _ *httpResponse) error {
 	return nil
 }
 
-func captureRE(t *testing.T, step string, ak *akResult, _ *httpResponse) error {
+func captureRE(t *testing.T, step string, ak *tests.AKResult, _ *httpResponse) error {
 	match := reCheck.FindStringSubmatch(step)
 	name, query := match[1], match[2]
 
@@ -54,7 +55,7 @@ func captureRE(t *testing.T, step string, ak *akResult, _ *httpResponse) error {
 		return fmt.Errorf("failed to compile regexp %q: %w", query, err)
 	}
 
-	v := re.FindString(ak.output)
+	v := re.FindString(ak.Output)
 
 	t.Logf("captured %q into %q", v, name)
 

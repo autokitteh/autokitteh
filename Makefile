@@ -37,7 +37,6 @@ endif
 VERSION_PKG_PATH="go.autokitteh.dev/autokitteh/internal/version"
 LDFLAGS+=-X '${VERSION_PKG_PATH}.Version=${VERSION}' -X '${VERSION_PKG_PATH}.Time=${TIMESTAMP}' -X '${VERSION_PKG_PATH}.Commit=${COMMIT}' -X '${VERSION_PKG_PATH}.User=$(shell whoami)' -X '${VERSION_PKG_PATH}.Host=$(shell hostname)'
 
-export AK_SYSTEST_USE_PROC_SVC=1
 export PYTHONPATH=$(PWD)/runtimes/pythonrt/py-sdk
 
 .PHONY: ak
@@ -47,11 +46,10 @@ ak: webplatform bin/ak
 # 2. Run shellcheck (shell scripts linter)
 # 3. Download latest web platform
 # 4. Rebuild protocol buffer stubs
-# 5. Build the entire Go codebase
-# 6. Run golangci-lint (Go linters)
-# 7. Build AK binary with version and/or debug info
-# 8. Run all automated tests (unit + integration)
-all: gofmt-check shellcheck webplatform proto lint build bin/ak test
+# 5. Run golangci-lint (Go linters)
+# 6. Build AK binary with version and/or debug info
+# 7. Run all automated tests (unit + integration)
+all: gofmt-check shellcheck webplatform proto lint bin/ak test
 
 .PHONY: clean
 clean:
@@ -64,11 +62,6 @@ bin: bin/ak
 .PHONY: bin/ak
 bin/ak:
 	$(GO) build --tags "${TAGS}" -o "$@" -ldflags="$(LDFLAGS)" $(GO_BUILD_OPTS) ./cmd/$(shell basename $@)
-
-.PHONY: build
-build:
-	mkdir -p $(OUTDIR)
-	$(GO) build $(GO_BUILD_OPTS) ./...
 
 .PHONY: debug
 debug:
@@ -116,19 +109,19 @@ test-unit:
 # and check for race conditions while running each of them.
 .PHONY: test-race
 test-race:
-	$(GOTEST) -race ./...
+	$(GOTEST) -timeout 0 -race ./...
 
 # Generate a coverage report for all Go tests
 # (including Python runtime and system tests).
 .PHONY: test-cover
 test-cover:
-	$(GOTEST) -covermode=atomic -coverprofile=tmp/cover.out ./...
+	$(GOTEST) -covermode=atomic -coverprofile=tmp/cover.out -timeout 0 ./...
 	go tool cover -html=tmp/cover.out
 
 # Long-running subset of "test-unit", for simplicity.
 .PHONY: test-system
 test-system: bin/ak
-	$(GOTEST) ./tests/system
+	AK_SYSTEST_USE_PROC_SVC=1 $(GOTEST) -timeout 0 ./tests/system
 
 .PHONY: test-db
 test-db:
@@ -147,11 +140,11 @@ test-opa:
 
 .PHONY: test-starlark
 test-starlark: bin/ak
-	./tests/starlark/run.sh
+	$(GOTEST) ./tests/starlark/...
 
 .PHONY: test-sessions
 test-sessions: bin/ak
-	./tests/sessions/run.sh
+	$(GOTEST) ./tests/sessions/...
 
 .PHONY: proto
 proto:

@@ -13,9 +13,11 @@ import (
 	"github.com/hexops/gotextdiff/myers"
 	"github.com/hexops/gotextdiff/span"
 	jd "github.com/josephburnett/jd/lib"
+
+	"go.autokitteh.dev/autokitteh/tests"
 )
 
-func runCheck(t *testing.T, step string, ak *akResult, resp *httpResponse) error {
+func runCheck(t *testing.T, step string, ak *tests.AKResult, resp *httpResponse) error {
 	match := steps.FindStringSubmatch(step)
 	switch match[1] {
 	case "output":
@@ -50,12 +52,12 @@ func nextField(text string) (string, string) {
 	return a, b
 }
 
-func checkAKOutput(t *testing.T, step string, ak *akResult) error {
+func checkAKOutput(t *testing.T, step string, ak *tests.AKResult) error {
 	match := akCheckOutput.FindStringSubmatch(step)
 	want := strings.TrimSpace(match[3])
 	want = strings.TrimPrefix(want, "'")
 	want = strings.TrimSuffix(want, "'")
-	got := ak.output
+	got := ak.Output
 
 	if strings.HasPrefix(match[2], "file") {
 		b, err := os.ReadFile(want)
@@ -105,7 +107,7 @@ func checkAKOutput(t *testing.T, step string, ak *akResult) error {
 	case "equals_jq":
 		q, expected := nextField(want)
 
-		got, err := jq(ak.output, q)
+		got, err := jq(ak.Output, q)
 		if err != nil {
 			return fmt.Errorf("failed to run jq: %w", err)
 		}
@@ -120,17 +122,17 @@ func checkAKOutput(t *testing.T, step string, ak *akResult) error {
 	return nil
 }
 
-func checkAKReturnCode(step string, ak *akResult) error {
+func checkAKReturnCode(step string, ak *tests.AKResult) error {
 	match := akCheckReturn.FindStringSubmatch(step)
 	expected, err := strconv.Atoi(match[1])
 	if err != nil {
 		return fmt.Errorf("failed to parse expected return code: %w", err)
 	}
-	if expected != ak.returnCode {
-		msg := fmt.Sprintf("got return code %d, want %d", ak.returnCode, expected)
+	if expected != ak.ReturnCode {
+		msg := fmt.Sprintf("got return code %d, want %d", ak.ReturnCode, expected)
 		// Append the AK output for context, if there is any.
-		if ak.output != "" {
-			msg += "\n" + ak.output
+		if ak.Output != "" {
+			msg += "\n" + ak.Output
 		}
 		return errors.New(msg)
 	}
