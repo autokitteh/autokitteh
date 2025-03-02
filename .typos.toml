@@ -6,3 +6,6 @@ extend-exclude = [
     "runtimes/pythonrt/build_test.go",
     "sdk/sdktypes/integration_id_test.go"
 ]
+
+[default.extend-identifiers]
+typ = "typ"
