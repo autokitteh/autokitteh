@@ -3,7 +3,11 @@ import config from "../src/config";
 import path from "path";
 
 test("ChatGPTClient - analyzeAttachment", async () => {
-    const client = new ChatGPTClient(config.chatGPT.promptTemplate, config.chatGPT.apiKey);
+    const client = await new ChatGPTClient(
+        config.chatGPT.promptTemplate,
+        config.chatGPT.apiKey
+    ).init();
+
     const filePath = path.join(__dirname, "./invoices/inv-1.pdf");
     const response = await client.analyzeAttachment(filePath);
     expect(response).toEqual({

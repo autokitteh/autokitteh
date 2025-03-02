@@ -5,20 +5,29 @@ import fs from 'fs';
 
 /**
  * ChatGPTClient is a client for interacting with OpenAI's GPT models, specifically tailored
- * to analyze and extract information from files such as PDFs using a provided prompt template.
+ * to analyze and extract information from PDF files using a provided prompt template.
+ * The class uses openai assistant with file search tool to analyze PDF files.
+ *  https://platform.openai.com/docs/assistants/tools/file-search
  */
 
 class ChatGPTClient {
     private readonly promptTemplate: string;
+    private readonly apiKey: string;
     private openai: OpenAI;
+    private assistant: any;
 
     constructor(promptTemplate: string, apiKey?: string) {
         this.promptTemplate = promptTemplate;
-        apiKey = apiKey || config.chatGPT.apiKey;
-        if (!apiKey) {
+        this.apiKey = apiKey || config.chatGPT.apiKey;
+        if (!this.apiKey) {
             throw new Error("Missing OPENAI_API_KEY. Please set it in your environment.");
         }
-        this.openai = new OpenAI({apiKey: apiKey});
+    }
+    async init(): Promise<ChatGPTClient> {
+        console.log('init');
+        this.openai = new OpenAI({apiKey: this.apiKey});
+        this.assistant = await this.createAssistant();
+        return this;
     }
 
     /**
@@ -32,10 +41,9 @@ class ChatGPTClient {
     async analyzeAttachment(filePath: string): Promise<InvoiceData | null> {
 
         const prompt: string = this.promptTemplate;
-        const assistant = await this.createAssistant();
         const fileId = await this.uploadFile(filePath);
         const threadId = await this.createThread(fileId.id, prompt);
-        const messages = await this.runAssistant(threadId, assistant.id);
+        const messages = await this.runAssistant(threadId, this.assistant.id);
         return this.processResponse(messages);
     }
 

@@ -39,9 +39,10 @@ class GmailClient {
         this.subjectRegex = new RegExp(subjectRegex, "i");
     }
 
-    async initialize(): Promise<void> {
+    async init(): Promise<GmailClient> {
         const authClient = await this.authenticate();
         this.gmail = google.gmail({version: 'v1', auth: authClient});
+        return this;
     }
 
     private async authenticate() {

@@ -16,12 +16,11 @@ import startServer from './server';
  */
 async function main(): Promise<void> {
     const storage = new InvoiceStorage();
-    const emailFetcher = new GmailClient();
-    await emailFetcher.initialize();
-    const chatGPTClient = new ChatGPTClient(config.chatGPT.promptTemplate);
-    const processor = new InvoiceProcessor(emailFetcher, chatGPTClient, storage);
+    const gmailClient = await new GmailClient().init();
+    const chatGPTClient = await new ChatGPTClient(config.chatGPT.promptTemplate).init();
+    const processor = new InvoiceProcessor(gmailClient, chatGPTClient, storage);
 
-    startServer(storage, 3000);
+    startServer(storage, 3001);
 
     while (true) {
         console.log("Checking for new emails...");
