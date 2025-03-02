@@ -28,8 +28,8 @@ test('typescript hooking async', async () => {
         }
     }
 
-    const sandbox = new Sandbox("/Users/adiludmer/GolandProjects/autokitteh/runtimes/nodejsrt/runner/test_data/replay-demo", hookFunc);
-    await sandbox.loadFile("/Users/adiludmer/GolandProjects/autokitteh/runtimes/nodejsrt/runner/test_data/replay-demo/main.ts");
+    const sandbox = new Sandbox("test_data/invoices-app", hookFunc);
+    await sandbox.loadFile("src/main.ts");
     await sandbox.run("on_event", [1], () => {})
     expect(hookCalled).toBe(true);
 });
