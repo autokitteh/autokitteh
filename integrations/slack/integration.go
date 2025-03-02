@@ -116,7 +116,6 @@ func migrateOldConnectionVars(l *zap.Logger, v sdkservices.Vars) {
 
 		pairs := []struct{ old, new string }{
 			{"Key", "install_ids"},
-			{"oauth_TokenTyp", "oauth_TokenType"},
 
 			{"oauth_AccessToken", "oauth_access_token"},
 			{"oauth_Expiry", "oauth_expiry"},
