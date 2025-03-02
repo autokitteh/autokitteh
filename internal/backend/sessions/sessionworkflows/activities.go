@@ -11,6 +11,7 @@ import (
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/backend/types"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -26,8 +27,11 @@ const (
 	getSessionStopReasonActivityName        = "get_session_stop_reason"
 	getSignalEventActivityName              = "get_signal_event"
 	removeSignalActivityName                = "remove_signal"
-	addSessionPrintActivityName             = "add_session_print"
+	legacyAddSessionPrintActivityName       = "add_session_print"
+	addSessionPrintActivityName             = "add_session_print_value"
 	deactivateDrainedDeploymentActivityName = "deactivate_drained_deployment"
+	getDeploymentStateActivityName          = "get_deployment_state"
+	createSessionActivityName               = "create_session"
 )
 
 func (ws *workflows) registerActivities() {
@@ -67,6 +71,11 @@ func (ws *workflows) registerActivities() {
 	)
 
 	ws.worker.RegisterActivityWithOptions(
+		ws.legacyAddSessionPrintActivity,
+		activity.RegisterOptions{Name: legacyAddSessionPrintActivityName},
+	)
+
+	ws.worker.RegisterActivityWithOptions(
 		ws.addSessionPrintActivity,
 		activity.RegisterOptions{Name: addSessionPrintActivityName},
 	)
@@ -75,14 +84,41 @@ func (ws *workflows) registerActivities() {
 		ws.deactivateDrainedDeploymentActivity,
 		activity.RegisterOptions{Name: deactivateDrainedDeploymentActivityName},
 	)
+
+	ws.worker.RegisterActivityWithOptions(
+		ws.getDeploymentStateActivity,
+		activity.RegisterOptions{Name: getDeploymentStateActivityName},
+	)
+
+	ws.worker.RegisterActivityWithOptions(
+		ws.createSessionActivity,
+		activity.RegisterOptions{Name: createSessionActivityName},
+	)
+}
+
+func (ws *workflows) createSessionActivity(ctx context.Context, session sdktypes.Session) error {
+	return temporalclient.TranslateError(ws.svcs.DB.CreateSession(ctx, session), "%v: create session", session.ID())
 }
 
 func (ws *workflows) updateSessionStateActivity(ctx context.Context, sid sdktypes.SessionID, state sdktypes.SessionState) error {
 	return temporalclient.TranslateError(ws.svcs.DB.UpdateSessionState(ctx, sid, state), "%v: update session state", sid)
 }
 
-func (ws *workflows) addSessionPrintActivity(ctx context.Context, sid sdktypes.SessionID, print string) error {
-	return temporalclient.TranslateError(ws.svcs.DB.AddSessionPrint(ctx, sid, print), "%v: add session print", sid)
+func (ws *workflows) getDeploymentStateActivity(ctx context.Context, did sdktypes.DeploymentID) (sdktypes.DeploymentState, error) {
+	d, err := ws.svcs.Deployments.Get(authcontext.SetAuthnSystemUser(ctx), did)
+	if err != nil {
+		return sdktypes.DeploymentStateUnspecified, temporalclient.TranslateError(err, "%v: get deployment state", did)
+	}
+
+	return d.State(), nil
+}
+
+func (ws *workflows) addSessionPrintActivity(ctx context.Context, sid sdktypes.SessionID, v sdktypes.Value, callSeq uint32) error {
+	return temporalclient.TranslateError(ws.svcs.DB.AddSessionPrint(ctx, sid, v, callSeq), "%v: add session print", sid)
+}
+
+func (ws *workflows) legacyAddSessionPrintActivity(ctx context.Context, sid sdktypes.SessionID, txt string) error {
+	return temporalclient.TranslateError(ws.svcs.DB.AddSessionPrint(ctx, sid, sdktypes.NewStringValue(txt), 0), "%v: legacy add session print", sid)
 }
 
 func (ws *workflows) removeSignalActivity(ctx context.Context, sigid uuid.UUID) error {
@@ -168,12 +204,12 @@ func (ws *workflows) getSignalEventActivity(ctx context.Context, sigid uuid.UUID
 }
 
 func (ws *workflows) getSessionStopReasonActivity(ctx context.Context, sid sdktypes.SessionID) (string, error) {
-	log, err := ws.svcs.DB.GetSessionLog(ctx, sdkservices.ListSessionLogRecordsFilter{SessionID: sid})
+	log, err := ws.svcs.DB.GetSessionLog(ctx, sdkservices.SessionLogRecordsFilter{SessionID: sid})
 	if err != nil {
 		return "", temporalclient.TranslateError(err, "get session log for %v", sid)
 	}
 
-	for _, rec := range log.Log.Records() {
+	for _, rec := range log.Records {
 		if r, ok := rec.GetStopRequest(); ok {
 			return r, nil
 		}
@@ -242,7 +278,7 @@ func (ws *workflows) terminateSessionWorkflow(wctx workflow.Context, params term
 }
 
 func (ws *workflows) terminateWorkflowActivity(ctx context.Context, sid sdktypes.SessionID, reason string) error {
-	err := ws.svcs.Temporal().TerminateWorkflow(ctx, workflowID(sid), "", reason)
+	err := ws.svcs.Temporal.TemporalClient().TerminateWorkflow(ctx, workflowID(sid), "", reason)
 	if err != nil {
 		// might happen multiple times for some reason, give it a chance to update the state later on.
 		var notFound *serviceerror.NotFound

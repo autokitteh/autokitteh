@@ -28,7 +28,8 @@ func (db *terminalDB) Setup(ctx context.Context) error {
 }
 
 func (db *terminalDB) db(ctx context.Context) *gorm.DB {
-	return db.DB.GormDB().WithContext(ctx)
+	_, w := db.DB.GormDB()
+	return w.WithContext(ctx)
 }
 
 func (db *terminalDB) GetMessages(ctx context.Context, addr string) ([]Message, error) {

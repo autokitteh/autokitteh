@@ -1,0 +1,38 @@
+name: CI - Manifest
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/manifest.yml
+      - docs/autokitteh.yaml
+      - internal/manifest/manifest.go
+      - manifest.schema.yaml
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/manifest.yml
+      - docs/autokitteh.yaml
+      - internal/manifest/manifest.go
+      - manifest.schema.yaml
+
+jobs:
+  test-schema:
+    name: Test manifest schema
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build AK
+        run: go build -trimpath -o bin/ak ./cmd/ak
+
+      - name: Verify Schema
+        run: |
+          ./bin/ak manifest schema > /tmp/schema.yaml
+          diff manifest.schema.yaml /tmp/schema.yaml
+          ./bin/ak manifest validate docs/autokitteh.yaml

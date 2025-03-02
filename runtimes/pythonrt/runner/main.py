@@ -13,6 +13,7 @@ from threading import Lock, Thread, Timer
 from time import sleep
 from traceback import TracebackException, format_exception
 
+import autokitteh
 import grpc
 import loader
 import log
@@ -20,9 +21,10 @@ import pb
 import values
 
 # from audit import make_audit_hook  # TODO(ENG-1893): uncomment this.
-from autokitteh import AttrDict, connections
-from call import AKCall, full_func_name
-from syscalls import SysCalls
+from autokitteh import AttrDict, Event, connections
+from autokitteh.errors import AutoKittehError
+from call import AKCall, full_func_name, activity_marker
+from syscalls import SysCalls, mark_no_activity
 
 # Timeouts are in seconds
 SERVER_GRACE_TIMEOUT = 3
@@ -84,8 +86,8 @@ def result_error(err):
 
 
 # Go passes HTTP event.data.body.bytes as base64 encode string
-def fix_http_body(event):
-    data = event.get("data")
+def fix_http_body(inputs):
+    data = inputs.get("data")
     if not isinstance(data, dict):
         return
 
@@ -110,7 +112,7 @@ def abort_with_exception(context, status, err):
 
 
 def set_exception_args(err):
-    """Make it possible to unpickle an error.
+    """Set exception "args" attribute to match __init__ signature so it can be un-pickled.
 
     See https://stackoverflow.com/questions/41808912/cannot-unpickle-exception-subclass
     """
@@ -138,6 +140,31 @@ def set_exception_args(err):
 
 Call = namedtuple("Call", "fn args kw fut")
 Result = namedtuple("Result", "value error traceback")
+
+
+def is_pickleable(err):
+    try:
+        data = pickle.dumps(err)
+        pickle.loads(data)
+        return True
+    except (TypeError, pickle.PickleError):
+        return False
+
+
+def restore_error(err):
+    if isinstance(err, Exception):
+        return err
+
+    if not isinstance(err, tuple):
+        raise TypeError("excepted a tuple, got %r", err)
+
+    if len(err) < 3:
+        raise ValueError("reduce tuple should be at least 3 elements, got %r", err)
+
+    cls, _, state = err[:3]
+    obj = cls.__new__(cls)
+    obj.__setstate__(state)
+    return obj
 
 
 class Runner(pb.runner_rpc.RunnerService):
@@ -196,6 +223,20 @@ class Runner(pb.runner_rpc.RunnerService):
         log.error("could not verify if should keep running, killing self")
         self.server.stop(SERVER_GRACE_TIMEOUT)
 
+    def patch_ak_funcs(self):
+        connections.encode_jwt = self.syscalls.ak_encode_jwt
+        connections.refresh_oauth = self.syscalls.ak_refresh_oauth
+
+        autokitteh.next_event = self.syscalls.ak_next_event
+        autokitteh.next_signal = self.syscalls.ak_next_signal
+        autokitteh.signal = self.syscalls.ak_signal
+        autokitteh.start = self.syscalls.ak_start
+        autokitteh.subscribe = self.syscalls.ak_subscribe
+        autokitteh.unsubscribe = self.syscalls.ak_unsubscribe
+
+        # Not ak, but patching print as well
+        builtins.print = self.ak_print
+
     def Start(self, request: pb.runner.StartRequest, context: grpc.ServicerContext):
         if self._start_called:
             log.error("already called start before")
@@ -206,16 +247,22 @@ class Runner(pb.runner_rpc.RunnerService):
         self._start_called = True
         log.info("start request: %r", request.entry_point)
 
-        self.syscalls = SysCalls(self.id, self.worker)
+        self.syscalls = SysCalls(self.id, self.worker, log)
         mod_name, fn_name = parse_entry_point(request.entry_point)
 
-        # Monkey patch some functions, should come before we import user code.
-        builtins.print = self.ak_print
-        connections.encode_jwt = self.syscalls.ak_encode_jwt
-        connections.refresh_oauth = self.syscalls.ak_refresh_oauth
+        # Must be before we load user code
+        self.patch_ak_funcs()
 
         ak_call = AKCall(self, self.code_dir)
-        mod = loader.load_code(self.code_dir, ak_call, mod_name)
+        try:
+            mod = loader.load_code(self.code_dir, ak_call, mod_name)
+        except Exception as err:
+            self.ak_print(result_error(err))
+            context.abort(
+                grpc.StatusCode.INVALID_ARGUMENT,
+                f"can't load {mod_name} from {self.code_dir} - {err}",
+            )
+
         ak_call.set_module(mod)
 
         fn = getattr(mod, fn_name, None)
@@ -225,15 +272,27 @@ class Runner(pb.runner_rpc.RunnerService):
                 f"function {fn_name!r} not found",
             )
 
-        event = json.loads(request.event.data)
+        inputs = json.loads(request.event.data)
 
-        fix_http_body(event)
-        event = AttrDict(event)
+        fix_http_body(inputs)
+
+        event = Event(
+            data=AttrDict(inputs.get("data", {})),
+            session_id=inputs.get("session_id"),
+        )
 
         # TODO(ENG-1893): Disabled temporarily due to issues with HubSpot client - need to investigate.
         # # Warn on I/O outside an activity. Should come after importing the user module
         # hook = make_audit_hook(ak_call, self.code_dir)
         # sys.addaudithook(hook)
+
+        if activity_marker(fn):
+            orig_fn = fn
+
+            def handler(event):
+                return ak_call(orig_fn, event)
+
+            fn = handler
 
         self.executor.submit(self.on_event, fn, event)
 
@@ -269,10 +328,11 @@ class Runner(pb.runner_rpc.RunnerService):
     def ActivityReply(
         self, request: pb.runner.ActivityReplyRequest, context: grpc.ServicerContext
     ):
-        if not request.result.custom.data:
+        if request.error or not request.result.custom.data:
+            error = request.error or "activity reply not a Custom value"
             req = pb.handler.DoneRequest(
                 runner_id=self.id,
-                error="activity reply not a Custom value",
+                error=error,
             )
             try:
                 self.worker.Done(req)
@@ -304,7 +364,12 @@ class Runner(pb.runner_rpc.RunnerService):
             )
 
         if result.error:
-            call.fut.set_exception(result.error)
+            try:
+                error = restore_error(result.error)
+            except (TypeError, ValueError) as err:
+                log.exception("can't restore error: %r", err)
+                error = AutoKittehError(repr(result.error))
+            call.fut.set_exception(error)
         else:
             call.fut.set_result(result.value)
 
@@ -353,20 +418,27 @@ class Runner(pb.runner_rpc.RunnerService):
         value = error = tb = None
         try:
             value = fn(*args, **kw)
-            if isinstance(value, Exception):
-                set_exception_args(value)
-        except Exception as err:
+        except BaseException as err:
             log.error("%s raised: %s", func_name, err)
             tb = TracebackException.from_exception(err)
             error = err
             set_exception_args(error)
 
+        if isinstance(value, Exception):
+            set_exception_args(value)
+
+        if not is_pickleable(error):
+            log.info("non pickleable: %r", error)
+            error = error.__reduce__()
+
         return Result(value, error, tb)
 
     def on_event(self, fn, event):
-        log.info("start event: %s", full_func_name(fn))
+        func_name = full_func_name(fn)
+        log.info("start event: %s", func_name)
 
         result = self._call(fn, [event], {})
+
         log.info("event end: error=%r", result.error)
         req = pb.handler.DoneRequest(
             runner_id=self.id,
@@ -389,9 +461,7 @@ class Runner(pb.runner_rpc.RunnerService):
         except grpc.RpcError as err:
             log.error("on_event: done send error: %r", err)
 
-    def syscall(self, fn, args, kw):
-        return self.syscalls.call(fn, args, kw)
-
+    @mark_no_activity
     def ak_print(self, *objects, sep=" ", end="\n", file=None, flush=False):
         io = StringIO()
         self._orig_print(*objects, sep=sep, end=end, flush=flush, file=io)

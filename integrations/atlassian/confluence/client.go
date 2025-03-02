@@ -8,30 +8,26 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+const (
+	integrationName = "confluence"
+)
+
+var (
+	integrationID = sdktypes.NewIntegrationIDFromName(integrationName)
+
+	desc = common.Descriptor(integrationName, "Atlassian Confluence", "/static/images/confluence.svg")
+)
+
 type integration struct {
 	vars sdkservices.Vars
 }
-
-var integrationID = sdktypes.NewIntegrationIDFromName("confluence")
-
-var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
-	IntegrationId: integrationID.String(),
-	UniqueName:    "confluence",
-	DisplayName:   "Atlassian Confluence",
-	Description:   "Atlassian Confluence is a corporate wiki developed by Atlassian.",
-	LogoUrl:       "/static/images/confluence.svg",
-	ConnectionUrl: "/confluence/connect",
-	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
-		RequiresConnectionInit: true,
-	},
-}))
 
 func New(cvars sdkservices.Vars) sdkservices.Integration {
 	i := &integration{vars: cvars}
@@ -104,7 +100,7 @@ func connTest(i *integration) sdkintegrations.OptFn {
 				return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 			}
 		case integrations.APIToken:
-			err := apiTokenConnTest(nil, vs)
+			err := apiTokenConnTest(ctx, nil, vs)
 			if err != nil {
 				return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 			}
@@ -134,13 +130,13 @@ func oauthConnTest(vs sdktypes.Vars) error {
 // apiTokenConnTest verifies the connection for API key authentication.
 // It sends a request to the API to confirm credentials and access.
 // https://developer.atlassian.com/cloud/confluence/rest/v2/intro/#about
-func apiTokenConnTest(l *zap.Logger, vs sdktypes.Vars) error {
+func apiTokenConnTest(ctx context.Context, l *zap.Logger, vs sdktypes.Vars) error {
 	baseURL := vs.Get(baseURL).Value()
 	email := vs.Get(email).Value()
 	token := vs.Get(token).Value()
 
 	u := baseURL + "/wiki/rest/api/user/current"
-	req, err := http.NewRequest(http.MethodGet, u, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
 		logWarnIfNotNil(l, "Failed to construct HTTP request for Confluence API token test", zap.Error(err))
 		return err

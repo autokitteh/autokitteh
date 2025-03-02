@@ -12,6 +12,7 @@ import (
 type OAuthData struct {
 	Token  *oauth2.Token
 	Params url.Values
+	Extra  map[string]interface{}
 }
 
 func (d OAuthData) Encode() (string, error) { return kittehs.EncodeURLData(d) }

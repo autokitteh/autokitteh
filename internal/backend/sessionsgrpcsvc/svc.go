@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -42,6 +43,10 @@ func (s *server) Start(ctx context.Context, req *connect.Request[sessionsv1.Star
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
+	if msg.Session.Inputs == nil {
+		msg.Session.Inputs = make(map[string]*sdktypes.ValuePB)
+	}
+
 	for k, v := range msg.JsonInputs {
 		decoded, err := decodeNestedJSON(v)
 		if err != nil {
@@ -49,17 +54,19 @@ func (s *server) Start(ctx context.Context, req *connect.Request[sessionsv1.Star
 			return nil, sdkerrors.AsConnectError(err)
 		}
 
-		if msg.Session.Inputs == nil {
-			msg.Session.Inputs = make(map[string]*sdktypes.ValuePB)
-		}
-
 		wrappedValue, err := sdktypes.WrapValue(decoded)
 		if err != nil {
 			err = sdkerrors.NewInvalidArgumentError(`json_inputs["%s"]: %w`, k, err)
-			return nil, sdkerrors.AsConnectError(fmt.Errorf(`json_inputs["%s"]: %w`, k, err))
+			return nil, sdkerrors.AsConnectError(err)
 		}
 
 		msg.Session.Inputs[k] = wrappedValue.ToProto()
+	}
+
+	if msg.JsonObjectInput != "" {
+		if err := unpackJSONObject(msg.JsonObjectInput, msg.Session.Inputs); err != nil {
+			return nil, sdkerrors.AsConnectError(err)
+		}
 	}
 
 	session, err := sdktypes.SessionFromProto(msg.Session)
@@ -170,7 +177,7 @@ func (s *server) GetLog(ctx context.Context, req *connect.Request[sessionsv1.Get
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	filter := sdkservices.ListSessionLogRecordsFilter{
+	filter := sdkservices.SessionLogRecordsFilter{
 		PaginationRequest: sdktypes.PaginationRequest{
 			Skip:      msg.Skip,
 			PageToken: msg.PageToken,
@@ -189,14 +196,15 @@ func (s *server) GetLog(ctx context.Context, req *connect.Request[sessionsv1.Get
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	logpb := hist.Log.ToProto()
+	pbrs := kittehs.Transform(hist.Records, sdktypes.ToProto)
+
 	if req.Msg.JsonValues {
-		for _, r := range logpb.Records {
-			if c := r.CallAttemptComplete; c != nil {
+		for _, pbr := range pbrs {
+			if c := pbr.CallAttemptComplete; c != nil {
 				if c.Result.Value, err = sdktypes.ValueProtoToJSONStringValue(c.Result.Value); err != nil {
 					return nil, err
 				}
-			} else if c := r.CallSpec; c != nil {
+			} else if c := pbr.CallSpec; c != nil {
 				if c.Args, err = kittehs.TransformError(c.Args, sdktypes.ValueProtoToJSONStringValue); err != nil {
 					return nil, err
 				}
@@ -208,7 +216,55 @@ func (s *server) GetLog(ctx context.Context, req *connect.Request[sessionsv1.Get
 		}
 	}
 
-	return connect.NewResponse(&sessionsv1.GetLogResponse{Log: logpb, Count: hist.TotalCount, NextPageToken: hist.NextPageToken}), nil
+	pblog := &sessionsv1.SessionLog{Records: pbrs}
+
+	return connect.NewResponse(&sessionsv1.GetLogResponse{Records: pbrs, Log: pblog, Count: hist.TotalCount, NextPageToken: hist.NextPageToken}), nil
+}
+
+func (s *server) GetPrints(ctx context.Context, req *connect.Request[sessionsv1.GetPrintsRequest]) (*connect.Response[sessionsv1.GetPrintsResponse], error) {
+	msg := req.Msg
+
+	if err := proto.Validate(msg); err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	sid, err := sdktypes.ParseSessionID(msg.SessionId)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	pagination := sdktypes.PaginationRequest{
+		Skip:      msg.Skip,
+		PageToken: msg.PageToken,
+		PageSize:  msg.PageSize,
+		Ascending: msg.Ascending,
+	}
+
+	if pagination.PageSize > 100 {
+		pagination.PageSize = 100
+	}
+
+	if pagination.PageSize < 10 {
+		pagination.PageSize = 10
+	}
+
+	prints, err := s.sessions.GetPrints(ctx, sid, pagination)
+	if err != nil {
+		if errors.Is(err, sdkerrors.ErrNotFound) {
+			return connect.NewResponse(&sessionsv1.GetPrintsResponse{}), nil
+		}
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	return connect.NewResponse(&sessionsv1.GetPrintsResponse{
+		Prints: kittehs.Transform(prints.Prints, func(p *sdkservices.SessionPrint) *sessionsv1.GetPrintsResponse_Print {
+			return &sessionsv1.GetPrintsResponse_Print{
+				V: p.Value.ToProto(),
+				T: timestamppb.New(p.Timestamp),
+			}
+		}),
+		NextPageToken: prints.NextPageToken,
+	}), nil
 }
 
 func (s *server) List(ctx context.Context, req *connect.Request[sessionsv1.ListRequest]) (*connect.Response[sessionsv1.ListResponse], error) {

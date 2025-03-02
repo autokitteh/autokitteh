@@ -44,6 +44,12 @@ func validateTar(t *testing.T, tarData []byte, fsys fs.FS) {
 		}
 
 		require.NoError(t, err, "iterate tar")
+
+		// Ignore directories
+		if hdr.Name[len(hdr.Name)-1] == '/' {
+			continue
+		}
+
 		require.Truef(t, isFSFile(fsys, hdr.Name), "%q - not on fs", hdr.Name)
 		inTar[hdr.Name] = true
 	}
@@ -154,7 +160,7 @@ func newCallbacks(svc *pySvc) *sdkservices.RunCallbacks {
 		Load: func(ctx context.Context, rid sdktypes.RunID, path string) (map[string]sdktypes.Value, error) {
 			return map[string]sdktypes.Value{}, nil
 		},
-		Print: func(ctx context.Context, rid sdktypes.RunID, msg string) {},
+		Print: func(ctx context.Context, rid sdktypes.RunID, msg string) error { return nil },
 	}
 
 	return &cbs
@@ -237,10 +243,10 @@ func Test_pySvc_Run(t *testing.T) {
 		"bytes": sdktypes.NewBytesValue([]byte(`{"user": "joe", "id": 7}`)),
 	})
 	kwargs := map[string]sdktypes.Value{
-		"event_id": sdktypes.NewStringValue("007"),
 		"data": sdktypes.NewDictValueFromStringMap(map[string]sdktypes.Value{
 			"body": body,
 		}),
+		"session_id": sdktypes.NewStringValue("ses_meow"),
 	}
 	_, err = run.Call(ctx, fn, nil, kwargs)
 	require.NoError(t, err, "call")
@@ -376,9 +382,7 @@ func TestProgramError(t *testing.T) {
 	fn, err := sdktypes.NewFunctionValue(xid, "handle", nil, nil, mod)
 	require.NoError(t, err, "new function")
 
-	kwargs := map[string]sdktypes.Value{}
-
-	_, err = svc.Call(ctx, fn, nil, kwargs)
+	_, err = svc.Call(ctx, fn, nil, nil)
 	require.Error(t, err)
 	t.Logf("ERROR:\n%s", err)
 	// There no way to check that err is a ProgramError since it's wrapped by unexported programError

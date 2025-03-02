@@ -6,7 +6,7 @@ after
 import autokitteh
 
 
-def main(event):
+def main(event: autokitteh.Event):
 	print('before')
 	try:
 		step()

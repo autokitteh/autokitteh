@@ -2,56 +2,6 @@
 // in Slack's Web API: https://api.slack.com/methods?filter=users.
 package users
 
-import (
-	"go.autokitteh.dev/autokitteh/integrations/slack/api"
-)
-
-// -------------------- Requests and responses --------------------
-
-// https://api.slack.com/methods/users.getPresence#examples
-type GetPresenceResponse struct {
-	api.SlackResponse
-
-	// Presence: "active" or "away".
-	Presence string `json:"presence,omitempty"`
-
-	// These fields appear only in responses to self-queries.
-	Online          bool `json:"online,omitempty"`
-	AutoAway        bool `json:"auto_away,omitempty"`
-	ManualAway      bool `json:"manual_away,omitempty"`
-	ConnectionCount int  `json:"connection_count,omitempty"`
-}
-
-// https://api.slack.com/methods/users.info#examples
-type InfoResponse struct {
-	api.SlackResponse
-
-	// https://api.slack.com/types/user
-	// https://github.com/slackapi/slack-api-specs/blob/master/web-api ("objs_user")
-	User *User `json:"user,omitempty"`
-}
-
-// https://api.slack.com/methods/users.list#examples
-type ListResponse struct {
-	api.SlackResponse
-
-	Offset  string `json:"offset,omitempty"`
-	CacheTS int    `json:"cache_ts,omitempty"`
-
-	Members []User `json:"members,omitempty"`
-}
-
-// https://api.slack.com/methods/users.lookupByEmail#examples
-type LookupByEmailResponse struct {
-	api.SlackResponse
-
-	// https://api.slack.com/types/user
-	// https://github.com/slackapi/slack-api-specs/blob/master/web-api ("objs_user")
-	User *User `json:"user,omitempty"`
-}
-
-// -------------------- Auxiliary data structures --------------------
-
 // EnterpriseUser contains info related to an Enterprise Grid user.
 // See https://api.slack.com/enterprise/grid.
 type EnterpriseUser struct {

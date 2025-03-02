@@ -22,6 +22,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/oauth"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	userCode "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/user_code/v1"
+	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -184,206 +185,188 @@ func (s *workerGRPCHandler) Activity(ctx context.Context, req *userCode.Activity
 
 // ak functions
 
-func makeCallbackMessage(args []sdktypes.Value, kwargs map[string]sdktypes.Value) *callbackMessage {
-	callbackChan := make(chan sdktypes.Value, 1)
-	errorChannel := make(chan error, 1)
+func (w *workerGRPCHandler) callback(ctx context.Context, rid string, name string, fn func(context.Context, *sdkservices.RunCallbacks, sdktypes.RunID) (any, error)) (*callbackResponse, error) {
+	l := w.log.With(zap.String("runner", rid), zap.String("name", name))
+
+	startedAt := time.Now()
+
+	w.mu.Lock()
+	runner, ok := w.runnerIDsToRuntime[rid]
+	w.mu.Unlock()
+	if !ok {
+		l.Error("unknown runner ID", zap.String("id", rid))
+		return nil, errors.New("unknown runner ID")
+	}
+
+	l.Debug("sending callback")
 
 	msg := &callbackMessage{
-		args:           args,
-		kwargs:         kwargs,
-		successChannel: callbackChan,
-		errorChannel:   errorChannel,
+		name: name,
+		fn:   fn,
+		ch:   make(chan callbackResponse, 1),
 	}
-	return msg
+
+	runner.channels.callback <- msg
+
+	l.Debug("callback sent", zap.Duration("duration", time.Since(startedAt)))
+
+	select {
+	case resp := <-msg.ch:
+		l.Debug("callback response", zap.Any("response", resp), zap.Duration("duration", time.Since(startedAt)))
+		return &resp, nil
+	case <-ctx.Done():
+		l.Debug("context cancelled", zap.Duration("duration", time.Since(startedAt)))
+		return nil, ctx.Err()
+	}
 }
 
 func (s *workerGRPCHandler) Sleep(ctx context.Context, req *userCode.SleepRequest) (*userCode.SleepResponse, error) {
 	if req.DurationMs < 0 {
 		return nil, status.Error(codes.InvalidArgument, "negative time")
 	}
-
-	w.mu.Lock()
-	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
-	w.mu.Unlock()
-	if !ok {
-		w.log.Error("unknown runner ID", zap.String("id", req.RunnerId))
-		return &userCode.SleepResponse{Error: "unknown runner ID"}, nil
+	fn := func(ctx context.Context, cbs *sdkservices.RunCallbacks, rid sdktypes.RunID) (any, error) {
+		return nil, cbs.Sleep(ctx, rid, time.Duration(req.DurationMs)*time.Millisecond)
 	}
 
-	secs := float64(req.DurationMs) / 1000.0
-	args := []sdktypes.Value{
-		sdktypes.NewStringValue("sleep"),
-		sdktypes.NewFloatValue(secs),
-	}
-
-	msg := makeCallbackMessage(args, nil)
-	runner.channels.callback <- msg
-
-	select {
-	case err := <-msg.errorChannel:
-		err = status.Errorf(codes.Internal, "sleep(%f) -> %s", secs, err)
+	resp, err := s.callback(ctx, req.RunnerId, "sleep", fn)
+	if err != nil {
 		return &userCode.SleepResponse{Error: err.Error()}, nil
-	case <-msg.successChannel:
-		return &userCode.SleepResponse{}, nil
 	}
+
+	if resp.err != nil {
+		err = status.Errorf(codes.Internal, "sleep(%v) -> %v", req.DurationMs, err)
+		return &userCode.SleepResponse{Error: err.Error()}, nil
+	}
+
+	return &userCode.SleepResponse{}, nil
 }
 
 func (s *workerGRPCHandler) StartSession(ctx context.Context, req *userCode.StartSessionRequest) (*userCode.StartSessionResponse, error) {
-	w.mu.Lock()
-	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
-	w.mu.Unlock()
-	if !ok {
-		w.log.Error("unknown runner ID", zap.String("id", req.RunnerId))
-		return &userCode.StartSessionResponse{
-			Error: "Unknown runner id",
-		}, nil
-	}
-
 	var data map[string]any
 	if err := json.Unmarshal(req.Data, &data); err != nil {
+		s.log.Error("unmarshal Data", zap.Error(err))
 		return nil, status.Errorf(codes.InvalidArgument, "can't unmarshal data: %s", err)
 	}
 
 	var memo map[string]string
 	if err := json.Unmarshal(req.Memo, &memo); err != nil {
+		s.log.Error("marshal Memo", zap.Error(err))
 		return nil, status.Errorf(codes.InvalidArgument, "can't unmarshal memo: %s", err)
 	}
 
 	vdata, err := kittehs.TransformMapValuesError(data, sdktypes.DefaultValueWrapper.Wrap)
 	if err != nil {
+		s.log.Error("wrapping values", zap.Error(err))
 		return nil, status.Errorf(codes.InvalidArgument, "can't wrap data: %s", err)
 	}
 
-	args := []sdktypes.Value{
-		sdktypes.NewStringValue("start"),
-		sdktypes.NewStringValue(req.Loc),
-		sdktypes.NewDictValueFromStringMap(vdata),
-		sdktypes.NewDictValueFromStringMap(kittehs.TransformMapValues(memo, sdktypes.NewStringValue)),
+	loc, err := sdktypes.ParseCodeLocation(req.Loc)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "can't parse code location: %v", err)
 	}
-	msg := makeCallbackMessage(args, nil)
-	runner.channels.callback <- msg
 
-	select {
-	case err := <-msg.errorChannel:
+	fn := func(ctx context.Context, cbs *sdkservices.RunCallbacks, rid sdktypes.RunID) (any, error) {
+		return cbs.Start(ctx, rid, loc, vdata, memo)
+	}
+
+	resp, err := s.callback(ctx, req.RunnerId, "start", fn)
+	if err != nil {
+		return &userCode.StartSessionResponse{Error: err.Error()}, nil
+	}
+
+	if resp.err != nil {
 		err = status.Errorf(codes.Internal, "start(%s) -> %s", req.Loc, err)
 		return &userCode.StartSessionResponse{Error: err.Error()}, nil
-	case val := <-msg.successChannel:
-		return &userCode.StartSessionResponse{SessionId: val.GetString().Value()}, nil
 	}
+
+	return &userCode.StartSessionResponse{SessionId: resp.value.(sdktypes.SessionID).String()}, nil
 }
 
 func (s *workerGRPCHandler) Subscribe(ctx context.Context, req *userCode.SubscribeRequest) (*userCode.SubscribeResponse, error) {
-	if req.Connection == "" || req.Filter == "" {
+	if req.Connection == "" {
 		return nil, status.Error(codes.InvalidArgument, "missing connection name or filter")
 	}
 
-	w.mu.Lock()
-	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
-	w.mu.Unlock()
-	if !ok {
-		w.log.Error("unknown runner ID", zap.String("id", req.RunnerId))
-		return &userCode.SubscribeResponse{Error: "unknown runner ID"}, nil
+	fn := func(ctx context.Context, cbs *sdkservices.RunCallbacks, rid sdktypes.RunID) (any, error) {
+		return cbs.Subscribe(ctx, rid, req.Connection, req.Filter)
 	}
 
-	args := []sdktypes.Value{
-		sdktypes.NewStringValue("subscribe"),
-		sdktypes.NewStringValue(req.Connection),
-		sdktypes.NewStringValue(req.Filter),
+	resp, err := s.callback(ctx, req.RunnerId, "subscribe", fn)
+	if err != nil {
+		return &userCode.SubscribeResponse{Error: err.Error()}, nil
 	}
-	msg := makeCallbackMessage(args, nil)
-	runner.channels.callback <- msg
 
-	select {
-	case err := <-msg.errorChannel:
+	if resp.err != nil {
 		err = status.Errorf(codes.Internal, "subscribe(%s, %s) -> %s", req.Connection, req.Filter, err)
 		return &userCode.SubscribeResponse{Error: err.Error()}, nil
-	case val := <-msg.successChannel:
-		signalID := val.GetString().Value()
-		return &userCode.SubscribeResponse{SignalId: signalID}, nil
 	}
+
+	return &userCode.SubscribeResponse{SignalId: resp.value.(string)}, nil
 }
 
 func (s *workerGRPCHandler) NextEvent(ctx context.Context, req *userCode.NextEventRequest) (*userCode.NextEventResponse, error) {
 	if len(req.SignalIds) == 0 {
-		w.log.Error("empty signal ID")
-		return nil, status.Error(codes.InvalidArgument, "at least one signal ID required")
+		return &userCode.NextEventResponse{
+			Event: &userCode.Event{
+				Data: []byte("null"),
+			},
+		}, nil
 	}
+
 	if req.TimeoutMs < 0 {
 		w.log.Error("bad timeout", zap.Int64("timeout", req.TimeoutMs))
 		return nil, status.Error(codes.InvalidArgument, "timeout < 0")
 	}
 
-	w.mu.Lock()
-	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
-	w.mu.Unlock()
-	if !ok {
-		w.log.Error("unknown runner ID", zap.String("id", req.RunnerId))
-		return &userCode.NextEventResponse{Error: "unknown runner ID"}, nil
+	fn := func(ctx context.Context, cbs *sdkservices.RunCallbacks, rid sdktypes.RunID) (any, error) {
+		return cbs.NextEvent(ctx, rid, req.SignalIds, time.Duration(req.TimeoutMs)*time.Millisecond)
 	}
 
-	args := make([]sdktypes.Value, len(req.SignalIds)+1)
-	args[0] = sdktypes.NewStringValue("next_event")
-	for i, id := range req.SignalIds {
-		args[i+1] = sdktypes.NewStringValue(id)
-	}
-	// timeout is kw only
-	kw := make(map[string]sdktypes.Value)
-	if req.TimeoutMs > 0 {
-		kw["timeout"] = sdktypes.NewFloatValue(float64(req.TimeoutMs) / 1000.0)
+	resp, err := s.callback(ctx, req.RunnerId, "next_event", fn)
+	if err != nil {
+		return &userCode.NextEventResponse{Error: err.Error()}, nil
 	}
 
-	msg := makeCallbackMessage(args, kw)
-	runner.channels.callback <- msg
-
-	select {
-	case err := <-msg.errorChannel:
+	if resp.err != nil {
 		err = status.Errorf(codes.Internal, "next_event(%s, %d) -> %s", req.SignalIds, req.TimeoutMs, err)
 		return &userCode.NextEventResponse{Error: err.Error()}, nil
-	case val := <-msg.successChannel:
-		out, err := sdktypes.ValueWrapper{SafeForJSON: true}.Unwrap(val)
-		if err != nil {
-			err = status.Errorf(codes.Internal, "can't unwrap %v - %s", val, err)
-			return &userCode.NextEventResponse{Error: err.Error()}, err
-		}
-
-		data, err := json.Marshal(out)
-		if err != nil {
-			err = status.Errorf(codes.Internal, "can't json.Marshal %v - %s", out, err)
-			return &userCode.NextEventResponse{Error: err.Error()}, err
-		}
-
-		resp := userCode.NextEventResponse{
-			Event: &userCode.Event{
-				Data: data,
-			},
-		}
-		return &resp, nil
 	}
+
+	out, err := sdktypes.ValueWrapper{SafeForJSON: true}.Unwrap(resp.value.(sdktypes.Value))
+	if err != nil {
+		err = status.Errorf(codes.Internal, "can't unwrap %v - %s", resp.value, err)
+		return &userCode.NextEventResponse{Error: err.Error()}, err
+	}
+
+	data, err := json.Marshal(out)
+	if err != nil {
+		err = status.Errorf(codes.Internal, "can't json.Marshal %v - %s", out, err)
+		return &userCode.NextEventResponse{Error: err.Error()}, err
+	}
+
+	return &userCode.NextEventResponse{
+		Event: &userCode.Event{
+			Data: data,
+		},
+	}, nil
 }
 
 func (s *workerGRPCHandler) Unsubscribe(ctx context.Context, req *userCode.UnsubscribeRequest) (*userCode.UnsubscribeResponse, error) {
-	w.mu.Lock()
-	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
-	w.mu.Unlock()
-	if !ok {
-		w.log.Error("unknown runner ID", zap.String("id", req.RunnerId))
-		return &userCode.UnsubscribeResponse{Error: "Unknown runner id"}, nil
+	fn := func(ctx context.Context, cbs *sdkservices.RunCallbacks, rid sdktypes.RunID) (any, error) {
+		return nil, cbs.Unsubscribe(ctx, rid, req.SignalId)
 	}
 
-	args := []sdktypes.Value{
-		sdktypes.NewStringValue("unsubscribe"),
-		sdktypes.NewStringValue(req.SignalId),
+	resp, err := s.callback(ctx, req.RunnerId, "unsubscribe", fn)
+	if err != nil {
+		return &userCode.UnsubscribeResponse{Error: err.Error()}, nil
 	}
-	msg := makeCallbackMessage(args, nil)
-	runner.channels.callback <- msg
 
-	select {
-	case err := <-msg.errorChannel:
+	if resp.err != nil {
 		err = status.Errorf(codes.Internal, "unsubscribe(%s) -> %s", req.SignalId, err)
-		return &userCode.UnsubscribeResponse{Error: err.Error()}, err
-	case <-msg.successChannel:
-		return &userCode.UnsubscribeResponse{}, nil
+		return &userCode.UnsubscribeResponse{Error: err.Error()}, nil
 	}
+
+	return &userCode.UnsubscribeResponse{}, nil
 }
 
 func (s *workerGRPCHandler) EncodeJWT(ctx context.Context, req *userCode.EncodeJWTRequest) (*userCode.EncodeJWTResponse, error) {
@@ -452,5 +435,72 @@ func (s *workerGRPCHandler) RefreshOAuthToken(ctx context.Context, req *userCode
 	return &userCode.RefreshResponse{
 		Token:   t.AccessToken,
 		Expires: timestamppb.New(t.Expiry),
+	}, nil
+}
+
+func (s *workerGRPCHandler) Signal(ctx context.Context, req *userCode.SignalRequest) (*userCode.SignalResponse, error) {
+	pbsig := req.Signal
+
+	sid, err := sdktypes.ParseSessionID(req.SessionId)
+	if err != nil {
+		return &userCode.SignalResponse{Error: fmt.Sprintf("invalid session id: %v", err)}, nil
+	}
+
+	payload, err := sdktypes.ValueFromProto(pbsig.Payload)
+	if err != nil {
+		return &userCode.SignalResponse{Error: fmt.Sprintf("invalid payload: %v", err)}, nil
+	}
+
+	fn := func(ctx context.Context, cbs *sdkservices.RunCallbacks, rid sdktypes.RunID) (any, error) {
+		return nil, cbs.Signal(ctx, rid, sid, pbsig.Name, payload)
+	}
+
+	resp, err := s.callback(ctx, req.RunnerId, "signal", fn)
+	if err != nil {
+		return &userCode.SignalResponse{Error: err.Error()}, nil
+	}
+
+	if resp.err != nil {
+		err = status.Errorf(codes.Internal, "signal(%s,%s) -> %s", pbsig.Name, sid.String(), err)
+		return &userCode.SignalResponse{Error: err.Error()}, nil
+	}
+
+	return &userCode.SignalResponse{}, nil
+}
+
+func (s *workerGRPCHandler) NextSignal(ctx context.Context, req *userCode.NextSignalRequest) (*userCode.NextSignalResponse, error) {
+	if len(req.Names) == 0 {
+		return &userCode.NextSignalResponse{}, nil
+	}
+
+	if req.TimeoutMs < 0 {
+		w.log.Error("bad timeout", zap.Int64("timeout", req.TimeoutMs))
+		return nil, status.Error(codes.InvalidArgument, "timeout < 0")
+	}
+
+	fn := func(ctx context.Context, cbs *sdkservices.RunCallbacks, rid sdktypes.RunID) (any, error) {
+		return cbs.NextSignal(ctx, rid, req.Names, time.Duration(req.TimeoutMs)*time.Millisecond)
+	}
+
+	resp, err := s.callback(ctx, req.RunnerId, "next_signal", fn)
+	if err != nil {
+		return &userCode.NextSignalResponse{Error: err.Error()}, nil
+	}
+
+	if resp.err != nil {
+		err = status.Errorf(codes.Internal, "next_signal(%v, %d) -> %s", req.Names, req.TimeoutMs, err)
+		return &userCode.NextSignalResponse{Error: err.Error()}, nil
+	}
+
+	sig := resp.value.(*sdkservices.RunSignal)
+	if sig == nil {
+		return &userCode.NextSignalResponse{}, nil
+	}
+
+	return &userCode.NextSignalResponse{
+		Signal: &userCode.Signal{
+			Name:    sig.Name,
+			Payload: sig.Payload.ToProto(),
+		},
 	}, nil
 }

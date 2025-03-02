@@ -49,11 +49,5 @@ func Open(cfg *Config, f func(*gorm.Config)) (*gorm.DB, error) {
 		db = db.Debug()
 	}
 
-	if cfg.Type == "sqlite" {
-		if err := db.Exec("PRAGMA foreign_keys = ON").Error; err != nil {
-			return nil, fmt.Errorf("sqlite error, failed setting foreign keys on: %w", err)
-		}
-	}
-
 	return db, nil
 }

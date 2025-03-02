@@ -6,6 +6,7 @@ import (
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	sessionv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1"
 )
 
@@ -45,12 +46,16 @@ func StrictSessionLogRecordFromProto(m *SessionLogRecordPB) (SessionLogRecord, e
 	return Strict(SessionLogRecordFromProto(m))
 }
 
-func (s SessionLogRecord) GetPrint() (string, bool) {
+func (s SessionLogRecord) GetPrint() (Value, bool) {
 	if m := s.read(); m.Print != nil {
-		return m.Print.Text, true
+		if m.Print.Value == nil {
+			return NewStringValue(m.Print.Text), true
+		}
+
+		return kittehs.Must1(ValueFromProto(m.Print.Value)), true
 	}
 
-	return "", false
+	return InvalidValue, false
 }
 
 func (s SessionLogRecord) GetCallSpec() SessionCallSpec {
@@ -69,60 +74,71 @@ func (s SessionLogRecord) GetStopRequest() (string, bool) {
 	return "", false
 }
 
-func NewPrintSessionLogRecord(text string) SessionLogRecord {
+func NewPrintSessionLogRecord(t time.Time, v Value, callSeq uint32) SessionLogRecord {
+	var text string
+	if v.IsString() {
+		text = v.GetString().Value()
+	} else {
+		text = v.String()
+	}
+
 	return forceFromProto[SessionLogRecord](&SessionLogRecordPB{
-		T:     timestamppb.Now(),
-		Print: &sessionv1.SessionLogRecord_Print{Text: text},
+		T: timestamppb.New(t),
+		Print: &sessionv1.SessionLogRecord_Print{
+			Text:    text,
+			Value:   v.ToProto(),
+			CallSeq: callSeq,
+		},
 	})
 }
 
-func NewStopRequestSessionLogRecord(reason string) SessionLogRecord {
+func NewStopRequestSessionLogRecord(t time.Time, reason string) SessionLogRecord {
 	return forceFromProto[SessionLogRecord](&SessionLogRecordPB{
-		T:           timestamppb.Now(),
+		T:           timestamppb.New(t),
 		StopRequest: &sessionv1.SessionLogRecord_StopRequest{Reason: reason},
 	})
 }
 
-func NewStateSessionLogRecord(state SessionState) SessionLogRecord {
+func NewStateSessionLogRecord(t time.Time, state SessionState) SessionLogRecord {
 	if !state.IsValid() {
 		return InvalidSessionLogRecord
 	}
 
 	return forceFromProto[SessionLogRecord](&SessionLogRecordPB{
-		T:     timestamppb.Now(),
+		T:     timestamppb.New(t),
 		State: state.ToProto(),
 	})
 }
 
-func NewCallAttemptStartSessionLogRecord(s SessionCallAttemptStart) SessionLogRecord {
+func NewCallAttemptStartSessionLogRecord(t time.Time, s SessionCallAttemptStart) SessionLogRecord {
 	if !s.IsValid() {
 		return InvalidSessionLogRecord
 	}
 
 	return forceFromProto[SessionLogRecord](&SessionLogRecordPB{
-		T:                timestamppb.Now(),
+		T:                timestamppb.New(t),
 		CallAttemptStart: s.ToProto(),
 	})
 }
 
-func NewCallAttemptCompleteSessionLogRecord(s SessionCallAttemptComplete) SessionLogRecord {
+func NewCallAttemptCompleteSessionLogRecord(t time.Time, s SessionCallAttemptComplete) SessionLogRecord {
 	if !s.IsValid() {
 		return InvalidSessionLogRecord
 	}
 
 	return forceFromProto[SessionLogRecord](&SessionLogRecordPB{
-		T:                   timestamppb.Now(),
+		T:                   timestamppb.New(t),
 		CallAttemptComplete: s.ToProto(),
 	})
 }
 
-func NewCallSpecSessionLogRecord(s SessionCallSpec) SessionLogRecord {
+func NewCallSpecSessionLogRecord(t time.Time, s SessionCallSpec) SessionLogRecord {
 	if !s.IsValid() {
 		return InvalidSessionLogRecord
 	}
 
 	return forceFromProto[SessionLogRecord](&SessionLogRecordPB{
-		T:        timestamppb.Now(),
+		T:        timestamppb.New(t),
 		CallSpec: s.ToProto(),
 	})
 }

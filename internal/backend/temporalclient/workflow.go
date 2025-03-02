@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/workflow"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )
@@ -29,6 +30,17 @@ func (wc WorkflowConfig) ToStartWorkflowOptions(qname, id, sum string, memo map[
 	wc = wc.With(defaultWorkflowConfig)
 	return client.StartWorkflowOptions{
 		ID:                  id,
+		TaskQueue:           qname,
+		StaticSummary:       sum,
+		Memo:                kittehs.TransformMapValues(memo, func(v string) any { return v }),
+		WorkflowTaskTimeout: wc.WorkflowTaskTimeout,
+	}
+}
+
+func (wc WorkflowConfig) ToChildWorkflowOptions(qname, id, sum string, memo map[string]string) workflow.ChildWorkflowOptions {
+	wc = wc.With(defaultWorkflowConfig)
+	return workflow.ChildWorkflowOptions{
+		WorkflowID:          id,
 		TaskQueue:           qname,
 		StaticSummary:       sum,
 		Memo:                kittehs.TransformMapValues(memo, func(v string) any { return v }),

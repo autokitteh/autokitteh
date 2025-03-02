@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"maps"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"go.temporal.io/sdk/activity"
@@ -14,13 +15,8 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncalls"
-	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessiondata"
-	httpmodule "go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/http"
-	osmodule "go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/os"
-	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/store"
 	testtoolsmodule "go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/testtools"
-	timemodule "go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/time"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/backend/types"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -42,6 +38,7 @@ type sessionWorkflow struct {
 	l  *zap.Logger
 	ws *workflows
 
+	opts StartWorkflowOptions
 	data *sessiondata.Data
 
 	// All the members belows must be built deterministically by the workflow.
@@ -53,6 +50,8 @@ type sessionWorkflow struct {
 	callSeq uint32
 
 	lastReadEventSeqForSignal map[uuid.UUID]uint64 // map signals to last read event seq num.
+
+	children map[sdktypes.SessionID]workflow.ChildWorkflowFuture
 }
 
 type connInfo struct {
@@ -64,13 +63,15 @@ func runWorkflow(
 	wctx workflow.Context,
 	l *zap.Logger,
 	ws *workflows,
-	data *sessiondata.Data,
-) (prints []string, err error) {
+	params *sessionWorkflowParams,
+) (prints []sdkservices.SessionPrint, rv sdktypes.Value, err error) {
 	w := &sessionWorkflow{
 		l:                         l,
-		data:                      data,
+		data:                      params.Data,
+		opts:                      params.Opts,
 		ws:                        ws,
 		lastReadEventSeqForSignal: make(map[uuid.UUID]uint64),
+		children:                  make(map[sdktypes.SessionID]workflow.ChildWorkflowFuture),
 	}
 
 	var cinfos map[string]connInfo
@@ -83,11 +84,11 @@ func runWorkflow(
 		return
 	}
 
-	if w.globals, err = w.initGlobalModules(); err != nil {
+	if w.globals, err = w.initGlobalModules(wctx); err != nil {
 		return
 	}
 
-	prints, err = w.run(wctx, l)
+	prints, rv, err = w.run(wctx, l)
 
 	// context might have been canceled, create a disconnected one.
 	wctx, cancel := workflow.NewDisconnectedContext(wctx)
@@ -150,9 +151,10 @@ func (w *sessionWorkflow) call(ctx workflow.Context, _ sdktypes.RunID, v sdktype
 	w.callSeq++
 
 	result, err := w.ws.calls.Call(ctx, &sessioncalls.CallParams{
-		SessionID: w.data.Session.ID(),
-		CallSpec:  sdktypes.NewSessionCallSpec(v, args, kwargs, w.callSeq),
-		Executors: &w.executors,
+		SessionID:                 w.data.Session.ID(),
+		CallSpec:                  sdktypes.NewSessionCallSpec(v, args, kwargs, w.callSeq),
+		Executors:                 &w.executors,
+		UseTemporalForSessionLogs: w.opts.UseTemporalForSessionLogs,
 	})
 	if err != nil {
 		return sdktypes.InvalidValue, err
@@ -252,40 +254,20 @@ func (w *sessionWorkflow) initConnections(wctx workflow.Context) (map[string]con
 	return cinfos, nil
 }
 
-func (w *sessionWorkflow) initGlobalModules() (map[string]sdktypes.Value, error) {
-	execs := map[string]sdkexecutor.Executor{
-		"ak":    w.newModule(),
-		"time":  timemodule.New(),
-		"http":  httpmodule.New(),
-		"store": store.New(w.data.Session.ProjectID(), w.ws.svcs.RedisClient),
+func (w *sessionWorkflow) initGlobalModules(wctx workflow.Context) (map[string]sdktypes.Value, error) {
+	if !w.ws.cfg.Test {
+		return nil, nil
 	}
 
-	vs := make(map[string]sdktypes.Value, len(execs))
+	const name = "testtools"
 
-	if w.ws.cfg.OSModule {
-		execs["os"] = osmodule.New()
-	} else {
-		vs["os"] = sdktypes.Nothing
+	tt := kittehs.Must1(sdktypes.NewStructValue(sdktypes.NewSymbolValue(sdktypes.NewSymbol(name)), nil))
+
+	if err := w.executors.AddExecutor(name, testtoolsmodule.New(wctx)); err != nil {
+		return nil, err
 	}
 
-	if w.ws.cfg.Test {
-		execs["testtools"] = testtoolsmodule.New()
-	} else {
-		vs["testtools"] = sdktypes.Nothing
-	}
-
-	for name, exec := range execs {
-		sym, err := sdktypes.StrictParseSymbol(name)
-		if err != nil {
-			return nil, err
-		}
-		vs[name] = kittehs.Must1(sdktypes.NewStructValue(sdktypes.NewSymbolValue(sym), exec.Values()))
-		if err := w.executors.AddExecutor(name, exec); err != nil {
-			return nil, err
-		}
-	}
-
-	return vs, nil
+	return map[string]sdktypes.Value{name: tt}, nil
 }
 
 func (w *sessionWorkflow) createEventSubscription(wctx workflow.Context, filter string, did sdktypes.EventDestinationID) (uuid.UUID, error) {
@@ -369,10 +351,9 @@ func (w *sessionWorkflow) waitOnFirstSignal(wctx workflow.Context, signals []uui
 	return signalID, nil
 }
 
-func (w *sessionWorkflow) getNextEvent(ctx context.Context, signalID uuid.UUID) (map[string]sdktypes.Value, error) {
+func (w *sessionWorkflow) getNextEvent(wctx workflow.Context, signalID uuid.UUID) (map[string]sdktypes.Value, error) {
 	l := w.l.With(zap.Any("signal_id", signalID))
 
-	wctx := sessioncontext.GetWorkflowContext(ctx)
 	wctx = temporalclient.WithActivityOptions(wctx, taskQueueName, w.ws.cfg.Activity)
 
 	minSequenceNumber, ok := w.lastReadEventSeqForSignal[signalID]
@@ -409,10 +390,9 @@ func (w *sessionWorkflow) getNextEvent(ctx context.Context, signalID uuid.UUID) 
 	return event.Data(), nil
 }
 
-func (w *sessionWorkflow) removeEventSubscription(ctx context.Context, signalID uuid.UUID) {
+func (w *sessionWorkflow) removeEventSubscription(wctx workflow.Context, signalID uuid.UUID) {
 	l := w.l.With(zap.Any("signal_id", signalID))
 
-	wctx := sessioncontext.GetWorkflowContext(ctx)
 	wctx = temporalclient.WithActivityOptions(wctx, taskQueueName, w.ws.cfg.Activity)
 
 	if err := workflow.ExecuteActivity(wctx, removeSignalActivityName, signalID).Get(wctx, nil); err != nil {
@@ -423,11 +403,11 @@ func (w *sessionWorkflow) removeEventSubscription(ctx context.Context, signalID 
 	delete(w.lastReadEventSeqForSignal, signalID)
 }
 
-func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []string, err error) {
+func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []sdkservices.SessionPrint, retVal sdktypes.Value, err error) {
 	sid := w.data.Session.ID()
 
-	newRunID := func() (runID sdktypes.RunID) {
-		if err := workflow.SideEffect(wctx, func(workflow.Context) any {
+	newRunID := func() (runID sdktypes.RunID, err error) {
+		if err = workflow.SideEffect(wctx, func(workflow.Context) any {
 			return sdktypes.NewRunID()
 		}).Get(&runID); err != nil {
 			l.With(zap.Error(err)).Sugar().Panicf("new run ID side effect: %v", err)
@@ -470,7 +450,7 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []st
 
 			return w.call(wctx, runID, v, args, kwargs)
 		},
-		Print: func(printCtx context.Context, runID sdktypes.RunID, text string) {
+		Print: func(printCtx context.Context, runID sdktypes.RunID, text string) error {
 			isActivity := activity.IsActivity(printCtx)
 
 			// Trim single trailing space, but no other spaces.
@@ -481,26 +461,25 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []st
 			l := l.With(zap.Any("run_id", runID), zap.Bool("is_activity", isActivity))
 			l.Debug("print", zap.String("text", text))
 
-			prints = append(prints, text)
+			pv := sdktypes.NewStringValue(text)
 
-			if run == nil || isActivity {
-				// run == nil: Since initial run is running via temporalclient.LongRunning, we
-				// cannot use the workflow context to report prints.
-				//
-				// TODO(ENG-1554): we need to retry here.
-				err = w.ws.svcs.DB.AddSessionPrint(printCtx, sid, text)
+			var now time.Time
+
+			if isActivity {
+				now = kittehs.Now()
+
+				// TODO(ENG-1554): we might need to retry here.
+				err = w.ws.svcs.DB.AddSessionPrint(printCtx, sid, pv, w.callSeq)
 			} else {
-				// TODO(ENG-1467): Currently the python runtime is calling Print from a
-				//                 separate goroutine. This is a workaround to detect
-				//                 that behaviour and in that case just write the
-				//                 print directly into the DB since we cannot launch
-				//                 an activity from a separate goroutine.
-				if temporalclient.IsWorkflowContextAsGoContext(printCtx) {
-					err = workflow.ExecuteActivity(wctx, addSessionPrintActivityName, sid, text).Get(wctx, nil)
-				} else if !workflow.IsReplaying(wctx) {
-					err = w.ws.svcs.DB.AddSessionPrint(printCtx, sid, text)
-				}
+				now = workflow.Now(wctx)
+
+				err = workflow.ExecuteActivity(wctx, addSessionPrintActivityName, sid, pv, 0).Get(wctx, nil)
 			}
+
+			prints = append(prints, sdkservices.SessionPrint{
+				Timestamp: now,
+				Value:     pv,
+			})
 
 			// We do not consider print failure as a critical error, since we don't want to hold back the
 			// workflow for potential user debugging prints. Just log the error and move on. Nevertheless,
@@ -509,13 +488,44 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []st
 			if err != nil {
 				l.With(zap.String("text", text)).Sugar().Warnf("failed to add print session record: %v", err)
 			}
+
+			return err
 		},
+		Now: func(nowCtx context.Context, runID sdktypes.RunID) (time.Time, error) {
+			if activity.IsActivity(nowCtx) {
+				return kittehs.Now().UTC(), nil
+			}
+
+			return workflow.Now(wctx).UTC(), nil
+		},
+		Sleep: func(sleepCtx context.Context, runID sdktypes.RunID, d time.Duration) error {
+			if activity.IsActivity(sleepCtx) {
+				select {
+				case <-time.After(d):
+					return nil
+				case <-sleepCtx.Done():
+					return sleepCtx.Err()
+				}
+			}
+
+			return workflow.Sleep(wctx, d)
+		},
+		Start:              w.start(wctx),
+		Subscribe:          w.subscribe(wctx),
+		Unsubscribe:        w.unsubscribe(wctx),
+		NextEvent:          w.nextEvent(wctx),
+		IsDeploymentActive: w.isDeploymentActive(wctx),
+		Signal:             w.signal(wctx),
+		NextSignal:         w.nextSignal(wctx),
 	}
 
-	runID := newRunID()
+	runID, err := newRunID()
+	if err != nil {
+		return nil, sdktypes.InvalidValue, fmt.Errorf("new run id: %w", err)
+	}
 
 	if err := w.updateState(wctx, sdktypes.NewSessionStateRunning(runID, sdktypes.InvalidValue)); err != nil {
-		return nil, err
+		return nil, sdktypes.InvalidValue, err
 	}
 
 	entryPoint := w.data.Session.EntryPoint()
@@ -541,12 +551,10 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []st
 	)
 
 	if err != nil {
-		return nil, err
+		return nil, sdktypes.InvalidValue, err
 	}
 
 	kittehs.Must0(w.executors.AddExecutor(fmt.Sprintf("run_%s", run.ID().Value()), run))
-
-	var retVal sdktypes.Value
 
 	// Run call only if the entrypoint includes a name.
 	if epName := entryPoint.Name(); epName != "" {
@@ -554,27 +562,38 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []st
 		if !ok {
 			// The user specified an entry point that does not exist.
 			// WrapError so it will be a program error and not considered as an internal error.
-			return prints, sdktypes.WrapError(fmt.Errorf("entry point %q not found after evaluation", epName)).ToError()
+			return prints, sdktypes.InvalidValue, sdktypes.WrapError(fmt.Errorf("entry point %q not found after evaluation", epName)).ToError()
 		}
 
 		if !callValue.IsFunction() {
 			// The user specified an entry point that is not a function.
 			// WrapError so it will be a program error and not considered as an internal error.
-			return prints, sdktypes.WrapError(fmt.Errorf("entry point %q is not a function", epName)).ToError()
+			return prints, sdktypes.InvalidValue, sdktypes.WrapError(fmt.Errorf("entry point %q is not a function", epName)).ToError()
 		}
 
 		if callValue.GetFunction().ExecutorID().ToRunID() != runID {
-			return prints, errors.New("entry point does not belong to main run")
+			return prints, sdktypes.InvalidValue, errors.New("entry point does not belong to main run")
 		}
 
 		if err := w.updateState(wctx, sdktypes.NewSessionStateRunning(runID, callValue)); err != nil {
-			return prints, err
+			return prints, sdktypes.InvalidValue, err
 		}
 
-		if retVal, err = run.Call(ctx, callValue, nil, w.data.Session.Inputs()); err != nil {
-			return prints, err
+		inputs := map[string]sdktypes.Value{
+			"data":       sdktypes.NewDictValueFromStringMap(w.data.Session.Inputs()),
+			"session_id": sdktypes.NewStringValue(sid.String()),
+		}
+
+		if retVal, err = run.Call(ctx, callValue, nil, inputs); err != nil {
+			return prints, sdktypes.InvalidValue, err
 		}
 	}
 
-	return prints, w.updateState(wctx, sdktypes.NewSessionStateCompleted(prints, run.Values(), retVal))
+	return prints, retVal, w.updateState(
+		wctx,
+		sdktypes.NewSessionStateCompleted(
+			kittehs.Transform(prints, func(p sdkservices.SessionPrint) string { return p.Value.GetString().Value() }),
+			run.Values(),
+			retVal,
+		))
 }

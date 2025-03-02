@@ -3,6 +3,7 @@ package gormkitteh
 
 import (
 	"errors"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -27,7 +28,6 @@ type Config struct {
 	AutoMigrate bool `koanf:"auto_migrate"`
 
 	MaxOpenConns int `koanf:"max_open_conns"`
-	MaxIdleConns int `koanf:"max_idle_conns"`
 
 	// Run this commands after Setup.
 	SeedCommands string `koanf:"seed_commands"`
@@ -47,9 +47,20 @@ func (c Config) Explicit() (*Config, error) {
 			// With empty DSN, assume type is "sqlite". Will make sqlite
 			// use a temporary database.
 			c.Type = "sqlite"
+
+			// See https://kerkour.com/sqlite-for-servers.
+			params := make(url.Values)
+			params.Add("_txlock", "immediate")
+			params.Add("_journal_mode", "WAL")
+			params.Add("_busy_timeout", "5000")
+			params.Add("_synchronous", "NORMAL")
+			params.Add("_cache_size", "1000000000")
+			params.Add("_foreign_keys", "true")
+
 			// For in-memory, cached is required for transactions to work.
-			// Not using "?cache=shared", for auto-cleanup between system tests.
-			c.DSN = "file::memory:?cache=shared"
+			params.Add("cache", "shared")
+
+			c.DSN = "file::memory:?" + params.Encode()
 		} else {
 			// This should make it easier to just specify the type in the dsn
 			// in a single env var.

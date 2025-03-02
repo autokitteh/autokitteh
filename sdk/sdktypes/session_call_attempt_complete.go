@@ -4,7 +4,6 @@ import (
 	"errors"
 	"time"
 
-	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	sessionv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1"
@@ -49,11 +48,10 @@ func NewSessionLogCallAttemptComplete(complete SessionCallAttemptComplete) Sessi
 	return forceFromProto[SessionCallAttemptComplete](&SessionCallAttemptCompletePB{Result: ToProto(complete.Result())})
 }
 
-func NewSessionCallAttemptComplete(last bool, interval time.Duration, result SessionCallAttemptResult) SessionCallAttemptComplete {
+func NewSessionCallAttemptComplete(t time.Time, last bool, result SessionCallAttemptResult) SessionCallAttemptComplete {
 	return forceFromProto[SessionCallAttemptComplete](&SessionCallAttemptCompletePB{
-		IsLast:        last,
-		RetryInterval: durationpb.New(interval),
-		CompletedAt:   timestamppb.Now(),
-		Result:        result.ToProto(),
+		IsLast:      last,
+		CompletedAt: timestamppb.New(t),
+		Result:      result.ToProto(),
 	})
 }

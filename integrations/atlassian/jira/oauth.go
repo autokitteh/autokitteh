@@ -89,22 +89,30 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	t := utc30Days()
-	id, ok := getWebhook(l, u, oauthToken.AccessToken)
+	id, ok := getWebhook(r.Context(), l, u, oauthToken.AccessToken)
 	if !ok {
-		id, ok = registerWebhook(l, u, oauthToken.AccessToken)
+		id, ok = registerWebhook(r.Context(), l, u, oauthToken.AccessToken)
 		if !ok {
 			c.AbortServerError("failed to register webhook")
 			return
 		}
 	} else {
-		t, ok = ExtendWebhookLife(l, u, oauthToken.AccessToken, id)
+		t, ok = ExtendWebhookLife(r.Context(), l, u, oauthToken.AccessToken, id)
 		if !ok {
 			c.AbortServerError("failed to extend webhook life")
 			return
 		}
 	}
 
+	d, err := extractDomain(res[0].URL)
+	if err != nil {
+		l.Warn("Failed to get domain from URL", zap.Error(err))
+		c.AbortBadRequest("failed to get domain from URL")
+		return
+	}
+
 	c.Finalize(sdktypes.NewVars(data.ToVars()...).Append(res[0].toVars()...).
+		Set(WebhookKeySymbol, webhookKey(d, strconv.Itoa(id)), false).
 		Set(WebhookID, strconv.Itoa(id), false).
 		Set(WebhookExpiration, t.Format(time.RFC3339), false))
 }

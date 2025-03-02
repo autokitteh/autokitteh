@@ -63,12 +63,8 @@ func (c ConnectionInit) AbortWithStatus(status int, err string) {
 		u := "vscode://autokitteh.autokitteh?cid=%s&status=%d&error=%s"
 		u = fmt.Sprintf(u, c.ConnectionID, status, url.QueryEscape(err))
 		http.Redirect(c.Writer, c.Request, u, http.StatusFound)
-	case "web": // SaaS web UI (non-OAuth connections)
+	default: // SaaS web UI (non-OAuth connections) / local server ("cli", "dash", etc.)
 		http.Error(c.Writer, err, status)
-	default: // Local server ("cli", "dash", etc.)
-		u := "/connections/%s/error?origin=%s&status=%d&error=%s"
-		u = fmt.Sprintf(u, c.ConnectionID, origin, status, url.QueryEscape(err))
-		http.Redirect(c.Writer, c.Request, u, http.StatusFound)
 	}
 }
 

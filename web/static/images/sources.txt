@@ -54,6 +54,9 @@ HTTP/REST:
 https://commons.wikimedia.org/wiki/File:HTTP_logo.svg
 https://upload.wikimedia.org/wikipedia/commons/5/5b/HTTP_logo.svg
 
+Linear:
+https://linear.app/brand
+
 Microsoft:
 https://commons.wikimedia.org/wiki/File:Microsoft_logo.svg
 https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg
@@ -73,5 +76,13 @@ Slack:
 https://commons.wikimedia.org/wiki/File:Slack_icon_2022.svg
 https://upload.wikimedia.org/wikipedia/commons/3/3b/Slack_icon_2022.svg
 
+Salesforce:
+https://en.m.wikipedia.org/wiki/File:Salesforce.com_logo.svg
+https://upload.wikimedia.org/wikipedia/commons/f/f9/Salesforce.com_logo.svg
+
 Twilio:
 https://seeklogo.com/images/T/twilio-logo-341DD81BFB-seeklogo.com.png
+
+Zoom:
+https://en.m.wikipedia.org/wiki/File:Zoom_Communications_Logo.svg
+https://upload.wikimedia.org/wikipedia/commons/7/7b/Zoom_Communications_Logo.svg

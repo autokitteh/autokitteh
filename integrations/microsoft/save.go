@@ -1,7 +1,6 @@
 package microsoft
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -11,6 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations"
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/microsoft/connection"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -47,13 +47,14 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 		c.AbortBadRequest("invalid connection ID")
 		return
 	}
-	vsid := sdktypes.NewVarScopeID(cid)
 
 	// Determine what to save and how to proceed.
-	authType := h.saveAuthType(r.Context(), vsid, r.FormValue("auth_type"))
+	vsid := sdktypes.NewVarScopeID(cid)
+	authType := common.SaveAuthType(r, h.vars, vsid)
+	l = l.With(zap.String("auth_type", authType))
 
 	switch authType {
-	// Use the AutoKitteh's server's default Microsoft OAuth 2.0 app, i.e.
+	// Use the AutoKitteh server's default Microsoft OAuth 2.0 app, i.e.
 	// immediately redirect to the 3-legged OAuth 2.0 flow's starting point.
 	case integrations.OAuthDefault:
 		startOAuth(w, r, c, l)
@@ -61,56 +62,107 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	// First save the user-provided details of a private Microsoft OAuth 2.0 app,
 	// and only then redirect to the 3-legged OAuth 2.0 flow's starting point.
 	case integrations.OAuthPrivate:
-		if err := h.saveOAuthAppConfig(r, vsid); err != nil {
-			l.Error("save connection: " + err.Error())
-			c.AbortServerError(err.Error())
+		if err := h.savePrivateOAuthApp(r, vsid); err != nil {
+			c.AbortBadRequest(err.Error())
 			return
 		}
 		startOAuth(w, r, c, l)
 
+	// Same as a private OAuth 2.0 app, but without the OAuth 2.0 flow
+	// (it uses application permissions instead of user-delegated ones).
+	case integrations.DaemonApp:
+		if err := h.savePrivateDaemonApp(r, c.Integration, cid); err != nil {
+			c.AbortBadRequest(err.Error())
+			return
+		}
+		urlPath, err := c.FinalURL()
+		if err != nil {
+			l.Error("save connection: failed to construct final URL", zap.Error(err))
+			c.AbortBadRequest("bad redirect URL")
+			return
+		}
+		http.Redirect(w, r, urlPath, http.StatusFound)
+
 	// Unknown/unrecognized mode - an error.
 	default:
-		l.Warn("save connection: unexpected auth type", zap.String("auth_type", authType))
+		l.Warn("save connection: unexpected auth type")
 		c.AbortBadRequest(fmt.Sprintf("unexpected auth type %q", authType))
 	}
 }
 
-// saveAuthType saves the authentication type that the user selected for this connection.
-// This will be redundant if/when the only way to initialize connections is via the web UI.
-// Therefore, we do not care if this function fails to save it as a connection variable.
-func (h handler) saveAuthType(ctx context.Context, vsid sdktypes.VarScopeID, authType string) string {
-	v := sdktypes.NewVar(connection.AuthTypeVar).WithScopeID(vsid)
-	_ = h.vars.Set(ctx, v.SetValue(authType))
-	return authType
-}
-
-// OAuthAppConfig contains the user-provided details of a private Microsoft OAuth 2.0 app.
-type OAuthAppConfig struct {
-	ClientID     string `var:"client_id"`
-	ClientSecret string `var:"client_secret,secret"`
-	Tenant       string `var:"tenant"`
-}
-
-// saveOAuthAppConfig saves the user-provided details of a
+// savePrivateOAuthApp saves the user-provided details of a
 // private Microsoft OAuth 2.0 app as connection variables.
-func (h handler) saveOAuthAppConfig(r *http.Request, vsid sdktypes.VarScopeID) error {
-	tenant := r.FormValue("tenant")
-	if tenant == "" {
-		tenant = "common"
+func (h handler) savePrivateOAuthApp(r *http.Request, vsid sdktypes.VarScopeID) error {
+	tenantID := r.FormValue("tenant_id")
+	if tenantID == "" {
+		tenantID = "common"
 	}
 
-	app := OAuthAppConfig{
+	app := connection.PrivateApp{
 		ClientID:     r.FormValue("client_id"),
 		ClientSecret: r.FormValue("client_secret"),
-		Tenant:       tenant,
+		TenantID:     tenantID,
 	}
 
-	// Sanity check: all the required details were provided.
-	if app.ClientID == "" || app.ClientSecret == "" {
-		return errors.New("missing OAuth 2.0 app details")
+	// Sanity check: all the required details were provided, and are valid.
+	if app.ClientID == "" || (app.ClientSecret == "" && app.Certificate == "") {
+		return errors.New("missing private app details")
 	}
 
 	return h.vars.Set(r.Context(), sdktypes.EncodeVars(app).WithScopeID(vsid)...)
+}
+
+// savePrivateDaemonApp saves the user-provided details of
+// a private Microsoft Daemon app as connection variables.
+func (h handler) savePrivateDaemonApp(r *http.Request, i sdktypes.Integration, cid sdktypes.ConnectionID) error {
+	tenantID := r.FormValue("tenant_id")
+	if tenantID == "" {
+		tenantID = "common"
+	}
+
+	app := connection.PrivateApp{
+		ClientID:     r.FormValue("client_id"),
+		ClientSecret: r.FormValue("client_secret"),
+		TenantID:     tenantID,
+	}
+
+	// Sanity check: all the required details were provided, and are valid.
+	if app.ClientID == "" || (app.ClientSecret == "" && app.Certificate == "") {
+		return errors.New("missing private app details")
+	}
+
+	// Test the app's usability by generating a new token.
+	ctx := r.Context()
+	vsid := sdktypes.NewVarScopeID(cid)
+	vs, err := h.vars.Get(ctx, vsid)
+	if err != nil {
+		h.logger.Error("failed to read connection vars", zap.Error(err))
+		return errors.New("failed to read connection vars")
+	}
+
+	t, err := connection.DaemonToken(ctx, vs)
+	if err != nil {
+		h.logger.Error("failed to generate MS daemon app token", zap.Error(err))
+		return err
+	}
+
+	vs = sdktypes.EncodeVars(app)
+
+	// Optional: save the tenant details, if the app is allowed to read them.
+	if org, err := connection.GetOrgInfo(ctx, t); err == nil {
+		vs = vs.Append(sdktypes.EncodeVars(org)...)
+	}
+
+	// Subscribe to receive asynchronous change notifications from
+	// Microsoft Graph, based on the connection's integration type.
+	svc := connection.NewServices(h.logger, h.vars, h.oauth)
+	err = errors.Join(connection.Subscribe(ctx, svc, cid, resources(i))...)
+	if err != nil {
+		h.logger.Error("failed to create MS event subscriptions", zap.Error(err))
+		return err
+	}
+
+	return h.vars.Set(ctx, vs.WithScopeID(vsid)...)
 }
 
 // startOAuth redirects the user to the AutoKitteh server's
@@ -120,6 +172,7 @@ func startOAuth(w http.ResponseWriter, r *http.Request, c sdkintegrations.Connec
 	if err != nil {
 		l.Warn("save connection: bad OAuth redirect URL")
 		c.AbortBadRequest("bad redirect URL")
+		return
 	}
 	http.Redirect(w, r, urlPath, http.StatusFound)
 }
@@ -129,7 +182,7 @@ func startOAuth(w http.ResponseWriter, r *http.Request, c sdkintegrations.Connec
 func oauthURL(cid, origin, scopes string) (string, error) {
 	// Security check: parameters must be alphanumeric strings,
 	// to prevent path traversal attacks and other issues.
-	re := regexp.MustCompile(`^[\w]+$`)
+	re := regexp.MustCompile(`^\w+$`)
 	if !re.MatchString(cid + origin + scopes) {
 		return "", errors.New("invalid connection ID, origin, or scopes")
 	}
@@ -142,5 +195,5 @@ func oauthURL(cid, origin, scopes string) (string, error) {
 	}
 
 	// Remember the AutoKitteh connection ID and request origin.
-	return path + fmt.Sprintf("?cid=%s&origin=%s", cid, origin), nil
+	return fmt.Sprintf("%s?cid=%s&origin=%s", path, cid, origin), nil
 }

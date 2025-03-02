@@ -50,7 +50,7 @@ func (sch *Scheduler) Start(ctx context.Context, dispatcher sdkservices.Dispatch
 	sch.dispatcher = dispatcher
 	sch.triggers = triggers
 
-	w := temporalclient.NewWorker(sch.sl.Desugar(), sch.temporal.Temporal(), taskQueueName, sch.cfg.Worker)
+	w := temporalclient.NewWorker(sch.sl.Desugar(), sch.temporal.TemporalClient(), taskQueueName, sch.cfg.Worker)
 	if w == nil {
 		return nil
 	}
@@ -68,7 +68,7 @@ func (sch *Scheduler) Start(ctx context.Context, dispatcher sdkservices.Dispatch
 func (sch *Scheduler) Create(ctx context.Context, tid sdktypes.TriggerID, schedule string) error {
 	l := sch.sl.With("trigger_id", tid.String())
 
-	_, err := sch.temporal.Temporal().ScheduleClient().Create(
+	_, err := sch.temporal.TemporalClient().ScheduleClient().Create(
 		ctx,
 		client.ScheduleOptions{
 			ID: tid.String(),
@@ -99,7 +99,7 @@ func (sch *Scheduler) Create(ctx context.Context, tid sdktypes.TriggerID, schedu
 func (sch *Scheduler) Delete(ctx context.Context, tid sdktypes.TriggerID) error {
 	sl := sch.sl.With("trigger_id", tid)
 
-	scheduleHandle := sch.temporal.Temporal().ScheduleClient().GetHandle(ctx, tid.String()) // validity of scheduleID is not checked by temporal
+	scheduleHandle := sch.temporal.TemporalClient().ScheduleClient().GetHandle(ctx, tid.String()) // validity of scheduleID is not checked by temporal
 	if err := scheduleHandle.Delete(ctx); err != nil {
 		return fmt.Errorf("schedule: delete scheduler workflow: %w", err)
 	}
@@ -112,7 +112,7 @@ func (sch *Scheduler) Delete(ctx context.Context, tid sdktypes.TriggerID) error 
 func (sch *Scheduler) Update(ctx context.Context, tid sdktypes.TriggerID, schedule string) error {
 	sl := sch.sl.With("trigger_id", tid)
 
-	h := sch.temporal.Temporal().ScheduleClient().GetHandle(ctx, tid.String()) // validity of scheduleID is not checked by temporal
+	h := sch.temporal.TemporalClient().ScheduleClient().GetHandle(ctx, tid.String()) // validity of scheduleID is not checked by temporal
 	err := h.Update(ctx, client.ScheduleUpdateOptions{
 		DoUpdate: func(input client.ScheduleUpdateInput) (*client.ScheduleUpdate, error) {
 			input.Description.Schedule.Spec = &client.ScheduleSpec{CronExpressions: []string{schedule}}

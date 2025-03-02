@@ -11,11 +11,11 @@ RUN cd py-sdk && python -m pip install .
 
 # https://stackoverflow.com/questions/78599865/how-to-install-missing-python-modules-on-distroless-image
 FROM gcr.io/distroless/python3-debian12
+USER 65532:65532
 
-COPY --from=build /usr/local/lib/python3.11/site-packages /usr/lib/python3.11/site-packages
-COPY --from=build /usr/local/bin /usr/local/bin
+COPY  --from=build /usr/local/lib/python3.11/site-packages /usr/lib/python3.11/site-packages
 
-COPY runner /runner
-COPY workflow /workflow
+COPY  --chown=65532:65532  runner /runner
+COPY  --chown=65532:65532 workflow /workflow
 
 ENV PYTHONPATH=/usr/lib/python3.11/site-packages

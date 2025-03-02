@@ -10,7 +10,6 @@ import (
 
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 )
 
@@ -61,7 +60,6 @@ func intercept(z *zap.Logger, cfg *LoggerConfig, extractors []RequestLogExtracto
 	unlogged := regexp.MustCompile(strings.Join(cfg.UnloggedRegexes, `|`))
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("AutoKitteh-Process-ID", fixtures.ProcessID())
 		// https://pkg.go.dev/net/http#example-ResponseWriter-Trailers
 		w.Header().Set("Trailer", "AutoKitteh-Duration")
 

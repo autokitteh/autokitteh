@@ -29,5 +29,5 @@ project:
       call: program.star:on_http
 
 -- program.star --
-def on_http(data, trigger, event):
+def on_http(data):
     pass

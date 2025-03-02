@@ -2,6 +2,7 @@ package jira
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -81,9 +82,9 @@ type webhookListResponse struct {
 // https://developer.atlassian.com/cloud/jira/platform/webhooks/#using-the-rest-api--fetching-registered-webhooks
 // https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-webhooks/#api-rest-api-3-webhook-get
 // https://developer.atlassian.com/server/jira/platform/webhooks/
-func getWebhook(l *zap.Logger, baseURL, token string) (int, bool) {
+func getWebhook(ctx context.Context, l *zap.Logger, baseURL, token string) (int, bool) {
 	// TODO(ENG-965): Support pagination.
-	req, err := http.NewRequest(http.MethodGet, baseURL+"/rest/api/3/webhook", nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"/rest/api/3/webhook", nil)
 	if err != nil {
 		l.Warn("Failed to construct HTTP request to list Jira webhooks", zap.Error(err))
 		return 0, false
@@ -134,7 +135,7 @@ func getWebhook(l *zap.Logger, baseURL, token string) (int, bool) {
 			} else {
 				// Already found a webhook for this AutoKitteh server.
 				// Delete duplicates and return the first one's ID.
-				deleteWebhook(l, baseURL, token, v.ID)
+				deleteWebhook(ctx, l, baseURL, token, v.ID)
 			}
 		}
 	}
@@ -148,9 +149,9 @@ func getWebhook(l *zap.Logger, baseURL, token string) (int, bool) {
 // https://developer.atlassian.com/server/jira/platform/webhooks/
 // This function logs errors but doesn't return them, because the only caller is [getWebhook],
 // which uses this function to clean up duplicates and doesn't need to know about the errors.
-func deleteWebhook(l *zap.Logger, baseURL, oauthToken string, id int) {
+func deleteWebhook(ctx context.Context, l *zap.Logger, baseURL, oauthToken string, id int) {
 	jsonReader := bytes.NewReader([]byte(fmt.Sprintf(`{"webhookIds": [%d]}`, id)))
-	req, err := http.NewRequest(http.MethodDelete, baseURL+"/rest/api/3/webhook", jsonReader)
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, baseURL+"/rest/api/3/webhook", jsonReader)
 	if err != nil {
 		l.Error("Failed to construct HTTP request to delete Jira webhook",
 			zap.Int("id", id),
@@ -205,7 +206,7 @@ type webhookRegistrationResult struct {
 // https://developer.atlassian.com/cloud/jira/platform/webhooks/#using-the-rest-api--registration
 // https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-webhooks/#api-rest-api-3-webhook-post
 // https://developer.atlassian.com/server/jira/platform/webhooks/
-func registerWebhook(l *zap.Logger, baseURL, token string) (int, bool) {
+func registerWebhook(ctx context.Context, l *zap.Logger, baseURL, token string) (int, bool) {
 	webhookBase := os.Getenv("WEBHOOK_ADDRESS")
 	r := webhookRegisterRequest{
 		URL: fmt.Sprintf("https://%s/jira/webhook", webhookBase),
@@ -233,7 +234,7 @@ func registerWebhook(l *zap.Logger, baseURL, token string) (int, bool) {
 	}
 
 	jsonReader := bytes.NewReader(body)
-	req, err := http.NewRequest(http.MethodPost, baseURL+"/rest/api/3/webhook", jsonReader)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, baseURL+"/rest/api/3/webhook", jsonReader)
 	if err != nil {
 		l.Error("Failed to construct HTTP request to register Jira webhook", zap.Error(err))
 		return 0, false
@@ -298,9 +299,9 @@ type webhookRefreshResponse struct {
 // https://developer.atlassian.com/cloud/jira/platform/webhooks/#using-the-rest-api--refreshing-registered-webhooks
 // https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-webhooks/#api-rest-api-3-webhook-refresh-put
 // https://developer.atlassian.com/server/jira/platform/webhooks/
-func ExtendWebhookLife(l *zap.Logger, baseURL, oauthToken string, id int) (time.Time, bool) {
+func ExtendWebhookLife(ctx context.Context, l *zap.Logger, baseURL, oauthToken string, id int) (time.Time, bool) {
 	jsonReader := bytes.NewReader([]byte(fmt.Sprintf(`{"webhookIds": [%d]}`, id)))
-	req, err := http.NewRequest(http.MethodPut, baseURL+"/rest/api/3/webhook/refresh", jsonReader)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, baseURL+"/rest/api/3/webhook/refresh", jsonReader)
 	if err != nil {
 		l.Error("Failed to construct HTTP request to refresh Jira webhook", zap.Error(err))
 		return time.Time{}, false

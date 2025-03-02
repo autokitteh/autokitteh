@@ -49,7 +49,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Test the OAuth token's usability and get authoritative installation details.
-	req, err := http.NewRequest(http.MethodGet, "https://api.hubapi.com/crm/v3/owners/", nil)
+	req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, "https://api.hubapi.com/crm/v3/owners/", nil)
 	if err != nil {
 		l.Error("Failed to create HTTP request", zap.Error(err))
 		c.AbortServerError("request creation error")

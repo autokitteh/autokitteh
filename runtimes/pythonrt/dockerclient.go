@@ -108,7 +108,7 @@ func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, sess
 		},
 		&container.HostConfig{
 			NetworkMode:  container.NetworkMode(networkName),
-			PortBindings: nat.PortMap{internalRunnerPort: []nat.PortBinding{{HostIP: "0.0.0.0"}}},
+			PortBindings: nat.PortMap{internalRunnerPort: []nat.PortBinding{{HostIP: "127.0.0.1"}}},
 			Tmpfs:        map[string]string{"/tmp": "size=64m"},
 		}, nil, nil, "")
 

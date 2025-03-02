@@ -55,21 +55,21 @@
         <input type="text" name="auth_scopes" value="teams" readonly />
       </div>
 
-      <h2>OAuth 2.0</h2>
+      <h2>Authentication Type</h2>
 
       <div class="form-group">
-        <label for="auth_type">Auth Type</label>
         <select name="auth_type" id="authType">
-          <option value="oauthDefault">Default App</option>
-          <option value="oauthPrivate">Private App</option>
+          <option value="oauthDefault">Default user-delegated app</option>
+          <option value="oauthPrivate">Private user-delegated app</option>
+          <option value="daemonApp">Private daemon app</option>
         </select>
       </div>
 
-      <div id="privateApp" class="hidden">
+      <div id="privateAppSection" class="hidden">
         <h2>Private App</h2>
 
         <div class="form-group">
-          <label for="client_id">Client ID</label>
+          <label for="client_id">Client ID <i>(required)</i></label>
           <input
             type="text"
             id="clientId"
@@ -77,11 +77,12 @@
             autocomplete="off"
             spellcheck="false"
             disabled
+            required
           />
         </div>
 
         <div class="form-group">
-          <label for="client_secret">Client Secret</label>
+          <label for="client_secret">Client Secret <i>(required)</i></label>
           <input
             type="text"
             id="clientSecret"
@@ -89,24 +90,29 @@
             autocomplete="off"
             spellcheck="false"
             disabled
+            required
           />
         </div>
 
         <div class="form-group">
-          <label for="tenant">Tenant (Default = "common")</label>
+          <label for="tenant_id">
+            Tenant ID <i>(required, multi-tenant = "common")</i>
+          </label>
           <input
             type="text"
-            id="tenant"
-            name="tenant"
-            value="common"
+            id="tenantId"
+            name="tenant_id"
             autocomplete="off"
             spellcheck="false"
             disabled
+            required
           />
         </div>
       </div>
 
-      <button type="submit" class="submit-btn">Start OAuth Flow</button>
+      <button type="submit" class="submit-btn" id="submit">
+        Start OAuth Flow
+      </button>
     </form>
   </body>
 </html>

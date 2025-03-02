@@ -2,12 +2,13 @@ package usagereporter
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"net/http"
 )
 
 func post(endpoint string, data []byte) error {
-	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewReader(data))
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, endpoint, bytes.NewReader(data))
 	if err != nil {
 		return fmt.Errorf("constructing request: %w", err)
 	}

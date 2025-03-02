@@ -4,24 +4,16 @@ import (
 	"context"
 	"errors"
 	"net/http"
-	"time"
 
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/microsoft/connection"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
-
-// oauthData contains OAuth token details.
-type oauthData struct {
-	AccessToken  string `var:"access_token,secret"`
-	Expiry       string `var:"expiry"`
-	RefreshToken string `var:"refresh_token,secret"`
-	TokenType    string `var:"token_type"`
-}
 
 // handleOAuth receives an incoming redirect request from AutoKitteh's
 // generic OAuth service, which contains an OAuth token (if the OAuth
@@ -45,13 +37,12 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		c.AbortBadRequest("invalid connection ID")
 		return
 	}
-	vsid := sdktypes.NewVarScopeID(cid)
 
 	// Handle OAuth errors (e.g. the user didn't authorize us), based on:
 	// https://developers.google.com/identity/protocols/oauth2/web-server#handlingresponse
 	e := r.FormValue("error")
 	if e != "" {
-		l.Warn("OAuth redirection reported an error", zap.Error(errors.New(e)))
+		l.Warn("OAuth redirection reported an error", zap.String("error", e))
 		c.AbortBadRequest(e)
 		return
 	}
@@ -65,20 +56,38 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Test the OAuth token's usability by getting the user info associated with it.
+	// Test the token's usability and get authoritative installation details.
 	ctx := r.Context()
-	user, err := connection.GetUserInfo(ctx, data.Token)
+	org, err := connection.GetOrgInfo(ctx, data.Token)
 	if err != nil {
-		l.Error("failed to fetch authenticated user details", zap.Error(err))
-		c.AbortServerError("user details error")
+		l.Warn("MS organization details request failed", zap.Error(err))
+		c.AbortServerError("organization details request failed")
 		return
 	}
 
-	if err := h.saveConnection(ctx, vsid, data.Token, user); err != nil {
+	user, err := connection.GetUserInfo(ctx, data.Token)
+	if err != nil {
+		l.Warn("MS user details request failed", zap.Error(err))
+		c.AbortServerError("user details request failed")
+		return
+	}
+
+	vsid := sdktypes.NewVarScopeID(cid)
+	if err := h.saveConnection(ctx, vsid, data.Token, org, user); err != nil {
 		l.Error("failed to save OAuth connection details", zap.Error(err))
 		c.AbortServerError("failed to save connection details")
 		return
 	}
+
+	// Subscribe to receive asynchronous change notifications from
+	// Microsoft Graph, based on the connection's integration type.
+	svc := connection.NewServices(l, h.vars, h.oauth)
+	_ = errors.Join(connection.Subscribe(ctx, svc, cid, resources(c.Integration))...)
+	// TODO(INT-232): "Subscription operations for tenant-wide chats subscription is not allowed in 'OnBehalfOfUser' context."
+	// if err != nil {
+	// 	c.AbortServerError("failed to create/renew event subscriptions")
+	// 	return
+	// }
 
 	// Redirect the user back to the UI.
 	urlPath, err := c.FinalURL()
@@ -91,20 +100,14 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, urlPath, http.StatusFound)
 }
 
-// saveConnection saves OAuth token and user profile details as connection variables.
-func (h handler) saveConnection(ctx context.Context, vsid sdktypes.VarScopeID, t *oauth2.Token, u *connection.UserInfo) error {
+// saveConnection saves OAuth token details as connection variables.
+func (h handler) saveConnection(ctx context.Context, vsid sdktypes.VarScopeID, t *oauth2.Token, o *connection.OrgInfo, u *connection.UserInfo) error {
 	if t == nil {
 		return errors.New("OAuth redirection missing token data")
 	}
 
-	vs := sdktypes.EncodeVars(oauthData{
-		AccessToken:  t.AccessToken,
-		Expiry:       t.Expiry.Format(time.RFC3339),
-		RefreshToken: t.RefreshToken,
-		TokenType:    t.TokenType,
-	}).WithPrefix("oauth_")
-
-	vs = vs.Append(sdktypes.EncodeVars(u).WithPrefix("user_")...)
-
+	vs := sdktypes.EncodeVars(common.EncodeOAuthData(t))
+	vs = vs.Append(sdktypes.EncodeVars(o)...)
+	vs = vs.Append(sdktypes.EncodeVars(u)...)
 	return h.vars.Set(ctx, vs.WithScopeID(vsid)...)
 }

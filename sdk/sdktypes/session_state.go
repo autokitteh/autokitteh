@@ -2,10 +2,8 @@ package sdktypes
 
 import (
 	"errors"
-	"time"
 
 	sessionv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1"
-	"go.autokitteh.dev/autokitteh/sdk/sdklogger"
 )
 
 type SessionState struct {
@@ -28,36 +26,7 @@ func (SessionStateTraits) Validate(m *SessionStatePB) error {
 	)
 }
 
-func (SessionStateTraits) StrictValidate(m *SessionStatePB) error {
-	return oneOfMessage(m)
-}
-
-func SessionStateFromProto(m *SessionStatePB) (SessionState, error) {
-	return FromProto[SessionState](m)
-}
-
-func StrictSessionStateFromProto(m *SessionStatePB) (SessionState, error) {
-	return Strict(SessionStateFromProto(m))
-}
-
-func NewSessionState(t time.Time, concrete concreteSessionState) SessionState {
-	var pb SessionStatePB
-
-	switch concrete := concrete.(type) {
-	case *SessionStateCompleted:
-		pb.Completed = concrete.ToProto()
-	case *SessionStateCreated:
-		pb.Created = concrete.ToProto()
-	case *SessionStateError:
-		pb.Error = concrete.ToProto()
-	case *SessionStateStopped:
-		pb.Stopped = concrete.ToProto()
-	default:
-		sdklogger.Panic("invalid session concrete state")
-	}
-
-	return forceFromProto[SessionState](&pb)
-}
+func (SessionStateTraits) StrictValidate(m *SessionStatePB) error { return oneOfMessage(m) }
 
 func (p SessionState) Type() SessionStateType {
 	pb := p.read()

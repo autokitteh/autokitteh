@@ -28,7 +28,7 @@ var logCmd = common.StandardCommand(&cobra.Command{
 			return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "session")
 		}
 
-		f := sdkservices.ListSessionLogRecordsFilter{SessionID: sid}
+		f := sdkservices.SessionLogRecordsFilter{SessionID: sid}
 		if nextPageToken != "" {
 			f.PageToken = nextPageToken
 		}
@@ -65,7 +65,7 @@ func init() {
 
 // skip >= 0: skip first records
 // skip < 0: skip all up to last |skip| records.
-func sessionLog(filter sdkservices.ListSessionLogRecordsFilter) error {
+func sessionLog(filter sdkservices.SessionLogRecordsFilter) error {
 	ctx, done := common.LimitedContext()
 	defer done()
 
@@ -74,7 +74,7 @@ func sessionLog(filter sdkservices.ListSessionLogRecordsFilter) error {
 		return fmt.Errorf("get log: %w", err)
 	}
 
-	rs := l.Log.Records()
+	rs := l.Records
 	if len(rs) == 0 {
 		return nil
 	}
@@ -96,8 +96,12 @@ func printLogs(logs []sdktypes.SessionLogRecord) {
 
 		msg := ""
 		if printsOnly {
-			if txt, ok := r.GetPrint(); ok {
-				msg = txt
+			if p, ok := r.GetPrint(); ok {
+				s, err := p.ToString()
+				if err != nil {
+					s = fmt.Sprintf("error converting print to string: %v", err.Error())
+				}
+				msg = s
 			} else if state := r.GetState(); state.IsValid() && state.Type() == sdktypes.SessionStateTypeError {
 				if stateErr := state.GetError(); stateErr.IsValid() {
 					pe := stateErr.GetProgramError()

@@ -23,9 +23,13 @@ func TestValues(t *testing.T) {
 
 	require.NoError(t, db.Connect(ctx))
 	require.NoError(t, db.Setup(ctx))
-	require.NoError(t, db.CreateProject(ctx, sdktypes.NewProject().WithName(sdktypes.NewSymbol("test1")).WithID(pids[0])))
-	require.NoError(t, db.CreateProject(ctx, sdktypes.NewProject().WithName(sdktypes.NewSymbol("test2")).WithID(pids[1])))
-	require.NoError(t, db.CreateProject(ctx, sdktypes.NewProject().WithName(sdktypes.NewSymbol("test3")).WithID(pids[2])))
+
+	oid, err := db.CreateOrg(ctx, sdktypes.NewOrg().WithID(sdktypes.NewOrgID()))
+	require.NoError(t, err)
+
+	require.NoError(t, db.CreateProject(ctx, sdktypes.NewProject().WithName(sdktypes.NewSymbol("test1")).WithID(pids[0]).WithOrgID(oid)))
+	require.NoError(t, db.CreateProject(ctx, sdktypes.NewProject().WithName(sdktypes.NewSymbol("test2")).WithID(pids[1]).WithOrgID(oid)))
+	require.NoError(t, db.CreateProject(ctx, sdktypes.NewProject().WithName(sdktypes.NewSymbol("test3")).WithID(pids[2]).WithOrgID(oid)))
 
 	require.NoError(t, db.SetValue(ctx, pids[0], "key0", sdktypes.NewIntegerValue(10)))
 	require.NoError(t, db.SetValue(ctx, pids[0], "key1", sdktypes.NewIntegerValue(11)))

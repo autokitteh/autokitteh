@@ -14,6 +14,7 @@ import (
 )
 
 type Data struct {
+	OrgID       sdktypes.OrgID          `json:"org_id"`
 	Session     sdktypes.Session        `json:"session"`
 	Vars        []sdktypes.Var          `json:"vars"`
 	Build       sdktypes.Build          `json:"build"`
@@ -61,6 +62,10 @@ func Get(ctx context.Context, svcs *sessionsvcs.Svcs, session sdktypes.Session) 
 	// TODO(ENG-207): Consider doing all retrievals using one big happy join.
 
 	if pid := session.ProjectID(); pid.IsValid() {
+		if data.OrgID, err = svcs.DB.GetOrgIDOf(ctx, pid); err != nil {
+			return nil, fmt.Errorf("get org id: %w", err)
+		}
+
 		cfilter := sdkservices.ListConnectionsFilter{ProjectID: pid}
 		if data.Connections, err = svcs.Connections.List(ctx, cfilter); err != nil {
 			return nil, fmt.Errorf("connections.list: %w", err)

@@ -6,9 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"regexp"
-	"slices"
 	"strings"
 
 	"github.com/hexops/gotextdiff"
@@ -19,6 +19,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -30,6 +31,9 @@ var (
 
 	// File "/opt/hostedtoolcache/Python/3.12.8/x64/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result`
 	pyLibRe = regexp.MustCompile(`File ".*/lib/python3\.\d+/(.*\.py)", line (\d+), in (.*)`)
+
+	// Some python version like to put an annoying ^^^^ marker to show where the error is.
+	pyAnnoyingErrorLocationMarkerRe = regexp.MustCompile(`^\s*~*\^+$`)
 )
 
 func normalizePath(p string) string {
@@ -89,13 +93,13 @@ var testCmd = common.StandardCommand(&cobra.Command{
 			a.Files[0].Name = ep.Path()
 		}
 
-		fs, err := kittehs.TxtarToFS(a)
+		txtarFS, err := kittehs.TxtarToFS(a)
 		if err != nil {
 			return fmt.Errorf("internal error: %w", err)
 		}
 
 		if !bid.IsValid() {
-			b, err := common.Build(common.Client().Runtimes(), fs, nil, nil)
+			b, err := common.Build(common.Client().Runtimes(), txtarFS, nil, nil)
 			if err != nil {
 				return err
 			}
@@ -113,6 +117,11 @@ var testCmd = common.StandardCommand(&cobra.Command{
 			}
 		}
 
+		expectedCallsTxt, err := fs.ReadFile(txtarFS, "calls.txt")
+		if err != nil && !errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("open calls.txt: %w", err)
+		}
+
 		s := sdktypes.NewSession(bid, ep, nil, nil).WithDeploymentID(did).WithProjectID(pid)
 
 		ctx, cancel := common.LimitedContext()
@@ -123,41 +132,81 @@ var testCmd = common.StandardCommand(&cobra.Command{
 			return fmt.Errorf("start session: %w", err)
 		}
 		pageSize = 10
-		rs, err := sessionWatch(sid, sdktypes.SessionStateTypeUnspecified, "")
+		if _, err := sessionWatch(sid, sdktypes.SessionStateTypeUnspecified, ""); err != nil {
+			return err
+		}
+
+		rs, err := sessions().GetPrints(ctx, sid, sdktypes.PaginationRequest{
+			Ascending: true,
+		})
 		if err != nil {
 			return err
 		}
 
-		slices.SortFunc(rs, func(a, b sdktypes.SessionLogRecord) int {
-			return a.Timestamp().Compare(b.Timestamp())
-		})
-
 		var prints strings.Builder
 
-		for _, r := range rs {
-			if p, ok := r.GetPrint(); ok {
-				s := bufio.NewScanner(strings.NewReader(p))
-				for s.Scan() {
-					line := normalizePath(s.Text())
-					prints.WriteString(line)
-					prints.WriteRune('\n')
+		for _, r := range rs.Prints {
+			ps, err := r.Value.ToString()
+			if err != nil {
+				ps = ""
+			}
+
+			s := bufio.NewScanner(strings.NewReader(ps))
+			for s.Scan() {
+				line := normalizePath(s.Text())
+
+				if pyAnnoyingErrorLocationMarkerRe.MatchString(line) {
+					continue
 				}
 
-				if err := s.Err(); err != nil {
-					return fmt.Errorf("scan print: %w", err)
-				}
+				prints.WriteString(line)
+				prints.WriteRune('\n')
+			}
+
+			if err := s.Err(); err != nil {
+				return fmt.Errorf("scan print: %w", err)
 			}
 		}
 
 		expected := strings.TrimSpace(string(a.Comment))
 		actual := strings.TrimSpace(prints.String())
 
+		var errs []error
+
 		if actual != expected {
 			edits := myers.ComputeEdits(span.URIFromPath("want"), expected, actual)
-			return errors.New(fmt.Sprint(gotextdiff.ToUnified("want", "got", expected, edits)))
+			errs = append(errs, errors.New(fmt.Sprint("output:\n", gotextdiff.ToUnified("want", "got", expected, edits))))
 		}
 
-		return nil
+		if expectedCallsTxt != nil {
+			results, err := sessions().GetLog(ctx, sdkservices.SessionLogRecordsFilter{
+				SessionID: sid,
+				Types:     sdktypes.CallSpecSessionLogRecordType,
+				PaginationRequest: sdktypes.PaginationRequest{
+					Ascending: true,
+				},
+			})
+			if err != nil {
+				return fmt.Errorf("get calls: %w", err)
+			}
+
+			var callsTxt strings.Builder
+			for _, r := range results.Records {
+				f, _, _ := r.GetCallSpec().Data()
+				fmt.Fprintf(&callsTxt, "%s\n", f.GetFunction().Name())
+			}
+
+			expected := strings.TrimSpace(kittehs.StringWithoutComments(string(expectedCallsTxt)))
+			actual := strings.TrimSpace(callsTxt.String())
+
+			if expected != actual {
+				edits := myers.ComputeEdits(span.URIFromPath("want"), expected, actual)
+				diff := gotextdiff.ToUnified("want", "got", expected, edits)
+				errs = append(errs, errors.New(fmt.Sprint("calls:\n", diff)))
+			}
+		}
+
+		return errors.Join(errs...)
 	},
 })
 

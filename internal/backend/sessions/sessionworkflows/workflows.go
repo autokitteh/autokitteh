@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"maps"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -20,6 +19,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionsvcs"
 	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -33,14 +33,21 @@ const (
 	delayedTerminateSessionWorkflowName = "delayed_terminate_session"
 )
 
+type StartWorkflowOptions struct {
+	UseTemporalForSessionLogs bool
+}
+
 type Workflows interface {
 	StartWorkers(context.Context) error
-	StartWorkflow(ctx context.Context, session sdktypes.Session) error
+	StartWorkflow(ctx context.Context, session sdktypes.Session, opts StartWorkflowOptions) error
+	StartChildWorkflow(wctx workflow.Context, childSession sdktypes.Session, parentSessionData *sessiondata.Data) (workflow.ChildWorkflowFuture, error)
+	GetWorkflowLog(ctx context.Context, filter sdkservices.SessionLogRecordsFilter) (*sdkservices.GetLogResults, error)
 	StopWorkflow(ctx context.Context, sessionID sdktypes.SessionID, reason string, force bool, cancelTimeout time.Duration) error
 }
 
 type sessionWorkflowParams struct {
 	Data *sessiondata.Data
+	Opts StartWorkflowOptions
 }
 
 type workflows struct {
@@ -67,7 +74,7 @@ func New(
 }
 
 func (ws *workflows) StartWorkers(ctx context.Context) error {
-	ws.worker = temporalclient.NewWorker(ws.l.Named("sessionworkflowsworker"), ws.svcs.Temporal(), taskQueueName, ws.cfg.Worker)
+	ws.worker = temporalclient.NewWorker(ws.l.Named("sessionworkflowsworker"), ws.svcs.Temporal.TemporalClient(), taskQueueName, ws.cfg.Worker)
 	if ws.worker == nil {
 		return nil
 	}
@@ -93,26 +100,17 @@ func (ws *workflows) StartWorkers(ctx context.Context) error {
 	return ws.worker.Start()
 }
 
-func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session) error {
-	sessionID := session.ID()
-
-	l := ws.l.Sugar().With("session_id", sessionID)
-
-	oid, err := ws.svcs.DB.GetOrgIDOf(ctx, session.ProjectID())
-	if err != nil {
-		return fmt.Errorf("get org id: %w", err)
-	}
-
+func memo(session sdktypes.Session, data sessiondata.Data) map[string]string {
 	memo := map[string]string{
 		"process_id":      fixtures.ProcessID(),
-		"session_id":      sessionID.Value().String(),
-		"session_uuid":    sessionID.UUIDValue().String(),
+		"session_id":      session.ID().String(),
+		"session_uuid":    session.ID().UUIDValue().String(),
 		"deployment_id":   session.DeploymentID().String(),
 		"deployment_uuid": session.DeploymentID().UUIDValue().String(),
 		"project_id":      session.ProjectID().String(),
 		"project_uuid":    session.ProjectID().UUIDValue().String(),
-		"org_id":          oid.String(),
-		"org_uuid":        oid.UUIDValue().String(),
+		"org_id":          data.OrgID.String(),
+		"org_uuid":        data.OrgID.UUIDValue().String(),
 	}
 
 	if session.ParentSessionID().IsValid() {
@@ -120,14 +118,60 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 		memo["parent_session_uuid"] = session.ParentSessionID().UUIDValue().String()
 	}
 
-	maps.Copy(memo, session.Memo())
+	for k, v := range session.Memo() {
+		memo["session__"+k] = v
+	}
+
+	return memo
+}
+
+func (ws *workflows) StartChildWorkflow(wctx workflow.Context, childSession sdktypes.Session, parentSessionData *sessiondata.Data) (workflow.ChildWorkflowFuture, error) {
+	childSessionID := childSession.ID()
+
+	l := ws.l.With(zap.Any("child_session_id", childSessionID))
+
+	data := *parentSessionData
+	data.Session = childSession
+
+	memo := memo(childSession, data)
+
+	f := workflow.ExecuteChildWorkflow(
+		workflow.WithChildOptions(
+			wctx,
+			ws.cfg.SessionWorkflow.ToChildWorkflowOptions(
+				taskQueueName,
+				workflowID(childSessionID),
+				fmt.Sprintf("session %v", childSessionID),
+				memo,
+			),
+		),
+		sessionWorkflowName,
+		&sessionWorkflowParams{Data: &data},
+	)
+
+	var r workflow.Execution
+	if err := f.GetChildWorkflowExecution().Get(wctx, &r); err != nil {
+		return nil, fmt.Errorf("child workflow execution: %w", err)
+	}
+
+	l.With(zap.String("workflow_id", r.ID), zap.String("run_id", r.RunID), zap.Any("memo", memo)).Info("initiated child session workflow")
+
+	return f, nil
+}
+
+func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session, opts StartWorkflowOptions) error {
+	sessionID := session.ID()
+
+	l := ws.l.Sugar().With("session_id", sessionID)
 
 	data, err := sessiondata.Get(ctx, ws.svcs, session)
 	if err != nil {
 		return fmt.Errorf("get session data: %w", err)
 	}
 
-	r, err := ws.svcs.Temporal().ExecuteWorkflow(
+	memo := memo(session, *data)
+
+	r, err := ws.svcs.Temporal.TemporalClient().ExecuteWorkflow(
 		ctx,
 		ws.cfg.SessionWorkflow.ToStartWorkflowOptions(
 			taskQueueName,
@@ -136,7 +180,7 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 			memo,
 		),
 		sessionWorkflowName,
-		&sessionWorkflowParams{Data: data},
+		&sessionWorkflowParams{Data: data, Opts: opts},
 	)
 	if err != nil {
 		return fmt.Errorf("execute session workflow: %w", err)
@@ -211,7 +255,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 	)
 
 	startTime := time.Now() // we want actual start time for metrics.
-	prints, err := runWorkflow(wctx, l, ws, params.Data)
+	prints, retVal, err := runWorkflow(wctx, l, ws, params)
 	duration := time.Since(startTime)
 
 	// from this point on we should not be doing anything really that should be cancelled.
@@ -234,6 +278,8 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 		}
 	}
 
+	workflowErr := err
+
 	if err != nil {
 		l := l.With(zap.Error(err))
 
@@ -244,7 +290,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 
 			ws.stopped(dwctx, sid)
 		} else {
-			ws.errored(dwctx, sid, err, prints)
+			ws.errored(dwctx, sid, err, kittehs.Transform(prints, func(p sdkservices.SessionPrint) string { return p.Value.GetString().Value() }))
 
 			if _, ok := sdktypes.FromError(err); ok {
 				// User level error (convertible to ProgramError).
@@ -252,7 +298,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 				sessionsProgramErrorsCounter.Add(metricsCtx, 1)
 
 				// No need to indicate the workflow as errored.
-				err = nil
+				workflowErr = nil
 			} else {
 				l.Sugar().Errorf("session workflow error: %v", err)
 				if sdkerrors.IsRetryableError(err) {
@@ -267,9 +313,30 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 		l.Info("session workflow completed with no errors")
 	}
 
+	// Signal parent session on completion.
+	if pid := session.ParentSessionID(); pid.IsValid() {
+		payload := map[string]sdktypes.Value{
+			"completed": sdktypes.NewBooleanValue(err == nil),
+		}
+
+		if err == nil {
+			payload["value"] = retVal
+		}
+
+		if err := workflow.SignalExternalWorkflow(
+			dwctx,
+			pid.String(),
+			"",
+			sessionSignalName(session.ID()),
+			sdktypes.NewDictValueFromStringMap(payload),
+		).Get(dwctx, nil); err != nil {
+			l.With(zap.Error(err)).Sugar().Errorf("signal parent session: %v", err)
+		}
+	}
+
 	_ = workflow.ExecuteActivity(wctx, deactivateDrainedDeploymentActivityName, session.DeploymentID()).Get(wctx, nil)
 
-	return err
+	return workflowErr
 }
 
 // workflow is stopped, so this assumes the given wctx is a disconnected context.
@@ -321,7 +388,7 @@ func (ws *workflows) StopWorkflow(ctx context.Context, sessionID sdktypes.Sessio
 	//
 	// When the workflow is actually stopped, the session state will be updated to stopped by
 	// the workflow itself.
-	if err := ws.svcs.Temporal().CancelWorkflow(ctx, wid, ""); err != nil {
+	if err := ws.svcs.Temporal.TemporalClient().CancelWorkflow(ctx, wid, ""); err != nil {
 		var notFound *serviceerror.NotFound
 		if errors.As(err, &notFound) {
 			// workflow might have already ended?
@@ -353,7 +420,7 @@ func (ws *workflows) StopWorkflow(ctx context.Context, sessionID sdktypes.Sessio
 
 	// run the termination in a separate workflow to avoid having the workflow terminated but not updated in
 	// the db if the caller croaks.
-	r, err := ws.svcs.Temporal().ExecuteWorkflow(
+	r, err := ws.svcs.Temporal.TemporalClient().ExecuteWorkflow(
 		ctx,
 		ws.cfg.TerminationWorkflow.ToStartWorkflowOptions(
 			taskQueueName,

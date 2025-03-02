@@ -23,14 +23,26 @@ class Transformer(ast.NodeTransformer):
     def __init__(self, file_name, src):
         self.file_name = file_name
         self.code_lines = src.splitlines()
+        # We should patch only inside function/class
+        self.patch = False
 
-    def visit_Call(self, node):
-        # Recurse, see https://docs.python.org/3/library/ast.html#ast.NodeVisitor.generic_visit
-        self.generic_visit(node)
+    def visit(self, node):
+        # Visit AST nodes. We keep track of functions and indent, in order not to patch
+        # module level calls.
+        if isinstance(node, (ast.FunctionDef, ast.ClassDef)) and not self.patch:
+            self.patch = True
+            self.generic_visit(node)
+            self.patch = False
+            return node
+
+        if not isinstance(node, ast.Call) or not self.patch:
+            self.generic_visit(node)
+            return node
 
         name = name_of(node.func, self.code_lines)
 
         if not name or name in BUILTIN:
+            self.generic_visit(node)
             return node
 
         log.info("%s:%d: patching %s with ak_call", self.file_name, node.lineno, name)
@@ -40,6 +52,7 @@ class Transformer(ast.NodeTransformer):
             args=[node.func] + node.args,
             keywords=node.keywords,
         )
+        self.generic_visit(node)
         return call
 
 

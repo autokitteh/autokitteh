@@ -5,20 +5,16 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"sync"
+	"runtime"
+	"strings"
 
 	_ "ariga.io/atlas-provider-gorm/gormschema"
-	"github.com/google/uuid"
 	"github.com/pressly/goose/v3"
-	"go.jetify.com/typeid"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/auth/authusers"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
-	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/backend/gormkitteh"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/migrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
@@ -27,15 +23,9 @@ type Config = gormkitteh.Config
 
 type gormdb struct {
 	z   *zap.Logger
-	db  *gorm.DB
 	cfg *Config
 
-	// See https://github.com/mattn/go-sqlite3/issues/274.
-	// Used only for protecting writes when using sqlite.
-	//
-	// TODO(ENG-190): This is not... ideal. Really find a better
-	//                solution. Everything else I tried didn't work.
-	mu *sync.Mutex
+	writer, reader *gorm.DB
 }
 
 var _ db.DB = (*gormdb)(nil)
@@ -50,51 +40,60 @@ func New(z *zap.Logger, cfg *Config) (db.DB, error) {
 		return nil, err
 	}
 
-	db := &gormdb{z: z, cfg: cfg}
-
-	if cfg.Type == "sqlite" {
-		db.mu = new(sync.Mutex)
-	}
-
-	return db, nil
+	return &gormdb{z: z, cfg: cfg}, nil
 }
 
-func (db *gormdb) GormDB() *gorm.DB { return db.db }
+func (db *gormdb) GormDB() (r, w *gorm.DB) { return db.reader, db.writer }
 
-func connect(_ context.Context, z *zap.Logger, cfg *Config) (*gorm.DB, error) {
-	client, err := gormkitteh.OpenZ(z, cfg, func(cfg *gorm.Config) {
-		cfg.SkipDefaultTransaction = true
-	})
+func connect(_ context.Context, z *zap.Logger, cfg *Config) (r *gorm.DB, w *gorm.DB, err error) {
+	gormCfgFn := func(cfg *gorm.Config) { cfg.SkipDefaultTransaction = true }
+
+	r, err = gormkitteh.OpenZ(z, cfg, gormCfgFn)
 	if err != nil {
-		return nil, fmt.Errorf("opendb: %w", err)
+		err = fmt.Errorf("opendb: %w", err)
+		return
 	}
-	sqlDB, err := client.DB()
+
+	var sqlDB *sql.DB
+	if sqlDB, err = r.DB(); err != nil {
+		return
+	}
+
+	n := cfg.MaxOpenConns
+	if n == 0 {
+		n = max(4, runtime.NumCPU())
+	}
+
+	sqlDB.SetMaxOpenConns(n)
+
+	// For in memory sqlite in memory database we will use the same connection for reads and writes
+	// since otherwise it will have two distinct databases for these.
+	if cfg.Type == "sqlite" && strings.HasPrefix(cfg.DSN, ":memory:") {
+		w = r
+		return
+	}
+
+	// For SQlite we need to open a separate connection for writes.
+	// See https://kerkour.com/sqlite-for-servers.
+
+	w, err = gormkitteh.OpenZ(z, cfg, gormCfgFn)
 	if err != nil {
-		return nil, err
+		err = fmt.Errorf("opendb: %w", err)
+		return
 	}
 
-	if cfg.MaxOpenConns > 0 {
-		sqlDB.SetMaxOpenConns(cfg.MaxOpenConns)
-	}
-	if cfg.MaxIdleConns > 0 {
-		sqlDB.SetMaxIdleConns(cfg.MaxIdleConns)
+	if sqlDB, err = w.DB(); err != nil {
+		return
 	}
 
-	return client, nil
-}
+	sqlDB.SetMaxOpenConns(1)
 
-func (db *gormdb) Connect(ctx context.Context) (err error) {
-	db.db, err = connect(ctx, db.z.Named("gorm"), db.cfg)
 	return
 }
 
-func (db *gormdb) locked(f func(db *gormdb) error) error {
-	if db.mu != nil {
-		db.mu.Lock()
-		defer db.mu.Unlock()
-	}
-
-	return f(db)
+func (db *gormdb) Connect(ctx context.Context) (err error) {
+	db.reader, db.writer, err = connect(ctx, db.z.Named("gorm"), db.cfg)
+	return
 }
 
 func translateError(err error) error {
@@ -134,12 +133,23 @@ var fkStmtByDB = map[string]map[bool]string{
 	},
 }
 
-func foreignKeys(gormdb *gormdb, enable bool) {
+func foreignKeys(gormdb *gormdb, enable bool) error {
 	if _, found := fkStmtByDB[gormdb.cfg.Type]; !found {
 		panic(fmt.Errorf("unknown DB type: %s", gormdb.cfg.Type))
 	}
 	stmt := fkStmtByDB[gormdb.cfg.Type][enable]
-	gormdb.db.Exec(stmt)
+
+	if err := gormdb.reader.Exec(stmt).Error; err != nil {
+		return fmt.Errorf("read exec: %q: %w", stmt, err)
+	}
+
+	if gormdb.writer != gormdb.reader {
+		if err := gormdb.writer.Exec(stmt).Error; err != nil {
+			return fmt.Errorf("write exec: %q: %w", stmt, err)
+		}
+	}
+
+	return nil
 }
 
 func initGoose(client *sql.DB, dialect string) (ver int64, err error) {
@@ -159,10 +169,12 @@ func initGoose(client *sql.DB, dialect string) (ver int64, err error) {
 func (db *gormdb) Migrate(ctx context.Context) error {
 	db.z.Info("migrating")
 
-	client := db.client(true)
-
-	ver, err := initGoose(client, db.cfg.Type)
+	_, client, err := db.client(true)
 	if err != nil {
+		return err
+	}
+
+	if _, err = initGoose(client, db.cfg.Type); err != nil {
 		return err
 	}
 
@@ -171,152 +183,15 @@ func (db *gormdb) Migrate(ctx context.Context) error {
 		return fmt.Errorf("goose up: %w", err)
 	}
 
-	if ver >= 20241225035414 {
-		// This is needed only when initializing the database from a specific version.
-		if err := db.backfillUsersAndOrgs(ctx); err != nil {
-			return fmt.Errorf("backfill users and orgs: %w", err)
-		}
-	}
-
-	return nil
-}
-
-func (db *gormdb) backfillUsersAndOrgs(ctx context.Context) error {
-	l := db.z
-
-	gdb, err := connect(ctx, db.z.Named("gorm-migrate"), db.cfg)
-	if err != nil {
-		return err
-	}
-
-	gdb = gdb.WithContext(ctx)
-
-	// Backfill users.
-
-	// Find all users that don't have default_org_id set. These are users that were created before the migration.
-	var users []scheme.User
-	if err := gdb.Where("default_org_id is NULL").Find(&users).Error; err != nil {
-		return err
-	}
-
-	l.Info("backfilling users and orgs for users without default orgs", zap.Int("users", len(users)))
-
-	usersMap := make(map[uuid.UUID]scheme.User, len(users))
-
-	for i, user := range users {
-		l := l.With(zap.String("user_id", user.UserID.String()), zap.Int("i", i))
-
-		// Prepare a personal org for each user.
-		org := scheme.Org{
-			OrgID:       kittehs.Must1(uuid.NewV7()),
-			DisplayName: user.DisplayName + "'s Personal Org",
-			Base: scheme.Base{
-				CreatedBy: authusers.SystemUser.DefaultOrgID().UUIDValue(),
-				CreatedAt: kittehs.Now().UTC(),
-			},
-		}
-
-		l = l.With(zap.String("org_id", org.OrgID.String()))
-
-		l.Info("creating org for user")
-
-		if err := gdb.Create(&org).Error; err != nil {
-			return err
-		}
-
-		l.Info("updating user with org")
-
-		user.DefaultOrgID = org.OrgID
-		if err := gdb.Save(&user).Error; err != nil {
-			return err
-		}
-
-		usersMap[user.UserID] = user
-
-		// Register the user as its own org member.
-
-		l.Info("registering user as org member")
-
-		if err := gdb.Save(&scheme.OrgMember{
-			OrgID:  org.OrgID,
-			UserID: user.UserID,
-			Base: scheme.Base{
-				CreatedBy: authusers.SystemUser.DefaultOrgID().UUIDValue(),
-				CreatedAt: kittehs.Now().UTC(),
-			},
-		}).Error; err != nil {
-			return err
-		}
-	}
-
-	// Backfill projects.
-
-	var projects []scheme.Project
-
-	// Find all projects that don't have org_id set. These are projects that were created before the migration.
-	if err := gdb.Where("org_id is NULL").Find(&projects).Error; err != nil {
-		return err
-	}
-
-	l.Info("backfilling projects without org", zap.Int("projects", len(projects)))
-
-	for i, project := range projects {
-		l := l.With(zap.String("project_id", project.ProjectID.String()), zap.Int("i", i))
-
-		// Find the ownership of the project, which associates the project with the user that created it.
-		var ownership scheme.Ownership
-		if err := gdb.Where("entity_id = ?", project.ProjectID).First(&ownership).Error; err != nil {
-			l.Error("failed to find ownership", zap.Error(err))
-			continue
-		}
-
-		// The user id in the ownership can be either a UUID or a TypeID.
-		uid, err := uuid.Parse(ownership.UserID)
-		if err != nil {
-			aid, err := typeid.Parse[typeid.AnyID](ownership.UserID)
-			if err != nil {
-				l.Error("failed to parse user id", zap.Error(err))
-				continue
-			}
-
-			if uid, err = uuid.Parse(aid.UUID()); err != nil {
-				l.Error("failed to parse user uuid", zap.Error(err))
-				continue
-			}
-		}
-
-		l = l.With(zap.String("user_id", uid.String()))
-
-		var oid uuid.UUID
-
-		user, found := usersMap[uid]
-		if !found {
-			// User is not found since it already had a default org before migration, and just now updating its projects.
-			if err := gdb.Where("user_id = ?", uid).First(&user).Error; err != nil {
-				l.Error("failed to find user", zap.Error(err))
-				continue
-			}
-		}
-
-		oid = user.DefaultOrgID
-
-		l = l.With(zap.String("org_id", oid.String()))
-
-		l.Info("updating project with org")
-
-		// Associate the project with the user's default org (which is probably its personal org).
-		err = gdb.Model(&scheme.Project{}).Where("project_id = ?", project.ProjectID).Update("org_id", oid).Error
-		if err != nil {
-			l.Error("failed to update project", zap.Error(err))
-			continue
-		}
-	}
-
 	return nil
 }
 
 func (db *gormdb) MigrationRequired(ctx context.Context) (bool, int64, error) {
-	client := db.client(false)
+	_, client, err := db.client(false)
+	if err != nil {
+		return false, 0, err
+	}
+
 	dbversion, err := initGoose(client, db.cfg.Type)
 	if err != nil {
 		return false, 0, err
@@ -358,7 +233,7 @@ func (db *gormdb) seed(ctx context.Context) error {
 
 	db.z.Info("seeding")
 
-	cmd := db.db.WithContext(ctx).Debug().Exec(db.cfg.SeedCommands)
+	cmd := db.writer.WithContext(ctx).Debug().Exec(db.cfg.SeedCommands)
 
 	db.z.Info("done seeding", zap.Int64("rows_affected", cmd.RowsAffected))
 
@@ -368,8 +243,15 @@ func (db *gormdb) seed(ctx context.Context) error {
 func (db *gormdb) Setup(ctx context.Context) error {
 	isSqlite := db.cfg.Type == "sqlite"
 	if isSqlite {
-		foreignKeys(db, false)
-		defer foreignKeys(db, true)
+		if err := foreignKeys(db, false); err != nil {
+			return err
+		}
+
+		defer func() {
+			if err := foreignKeys(db, true); err != nil {
+				db.z.Error("failed to re-enable foreign keys", zap.Error(err))
+			}
+		}()
 	}
 
 	if err := db.migrate(ctx); err != nil {
@@ -386,8 +268,9 @@ func (db *gormdb) Setup(ctx context.Context) error {
 // TODO: not sure this will work with the connect method
 func (db *gormdb) Debug() db.DB {
 	return &gormdb{
-		z:  db.z,
-		db: db.db.Debug(),
+		z:      db.z,
+		reader: db.reader.Debug(),
+		writer: db.writer.Debug(),
 	}
 }
 
@@ -423,11 +306,22 @@ func delete[T any](db *gorm.DB, ctx context.Context, where string, args ...any) 
 	return nil
 }
 
-func (db *gormdb) client(debug bool) *sql.DB {
-	q := db.db
+func (db *gormdb) client(debug bool) (r, w *sql.DB, err error) {
+	q := db.reader
 	if debug {
 		q = q.Debug()
 	}
 
-	return kittehs.Must1(q.DB())
+	if r, err = q.DB(); err != nil {
+		return
+	}
+
+	q = db.writer
+	if debug {
+		q = q.Debug()
+	}
+
+	w, err = q.DB()
+
+	return
 }

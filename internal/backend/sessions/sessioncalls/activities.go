@@ -12,19 +12,19 @@ import (
 )
 
 const (
-	callActivityName                       = "session_call"
+	CallActivityName                       = "session_call"
 	createSessionCallActivityName          = "create_session_call"
 	createSessionCallAttemptActivityName   = "create_session_call_attempt"
 	completeSessionCallAttemptActivityName = "complete_session_call_attempt"
 )
 
-type callActivityInputs struct {
+type CallActivityInputs struct {
 	SessionID sdktypes.SessionID
 	CallSpec  sdktypes.SessionCallSpec
 	Unique    bool
 }
 
-type callActivityOutputs struct {
+type CallActivityOutputs struct {
 	Result sdktypes.SessionCallAttemptResult
 
 	// Ask for a manual retry. This is used when executorsForSessions are not
@@ -37,12 +37,12 @@ type callActivityOutputs struct {
 func (cs *calls) registerActivities() {
 	cs.generalWorker.RegisterActivityWithOptions(
 		cs.sessionCallActivity,
-		activity.RegisterOptions{Name: callActivityName},
+		activity.RegisterOptions{Name: CallActivityName},
 	)
 
 	cs.uniqueWorker.RegisterActivityWithOptions(
 		cs.sessionCallActivity,
-		activity.RegisterOptions{Name: callActivityName},
+		activity.RegisterOptions{Name: CallActivityName},
 	)
 
 	cs.generalWorker.RegisterActivityWithOptions(
@@ -61,7 +61,7 @@ func (cs *calls) registerActivities() {
 	)
 }
 
-func (cs *calls) sessionCallActivity(ctx context.Context, params *callActivityInputs) (*callActivityOutputs, error) {
+func (cs *calls) sessionCallActivity(ctx context.Context, params *CallActivityInputs) (*CallActivityOutputs, error) {
 	sl := cs.l.Sugar().With("session_id", params.SessionID, "seq", params.CallSpec.Seq())
 
 	cs.executorsForSessionsMu.RLock()
@@ -76,7 +76,7 @@ func (cs *calls) sessionCallActivity(ctx context.Context, params *callActivityIn
 
 		sl.Warnf("unique execution requested for %v#%d, but executors are not initialized", params.SessionID, params.CallSpec.Seq())
 
-		return &callActivityOutputs{Retry: true}, nil
+		return &CallActivityOutputs{Retry: true}, nil
 	}
 
 	if !params.CallSpec.Function().GetFunction().HasFlag(sdktypes.DisableAutoHeartbeat) && cs.config.ActivityHeartbeatInterval > 0 {
@@ -89,7 +89,7 @@ func (cs *calls) sessionCallActivity(ctx context.Context, params *callActivityIn
 		return nil, temporalclient.TranslateError(err, "execute call for %v", params.SessionID)
 	}
 
-	return &callActivityOutputs{Result: result}, nil
+	return &CallActivityOutputs{Result: result}, nil
 }
 
 func (cs *calls) createSessionCallActivity(ctx context.Context, sid sdktypes.SessionID, data sdktypes.SessionCallSpec) error {

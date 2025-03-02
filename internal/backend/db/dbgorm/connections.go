@@ -2,6 +2,8 @@ package dbgorm
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"maps"
 
 	"github.com/google/uuid"
@@ -15,10 +17,10 @@ import (
 )
 
 func (gdb *gormdb) createConnection(ctx context.Context, conn *scheme.Connection) error {
-	return gdb.transaction(ctx, func(tx *tx) error {
+	return gdb.writeTransaction(ctx, func(tx *gormdb) error {
 		// ensure there is no connection with the same name for the same project
 		var count int64
-		if err := tx.db.
+		if err := tx.writer.
 			Model(&scheme.Connection{}).
 			Where("name = ?", conn.Name).Where("project_id = ?", conn.ProjectID).Count(&count).Error; err != nil {
 			return err
@@ -26,15 +28,24 @@ func (gdb *gormdb) createConnection(ctx context.Context, conn *scheme.Connection
 		if count > 0 {
 			return gorm.ErrDuplicatedKey // active/non-deleted connection was found.
 		}
-		return tx.db.Create(conn).Error
+		return tx.writer.Create(conn).Error
 	})
 }
 
 func (gdb *gormdb) deleteConnectionsAndVars(ctx context.Context, what string, id uuid.UUID) error {
 	// should be transactional with context already applied
+	if what == "connection_id" {
+		hasTriggers, err := gdb.doesConnectionHaveTriggers(ctx, id)
+		if err != nil {
+			return translateError(err)
+		}
+		if hasTriggers {
+			return errors.New("cannot delete a connection that has associated triggers")
+		}
+	}
 
 	var ids []uuid.UUID
-	q := gdb.db.WithContext(ctx).Model(&scheme.Connection{})
+	q := gdb.writer.WithContext(ctx).Model(&scheme.Connection{})
 	q = q.Clauses(clause.Returning{Columns: []clause.Column{{Name: "connection_id"}}})
 	if err := q.Delete(&ids, what+" = ?", id).Error; err != nil {
 		return err
@@ -42,10 +53,27 @@ func (gdb *gormdb) deleteConnectionsAndVars(ctx context.Context, what string, id
 	}
 
 	if len(ids) > 0 {
-		return gdb.db.Where("var_id IN (?)", ids).Delete(&scheme.Var{}).Error
+		return gdb.writer.Where("var_id IN (?)", ids).Delete(&scheme.Var{}).Error
 	}
 
 	return nil
+}
+
+func (gdb *gormdb) doesConnectionHaveTriggers(ctx context.Context, connID uuid.UUID) (bool, error) {
+	var exists bool
+	q := gdb.reader.WithContext(ctx)
+
+	q = q.Model(&scheme.Trigger{}).
+		Select("1").
+		Where("connection_id = ?", connID).
+		Where("deleted_at IS NULL").
+		Limit(1)
+
+	err := q.Find(&exists).Error
+	if err != nil {
+		return false, fmt.Errorf("checking active triggers: %w", err)
+	}
+	return exists, nil
 }
 
 func (gdb *gormdb) deleteConnection(ctx context.Context, id uuid.UUID) error {
@@ -53,11 +81,11 @@ func (gdb *gormdb) deleteConnection(ctx context.Context, id uuid.UUID) error {
 }
 
 func (gdb *gormdb) updateConnection(ctx context.Context, id uuid.UUID, data map[string]any) error {
-	return gdb.db.WithContext(ctx).Model(&scheme.Connection{ConnectionID: id}).Updates(data).Error
+	return gdb.writer.WithContext(ctx).Model(&scheme.Connection{ConnectionID: id}).Updates(data).Error
 }
 
 func (gdb *gormdb) getConnection(ctx context.Context, id uuid.UUID) (*scheme.Connection, error) {
-	return getOne[scheme.Connection](gdb.db.WithContext(ctx), "connection_id = ?", id)
+	return getOne[scheme.Connection](gdb.reader.WithContext(ctx), "connection_id = ?", id)
 }
 
 func findConnections(query *gorm.DB) ([]scheme.Connection, error) {
@@ -69,12 +97,12 @@ func findConnections(query *gorm.DB) ([]scheme.Connection, error) {
 }
 
 func (gdb *gormdb) getConnections(ctx context.Context, ids ...uuid.UUID) ([]scheme.Connection, error) {
-	q := gdb.db.WithContext(ctx).Where("connection_id IN (?)", ids)
+	q := gdb.reader.WithContext(ctx).Where("connection_id IN (?)", ids)
 	return findConnections(q)
 }
 
 func (gdb *gormdb) listConnections(ctx context.Context, filter sdkservices.ListConnectionsFilter, idsOnly bool) ([]scheme.Connection, error) {
-	q := gdb.db.WithContext(ctx)
+	q := gdb.reader.WithContext(ctx)
 
 	q = withProjectID(q, "", filter.ProjectID)
 

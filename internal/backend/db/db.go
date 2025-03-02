@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	"go.uber.org/zap"
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/health/healthreporter"
@@ -12,20 +11,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
-
-type Transaction interface {
-	DB
-	Commit() error
-
-	// Does nothing if already committed.
-	Rollback() error
-}
-
-func LoggedRollback(z *zap.Logger, tx Transaction) {
-	if err := tx.Rollback(); err != nil {
-		z.Error("rollback error", zap.Error(err))
-	}
-}
 
 type DB interface {
 	Connect(context.Context) error
@@ -36,10 +21,7 @@ type DB interface {
 
 	healthreporter.HealthReporter
 
-	GormDB() *gorm.DB
-
-	// Begina a transaction.
-	Begin(context.Context) (Transaction, error)
+	GormDB() (r, w *gorm.DB)
 
 	Transaction(context.Context, func(tx DB) error) error
 
@@ -119,9 +101,9 @@ type DB interface {
 	// -----------------------------------------------------------------------
 	CreateSession(ctx context.Context, session sdktypes.Session) error
 	GetSession(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.Session, error)
-	GetSessionLog(ctx context.Context, filter sdkservices.ListSessionLogRecordsFilter) (*sdkservices.GetLogResults, error)
+	GetSessionLog(ctx context.Context, filter sdkservices.SessionLogRecordsFilter) (*sdkservices.GetLogResults, error)
 	UpdateSessionState(ctx context.Context, sessionID sdktypes.SessionID, state sdktypes.SessionState) error
-	AddSessionPrint(ctx context.Context, sessionID sdktypes.SessionID, print string) error
+	AddSessionPrint(ctx context.Context, sessionID sdktypes.SessionID, v sdktypes.Value, callSeq uint32) error
 	AddSessionStopRequest(ctx context.Context, sessionID sdktypes.SessionID, reason string) error
 	ListSessions(ctx context.Context, f sdkservices.ListSessionsFilter) (*sdkservices.ListSessionResult, error)
 	DeleteSession(ctx context.Context, sessionID sdktypes.SessionID) error

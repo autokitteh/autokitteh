@@ -7,31 +7,27 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations"
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/github/internal/vars"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+const (
+	integrationName = "github"
+)
+
+var (
+	integrationID = sdktypes.NewIntegrationIDFromName(integrationName)
+
+	desc = common.Descriptor(integrationName, "GitHub", "/static/images/github.svg")
+)
+
 type integration struct {
 	vars sdkservices.Vars
 }
-
-var integrationID = sdktypes.NewIntegrationIDFromName("github")
-
-var desc = kittehs.Must1(sdktypes.StrictIntegrationFromProto(&sdktypes.IntegrationPB{
-	IntegrationId: integrationID.String(),
-	UniqueName:    "github",
-	DisplayName:   "GitHub",
-	Description:   "GitHub is a development platform with distributed version control, issue tracking, continuous integration, and more.",
-	LogoUrl:       "/static/images/github.svg",
-	ConnectionUrl: "/github/connect",
-	ConnectionCapabilities: &sdktypes.ConnectionCapabilitiesPB{
-		RequiresConnectionInit: true,
-	},
-}))
 
 func New(cvars sdkservices.Vars) sdkservices.Integration {
 	i := &integration{vars: cvars}
@@ -62,9 +58,15 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 		}
 
 		switch at.Value() {
-		case integrations.OAuth:
-			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using GitHub app"), nil
+		case integrations.OAuth, integrations.OAuthDefault:
+			if vs.Get(vars.InstallID).IsValid() {
+				return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using GitHub app"), nil
+			}
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 		case integrations.PAT:
+			if vs.GetValue(vars.PAT) == "" {
+				return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+			}
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using PAT + webhook"), nil
 		default:
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil

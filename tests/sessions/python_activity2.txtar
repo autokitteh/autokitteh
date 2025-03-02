@@ -1,0 +1,24 @@
+main
+meow
+bar
+done
+
+-- main.py:main --
+import autokitteh
+
+@autokitteh.activity
+def foo(x):
+    print(x)
+
+def bar():
+    foo("bar")
+
+def main(event: autokitteh.Event):
+    print("main")
+    foo("meow")
+    bar()
+    print("done")
+
+-- calls.txt --
+foo
+foo

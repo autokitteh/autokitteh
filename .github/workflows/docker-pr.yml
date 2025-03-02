@@ -1,0 +1,25 @@
+# See also "docker-main.yml", "manual-docker-image.yml", and "release.yml".
+# https://github.com/marketplace/actions/build-and-push-docker-images
+
+name: CI - Docker (PRs)
+
+on:
+  pull_request:
+
+jobs:
+  test-docker-build:
+    name: Test Docker build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build but don't push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          tags: autokitteh:latest
+          push: false
+          provenance: false

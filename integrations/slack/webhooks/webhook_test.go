@@ -95,8 +95,8 @@ func TestWebhookCheckRequest(t *testing.T) {
 			w := httptest.NewRecorder()
 			r := httptest.NewRequest(http.MethodPost, "/test", tt.r)
 			r.Header.Add(api.HeaderContentType, tt.gotContentType)
-			r.Header.Add(api.HeaderSlackTimestamp, tt.timestampHeader)
-			r.Header.Add(api.HeaderSlackSignature, tt.signatureHeader)
+			r.Header.Add(headerSlackTimestamp, tt.timestampHeader)
+			r.Header.Add(headerSlackSignature, tt.signatureHeader)
 
 			h := handler{}
 			got := h.checkRequest(w, r, zap.L(), tt.wantContentType)

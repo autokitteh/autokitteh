@@ -59,6 +59,16 @@ class HandlerServiceStub(object):
                 request_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StartSessionRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StartSessionResponse.FromString,
                 _registered_method=True)
+        self.Signal = channel.unary_unary(
+                '/autokitteh.user_code.v1.HandlerService/Signal',
+                request_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.SignalRequest.SerializeToString,
+                response_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.SignalResponse.FromString,
+                _registered_method=True)
+        self.NextSignal = channel.unary_unary(
+                '/autokitteh.user_code.v1.HandlerService/NextSignal',
+                request_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.NextSignalRequest.SerializeToString,
+                response_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.NextSignalResponse.FromString,
+                _registered_method=True)
         self.EncodeJWT = channel.unary_unary(
                 '/autokitteh.user_code.v1.HandlerService/EncodeJWT',
                 request_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.EncodeJWTRequest.SerializeToString,
@@ -143,6 +153,18 @@ class HandlerServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def Signal(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def NextSignal(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def EncodeJWT(self, request, context):
         """Utility functions
         """
@@ -215,6 +237,16 @@ def add_HandlerServiceServicer_to_server(servicer, server):
                     servicer.StartSession,
                     request_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StartSessionRequest.FromString,
                     response_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StartSessionResponse.SerializeToString,
+            ),
+            'Signal': grpc.unary_unary_rpc_method_handler(
+                    servicer.Signal,
+                    request_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.SignalRequest.FromString,
+                    response_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.SignalResponse.SerializeToString,
+            ),
+            'NextSignal': grpc.unary_unary_rpc_method_handler(
+                    servicer.NextSignal,
+                    request_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.NextSignalRequest.FromString,
+                    response_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.NextSignalResponse.SerializeToString,
             ),
             'EncodeJWT': grpc.unary_unary_rpc_method_handler(
                     servicer.EncodeJWT,
@@ -480,6 +512,60 @@ class HandlerService(object):
             '/autokitteh.user_code.v1.HandlerService/StartSession',
             autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StartSessionRequest.SerializeToString,
             autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StartSessionResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def Signal(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/autokitteh.user_code.v1.HandlerService/Signal',
+            autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.SignalRequest.SerializeToString,
+            autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.SignalResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def NextSignal(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/autokitteh.user_code.v1.HandlerService/NextSignal',
+            autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.NextSignalRequest.SerializeToString,
+            autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.NextSignalResponse.FromString,
             options,
             channel_credentials,
             insecure,

@@ -57,25 +57,13 @@ func Run(
 		return nil, fmt.Errorf("not found: %q", mainPath)
 	}
 
-	vctx := &values.Context{Call: cbs.SafeCall, RunID: runID}
+	vctx := &values.Context{Call: cbs.Call, RunID: runID}
 
-	givens, err := kittehs.TransformMapValuesError(givenValues, vctx.ToStarlarkValue)
-	if err != nil {
-		return nil, fmt.Errorf("converting values to starlark: %w", err)
-	}
-
-	// preload all  modules
-	libs := libs.LoadModules(int64(kittehs.HashString64(runID.String())))
-
-	// order matters here - builtins are the least important. givens can override them.
-	// then we have the starlib libs, which can override both.
-	predeclared := maps.Clone(builtins)
-	maps.Copy(predeclared, givens)
-	maps.Copy(predeclared, libs)
+	var predeclared starlark.StringDict
 
 	th := &starlark.Thread{
 		Name:  mainPath,
-		Print: func(_ *starlark.Thread, text string) { cbs.SafePrint(ctx, runID, text) },
+		Print: func(_ *starlark.Thread, text string) { _ = cbs.Print(ctx, runID, text) },
 		Load: func(th *starlark.Thread, path string) (starlark.StringDict, error) {
 			if len(th.CallStack()) > 0 {
 				// Path is relative to the file that called load.
@@ -89,7 +77,7 @@ func Run(
 			}
 
 			if prog == nil {
-				globals, err := cbs.SafeLoad(ctx, runID, path)
+				globals, err := cbs.Load(ctx, runID, path)
 				if err != nil {
 					return nil, err
 				}
@@ -104,6 +92,22 @@ func Run(
 			return prog.Init(th, predeclared)
 		},
 	}
+
+	givens, err := kittehs.TransformMapValuesError(givenValues, vctx.ToStarlarkValue)
+	if err != nil {
+		return nil, fmt.Errorf("converting values to starlark: %w", err)
+	}
+
+	libs.InitThread(th)
+
+	// preload all  modules
+	libs := libs.LoadModules(int64(kittehs.HashString64(runID.String())))
+
+	// order matters here - builtins are the least important. givens can override them.
+	// then we have the starlib libs, which can override both.
+	predeclared = maps.Clone(builtins)
+	maps.Copy(predeclared, givens)
+	maps.Copy(predeclared, libs)
 
 	vctx.SetTLS(th)
 	tls.Set(th, &tls.Context{
@@ -167,9 +171,14 @@ func (r *run) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value,
 	}
 
 	th := &starlark.Thread{
-		Name:  fv.UniqueID(),
-		Print: func(_ *starlark.Thread, text string) { r.cbs.SafePrint(ctx, r.runID, text) },
+		Name: fv.UniqueID(),
+		Print: func(_ *starlark.Thread, text string) {
+			// Nothing to do with the error here.
+			_ = r.cbs.Print(ctx, r.runID, text)
+		},
 	}
+
+	libs.InitThread(th)
 
 	r.vctx.SetTLS(th)
 	tls.Set(th, &tls.Context{

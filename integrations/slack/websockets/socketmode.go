@@ -14,24 +14,17 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-// handler is an autokitteh webhook which implements [http.Handler]
-// to receive and dispatch asynchronous event notifications.
-type handler struct {
+// handler implements WebSockets to receive and dispatch
+// third-party asynchronous event notifications.
+type Handler struct {
 	logger        *zap.Logger
 	vars          sdkservices.Vars
 	dispatch      sdkservices.DispatchFunc
-	integration   sdktypes.Integration
 	integrationID sdktypes.IntegrationID
 }
 
-func NewHandler(l *zap.Logger, v sdkservices.Vars, d sdkservices.DispatchFunc, i sdktypes.Integration) handler {
-	return handler{
-		logger:        l,
-		vars:          v,
-		dispatch:      d,
-		integration:   i,
-		integrationID: i.ID(),
-	}
+func NewHandler(l *zap.Logger, v sdkservices.Vars, d sdkservices.DispatchFunc, i sdktypes.IntegrationID) Handler {
+	return Handler{logger: l, vars: v, dispatch: d, integrationID: i}
 }
 
 var (
@@ -43,7 +36,7 @@ var (
 	mu = &sync.Mutex{}
 )
 
-func (h handler) OpenSocketModeConnection(appID, botToken, appToken string) {
+func (h Handler) OpenWebSocketConnection(appID, appToken, botToken string) {
 	// Ensure multiple users don't reference the same app at the same time.
 	mu.Lock()
 	defer mu.Unlock()
@@ -54,8 +47,8 @@ func (h handler) OpenSocketModeConnection(appID, botToken, appToken string) {
 		return
 	}
 
-	api := slack.New(botToken, slack.OptionAppLevelToken(appToken))
-	webSocketClients[appID] = socketmode.New(api)
+	client := slack.New(botToken, slack.OptionAppLevelToken(appToken))
+	webSocketClients[appID] = socketmode.New(client)
 
 	go func() {
 		for {
@@ -71,7 +64,7 @@ func (h handler) OpenSocketModeConnection(appID, botToken, appToken string) {
 	}()
 }
 
-func (h handler) socketModeHandler(e *socketmode.Event, c *socketmode.Client) {
+func (h Handler) socketModeHandler(e *socketmode.Event, c *socketmode.Client) {
 	msg := "Slack Socket Mode event: " + string(e.Type)
 	switch string(e.Type) {
 	// WebSocket connection flow.
@@ -141,7 +134,7 @@ func transformEvent(l *zap.Logger, slackEvent any, eventType string) (sdktypes.E
 	return akEvent, nil
 }
 
-func (h handler) dispatchAsyncEventsToConnections(cids []sdktypes.ConnectionID, e sdktypes.Event) {
+func (h Handler) dispatchAsyncEventsToConnections(cids []sdktypes.ConnectionID, e sdktypes.Event) {
 	ctx := extrazap.AttachLoggerToContext(h.logger, context.Background())
 	for _, cid := range cids {
 		eid, err := h.dispatch(ctx, e.WithConnectionDestinationID(cid), nil)

@@ -54,10 +54,11 @@ func TestCreateDuplicatedProjectName(t *testing.T) {
 	f.createProjectsAndAssert(t, p)
 
 	// create different project with the same name
-	p2 := f.newProject()
+	p2 := f.newProject(p.OrgID)
 	p2.Name = p.Name
 	assert.Equal(t, p.Name, p2.Name)
 	assert.NotEqual(t, p.ProjectID, p2.ProjectID)
+	assert.Equal(t, p.OrgID, p2.OrgID)
 
 	// test create another project with the same name
 	assert.ErrorIs(t, f.gormdb.createProject(f.ctx, &p2), gorm.ErrDuplicatedKey)
@@ -144,6 +145,19 @@ func TestGetProjectDeployments(t *testing.T) {
 	// assert.NoError(t, err)
 	// assert.Equal(t, []sdktypes.UUID{d1.DeploymentID, d2.DeploymentID, d3.DeploymentID},
 	// 	kittehs.Transform(ds, func(d DeploymentState) sdktypes.UUID { return d.DeploymentID }))
+}
+
+func TestDeleteEventWhenProjectDeleted(t *testing.T) {
+	f := preProjectTest(t)
+
+	p := f.newProject()
+	e := f.newEvent(p)
+	f.createProjectsAndAssert(t, p)
+	f.createEventsAndAssert(t, e)
+
+	assert.NoError(t, f.gormdb.deleteProject(f.ctx, p.ProjectID))
+	f.assertProjectDeleted(t, p)
+	f.assertEventsDeleted(t, e)
 }
 
 func TestDeleteProjectAndDependents(t *testing.T) {

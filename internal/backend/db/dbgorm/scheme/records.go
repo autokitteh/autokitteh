@@ -157,7 +157,8 @@ type Secret struct {
 type Event struct {
 	Base
 
-	ProjectID     uuid.UUID  `gorm:"index;type:uuid"` // TODO(authz-migration): not null.
+	ProjectID     uuid.UUID  `gorm:"index;type:uuid"`                      // TODO(authz-migration): not null.
+	OrgID         *uuid.UUID `gorm:"index;index:idx_org_id_seq;type:uuid"` // use only for list.
 	EventID       uuid.UUID  `gorm:"uniqueIndex;type:uuid;not null"`
 	DestinationID uuid.UUID  `gorm:"index;type:uuid;not null"`
 	IntegrationID *uuid.UUID `gorm:"index;type:uuid"`
@@ -167,15 +168,17 @@ type Event struct {
 	EventType string `gorm:"index:idx_event_type_seq,priority:1;index:idx_event_type"`
 	Data      datatypes.JSON
 	Memo      datatypes.JSON
-	Seq       uint64 `gorm:"primaryKey;autoIncrement:true,index:idx_event_type_seq,priority:2"`
+	Seq       uint64 `gorm:"primaryKey;autoIncrement:true;index:idx_event_type_seq,priority:2;index:idx_org_id_seq"`
 
 	// enforce foreign keys
-	Connection *Connection
-	Trigger    *Trigger
-
-	DeletedAt gorm.DeletedAt `gorm:"index"`
+	Connection *Connection `gorm:"constraint:OnDelete:SET NULL"`
+	Trigger    *Trigger    `gorm:"constraint:OnDelete:SET NULL"`
 
 	Project *Project
+	Org     *Org
+
+	// Redeclare here to create an index on created_at for sessions specifically
+	CreatedAt time.Time `gorm:"index"`
 }
 
 func (Event) IDFieldName() string { return "event_id" }
@@ -259,13 +262,19 @@ func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
 		srcType = sdktypes.TriggerSourceTypeConnection
 	}
 
+	filter := e.Filter
+	if filter == "." {
+		// HACK: "." is a signal for an empty filter.
+		filter = ""
+	}
+
 	return sdktypes.StrictTriggerFromProto(&sdktypes.TriggerPB{
 		TriggerId:    sdktypes.NewIDFromUUID[sdktypes.TriggerID](e.TriggerID).String(),
 		SourceType:   srcType.ToProto(),
 		ConnectionId: sdktypes.NewIDFromUUIDPtr[sdktypes.ConnectionID](e.ConnectionID).String(),
 		ProjectId:    sdktypes.NewIDFromUUID[sdktypes.ProjectID](e.ProjectID).String(),
 		EventType:    e.EventType,
-		Filter:       e.Filter,
+		Filter:       filter,
 		CodeLocation: loc.ToProto(),
 		Name:         e.Name,
 		WebhookSlug:  e.WebhookSlug,
@@ -280,7 +289,7 @@ type SessionLogRecord struct {
 	Type      string `gorm:"index"`
 
 	// enforce foreign keys
-	Session *Session
+	Session *Session `gorm:"constraint:OnDelete:CASCADE"`
 }
 
 func ParseSessionLogRecord(c SessionLogRecord) (spec sdktypes.SessionLogRecord, err error) {
@@ -294,7 +303,7 @@ type SessionCallSpec struct {
 	Data      datatypes.JSON
 
 	// enforce foreign keys
-	Session *Session
+	Session *Session `gorm:"constraint:OnDelete:CASCADE"`
 }
 
 func ParseSessionCallSpec(c SessionCallSpec) (spec sdktypes.SessionCallSpec, err error) {
@@ -310,7 +319,7 @@ type SessionCallAttempt struct {
 	Complete  datatypes.JSON
 
 	// enforce foreign keys
-	Session *Session
+	Session *Session `gorm:"constraint:OnDelete:CASCADE"`
 }
 
 func ParseSessionCallAttemptStart(c SessionCallAttempt) (d sdktypes.SessionCallAttemptStart, err error) {
@@ -338,13 +347,15 @@ type Session struct {
 
 	UpdatedBy uuid.UUID `gorm:"type:uuid"`
 	UpdatedAt time.Time
-	DeletedAt gorm.DeletedAt `gorm:"index"`
 
 	// enforce foreign keys
 	Build      *Build
 	Deployment *Deployment
 	Project    *Project
-	Event      *Event `gorm:"references:EventID"`
+	Event      *Event `gorm:"references:EventID;constraint:OnDelete:SET NULL"`
+
+	// Redeclare here to create an index on created_at for sessions specifically
+	CreatedAt time.Time `gorm:"index"`
 }
 
 func (Session) IDFieldName() string { return "session_id" }
@@ -531,7 +542,6 @@ type User struct {
 	UserID       uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
 	Email        string    `gorm:"uniqueIndex;not null"`
 	DisplayName  string
-	Disabled     bool      // deprecated, leave for backward compatibility.
 	Status       int32     `gorm:"index"`
 	DefaultOrgID uuid.UUID `gorm:"type:uuid"`
 
@@ -540,19 +550,9 @@ type User struct {
 }
 
 func ParseUser(r User) (sdktypes.User, error) {
-	s := sdktypes.UserStatusActive
-
-	if r.Status == 0 {
-		// legacy.
-		if r.Disabled {
-			s = sdktypes.UserStatusDisabled
-		}
-	} else {
-		var err error
-		s, err = sdktypes.UserStatusFromProto(sdktypes.UserStatusPB(r.Status))
-		if err != nil {
-			return sdktypes.InvalidUser, fmt.Errorf("invalid user status: %w", err)
-		}
+	s, err := sdktypes.UserStatusFromProto(sdktypes.UserStatusPB(r.Status))
+	if err != nil {
+		return sdktypes.InvalidUser, fmt.Errorf("invalid user status: %w", err)
 	}
 
 	return sdktypes.NewUser().
@@ -573,6 +573,7 @@ type Org struct {
 
 	UpdatedBy uuid.UUID `gorm:"type:uuid"`
 	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
 func ParseOrg(r Org) (sdktypes.Org, error) {
@@ -620,12 +621,4 @@ func ParseOrgMember(r OrgMember) (sdktypes.OrgMember, error) {
 		sdktypes.NewIDFromUUID[sdktypes.OrgID](r.OrgID),
 		sdktypes.NewIDFromUUID[sdktypes.UserID](r.UserID),
 	).WithStatus(s).WithRoles(roles...), nil
-}
-
-// TODO: Remove after migration to new ownership is done.
-type Ownership struct {
-	EntityID   uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
-	EntityType string    `gorm:"not null"`
-
-	UserID string `gorm:"not null"`
 }

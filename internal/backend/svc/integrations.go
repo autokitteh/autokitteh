@@ -5,6 +5,7 @@ import (
 
 	"go.uber.org/fx"
 	"go.uber.org/zap"
+	"logur.dev/logur/integration/grpc"
 
 	"go.autokitteh.dev/autokitteh/integrations/asana"
 	"go.autokitteh.dev/autokitteh/integrations/atlassian/confluence"
@@ -21,13 +22,15 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/google/gemini"
 	"go.autokitteh.dev/autokitteh/integrations/google/gmail"
 	"go.autokitteh.dev/autokitteh/integrations/google/sheets"
-	"go.autokitteh.dev/autokitteh/integrations/grpc"
+	"go.autokitteh.dev/autokitteh/integrations/height"
 	"go.autokitteh.dev/autokitteh/integrations/hubspot"
+	"go.autokitteh.dev/autokitteh/integrations/linear"
 	"go.autokitteh.dev/autokitteh/integrations/microsoft"
 	"go.autokitteh.dev/autokitteh/integrations/microsoft/teams"
-	"go.autokitteh.dev/autokitteh/integrations/redis"
+	"go.autokitteh.dev/autokitteh/integrations/salesforce"
 	"go.autokitteh.dev/autokitteh/integrations/slack"
 	"go.autokitteh.dev/autokitteh/integrations/twilio"
+	"go.autokitteh.dev/autokitteh/integrations/zoom"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/backend/integrations"
@@ -98,14 +101,17 @@ func integrationsFXOption() fx.Option {
 		integration("gemini", configset.Empty, gemini.New),
 		integration("google", configset.Empty, google.New),
 		integration("grpc", configset.Empty, grpc.New),
+		integration("height", configset.Empty, height.New),
 		integration("hubspot", configset.Empty, hubspot.New),
 		integration("jira", configset.Empty, jira.New),
+		integration("linear", configset.Empty, linear.New),
 		integration("microsoft", configset.Empty, microsoft.New),
 		integration("microsoft_teams", configset.Empty, teams.New),
-		integration("redis", configset.Empty, redis.New),
+		integration("salesforce", configset.Empty, salesforce.New),
 		integration("sheets", configset.Empty, sheets.New),
 		integration("slack", configset.Empty, slack.New),
 		integration("twilio", configset.Empty, twilio.New),
+		integration("zoom", configset.Empty, zoom.New),
 		fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, muxes *muxes.Muxes, vars sdkservices.Vars, dispatch sdkservices.DispatchFunc, oauth sdkservices.OAuth) {
 			HookOnStart(lc, func(ctx context.Context) error {
 				asana.Start(l, muxes)
@@ -117,11 +123,15 @@ func integrationsFXOption() fx.Option {
 				gemini.Start(l, muxes)
 				github.Start(l, muxes, vars, oauth, dispatch)
 				google.Start(l, muxes, vars, oauth, dispatch)
+				height.Start(l, muxes, vars, oauth, dispatch)
 				hubspot.Start(l, muxes, oauth)
 				jira.Start(l, muxes, vars, oauth, dispatch)
+				linear.Start(l, muxes, vars, oauth, dispatch)
 				microsoft.Start(l, muxes, vars, oauth, dispatch)
+				salesforce.Start(l, muxes, vars, oauth, dispatch)
 				slack.Start(l, muxes, vars, dispatch)
 				twilio.Start(l, muxes, vars, dispatch)
+				zoom.Start(l, muxes, vars, oauth, dispatch)
 				return nil
 			})
 		}),

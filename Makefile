@@ -40,6 +40,9 @@ LDFLAGS+=-X '${VERSION_PKG_PATH}.Version=${VERSION}' -X '${VERSION_PKG_PATH}.Tim
 export AK_SYSTEST_USE_PROC_SVC=1
 export PYTHONPATH=$(PWD)/runtimes/pythonrt/py-sdk
 
+.PHONY: ak
+ak: webplatform bin/ak
+
 # 1. Detect unformatted Go files
 # 2. Run shellcheck (shell scripts linter)
 # 3. Download latest web platform
@@ -54,9 +57,6 @@ all: gofmt-check shellcheck webplatform proto lint build bin/ak test
 clean:
 	rm -rf $(OUTDIR)
 	make -C web/webplatform clean
-
-.PHONY: ak
-ak: webplatform bin/ak
 
 .PHONY: bin
 bin: bin/ak
@@ -80,13 +80,13 @@ gofmt-check:
 
 golangci_lint=$(shell which golangci-lint)
 
-# https://golangci-lint.run/usage/install/#local-installation
-# Keep the same version in "/.github/workflows/ci-go.yml"!
-# See: https://github.com/golangci/golangci-lint
+# Based on: https://golangci-lint.run/welcome/install/#other-ci
+# Keep the same version in "/.github/workflows/go.yml"!
+# See: https://github.com/golangci/golangci-lint/releases
 $(OUTDIR)/tools/golangci-lint:
 	mkdir -p $(OUTDIR)/tools
 ifeq ($(golangci_lint),)
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "$(OUTDIR)/tools" v1.63.1
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "$(OUTDIR)/tools" v1.64.5
 else
 	ln -fs $(golangci_lint) $(OUTDIR)/tools/golangci-lint
 endif
@@ -104,54 +104,54 @@ ifneq ($(scripts),)
 endif
 
 .PHONY: test
-test: test-opa test-race test-runs test-sessions
+test: test-race test-db test-opa test-starkark test-sessions
 
-.PHONY: test-opa
-test-opa:
-	@if which opa > /dev/null; then \
-		cd configs/opa_bundles/default; \
-		opa test -v .; \
-	else \
-		echo "opa not found, skipping OPA tests"; \
-	fi
-
-.PHONY: test-dbgorm
-test-dbgorm:
-	for dbtype in sqlite postgres; do \
-		echo running for $$dbtype; \
-	go test -v ./internal/backend/db/dbgorm -dbtype $$dbtype ; \
-	done
-
-# Skip a few Go unit-tests under "runtimes/pythonrt/" - either because they
-# fails due to missing Python deps, or because they are very slow (20-30 sec).
-# Note that this affects only Go CI in GitHub (which runs "make test-unit"),
-# but not manual runs of "make" (which depend on "test-race"), or Python CI
-# in GitHub (which uses "runtimes/pythonrt/Makefile").
+# Run only Go unit-tests, without checking for race conditions,
+# and without running long-running Python runtime and system tests.
 .PHONY: test-unit
 test-unit:
-	$(GOTEST) ./... -skip "(pyExports|pySvc|createVEnv)"
+	$(GOTEST) $(go list ./... | grep -v -E "autokitteh/tests|runtimes/python")
 
-# Subset of "test-unit", for simplicity.
-.PHONY: test-system
-test-system:
-	$(GOTEST) ./tests/system
+# Run all Go tests (including Python runtime and system tests),
+# and check for race conditions while running each of them.
+.PHONY: test-race
+test-race:
+	$(GOTEST) -race ./...
 
-.PHONY: test-runs
-test-runs:
-	./tests/runs/run.sh
-
-.PHONY: test-sessions
-test-sessions:
-	./tests/sessions/run.sh
-
+# Generate a coverage report for all Go tests
+# (including Python runtime and system tests).
 .PHONY: test-cover
 test-cover:
 	$(GOTEST) -covermode=atomic -coverprofile=tmp/cover.out ./...
 	go tool cover -html=tmp/cover.out
 
-.PHONY: test-race
-test-race:
-	$(GOTEST) -race ./...
+# Long-running subset of "test-unit", for simplicity.
+.PHONY: test-system
+test-system: bin/ak
+	$(GOTEST) ./tests/system
+
+.PHONY: test-db
+test-db:
+	for dbtype in sqlite postgres; do \
+		echo running for $$dbtype; \
+	$(GOTEST) ./internal/backend/db/... -dbtype $$dbtype ; \
+	done
+
+.PHONY: test-opa
+test-opa:
+	@if which opa > /dev/null; then \
+		opa test configs/opa_bundles -v; \
+	else \
+		echo "opa not found, skipping OPA tests"; \
+	fi
+
+.PHONY: test-starlark
+test-starlark: bin/ak
+	./tests/starlark/run.sh
+
+.PHONY: test-sessions
+test-sessions: bin/ak
+	./tests/sessions/run.sh
 
 .PHONY: proto
 proto:

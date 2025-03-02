@@ -37,8 +37,7 @@ def test():
 {"state":{"created":{}}}
 {"state":{"running":{"run_id":"run_00000000000000000000000006"}}}
 {"state":{"running":{"run_id":"run_00000000000000000000000006","call":{"function":{"executor_id":"run_00000000000000000000000006","name":"test","desc":{},"data":"dGVzdCMx"}}}}}
-{"print":{"text":"started"}}
+{"print":{"text":"started","value":{"string":{"v":"started"}}}}
 {"call_spec":{"function":{"function":{"executor_id":"int_3kth00testaf9d33c5697341f0","name":"freeze","desc":{"input":[{"name":"duration","optional":true},{"name":"allow_cancel","optional":true}]},"data":"Y29uXzAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAy"}},"args":[{"integer":{"v":"10"}},{"boolean":{"v":true}}],"seq":1}}
-{"call_attempt_start":{}}
-{"stop_request":{"reason":"[forced] test"}}
-{"state":{"stopped":{"reason":"test"}}}
+{"stop_request":{}}
+{"state":{"stopped":{"reason":"[forced] test"}}}

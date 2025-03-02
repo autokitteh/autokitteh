@@ -561,6 +561,8 @@ export class Call_Attempt_Complete extends Message<Call_Attempt_Complete> {
   completedAt?: Timestamp;
 
   /**
+   * deprecated.
+   *
    * @generated from field: google.protobuf.Duration retry_interval = 2;
    */
   retryInterval?: Duration;
@@ -622,6 +624,8 @@ export class SessionLogRecord extends Message<SessionLogRecord> {
 
   /**
    * one of the following is required.
+   *
+   * deprecated, avoid.
    *
    * @generated from field: autokitteh.sessions.v1.SessionLogRecord.Print print = 10;
    */
@@ -699,6 +703,8 @@ export enum SessionLogRecord_Type {
   UNSPECIFIED = 0,
 
   /**
+   * deprecated, avoid.
+   *
    * @generated from enum value: TYPE_PRINT = 1;
    */
   PRINT = 1,
@@ -744,9 +750,23 @@ proto3.util.setEnumType(SessionLogRecord_Type, "autokitteh.sessions.v1.SessionLo
  */
 export class SessionLogRecord_Print extends Message<SessionLogRecord_Print> {
   /**
+   * deprecated, use value instead.
+   *
    * @generated from field: string text = 1;
    */
   text = "";
+
+  /**
+   * @generated from field: autokitteh.values.v1.Value value = 2;
+   */
+  value?: Value;
+
+  /**
+   * for prints that happened inside an activity.
+   *
+   * @generated from field: uint32 call_seq = 3;
+   */
+  callSeq = 0;
 
   constructor(data?: PartialMessage<SessionLogRecord_Print>) {
     super();
@@ -757,6 +777,8 @@ export class SessionLogRecord_Print extends Message<SessionLogRecord_Print> {
   static readonly typeName = "autokitteh.sessions.v1.SessionLogRecord.Print";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "text", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "value", kind: "message", T: Value },
+    { no: 3, name: "call_seq", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SessionLogRecord_Print {

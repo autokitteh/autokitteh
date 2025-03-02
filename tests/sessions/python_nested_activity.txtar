@@ -8,7 +8,7 @@ main end
 import autokitteh
 
 
-def main(event):
+def main(event: autokitteh.Event):
     print("main start")
     outer(event)
     print("main end")

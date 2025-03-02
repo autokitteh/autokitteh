@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"time"
 
 	"go.uber.org/zap"
+	"golang.org/x/oauth2"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
@@ -84,6 +86,15 @@ func (s *svc) exchange(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	handled, err := s.redirectToGitHub(w, r, intg, state)
+	if err != nil {
+		l.Warn("Failed to redirect to GitHub", zap.Error(err))
+		return
+	}
+	if handled {
+		return
+	}
+
 	// Ensure the state parameter is well-formed.
 	sub := regexp.MustCompile(`^(.+)_([a-z]+)$`).FindStringSubmatch(state)
 	if len(sub) != 3 {
@@ -147,13 +158,41 @@ func (s *svc) exchange(w http.ResponseWriter, r *http.Request) {
 	l.Info("OAuth token exchange successful")
 
 	// Pass the OAuth data back to the originating integration.
-	oauthData, err := sdkintegrations.OAuthData{Token: token, Params: r.URL.Query()}.Encode()
+	oauthData, err := sdkintegrations.OAuthData{Token: token, Params: r.URL.Query(), Extra: getExtra(token)}.Encode()
 	if err != nil {
 		abort(w, r, intg, sub[1], sub[2], "OAuth token encoding error")
 		return
 	}
 
 	redirect(w, r, intg, sub[1], sub[2], "oauth", oauthData)
+}
+
+// redirectToGitHub redirects users to the GitHub App installation page when they
+// initiate OAuth without a state parameter, typically after installing from the
+// GitHub Marketplace. This ensures a smoother user experience.
+func (s *svc) redirectToGitHub(w http.ResponseWriter, r *http.Request, intg string, state string) (bool, error) {
+	if intg != "github" || state != "" {
+		return false, nil
+	}
+
+	appName := os.Getenv("GITHUB_APP_NAME")
+	if appName == "" {
+		appName = "autokitteh"
+	}
+
+	enterpriseURL := os.Getenv("GITHUB_ENTERPRISE_URL")
+	if enterpriseURL == "" {
+		enterpriseURL = "https://github.com"
+	}
+
+	redirectURL, err := url.JoinPath(enterpriseURL, "apps", appName)
+	if err != nil {
+		return false, fmt.Errorf("failed to construct redirect URL: %w", err)
+	}
+
+	http.Redirect(w, r, redirectURL, http.StatusFound)
+
+	return true, nil
 }
 
 func abort(w http.ResponseWriter, r *http.Request, intg, cid, origin, err string) {
@@ -170,4 +209,12 @@ func transformState(state string) string {
 		return state
 	}
 	return "con_" + state
+}
+
+func getExtra(token *oauth2.Token) map[string]interface{} {
+	extra := make(map[string]interface{})
+	if v := token.Extra("instance_url"); v != nil {
+		extra["instance_url"] = v // salesforce
+	}
+	return extra
 }

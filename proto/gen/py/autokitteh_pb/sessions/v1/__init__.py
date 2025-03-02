@@ -2,8 +2,8 @@
 
 
 from .session_pb2 import (SessionStateType,SessionState,Call,SessionLogRecord,SessionLog,Session,)
-from .svc_pb2 import (StartRequest,StartResponse,StopRequest,StopResponse,ListRequest,ListResponse,GetRequest,GetResponse,GetLogRequest,GetLogResponse,DeleteRequest,DeleteResponse,)
+from .svc_pb2 import (StartRequest,StartResponse,StopRequest,StopResponse,ListRequest,ListResponse,GetRequest,GetResponse,GetLogRequest,GetLogResponse,GetPrintsRequest,GetPrintsResponse,DeleteRequest,DeleteResponse,)
 from .svc_pb2_grpc import (SessionsServiceStub,SessionsServiceServicer,SessionsService,)
 
 
-__all__ = ["SessionsServiceStub","SessionsServiceServicer","SessionsService","StartRequest","StartResponse","StopRequest","StopResponse","ListRequest","ListResponse","GetRequest","GetResponse","GetLogRequest","GetLogResponse","DeleteRequest","DeleteResponse","SessionStateType","SessionState","Call","SessionLogRecord","SessionLog","Session",]
+__all__ = ["SessionsServiceStub","SessionsServiceServicer","SessionsService","StartRequest","StartResponse","StopRequest","StopResponse","ListRequest","ListResponse","GetRequest","GetResponse","GetLogRequest","GetLogResponse","GetPrintsRequest","GetPrintsResponse","DeleteRequest","DeleteResponse","SessionStateType","SessionState","Call","SessionLogRecord","SessionLog","Session",]

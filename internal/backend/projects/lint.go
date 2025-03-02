@@ -22,9 +22,7 @@ import (
 
 type Checker func(projectID sdktypes.ProjectID, manifest *manifest.Manifest, resources map[string][]byte) []*sdktypes.CheckViolation
 
-var (
-	lintCheckers []Checker
-)
+var lintCheckers []Checker
 
 const manifestFilePath = "autokitteh.yaml"
 
@@ -310,7 +308,6 @@ func checkCodeConnections(_ sdktypes.ProjectID, m *manifest.Manifest, resources 
 					Level:   sdktypes.ViolationError,
 					RuleId:  "E9",
 				})
-
 			}
 		}
 	}
@@ -392,7 +389,6 @@ var pyClientFns = map[string]bool{
 	"google_sheets_client":   true,
 	"jira_client":            true,
 	"openai_client":          true,
-	"redis_client":           true,
 	"slack_client":           true,
 	"twilio_client":          true,
 }

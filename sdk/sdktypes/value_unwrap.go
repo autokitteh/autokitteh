@@ -81,9 +81,13 @@ func (w *ValueWrapper) unwrap(v Value) (any, error) {
 		ctor, fields := v.Ctor(), v.Fields()
 		m := make(map[string]any, len(fields)+1)
 		var err error
-		if m[ctorFieldName], err = w.Unwrap(ctor); err != nil {
-			return nil, fmt.Errorf("ctor: %w", err)
+
+		if w.UnwrapStructCtor {
+			if m[ctorFieldName], err = w.Unwrap(ctor); err != nil {
+				return nil, fmt.Errorf("ctor: %w", err)
+			}
 		}
+
 		for n, v := range fields {
 			if m[n], err = w.Unwrap(v); err != nil {
 				return nil, fmt.Errorf("field %q: %w", n, err)

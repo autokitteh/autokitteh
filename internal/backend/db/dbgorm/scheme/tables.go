@@ -7,7 +7,6 @@ var Tables = []any{
 	&Event{},
 	&Org{},
 	&OrgMember{},
-	&Ownership{},
 	&Project{},
 	&Secret{},
 	&Session{},

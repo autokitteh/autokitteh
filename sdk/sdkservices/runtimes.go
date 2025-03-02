@@ -3,9 +3,9 @@ package sdkservices
 import (
 	"context"
 	"io/fs"
+	"time"
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkbuildfile"
-	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkexecutor"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -45,23 +45,28 @@ type Runtime interface {
 	) (Run, error)
 }
 
-type (
-	RunLoadFunc  = func(ctx context.Context, rid sdktypes.RunID, path string) (map[string]sdktypes.Value, error)
-	RunCallFunc  = func(ctx context.Context, rid sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error)
-	RunPrintFunc = func(ctx context.Context, rid sdktypes.RunID, text string)
-	NewRunIDFunc = func() sdktypes.RunID
-)
-
+// TODO: This should be an interface.
 type RunCallbacks struct {
 	// Returns sdktypes.ProgramErrorAsError if not internal error.
-	Load RunLoadFunc
-
+	Load func(ctx context.Context, rid sdktypes.RunID, path string) (map[string]sdktypes.Value, error)
 	// Returns sdktypes.ProgramErrorAsError if not internal error.
-	Call RunCallFunc
+	Call func(ctx context.Context, rid sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error)
 
-	Print RunPrintFunc
+	IsDeploymentActive func(ctx context.Context) (bool, error)
+	NewRunID           func() (sdktypes.RunID, error)
+	Now                func(ctx context.Context, rid sdktypes.RunID) (time.Time, error)
+	Print              func(ctx context.Context, rid sdktypes.RunID, text string) error
+	Sleep              func(ctx context.Context, rid sdktypes.RunID, d time.Duration) error
+	Start              func(ctx context.Context, rid sdktypes.RunID, loc sdktypes.CodeLocation, inputs map[string]sdktypes.Value, memo map[string]string) (sdktypes.SessionID, error)
 
-	NewRunID NewRunIDFunc
+	// Events
+	Subscribe   func(ctx context.Context, rid sdktypes.RunID, name, filter string) (string, error)
+	Unsubscribe func(ctx context.Context, rid sdktypes.RunID, signalID string) error
+	NextEvent   func(ctx context.Context, rid sdktypes.RunID, signalIDs []string, timeout time.Duration) (sdktypes.Value, error)
+
+	// Signals
+	Signal     func(ctx context.Context, rid sdktypes.RunID, sid sdktypes.SessionID, name string, payload sdktypes.Value) error
+	NextSignal func(ctx context.Context, rid sdktypes.RunID, names []string, timeout time.Duration) (*RunSignal, error)
 }
 
 type Run interface {
@@ -72,28 +77,7 @@ type Run interface {
 	sdkexecutor.Executor
 }
 
-func (rc *RunCallbacks) SafeLoad(ctx context.Context, rid sdktypes.RunID, path string) (map[string]sdktypes.Value, error) {
-	if rc == nil || rc.Load == nil {
-		return nil, nil
-	}
-
-	return rc.Load(ctx, rid, path)
+type RunSignal struct {
+	Name    string         `json:"name"`
+	Payload sdktypes.Value `json:"payload"`
 }
-
-func (rc *RunCallbacks) SafeCall(ctx context.Context, rid sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
-	if rc == nil || rc.Call == nil {
-		return sdktypes.InvalidValue, sdkerrors.ErrNotImplemented
-	}
-
-	return rc.Call(ctx, rid, v, args, kwargs)
-}
-
-func (rc *RunCallbacks) SafePrint(ctx context.Context, rid sdktypes.RunID, text string) {
-	if rc == nil || rc.Print == nil {
-		return
-	}
-
-	rc.Print(ctx, rid, text)
-}
-
-func (rc *RunCallbacks) SafeNewRunID() sdktypes.RunID { return sdktypes.NewRunID() }

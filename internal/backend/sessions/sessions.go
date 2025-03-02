@@ -2,6 +2,7 @@ package sessions
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionsvcs"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows"
 	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -36,13 +38,13 @@ type sessions struct {
 
 var _ Sessions = (*sessions)(nil)
 
-func New(l *zap.Logger, config *Config, db db.DB, svcs sessionsvcs.Svcs, telemetry *telemetry.Telemetry) Sessions {
+func New(l *zap.Logger, config *Config, db db.DB, svcs sessionsvcs.Svcs, telemetry *telemetry.Telemetry) (Sessions, error) {
 	return &sessions{
 		config:    config,
 		svcs:      &svcs,
 		l:         l,
 		telemetry: telemetry,
-	}
+	}, nil
 }
 
 func (s *sessions) StartWorkers(ctx context.Context) error {
@@ -67,12 +69,58 @@ func (s *sessions) StartWorkers(ctx context.Context) error {
 	return nil
 }
 
-func (s *sessions) GetLog(ctx context.Context, filter sdkservices.ListSessionLogRecordsFilter) (*sdkservices.GetLogResults, error) {
-	if err := authz.CheckContext(ctx, filter.SessionID, "read:get-log", authz.WithData("filter", filter), authz.WithConvertForbiddenToNotFound); err != nil {
+func (s *sessions) GetPrints(ctx context.Context, sid sdktypes.SessionID, pagination sdktypes.PaginationRequest) (*sdkservices.GetPrintsResults, error) {
+	if err := authz.CheckContext(ctx, sid, "read:get-prints", authz.WithData("pagination", pagination), authz.WithConvertForbiddenToNotFound); err != nil {
 		return nil, err
 	}
 
-	return s.svcs.DB.GetSessionLog(ctx, filter)
+	lr, err := s.svcs.DB.GetSessionLog(ctx, sdkservices.SessionLogRecordsFilter{
+		SessionID:         sid,
+		Types:             sdktypes.PrintSessionLogRecordType,
+		PaginationRequest: pagination,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	prints := kittehs.Transform(lr.Records, func(r sdktypes.SessionLogRecord) *sdkservices.SessionPrint {
+		p, _ := r.GetPrint()
+
+		return &sdkservices.SessionPrint{
+			Timestamp: r.Timestamp(),
+			Value:     p,
+		}
+	})
+
+	return &sdkservices.GetPrintsResults{
+		Prints:           prints,
+		PaginationResult: lr.PaginationResult,
+	}, nil
+}
+
+func (s *sessions) GetLog(ctx context.Context, filter sdkservices.SessionLogRecordsFilter) (*sdkservices.GetLogResults, error) {
+	if err := authz.CheckContext(
+		ctx,
+		filter.SessionID,
+		"read:get-log",
+		authz.WithData("filter", filter),
+		authz.WithConvertForbiddenToNotFound,
+	); err != nil {
+		return nil, err
+	}
+
+	rs, err := s.workflows.GetWorkflowLog(ctx, filter)
+	if err != nil {
+		if errors.Is(err, sdkerrors.ErrNotFound) {
+			// If temporal already lost the workflow, use the log from the db.
+			// (This will not contain the calls log).
+			return s.svcs.DB.GetSessionLog(ctx, filter)
+		}
+
+		return nil, err
+	}
+
+	return rs, nil
 }
 
 func (s *sessions) Get(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.Session, error) {
@@ -174,7 +222,7 @@ func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktype
 		return sdktypes.InvalidSessionID, fmt.Errorf("start session: %w", err)
 	}
 
-	if err := s.workflows.StartWorkflow(ctx, session); err != nil {
+	if err := s.workflows.StartWorkflow(ctx, session, sessionworkflows.StartWorkflowOptions{UseTemporalForSessionLogs: !s.config.DBSessionLogs}); err != nil {
 		err = fmt.Errorf("start workflow: %w", err)
 		if uerr := s.svcs.DB.UpdateSessionState(ctx, session.ID(), sdktypes.NewSessionStateError(err, nil)); uerr != nil {
 			l.Sugar().With("err", err).Error("update session state: %v")

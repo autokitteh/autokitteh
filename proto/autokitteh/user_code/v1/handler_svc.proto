@@ -72,6 +72,32 @@ message UnsubscribeResponse {
   string error = 1;
 }
 
+message Signal {
+  string name = 2;
+  autokitteh.values.v1.Value payload = 3;
+}
+
+message SignalRequest {
+  string runner_id = 1;
+  Signal signal = 2;
+  string session_id = 3;
+}
+
+message SignalResponse {
+  string error = 1;
+}
+
+message NextSignalRequest {
+  string runner_id = 1;
+  repeated string names = 2;
+  int64 timeout_ms = 3;
+}
+
+message NextSignalResponse {
+  Signal signal = 1;
+  string error = 2;
+}
+
 message LogRequest {
   string runner_id = 1;
   string level = 2;
@@ -140,6 +166,7 @@ message HandlerHealthRequest {}
 message HandlerHealthResponse {
   string error = 1;
 }
+
 service HandlerService {
   // Runner starting activity
   rpc Activity(ActivityRequest) returns (ActivityResponse) {}
@@ -156,6 +183,8 @@ service HandlerService {
   rpc NextEvent(NextEventRequest) returns (NextEventResponse) {}
   rpc Unsubscribe(UnsubscribeRequest) returns (UnsubscribeResponse) {}
   rpc StartSession(StartSessionRequest) returns (StartSessionResponse) {}
+  rpc Signal(SignalRequest) returns (SignalResponse) {}
+  rpc NextSignal(NextSignalRequest) returns (NextSignalResponse) {}
 
   // Utility functions
   rpc EncodeJWT(EncodeJWTRequest) returns (EncodeJWTResponse) {}
