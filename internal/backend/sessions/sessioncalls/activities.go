@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"go.temporal.io/sdk/activity"
+	"go.temporal.io/sdk/worker"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -34,31 +35,44 @@ type CallActivityOutputs struct {
 	Retry bool
 }
 
+func (cs *calls) RegisterSessionCallActivity(r worker.ActivityRegistry) {
+	r.RegisterActivityWithOptions(
+		cs.sessionCallActivity,
+		activity.RegisterOptions{Name: CallActivityName},
+	)
+}
+
 func (cs *calls) registerActivities() {
-	cs.generalWorker.RegisterActivityWithOptions(
-		cs.sessionCallActivity,
-		activity.RegisterOptions{Name: CallActivityName},
-	)
+	if cs.generalWorker != nil {
+		cs.generalWorker.RegisterActivityWithOptions(
+			cs.sessionCallActivity,
+			activity.RegisterOptions{Name: CallActivityName},
+		)
+	}
 
-	cs.uniqueWorker.RegisterActivityWithOptions(
-		cs.sessionCallActivity,
-		activity.RegisterOptions{Name: CallActivityName},
-	)
+	if cs.uniqueWorker != nil {
+		cs.uniqueWorker.RegisterActivityWithOptions(
+			cs.sessionCallActivity,
+			activity.RegisterOptions{Name: CallActivityName},
+		)
+	}
 
-	cs.generalWorker.RegisterActivityWithOptions(
-		cs.createSessionCallActivity,
-		activity.RegisterOptions{Name: createSessionCallActivityName},
-	)
+	if cs.svcs != nil && cs.svcs.DB != nil {
+		cs.generalWorker.RegisterActivityWithOptions(
+			cs.createSessionCallActivity,
+			activity.RegisterOptions{Name: createSessionCallActivityName},
+		)
 
-	cs.generalWorker.RegisterActivityWithOptions(
-		cs.createSessionCallAttemptActivity,
-		activity.RegisterOptions{Name: createSessionCallAttemptActivityName},
-	)
+		cs.generalWorker.RegisterActivityWithOptions(
+			cs.createSessionCallAttemptActivity,
+			activity.RegisterOptions{Name: createSessionCallAttemptActivityName},
+		)
 
-	cs.generalWorker.RegisterActivityWithOptions(
-		cs.completeSessionCallAttemptActivity,
-		activity.RegisterOptions{Name: completeSessionCallAttemptActivityName},
-	)
+		cs.generalWorker.RegisterActivityWithOptions(
+			cs.completeSessionCallAttemptActivity,
+			activity.RegisterOptions{Name: completeSessionCallAttemptActivityName},
+		)
+	}
 }
 
 func (cs *calls) sessionCallActivity(ctx context.Context, params *CallActivityInputs) (*CallActivityOutputs, error) {

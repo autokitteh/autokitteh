@@ -62,7 +62,7 @@ func (s *sessions) StartWorkers(ctx context.Context) error {
 		return fmt.Errorf("workflow workflows: %w", err)
 	}
 
-	if err := s.calls.StartWorkers(ctx); err != nil {
+	if err := s.calls.StartWorkers(ctx, nil); err != nil {
 		return fmt.Errorf("activity workflows: %w", err)
 	}
 
