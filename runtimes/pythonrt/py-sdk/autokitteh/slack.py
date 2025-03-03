@@ -47,7 +47,16 @@ def slack_client(connection: str, **kwargs) -> WebClient:
 
 
 def normalize_channel_name(name: str) -> str:
-    """Convert arbitrary text into a valid Slack channel name."""
+    """Convert arbitrary text into a valid Slack channel name.
+
+    See: https://api.slack.com/methods/conversations.create#naming
+
+    Args:
+        name: Desired name for a Slack channel.
+
+    Returns:
+        Valid Slack channel name.
+    """
     if name == "":
         return name
 
