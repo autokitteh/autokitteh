@@ -39,6 +39,9 @@ func initConverter(t *testing.T, r io.Reader, keyNames []string) (converter.Data
 				Encrypt: true,
 				Keys:    strings.Join(kittehs.Transform(keyNames, func(k string) string { return k + "=" + keys[k] }), ","),
 			},
+			LargePayload: LargePayloadConfig{
+				StoreType: "none",
+			},
 		},
 		converter.GetDefaultDataConverter(),
 	)

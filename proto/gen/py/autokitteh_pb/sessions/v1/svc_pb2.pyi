@@ -98,10 +98,11 @@ class GetResponse(_message.Message):
     def __init__(self, session: _Optional[_Union[_session_pb2.Session, _Mapping]] = ...) -> None: ...
 
 class GetLogRequest(_message.Message):
-    __slots__ = ["session_id", "json_values", "types", "ascending", "page_size", "skip", "page_token"]
+    __slots__ = ["session_id", "json_values", "types", "max_value_size", "ascending", "page_size", "skip", "page_token"]
     SESSION_ID_FIELD_NUMBER: _ClassVar[int]
     JSON_VALUES_FIELD_NUMBER: _ClassVar[int]
     TYPES_FIELD_NUMBER: _ClassVar[int]
+    MAX_VALUE_SIZE_FIELD_NUMBER: _ClassVar[int]
     ASCENDING_FIELD_NUMBER: _ClassVar[int]
     PAGE_SIZE_FIELD_NUMBER: _ClassVar[int]
     SKIP_FIELD_NUMBER: _ClassVar[int]
@@ -109,11 +110,12 @@ class GetLogRequest(_message.Message):
     session_id: str
     json_values: bool
     types: _session_pb2.SessionLogRecord.Type
+    max_value_size: int
     ascending: bool
     page_size: int
     skip: int
     page_token: str
-    def __init__(self, session_id: _Optional[str] = ..., json_values: bool = ..., types: _Optional[_Union[_session_pb2.SessionLogRecord.Type, str]] = ..., ascending: bool = ..., page_size: _Optional[int] = ..., skip: _Optional[int] = ..., page_token: _Optional[str] = ...) -> None: ...
+    def __init__(self, session_id: _Optional[str] = ..., json_values: bool = ..., types: _Optional[_Union[_session_pb2.SessionLogRecord.Type, str]] = ..., max_value_size: _Optional[int] = ..., ascending: bool = ..., page_size: _Optional[int] = ..., skip: _Optional[int] = ..., page_token: _Optional[str] = ...) -> None: ...
 
 class GetLogResponse(_message.Message):
     __slots__ = ["log", "count", "records", "next_page_token"]

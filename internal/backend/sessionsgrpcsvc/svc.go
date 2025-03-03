@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
+	gproto "google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
@@ -16,10 +17,13 @@ import (
 	"go.autokitteh.dev/autokitteh/proto"
 	sessionsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1/sessionsv1connect"
+	valuesv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/values/v1"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
+
+const defaultValueMaxSize = 8 * 1024
 
 type server struct {
 	sessions sdkservices.Sessions
@@ -198,6 +202,44 @@ func (s *server) GetLog(ctx context.Context, req *connect.Request[sessionsv1.Get
 
 	pbrs := kittehs.Transform(hist.Records, sdktypes.ToProto)
 
+	maxSize := int(req.Msg.MaxValueSize)
+	if maxSize == 0 {
+		maxSize = defaultValueMaxSize
+	}
+
+	for _, pbr := range pbrs {
+		trim := func(v *sdktypes.ValuePB) {
+			if s := gproto.Size(v); s > maxSize {
+				actual := v
+				if v.Custom != nil {
+					actual = v.Custom.Value
+				}
+
+				kind := sdktypes.GetValueTypeFromProto(actual)
+
+				v.Reset()
+				v.String_ = &valuesv1.String{V: fmt.Sprintf("|%s value too large, %d bytes hidden|", kind, s)}
+			}
+		}
+
+		if c := pbr.CallAttemptComplete; c != nil {
+			trim(c.Result.Value)
+		} else if c := pbr.CallSpec; c != nil {
+			for _, a := range c.Args {
+				trim(a)
+			}
+
+			for _, v := range c.Kwargs {
+				trim(v)
+			}
+		} else if c := pbr.State; c != nil && c.Completed != nil {
+			trim(c.Completed.ReturnValue)
+			for _, x := range c.Completed.Exports {
+				trim(x)
+			}
+		}
+	}
+
 	if req.Msg.JsonValues {
 		for _, pbr := range pbrs {
 			if c := pbr.CallAttemptComplete; c != nil {
@@ -212,6 +254,15 @@ func (s *server) GetLog(ctx context.Context, req *connect.Request[sessionsv1.Get
 				if c.Kwargs, err = kittehs.TransformMapValuesError(c.Kwargs, sdktypes.ValueProtoToJSONStringValue); err != nil {
 					return nil, err
 				}
+			} else if c := pbr.State; c != nil && c.Completed != nil {
+				if c.Completed.ReturnValue, err = sdktypes.ValueProtoToJSONStringValue(c.Completed.ReturnValue); err != nil {
+					return nil, err
+				}
+
+				if c.Completed.Exports, err = kittehs.TransformMapValuesError(c.Completed.Exports, sdktypes.ValueProtoToJSONStringValue); err != nil {
+					return nil, err
+				}
+
 			}
 		}
 	}

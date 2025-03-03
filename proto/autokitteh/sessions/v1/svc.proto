@@ -103,6 +103,10 @@ message GetLogRequest {
   // Bitmask: If 0 or 0xFF, include all.
   SessionLogRecord.Type types = 3;
 
+  // Values with size bigger than max_value_size will be reducted.
+  // Default is 8K.
+  int32 max_value_size = 4;
+
   bool ascending = 11;
 
   int32 page_size = 20;

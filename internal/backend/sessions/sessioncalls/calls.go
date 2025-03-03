@@ -106,7 +106,7 @@ func (cs *calls) Call(wctx workflow.Context, params *CallParams) (sdktypes.Sessi
 
 	seq := spec.Seq()
 
-	l := cs.l.With(zap.Any("session_id", sid), zap.Any("seq", seq), zap.Any("v", fnv))
+	l := cs.l.With(zap.Any("session_id", sid), zap.Any("seq", seq), zap.Any("v", fnv.GetFunction().Name()))
 
 	wctx = workflow.WithActivityOptions(wctx, cs.config.activityConfig().ToOptions(generalTaskQueueName))
 
