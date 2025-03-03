@@ -82,11 +82,5 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Download Go modules
-        run: go mod download
-
-      - name: Build AK
-        run: go build -trimpath -o bin/ak ./cmd/ak
-
       - name: Test
-        run: PYTHON=only ./tests/sessions/run.sh
+        run: cd runtimes/pythonrt/py-sdk && make ci
