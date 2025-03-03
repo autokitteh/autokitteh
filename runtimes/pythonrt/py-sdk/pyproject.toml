@@ -20,7 +20,7 @@ all = [
 	"auth0-python ~= 4.7",
 	"azure-identity ~= 1.19",
 	"boto3 ~= 1.35",
-	"discord.py ~= 2.4",
+	"discord.py ~= 2.5",
 	"google-api-python-client ~= 2.155",
 	"google-auth-httplib2 ~= 0.2",
 	"google-auth-oauthlib ~= 1.2",
@@ -41,6 +41,11 @@ all = [
 	"PyYAML ~= 6.0",
 	"requests ~= 2.32",
 	"tenacity ~= 9.0",
+]
+
+dev = [
+	"ruff ~= 0.7",
+	"pytest ~= 8.3",
 ]
 
 [tool.setuptools.packages.find]

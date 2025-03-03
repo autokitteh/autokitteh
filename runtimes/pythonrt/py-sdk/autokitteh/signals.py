@@ -3,8 +3,6 @@
 from datetime import timedelta
 from dataclasses import dataclass
 
-from autokitteh import AttrDict
-
 
 @dataclass
 class Signal:
