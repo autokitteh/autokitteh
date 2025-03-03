@@ -2,13 +2,8 @@ package zoom
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
-	"fmt"
 	"net/http"
-	"net/url"
 	"os"
-	"strings"
 	"time"
 
 	"go.autokitteh.dev/autokitteh/integrations"
@@ -63,71 +58,6 @@ func test(v sdkservices.Vars) sdkintegrations.OptFn {
 	})
 }
 
-func makeAPICall(ctx context.Context, token string, url string) (*http.Response, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to create request: %v", err)
-	}
-
-	req.Header.Set("Authorization", "Bearer "+token)
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{
-		Timeout: 10 * time.Second,
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("API request failed: %v", err)
-	}
-	return resp, nil
-}
-
-// refreshTokenReq sends a request to Zoom's OAuth endpoint to refresh an expired access token.
-func refreshTokenReq(ctx context.Context, refreshToken string, clientID string, clientSecret string, vs sdktypes.Vars) (string, error) {
-	data := url.Values{}
-	data.Set("grant_type", "refresh_token")
-	data.Set("refresh_token", refreshToken)
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
-		"https://zoom.us/oauth/token", strings.NewReader(data.Encode()))
-	if err != nil {
-		return "", fmt.Errorf("failed to create refresh request: %v", err)
-	}
-
-	req.SetBasicAuth(clientID, clientSecret)
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("refresh token request failed: %v", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return "", errors.New("failed to refresh token")
-	}
-
-	var tokenResp struct {
-		AccessToken  string `json:"access_token"`
-		RefreshToken string `json:"refresh_token"`
-	}
-
-	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
-		return "", fmt.Errorf("failed to decode token response: %v", err)
-	}
-
-	if err := vs.Set(common.OAuthAccessTokenVar, tokenResp.AccessToken, true); err != nil {
-		return "", errors.New("Failed to save new access token")
-	}
-	if err := vs.Set(common.OAuthRefreshTokenVar, tokenResp.RefreshToken, true); err != nil {
-		return "", errors.New("Failed to save new refresh token")
-	}
-
-	return tokenResp.AccessToken, nil
-}
-
 // oauthTest verifies the OAuth authentication with Zoom API using the "me" context.
 // (Based on: https://developers.zoom.us/docs/integrations/oauth/#the-me-context).
 func oauthTest(ctx context.Context, vs sdktypes.Vars) (sdktypes.Status, error) {
@@ -166,6 +96,48 @@ func oauthTest(ctx context.Context, vs sdktypes.Vars) (sdktypes.Status, error) {
 		}
 
 		return sdktypes.NewStatus(sdktypes.StatusCodeError, "Failed to connect to Zoom API after token refresh"), nil
+	}
+
+	return sdktypes.NewStatus(sdktypes.StatusCodeError, "Failed to connect to Zoom API"), nil
+}
+
+// ServerToServerTest handles the Server-to-Server authentication test for Zoom
+// (Based on: https://developers.zoom.us/docs/internal-apps/s2s-oauth/).
+func ServerToServerTest(ctx context.Context, vs sdktypes.Vars) (sdktypes.Status, error) {
+	id := vs.GetValue(accountID)
+	clientID := vs.GetValue(clientID)
+	secret := vs.GetValue(clientSecret)
+
+	app := privateApp{
+		AccountID:    id,
+		ClientID:     clientID,
+		ClientSecret: secret,
+	}
+
+	// Get a server-to-server token
+	token, err := serverToken(ctx, &app)
+	if err != nil {
+		return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
+	}
+
+	url := "https://api.zoom.us/v2/users"
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
+	}
+
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return sdktypes.NewStatus(sdktypes.StatusCodeError, "API request failed"), nil
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusOK {
+		return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Server-to-Server connection successful"), nil
 	}
 
 	return sdktypes.NewStatus(sdktypes.StatusCodeError, "Failed to connect to Zoom API"), nil
