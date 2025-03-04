@@ -19,30 +19,33 @@ package systest
 
 import (
 	"context"
+	"embed"
 	"fmt"
 	"io/fs"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/tests"
 )
 
 const (
-	rootDir     = "testdata"
 	stopTimeout = 3 * time.Second
 )
 
-func TestSuite(t *testing.T) {
-	akPath := setUpSuite(t)
-	tests := make(map[string]*testFile)
+//go:embed *
+var testFiles embed.FS
+
+func TestSystem(t *testing.T) {
+	akPath, venvPath := setUpSuite(t)
+
+	testCases := make(map[string]*testFile)
 	var exclusives []string
 
 	// Each .txtar file is a test-case, with potentially
 	// multiple actions, checks, and embedded files.
-	err := fs.WalkDir(testDataFS, rootDir, func(path string, d fs.DirEntry, err error) error {
+	err := fs.WalkDir(testFiles, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -51,15 +54,15 @@ func TestSuite(t *testing.T) {
 			return nil // Skip directories and non-test files.
 		}
 
-		f, err := readTestFile(t, path)
+		f, err := readTestFile(t, testFiles, path)
 		if err != nil {
 			return err
 		}
 
-		path = strings.TrimPrefix(path, rootDir+"/")
+		path = strings.TrimPrefix(path, "testdata/")
+		testCases[path] = f
 
-		tests[path] = f
-
+		// Same as the "-run" flag in "go test", but easier to use.
 		if f.config.Exclusive {
 			exclusives = append(exclusives, path)
 		}
@@ -70,49 +73,44 @@ func TestSuite(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Same as the "-run" flag in "go test", but easier to use.
 	filter := func(string) bool { return true }
 	if len(exclusives) > 0 {
 		filter = kittehs.ContainedIn(exclusives...)
 	}
 
-	for path, test := range tests {
+	for path, test := range testCases {
 		t.Run(path, func(t *testing.T) {
 			if !filter(path) {
 				t.Skip("skipping")
 			}
 
-			prepTestFiles(t, test.a)
-
+			tests.SwitchToTempDir(t, venvPath) // For test isolation.
 			akAddr := setUpTest(t, akPath, test.config.Server)
+
+			writeEmbeddedFiles(t, test.a.Files)
+
 			runTestSteps(t, test.steps, akPath, akAddr, &test.config)
 		})
 	}
 }
 
-func setUpSuite(t *testing.T) string {
+func setUpSuite(t *testing.T) (akPath, venvPath string) {
 	// https://docs.temporal.io/dev-guide/go/debugging
 	t.Setenv("TEMPORAL_DEBUG", "true")
 
-	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("failed to get current working directory: %v", err)
-	}
+	akPath = tests.AKPath(t)
 
-	path, err := filepath.Abs(filepath.Join(wd, "..", "..", "bin", "ak"))
-	if err != nil {
-		t.Fatalf("failed to construct ak path: %v", err)
-	}
+	tests.SetPythonPath(t)
+	venvPath = tests.CreatePythonVenv(t)
+	t.Cleanup(func() {
+		tests.DeletePythonVenv(t, venvPath)
+	})
 
-	if _, err := os.Stat(path); err != nil {
-		t.Fatalf("failed to get ak file info: %v", err)
-	}
-
-	return path
+	return
 }
 
 func setUpTest(t *testing.T, akPath string, cfg map[string]any) string {
-	// TODO: Replace "/backend/internal/temporalclient/client.go"?
-
 	setFirstUser()
 
 	// Start the AK server.
@@ -137,7 +135,7 @@ func setUpTest(t *testing.T, akPath string, cfg map[string]any) string {
 func runTestSteps(t *testing.T, steps []string, akPath, akAddr string, cfg *testConfig) {
 	var (
 		actionIndex int
-		ak          *akResult
+		ak          *tests.AKResult
 		pendingReq  *httpRequest
 		httpResp    *httpResponse
 	)
@@ -181,7 +179,7 @@ func runTestSteps(t *testing.T, steps []string, akPath, akAddr string, cfg *test
 
 			if result != nil {
 				switch v := result.(type) {
-				case *akResult:
+				case *tests.AKResult:
 					ak = v
 				case *httpRequest:
 					pendingReq = v
