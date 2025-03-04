@@ -41,7 +41,7 @@ func transformEvent(l *zap.Logger, slackEvent any, eventType string) (sdktypes.E
 
 	data, err := wrapped.ToStringValuesMap()
 	if err != nil {
-		l.Error("Failed to convert wrapped Slack event", zap.Error(err))
+		l.Error("Failed to convert wrapped Salesforce event", zap.Error(err))
 		return sdktypes.InvalidEvent, err
 	}
 
