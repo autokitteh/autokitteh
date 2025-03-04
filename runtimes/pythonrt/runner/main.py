@@ -464,7 +464,6 @@ class Runner(pb.runner_rpc.RunnerService):
             self.worker.Done(req)
         except Exception as err:
             log.error("on_event: done send error: %r", err)
-        
 
     @mark_no_activity
     def ak_print(self, *objects, sep=" ", end="\n", file=None, flush=False):
