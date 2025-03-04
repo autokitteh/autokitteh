@@ -8,14 +8,13 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"go.autokitteh.dev/autokitteh/tests"
 )
 
 const (
-	// TODO: Should be 15 * time.Second
-	// (but there was a performance degradation on the weekend)
-	clientTimeout = 0
+	clientTimeout = 30 * time.Second
 )
 
 //go:embed *
