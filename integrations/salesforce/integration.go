@@ -30,16 +30,12 @@ func New(v sdkservices.Vars) sdkservices.Integration {
 func Start(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.DispatchFunc) {
 	common.ServeStaticUI(m, desc, static.SalesforceWebContent)
 
-	iid := sdktypes.NewIntegrationIDFromName(desc.UniqueName().String())
-	h := newHTTPHandler(l, v, o, d, iid)
+	h := newHTTPHandler(l, v, o, d, sdktypes.NewIntegrationIDFromName(desc.UniqueName().String()))
 
 	common.RegisterSaveHandler(m, desc, h.handleSave)
 	common.RegisterOAuthHandler(m, desc, h.handleOAuth)
 
-	// TODO: Event webhooks (no AutoKitteh user authentication by definition, because
-	// these asynchronous requests are sent to us by third-party services).
-
-	reopenExistingPubSubConnections(context.Background(), l, v, h)
+	h.reopenExistingPubSubConnections(context.Background())
 }
 
 // handler implements several HTTP webhooks to save authentication data, as
@@ -56,24 +52,22 @@ func newHTTPHandler(l *zap.Logger, v sdkservices.Vars, o sdkservices.OAuth, d sd
 	return handler{logger: l, oauth: o, vars: v, dispatch: d, integrationID: i}
 }
 
-func reopenExistingPubSubConnections(ctx context.Context, l *zap.Logger, v sdkservices.Vars, h handler) {
-	iid := sdktypes.NewIntegrationIDFromName(desc.UniqueName().String())
-	cids, err := v.FindConnectionIDs(ctx, iid, instanceURLVar, "")
+func (h handler) reopenExistingPubSubConnections(ctx context.Context) {
+	cids, err := h.vars.FindConnectionIDs(ctx, h.integrationID, instanceURLVar, "")
 	if err != nil {
-		l.Error("failed to list Salesforce connection IDs", zap.Error(err))
+		h.logger.Error("failed to list Salesforce connection IDs", zap.Error(err))
 		return
 	}
 
 	for _, cid := range cids {
-		data, err := v.Get(ctx, sdktypes.NewVarScopeID(cid))
+		data, err := h.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
 		if err != nil {
-			l.Error("can't restart Salesforce PubSub connection", zap.Error(err))
+			h.logger.With(zap.String("connection_id", cid.String())).Error("can't restart Salesforce PubSub connection", zap.Error(err))
 			continue
 		}
-		accessToken := data.GetValue(oauthAccessTokenVar)
 		instanceURL := data.GetValue(instanceURLVar)
 		orgID := data.GetValue(orgIDVar)
 
-		h.Subscribe(instanceURL, orgID, accessToken, cid)
+		h.subscribe(instanceURL, orgID, cid)
 	}
 }

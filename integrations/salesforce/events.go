@@ -75,10 +75,3 @@ func (h handler) dispatchAsyncEventsToConnections(cids []sdktypes.ConnectionID, 
 		l.Debug("Event dispatched")
 	}
 }
-
-func supportedEventTypes() []string {
-	return []string{
-		// https://developer.salesforce.com/docs/atlas.en-us.platform_events.meta/platform_events/platform_events_objects_change_data_capture.htm
-		"/data/ChangeEvents",
-	}
-}

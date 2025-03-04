@@ -55,11 +55,11 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		c.AbortServerError("invalid OAuth data")
 		return
 	}
-
+	// Test the token's usability and get authoritative installation details.
+	ctx := r.Context()
 	accessToken := data.Token.AccessToken
 	instanceURL := data.Extra["instance_url"].(string)
-	// Test the token's usability and get authoritative installation details.
-	userInfo, err := getUserInfo(r.Context(), instanceURL, accessToken)
+	userInfo, err := getUserInfo(ctx, instanceURL, accessToken)
 	if err != nil {
 		l.Error("failed to get user info", zap.Error(err))
 		c.AbortServerError("failed to get user info")
@@ -67,7 +67,6 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	}
 	orgID := userInfo["organization_id"].(string)
 
-	ctx := r.Context()
 	vsid := sdktypes.NewVarScopeID(cid)
 	if err := h.saveConnection(ctx, vsid, data.Token, data.Extra, orgID); err != nil {
 		l.Error("failed to save OAuth connection details", zap.Error(err))
@@ -85,7 +84,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 
 	http.Redirect(w, r, urlPath, http.StatusFound)
 
-	h.Subscribe(instanceURL, orgID, h.bearerToken(ctx, l, cid), cid)
+	h.subscribe(instanceURL, orgID, cid)
 }
 
 // saveConnection saves OAuth token details as connection variables.

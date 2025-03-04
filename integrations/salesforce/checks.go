@@ -61,17 +61,14 @@ func test(v sdkservices.Vars) sdkintegrations.OptFn {
 }
 
 func getUserInfo(ctx context.Context, instanceURL, accessToken string) (map[string]interface{}, error) {
-	// Create the request
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, instanceURL+"/services/oauth2/userinfo", nil)
 	if err != nil {
 		return nil, err
 	}
 
-	// Set headers
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	req.Header.Set("Content-Type", "application/json")
 
-	// Make the request
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
@@ -79,13 +76,11 @@ func getUserInfo(ctx context.Context, instanceURL, accessToken string) (map[stri
 	}
 	defer resp.Body.Close()
 
-	// Read the response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	// Check for non-200 status codes
 	if resp.StatusCode != http.StatusOK {
 		return nil, errors.New("Salesforce API error: " + string(body))
 	}

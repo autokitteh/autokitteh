@@ -8,7 +8,6 @@ import (
 	"github.com/linkedin/goavro/v2"
 	"go.uber.org/zap"
 
-	// "go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -21,7 +20,9 @@ var (
 	mu = &sync.Mutex{}
 )
 
-func (h handler) Subscribe(instanceURL, orgID, accessToken string, cid sdktypes.ConnectionID) {
+// subscribe creates a new gRPC client and subscribes to a generic Salesforce Change Data Capture channel.
+// https://developer.salesforce.com/docs/platform/pub-sub-api/references/methods/subscribe-rpc.html
+func (h handler) subscribe(instanceURL, orgID string, cid sdktypes.ConnectionID) {
 	// Ensure multiple users don't reference the same app at the same time.
 	mu.Lock()
 	defer mu.Unlock()
@@ -31,37 +32,37 @@ func (h handler) Subscribe(instanceURL, orgID, accessToken string, cid sdktypes.
 	}
 
 	ctx := context.Background()
-	conn, err := initConn(accessToken, instanceURL, orgID, h.logger)
+	conn, err := initConn(h.bearerToken(ctx, h.logger, cid), instanceURL, orgID, h.logger)
 	if err != nil {
-		h.logger.Error("failed to create gRPC connection", zap.Error(err))
 		return
 	}
 
 	client := pb.NewPubSubClient(conn)
 	pubSubClients[instanceURL] = &client
 
-	for _, eventType := range supportedEventTypes() {
-		go h.handleSalesForceSubscription(ctx, client, eventType, cid)
-	}
+	// https://developer.salesforce.com/docs/atlas.en-us.platform_events.meta/platform_events/platform_events_objects_change_data_capture.htm
+	go h.eventLoop(ctx, client, "/data/ChangeEvents", cid)
 }
 
-func (h handler) handleSalesForceSubscription(ctx context.Context, client pb.PubSubClient, topicName string, cid sdktypes.ConnectionID) {
+// eventLoop processes incoming messages, and automatically renews the subscription.
+// https://developer.salesforce.com/docs/platform/pub-sub-api/guide/pub-sub-features.html
+func (h handler) eventLoop(ctx context.Context, client pb.PubSubClient, topicName string, cid sdktypes.ConnectionID) {
+	l := h.logger.With(zap.String("connection_id", cid.String()))
 	const defaultBatchSize = int32(100)
-	// var latestReplayId []byte
 	numLeftToReceive := 0
 
 	stream, err := client.Subscribe(ctx)
 	if err != nil {
-		h.logger.Error("failed to create stream", zap.Error(err))
+		l.Error("failed to create gRPC stream for Salesforce events", zap.Error(err))
 		return
 	}
 
 	// Start receiving messages
 	for {
 		if numLeftToReceive <= 0 {
-			n, err := renewSubscription(stream, defaultBatchSize, topicName, h.logger)
+			n, err := renewSubscription(l, stream, defaultBatchSize, topicName)
 			if err != nil {
-				h.logger.Error("failed to renew subscription", zap.Error(err))
+				l.Error("failed to renew Salesforce events subscription", zap.Error(err))
 				continue
 			}
 			numLeftToReceive = n
@@ -71,7 +72,7 @@ func (h handler) handleSalesForceSubscription(ctx context.Context, client pb.Pub
 		// https://developer.salesforce.com/docs/platform/pub-sub-api/references/methods/subscribe-rpc.html#subscribe-keepalive-behavior
 		msg, err := stream.Recv()
 		if err != nil {
-			h.logger.Error("error receiving message", zap.Error(err))
+			l.Error("error receiving Salesforce event", zap.Error(err))
 			continue
 		}
 
@@ -85,16 +86,13 @@ func (h handler) handleSalesForceSubscription(ctx context.Context, client pb.Pub
 		}
 
 		for _, event := range msg.Events {
-			schema, err := client.GetSchema(ctx, &pb.SchemaRequest{
-				SchemaId: event.Event.SchemaId,
-			})
+			schema, err := client.GetSchema(ctx, &pb.SchemaRequest{SchemaId: event.Event.SchemaId})
 			if err != nil {
-				h.logger.Error("failed to get schema", zap.Error(err))
+				l.Error("failed to get Salesforce event schema", zap.String("schema_id", event.Event.SchemaId), zap.Error(err))
 				continue
 			}
-			data, err := decodePayload(schema, event.Event.Payload, h.logger)
+			data, err := decodePayload(l, schema, event.Event.Payload)
 			if err != nil {
-				h.logger.Error("failed to decode event", zap.Error(err))
 				continue
 			}
 
@@ -103,8 +101,7 @@ func (h handler) handleSalesForceSubscription(ctx context.Context, client pb.Pub
 	}
 }
 
-func renewSubscription(stream pb.PubSub_SubscribeClient, defaultBatchSize int32, topicName string, l *zap.Logger) (int, error) {
-	l.Info("requesting more messages", zap.Int32("batchSize", defaultBatchSize))
+func renewSubscription(l *zap.Logger, stream pb.PubSub_SubscribeClient, defaultBatchSize int32, topicName string) (int, error) {
 	fetchReq := &pb.FetchRequest{
 		TopicName:    topicName,
 		NumRequested: defaultBatchSize,
@@ -114,16 +111,16 @@ func renewSubscription(stream pb.PubSub_SubscribeClient, defaultBatchSize int32,
 
 	err := stream.Send(fetchReq)
 	if err != nil {
-		l.Error("failed to request more messages", zap.Error(err))
+		l.Error("failed to request more Salesforce events", zap.Error(err))
 		return 0, err
 	}
 	return int(defaultBatchSize), nil
 }
 
-func decodePayload(schema *pb.SchemaInfo, payload []byte, l *zap.Logger) (map[string]any, error) {
+func decodePayload(l *zap.Logger, schema *pb.SchemaInfo, payload []byte) (map[string]any, error) {
 	codec, err := goavro.NewCodec(schema.SchemaJson)
 	if err != nil {
-		l.Error("failed to create codec", zap.Error(err))
+		l.Error("failed to create codec for decoding Salesforce event", zap.Error(err))
 		return nil, err
 	}
 
