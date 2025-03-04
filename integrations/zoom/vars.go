@@ -8,10 +8,3 @@ type privateApp struct {
 	ClientSecret string `var:"private_client_secret,secret"`
 	SecretToken  string `var:"private_secret_token,secret"`
 }
-
-type tokenResp struct {
-	AccessToken string `json:"access_token"`
-	TokenType   string `json:"token_type"`
-	ExpiresIn   int    `json:"expires_in"`
-	Scope       string `json:"scope"`
-}
