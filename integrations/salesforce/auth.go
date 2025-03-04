@@ -3,13 +3,14 @@ package salesforce
 import (
 	"context"
 
+	"go.uber.org/zap"
+	"golang.org/x/oauth2"
+
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.uber.org/zap"
-	"golang.org/x/oauth2"
 )
 
 // oauthToken returns the OAuth token stored in the
