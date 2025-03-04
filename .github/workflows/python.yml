@@ -79,4 +79,19 @@ jobs:
         run: go build -trimpath -o bin/ak ./cmd/ak
 
       - name: Test
-        run: gotestsum -f github-actions -- -timeout 0 -trimpath ./tests/sessions/... -run /python
+        run: gotestsum -f github-actions --
+              -timeout 0 -trimpath ./tests/sessions/... -run /python
+
+  python-SDK-tests:
+    name: Python SDK tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Test
+        run: cd runtimes/pythonrt/py-sdk && make ci

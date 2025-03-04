@@ -15,7 +15,16 @@ upload: build
 
 install-deps:
 	python -m pip install build twine
+	python -m pip install .[all,dev]
+	rm -rf build *.egg-info
 
 build-docs:
 	cd docs && ./gen-reqs.py
 	$(MAKE) -C docs html
+
+test:
+	ruff check .
+	ruff format --check
+	python -m pytest tests
+
+ci: install-deps test
