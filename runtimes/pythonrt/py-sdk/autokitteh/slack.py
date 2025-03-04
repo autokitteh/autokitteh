@@ -1,6 +1,7 @@
-"""Initialize a Slack client, based on an AutoKitteh connection."""
+"""Slack client initialization, and other helper functions."""
 
 import os
+import re
 
 from slack_sdk.web.client import WebClient
 
@@ -43,3 +44,35 @@ def slack_client(connection: str, **kwargs) -> WebClient:
     client = WebClient(bot_token, **kwargs)
     client.auth_test().validate()
     return client
+
+
+def normalize_channel_name(name: str) -> str:
+    """Convert arbitrary text into a valid Slack channel name.
+
+    See: https://api.slack.com/methods/conversations.create#naming
+
+    Args:
+        name: Desired name for a Slack channel.
+
+    Returns:
+        Valid Slack channel name.
+    """
+    if name == "":
+        return name
+
+    name = name.lower().strip()
+    name = re.sub(r"['\"]", "", name)  # Remove quotes.
+    name = re.sub(r"[^a-z0-9_-]", "-", name)  # Replace invalid characters.
+    name = re.sub(r"[_-]{2,}", "-", name)  # Remove repeating separators.
+
+    # Slack channel names are limited to 80 characters,
+    # but that's too long for comfort, so we use 50 instead.
+    name = name[:50]
+
+    # Cosmetic tweak: remove leading and trailing hyphens.
+    if name[0] == "-":
+        name = name[1:]
+    if name[-1] == "-":
+        name = name[:-1]
+
+    return name
