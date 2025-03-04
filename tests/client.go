@@ -42,6 +42,8 @@ func RunAKClient(akPath, akAddr, userToken string, timeout time.Duration, args [
 		ReturnCode: cmd.ProcessState.ExitCode(),
 	}
 
+	// Don't report non-zero-exit-code errors as errors. Both cases end up
+	// as test failures, but errors are reserved for unexpected failures.
 	if ee := new(exec.ExitError); errors.As(err, &ee) {
 		err = nil
 	}
