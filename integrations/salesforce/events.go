@@ -27,15 +27,15 @@ func (h handler) handleSalesForceEvent(decodedEventPayload map[string]any, topic
 }
 
 // Transform the received Salesforce event into an AutoKitteh event.
-func transformEvent(l *zap.Logger, slackEvent any, eventType string) (sdktypes.Event, error) {
+func transformEvent(l *zap.Logger, salesforceEvent any, eventType string) (sdktypes.Event, error) {
 	l = l.With(
 		zap.String("eventType", eventType),
-		zap.Any("event", slackEvent),
+		zap.Any("event", salesforceEvent),
 	)
 
-	wrapped, err := sdktypes.WrapValue(slackEvent)
+	wrapped, err := sdktypes.WrapValue(salesforceEvent)
 	if err != nil {
-		l.Error("Failed to wrap Slack event", zap.Error(err))
+		l.Error("Failed to wrap Salesforce event", zap.Error(err))
 		return sdktypes.InvalidEvent, err
 	}
 
