@@ -30,7 +30,9 @@ func New(v sdkservices.Vars) sdkservices.Integration {
 func Start(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.DispatchFunc) {
 	common.ServeStaticUI(m, desc, static.SalesforceWebContent)
 
-	h := newHTTPHandler(l, v, o, d)
+	iid := sdktypes.NewIntegrationIDFromName(desc.UniqueName().String())
+	h := newHTTPHandler(l, v, o, d, iid)
+
 	common.RegisterSaveHandler(m, desc, h.handleSave)
 	common.RegisterOAuthHandler(m, desc, h.handleOAuth)
 
@@ -43,14 +45,15 @@ func Start(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, o sdkservices.OAut
 // handler implements several HTTP webhooks to save authentication data, as
 // well as receive and dispatch third-party asynchronous event notifications.
 type handler struct {
-	logger   *zap.Logger
-	vars     sdkservices.Vars
-	oauth    sdkservices.OAuth
-	dispatch sdkservices.DispatchFunc
+	logger        *zap.Logger
+	vars          sdkservices.Vars
+	oauth         sdkservices.OAuth
+	dispatch      sdkservices.DispatchFunc
+	integrationID sdktypes.IntegrationID
 }
 
-func newHTTPHandler(l *zap.Logger, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.DispatchFunc) handler {
-	return handler{logger: l, oauth: o, vars: v, dispatch: d}
+func newHTTPHandler(l *zap.Logger, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.DispatchFunc, i sdktypes.IntegrationID) handler {
+	return handler{logger: l, oauth: o, vars: v, dispatch: d, integrationID: i}
 }
 
 func reopenExistingPubSubConnections(ctx context.Context, l *zap.Logger, v sdkservices.Vars, h handler) {
@@ -71,6 +74,6 @@ func reopenExistingPubSubConnections(ctx context.Context, l *zap.Logger, v sdkse
 		instanceURL := data.GetValue(instanceURLVar)
 		orgID := data.GetValue(orgIDVar)
 
-		h.Subscribe(instanceURL, orgID, accessToken)
+		h.Subscribe(instanceURL, orgID, accessToken, cid)
 	}
 }

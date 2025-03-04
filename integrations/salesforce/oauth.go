@@ -56,8 +56,10 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	accessToken := data.Token.AccessToken
+	instanceURL := data.Extra["instance_url"].(string)
 	// Test the token's usability and get authoritative installation details.
-	userInfo, err := getUserInfo(r.Context(), h.vars, cid)
+	userInfo, err := getUserInfo(r.Context(), instanceURL, accessToken)
 	if err != nil {
 		l.Error("failed to get user info", zap.Error(err))
 		c.AbortServerError("failed to get user info")
@@ -65,9 +67,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	}
 	orgID := userInfo["organization_id"].(string)
 
-	// TODO: handle multiple topics + support for custom topics
 	ctx := r.Context()
-
 	vsid := sdktypes.NewVarScopeID(cid)
 	if err := h.saveConnection(ctx, vsid, data.Token, data.Extra, orgID); err != nil {
 		l.Error("failed to save OAuth connection details", zap.Error(err))
@@ -85,8 +85,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 
 	http.Redirect(w, r, urlPath, http.StatusFound)
 
-	// TODO: should I go to vars? check to make sure it's not empty?
-	h.Subscribe(data.Extra["instance_url"].(string), orgID, data.Token.AccessToken)
+	h.Subscribe(instanceURL, orgID, h.bearerToken(ctx, l, cid), cid)
 }
 
 // saveConnection saves OAuth token details as connection variables.

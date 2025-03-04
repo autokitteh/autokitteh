@@ -3,6 +3,7 @@ package salesforce
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 
@@ -59,15 +60,7 @@ func test(v sdkservices.Vars) sdkintegrations.OptFn {
 	})
 }
 
-func getUserInfo(ctx context.Context, v sdkservices.Vars, cid sdktypes.ConnectionID) (map[string]interface{}, error) {
-	vs, errStatus, err := common.ReadConnectionVars(ctx, v, cid)
-	if errStatus.IsValid() || err != nil {
-		return nil, err
-	}
-
-	instanceURL := vs.GetValue(instanceURLVar)
-	accessToken := vs.GetValue(oauthAccessTokenVar)
-
+func getUserInfo(ctx context.Context, instanceURL, accessToken string) (map[string]interface{}, error) {
 	// Create the request
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, instanceURL+"/services/oauth2/userinfo", nil)
 	if err != nil {
@@ -86,10 +79,15 @@ func getUserInfo(ctx context.Context, v sdkservices.Vars, cid sdktypes.Connectio
 	}
 	defer resp.Body.Close()
 
-	// Read and print the response body
+	// Read the response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
+	}
+
+	// Check for non-200 status codes
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New("Salesforce API error: " + string(body))
 	}
 
 	var userInfo map[string]interface{}
