@@ -16,8 +16,9 @@ type AKResult struct {
 // RunAKClient runs the AK client as a subprocess, not a goroutine,
 // to ensure isolation with the server and other client executions.
 // The first 2 "ak*" parameters are required, the rest are optional.
+// It is assumed that the AK binary was built before running the test.
 func RunAKClient(akPath, akAddr, userToken string, timeout time.Duration, args []string) (*AKResult, error) {
-	ctx := context.Background()
+	ctx := context.Background() // TODO(INT-312): Use t.Context instead.
 	if timeout > 0 {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, timeout)

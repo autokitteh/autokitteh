@@ -25,7 +25,8 @@ const (
 // StartAKServer starts the AK server as a subprocess.
 // If the server started but isn't responding, we still return
 // the process details, so the caller can kill the entire process group.
-// It is assumed that the working directory is temporary and isolated.
+// It is assumed that the AK binary was built before running the test,
+// and that the current working directory is temporary and isolated.
 func StartAKServer(akPath, akMode string) (*AKServer, error) {
 	cmd := exec.Command(akPath, "up", "--mode", akMode)
 
@@ -98,6 +99,7 @@ func waitForAddress() string {
 }
 
 // PrintLog prints the AK server log from a temporary file to the test log.
+// Called after test errors, to help diagnose them but keep the test log manageable.
 func (s *AKServer) PrintLog(t *testing.T) {
 	if s == nil {
 		return
