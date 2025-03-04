@@ -1,7 +1,6 @@
 package systest
 
 import (
-	"embed"
 	"encoding/json"
 	"io/fs"
 	"path/filepath"
@@ -13,17 +12,14 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-//go:embed testdata/*
-var testDataFS embed.FS
-
 type testFile struct {
 	steps  []string
 	config testConfig
 	a      *txtar.Archive
 }
 
-func readTestFile(t *testing.T, path string) (*testFile, error) {
-	bs, err := fs.ReadFile(testDataFS, path)
+func readTestFile(t *testing.T, testFiles fs.FS, path string) (*testFile, error) {
+	bs, err := fs.ReadFile(testFiles, path)
 	if err != nil {
 		t.Fatalf("failed to load file: %v", err)
 	}
@@ -42,12 +38,6 @@ func readTestFile(t *testing.T, path string) (*testFile, error) {
 	}
 
 	return parseTestFile(t, a), nil
-}
-
-func prepTestFiles(t *testing.T, a *txtar.Archive) *testFile {
-	useTempDir(t)
-	writeEmbeddedFiles(t, a.Files)
-	return parseTestFile(t, a)
 }
 
 func parseTestFile(t *testing.T, a *txtar.Archive) *testFile {
