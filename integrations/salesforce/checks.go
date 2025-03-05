@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/url"
 
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/common"
@@ -61,7 +62,12 @@ func test(v sdkservices.Vars) sdkintegrations.OptFn {
 }
 
 func getUserInfo(ctx context.Context, instanceURL, accessToken string) (map[string]interface{}, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, instanceURL+"/services/oauth2/userinfo", nil)
+	u, err := url.JoinPath(instanceURL, "services", "oauth2", "userinfo")
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +91,7 @@ func getUserInfo(ctx context.Context, instanceURL, accessToken string) (map[stri
 		return nil, errors.New("Salesforce API error: " + string(body))
 	}
 
-	var userInfo map[string]interface{}
+	var userInfo map[string]any
 	if err := json.Unmarshal(body, &userInfo); err != nil {
 		return nil, err
 	}

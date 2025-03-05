@@ -80,10 +80,7 @@ func (h handler) eventLoop(ctx context.Context, client pb.PubSubClient, topicNam
 		// latestReplayId = msg.GetLatestReplayId()
 
 		// Process the received message.
-		eventCount := len(msg.Events)
-		if eventCount > 0 {
-			numLeftToReceive -= eventCount
-		}
+		numLeftToReceive -= len(msg.Events)
 
 		for _, event := range msg.Events {
 			schema, err := client.GetSchema(ctx, &pb.SchemaRequest{SchemaId: event.Event.SchemaId})
@@ -96,7 +93,7 @@ func (h handler) eventLoop(ctx context.Context, client pb.PubSubClient, topicNam
 				continue
 			}
 
-			h.handleSalesForceEvent(data, topicName)
+			h.dispatchEvent(data, topicName)
 		}
 	}
 }

@@ -10,8 +10,8 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func (h handler) handleSalesForceEvent(decodedEventPayload map[string]any, topicName string) {
-	akEvent, err := transformEvent(h.logger, decodedEventPayload, topicName)
+func (h handler) dispatchEvent(payload map[string]any, topic string) {
+	akEvent, err := h.transformEvent(payload, topic)
 	if err != nil {
 		h.logger.Error("failed to transform event", zap.Error(err))
 		return
@@ -19,29 +19,29 @@ func (h handler) handleSalesForceEvent(decodedEventPayload map[string]any, topic
 
 	cids, err := h.vars.FindConnectionIDs(context.Background(), h.integrationID, instanceURLVar, "")
 	if err != nil {
-		h.logger.Error("Failed to find connection IDs", zap.Error(err))
+		h.logger.Error("failed to find connection IDs", zap.Error(err))
 		return
 	}
 
 	h.dispatchAsyncEventsToConnections(cids, akEvent)
 }
 
-// Transform the received Salesforce event into an AutoKitteh event.
-func transformEvent(l *zap.Logger, salesforceEvent any, eventType string) (sdktypes.Event, error) {
-	l = l.With(
-		zap.String("eventType", eventType),
+// transformEvent transforms the received Salesforce event payload into an AutoKitteh event.
+func (h handler) transformEvent(salesforceEvent any, eventType string) (sdktypes.Event, error) {
+	l := h.logger.With(
+		zap.String("event_type", eventType),
 		zap.Any("event", salesforceEvent),
 	)
 
 	wrapped, err := sdktypes.WrapValue(salesforceEvent)
 	if err != nil {
-		l.Error("Failed to wrap Salesforce event", zap.Error(err))
+		l.Error("failed to wrap Salesforce event", zap.Error(err))
 		return sdktypes.InvalidEvent, err
 	}
 
 	data, err := wrapped.ToStringValuesMap()
 	if err != nil {
-		l.Error("Failed to convert wrapped Salesforce event", zap.Error(err))
+		l.Error("failed to convert wrapped Salesforce event", zap.Error(err))
 		return sdktypes.InvalidEvent, err
 	}
 
@@ -50,10 +50,7 @@ func transformEvent(l *zap.Logger, salesforceEvent any, eventType string) (sdkty
 		Data:      kittehs.TransformMapValues(data, sdktypes.ToProto),
 	})
 	if err != nil {
-		l.Error("Failed to convert protocol buffer to SDK event",
-			zap.Any("data", data),
-			zap.Error(err),
-		)
+		l.Error("failed to convert protocol buffer to SDK event", zap.Error(err))
 		return sdktypes.InvalidEvent, err
 	}
 
@@ -69,9 +66,9 @@ func (h handler) dispatchAsyncEventsToConnections(cids []sdktypes.ConnectionID, 
 			zap.String("eventID", eid.String()),
 		)
 		if err != nil {
-			l.Error("Event dispatch failed", zap.Error(err))
+			l.Error("event dispatch failed", zap.Error(err))
 			return
 		}
-		l.Debug("Event dispatched")
+		l.Debug("event dispatched")
 	}
 }
