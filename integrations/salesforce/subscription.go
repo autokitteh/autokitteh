@@ -7,6 +7,8 @@ import (
 	pb "github.com/developerforce/pub-sub-api/go/proto"
 	"github.com/linkedin/goavro/v2"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	gstatus "google.golang.org/grpc/status"
 
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -72,8 +74,11 @@ func (h handler) eventLoop(ctx context.Context, client pb.PubSubClient, topicNam
 		// https://developer.salesforce.com/docs/platform/pub-sub-api/references/methods/subscribe-rpc.html#subscribe-keepalive-behavior
 		msg, err := stream.Recv()
 		if err != nil {
+			if gstatus.Code(err) != codes.Unauthenticated {
+				l.Error("authentication error receiving Salesforce event", zap.Error(err))
+			}
 			l.Error("error receiving Salesforce event", zap.Error(err))
-			continue
+			return
 		}
 
 		// TODO(INT-314): Save the latest replay ID.
@@ -81,7 +86,6 @@ func (h handler) eventLoop(ctx context.Context, client pb.PubSubClient, topicNam
 
 		// Process the received message.
 		numLeftToReceive -= len(msg.Events)
-
 		for _, event := range msg.Events {
 			schema, err := client.GetSchema(ctx, &pb.SchemaRequest{SchemaId: event.Event.SchemaId})
 			if err != nil {
@@ -122,8 +126,10 @@ func decodePayload(l *zap.Logger, schema *pb.SchemaInfo, payload []byte) (map[st
 	}
 
 	var data map[string]any
-	// Payload may contain multiple records
-	native, _, err := codec.NativeFromBinary(payload)
+	native, remaining, err := codec.NativeFromBinary(payload)
+	if len(remaining) > 0 {
+		l.Warn("remaining bytes after decoding Salesforce event", zap.Int("len", len(remaining)), zap.Any("remaining", remaining))
+	}
 	if err != nil {
 		l.Error("failed to decode event", zap.Error(err))
 		return nil, err

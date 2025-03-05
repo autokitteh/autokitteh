@@ -2,6 +2,7 @@ package salesforce
 
 import (
 	"context"
+	"time"
 
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
@@ -21,6 +22,16 @@ func oauthToken(ctx context.Context, vs sdktypes.Vars, o sdkservices.OAuth) *oau
 		RefreshToken: vs.GetValue(common.OAuthRefreshTokenVar),
 		TokenType:    vs.GetValue(common.OAuthTokenTypeVar),
 	}
+
+	if expiryStr := vs.GetValue(common.OAuthExpiryVar); expiryStr != "" {
+		if expiry, err := time.Parse(time.RFC3339, expiryStr); err == nil {
+			t1.Expiry = expiry
+		} else {
+			// TODO: Question: Should we force a refresh here?
+			t1.Expiry = time.Now().Add(time.Hour * 2)
+		}
+	}
+
 	if t1.Valid() {
 		return t1
 	}
