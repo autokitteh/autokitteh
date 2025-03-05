@@ -450,11 +450,10 @@ class Runner(pb.runner_rpc.RunnerService):
                 tb = pb_traceback(result.traceback)
                 req.traceback.extend(tb)
             else:
-                try:
-                    data = pickle.dumps(result)
-                    req.result.custom.data = data
-                    req.result.custom.value.CopyFrom(values.safe_wrap(result.value))
-                except (TypeError, pickle.PickleError) as err:
+                data = pickle.dumps(result)
+                req.result.custom.data = data
+                req.result.custom.value.CopyFrom(values.safe_wrap(result.value))
+        except (TypeError, pickle.PickleError) as err:
                     req.error = f"can't pickle {result.value} - {err}"
         except Exception as err:
             req.error = f"unexpected error: {err}"
