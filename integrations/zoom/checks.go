@@ -64,25 +64,24 @@ func test(v sdkservices.Vars) sdkintegrations.OptFn {
 // oauthTest verifies the OAuth authentication with Zoom API using the "me" context.
 // (Based on: https://developers.zoom.us/docs/integrations/oauth/#the-me-context).
 func oauthTest(ctx context.Context, vs sdktypes.Vars) (sdktypes.Status, error) {
-	expiryStr := vs.GetValue(common.OAuthExpiryVar) // TODO: use decode common.OAuthData
-	refreshT := vs.GetValue(common.OAuthRefreshTokenVar)
-	token := vs.GetValue(common.OAuthAccessTokenVar)
+	data := common.OAuthData{}
+	vs.Decode(&data)
 	clientID := os.Getenv("ZOOM_CLIENT_ID")
 	clientSecret := os.Getenv("ZOOM_CLIENT_SECRET")
 	url := "https://api.zoom.us/v2/users/me"
 
 	// Check if the token is expired and refresh it.
-	expiry, err := time.Parse(time.RFC3339, expiryStr)
+	expiry, err := time.Parse(time.RFC3339, data.Expiry)
 	if err == nil {
-		if time.Now().After(expiry) && refreshT != "" {
-			token, err = refreshToken(ctx, refreshT, clientID, clientSecret, vs)
+		if time.Now().After(expiry) && data.RefreshToken != "" {
+			data.AccessToken, err = refreshToken(ctx, data.RefreshToken, clientID, clientSecret, vs)
 			if err != nil {
 				return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 			}
 		}
 	}
 
-	resp, err := httpGet(ctx, token, url)
+	resp, err := httpGet(ctx, data.AccessToken, url)
 	if err != nil {
 		return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 	}
@@ -95,24 +94,11 @@ func oauthTest(ctx context.Context, vs sdktypes.Vars) (sdktypes.Status, error) {
 	return sdktypes.NewStatus(sdktypes.StatusCodeError, "Failed to connect to Zoom API"), nil
 }
 
-var ( // TODO: REMOVE
-	accountID    = sdktypes.NewSymbol("private_account_id")
-	clientID     = sdktypes.NewSymbol("private_client_id")
-	clientSecret = sdktypes.NewSymbol("private_client_secret")
-)
-
-// ServerToServerTest validates the Server-to-Server authentication test for Zoom
+// ServerToServerTest validates the Server-to-Server authentication test for Zoom.
 // (Based on: https://developers.zoom.us/docs/internal-apps/s2s-oauth/).
 func ServerToServerTest(ctx context.Context, vs sdktypes.Vars) (sdktypes.Status, error) {
-	id := vs.GetValue(accountID)
-	clientID := vs.GetValue(clientID)
-	secret := vs.GetValue(clientSecret)
-
-	app := privateApp{ // TODO: use decode
-		AccountID:    id,
-		ClientID:     clientID,
-		ClientSecret: secret,
-	}
+	var app privateApp
+	vs.Decode(&app)
 
 	// Get a server-to-server token.
 	token, err := serverToken(ctx, app)

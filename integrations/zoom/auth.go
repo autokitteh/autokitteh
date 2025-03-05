@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"time"
 
 	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -58,16 +59,18 @@ func refreshToken(ctx context.Context, refreshT string, clientID string, clientS
 	var tokenResp struct {
 		AccessToken  string `json:"access_token"`
 		RefreshToken string `json:"refresh_token"`
+		Expiry       int    `json:"expires_in"`
 	}
-	// TODO: var tokenResp common.OAuthData
+
 	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
 		return "", fmt.Errorf("failed to decode token response: %v", err)
 	}
 
-	vs.Set(common.OAuthAccessTokenVar, tokenResp.AccessToken, true) // TODO: is this correct
-
+	vs.Set(common.OAuthAccessTokenVar, tokenResp.AccessToken, true)
 	vs.Set(common.OAuthRefreshTokenVar, tokenResp.RefreshToken, true)
-	// TODO: vs.Set(common.OAuthExpiryVar, tokenResp.Expiry, false);  add json:"expiry" to OAuthData struct
+
+	expiryTime := time.Now().Add(time.Duration(tokenResp.Expiry) * time.Second).Format(time.RFC3339)
+	vs.Set(common.OAuthExpiryVar, expiryTime, false)
 
 	return tokenResp.AccessToken, nil
 }
