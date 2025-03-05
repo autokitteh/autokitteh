@@ -444,21 +444,24 @@ class Runner(pb.runner_rpc.RunnerService):
             runner_id=self.id,
         )
 
-        if result.error:
-            req.error = result_error(result.error)
-            tb = pb_traceback(result.traceback)
-            req.traceback.extend(tb)
-        else:
-            try:
+        try:
+            if result.error:
+                req.error = result_error(result.error)
+                tb = pb_traceback(result.traceback)
+                req.traceback.extend(tb)
+            else:
                 data = pickle.dumps(result)
                 req.result.custom.data = data
                 req.result.custom.value.CopyFrom(values.safe_wrap(result.value))
-            except (TypeError, pickle.PickleError) as err:
-                req.error = f"can't pickle {result.value} - {err}"
+        except (TypeError, pickle.PickleError) as err:
+            req.error = f"can't pickle {result.value} - {err}"
+        except Exception as err:
+            req.error = f"unexpected error: {err}"
+            log.exception("on_event: %r", err)
 
         try:
             self.worker.Done(req)
-        except grpc.RpcError as err:
+        except Exception as err:
             log.error("on_event: done send error: %r", err)
 
     @mark_no_activity
