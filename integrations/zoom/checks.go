@@ -122,9 +122,9 @@ func ServerToServerTest(ctx context.Context, vs sdktypes.Vars) (sdktypes.Status,
 
 // httpGet sends an HTTP GET request to the specified URL with a Bearer token for authentication.
 func httpGet(ctx context.Context, bearerToken string, url string) (*http.Response, error) {
-	timoutCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
+	timeoutCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
-	req, err := http.NewRequestWithContext(timoutCtx, http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(timeoutCtx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create request: %v", err)
 	}
