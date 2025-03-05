@@ -9,7 +9,8 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
-type salesforceAuth struct {
+// https://developer.salesforce.com/docs/platform/pub-sub-api/guide/supported-auth.html
+type grpcAuth struct {
 	accessToken string
 	instanceURL string
 	tenantID    string
@@ -19,20 +20,20 @@ func initConn(accessToken, instanceURL, orgID string, l *zap.Logger) (*grpc.Clie
 	conn, err := grpc.NewClient(
 		"api.pubsub.salesforce.com:443",
 		grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})),
-		grpc.WithPerRPCCredentials(&salesforceAuth{
+		grpc.WithPerRPCCredentials(&grpcAuth{
 			accessToken: accessToken,
 			instanceURL: instanceURL,
 			tenantID:    orgID,
 		}),
 	)
 	if err != nil {
-		l.Error("failed to create gRPC connection", zap.Error(err))
+		l.Error("failed to create gRPC connection for Salesforce events", zap.Error(err))
 		return nil, err
 	}
 	return conn, nil
 }
 
-func (a *salesforceAuth) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
+func (a *grpcAuth) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
 	return map[string]string{
 		"accesstoken": a.accessToken,
 		"instanceurl": a.instanceURL,
@@ -40,6 +41,6 @@ func (a *salesforceAuth) GetRequestMetadata(ctx context.Context, uri ...string) 
 	}, nil
 }
 
-func (a *salesforceAuth) RequireTransportSecurity() bool {
+func (a *grpcAuth) RequireTransportSecurity() bool {
 	return true
 }

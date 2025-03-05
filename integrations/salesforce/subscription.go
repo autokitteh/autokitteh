@@ -23,7 +23,7 @@ var (
 // subscribe creates a new gRPC client and subscribes to a generic Salesforce Change Data Capture channel.
 // https://developer.salesforce.com/docs/platform/pub-sub-api/references/methods/subscribe-rpc.html
 func (h handler) subscribe(instanceURL, orgID string, cid sdktypes.ConnectionID) {
-	// Ensure multiple users don't reference the same app at the same time.
+	// Prevent duplication due to race conditions.
 	mu.Lock()
 	defer mu.Unlock()
 
