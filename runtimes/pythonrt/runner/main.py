@@ -454,7 +454,7 @@ class Runner(pb.runner_rpc.RunnerService):
                 req.result.custom.data = data
                 req.result.custom.value.CopyFrom(values.safe_wrap(result.value))
         except (TypeError, pickle.PickleError) as err:
-                    req.error = f"can't pickle {result.value} - {err}"
+            req.error = f"can't pickle {result.value} - {err}"
         except Exception as err:
             req.error = f"unexpected error: {err}"
             log.exception("on_event: %r", err)
