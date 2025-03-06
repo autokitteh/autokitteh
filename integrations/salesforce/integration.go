@@ -1,6 +1,8 @@
 package salesforce
 
 import (
+	"context"
+
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations/common"
@@ -8,6 +10,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	"go.autokitteh.dev/autokitteh/web/static"
 )
 
@@ -31,19 +34,40 @@ func Start(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, o sdkservices.OAut
 	common.RegisterSaveHandler(m, desc, h.handleSave)
 	common.RegisterOAuthHandler(m, desc, h.handleOAuth)
 
-	// TODO: Event webhooks (no AutoKitteh user authentication by definition, because
-	// these asynchronous requests are sent to us by third-party services).
+	h.reopenExistingPubSubConnections(context.Background())
 }
 
 // handler implements several HTTP webhooks to save authentication data, as
 // well as receive and dispatch third-party asynchronous event notifications.
 type handler struct {
-	logger   *zap.Logger
-	vars     sdkservices.Vars
-	oauth    sdkservices.OAuth
-	dispatch sdkservices.DispatchFunc
+	logger        *zap.Logger
+	vars          sdkservices.Vars
+	oauth         sdkservices.OAuth
+	dispatch      sdkservices.DispatchFunc
+	integrationID sdktypes.IntegrationID
 }
 
 func newHTTPHandler(l *zap.Logger, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.DispatchFunc) handler {
-	return handler{logger: l, oauth: o, vars: v, dispatch: d}
+	iid := sdktypes.NewIntegrationIDFromName(desc.UniqueName().String())
+	return handler{logger: l, oauth: o, vars: v, dispatch: d, integrationID: iid}
+}
+
+func (h handler) reopenExistingPubSubConnections(ctx context.Context) {
+	cids, err := h.vars.FindConnectionIDs(ctx, h.integrationID, instanceURLVar, "")
+	if err != nil {
+		h.logger.Error("failed to list Salesforce connection IDs", zap.Error(err))
+		return
+	}
+
+	for _, cid := range cids {
+		data, err := h.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+		if err != nil {
+			h.logger.Error("can't restart Salesforce PubSub connection", zap.String("connection_id", cid.String()), zap.Error(err))
+			continue
+		}
+		instanceURL := data.GetValue(instanceURLVar)
+		orgID := data.GetValue(orgIDVar)
+
+		h.subscribe(instanceURL, orgID, cid)
+	}
 }

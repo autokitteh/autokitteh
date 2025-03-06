@@ -20,6 +20,7 @@ require (
 	github.com/bufbuild/protovalidate-go v0.9.1
 	github.com/bwmarrin/discordgo v0.28.1
 	github.com/descope/go-sdk v1.6.9
+	github.com/developerforce/pub-sub-api/go v0.0.0-20240903201136-0ba470114fd8
 	github.com/dghubble/gologin/v2 v2.5.0
 	github.com/dghubble/sessions v0.4.1
 	github.com/docker/docker v27.5.1+incompatible
@@ -46,6 +47,7 @@ require (
 	github.com/knadh/koanf/providers/env v1.0.0
 	github.com/knadh/koanf/providers/file v1.1.2
 	github.com/knadh/koanf/v2 v2.1.2
+	github.com/linkedin/goavro/v2 v2.11.0
 	github.com/mennanov/fieldmask-utils v1.1.2
 	github.com/open-policy-agent/opa v1.1.0
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c
@@ -160,6 +162,7 @@ require (
 	github.com/golang-sql/civil v0.0.0-20220223132316-b832511892a9 // indirect
 	github.com/golang-sql/sqlexp v0.1.0 // indirect
 	github.com/golang/mock v1.6.0 // indirect
+	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/go-github/v52 v52.0.0 // indirect
 	github.com/google/go-github/v68 v68.0.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
