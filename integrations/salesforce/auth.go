@@ -7,7 +7,6 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 
-	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -59,12 +58,5 @@ func (h handler) bearerToken(ctx context.Context, l *zap.Logger, cid sdktypes.Co
 		return ""
 	}
 
-	switch authType := common.ReadAuthType(vs); authType {
-	case integrations.OAuthPrivate:
-		return "Bearer " + oauthToken(ctx, vs, h.oauth).AccessToken
-	// Unknown/unrecognized mode - an error.
-	default:
-		l.Error("Salesforce subscription: unexpected auth type", zap.String("auth_type", authType))
-		return ""
-	}
+	return "Bearer " + oauthToken(ctx, vs, h.oauth).AccessToken
 }
