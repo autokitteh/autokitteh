@@ -113,10 +113,16 @@ func (vs Vars) Decode(out any) {
 		fv := v.Field(i)
 		ft := t.Field(i)
 
+		tag := strings.Split(ft.Tag.Get("var"), ",")
+
 		n := NewSymbol(ft.Name)
 
 		if ft.Type.Kind() != reflect.String {
 			sdklogger.Panic("invalid field value type - not a string")
+		}
+
+		if tag[0] != "" && (tag[0] != "secret" || len(tag) > 1) {
+			n = NewSymbol(tag[0])
 		}
 
 		v := vs.Get(n).Value()
