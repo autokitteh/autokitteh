@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -138,12 +139,12 @@ func checkTimestamp(payload map[string]any) error {
 		return errors.New("missing webhook timestamp")
 	}
 
-	msecFloat, ok := wts.(float64)
+	msec, ok := wts.(float64)
 	if !ok {
 		return fmt.Errorf("invalid webhook timestamp: %v", wts)
 	}
 
-	t := time.UnixMilli(msec)
+	t := time.UnixMilli(int64(msec))
 	d := time.Since(t)
 	if d < 0 {
 		return errors.New("webhook timestamp in the future: " + t.Format(time.RFC3339))
