@@ -1,6 +1,9 @@
 package linear
 
 import (
+	"fmt"
+	"net/http"
+
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations/common"
@@ -31,8 +34,10 @@ func Start(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, o sdkservices.OAut
 	common.RegisterSaveHandler(m, desc, h.handleSave)
 	common.RegisterOAuthHandler(m, desc, h.handleOAuth)
 
-	// TODO: Event webhooks (no AutoKitteh user authentication by definition, because
+	// Event webhooks (no AutoKitteh user authentication by definition, because
 	// these asynchronous requests are sent to us by third-party services).
+	pattern := fmt.Sprintf("%s %s/event", http.MethodPost, desc.ConnectionURL().Path)
+	m.NoAuth.HandleFunc(pattern, h.handleEvent)
 }
 
 // handler implements several HTTP webhooks to save authentication data, as

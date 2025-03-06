@@ -30,7 +30,7 @@ func Descriptor(uniqueName, displayName, logoURL string) sdktypes.Integration {
 // isn't actually required for serving these files, but it's impossible
 // to use them (i.e. to initialize a connection) without authentication.
 func ServeStaticUI(m *muxes.Muxes, i sdktypes.Integration, fs embed.FS) {
-	pattern := fmt.Sprintf("GET %s/", i.ConnectionURL().Path)
+	pattern := fmt.Sprintf("%s %s/", http.MethodGet, i.ConnectionURL().Path)
 	m.Auth.Handle(pattern, http.FileServer(http.FS(fs)))
 }
 
@@ -50,5 +50,5 @@ func RegisterSaveHandler(m *muxes.Muxes, i sdktypes.Integration, h http.HandlerF
 // from AutoKitteh's generic OAuth service, which contains an OAuth token (if the
 // OAuth flow was successful) and form parameters for debugging and validation.
 func RegisterOAuthHandler(m *muxes.Muxes, i sdktypes.Integration, h http.HandlerFunc) {
-	m.Auth.HandleFunc(fmt.Sprintf("GET %s/oauth", i.ConnectionURL().Path), h)
+	m.Auth.HandleFunc(fmt.Sprintf("%s %s/oauth", http.MethodGet, i.ConnectionURL().Path), h)
 }

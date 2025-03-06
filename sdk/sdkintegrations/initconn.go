@@ -44,11 +44,17 @@ func NewConnectionInit(l *zap.Logger, w http.ResponseWriter, r *http.Request, i 
 
 // AbortBadRequest is the same as [AbortWithStatus] with HTTP 400 (Bad Request).
 func (c ConnectionInit) AbortBadRequest(err string) {
+	if err == "" {
+		err = http.StatusText(http.StatusBadRequest)
+	}
 	c.AbortWithStatus(http.StatusBadRequest, err)
 }
 
 // AbortServerError is the same as [AbortWithStatus] with HTTP 500 (Internal Server Error).
 func (c ConnectionInit) AbortServerError(err string) {
+	if err == "" {
+		err = http.StatusText(http.StatusInternalServerError)
+	}
 	c.AbortWithStatus(http.StatusInternalServerError, err)
 }
 
