@@ -33,8 +33,9 @@ func (h handler) subscribe(instanceURL, orgID string, cid sdktypes.ConnectionID)
 		return
 	}
 
+	l := h.logger.With(zap.String("connection_id", cid.String()))
 	ctx := context.Background()
-	conn, err := initConn(h.logger, h.bearerToken(ctx, h.logger, cid), instanceURL, orgID)
+	conn, err := initConn(l, h.bearerToken(ctx, l, cid), instanceURL, orgID)
 	if err != nil {
 		return
 	}
