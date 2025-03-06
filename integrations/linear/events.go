@@ -109,7 +109,7 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request) map[string
 
 // TODO(INT-284): Support all AutoKitteh connection auth types.
 func (h handler) signingSecret() (string, error) {
-	secret := "35402b6a5963542af1745c62627e28c0" // TODO: os.Getenv("LINEAR_SIGNING_SECRET")
+	secret := os.Getenv("LINEAR_SIGNING_SECRET")
 	if secret == "" {
 		return "", errors.New("missing Linear signing secret")
 	}
