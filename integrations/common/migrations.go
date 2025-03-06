@@ -2,7 +2,6 @@ package common
 
 import (
 	"context"
-	"regexp"
 	"time"
 
 	"go.autokitteh.dev/autokitteh/integrations"
@@ -31,8 +30,8 @@ func RenameVar(ctx context.Context, v sdkservices.Vars, vsid sdktypes.VarScopeID
 	return v.Delete(ctx, vsid, old)
 }
 
-// MigrateAuthType migrates a connection's "auth_type" variable from the old
-// "oauth" value to the new "oauthDefault". It is assumed that the variable exists.
+// MigrateAuthType migrates a connection's "auth_type" variable from the
+// old "oauth" value to the new "oauthDefault". Otherwise, it has no effect.
 func MigrateAuthType(ctx context.Context, v sdkservices.Vars, vsid sdktypes.VarScopeID) error {
 	vs, err := v.Get(ctx, vsid, AuthTypeVar)
 	if err != nil {
@@ -72,8 +71,7 @@ func MigrateDateTimeToRFC3339(ctx context.Context, v sdkservices.Vars, vsid sdkt
 		return nil
 	}
 
-	s = regexp.MustCompile(` [A-Z].*`).ReplaceAllString(s, "")
-	t, err := time.Parse("2006-01-02 15:04:05 -0700", s)
+	t, err := ParseGoTimestamp(s)
 	if err != nil {
 		return err
 	}
