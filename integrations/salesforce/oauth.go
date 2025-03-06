@@ -72,16 +72,15 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	}
 	orgID := userInfo["organization_id"].(string)
 
-	// get the access token expiration time
-	exp, err := h.accessTokenExpiration(ctx, instanceURL, accessToken, cid)
-	if err != nil {
+	// Get the access token expiration time.
+	if err := h.accessTokenExpiration(ctx, instanceURL, data.Token, cid); err != nil {
 		l.Error("failed to get access token expiration", zap.Error(err))
 		c.AbortServerError("failed to get access token expiration")
 		return
 	}
 
 	vsid := sdktypes.NewVarScopeID(cid)
-	if err := h.saveConnection(ctx, vsid, data.Token, data.Extra, orgID, exp); err != nil {
+	if err := h.saveConnection(ctx, vsid, data.Token, data.Extra, orgID); err != nil {
 		l.Error("failed to save OAuth connection details", zap.Error(err))
 		c.AbortServerError("failed to save connection details")
 		return
@@ -101,7 +100,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 }
 
 // saveConnection saves OAuth token details as connection variables.
-func (h handler) saveConnection(ctx context.Context, vsid sdktypes.VarScopeID, t *oauth2.Token, extra map[string]any, orgID string, exp time.Time) error {
+func (h handler) saveConnection(ctx context.Context, vsid sdktypes.VarScopeID, t *oauth2.Token, extra map[string]any, orgID string) error {
 	if t == nil {
 		return errors.New("OAuth redirection missing token data")
 	}
@@ -111,33 +110,31 @@ func (h handler) saveConnection(ctx context.Context, vsid sdktypes.VarScopeID, t
 		vs = vs.Append(sdktypes.NewVar(sdktypes.NewSymbol(k)).SetValue(fmt.Sprintf("%v", v)))
 	}
 	vs = vs.Append(sdktypes.NewVar(orgIDVar).SetValue(orgID))
-	vs = vs.Append(sdktypes.NewVar(common.OAuthExpiryVar).SetValue(exp.Format(time.RFC3339)))
 
 	return h.vars.Set(ctx, vs.WithScopeID(vsid)...)
 }
 
-func (h handler) accessTokenExpiration(ctx context.Context, instanceURL, accessToken string, cid sdktypes.ConnectionID) (time.Time, error) {
+func (h handler) accessTokenExpiration(ctx context.Context, instanceURL string, t *oauth2.Token, cid sdktypes.ConnectionID) error {
 	vs, errStatus, err := common.ReadConnectionVars(ctx, h.vars, cid)
 	if errStatus.IsValid() || err != nil {
-		return time.Time{}, err
+		return err
 	}
 
 	formData := url.Values{
-		"token":           {accessToken},
+		"token":           {t.AccessToken},
 		"token_type_hint": {"access_token"},
 		"client_id":       {vs.GetValueByString("private_client_id")},
 		"client_secret":   {vs.GetValueByString("private_client_secret")},
 	}
-	encodedFormData := formData.Encode()
 
-	u, err := url.JoinPath(instanceURL, "services", "oauth2", "introspect")
+	u, err := url.JoinPath(instanceURL, "services/oauth2/introspect")
 	if err != nil {
-		return time.Time{}, err
+		return err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u, strings.NewReader(encodedFormData))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u, strings.NewReader(formData.Encode()))
 	if err != nil {
-		return time.Time{}, err
+		return err
 	}
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -145,28 +142,26 @@ func (h handler) accessTokenExpiration(ctx context.Context, instanceURL, accessT
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return time.Time{}, err
+		return err
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return time.Time{}, err
+		return err
 	}
 
-	var tokenInfo map[string]interface{}
+	var tokenInfo map[string]any
 	if err := json.Unmarshal(body, &tokenInfo); err != nil {
-		return time.Time{}, errors.New("failed to parse token info")
+		return errors.New("failed to parse token info")
 	}
 
-	// Extract the expiration timestamp
+	// Extract the expiration timestamp.
 	expFloat, ok := tokenInfo["exp"].(float64)
 	if !ok {
-		return time.Time{}, errors.New("missing or invalid expiration time in response")
+		return errors.New("missing or invalid expiration time in response")
 	}
+	t.Expiry = time.Unix(int64(expFloat), 0)
 
-	// Convert the Unix timestamp to time.Time
-	expTime := time.Unix(int64(expFloat), 0)
-
-	return expTime, nil
+	return nil
 }

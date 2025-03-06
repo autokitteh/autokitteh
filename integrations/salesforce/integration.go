@@ -30,7 +30,7 @@ func New(v sdkservices.Vars) sdkservices.Integration {
 func Start(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.DispatchFunc) {
 	common.ServeStaticUI(m, desc, static.SalesforceWebContent)
 
-	h := newHTTPHandler(l, v, o, d, sdktypes.NewIntegrationIDFromName(desc.UniqueName().String()))
+	h := newHTTPHandler(l, v, o, d)
 
 	common.RegisterSaveHandler(m, desc, h.handleSave)
 	common.RegisterOAuthHandler(m, desc, h.handleOAuth)
@@ -48,8 +48,8 @@ type handler struct {
 	integrationID sdktypes.IntegrationID
 }
 
-func newHTTPHandler(l *zap.Logger, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.DispatchFunc, i sdktypes.IntegrationID) handler {
-	return handler{logger: l, oauth: o, vars: v, dispatch: d, integrationID: i}
+func newHTTPHandler(l *zap.Logger, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.DispatchFunc) handler {
+	return handler{logger: l, oauth: o, vars: v, dispatch: d, integrationID: sdktypes.NewIntegrationIDFromName(desc.UniqueName().String())}
 }
 
 func (h handler) reopenExistingPubSubConnections(ctx context.Context) {
@@ -62,7 +62,7 @@ func (h handler) reopenExistingPubSubConnections(ctx context.Context) {
 	for _, cid := range cids {
 		data, err := h.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
 		if err != nil {
-			h.logger.With(zap.String("connection_id", cid.String())).Error("can't restart Salesforce PubSub connection", zap.Error(err))
+			h.logger.Error("can't restart Salesforce PubSub connection", zap.String("connection_id", cid.String()), zap.Error(err))
 			continue
 		}
 		instanceURL := data.GetValue(instanceURLVar)

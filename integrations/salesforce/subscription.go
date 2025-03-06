@@ -34,7 +34,7 @@ func (h handler) subscribe(instanceURL, orgID string, cid sdktypes.ConnectionID)
 	}
 
 	ctx := context.Background()
-	conn, err := initConn(h.bearerToken(ctx, h.logger, cid), instanceURL, orgID, h.logger)
+	conn, err := initConn(h.logger, h.bearerToken(ctx, h.logger, cid), instanceURL, orgID)
 	if err != nil {
 		return
 	}
@@ -59,7 +59,7 @@ func (h handler) eventLoop(ctx context.Context, client pb.PubSubClient, topicNam
 		return
 	}
 
-	// Start receiving messages
+	// Start receiving messages.
 	for {
 		if numLeftToReceive <= 0 {
 			n, err := renewSubscription(l, stream, defaultBatchSize, topicName)
@@ -108,7 +108,7 @@ func renewSubscription(l *zap.Logger, stream pb.PubSub_SubscribeClient, defaultB
 		NumRequested: defaultBatchSize,
 	}
 
-	// TODO(INT-314): Use the latest replay ID if available for resumption
+	// TODO(INT-314): Use the latest replay ID if available for resumption.
 
 	err := stream.Send(fetchReq)
 	if err != nil {

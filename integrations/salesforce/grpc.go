@@ -10,13 +10,14 @@ import (
 )
 
 // https://developer.salesforce.com/docs/platform/pub-sub-api/guide/supported-auth.html
+// https://pkg.go.dev/google.golang.org/grpc/credentials#PerRPCCredentials
 type grpcAuth struct {
 	accessToken string
 	instanceURL string
 	tenantID    string
 }
 
-func initConn(accessToken, instanceURL, orgID string, l *zap.Logger) (*grpc.ClientConn, error) {
+func initConn(l *zap.Logger, accessToken, instanceURL, orgID string) (*grpc.ClientConn, error) {
 	conn, err := grpc.NewClient(
 		"api.pubsub.salesforce.com:443",
 		grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})),

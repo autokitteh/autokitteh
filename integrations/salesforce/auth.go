@@ -17,19 +17,17 @@ import (
 // oauthToken returns the OAuth token stored in the
 // connection variables. If it's stale, we refresh it first.
 func oauthToken(ctx context.Context, vs sdktypes.Vars, o sdkservices.OAuth) *oauth2.Token {
+	expiryStr := vs.GetValue(common.OAuthExpiryVar)
+	exp, err := time.Parse(time.RFC3339, expiryStr)
+	if err != nil {
+		exp = time.Now().Add(-time.Minute)
+	}
+
 	t1 := &oauth2.Token{
 		AccessToken:  vs.GetValue(common.OAuthAccessTokenVar),
 		RefreshToken: vs.GetValue(common.OAuthRefreshTokenVar),
 		TokenType:    vs.GetValue(common.OAuthTokenTypeVar),
-	}
-
-	if expiryStr := vs.GetValue(common.OAuthExpiryVar); expiryStr != "" {
-		if expiry, err := time.Parse(time.RFC3339, expiryStr); err == nil {
-			t1.Expiry = expiry
-		} else {
-			// TODO: Question: Should we force a refresh here?
-			t1.Expiry = time.Now().Add(time.Hour * 2)
-		}
+		Expiry:       exp,
 	}
 
 	if t1.Valid() {
