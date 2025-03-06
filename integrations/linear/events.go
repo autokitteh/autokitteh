@@ -138,7 +138,7 @@ func checkTimestamp(payload map[string]any) error {
 		return errors.New("missing webhook timestamp")
 	}
 
-	msec, ok := wts.(int64)
+	msecFloat, ok := wts.(float64)
 	if !ok {
 		return fmt.Errorf("invalid webhook timestamp: %v", wts)
 	}
