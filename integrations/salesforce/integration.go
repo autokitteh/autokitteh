@@ -31,7 +31,6 @@ func Start(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, o sdkservices.OAut
 	common.ServeStaticUI(m, desc, static.SalesforceWebContent)
 
 	h := newHTTPHandler(l, v, o, d)
-
 	common.RegisterSaveHandler(m, desc, h.handleSave)
 	common.RegisterOAuthHandler(m, desc, h.handleOAuth)
 
@@ -49,7 +48,8 @@ type handler struct {
 }
 
 func newHTTPHandler(l *zap.Logger, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.DispatchFunc) handler {
-	return handler{logger: l, oauth: o, vars: v, dispatch: d, integrationID: sdktypes.NewIntegrationIDFromName(desc.UniqueName().String())}
+	iid := sdktypes.NewIntegrationIDFromName(desc.UniqueName().String())
+	return handler{logger: l, oauth: o, vars: v, dispatch: d, integrationID: iid}
 }
 
 func (h handler) reopenExistingPubSubConnections(ctx context.Context) {

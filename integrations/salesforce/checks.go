@@ -62,12 +62,12 @@ func test(v sdkservices.Vars) sdkintegrations.OptFn {
 }
 
 func getUserInfo(ctx context.Context, instanceURL, accessToken string) (map[string]interface{}, error) {
-	u, err := url.JoinPath(instanceURL, "services", "oauth2", "userinfo")
+	u, err := url.JoinPath(instanceURL, "services/oauth2/userinfo")
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, http.NoBody)
 	if err != nil {
 		return nil, err
 	}

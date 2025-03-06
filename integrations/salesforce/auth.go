@@ -16,8 +16,7 @@ import (
 // oauthToken returns the OAuth token stored in the
 // connection variables. If it's stale, we refresh it first.
 func oauthToken(ctx context.Context, vs sdktypes.Vars, o sdkservices.OAuth) *oauth2.Token {
-	expiryStr := vs.GetValue(common.OAuthExpiryVar)
-	exp, err := time.Parse(time.RFC3339, expiryStr)
+	exp, err := time.Parse(time.RFC3339, vs.GetValue(common.OAuthExpiryVar))
 	if err != nil {
 		exp = time.Now().Add(-time.Minute)
 	}
