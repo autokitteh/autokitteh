@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -94,9 +93,9 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, urlPath, http.StatusFound)
-
 	h.subscribe(instanceURL, orgID, cid)
+
+	http.Redirect(w, r, urlPath, http.StatusFound)
 }
 
 // saveConnection saves OAuth token details as connection variables.
@@ -146,13 +145,8 @@ func (h handler) accessTokenExpiration(ctx context.Context, instanceURL string, 
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-
 	var tokenInfo map[string]any
-	if err := json.Unmarshal(body, &tokenInfo); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&tokenInfo); err != nil {
 		return errors.New("failed to parse token info")
 	}
 

@@ -18,7 +18,7 @@ import (
 func oauthToken(ctx context.Context, vs sdktypes.Vars, o sdkservices.OAuth) *oauth2.Token {
 	exp, err := time.Parse(time.RFC3339, vs.GetValue(common.OAuthExpiryVar))
 	if err != nil {
-		exp = time.Now().Add(-time.Minute)
+		exp = time.Now().UTC().Add(-time.Minute)
 	}
 
 	t1 := &oauth2.Token{
