@@ -60,7 +60,8 @@ func test(v sdkservices.Vars) sdkintegrations.OptFn {
 	})
 }
 
-// orgAndViewerInfo queries the Linear GraphQL API for important connection's details
+// orgAndViewerInfo queries the Linear GraphQL API for important connection's details.
+// A "viewer" is the authenticated user, and an "organization" is the user's workspace
 // (based on: https://developers.linear.app/docs/graphql/working-with-the-graphql-api
 // and: https://studio.apollographql.com/public/Linear-API/variant/current/home).
 func orgAndViewerInfo(ctx context.Context, auth string) (*orgInfo, *viewerInfo, error) {
