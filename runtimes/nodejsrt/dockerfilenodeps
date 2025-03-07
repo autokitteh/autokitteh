@@ -1,0 +1,21 @@
+FROM python:3.11-slim AS build
+
+RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /runner
+COPY pyproject.toml .
+RUN python -m pip install .[all]
+
+COPY py-sdk py-sdk
+RUN cd py-sdk && python -m pip install .
+
+# https://stackoverflow.com/questions/78599865/how-to-install-missing-python-modules-on-distroless-image
+FROM gcr.io/distroless/python3-debian12
+
+COPY --from=build /usr/local/lib/python3.11/site-packages /usr/lib/python3.11/site-packages
+COPY --from=build /usr/local/bin /usr/local/bin
+
+COPY runner /runner
+COPY workflow /workflow
+
+ENV PYTHONPATH=/usr/lib/python3.11/site-packages
