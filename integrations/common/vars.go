@@ -78,8 +78,8 @@ func EncodeOAuthData(t *oauth2.Token) OAuthData {
 
 // FreshOAuthToken returns the OAuth token stored in the
 // connection variables. If it's stale, we refresh it first.
-// Note that a token without an expiry is considered fresh forever,
-// so time-timited tokens with a missing timeout need to add it.
+// A token without an expiry is considered fresh forever, so
+// time-limited tokens with a missing timestamp need to add it.
 // Refreshed tokens are saved back to the connection variables.
 func FreshOAuthToken(ctx context.Context, l *zap.Logger, o sdkservices.OAuth, v sdkservices.Vars, i sdktypes.Integration, vs sdktypes.Vars) *oauth2.Token {
 	data := new(OAuthData)
@@ -101,10 +101,15 @@ func FreshOAuthToken(ctx context.Context, l *zap.Logger, o sdkservices.OAuth, v 
 		return t1
 	}
 
-	// TODO(INT-284): SFDC expiry is incorrectly 0?
 	t2, err := cfg.TokenSource(ctx, t1).Token()
 	if err != nil {
 		return t1
+	}
+
+	// Special case: Salesforce access tokens are time-limited and yet
+	// they don't have an expiry timestamp - so we add it on our own.
+	if i.UniqueName().String() == "salesforce" && t2.Expiry.IsZero() {
+		t2.Expiry = time.Now().UTC().Add(2 * time.Hour)
 	}
 
 	vsid := vs.Get(OAuthAccessTokenVar).ScopeID()
