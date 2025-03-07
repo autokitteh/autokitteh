@@ -109,6 +109,7 @@ func FreshOAuthToken(ctx context.Context, l *zap.Logger, o sdkservices.OAuth, v 
 	// Special case: Salesforce access tokens are time-limited and yet
 	// they don't have an expiry timestamp - so we add it on our own.
 	if i.UniqueName().String() == "salesforce" && t2.Expiry.IsZero() {
+		// TODO(INT-322): Reuse "accessTokenExpiration" in SFDC's OAuth handler.
 		t2.Expiry = time.Now().UTC().Add(2 * time.Hour)
 	}
 
