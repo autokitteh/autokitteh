@@ -16,8 +16,9 @@ const (
 	HeaderAuthorization = "Authorization"
 	HeaderContentType   = "Content-Type"
 
-	ContentTypeForm = "application/x-www-form-urlencoded"
-	ContentTypeJSON = "application/json"
+	ContentTypeForm            = "application/x-www-form-urlencoded"
+	ContentTypeJSON            = "application/json"                // Accept
+	ContentTypeJSONCharsetUTF8 = "application/json; charset=utf-8" // Content-Type
 )
 
 func HTTPPostForm(ctx context.Context, u, auth string, payload url.Values) ([]byte, error) {
@@ -36,7 +37,7 @@ func HTTPPostJSON(ctx context.Context, u, auth string, payload any) ([]byte, err
 			return nil, fmt.Errorf("failed to marshal JSON payload: %w", err)
 		}
 	}
-	return HTTPPost(ctx, u, auth, ContentTypeJSON, body)
+	return HTTPPost(ctx, u, auth, ContentTypeJSONCharsetUTF8, body)
 }
 
 func HTTPPost(ctx context.Context, u, auth, contentType string, body []byte) ([]byte, error) {
@@ -46,7 +47,7 @@ func HTTPPost(ctx context.Context, u, auth, contentType string, body []byte) ([]
 		return nil, fmt.Errorf("failed to construct HTTP request: %w", err)
 	}
 
-	req.Header.Set(HeaderAccept, "application/json")
+	req.Header.Set(HeaderAccept, ContentTypeJSON)
 	if auth != "" {
 		req.Header.Set(HeaderAuthorization, auth)
 	}
