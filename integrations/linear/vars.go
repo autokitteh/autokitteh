@@ -7,6 +7,7 @@ import (
 var (
 	actorVar  = sdktypes.NewSymbol("actor")
 	apiKeyVar = sdktypes.NewSymbol("api_key")
+	orgIDVar  = sdktypes.NewSymbol("org_id")
 )
 
 // privateOAuth contains the user-provided details of a private Linear OAuth 2.0 app.

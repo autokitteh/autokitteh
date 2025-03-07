@@ -25,17 +25,41 @@ import (
 func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	payload := h.checkRequest(w, r)
-	if payload == nil {
+	// Check the request's headers and parse its body.
+	linearEvent := h.checkRequest(w, r)
+	if linearEvent == nil {
 		return
 	}
 
-	// TODO: Transform the received Linear event into an AutoKitteh event.
+	eventType := strings.ToLower(r.Header.Get("Linear-Event"))
+	orgID, ok := linearEvent["organizationId"].(string)
+	if !ok {
+		h.logger.Warn("received Linear event without organization ID",
+			zap.String("event_type", eventType),
+			zap.Any("event", linearEvent),
+		)
+		common.HTTPError(w, http.StatusBadRequest)
+		return
+	}
 
-	// TODO: Retrieve all the relevant connections for this event.
+	// Transform the Linear event into an AutoKitteh event.
+	akEvent, err := common.TransformEvent(h.logger, linearEvent, eventType)
+	if err != nil {
+		common.HTTPError(w, http.StatusInternalServerError)
+		return
+	}
 
-	// TODO: Dispatch the event to all of them, for asynchronous handling.
-	h.logger.Warn("TODO: DISPATCH")
+	// Retrieve all the relevant connections for this event.
+	ctx := r.Context()
+	cids, err := h.vars.FindConnectionIDs(ctx, desc.ID(), orgIDVar, orgID)
+	if err != nil {
+		h.logger.Error("failed to find connection IDs", zap.Error(err))
+		common.HTTPError(w, http.StatusInternalServerError)
+		return
+	}
+
+	// Dispatch the event to all of them, for potential asynchronous handling.
+	common.DispatchEvent(ctx, h.logger, h.dispatch, akEvent, cids)
 }
 
 // checkRequest checks that the HTTP request has the right content
