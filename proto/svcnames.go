@@ -11,6 +11,7 @@ import (
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/integration_provider/v1/integration_providerv1connect"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/integration_registry/v1/integration_registryv1connect"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/integrations/v1/integrationsv1connect"
+	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/notifications/v1/notificationsv1connect"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/oauth/v1/oauthv1connect"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/orgs/v1/orgsv1connect"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/projects/v1/projectsv1connect"
@@ -42,4 +43,5 @@ var ServiceNames = []string{
 	usersv1connect.UsersServiceName,
 	varsv1connect.VarsServiceName,
 	orgsv1connect.OrgsServiceName,
+	notificationsv1connect.NotificationsServiceName,
 }

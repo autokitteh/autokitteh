@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package autokitteh.notifications.v1;
+
+message Notification {
+  string id = 1;
+  string recipient_id = 2; // org or user id.
+  string type = 3;
+  map<string, string> data = 4;
+}
