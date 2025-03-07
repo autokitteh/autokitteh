@@ -55,12 +55,17 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Test the token's usability and get authoritative installation details.
-	// TODO: Reuse "checks.go".
+	// Test the token's usability and get authoritative connection details.
 	ctx := r.Context()
+	org, viewer, err := orgAndViewerInfo(ctx, "Bearer "+data.Token.AccessToken)
+	if err != nil {
+		l.Error("OAuth token test failed", zap.Error(err))
+		c.AbortServerError("OAuth token test failed")
+		return
+	}
 
 	vsid := sdktypes.NewVarScopeID(cid)
-	if err := h.saveConnection(ctx, vsid, data.Token); err != nil {
+	if err := h.saveConnection(ctx, vsid, data.Token, org, viewer); err != nil {
 		l.Error("failed to save OAuth connection details", zap.Error(err))
 		c.AbortServerError("failed to save connection details")
 		return
@@ -78,11 +83,13 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 }
 
 // saveConnection saves OAuth token details as connection variables.
-func (h handler) saveConnection(ctx context.Context, vsid sdktypes.VarScopeID, t *oauth2.Token) error {
+func (h handler) saveConnection(ctx context.Context, vsid sdktypes.VarScopeID, t *oauth2.Token, o *orgInfo, v *viewerInfo) error {
 	if t == nil {
 		return errors.New("OAuth redirection missing token data")
 	}
 
 	vs := sdktypes.EncodeVars(common.EncodeOAuthData(t))
+	vs = vs.Append(sdktypes.EncodeVars(o)...)
+	vs = vs.Append(sdktypes.EncodeVars(v)...)
 	return h.vars.Set(ctx, vs.WithScopeID(vsid)...)
 }

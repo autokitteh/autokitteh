@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 
+	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 
 	"go.autokitteh.dev/autokitteh/integrations"
@@ -53,14 +54,19 @@ func Test(v sdkservices.Vars, o sdkservices.OAuth) sdkintegrations.OptFn {
 		switch common.ReadAuthType(vs) {
 		case "":
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+
 		case integrations.OAuthDefault, integrations.OAuthPrivate:
-			if _, err = GetUserInfo(ctx, oauthToken(ctx, vs, o)); err != nil {
+			desc := common.Descriptor("microsoft", "", "")
+			t := common.FreshOAuthToken(ctx, zap.L(), o, v, desc, vs)
+			if _, err = GetUserInfo(ctx, t); err != nil {
 				return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 			}
+
 		case integrations.DaemonApp:
 			if _, err = DaemonToken(ctx, vs); err != nil {
 				return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 			}
+
 		default:
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil
 		}

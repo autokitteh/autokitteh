@@ -130,10 +130,17 @@ func (h handler) saveAPIKey(r *http.Request, vsid sdktypes.VarScopeID) error {
 		return errors.New("missing API key")
 	}
 
-	// TODO: Test the API key's usability, reuse connection test.
+	// Test the API key's usability and get authoritative connection details.
+	ctx := r.Context()
+	org, viewer, err := orgAndViewerInfo(ctx, apiKey)
+	if err != nil {
+		return errors.New("API key test failed")
+	}
 
-	v := sdktypes.NewVar(apiKeyVar).SetValue(apiKey).SetSecret(true)
-	return h.vars.Set(r.Context(), v.WithScopeID(vsid))
+	vs := sdktypes.NewVars(sdktypes.NewVar(apiKeyVar).SetValue(apiKey).SetSecret(true))
+	vs = vs.Append(sdktypes.EncodeVars(org)...)
+	vs = vs.Append(sdktypes.EncodeVars(viewer)...)
+	return h.vars.Set(r.Context(), vs.WithScopeID(vsid)...)
 }
 
 // startOAuth redirects the user to the AutoKitteh server's
