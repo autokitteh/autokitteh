@@ -40,7 +40,7 @@ func TestEncodeVars(t *testing.T) {
 	assert.True(t, vs.GetByString("E").IsSecret())
 }
 
-func TestDeode(t *testing.T) {
+func TestDecode(t *testing.T) {
 	vs := NewVars(
 		NewVar(NewSymbol("A")).SetValue("1"),
 		NewVar(NewSymbol("b")).SetValue("2"),
