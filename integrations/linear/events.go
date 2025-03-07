@@ -21,7 +21,7 @@ import (
 // handleEvent receives and dispatches asynchronous Linear events.
 // We must respond with 200 OK within 5 seconds, otherwise Linear
 // will retry up to 3 times (with exponential backoff: 1m, 1h, 6h).
-// Based on: https://developers.linear.app/docs/graphql/webhooks
+// (Based on: https://developers.linear.app/docs/graphql/webhooks).
 func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
@@ -35,6 +35,7 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	// TODO: Retrieve all the relevant connections for this event.
 
 	// TODO: Dispatch the event to all of them, for asynchronous handling.
+	h.logger.Warn("TODO: DISPATCH")
 }
 
 // checkRequest checks that the HTTP request has the right content
@@ -110,7 +111,7 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request) map[string
 
 // TODO(INT-284): Support all AutoKitteh connection auth types.
 func (h handler) signingSecret() (string, error) {
-	secret := os.Getenv("LINEAR_SIGNING_SECRET")
+	secret := os.Getenv("LINEAR_WEBHOOK_SECRET")
 	if secret == "" {
 		return "", errors.New("missing Linear signing secret")
 	}
@@ -118,8 +119,8 @@ func (h handler) signingSecret() (string, error) {
 }
 
 // checkSignature compares the event body's hash, using a preconfigured signing
-// secret, to a signature reported in the event's HTTP header, using SHA256 HMAC.
-// Based on: https://developers.linear.app/docs/graphql/webhooks#securing-webhooks
+// secret, to a signature reported in the event's HTTP header, using SHA256 HMAC
+// (based on: https://developers.linear.app/docs/graphql/webhooks#securing-webhooks).
 func checkSignature(secret, want string, body []byte) bool {
 	mac := hmac.New(sha256.New, []byte(secret))
 
@@ -131,8 +132,8 @@ func checkSignature(secret, want string, body []byte) bool {
 	return hmac.Equal([]byte(got), []byte(want))
 }
 
-// checkTimestamp checks that the event is fresh, to prevent replay attacks.
-// Based on: https://developers.linear.app/docs/graphql/webhooks#securing-webhooks
+// checkTimestamp checks that the event is fresh, to prevent replay attacks
+// (based on: https://developers.linear.app/docs/graphql/webhooks#securing-webhooks).
 func checkTimestamp(payload map[string]any) error {
 	wts, ok := payload["webhookTimestamp"]
 	if !ok {

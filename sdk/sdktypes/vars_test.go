@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type MyStruct struct {
+type myStruct struct {
 	A string
 	B string `var:"b"`
 	C string `var:"c,secret"`
@@ -15,7 +15,7 @@ type MyStruct struct {
 }
 
 func TestEncodeVars(t *testing.T) {
-	s := MyStruct{"1", "2", "3", "4", "5"}
+	s := myStruct{"1", "2", "3", "4", "5"}
 	vs := EncodeVars(s)
 
 	assert.False(t, vs.Has(NewSymbol("")))
@@ -38,4 +38,24 @@ func TestEncodeVars(t *testing.T) {
 	assert.False(t, vs.Has(NewSymbol("secret")))
 	assert.True(t, vs.Has(NewSymbol("E")))
 	assert.True(t, vs.GetByString("E").IsSecret())
+}
+
+func TestDeode(t *testing.T) {
+	vs := NewVars(
+		NewVar(NewSymbol("A")).SetValue("1"),
+		NewVar(NewSymbol("b")).SetValue("2"),
+		NewVar(NewSymbol("c")).SetValue("3").SetSecret(true),
+		NewVar(NewSymbol("D")).SetValue("4").SetSecret(true),
+		NewVar(NewSymbol("E")).SetValue("5").SetSecret(true),
+		NewVar(NewSymbol("irrelevant")).SetValue("6"),
+	)
+
+	s := new(myStruct)
+	vs.Decode(s)
+
+	assert.Equal(t, "1", s.A)
+	assert.Equal(t, "2", s.B)
+	assert.Equal(t, "3", s.C)
+	assert.Equal(t, "4", s.D)
+	assert.Equal(t, "5", s.E)
 }
