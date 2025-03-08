@@ -2,6 +2,8 @@ package linear
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/common"
@@ -56,4 +58,29 @@ func test(v sdkservices.Vars) sdkintegrations.OptFn {
 		// TODO(INT-269): return sdktypes.NewStatus(sdktypes.StatusCodeOK, ""), nil
 		return sdktypes.NewStatus(sdktypes.StatusCodeError, "Not implemented"), nil
 	})
+}
+
+// orgAndViewerInfo queries the Linear GraphQL API for important connection's details.
+// A "viewer" is the authenticated user, and an "organization" is the user's workspace
+// (based on: https://developers.linear.app/docs/graphql/working-with-the-graphql-api
+// and: https://studio.apollographql.com/public/Linear-API/variant/current/home).
+func orgAndViewerInfo(ctx context.Context, auth string) (*orgInfo, *viewerInfo, error) {
+	url := "https://api.linear.app/graphql"
+	query := "{ organization { id name urlKey } viewer { id displayName email name } }"
+	resp, err := common.HTTPPostJSON(ctx, url, auth, fmt.Sprintf(`{"query": "%s"}`, query))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	info := new(struct {
+		Data struct {
+			Org    orgInfo    `json:"organization"`
+			Viewer viewerInfo `json:"viewer"`
+		} `json:"data"`
+	})
+	if err := json.Unmarshal(resp, info); err != nil {
+		return nil, nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	return &info.Data.Org, &info.Data.Viewer, nil
 }
