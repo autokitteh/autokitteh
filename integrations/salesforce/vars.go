@@ -3,6 +3,7 @@ package salesforce
 import "go.autokitteh.dev/autokitteh/sdk/sdktypes"
 
 var (
+	clientIDVar    = sdktypes.NewSymbol("private_client_id")
 	instanceURLVar = sdktypes.NewSymbol("instance_url")
 	orgIDVar       = sdktypes.NewSymbol("organization_id")
 )

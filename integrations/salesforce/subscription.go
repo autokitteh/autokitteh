@@ -2,6 +2,7 @@ package salesforce
 
 import (
 	"context"
+	"strings"
 	"sync"
 
 	pb "github.com/developerforce/pub-sub-api/go/proto"
@@ -24,24 +25,24 @@ var (
 
 // subscribe creates a new gRPC client and subscribes to a generic Salesforce Change Data Capture channel.
 // https://developer.salesforce.com/docs/platform/pub-sub-api/references/methods/subscribe-rpc.html
-func (h handler) subscribe(instanceURL, orgID string, cid sdktypes.ConnectionID) {
+func (h handler) subscribe(client_id, orgID string, cid sdktypes.ConnectionID) {
 	// Prevent duplication due to race conditions.
 	mu.Lock()
 	defer mu.Unlock()
 
-	if _, ok := pubSubClients[instanceURL]; ok {
+	if _, ok := pubSubClients[client_id]; ok {
 		return
 	}
 
 	l := h.logger.With(zap.String("connection_id", cid.String()))
 	ctx := context.Background()
-	conn, err := initConn(l, h.bearerToken(ctx, l, cid), instanceURL, orgID)
+	conn, err := initConn(l, h.bearerToken(ctx, l, cid), client_id, orgID)
 	if err != nil {
 		return
 	}
 
 	client := pb.NewPubSubClient(conn)
-	pubSubClients[instanceURL] = &client
+	pubSubClients[client_id] = &client
 
 	// https://developer.salesforce.com/docs/atlas.en-us.platform_events.meta/platform_events/platform_events_objects_change_data_capture.htm
 	go h.eventLoop(ctx, client, "/data/ChangeEvents", cid)
@@ -49,7 +50,7 @@ func (h handler) subscribe(instanceURL, orgID string, cid sdktypes.ConnectionID)
 
 // eventLoop processes incoming messages, and automatically renews the subscription.
 // https://developer.salesforce.com/docs/platform/pub-sub-api/guide/pub-sub-features.html
-func (h handler) eventLoop(ctx context.Context, client pb.PubSubClient, topicName string, cid sdktypes.ConnectionID) {
+func (h handler) eventLoop(ctx context.Context, client pb.PubSubClient, subscribeTopic string, cid sdktypes.ConnectionID) {
 	l := h.logger.With(zap.String("connection_id", cid.String()))
 	const defaultBatchSize = int32(100)
 	numLeftToReceive := 0
@@ -63,7 +64,7 @@ func (h handler) eventLoop(ctx context.Context, client pb.PubSubClient, topicNam
 	// Start receiving messages.
 	for {
 		if numLeftToReceive <= 0 {
-			n, err := renewSubscription(l, stream, defaultBatchSize, topicName)
+			n, err := renewSubscription(l, stream, defaultBatchSize, subscribeTopic)
 			if err != nil {
 				l.Error("failed to renew Salesforce events subscription", zap.Error(err))
 				continue
@@ -98,7 +99,19 @@ func (h handler) eventLoop(ctx context.Context, client pb.PubSubClient, topicNam
 				continue
 			}
 
-			h.dispatchEvent(data, topicName)
+			// Extract changed entity name for the event type.
+			header, ok := data["ChangeEventHeader"].(map[string]any)
+			if !ok {
+				l.Error("ChangeEventHeader is not a map in event data")
+				continue
+			}
+			entityName, ok := header["entityName"].(string)
+			if !ok {
+				l.Error("entityName is not a string in ChangeEventHeader")
+				continue
+			}
+
+			h.dispatchEvent(data, strings.ToLower(entityName))
 		}
 	}
 }
