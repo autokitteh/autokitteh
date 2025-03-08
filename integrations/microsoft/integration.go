@@ -51,6 +51,7 @@ type handler struct {
 }
 
 func newHTTPHandler(l *zap.Logger, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.DispatchFunc) handler {
+	l = l.With(zap.String("integration", desc.UniqueName().String()))
 	return handler{logger: l, oauth: o, vars: v, dispatch: d}
 }
 
