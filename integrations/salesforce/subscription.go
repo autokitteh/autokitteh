@@ -2,6 +2,7 @@ package salesforce
 
 import (
 	"context"
+	"strings"
 	"sync"
 
 	pb "github.com/developerforce/pub-sub-api/go/proto"
@@ -110,7 +111,7 @@ func (h handler) eventLoop(ctx context.Context, client pb.PubSubClient, subscrib
 				continue
 			}
 
-			h.dispatchEvent(data, entityName)
+			h.dispatchEvent(data, strings.ToLower(entityName))
 		}
 	}
 }
