@@ -40,29 +40,30 @@ func Start(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, o sdkservices.OAut
 // handler implements several HTTP webhooks to save authentication data, as
 // well as receive and dispatch third-party asynchronous event notifications.
 type handler struct {
-	logger        *zap.Logger
-	vars          sdkservices.Vars
-	oauth         sdkservices.OAuth
-	dispatch      sdkservices.DispatchFunc
-	integrationID sdktypes.IntegrationID
+	logger   *zap.Logger
+	vars     sdkservices.Vars
+	oauth    sdkservices.OAuth
+	dispatch sdkservices.DispatchFunc
 }
 
 func newHTTPHandler(l *zap.Logger, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.DispatchFunc) handler {
-	iid := sdktypes.NewIntegrationIDFromName(desc.UniqueName().String())
-	return handler{logger: l, oauth: o, vars: v, dispatch: d, integrationID: iid}
+	l = l.With(zap.String("integration", desc.UniqueName().String()))
+	return handler{logger: l, oauth: o, vars: v, dispatch: d}
 }
 
 func (h handler) reopenExistingPubSubConnections(ctx context.Context) {
-	cids, err := h.vars.FindConnectionIDs(ctx, h.integrationID, instanceURLVar, "")
+	cids, err := h.vars.FindConnectionIDs(ctx, desc.ID(), instanceURLVar, "")
 	if err != nil {
-		h.logger.Error("failed to list Salesforce connection IDs", zap.Error(err))
+		h.logger.Error("failed to list connection IDs", zap.Error(err))
 		return
 	}
 
 	for _, cid := range cids {
 		data, err := h.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
 		if err != nil {
-			h.logger.Error("can't restart Salesforce PubSub connection", zap.String("connection_id", cid.String()), zap.Error(err))
+			h.logger.Error("can't restart Salesforce PubSub connection",
+				zap.String("connection_id", cid.String()), zap.Error(err),
+			)
 			continue
 		}
 		instanceURL := data.GetValue(instanceURLVar)
