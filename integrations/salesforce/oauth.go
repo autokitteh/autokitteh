@@ -59,6 +59,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		c.AbortServerError("invalid OAuth data")
 		return
 	}
+
 	// Test the token's usability and get authoritative installation details.
 	ctx := r.Context()
 	accessToken := data.Token.AccessToken
@@ -71,7 +72,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	}
 	orgID := userInfo["organization_id"].(string)
 
-	// Get the access token expiration time.
+	// Set the access token expiration time.
 	if err := h.accessTokenExpiration(ctx, instanceURL, data.Token, cid); err != nil {
 		l.Error("failed to get access token expiration", zap.Error(err))
 		c.AbortServerError("failed to get access token expiration")
@@ -85,6 +86,14 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	vs, err := h.vars.Get(ctx, vsid, clientIDVar)
+	if err != nil {
+		l.Error("failed to read connection vars", zap.Error(err))
+		c.AbortServerError("failed to read connection vars")
+		return
+	}
+	h.subscribe(vs.GetValue(clientIDVar), orgID, cid)
+
 	// Redirect the user back to the UI.
 	urlPath, err := c.FinalURL()
 	if err != nil {
@@ -92,9 +101,6 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		c.AbortServerError("bad redirect URL")
 		return
 	}
-
-	h.subscribe(instanceURL, orgID, cid)
-
 	http.Redirect(w, r, urlPath, http.StatusFound)
 }
 

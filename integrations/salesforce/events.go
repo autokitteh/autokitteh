@@ -10,8 +10,8 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func (h handler) dispatchEvent(payload map[string]any, topic string) {
-	akEvent, err := h.transformEvent(payload, topic)
+func (h handler) dispatchEvent(payload map[string]any, eventType string) {
+	akEvent, err := h.transformEvent(payload, eventType)
 	if err != nil {
 		h.logger.Error("failed to transform event", zap.Error(err))
 		return
