@@ -11,6 +11,8 @@ import (
 	"google.golang.org/grpc/codes"
 	gstatus "google.golang.org/grpc/status"
 
+	"go.autokitteh.dev/autokitteh/integrations/common"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -34,9 +36,18 @@ func (h handler) subscribe(client_id, orgID string, cid sdktypes.ConnectionID) {
 		return
 	}
 
+	ctx := authcontext.SetAuthnSystemUser(context.Background())
 	l := h.logger.With(zap.String("connection_id", cid.String()))
-	ctx := context.Background()
-	conn, err := initConn(l, h.bearerToken(ctx, l, cid), client_id, orgID)
+	vs, err := h.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+	if err != nil {
+		l.Error("failed to read connection vars",
+			zap.String("connection_id", cid.String()), zap.Error(err),
+		)
+		return
+	}
+
+	t := common.FreshOAuthToken(ctx, l, h.oauth, h.vars, desc, vs)
+	conn, err := initConn(l, "Bearer "+t.AccessToken, client_id, orgID)
 	if err != nil {
 		return
 	}

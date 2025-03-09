@@ -1,6 +1,7 @@
 package confluence
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -53,7 +55,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Test the OAuth token's usability and get authoritative installation details.
-	res, err := accessibleResources(l, url, oauthToken.AccessToken)
+	res, err := accessibleResources(r.Context(), l, url, oauthToken.AccessToken)
 	if err != nil {
 		c.AbortBadRequest(err.Error())
 		return
@@ -93,30 +95,16 @@ type resource struct {
 // an OAuth token, which is necessary for API calls and webhook events. Based on:
 // https://developer.atlassian.com/cloud/confluence/oauth-2-3lo-apps/#3--make-calls-to-the-api-using-the-access-token
 // https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/#3--make-calls-to-the-api-using-the-access-token
-func accessibleResources(l *zap.Logger, baseURL string, token string) ([]resource, error) {
+func accessibleResources(ctx context.Context, l *zap.Logger, baseURL string, token string) ([]resource, error) {
 	u := baseURL + "/oauth/token/accessible-resources"
-	req, err := http.NewRequest(http.MethodGet, u, nil)
+	resp, err := common.HTTPGet(ctx, u, "Bearer "+token)
 	if err != nil {
-		logWarnIfNotNil(l, "Failed to construct HTTP request for OAuth token test", zap.Error(err))
+		logWarnIfNotNil(l, "failed to request accessible resources for OAuth token", zap.Error(err))
 		return nil, err
-	}
-
-	req.Header.Set("Authorization", "Bearer "+token)
-
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		logWarnIfNotNil(l, "Failed to request accessible resources for OAuth token", zap.Error(err))
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		logWarnIfNotNil(l, "Unexpected response on accessible resources", zap.Int("status", resp.StatusCode))
-		return nil, fmt.Errorf("accessible resources: unexpected status code %d", resp.StatusCode)
 	}
 
 	var res []resource
-	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
+	if err := json.Unmarshal(resp, &res); err != nil {
 		return nil, err
 	}
 

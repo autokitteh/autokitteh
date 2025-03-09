@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -73,26 +72,21 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	orgID := userInfo["organization_id"].(string)
 
 	// Set the access token expiration time.
-	if err := h.accessTokenExpiration(ctx, instanceURL, data.Token, cid); err != nil {
-		l.Error("failed to get access token expiration", zap.Error(err))
-		c.AbortServerError("failed to get access token expiration")
+	vsid := sdktypes.NewVarScopeID(cid)
+	clientID, err := h.accessTokenExpiration(ctx, instanceURL, data.Token, vsid)
+	if err != nil {
+		l.Error("failed to get OAuth access token expiration", zap.Error(err))
+		c.AbortServerError("failed to get OAuth access token expiration")
 		return
 	}
 
-	vsid := sdktypes.NewVarScopeID(cid)
 	if err := h.saveConnection(ctx, vsid, data.Token, data.Extra, orgID); err != nil {
 		l.Error("failed to save OAuth connection details", zap.Error(err))
 		c.AbortServerError("failed to save connection details")
 		return
 	}
 
-	vs, err := h.vars.Get(ctx, vsid, clientIDVar)
-	if err != nil {
-		l.Error("failed to read connection vars", zap.Error(err))
-		c.AbortServerError("failed to read connection vars")
-		return
-	}
-	h.subscribe(vs.GetValue(clientIDVar), orgID, cid)
+	h.subscribe(clientID, orgID, cid)
 
 	// Redirect the user back to the UI.
 	urlPath, err := c.FinalURL()
@@ -119,49 +113,41 @@ func (h handler) saveConnection(ctx context.Context, vsid sdktypes.VarScopeID, t
 	return h.vars.Set(ctx, vs.WithScopeID(vsid)...)
 }
 
-func (h handler) accessTokenExpiration(ctx context.Context, instanceURL string, t *oauth2.Token, cid sdktypes.ConnectionID) error {
-	vs, errStatus, err := common.ReadVarsWithStatus(ctx, h.vars, cid)
-	if errStatus.IsValid() || err != nil {
-		return err
+// accessTokenExpiration sets the expiration timestamp of the given access token.
+// Salesforce access tokens are time-limited, but they don't have an expiry timestamp
+// so we need to add it on our own. This function also returns the connection's client ID.
+// Based on: https://help.salesforce.com/s/articleView?id=xcloud.remoteaccess_oidc_token_introspection_endpoint.htm
+func (h handler) accessTokenExpiration(ctx context.Context, instanceURL string, t *oauth2.Token, vsid sdktypes.VarScopeID) (string, error) {
+	vs, err := h.vars.Get(ctx, vsid, clientIDVar, clientSecretVar)
+	if err != nil {
+		return "", err
 	}
 
-	formData := url.Values{
+	u, err := url.JoinPath(instanceURL, "/services/oauth2/introspect")
+	if err != nil {
+		return "", err
+	}
+
+	clientID := vs.GetValue(clientIDVar)
+	form := url.Values{
 		"token":           {t.AccessToken},
 		"token_type_hint": {"access_token"},
-		"client_id":       {vs.GetValueByString("private_client_id")},
-		"client_secret":   {vs.GetValueByString("private_client_secret")},
+		"client_id":       {clientID},
+		"client_secret":   {vs.GetValue(clientSecretVar)},
 	}
 
-	u, err := url.JoinPath(instanceURL, "services/oauth2/introspect")
+	resp, err := common.HTTPPostForm(ctx, u, "", form)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u, strings.NewReader(formData.Encode()))
-	if err != nil {
-		return err
+	info := new(struct {
+		Exp float64 `json:"exp"`
+	})
+	if err := json.Unmarshal(resp, info); err != nil {
+		return "", err
 	}
 
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	var tokenInfo map[string]any
-	if err := json.NewDecoder(resp.Body).Decode(&tokenInfo); err != nil {
-		return errors.New("failed to parse token info")
-	}
-
-	// Extract the expiration timestamp.
-	expFloat, ok := tokenInfo["exp"].(float64)
-	if !ok {
-		return errors.New("missing or invalid expiration time in response")
-	}
-	t.Expiry = time.Unix(int64(expFloat), 0)
-
-	return nil
+	t.Expiry = time.Unix(int64(info.Exp), 0)
+	return clientID, nil
 }

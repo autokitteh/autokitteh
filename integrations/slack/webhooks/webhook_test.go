@@ -13,7 +13,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/integrations/slack/api"
+	"go.autokitteh.dev/autokitteh/integrations/common"
 )
 
 func TestWebhookCheckRequest(t *testing.T) {
@@ -28,8 +28,8 @@ func TestWebhookCheckRequest(t *testing.T) {
 	}{
 		{
 			name:            "wrong_Content-Type",
-			gotContentType:  api.ContentTypeForm,
-			wantContentType: api.ContentTypeJSON,
+			gotContentType:  common.ContentTypeForm,
+			wantContentType: common.ContentTypeJSON,
 			timestampHeader: strconv.FormatInt(time.Now().Unix(), 10),
 			signatureHeader: "v0=test",
 			r:               nil,
@@ -37,8 +37,8 @@ func TestWebhookCheckRequest(t *testing.T) {
 		},
 		{
 			name:            "missing_X-Slack-Request-Timestamp",
-			gotContentType:  api.ContentTypeJSON,
-			wantContentType: api.ContentTypeJSON,
+			gotContentType:  common.ContentTypeJSON,
+			wantContentType: common.ContentTypeJSON,
 			timestampHeader: "",
 			signatureHeader: "v0=test",
 			r:               nil,
@@ -46,8 +46,8 @@ func TestWebhookCheckRequest(t *testing.T) {
 		},
 		{
 			name:            "non-numeric_X-Slack-Request-Timestamp",
-			gotContentType:  api.ContentTypeForm,
-			wantContentType: api.ContentTypeForm,
+			gotContentType:  common.ContentTypeForm,
+			wantContentType: common.ContentTypeForm,
 			timestampHeader: "abc",
 			signatureHeader: "v0=test",
 			r:               nil,
@@ -55,8 +55,8 @@ func TestWebhookCheckRequest(t *testing.T) {
 		},
 		{
 			name:            "X-Slack-Request-Timestamp_in_the_past",
-			gotContentType:  api.ContentTypeForm,
-			wantContentType: api.ContentTypeForm,
+			gotContentType:  common.ContentTypeForm,
+			wantContentType: common.ContentTypeForm,
 			timestampHeader: strconv.FormatInt(time.Now().Add(-time.Hour).Unix(), 10),
 			signatureHeader: "v0=test",
 			r:               nil,
@@ -64,8 +64,8 @@ func TestWebhookCheckRequest(t *testing.T) {
 		},
 		{
 			name:            "X-Slack-Request-Timestamp_in_the_future",
-			gotContentType:  api.ContentTypeForm,
-			wantContentType: api.ContentTypeForm,
+			gotContentType:  common.ContentTypeForm,
+			wantContentType: common.ContentTypeForm,
 			timestampHeader: strconv.FormatInt(time.Now().Add(time.Hour).Unix(), 10),
 			signatureHeader: "v0=test",
 			r:               nil,
@@ -73,8 +73,8 @@ func TestWebhookCheckRequest(t *testing.T) {
 		},
 		{
 			name:            "missing_X-Slack-Signature",
-			gotContentType:  api.ContentTypeForm,
-			wantContentType: api.ContentTypeForm,
+			gotContentType:  common.ContentTypeForm,
+			wantContentType: common.ContentTypeForm,
 			timestampHeader: strconv.FormatInt(time.Now().Unix(), 10),
 			signatureHeader: "",
 			r:               nil,
@@ -82,8 +82,8 @@ func TestWebhookCheckRequest(t *testing.T) {
 		},
 		{
 			name:            "body_reader_error",
-			gotContentType:  api.ContentTypeForm,
-			wantContentType: api.ContentTypeForm,
+			gotContentType:  common.ContentTypeForm,
+			wantContentType: common.ContentTypeForm,
 			timestampHeader: strconv.FormatInt(time.Now().Unix(), 10),
 			signatureHeader: "v0=test",
 			r:               iotest.ErrReader(errors.New("test error")),
@@ -94,7 +94,7 @@ func TestWebhookCheckRequest(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			w := httptest.NewRecorder()
 			r := httptest.NewRequest(http.MethodPost, "/test", tt.r)
-			r.Header.Add(api.HeaderContentType, tt.gotContentType)
+			r.Header.Add(common.HeaderContentType, tt.gotContentType)
 			r.Header.Add(headerSlackTimestamp, tt.timestampHeader)
 			r.Header.Add(headerSlackSignature, tt.signatureHeader)
 

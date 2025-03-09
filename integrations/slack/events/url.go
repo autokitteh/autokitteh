@@ -7,7 +7,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/integrations/slack/api"
+	"go.autokitteh.dev/autokitteh/integrations/common"
 )
 
 type urlVerificationContainer struct {
@@ -28,7 +28,7 @@ func URLVerificationHandler(l *zap.Logger, w http.ResponseWriter, body []byte, _
 	if w != nil {
 		// WebSockets never use this event by definition, so we
 		// don't have to check that w != nil, but it's still smart.
-		w.Header().Add(api.HeaderContentType, api.ContentTypeJSONCharsetUTF8)
+		w.Header().Add(common.HeaderContentType, common.ContentTypeJSONCharsetUTF8)
 		fmt.Fprintf(w, `{"challenge":"%s"}`, j.Challenge)
 	}
 
