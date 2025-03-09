@@ -73,7 +73,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	// Tests Auth0's Management API.
 	url := fmt.Sprintf("https://%s/api/v2/roles", d)
 	auth := "Bearer " + oauthToken.AccessToken
-	if _, err := common.HTTPGetEmpty(r.Context(), url, auth); err != nil {
+	if _, err := common.HTTPGet(r.Context(), url, auth); err != nil {
 		l.Warn("failed to test Auth0 OAuth token", zap.Error(err))
 		c.AbortServerError("failed to get the OAuth token's roles")
 		return

@@ -81,7 +81,7 @@ func connTest(i *integration) sdkintegrations.OptFn {
 
 		url := "https://app.asana.com/api/1.0/users/me"
 		auth := "Bearer " + vs.GetValue(patVar)
-		if _, err := common.HTTPGetEmpty(ctx, url, auth); err != nil {
+		if _, err := common.HTTPGet(ctx, url, auth); err != nil {
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 		}
 

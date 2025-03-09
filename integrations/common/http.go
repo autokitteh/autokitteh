@@ -21,11 +21,11 @@ const (
 	ContentTypeJSON            = "application/json"                // Accept
 	ContentTypeJSONCharsetUTF8 = "application/json; charset=utf-8" // Content-Type
 
-	timeout = 3 * time.Second
-	maxSize = 1 << 23 // 2^23 bytes = 8 MiB
+	HTTPTimeout = 3 * time.Second
+	HTTPMaxSize = 1 << 23 // 2^23 bytes = 8 MiB
 )
 
-func HTTPGetEmpty(ctx context.Context, u, auth string) ([]byte, error) {
+func HTTPGet(ctx context.Context, u, auth string) ([]byte, error) {
 	return httpRequest(ctx, http.MethodGet, u, auth, "", nil)
 }
 
@@ -66,8 +66,10 @@ func httpPost(ctx context.Context, u, auth, contentType string, body []byte) ([]
 	return httpRequest(ctx, http.MethodPost, u, auth, contentType, body)
 }
 
+// httpRequest sends an HTTP GET or POST request and returns the response's body.
+// This function accepts only JSON responses, even though it doesn't parse them.
 func httpRequest(ctx context.Context, method, u, auth, contentType string, body []byte) ([]byte, error) {
-	ctx, cancel := context.WithTimeout(ctx, timeout)
+	ctx, cancel := context.WithTimeout(ctx, HTTPTimeout)
 	defer cancel()
 
 	// Construct the request.
@@ -92,7 +94,7 @@ func httpRequest(ctx context.Context, method, u, auth, contentType string, body 
 	defer resp.Body.Close()
 
 	// Read the response's body.
-	payload, err := io.ReadAll(io.LimitReader(resp.Body, maxSize))
+	payload, err := io.ReadAll(io.LimitReader(resp.Body, HTTPMaxSize))
 	if err != nil {
 		return nil, fmt.Errorf("failed to read HTTP response's body: %w", err)
 	}

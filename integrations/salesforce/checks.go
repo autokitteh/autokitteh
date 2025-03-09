@@ -65,7 +65,7 @@ func getUserInfo(ctx context.Context, instanceURL, accessToken string) (map[stri
 		return nil, err
 	}
 
-	resp, err := common.HTTPGetEmpty(ctx, u, "Bearer "+accessToken)
+	resp, err := common.HTTPGet(ctx, u, "Bearer "+accessToken)
 	if err != nil {
 		return nil, err
 	}

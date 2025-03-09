@@ -143,7 +143,7 @@ type resource struct {
 // https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/#3--make-calls-to-the-api-using-the-access-token
 func accessibleResources(ctx context.Context, l *zap.Logger, baseURL string, token string) ([]resource, error) {
 	u := baseURL + "/oauth/token/accessible-resources"
-	resp, err := common.HTTPGetEmpty(ctx, u, "Bearer "+token)
+	resp, err := common.HTTPGet(ctx, u, "Bearer "+token)
 	if err != nil {
 		logWarnIfNotNil(l, "failed to request accessible resources for OAuth token", zap.Error(err))
 		return nil, err

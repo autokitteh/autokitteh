@@ -24,7 +24,7 @@ func get(ctx context.Context, botToken, slackMethod string, jsonResp any) error 
 		botToken = "Bearer " + botToken
 	}
 
-	resp, err := common.HTTPGetEmpty(ctx, u, botToken)
+	resp, err := common.HTTPGet(ctx, u, botToken)
 	if err != nil {
 		return err
 	}

@@ -81,7 +81,7 @@ func connTest(i *integration) sdkintegrations.OptFn {
 		// https://auth0.com/docs/api/management/v2/stats/get-active-users
 		url := fmt.Sprintf("https://%s/api/v2/stats/active-users", domain)
 
-		if _, err := common.HTTPGetEmpty(ctx, url, "Bearer "+token); err != nil {
+		if _, err := common.HTTPGet(ctx, url, "Bearer "+token); err != nil {
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 		}
 

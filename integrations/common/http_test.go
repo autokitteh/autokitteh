@@ -33,7 +33,7 @@ func TestHTTPGetEmpty(t *testing.T) {
 
 	// Call the function under test.
 	ctx := context.TODO() // TODO(INT-312): Use "t.Context()".
-	resp, err := HTTPGetEmpty(ctx, server.URL, "")
+	resp, err := HTTPGet(ctx, server.URL, "")
 	assert.NilError(t, err)
 
 	// Check the response.

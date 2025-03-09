@@ -77,7 +77,7 @@ func Test(v sdkservices.Vars, o sdkservices.OAuth) sdkintegrations.OptFn {
 // Graph (based on: https://learn.microsoft.com/en-us/graph/api/user-get).
 func GetUserInfo(ctx context.Context, t *oauth2.Token) (*UserInfo, error) {
 	u := "https://graph.microsoft.com/v1.0/me"
-	resp, err := common.HTTPGetEmpty(ctx, u, "Bearer "+t.AccessToken)
+	resp, err := common.HTTPGet(ctx, u, "Bearer "+t.AccessToken)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func GetUserInfo(ctx context.Context, t *oauth2.Token) (*UserInfo, error) {
 // Graph (based on: https://learn.microsoft.com/en-us/graph/api/organization-get).
 func GetOrgInfo(ctx context.Context, t *oauth2.Token) (*OrgInfo, error) {
 	u := "https://graph.microsoft.com/v1.0/organization"
-	resp, err := common.HTTPGetEmpty(ctx, u, "Bearer "+t.AccessToken)
+	resp, err := common.HTTPGet(ctx, u, "Bearer "+t.AccessToken)
 	if err != nil {
 		return nil, err
 	}

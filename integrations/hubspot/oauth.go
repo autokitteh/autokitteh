@@ -52,7 +52,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Test the OAuth token's usability and get authoritative connection details.
 	url := "https://api.hubapi.com/crm/v3/owners/"
 	auth := "Bearer " + oauthToken.AccessToken
-	if _, err := common.HTTPGetEmpty(r.Context(), url, auth); err != nil {
+	if _, err := common.HTTPGet(r.Context(), url, auth); err != nil {
 		l.Warn("failed to test HubSpot OAuth token", zap.Error(err))
 		c.AbortServerError("failed to test OAuth token")
 		return
