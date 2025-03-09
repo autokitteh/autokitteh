@@ -25,8 +25,20 @@ const (
 	HTTPMaxSize = 1 << 23 // 2^23 bytes = 8 MiB
 )
 
+func HTTPDeleteJSON(ctx context.Context, u, auth string, payload any) ([]byte, error) {
+	if s, ok := payload.(string); ok {
+		return httpRequest(ctx, http.MethodDelete, u, auth, ContentTypeJSONCharsetUTF8, []byte(s))
+	}
+
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal JSON payload: %w", err)
+	}
+	return httpRequest(ctx, http.MethodDelete, u, auth, ContentTypeJSONCharsetUTF8, body)
+}
+
 func HTTPGet(ctx context.Context, u, auth string) ([]byte, error) {
-	return httpRequest(ctx, http.MethodGet, u, auth, "", nil)
+	return httpGet(ctx, u, auth, "", nil)
 }
 
 func HTTPGetJSON(ctx context.Context, u, auth string, payload any) ([]byte, error) {
@@ -56,6 +68,18 @@ func HTTPPostJSON(ctx context.Context, u, auth string, payload any) ([]byte, err
 		return nil, fmt.Errorf("failed to marshal JSON payload: %w", err)
 	}
 	return httpPost(ctx, u, auth, ContentTypeJSONCharsetUTF8, body)
+}
+
+func HTTPPutJSON(ctx context.Context, u, auth string, payload any) ([]byte, error) {
+	if s, ok := payload.(string); ok {
+		return httpRequest(ctx, http.MethodPut, u, auth, ContentTypeJSONCharsetUTF8, []byte(s))
+	}
+
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal JSON payload: %w", err)
+	}
+	return httpRequest(ctx, http.MethodPut, u, auth, ContentTypeJSONCharsetUTF8, body)
 }
 
 func httpGet(ctx context.Context, u, auth, contentType string, body []byte) ([]byte, error) {

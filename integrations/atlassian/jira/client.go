@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"time"
 
 	"go.uber.org/zap"
 
@@ -132,7 +131,7 @@ func oauthConnTest(vs sdktypes.Vars) error {
 // It sends a request to the API to confirm credentials and access.
 // https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-myself/#api-group-myself
 func apiTokenConnTest(ctx context.Context, l *zap.Logger, vs sdktypes.Vars) error {
-	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, common.HTTPTimeout)
 	defer cancel()
 
 	baseURL := vs.Get(baseURL).Value()

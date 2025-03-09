@@ -11,7 +11,7 @@ import (
 	"gotest.tools/v3/assert"
 )
 
-func TestHTTPGetEmpty(t *testing.T) {
+func TestHTTPGet(t *testing.T) {
 	payload := `{"foo": "bar"}`
 
 	// Create a fake HTTP server.

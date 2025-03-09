@@ -8,7 +8,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
-	"go.autokitteh.dev/autokitteh/integrations/slack/api"
 	"go.autokitteh.dev/autokitteh/integrations/slack/events"
 )
 
@@ -59,7 +58,7 @@ func (h handler) HandleBotEvent(w http.ResponseWriter, r *http.Request) {
 	l := h.logger.With(zap.String("url_path", BotEventPath))
 
 	// Validate and parse the inbound request.
-	body := h.checkRequest(w, r, l, api.ContentTypeJSON)
+	body := h.checkRequest(w, r, l, common.ContentTypeJSON)
 	if body == nil {
 		return
 	}
