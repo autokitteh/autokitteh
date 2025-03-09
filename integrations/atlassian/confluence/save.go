@@ -9,12 +9,9 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-)
-
-const (
-	contentTypeForm = "application/x-www-form-urlencoded"
 )
 
 // See [webhookEvents] in "webhooks.go" for more details.
@@ -35,8 +32,8 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, desc)
 
 	// Check "Content-Type" header.
-	contentType := r.Header.Get(headerContentType)
-	if !strings.HasPrefix(contentType, contentTypeForm) {
+	contentType := r.Header.Get(common.HeaderContentType)
+	if !strings.HasPrefix(contentType, common.ContentTypeForm) {
 		c.AbortBadRequest("unexpected content type")
 		return
 	}

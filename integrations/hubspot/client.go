@@ -2,7 +2,6 @@ package hubspot
 
 import (
 	"context"
-	"net/http"
 
 	"go.uber.org/zap"
 
@@ -75,20 +74,9 @@ func connTest(i *integration) sdkintegrations.OptFn {
 
 		token := vs.GetValueByString("oauth_RefreshToken")
 		url := "https://api.hubapi.com/oauth/v1/refresh-tokens/" + token
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-		if err != nil {
-			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
-		}
 
-		client := &http.Client{}
-		resp, err := client.Do(req)
-		if err != nil {
+		if _, err := common.HTTPGetEmpty(ctx, url, ""); err != nil {
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad OAuth refresh token"), nil
 		}
 
 		return sdktypes.NewStatus(sdktypes.StatusCodeOK, "OK"), nil

@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"time"
 )
 
 const (
@@ -19,30 +20,58 @@ const (
 	ContentTypeForm            = "application/x-www-form-urlencoded"
 	ContentTypeJSON            = "application/json"                // Accept
 	ContentTypeJSONCharsetUTF8 = "application/json; charset=utf-8" // Content-Type
+
+	timeout = 3 * time.Second
+	maxSize = 1 << 23 // 2^23 bytes = 8 MiB
 )
+
+func HTTPGetEmpty(ctx context.Context, u, auth string) ([]byte, error) {
+	return httpRequest(ctx, http.MethodGet, u, auth, "", nil)
+}
+
+func HTTPGetJSON(ctx context.Context, u, auth string, payload any) ([]byte, error) {
+	if s, ok := payload.(string); ok {
+		return httpGet(ctx, u, auth, ContentTypeJSONCharsetUTF8, []byte(s))
+	}
+
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal JSON payload: %w", err)
+	}
+	return httpGet(ctx, u, auth, ContentTypeJSONCharsetUTF8, body)
+}
 
 func HTTPPostForm(ctx context.Context, u, auth string, payload url.Values) ([]byte, error) {
 	body := []byte(payload.Encode())
-	return HTTPPost(ctx, u, auth, ContentTypeForm, body)
+	return httpPost(ctx, u, auth, ContentTypeForm, body)
 }
 
 func HTTPPostJSON(ctx context.Context, u, auth string, payload any) ([]byte, error) {
-	var body []byte
 	if s, ok := payload.(string); ok {
-		body = []byte(s)
-	} else {
-		var err error
-		body, err = json.Marshal(payload)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal JSON payload: %w", err)
-		}
+		return httpPost(ctx, u, auth, ContentTypeJSONCharsetUTF8, []byte(s))
 	}
-	return HTTPPost(ctx, u, auth, ContentTypeJSONCharsetUTF8, body)
+
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal JSON payload: %w", err)
+	}
+	return httpPost(ctx, u, auth, ContentTypeJSONCharsetUTF8, body)
 }
 
-func HTTPPost(ctx context.Context, u, auth, contentType string, body []byte) ([]byte, error) {
+func httpGet(ctx context.Context, u, auth, contentType string, body []byte) ([]byte, error) {
+	return httpRequest(ctx, http.MethodGet, u, auth, contentType, body)
+}
+
+func httpPost(ctx context.Context, u, auth, contentType string, body []byte) ([]byte, error) {
+	return httpRequest(ctx, http.MethodPost, u, auth, contentType, body)
+}
+
+func httpRequest(ctx context.Context, method, u, auth, contentType string, body []byte) ([]byte, error) {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	// Construct the request.
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u, bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, method, u, bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct HTTP request: %w", err)
 	}
@@ -62,8 +91,8 @@ func HTTPPost(ctx context.Context, u, auth, contentType string, body []byte) ([]
 	}
 	defer resp.Body.Close()
 
-	// Read the response's body, up to 8 MiB.
-	payload, err := io.ReadAll(io.LimitReader(resp.Body, 1<<23))
+	// Read the response's body.
+	payload, err := io.ReadAll(io.LimitReader(resp.Body, maxSize))
 	if err != nil {
 		return nil, fmt.Errorf("failed to read HTTP response's body: %w", err)
 	}

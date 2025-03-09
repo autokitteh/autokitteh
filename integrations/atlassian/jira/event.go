@@ -1,7 +1,6 @@
 package jira
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,7 +10,6 @@ import (
 	"path"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"go.uber.org/zap"
@@ -23,15 +21,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-const (
-	headerContentType   = "Content-Type"
-	headerAuthorization = "Authorization"
-	contentTypeJSON     = "application/json"
-)
-
-// Default HTTP client with a timeout for short-lived HTTP requests.
-var httpClient = http.Client{Timeout: 3 * time.Second}
-
 // handler is an autokitteh webhook which implements [http.Handler]
 // to receive and dispatch asynchronous event notifications.
 type handler struct {
@@ -42,6 +31,7 @@ type handler struct {
 }
 
 func NewHTTPHandler(l *zap.Logger, o sdkservices.OAuth, v sdkservices.Vars, d sdkservices.DispatchFunc) handler {
+	l = l.With(zap.String("integration", desc.UniqueName().String()))
 	return handler{logger: l, oauth: o, vars: v, dispatch: d}
 }
 
@@ -55,7 +45,7 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	l := h.logger.With(zap.String("urlPath", r.URL.Path))
 
 	// Verify the JWT in the event's "Authorization" header.
-	token := r.Header.Get(headerAuthorization)
+	token := r.Header.Get(common.HeaderAuthorization)
 	if !verifyJWT(l, strings.TrimPrefix(token, "Bearer ")) {
 		l.Warn("Incoming Jira event with bad Authorization header")
 		common.HTTPError(w, http.StatusUnauthorized)
@@ -63,9 +53,9 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check the "Content-Type" header.
-	contentType := r.Header.Get(headerContentType)
-	if !strings.HasPrefix(contentType, contentTypeJSON) {
-		l.Warn("Incoming Jira event with bad header", zap.String(headerContentType, contentType))
+	contentType := r.Header.Get(common.HeaderContentType)
+	if !strings.HasPrefix(contentType, common.ContentTypeJSON) {
+		l.Warn("Incoming Jira event with bad header", zap.String(common.HeaderContentType, contentType))
 		common.HTTPError(w, http.StatusBadRequest)
 		return
 	}
@@ -124,8 +114,7 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
-		// Dispatch the event to all of them, for asynchronous handling.
-		h.dispatchAsyncEventsToConnections(ctx, cids, akEvent)
+		common.DispatchEvent(ctx, l, h.dispatch, akEvent, cids)
 	}
 
 	// Returning immediately without an error = acknowledgement of receipt.
@@ -224,20 +213,4 @@ func constructEvent(l *zap.Logger, jiraEvent map[string]any) (sdktypes.Event, er
 	}
 
 	return akEvent, nil
-}
-
-func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, cids []sdktypes.ConnectionID, e sdktypes.Event) {
-	l := extrazap.ExtractLoggerFromContext(ctx)
-	for _, cid := range cids {
-		eid, err := h.dispatch(ctx, e.WithConnectionDestinationID(cid), nil)
-		l := l.With(
-			zap.String("connectionID", cid.String()),
-			zap.String("eventID", eid.String()),
-		)
-		if err != nil {
-			l.Error("Event dispatch failed", zap.Error(err))
-			return
-		}
-		l.Debug("Event dispatched")
-	}
 }

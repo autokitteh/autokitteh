@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"time"
 
 	"go.uber.org/zap"
 
@@ -17,15 +16,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
-
-const (
-	headerContentType   = "Content-Type"
-	headerAuthorization = "Authorization"
-	contentTypeJSON     = "application/json"
-)
-
-// Default HTTP client with a timeout for short-lived HTTP requests.
-var httpClient = http.Client{Timeout: 3 * time.Second}
 
 // handler is an autokitteh webhook which implements [http.Handler]
 // to receive and dispatch asynchronous event notifications.
@@ -37,6 +27,7 @@ type handler struct {
 }
 
 func NewHTTPHandler(l *zap.Logger, o sdkservices.OAuth, v sdkservices.Vars, d sdkservices.DispatchFunc) handler {
+	l = l.With(zap.String("integration", desc.UniqueName().String()))
 	return handler{logger: l, oauth: o, vars: v, dispatch: d}
 }
 
@@ -55,9 +46,9 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	// (Confluence doesn't recognize secrets when creating webhooks).
 
 	// Check the "Content-Type" header.
-	contentType := r.Header.Get(headerContentType)
-	if !strings.HasPrefix(contentType, contentTypeJSON) {
-		l.Warn("Incoming Atlassian event with bad header", zap.String(headerContentType, contentType))
+	contentType := r.Header.Get(common.HeaderContentType)
+	if !strings.HasPrefix(contentType, common.ContentTypeJSON) {
+		l.Warn("Incoming Atlassian event with bad header", zap.String(common.HeaderContentType, contentType))
 		common.HTTPError(w, http.StatusBadRequest)
 		return
 	}

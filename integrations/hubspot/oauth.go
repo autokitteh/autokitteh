@@ -6,6 +6,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -48,28 +49,12 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Test the OAuth token's usability and get authoritative installation details.
-	req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, "https://api.hubapi.com/crm/v3/owners/", nil)
-	if err != nil {
-		l.Error("Failed to create HTTP request", zap.Error(err))
-		c.AbortServerError("request creation error")
-		return
-	}
-
-	req.Header.Add("Authorization", "Bearer "+oauthToken.AccessToken)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		l.Error("Failed to execute HTTP request", zap.Error(err))
-		c.AbortBadRequest("execution error")
-		return
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		l.Warn("Token is invalid or an error occurred", zap.Int("status_code", resp.StatusCode))
-		c.AbortBadRequest("invalid token or error occurred")
+	// Test the OAuth token's usability and get authoritative connection details.
+	url := "https://api.hubapi.com/crm/v3/owners/"
+	auth := "Bearer " + oauthToken.AccessToken
+	if _, err := common.HTTPGetEmpty(r.Context(), url, auth); err != nil {
+		l.Warn("failed to test HubSpot OAuth token", zap.Error(err))
+		c.AbortServerError("failed to test OAuth token")
 		return
 	}
 
