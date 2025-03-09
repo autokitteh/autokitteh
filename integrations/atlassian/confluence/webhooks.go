@@ -13,9 +13,10 @@ import (
 	"strings"
 	"time"
 
-	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.jetify.com/typeid"
 	"go.uber.org/zap"
+
+	"go.autokitteh.dev/autokitteh/integrations/common"
 )
 
 const (
