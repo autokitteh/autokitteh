@@ -113,7 +113,7 @@ func (h handler) saveAPIKey(r *http.Request, vsid sdktypes.VarScopeID) error {
 		return errors.New("missing API key")
 	}
 
-	// TODO: Test the API key's usability, reuse connection test.
+	// TODO: Test the API key's usability and get authoritative connection details.
 
 	v := sdktypes.NewVar(apiKeyVar).SetValue(apiKey).SetSecret(true)
 	return h.vars.Set(r.Context(), v.WithScopeID(vsid))

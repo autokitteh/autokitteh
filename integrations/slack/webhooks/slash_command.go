@@ -58,7 +58,7 @@ type SlashCommand struct {
 // Slack app. See https://api.slack.com/interactivity/slash-commands#responding_to_commands.
 // Compare this function with the [websockets.HandleSlashCommand] implementation.
 func (h handler) HandleSlashCommand(w http.ResponseWriter, r *http.Request) {
-	l := h.logger.With(zap.String("urlPath", SlashCommandPath))
+	l := h.logger.With(zap.String("url_path", SlashCommandPath))
 
 	// Validate and parse the inbound request.
 	body := h.checkRequest(w, r, l, api.ContentTypeForm)
@@ -116,13 +116,13 @@ func (h handler) HandleSlashCommand(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	cids, err := h.listConnectionIDs(ctx, cmd.APIAppID, cmd.EnterpriseID, cmd.TeamID)
 	if err != nil {
-		l.Error("Failed to find connection IDs", zap.Error(err))
+		l.Error("failed to find connection IDs", zap.Error(err))
 		common.HTTPError(w, http.StatusInternalServerError)
 		return
 	}
 
-	// Dispatch the event to all of them, for asynchronous handling.
-	h.dispatchAsyncEventsToConnections(ctx, cids, akEvent)
+	// Dispatch the event to all of them, for potential asynchronous handling.
+	common.DispatchEvent(ctx, l, h.dispatch, akEvent, cids)
 
 	// https://api.slack.com/interactivity/slash-commands#responding_to_commands
 	// https://api.slack.com/interactivity/slash-commands#responding_response_url

@@ -169,7 +169,7 @@ type Response struct {
 // and https://api.slack.com/interactivity/handling. Compare this function
 // with the [websockets.HandleInteractiveEvent] implementation.
 func (h handler) HandleInteraction(w http.ResponseWriter, r *http.Request) {
-	l := h.logger.With(zap.String("urlPath", InteractionPath))
+	l := h.logger.With(zap.String("url_path", InteractionPath))
 
 	// Validate and parse the inbound request.
 	body := h.checkRequest(w, r, l, api.ContentTypeForm)
@@ -212,13 +212,13 @@ func (h handler) HandleInteraction(w http.ResponseWriter, r *http.Request) {
 	}
 	cids, err := h.listConnectionIDs(ctx, payload.APIAppID, enterpriseID, payload.Team.ID)
 	if err != nil {
-		l.Error("Failed to find connection IDs", zap.Error(err))
+		l.Error("failed to find connection IDs", zap.Error(err))
 		common.HTTPError(w, http.StatusInternalServerError)
 		return
 	}
 
-	// Dispatch the event to all of them, for asynchronous handling.
-	h.dispatchAsyncEventsToConnections(ctx, cids, akEvent)
+	// Dispatch the event to all of them, for potential asynchronous handling.
+	common.DispatchEvent(ctx, l, h.dispatch, akEvent, cids)
 
 	// It's a Slack best practice to update an interactive message after the interaction,
 	// to prevent further interaction with the same message, and to reflect the user actions.

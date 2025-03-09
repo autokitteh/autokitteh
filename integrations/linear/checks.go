@@ -17,7 +17,7 @@ import (
 // ensures that the connection is at least theoretically usable.
 func status(v sdkservices.Vars) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
-		vs, errStatus, err := common.ReadConnectionVars(ctx, v, cid)
+		vs, errStatus, err := common.ReadVarsWithStatus(ctx, v, cid)
 		if errStatus.IsValid() || err != nil {
 			return errStatus, err
 		}
@@ -39,7 +39,7 @@ func status(v sdkservices.Vars) sdkintegrations.OptFn {
 // authentication credentials are valid and can be used to make API calls.
 func test(v sdkservices.Vars) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
-		vs, errStatus, err := common.ReadConnectionVars(ctx, v, cid)
+		vs, errStatus, err := common.ReadVarsWithStatus(ctx, v, cid)
 		if errStatus.IsValid() || err != nil {
 			return errStatus, err
 		}

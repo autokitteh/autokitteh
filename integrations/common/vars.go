@@ -133,10 +133,10 @@ func FreshOAuthToken(ctx context.Context, l *zap.Logger, o sdkservices.OAuth, v 
 	return t2
 }
 
-// ReadConnectionVars returns the connection's variables, or
+// ReadVarsWithStatus returns the connection's variables, or
 // an error if the connection is not initialized or accessible.
 // This is reused in connection status and test functions of all integrations.
-func ReadConnectionVars(ctx context.Context, vars sdkservices.Vars, cid sdktypes.ConnectionID) (sdktypes.Vars, sdktypes.Status, error) {
+func ReadVarsWithStatus(ctx context.Context, vars sdkservices.Vars, cid sdktypes.ConnectionID) (sdktypes.Vars, sdktypes.Status, error) {
 	if !cid.IsValid() {
 		return nil, sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 	}

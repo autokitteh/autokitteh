@@ -16,34 +16,8 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
-	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
-
-// oauthToken returns the OAuth token stored in the
-// connection variables. If it's stale, we refresh it first.
-func oauthToken(ctx context.Context, vs sdktypes.Vars, o sdkservices.OAuth) *oauth2.Token {
-	t1 := &oauth2.Token{
-		AccessToken:  vs.GetValue(common.OAuthAccessTokenVar),
-		RefreshToken: vs.GetValue(common.OAuthRefreshTokenVar),
-		TokenType:    vs.GetValue(common.OAuthTokenTypeVar),
-	}
-	if t1.Valid() {
-		return t1
-	}
-
-	cfg, _, err := o.Get(ctx, "microsoft")
-	if err != nil {
-		return t1
-	}
-
-	t2, err := cfg.TokenSource(ctx, t1).Token()
-	if err != nil {
-		return t1
-	}
-
-	return t2
-}
 
 // DaemonToken returns a Microsoft Graph daemon app token, which is the
 // same as a regular OAuth token, but without the 3-legged OAuth 2.0 flow
@@ -113,11 +87,10 @@ func bearerToken(ctx context.Context, l *zap.Logger, svc Services, cid sdktypes.
 	}
 
 	switch authType := common.ReadAuthType(vs); authType {
-	case integrations.OAuthDefault:
-		return "Bearer " + oauthToken(ctx, vs, svc.OAuth).AccessToken
-
-	case integrations.OAuthPrivate:
-		return "Bearer " + oauthToken(ctx, vs, svc.OAuth).AccessToken
+	case integrations.OAuthDefault, integrations.OAuthPrivate:
+		desc := common.Descriptor("microsoft", "", "")
+		t := common.FreshOAuthToken(ctx, l, svc.OAuth, svc.Vars, desc, vs)
+		return "Bearer " + t.AccessToken
 
 	case integrations.DaemonApp:
 		t, err := DaemonToken(ctx, vs)

@@ -24,7 +24,7 @@ import (
 // ensures that the connection is at least theoretically usable.
 func Status(v sdkservices.Vars) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
-		vs, errStatus, err := common.ReadConnectionVars(ctx, v, cid)
+		vs, errStatus, err := common.ReadVarsWithStatus(ctx, v, cid)
 		if errStatus.IsValid() || err != nil {
 			return errStatus, err
 		}
@@ -46,7 +46,7 @@ func Status(v sdkservices.Vars) sdkintegrations.OptFn {
 // authentication credentials are valid and can be used to make API calls.
 func Test(v sdkservices.Vars, o sdkservices.OAuth) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
-		vs, errStatus, err := common.ReadConnectionVars(ctx, v, cid)
+		vs, errStatus, err := common.ReadVarsWithStatus(ctx, v, cid)
 		if errStatus.IsValid() || err != nil {
 			return errStatus, err
 		}
@@ -108,10 +108,6 @@ func GetUserInfo(ctx context.Context, t *oauth2.Token) (*UserInfo, error) {
 	return &user, nil
 }
 
-type orgInfoWrapper struct {
-	Value []OrgInfo `json:"value"`
-}
-
 // GetOrgInfo returns the authenticated user's organization profile from Microsoft
 // Graph (based on: https://learn.microsoft.com/en-us/graph/api/organization-get).
 func GetOrgInfo(ctx context.Context, t *oauth2.Token) (*OrgInfo, error) {
@@ -137,8 +133,10 @@ func GetOrgInfo(ctx context.Context, t *oauth2.Token) (*OrgInfo, error) {
 		return nil, fmt.Errorf("request for org info failed: %s (%s)", resp.Status, body)
 	}
 
-	var org orgInfoWrapper
-	if err := json.Unmarshal(body, &org); err != nil {
+	org := new(struct {
+		Value []OrgInfo `json:"value"`
+	})
+	if err := json.Unmarshal(body, org); err != nil {
 		return nil, fmt.Errorf("failed to parse org info: %w", err)
 	}
 	if len(org.Value) != 1 {

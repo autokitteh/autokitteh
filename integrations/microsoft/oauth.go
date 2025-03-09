@@ -56,7 +56,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Test the token's usability and get authoritative installation details.
+	// Test the token's usability and get authoritative connection details.
 	ctx := r.Context()
 	org, err := connection.GetOrgInfo(ctx, data.Token)
 	if err != nil {

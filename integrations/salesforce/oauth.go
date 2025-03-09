@@ -60,7 +60,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Test the token's usability and get authoritative installation details.
+	// Test the token's usability and get authoritative connection details.
 	ctx := r.Context()
 	accessToken := data.Token.AccessToken
 	instanceURL := data.Extra["instance_url"].(string)
@@ -120,7 +120,7 @@ func (h handler) saveConnection(ctx context.Context, vsid sdktypes.VarScopeID, t
 }
 
 func (h handler) accessTokenExpiration(ctx context.Context, instanceURL string, t *oauth2.Token, cid sdktypes.ConnectionID) error {
-	vs, errStatus, err := common.ReadConnectionVars(ctx, h.vars, cid)
+	vs, errStatus, err := common.ReadVarsWithStatus(ctx, h.vars, cid)
 	if errStatus.IsValid() || err != nil {
 		return err
 	}

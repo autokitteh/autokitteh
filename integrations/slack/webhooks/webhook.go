@@ -18,7 +18,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations/common"
-	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/integrations/slack/api"
 	"go.autokitteh.dev/autokitteh/integrations/slack/events"
 	"go.autokitteh.dev/autokitteh/integrations/slack/vars"
@@ -195,22 +194,6 @@ func (h handler) listConnectionIDs(ctx context.Context, appID, enterpriseID, tea
 	return h.vars.FindConnectionIDs(ctx, h.integrationID, vars.InstallIDsVar, ids)
 }
 
-func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, cids []sdktypes.ConnectionID, e sdktypes.Event) {
-	l := extrazap.ExtractLoggerFromContext(ctx)
-	for _, cid := range cids {
-		eid, err := h.dispatch(ctx, e.WithConnectionDestinationID(cid), nil)
-		l := l.With(
-			zap.String("connection_id", cid.String()),
-			zap.String("event_id", eid.String()),
-		)
-		if err != nil {
-			l.Error("event dispatch failed", zap.Error(err))
-			return
-		}
-		l.Debug("event dispatched")
-	}
-}
-
 // extractIDs extracts the app ID, team ID, and enterprise ID from the given request body.
 func (h handler) extractIDs(l *zap.Logger, body []byte, wantContentType string) (string, string, string, error) {
 	// Option 1: JSON payloads.
@@ -266,7 +249,7 @@ func (h handler) signingSecret(ctx context.Context, l *zap.Logger, body []byte, 
 
 	cids, err := h.listConnectionIDs(ctx, appID, enterpriseID, teamID)
 	if err != nil {
-		return "", nil, fmt.Errorf("failed to list connection IDs: %w", err)
+		return "", nil, fmt.Errorf("failed to find connection IDs: %w", err)
 	}
 	if len(cids) == 0 {
 		return "", nil, nil
