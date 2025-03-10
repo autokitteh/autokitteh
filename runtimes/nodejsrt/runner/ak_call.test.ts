@@ -2,7 +2,7 @@ import {Waiter, ak_call} from "./ak_call";
 import {EventEmitter, once} from "node:events";
 import {toReaderCall} from "ts-proto/build/src/types";
 
-class mockWaiter implements Waiter{
+export class mockWaiter implements Waiter{
     event: EventEmitter;
     f: Function
     a: any

@@ -60,7 +60,7 @@ export class Sandbox {
         this.codeDir = codeDir;
         this.context = {};
         this.ak_call = ak_call;
-        this.prepareCodeDir();
+        // this.prepareCodeDir();
         this.initContext()
     }
 
