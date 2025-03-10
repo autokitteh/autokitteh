@@ -151,10 +151,9 @@ func (w *sessionWorkflow) call(ctx workflow.Context, _ sdktypes.RunID, v sdktype
 	w.callSeq++
 
 	result, err := w.ws.calls.Call(ctx, &sessioncalls.CallParams{
-		SessionID:                 w.data.Session.ID(),
-		CallSpec:                  sdktypes.NewSessionCallSpec(v, args, kwargs, w.callSeq),
-		Executors:                 &w.executors,
-		UseTemporalForSessionLogs: w.opts.UseTemporalForSessionLogs,
+		SessionID: w.data.Session.ID(),
+		CallSpec:  sdktypes.NewSessionCallSpec(v, args, kwargs, w.callSeq),
+		Executors: &w.executors,
 	})
 	if err != nil {
 		return sdktypes.InvalidValue, err

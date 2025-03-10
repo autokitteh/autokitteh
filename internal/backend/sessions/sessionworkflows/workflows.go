@@ -33,9 +33,7 @@ const (
 	delayedTerminateSessionWorkflowName = "delayed_terminate_session"
 )
 
-type StartWorkflowOptions struct {
-	UseTemporalForSessionLogs bool
-}
+type StartWorkflowOptions struct{}
 
 type Workflows interface {
 	StartWorkers(context.Context) error

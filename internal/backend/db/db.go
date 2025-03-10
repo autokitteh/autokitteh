@@ -109,14 +109,6 @@ type DB interface {
 	DeleteSession(ctx context.Context, sessionID sdktypes.SessionID) error
 
 	// -----------------------------------------------------------------------
-	CreateSessionCall(ctx context.Context, sessionID sdktypes.SessionID, data sdktypes.SessionCallSpec) error
-	GetSessionCallSpec(ctx context.Context, sessionID sdktypes.SessionID, seq uint32) (sdktypes.SessionCallSpec, error)
-
-	StartSessionCallAttempt(ctx context.Context, sessionID sdktypes.SessionID, seq uint32) (uint32, error)
-	CompleteSessionCallAttempt(ctx context.Context, sessionID sdktypes.SessionID, seq, attempt uint32, complete sdktypes.SessionCallAttemptComplete) error
-	GetSessionCallAttemptResult(ctx context.Context, sessionID sdktypes.SessionID, seq uint32, attempt int64 /* <0 for last */) (sdktypes.SessionCallAttemptResult, error)
-
-	// -----------------------------------------------------------------------
 	// TODO(ENG-917): Do not expose scheme outside of DB.
 	SaveSignal(ctx context.Context, signal *types.Signal) error
 	GetSignal(ctx context.Context, signalID uuid.UUID) (*types.Signal, error)
