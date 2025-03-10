@@ -60,13 +60,13 @@ export class Sandbox {
         this.codeDir = codeDir;
         this.context = {};
         this.ak_call = ak_call;
-        // this.prepareCodeDir();
+        this.prepareCodeDir();
         this.initContext()
     }
 
     prepareCodeDir(): void {
-        let output = execSync(`cd ${this.codeDir}; npm install`).toString();
-        console.log(output);
+        // let output = execSync(`cd ${this.codeDir}; npm install`).toString();
+        // console.log(output);
     }
 
     setCodeDir(codeDir: string): void {
