@@ -1,5 +1,9 @@
 package zoom
 
+import "go.autokitteh.dev/autokitteh/sdk/sdktypes"
+
+var accountIDVar = sdktypes.NewSymbol("account_id")
+
 // privateApp contains the user-provided details of a private
 // Zoom OAuth 2.0 app or Service-to-Service internal app.
 type privateApp struct {
