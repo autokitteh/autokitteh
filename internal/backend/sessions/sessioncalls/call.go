@@ -29,6 +29,10 @@ func (cs *calls) invoke(ctx context.Context, callv sdktypes.Value, args []sdktyp
 		// The executor is an integration, and not a pure function or a session module that must run in a session workflow,
 		// so it can run in any worker and using a stateless integration.
 
+		if cs.svcs == nil || cs.svcs.Integrations == nil {
+			return sdktypes.InvalidSessionCallAttemptResult, errors.New("no integrations")
+		}
+
 		var err error
 		if caller, err = cs.svcs.Integrations.Attach(ctx, iid); err != nil {
 			return sdktypes.InvalidSessionCallAttemptResult, fmt.Errorf("get integration: %w", err)
