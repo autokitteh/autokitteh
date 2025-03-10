@@ -77,13 +77,13 @@ func New(l *zap.Logger, config Config, svcs *sessionsvcs.Svcs) Calls {
 	}
 }
 
-func (cs *calls) StartWorkers(ctx context.Context, temporal client.Client) error {
-	if temporal == nil {
-		temporal = cs.svcs.Temporal.TemporalClient()
+func (cs *calls) StartWorkers(ctx context.Context, temporalClient client.Client) error {
+	if temporalClient == nil {
+		temporalClient = cs.svcs.Temporal.TemporalClient()
 	}
 
-	cs.generalWorker = temporalclient.NewWorker(cs.l.Named("sessionscallsworker"), temporal, generalTaskQueueName, cs.config.GeneralWorker)
-	cs.uniqueWorker = temporalclient.NewWorker(cs.l.Named("sessionscallsworker"), temporal, UniqueWorkerCallTaskQueueName(), cs.config.UniqueWorker)
+	cs.generalWorker = temporalclient.NewWorker(cs.l.Named("sessionscallsworker"), temporalClient, generalTaskQueueName, cs.config.GeneralWorker)
+	cs.uniqueWorker = temporalclient.NewWorker(cs.l.Named("sessionscallsworker"), temporalClient, UniqueWorkerCallTaskQueueName(), cs.config.UniqueWorker)
 
 	cs.registerActivities()
 

@@ -403,6 +403,9 @@ func (w *sessionWorkflow) removeEventSubscription(wctx workflow.Context, signalI
 	delete(w.lastReadEventSeqForSignal, signalID)
 }
 
+// Executes the actual workflow logic - running the program.
+// `globals` is a map of global variables to be passed to the program.
+// Its keys must be valid symbol names and all the values must be valid.
 func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger, globals map[string]sdktypes.Value) (prints []sdkservices.SessionPrint, retVal sdktypes.Value, err error) {
 	sid := w.data.Session.ID()
 
