@@ -4,7 +4,8 @@ extend-exclude = [
     "vanilla-jsoneditor.js",
     "internal/backend/dashboardsvc/render_list.go",
     "runtimes/pythonrt/build_test.go",
-    "sdk/sdktypes/integration_id_test.go"
+    "sdk/sdktypes/integration_id_test.go",
+    "go.mod",
 ]
 
 [default.extend-identifiers]

@@ -123,7 +123,7 @@ func (h handler) saveSocketModeApp(r *http.Request, vsid sdktypes.VarScopeID) er
 		return errors.New("missing private Socket Mode app details")
 	}
 
-	// Test the tokens' usability and get authoritative installation details.
+	// Test the tokens' usability and get authoritative connection details.
 	ctx := r.Context()
 	auth, err := api.AuthTest(ctx, app.BotToken)
 	if err != nil {

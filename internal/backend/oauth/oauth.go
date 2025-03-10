@@ -489,7 +489,7 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 				},
 				RedirectURL: redirectURL + "salesforce",
 				// https://help.salesforce.com/s/articleView?id=xcloud.remoteaccess_oauth_tokens_scopes.htm
-				Scopes: []string{""},
+				Scopes: []string{"api", "refresh_token"},
 			},
 
 			// Based on:
@@ -599,6 +599,9 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 			"microsoft_teams": {
 				"access_type": "offline", // oauth2.AccessTypeOffline
 				"prompt":      "consent", // oauth2.ApprovalForce
+			},
+			"salesforce": {
+				"prompt": "consent", // oauth2.ApprovalForce
 			},
 		},
 	}
