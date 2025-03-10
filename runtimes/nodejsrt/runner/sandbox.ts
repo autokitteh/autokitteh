@@ -69,6 +69,11 @@ export class Sandbox {
         console.log(output);
     }
 
+    setCodeDir(codeDir: string): void {
+        this.codeDir = codeDir;
+        this.prepareCodeDir();
+    }
+
     initContext() {
         this.context.exports = {}
         this.context.ak_call = this.ak_call

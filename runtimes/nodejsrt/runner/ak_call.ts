@@ -85,10 +85,10 @@ export class ActivityWaiter implements Waiter{
         this.token = token
         const encoder = new TextEncoder()
 
-        await this.client.activity({
-            runnerId: this.runnerId,
-            data: encoder.encode(JSON.stringify({token}))
-        })
+        // await this.client.activity({
+        //     runnerId: this.runnerId,
+        //     data: encoder.encode(JSON.stringify({token}))
+        // })
 
 
         const resp = await this.client.activity({
@@ -124,8 +124,8 @@ export const ak_call = (waiter: Waiter) => {
                         return await o[m](...m_args);
                     }
 
-                    console.log("remote obj call", f.name, f_args);
-                    const results = await waiter.wait(f, f_args, randomUUID());
+                    console.log("remote obj call", o.name, m_args);
+                    const results = await waiter.wait(o[m], m_args, randomUUID());
                     console.log("got obj call results", results)
                     return results;
                 }
