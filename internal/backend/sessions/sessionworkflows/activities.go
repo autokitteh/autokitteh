@@ -111,10 +111,6 @@ func (ws *workflows) addSessionPrintActivity(ctx context.Context, sid sdktypes.S
 	return temporalclient.TranslateError(ws.svcs.DB.AddSessionPrint(ctx, sid, v, callSeq), "%v: add session print", sid)
 }
 
-func (ws *workflows) legacyAddSessionPrintActivity(ctx context.Context, sid sdktypes.SessionID, txt string) error {
-	return temporalclient.TranslateError(ws.svcs.DB.AddSessionPrint(ctx, sid, sdktypes.NewStringValue(txt), 0), "%v: legacy add session print", sid)
-}
-
 func (ws *workflows) removeSignalActivity(ctx context.Context, sigid uuid.UUID) error {
 	return temporalclient.TranslateError(ws.svcs.DB.RemoveSignal(ctx, sigid), "%v: remove signal", sigid)
 }
