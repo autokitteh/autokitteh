@@ -99,6 +99,16 @@ func (h handler) eventLoop(ctx context.Context, client pb.PubSubClient, subscrib
 				continue
 			}
 
+			// TODO(INT-329): Temporary filter to ignore self-triggered events.
+			changeOrigin, ok := data["ChangeOrigin"].(string)
+			if !ok {
+				l.Error("ChangeOrigin is not a string in event data")
+				continue
+			}
+			if !strings.Contains(changeOrigin, "SfdcInternalAPI") {
+				continue
+			}
+
 			// Extract changed entity name for the event type.
 			header, ok := data["ChangeEventHeader"].(map[string]any)
 			if !ok {
