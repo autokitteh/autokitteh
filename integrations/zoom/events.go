@@ -123,7 +123,7 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request) map[string
 	}
 
 	if secret == "" {
-		// Linear is not configured, so there's no point
+		// Zoom is not configured, so there's no point
 		// in verifying or accepting the payload.
 		return nil
 	}
