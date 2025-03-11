@@ -57,6 +57,10 @@ func (ws *workflows) GetWorkflowLog(ctx context.Context, filter sdkservices.Sess
 		enumspb.HISTORY_EVENT_FILTER_TYPE_ALL_EVENT,
 	)
 
+	// Keep track of all the events and their ids in this map so we can easily
+	// correlated different history events together.
+	events := make(map[int64]*historypb.HistoryEvent, min(16, filter.PageSize))
+
 	if !filter.Ascending {
 		// This is an ugly hack as it consumes all elements, but that's what we can do right now.
 
@@ -70,6 +74,10 @@ func (ws *workflows) GetWorkflowLog(ctx context.Context, filter sdkservices.Sess
 			}
 
 			riter.rs = append(riter.rs, event)
+
+			// On a descending query, we need to prepopulate the events so they'll be available when
+			// we bump into a "later" event before the "easlier" event.
+			events[event.EventId] = event
 		}
 
 		slices.Reverse(riter.rs)
@@ -82,8 +90,6 @@ func (ws *workflows) GetWorkflowLog(ctx context.Context, filter sdkservices.Sess
 		nextPageToken string
 		reached       = filter.PageToken == ""
 	)
-
-	events := make(map[int64]*historypb.HistoryEvent, min(16, filter.PageSize))
 
 	for iter.HasNext() {
 		event, err := iter.Next()
