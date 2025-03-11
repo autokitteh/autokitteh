@@ -20,19 +20,19 @@ var (
 	// Key = Salesforce instance URL (to ensure one gRPC client per app).
 	// Writes happen during server startup, and when a user
 	// creates a new Salesforce connection in the UI.
-	pubSubClients = make(map[string]*pb.PubSubClient)
+	pubSubClients = make(map[string]pb.PubSubClient)
 
 	mu = &sync.Mutex{}
 )
 
 // subscribe creates a new gRPC client and subscribes to a generic Salesforce Change Data Capture channel.
 // https://developer.salesforce.com/docs/platform/pub-sub-api/references/methods/subscribe-rpc.html
-func (h handler) subscribe(client_id, orgID string, cid sdktypes.ConnectionID) {
+func (h handler) subscribe(clientID, orgID string, cid sdktypes.ConnectionID) {
 	// Prevent duplication due to race conditions.
 	mu.Lock()
 	defer mu.Unlock()
 
-	if _, ok := pubSubClients[client_id]; ok {
+	if _, ok := pubSubClients[clientID]; ok {
 		return
 	}
 
@@ -47,30 +47,32 @@ func (h handler) subscribe(client_id, orgID string, cid sdktypes.ConnectionID) {
 	}
 
 	t := common.FreshOAuthToken(ctx, l, h.oauth, h.vars, desc, vs)
-	conn, err := initConn(l, "Bearer "+t.AccessToken, client_id, orgID)
+	cfg, _, err := h.oauth.Get(ctx, desc.ID().String())
+	if err != nil {
+		l.Error("failed to get Salesforce OAuth config", zap.Error(err))
+		return
+	}
+	conn, err := initConn(l, cfg, t, clientID, orgID)
 	if err != nil {
 		return
 	}
 
 	client := pb.NewPubSubClient(conn)
-	pubSubClients[client_id] = &client
+	pubSubClients[clientID] = client
 
 	// https://developer.salesforce.com/docs/atlas.en-us.platform_events.meta/platform_events/platform_events_objects_change_data_capture.htm
-	go h.eventLoop(ctx, client, "/data/ChangeEvents", cid)
+	go h.eventLoop(ctx, clientID, "/data/ChangeEvents", cid)
 }
 
 // eventLoop processes incoming messages, and automatically renews the subscription.
 // https://developer.salesforce.com/docs/platform/pub-sub-api/guide/pub-sub-features.html
-func (h handler) eventLoop(ctx context.Context, client pb.PubSubClient, subscribeTopic string, cid sdktypes.ConnectionID) {
+func (h handler) eventLoop(ctx context.Context, clientID string, subscribeTopic string, cid sdktypes.ConnectionID) {
 	l := h.logger.With(zap.String("connection_id", cid.String()))
 	const defaultBatchSize = int32(100)
 	numLeftToReceive := 0
 
-	stream, err := client.Subscribe(ctx)
-	if err != nil {
-		l.Error("failed to create gRPC stream for Salesforce events", zap.Error(err))
-		return
-	}
+	client := pubSubClients[clientID]
+	stream := initStream(ctx, l, client)
 
 	// Start receiving messages.
 	for {
@@ -78,6 +80,7 @@ func (h handler) eventLoop(ctx context.Context, client pb.PubSubClient, subscrib
 			n, err := renewSubscription(l, stream, defaultBatchSize, subscribeTopic)
 			if err != nil {
 				l.Error("failed to renew Salesforce events subscription", zap.Error(err))
+				// TODO(INT-333): Add exponential backoff.
 				continue
 			}
 			numLeftToReceive = n
@@ -89,9 +92,11 @@ func (h handler) eventLoop(ctx context.Context, client pb.PubSubClient, subscrib
 		if err != nil {
 			if gstatus.Code(err) != codes.Unauthenticated {
 				l.Error("authentication error receiving Salesforce event", zap.Error(err))
+			} else {
+				l.Error("error receiving Salesforce event", zap.Error(err))
 			}
-			l.Error("error receiving Salesforce event", zap.Error(err))
-			return
+			stream = initStream(ctx, l, client)
+			continue
 		}
 
 		// TODO(INT-314): Save the latest replay ID.
@@ -140,6 +145,19 @@ func (h handler) eventLoop(ctx context.Context, client pb.PubSubClient, subscrib
 
 			h.dispatchEvent(data, strings.ToLower(entityName))
 		}
+	}
+}
+
+func initStream(ctx context.Context, l *zap.Logger, client pb.PubSubClient) pb.PubSub_SubscribeClient {
+	for {
+		stream, err := client.Subscribe(ctx)
+		if err != nil {
+			l.Error("failed to create gRPC stream for Salesforce events", zap.Error(err))
+			// TODO(INT-333): Add exponential backoff.
+			continue
+		}
+
+		return stream
 	}
 }
 
