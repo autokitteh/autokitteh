@@ -1,7 +1,7 @@
 import traverse, {NodePath} from "@babel/traverse";
 import {parse} from "@babel/parser";
 import generate from "@babel/generator";
-import { Expression, isMemberExpression, identifier, isIdentifier, isAwaitExpression, isVariableDeclarator, stringLiteral, MemberExpression, Identifier, CallExpression } from "@babel/types";
+import { isMemberExpression, identifier, isIdentifier, isAwaitExpression, isVariableDeclarator, stringLiteral, CallExpression } from "@babel/types";
 
 import {listFiles} from "./file_utils";
 import fs from "fs"
@@ -22,10 +22,10 @@ export interface Symbols {
 export async function listExports(code: string, file: string): Promise<Export[]> {
     const ast = parse(code, {sourceType: "module", plugins: ["typescript"]});
 
-    let exports: Export[] = [];
+    const exports: Export[] = [];
     traverse(ast, {
         FunctionDeclaration: function (path) {
-            let params: string[] = []
+            const params: string[] = []
             path.node.params.forEach((param) => {
                 if (isIdentifier(param)) {
                     params.push(param.name)
@@ -37,9 +37,7 @@ export async function listExports(code: string, file: string): Promise<Export[]>
                 name = path.node.id.name;
             }
 
-
             let line = 0;
-
             if (path.node.loc) {
                 line = path.node.loc.start.line;
             }
@@ -51,7 +49,7 @@ export async function listExports(code: string, file: string): Promise<Export[]>
             exports.push({args: params, line: line, name: name, file: file, $typeName:"autokitteh.user_code.v1.Export"});
         },
         ArrowFunctionExpression: function (path) {
-            let params: string[] = []
+            const params: string[] = []
             path.node.params.forEach((param) => {
                 if (isIdentifier(param)) {
                     params.push(param.name)
@@ -66,7 +64,6 @@ export async function listExports(code: string, file: string): Promise<Export[]>
             }
 
             let line = 0;
-
             if (path.node.loc) {
                 line = path.node.loc.start.line;
             }
@@ -84,7 +81,7 @@ export async function listExports(code: string, file: string): Promise<Export[]>
 
 export async function listExportsInDirectory(dirPath: string): Promise<Export[]> {
     const files = await listFiles(dirPath);
-    let exports: Export[] = []
+    const exports: Export[] = []
     for (const file of files) {
         if (file.includes("node_modules")) {
             continue
@@ -94,62 +91,49 @@ export async function listExportsInDirectory(dirPath: string): Promise<Export[]>
             continue;
         }
 
-        let code = fs.readFileSync(file, "utf8");
-        let new_exports = await listExports(code, file)
+        const code = fs.readFileSync(file, "utf8");
+        const new_exports = await listExports(code, file)
         exports.push(...new_exports)
     }
 
     return exports;
 }
 
-export async function patchCode(code: string, exclude: string[] = []): Promise<string> {
-    const parserOptions: ParserOptions = { sourceType: "module", plugins: ["typescript", "asyncGenerators", "topLevelAwait"] };
-    const ast = parse(code, parserOptions);
+export async function patchCode(code: string): Promise<string> {
+    const ast = parse(code, {sourceType: "module", plugins: ["typescript"]});
 
     traverse(ast, {
-        CallExpression: function (path: NodePath<CallExpression>) {
-            let originalFunc: string = "";
-
+        CallExpression(path) {
             if (!isAwaitExpression(path.parent)) {
                 return;
             }
 
-            function getFullMemberExpressionParts(memberExpr: Expression): { object: Identifier; method: string } | null {
-                let parts: string[] = [];
-                while (isMemberExpression(memberExpr)) {
-                    if (isIdentifier(memberExpr.property)) {
-                        parts.unshift(memberExpr.property.name);
-                    } else {
-                        return null;
+            // Skip wrapping if it's a relative import
+            if (isIdentifier(path.node.callee)) {
+                const binding = path.scope.getBinding(path.node.callee.name);
+                if (binding?.path.parent?.type === 'ImportDeclaration') {
+                    const importSource = binding.path.parent.source.value;
+                    if (importSource.startsWith('.')) {
+                        return;
                     }
-                    memberExpr = memberExpr.object as MemberExpression;
                 }
-                if (isIdentifier(memberExpr)) {
-                    parts.unshift(memberExpr.name);
-                    const method = parts.pop()!
-                    const obj = parts.join(".")
-                    return { object: identifier(obj), method: method };
-                }
-                return null;
             }
 
             if (isMemberExpression(path.node.callee)) {
-                const parts = getFullMemberExpressionParts(path.node.callee);
-                if (parts) {
-                    originalFunc = parts.object.name + "." + parts.method;
+                const parts = {
+                    object: path.node.callee.object,
+                    method: isIdentifier(path.node.callee.property) ? path.node.callee.property.name : ''
+                };
+                if (parts.method) {
                     path.node.callee = identifier("ak_call");
                     path.node.arguments = [parts.object, stringLiteral(parts.method), ...path.node.arguments];
                 }
             } else if (isIdentifier(path.node.callee)) {
-                originalFunc = path.node.callee.name;
-                path.node.callee.name = "ak_call";
-                path.node.arguments.unshift(identifier(originalFunc));
+                const name = path.node.callee.name;
+                path.node.callee = identifier("ak_call");
+                path.node.arguments.unshift(identifier(name));
             }
-
-            if (exclude.includes(originalFunc) || originalFunc === "") {
-                return;
-            }
-        },
+        }
     });
 
     return generate(ast).code;

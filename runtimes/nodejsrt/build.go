@@ -16,12 +16,12 @@ import (
 
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 func isBuildFile(entry fs.DirEntry) bool {
-	if strings.Contains(entry.Name(), "__pycache__") {
+	// Skip node_modules, dist directory and hidden files
+	if strings.Contains(entry.Name(), "node_modules") || strings.Contains(entry.Name(), "dist") {
 		return false
 	}
 
@@ -37,12 +37,54 @@ func isBuildFile(entry fs.DirEntry) bool {
 func (js *nodejsSvc) Build(ctx context.Context, fsys fs.FS, path string, values []sdktypes.Symbol) (sdktypes.BuildArtifact, error) {
 	js.log.Info("build NodeJS module", zap.String("path", path))
 
-	ffs, err := kittehs.NewFilterFS(fsys, isBuildFile)
+	// 1. Create temp dir for output
+	outputDir, err := os.MkdirTemp("", "ak-proj")
 	if err != nil {
 		return sdktypes.InvalidBuildArtifact, err
 	}
+	defer os.RemoveAll(outputDir)
 
-	data, err := createTar(ffs)
+	// 2. Create temp dir for input
+	inputDir, err := os.MkdirTemp("", "ak-proj-input")
+	if err != nil {
+		return sdktypes.InvalidBuildArtifact, err
+	}
+	defer os.RemoveAll(inputDir)
+
+	// Copy input files to input dir using copyFSToDir
+	if err := copyFSToDir(fsys, inputDir); err != nil {
+		return sdktypes.InvalidBuildArtifact, err
+	}
+
+	// 3. Create temp dir for runner tools
+	runnerDir, err := os.MkdirTemp("", "ak-runner")
+	if err != nil {
+		return sdktypes.InvalidBuildArtifact, err
+	}
+	defer os.RemoveAll(runnerDir)
+
+	// Copy runner tools using copyFSToDir
+	if err := copyFSToDir(runnerJsCode, runnerDir); err != nil {
+		return sdktypes.InvalidBuildArtifact, err
+	}
+
+	// 4. Run build.ts to copy and modify the code
+	buildCmd := exec.Command("node", "runner/node_modules/ts-node/dist/bin.js", "runner/build.ts", inputDir, outputDir)
+	buildCmd.Dir = runnerDir
+	var buildStdout, buildStderr bytes.Buffer
+	buildCmd.Stdout = &buildStdout
+	buildCmd.Stderr = &buildStderr
+
+	if err := buildCmd.Run(); err != nil {
+		js.log.Error("build.ts failed",
+			zap.Error(err),
+			zap.String("stdout", buildStdout.String()),
+			zap.String("stderr", buildStderr.String()))
+		return sdktypes.InvalidBuildArtifact, fmt.Errorf("build.ts failed:\n%s", buildStderr.String())
+	}
+
+	// 5. Create tar from the modified files
+	data, err := createTar(os.DirFS(outputDir))
 	if err != nil {
 		js.log.Error("create tar", zap.Error(err))
 		return sdktypes.InvalidBuildArtifact, err
@@ -52,7 +94,7 @@ func (js *nodejsSvc) Build(ctx context.Context, fsys fs.FS, path string, values 
 		archiveKey: data,
 	}
 
-	// UI requires file names in the compiled data.
+	// Add file names to compiledData for UI
 	tf := tar.NewReader(bytes.NewReader(data))
 	for {
 		hdr, err := tf.Next()
@@ -64,33 +106,34 @@ func (js *nodejsSvc) Build(ctx context.Context, fsys fs.FS, path string, values 
 			return sdktypes.InvalidBuildArtifact, err
 		}
 
-		if !strings.HasSuffix(hdr.Name, ".js") {
+		if !strings.HasSuffix(hdr.Name, ".js") && !strings.HasSuffix(hdr.Name, ".ts") {
 			continue
 		}
 
 		compiledData[hdr.Name] = nil
 	}
 
-	var art sdktypes.BuildArtifact
-	art = art.WithCompiledData(compiledData)
-
-	exports, err := findExports(js.log, fsys)
+	// 6. Find exports from the modified code
+	exports, err := findExports(js.log, os.DirFS(outputDir))
 	if err != nil {
 		js.log.Error("get exports", zap.Error(err))
 		return sdktypes.InvalidBuildArtifact, err
 	}
 
+	var art sdktypes.BuildArtifact
+	art = art.WithCompiledData(compiledData)
 	art = art.WithExports(exports)
 	return art, nil
 }
 
-func findExports(_ *zap.Logger, fsys fs.FS) ([]sdktypes.BuildExport, error) {
+func findExports(log *zap.Logger, fsys fs.FS) ([]sdktypes.BuildExport, error) {
 	codeDir, err := os.MkdirTemp("", "ak-proj")
 	if err != nil {
 		return nil, err
 	}
+	defer os.RemoveAll(codeDir)
 
-	if err := os.CopyFS(codeDir, fsys); err != nil {
+	if err := copyFSToDir(fsys, codeDir); err != nil {
 		return nil, err
 	}
 
@@ -98,12 +141,16 @@ func findExports(_ *zap.Logger, fsys fs.FS) ([]sdktypes.BuildExport, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := os.CopyFS(runnerDir, runnerJsCode); err != nil {
+	defer os.RemoveAll(runnerDir)
+
+	if err := copyFSToDir(runnerJsCode, runnerDir); err != nil {
 		return nil, err
 	}
 
-	cmd := exec.Command("node", "node_modules/ts-node/dist/bin.js", "exports.ts", codeDir)
-	cmd.Dir = runnerDir + "/runner"
+	// Run exports discovery
+	log.Info("discovering exports")
+	cmd := exec.Command("node", "runner/node_modules/ts-node/dist/bin.js", "runner/exports.ts", codeDir)
+	cmd.Dir = runnerDir
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
