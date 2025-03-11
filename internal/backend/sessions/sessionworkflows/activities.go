@@ -27,7 +27,6 @@ const (
 	getSessionStopReasonActivityName        = "get_session_stop_reason"
 	getSignalEventActivityName              = "get_signal_event"
 	removeSignalActivityName                = "remove_signal"
-	legacyAddSessionPrintActivityName       = "add_session_print"
 	addSessionPrintActivityName             = "add_session_print_value"
 	deactivateDrainedDeploymentActivityName = "deactivate_drained_deployment"
 	getDeploymentStateActivityName          = "get_deployment_state"
@@ -68,11 +67,6 @@ func (ws *workflows) registerActivities() {
 	ws.worker.RegisterActivityWithOptions(
 		ws.removeSignalActivity,
 		activity.RegisterOptions{Name: removeSignalActivityName},
-	)
-
-	ws.worker.RegisterActivityWithOptions(
-		ws.legacyAddSessionPrintActivity,
-		activity.RegisterOptions{Name: legacyAddSessionPrintActivityName},
 	)
 
 	ws.worker.RegisterActivityWithOptions(

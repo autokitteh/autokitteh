@@ -216,9 +216,7 @@ func (s *server) GetLog(ctx context.Context, req *connect.Request[sessionsv1.Get
 		}
 	}
 
-	pblog := &sessionsv1.SessionLog{Records: pbrs}
-
-	return connect.NewResponse(&sessionsv1.GetLogResponse{Records: pbrs, Log: pblog, Count: hist.TotalCount, NextPageToken: hist.NextPageToken}), nil
+	return connect.NewResponse(&sessionsv1.GetLogResponse{Records: pbrs, Count: hist.TotalCount, NextPageToken: hist.NextPageToken}), nil
 }
 
 func (s *server) GetPrints(ctx context.Context, req *connect.Request[sessionsv1.GetPrintsRequest]) (*connect.Response[sessionsv1.GetPrintsResponse], error) {

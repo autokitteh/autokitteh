@@ -117,7 +117,7 @@ message GetLogRequest {
 }
 
 message GetLogResponse {
-  SessionLog log = 1 [(buf.validate.field).required = true]; // deprecated, use records.
+  reserved 1; // deprecated.
   int64 count = 2;
   repeated SessionLogRecord records = 3 [(buf.validate.field).repeated.items.required = true];
 
