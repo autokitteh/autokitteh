@@ -99,12 +99,28 @@ func (h handler) eventLoop(ctx context.Context, client pb.PubSubClient, subscrib
 				continue
 			}
 
-			// Extract changed entity name for the event type.
 			header, ok := data["ChangeEventHeader"].(map[string]any)
 			if !ok {
 				l.Error("ChangeEventHeader is not a map in event data")
 				continue
 			}
+
+			// TODO(INT-329): Temporary filter to ignore self-triggered events.
+			changeOriginValue, ok := header["changeOrigin"]
+			if !ok {
+				l.Error("changeOrigin key is not present in Salesforce ChangeEventHeader")
+				continue
+			}
+			changeOrigin, ok := changeOriginValue.(string)
+			if !ok {
+				l.Error("changeOrigin is not a string in Salesforce ChangeEventHeader")
+				continue
+			}
+			if !strings.Contains(changeOrigin, "SfdcInternalAPI") {
+				continue
+			}
+
+			// Extract changed entity name for the event type.
 			entityName, ok := header["entityName"].(string)
 			if !ok {
 				l.Error("entityName is not a string in ChangeEventHeader")
