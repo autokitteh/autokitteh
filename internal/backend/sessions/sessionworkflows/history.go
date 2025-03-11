@@ -76,7 +76,7 @@ func (ws *workflows) GetWorkflowLog(ctx context.Context, filter sdkservices.Sess
 			riter.rs = append(riter.rs, event)
 
 			// On a descending query, we need to prepopulate the events so they'll be available when
-			// we bump into a "later" event before the "easlier" event.
+			// we bump into a "later" event before the "earlier" event.
 			events[event.EventId] = event
 		}
 
