@@ -384,54 +384,6 @@ func (x *SessionLogRecord) GetStopRequest() *SessionLogRecord_StopRequest {
 	return nil
 }
 
-type SessionLog struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	// Chronological order: the last item is the latest.
-	Records []*SessionLogRecord `protobuf:"bytes,1,rep,name=records,proto3" json:"records,omitempty"`
-}
-
-func (x *SessionLog) Reset() {
-	*x = SessionLog{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[3]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *SessionLog) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SessionLog) ProtoMessage() {}
-
-func (x *SessionLog) ProtoReflect() protoreflect.Message {
-	mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[3]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SessionLog.ProtoReflect.Descriptor instead.
-func (*SessionLog) Descriptor() ([]byte, []int) {
-	return file_autokitteh_sessions_v1_session_proto_rawDescGZIP(), []int{3}
-}
-
-func (x *SessionLog) GetRecords() []*SessionLogRecord {
-	if x != nil {
-		return x.Records
-	}
-	return nil
-}
-
 type Session struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -455,7 +407,7 @@ type Session struct {
 func (x *Session) Reset() {
 	*x = Session{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[4]
+		mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -468,7 +420,7 @@ func (x *Session) String() string {
 func (*Session) ProtoMessage() {}
 
 func (x *Session) ProtoReflect() protoreflect.Message {
-	mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[4]
+	mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -481,7 +433,7 @@ func (x *Session) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Session.ProtoReflect.Descriptor instead.
 func (*Session) Descriptor() ([]byte, []int) {
-	return file_autokitteh_sessions_v1_session_proto_rawDescGZIP(), []int{4}
+	return file_autokitteh_sessions_v1_session_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *Session) GetSessionId() string {
@@ -577,7 +529,7 @@ type SessionState_Created struct {
 func (x *SessionState_Created) Reset() {
 	*x = SessionState_Created{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[5]
+		mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -590,7 +542,7 @@ func (x *SessionState_Created) String() string {
 func (*SessionState_Created) ProtoMessage() {}
 
 func (x *SessionState_Created) ProtoReflect() protoreflect.Message {
-	mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[5]
+	mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -618,7 +570,7 @@ type SessionState_Running struct {
 func (x *SessionState_Running) Reset() {
 	*x = SessionState_Running{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[6]
+		mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -631,7 +583,7 @@ func (x *SessionState_Running) String() string {
 func (*SessionState_Running) ProtoMessage() {}
 
 func (x *SessionState_Running) ProtoReflect() protoreflect.Message {
-	mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[6]
+	mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -673,7 +625,7 @@ type SessionState_Error struct {
 func (x *SessionState_Error) Reset() {
 	*x = SessionState_Error{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[7]
+		mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -686,7 +638,7 @@ func (x *SessionState_Error) String() string {
 func (*SessionState_Error) ProtoMessage() {}
 
 func (x *SessionState_Error) ProtoReflect() protoreflect.Message {
-	mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[7]
+	mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -729,7 +681,7 @@ type SessionState_Completed struct {
 func (x *SessionState_Completed) Reset() {
 	*x = SessionState_Completed{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[8]
+		mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -742,7 +694,7 @@ func (x *SessionState_Completed) String() string {
 func (*SessionState_Completed) ProtoMessage() {}
 
 func (x *SessionState_Completed) ProtoReflect() protoreflect.Message {
-	mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[8]
+	mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -790,7 +742,7 @@ type SessionState_Stopped struct {
 func (x *SessionState_Stopped) Reset() {
 	*x = SessionState_Stopped{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[9]
+		mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -803,7 +755,7 @@ func (x *SessionState_Stopped) String() string {
 func (*SessionState_Stopped) ProtoMessage() {}
 
 func (x *SessionState_Stopped) ProtoReflect() protoreflect.Message {
-	mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[9]
+	mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -840,7 +792,7 @@ type Call_Spec struct {
 func (x *Call_Spec) Reset() {
 	*x = Call_Spec{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[11]
+		mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -853,7 +805,7 @@ func (x *Call_Spec) String() string {
 func (*Call_Spec) ProtoMessage() {}
 
 func (x *Call_Spec) ProtoReflect() protoreflect.Message {
-	mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[11]
+	mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -909,7 +861,7 @@ type Call_Attempt struct {
 func (x *Call_Attempt) Reset() {
 	*x = Call_Attempt{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[12]
+		mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -922,7 +874,7 @@ func (x *Call_Attempt) String() string {
 func (*Call_Attempt) ProtoMessage() {}
 
 func (x *Call_Attempt) ProtoReflect() protoreflect.Message {
-	mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[12]
+	mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -965,7 +917,7 @@ type Call_Attempt_Result struct {
 func (x *Call_Attempt_Result) Reset() {
 	*x = Call_Attempt_Result{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[14]
+		mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[13]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -978,7 +930,7 @@ func (x *Call_Attempt_Result) String() string {
 func (*Call_Attempt_Result) ProtoMessage() {}
 
 func (x *Call_Attempt_Result) ProtoReflect() protoreflect.Message {
-	mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[14]
+	mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[13]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1020,7 +972,7 @@ type Call_Attempt_Start struct {
 func (x *Call_Attempt_Start) Reset() {
 	*x = Call_Attempt_Start{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[15]
+		mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[14]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1033,7 +985,7 @@ func (x *Call_Attempt_Start) String() string {
 func (*Call_Attempt_Start) ProtoMessage() {}
 
 func (x *Call_Attempt_Start) ProtoReflect() protoreflect.Message {
-	mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[15]
+	mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[14]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1077,7 +1029,7 @@ type Call_Attempt_Complete struct {
 func (x *Call_Attempt_Complete) Reset() {
 	*x = Call_Attempt_Complete{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[16]
+		mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[15]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1090,7 +1042,7 @@ func (x *Call_Attempt_Complete) String() string {
 func (*Call_Attempt_Complete) ProtoMessage() {}
 
 func (x *Call_Attempt_Complete) ProtoReflect() protoreflect.Message {
-	mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[16]
+	mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[15]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1148,7 +1100,7 @@ type SessionLogRecord_Print struct {
 func (x *SessionLogRecord_Print) Reset() {
 	*x = SessionLogRecord_Print{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[17]
+		mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[16]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1161,7 +1113,7 @@ func (x *SessionLogRecord_Print) String() string {
 func (*SessionLogRecord_Print) ProtoMessage() {}
 
 func (x *SessionLogRecord_Print) ProtoReflect() protoreflect.Message {
-	mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[17]
+	mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[16]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1209,7 +1161,7 @@ type SessionLogRecord_StopRequest struct {
 func (x *SessionLogRecord_StopRequest) Reset() {
 	*x = SessionLogRecord_StopRequest{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[18]
+		mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[17]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1222,7 +1174,7 @@ func (x *SessionLogRecord_StopRequest) String() string {
 func (*SessionLogRecord_StopRequest) ProtoMessage() {}
 
 func (x *SessionLogRecord_StopRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[18]
+	mi := &file_autokitteh_sessions_v1_session_proto_msgTypes[17]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1442,13 +1394,7 @@ var file_autokitteh_sessions_v1_session_proto_rawDesc = []byte{
 	0x50, 0x54, 0x5f, 0x43, 0x4f, 0x4d, 0x50, 0x4c, 0x45, 0x54, 0x45, 0x10, 0x08, 0x12, 0x0e, 0x0a,
 	0x0a, 0x54, 0x59, 0x50, 0x45, 0x5f, 0x53, 0x54, 0x41, 0x54, 0x45, 0x10, 0x10, 0x12, 0x15, 0x0a,
 	0x11, 0x54, 0x59, 0x50, 0x45, 0x5f, 0x53, 0x54, 0x4f, 0x50, 0x5f, 0x52, 0x45, 0x51, 0x55, 0x45,
-	0x53, 0x54, 0x10, 0x20, 0x22, 0x5e, 0x0a, 0x0a, 0x53, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x4c,
-	0x6f, 0x67, 0x12, 0x50, 0x0a, 0x07, 0x72, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x73, 0x18, 0x01, 0x20,
-	0x03, 0x28, 0x0b, 0x32, 0x28, 0x2e, 0x61, 0x75, 0x74, 0x6f, 0x6b, 0x69, 0x74, 0x74, 0x65, 0x68,
-	0x2e, 0x73, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x65, 0x73,
-	0x73, 0x69, 0x6f, 0x6e, 0x4c, 0x6f, 0x67, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x42, 0x0c, 0xfa,
-	0xf7, 0x18, 0x08, 0x92, 0x01, 0x05, 0x22, 0x03, 0xc8, 0x01, 0x01, 0x52, 0x07, 0x72, 0x65, 0x63,
-	0x6f, 0x72, 0x64, 0x73, 0x22, 0xfb, 0x05, 0x0a, 0x07, 0x53, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e,
+	0x53, 0x54, 0x10, 0x20, 0x22, 0xfb, 0x05, 0x0a, 0x07, 0x53, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e,
 	0x12, 0x1d, 0x0a, 0x0a, 0x73, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x5f, 0x69, 0x64, 0x18, 0x01,
 	0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x73, 0x65, 0x73, 0x73, 0x69, 0x6f, 0x6e, 0x49, 0x64, 0x12,
 	0x19, 0x0a, 0x08, 0x62, 0x75, 0x69, 0x6c, 0x64, 0x5f, 0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28,
@@ -1541,83 +1487,81 @@ func file_autokitteh_sessions_v1_session_proto_rawDescGZIP() []byte {
 }
 
 var file_autokitteh_sessions_v1_session_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_autokitteh_sessions_v1_session_proto_msgTypes = make([]protoimpl.MessageInfo, 21)
+var file_autokitteh_sessions_v1_session_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_autokitteh_sessions_v1_session_proto_goTypes = []interface{}{
 	(SessionStateType)(0),                // 0: autokitteh.sessions.v1.SessionStateType
 	(SessionLogRecord_Type)(0),           // 1: autokitteh.sessions.v1.SessionLogRecord.Type
 	(*SessionState)(nil),                 // 2: autokitteh.sessions.v1.SessionState
 	(*Call)(nil),                         // 3: autokitteh.sessions.v1.Call
 	(*SessionLogRecord)(nil),             // 4: autokitteh.sessions.v1.SessionLogRecord
-	(*SessionLog)(nil),                   // 5: autokitteh.sessions.v1.SessionLog
-	(*Session)(nil),                      // 6: autokitteh.sessions.v1.Session
-	(*SessionState_Created)(nil),         // 7: autokitteh.sessions.v1.SessionState.Created
-	(*SessionState_Running)(nil),         // 8: autokitteh.sessions.v1.SessionState.Running
-	(*SessionState_Error)(nil),           // 9: autokitteh.sessions.v1.SessionState.Error
-	(*SessionState_Completed)(nil),       // 10: autokitteh.sessions.v1.SessionState.Completed
-	(*SessionState_Stopped)(nil),         // 11: autokitteh.sessions.v1.SessionState.Stopped
-	nil,                                  // 12: autokitteh.sessions.v1.SessionState.Completed.ExportsEntry
-	(*Call_Spec)(nil),                    // 13: autokitteh.sessions.v1.Call.Spec
-	(*Call_Attempt)(nil),                 // 14: autokitteh.sessions.v1.Call.Attempt
-	nil,                                  // 15: autokitteh.sessions.v1.Call.Spec.KwargsEntry
-	(*Call_Attempt_Result)(nil),          // 16: autokitteh.sessions.v1.Call.Attempt.Result
-	(*Call_Attempt_Start)(nil),           // 17: autokitteh.sessions.v1.Call.Attempt.Start
-	(*Call_Attempt_Complete)(nil),        // 18: autokitteh.sessions.v1.Call.Attempt.Complete
-	(*SessionLogRecord_Print)(nil),       // 19: autokitteh.sessions.v1.SessionLogRecord.Print
-	(*SessionLogRecord_StopRequest)(nil), // 20: autokitteh.sessions.v1.SessionLogRecord.StopRequest
-	nil,                                  // 21: autokitteh.sessions.v1.Session.InputsEntry
-	nil,                                  // 22: autokitteh.sessions.v1.Session.MemoEntry
-	(*timestamppb.Timestamp)(nil),        // 23: google.protobuf.Timestamp
-	(*v1.CodeLocation)(nil),              // 24: autokitteh.program.v1.CodeLocation
-	(*v11.Value)(nil),                    // 25: autokitteh.values.v1.Value
-	(*v1.Error)(nil),                     // 26: autokitteh.program.v1.Error
-	(*durationpb.Duration)(nil),          // 27: google.protobuf.Duration
+	(*Session)(nil),                      // 5: autokitteh.sessions.v1.Session
+	(*SessionState_Created)(nil),         // 6: autokitteh.sessions.v1.SessionState.Created
+	(*SessionState_Running)(nil),         // 7: autokitteh.sessions.v1.SessionState.Running
+	(*SessionState_Error)(nil),           // 8: autokitteh.sessions.v1.SessionState.Error
+	(*SessionState_Completed)(nil),       // 9: autokitteh.sessions.v1.SessionState.Completed
+	(*SessionState_Stopped)(nil),         // 10: autokitteh.sessions.v1.SessionState.Stopped
+	nil,                                  // 11: autokitteh.sessions.v1.SessionState.Completed.ExportsEntry
+	(*Call_Spec)(nil),                    // 12: autokitteh.sessions.v1.Call.Spec
+	(*Call_Attempt)(nil),                 // 13: autokitteh.sessions.v1.Call.Attempt
+	nil,                                  // 14: autokitteh.sessions.v1.Call.Spec.KwargsEntry
+	(*Call_Attempt_Result)(nil),          // 15: autokitteh.sessions.v1.Call.Attempt.Result
+	(*Call_Attempt_Start)(nil),           // 16: autokitteh.sessions.v1.Call.Attempt.Start
+	(*Call_Attempt_Complete)(nil),        // 17: autokitteh.sessions.v1.Call.Attempt.Complete
+	(*SessionLogRecord_Print)(nil),       // 18: autokitteh.sessions.v1.SessionLogRecord.Print
+	(*SessionLogRecord_StopRequest)(nil), // 19: autokitteh.sessions.v1.SessionLogRecord.StopRequest
+	nil,                                  // 20: autokitteh.sessions.v1.Session.InputsEntry
+	nil,                                  // 21: autokitteh.sessions.v1.Session.MemoEntry
+	(*timestamppb.Timestamp)(nil),        // 22: google.protobuf.Timestamp
+	(*v1.CodeLocation)(nil),              // 23: autokitteh.program.v1.CodeLocation
+	(*v11.Value)(nil),                    // 24: autokitteh.values.v1.Value
+	(*v1.Error)(nil),                     // 25: autokitteh.program.v1.Error
+	(*durationpb.Duration)(nil),          // 26: google.protobuf.Duration
 }
 var file_autokitteh_sessions_v1_session_proto_depIdxs = []int32{
-	7,  // 0: autokitteh.sessions.v1.SessionState.created:type_name -> autokitteh.sessions.v1.SessionState.Created
-	8,  // 1: autokitteh.sessions.v1.SessionState.running:type_name -> autokitteh.sessions.v1.SessionState.Running
-	9,  // 2: autokitteh.sessions.v1.SessionState.error:type_name -> autokitteh.sessions.v1.SessionState.Error
-	10, // 3: autokitteh.sessions.v1.SessionState.completed:type_name -> autokitteh.sessions.v1.SessionState.Completed
-	11, // 4: autokitteh.sessions.v1.SessionState.stopped:type_name -> autokitteh.sessions.v1.SessionState.Stopped
-	13, // 5: autokitteh.sessions.v1.Call.spec:type_name -> autokitteh.sessions.v1.Call.Spec
-	14, // 6: autokitteh.sessions.v1.Call.attempts:type_name -> autokitteh.sessions.v1.Call.Attempt
-	23, // 7: autokitteh.sessions.v1.SessionLogRecord.t:type_name -> google.protobuf.Timestamp
-	19, // 8: autokitteh.sessions.v1.SessionLogRecord.print:type_name -> autokitteh.sessions.v1.SessionLogRecord.Print
-	13, // 9: autokitteh.sessions.v1.SessionLogRecord.call_spec:type_name -> autokitteh.sessions.v1.Call.Spec
-	17, // 10: autokitteh.sessions.v1.SessionLogRecord.call_attempt_start:type_name -> autokitteh.sessions.v1.Call.Attempt.Start
-	18, // 11: autokitteh.sessions.v1.SessionLogRecord.call_attempt_complete:type_name -> autokitteh.sessions.v1.Call.Attempt.Complete
+	6,  // 0: autokitteh.sessions.v1.SessionState.created:type_name -> autokitteh.sessions.v1.SessionState.Created
+	7,  // 1: autokitteh.sessions.v1.SessionState.running:type_name -> autokitteh.sessions.v1.SessionState.Running
+	8,  // 2: autokitteh.sessions.v1.SessionState.error:type_name -> autokitteh.sessions.v1.SessionState.Error
+	9,  // 3: autokitteh.sessions.v1.SessionState.completed:type_name -> autokitteh.sessions.v1.SessionState.Completed
+	10, // 4: autokitteh.sessions.v1.SessionState.stopped:type_name -> autokitteh.sessions.v1.SessionState.Stopped
+	12, // 5: autokitteh.sessions.v1.Call.spec:type_name -> autokitteh.sessions.v1.Call.Spec
+	13, // 6: autokitteh.sessions.v1.Call.attempts:type_name -> autokitteh.sessions.v1.Call.Attempt
+	22, // 7: autokitteh.sessions.v1.SessionLogRecord.t:type_name -> google.protobuf.Timestamp
+	18, // 8: autokitteh.sessions.v1.SessionLogRecord.print:type_name -> autokitteh.sessions.v1.SessionLogRecord.Print
+	12, // 9: autokitteh.sessions.v1.SessionLogRecord.call_spec:type_name -> autokitteh.sessions.v1.Call.Spec
+	16, // 10: autokitteh.sessions.v1.SessionLogRecord.call_attempt_start:type_name -> autokitteh.sessions.v1.Call.Attempt.Start
+	17, // 11: autokitteh.sessions.v1.SessionLogRecord.call_attempt_complete:type_name -> autokitteh.sessions.v1.Call.Attempt.Complete
 	2,  // 12: autokitteh.sessions.v1.SessionLogRecord.state:type_name -> autokitteh.sessions.v1.SessionState
-	20, // 13: autokitteh.sessions.v1.SessionLogRecord.stop_request:type_name -> autokitteh.sessions.v1.SessionLogRecord.StopRequest
-	4,  // 14: autokitteh.sessions.v1.SessionLog.records:type_name -> autokitteh.sessions.v1.SessionLogRecord
-	24, // 15: autokitteh.sessions.v1.Session.entrypoint:type_name -> autokitteh.program.v1.CodeLocation
-	21, // 16: autokitteh.sessions.v1.Session.inputs:type_name -> autokitteh.sessions.v1.Session.InputsEntry
-	22, // 17: autokitteh.sessions.v1.Session.memo:type_name -> autokitteh.sessions.v1.Session.MemoEntry
-	23, // 18: autokitteh.sessions.v1.Session.created_at:type_name -> google.protobuf.Timestamp
-	23, // 19: autokitteh.sessions.v1.Session.updated_at:type_name -> google.protobuf.Timestamp
-	0,  // 20: autokitteh.sessions.v1.Session.state:type_name -> autokitteh.sessions.v1.SessionStateType
-	25, // 21: autokitteh.sessions.v1.SessionState.Running.call:type_name -> autokitteh.values.v1.Value
-	26, // 22: autokitteh.sessions.v1.SessionState.Error.error:type_name -> autokitteh.program.v1.Error
-	12, // 23: autokitteh.sessions.v1.SessionState.Completed.exports:type_name -> autokitteh.sessions.v1.SessionState.Completed.ExportsEntry
-	25, // 24: autokitteh.sessions.v1.SessionState.Completed.return_value:type_name -> autokitteh.values.v1.Value
-	25, // 25: autokitteh.sessions.v1.SessionState.Completed.ExportsEntry.value:type_name -> autokitteh.values.v1.Value
-	25, // 26: autokitteh.sessions.v1.Call.Spec.function:type_name -> autokitteh.values.v1.Value
-	25, // 27: autokitteh.sessions.v1.Call.Spec.args:type_name -> autokitteh.values.v1.Value
-	15, // 28: autokitteh.sessions.v1.Call.Spec.kwargs:type_name -> autokitteh.sessions.v1.Call.Spec.KwargsEntry
-	17, // 29: autokitteh.sessions.v1.Call.Attempt.start:type_name -> autokitteh.sessions.v1.Call.Attempt.Start
-	18, // 30: autokitteh.sessions.v1.Call.Attempt.complete:type_name -> autokitteh.sessions.v1.Call.Attempt.Complete
-	25, // 31: autokitteh.sessions.v1.Call.Spec.KwargsEntry.value:type_name -> autokitteh.values.v1.Value
-	25, // 32: autokitteh.sessions.v1.Call.Attempt.Result.value:type_name -> autokitteh.values.v1.Value
-	26, // 33: autokitteh.sessions.v1.Call.Attempt.Result.error:type_name -> autokitteh.program.v1.Error
-	23, // 34: autokitteh.sessions.v1.Call.Attempt.Start.started_at:type_name -> google.protobuf.Timestamp
-	23, // 35: autokitteh.sessions.v1.Call.Attempt.Complete.completed_at:type_name -> google.protobuf.Timestamp
-	27, // 36: autokitteh.sessions.v1.Call.Attempt.Complete.retry_interval:type_name -> google.protobuf.Duration
-	16, // 37: autokitteh.sessions.v1.Call.Attempt.Complete.result:type_name -> autokitteh.sessions.v1.Call.Attempt.Result
-	25, // 38: autokitteh.sessions.v1.SessionLogRecord.Print.value:type_name -> autokitteh.values.v1.Value
-	25, // 39: autokitteh.sessions.v1.Session.InputsEntry.value:type_name -> autokitteh.values.v1.Value
-	40, // [40:40] is the sub-list for method output_type
-	40, // [40:40] is the sub-list for method input_type
-	40, // [40:40] is the sub-list for extension type_name
-	40, // [40:40] is the sub-list for extension extendee
-	0,  // [0:40] is the sub-list for field type_name
+	19, // 13: autokitteh.sessions.v1.SessionLogRecord.stop_request:type_name -> autokitteh.sessions.v1.SessionLogRecord.StopRequest
+	23, // 14: autokitteh.sessions.v1.Session.entrypoint:type_name -> autokitteh.program.v1.CodeLocation
+	20, // 15: autokitteh.sessions.v1.Session.inputs:type_name -> autokitteh.sessions.v1.Session.InputsEntry
+	21, // 16: autokitteh.sessions.v1.Session.memo:type_name -> autokitteh.sessions.v1.Session.MemoEntry
+	22, // 17: autokitteh.sessions.v1.Session.created_at:type_name -> google.protobuf.Timestamp
+	22, // 18: autokitteh.sessions.v1.Session.updated_at:type_name -> google.protobuf.Timestamp
+	0,  // 19: autokitteh.sessions.v1.Session.state:type_name -> autokitteh.sessions.v1.SessionStateType
+	24, // 20: autokitteh.sessions.v1.SessionState.Running.call:type_name -> autokitteh.values.v1.Value
+	25, // 21: autokitteh.sessions.v1.SessionState.Error.error:type_name -> autokitteh.program.v1.Error
+	11, // 22: autokitteh.sessions.v1.SessionState.Completed.exports:type_name -> autokitteh.sessions.v1.SessionState.Completed.ExportsEntry
+	24, // 23: autokitteh.sessions.v1.SessionState.Completed.return_value:type_name -> autokitteh.values.v1.Value
+	24, // 24: autokitteh.sessions.v1.SessionState.Completed.ExportsEntry.value:type_name -> autokitteh.values.v1.Value
+	24, // 25: autokitteh.sessions.v1.Call.Spec.function:type_name -> autokitteh.values.v1.Value
+	24, // 26: autokitteh.sessions.v1.Call.Spec.args:type_name -> autokitteh.values.v1.Value
+	14, // 27: autokitteh.sessions.v1.Call.Spec.kwargs:type_name -> autokitteh.sessions.v1.Call.Spec.KwargsEntry
+	16, // 28: autokitteh.sessions.v1.Call.Attempt.start:type_name -> autokitteh.sessions.v1.Call.Attempt.Start
+	17, // 29: autokitteh.sessions.v1.Call.Attempt.complete:type_name -> autokitteh.sessions.v1.Call.Attempt.Complete
+	24, // 30: autokitteh.sessions.v1.Call.Spec.KwargsEntry.value:type_name -> autokitteh.values.v1.Value
+	24, // 31: autokitteh.sessions.v1.Call.Attempt.Result.value:type_name -> autokitteh.values.v1.Value
+	25, // 32: autokitteh.sessions.v1.Call.Attempt.Result.error:type_name -> autokitteh.program.v1.Error
+	22, // 33: autokitteh.sessions.v1.Call.Attempt.Start.started_at:type_name -> google.protobuf.Timestamp
+	22, // 34: autokitteh.sessions.v1.Call.Attempt.Complete.completed_at:type_name -> google.protobuf.Timestamp
+	26, // 35: autokitteh.sessions.v1.Call.Attempt.Complete.retry_interval:type_name -> google.protobuf.Duration
+	15, // 36: autokitteh.sessions.v1.Call.Attempt.Complete.result:type_name -> autokitteh.sessions.v1.Call.Attempt.Result
+	24, // 37: autokitteh.sessions.v1.SessionLogRecord.Print.value:type_name -> autokitteh.values.v1.Value
+	24, // 38: autokitteh.sessions.v1.Session.InputsEntry.value:type_name -> autokitteh.values.v1.Value
+	39, // [39:39] is the sub-list for method output_type
+	39, // [39:39] is the sub-list for method input_type
+	39, // [39:39] is the sub-list for extension type_name
+	39, // [39:39] is the sub-list for extension extendee
+	0,  // [0:39] is the sub-list for field type_name
 }
 
 func init() { file_autokitteh_sessions_v1_session_proto_init() }
@@ -1663,18 +1607,6 @@ func file_autokitteh_sessions_v1_session_proto_init() {
 			}
 		}
 		file_autokitteh_sessions_v1_session_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*SessionLog); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_autokitteh_sessions_v1_session_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Session); i {
 			case 0:
 				return &v.state
@@ -1686,7 +1618,7 @@ func file_autokitteh_sessions_v1_session_proto_init() {
 				return nil
 			}
 		}
-		file_autokitteh_sessions_v1_session_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+		file_autokitteh_sessions_v1_session_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*SessionState_Created); i {
 			case 0:
 				return &v.state
@@ -1698,7 +1630,7 @@ func file_autokitteh_sessions_v1_session_proto_init() {
 				return nil
 			}
 		}
-		file_autokitteh_sessions_v1_session_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+		file_autokitteh_sessions_v1_session_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*SessionState_Running); i {
 			case 0:
 				return &v.state
@@ -1710,7 +1642,7 @@ func file_autokitteh_sessions_v1_session_proto_init() {
 				return nil
 			}
 		}
-		file_autokitteh_sessions_v1_session_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+		file_autokitteh_sessions_v1_session_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*SessionState_Error); i {
 			case 0:
 				return &v.state
@@ -1722,7 +1654,7 @@ func file_autokitteh_sessions_v1_session_proto_init() {
 				return nil
 			}
 		}
-		file_autokitteh_sessions_v1_session_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
+		file_autokitteh_sessions_v1_session_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*SessionState_Completed); i {
 			case 0:
 				return &v.state
@@ -1734,7 +1666,7 @@ func file_autokitteh_sessions_v1_session_proto_init() {
 				return nil
 			}
 		}
-		file_autokitteh_sessions_v1_session_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
+		file_autokitteh_sessions_v1_session_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*SessionState_Stopped); i {
 			case 0:
 				return &v.state
@@ -1746,7 +1678,7 @@ func file_autokitteh_sessions_v1_session_proto_init() {
 				return nil
 			}
 		}
-		file_autokitteh_sessions_v1_session_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
+		file_autokitteh_sessions_v1_session_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Call_Spec); i {
 			case 0:
 				return &v.state
@@ -1758,7 +1690,7 @@ func file_autokitteh_sessions_v1_session_proto_init() {
 				return nil
 			}
 		}
-		file_autokitteh_sessions_v1_session_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
+		file_autokitteh_sessions_v1_session_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Call_Attempt); i {
 			case 0:
 				return &v.state
@@ -1770,7 +1702,7 @@ func file_autokitteh_sessions_v1_session_proto_init() {
 				return nil
 			}
 		}
-		file_autokitteh_sessions_v1_session_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
+		file_autokitteh_sessions_v1_session_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Call_Attempt_Result); i {
 			case 0:
 				return &v.state
@@ -1782,7 +1714,7 @@ func file_autokitteh_sessions_v1_session_proto_init() {
 				return nil
 			}
 		}
-		file_autokitteh_sessions_v1_session_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
+		file_autokitteh_sessions_v1_session_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Call_Attempt_Start); i {
 			case 0:
 				return &v.state
@@ -1794,7 +1726,7 @@ func file_autokitteh_sessions_v1_session_proto_init() {
 				return nil
 			}
 		}
-		file_autokitteh_sessions_v1_session_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
+		file_autokitteh_sessions_v1_session_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Call_Attempt_Complete); i {
 			case 0:
 				return &v.state
@@ -1806,7 +1738,7 @@ func file_autokitteh_sessions_v1_session_proto_init() {
 				return nil
 			}
 		}
-		file_autokitteh_sessions_v1_session_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
+		file_autokitteh_sessions_v1_session_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*SessionLogRecord_Print); i {
 			case 0:
 				return &v.state
@@ -1818,7 +1750,7 @@ func file_autokitteh_sessions_v1_session_proto_init() {
 				return nil
 			}
 		}
-		file_autokitteh_sessions_v1_session_proto_msgTypes[18].Exporter = func(v interface{}, i int) interface{} {
+		file_autokitteh_sessions_v1_session_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*SessionLogRecord_StopRequest); i {
 			case 0:
 				return &v.state
@@ -1837,7 +1769,7 @@ func file_autokitteh_sessions_v1_session_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_autokitteh_sessions_v1_session_proto_rawDesc,
 			NumEnums:      2,
-			NumMessages:   21,
+			NumMessages:   20,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
