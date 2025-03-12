@@ -49,36 +49,36 @@ func HTTPDeleteJSON(ctx context.Context, u, auth string, payload any) ([]byte, e
 }
 
 func HTTPGet(ctx context.Context, u, auth string) ([]byte, error) {
-	return httpGet(ctx, u, auth, "", nil)
+	return httpRequest(ctx, http.MethodGet, u, auth, "", nil)
 }
 
 func HTTPGetJSON(ctx context.Context, u, auth string, payload any) ([]byte, error) {
 	if s, ok := payload.(string); ok {
-		return httpGet(ctx, u, auth, ContentTypeJSONCharsetUTF8, []byte(s))
+		return httpRequest(ctx, http.MethodGet, u, auth, ContentTypeJSONCharsetUTF8, []byte(s))
 	}
 
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal JSON payload: %w", err)
 	}
-	return httpGet(ctx, u, auth, ContentTypeJSONCharsetUTF8, body)
+	return httpRequest(ctx, http.MethodGet, u, auth, ContentTypeJSONCharsetUTF8, body)
 }
 
 func HTTPPostForm(ctx context.Context, u, auth string, payload url.Values) ([]byte, error) {
 	body := []byte(payload.Encode())
-	return httpPost(ctx, u, auth, ContentTypeForm, body)
+	return httpRequest(ctx, http.MethodPost, u, auth, ContentTypeForm, body)
 }
 
 func HTTPPostJSON(ctx context.Context, u, auth string, payload any) ([]byte, error) {
 	if s, ok := payload.(string); ok {
-		return httpPost(ctx, u, auth, ContentTypeJSONCharsetUTF8, []byte(s))
+		return httpRequest(ctx, http.MethodPost, u, auth, ContentTypeJSONCharsetUTF8, []byte(s))
 	}
 
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal JSON payload: %w", err)
 	}
-	return httpPost(ctx, u, auth, ContentTypeJSONCharsetUTF8, body)
+	return httpRequest(ctx, http.MethodPost, u, auth, ContentTypeJSONCharsetUTF8, body)
 }
 
 func HTTPPutJSON(ctx context.Context, u, auth string, payload any) ([]byte, error) {
@@ -91,14 +91,6 @@ func HTTPPutJSON(ctx context.Context, u, auth string, payload any) ([]byte, erro
 		return nil, fmt.Errorf("failed to marshal JSON payload: %w", err)
 	}
 	return httpRequest(ctx, http.MethodPut, u, auth, ContentTypeJSONCharsetUTF8, body)
-}
-
-func httpGet(ctx context.Context, u, auth, contentType string, body []byte) ([]byte, error) {
-	return httpRequest(ctx, http.MethodGet, u, auth, contentType, body)
-}
-
-func httpPost(ctx context.Context, u, auth, contentType string, body []byte) ([]byte, error) {
-	return httpRequest(ctx, http.MethodPost, u, auth, contentType, body)
 }
 
 // httpRequest sends an HTTP GET or POST request and returns the response's body.
