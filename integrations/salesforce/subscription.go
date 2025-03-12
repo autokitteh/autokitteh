@@ -47,7 +47,7 @@ func (h handler) subscribe(clientID, orgID string, cid sdktypes.ConnectionID) {
 	}
 
 	t := common.FreshOAuthToken(ctx, l, h.oauth, h.vars, desc, vs)
-	cfg, _, err := h.oauth.Get(ctx, desc.ID().String())
+	cfg, _, err := h.oauth.Get(ctx, desc.UniqueName().String())
 	if err != nil {
 		l.Error("failed to get Salesforce OAuth config", zap.Error(err))
 		return
