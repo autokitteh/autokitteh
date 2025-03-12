@@ -32,11 +32,12 @@ func DaemonToken(ctx context.Context, vs sdktypes.Vars) (*oauth2.Token, error) {
 	u := fmt.Sprintf("https://login.microsoftonline.com/%s/oauth2/v2.0/token", tenantID)
 
 	// TODO(INT-227): Add support for certificate-based authentication.
-	form := url.Values{}
-	form.Set("grant_type", "client_credentials")
-	form.Set("client_id", vs.GetValue(privateClientIDVar))
-	form.Set("client_secret", vs.GetValue(privateClientSecretVar))
-	form.Set("scope", "https://graph.microsoft.com/.default")
+	form := url.Values{
+		"grant_type":    {"client_credentials"},
+		"client_id":     {vs.GetValue(privateClientIDVar)},
+		"client_secret": {vs.GetValue(privateClientSecretVar)},
+		"scope":         {"https://graph.microsoft.com/.default"},
+	}
 
 	if form.Get("client_id") == "" || form.Get("client_secret") == "" {
 		return nil, errors.New("missing required connection variables")
