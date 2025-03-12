@@ -186,12 +186,6 @@ class SessionLogRecord(_message.Message):
     stop_request: SessionLogRecord.StopRequest
     def __init__(self, t: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., process_id: _Optional[str] = ..., print: _Optional[_Union[SessionLogRecord.Print, _Mapping]] = ..., call_spec: _Optional[_Union[Call.Spec, _Mapping]] = ..., call_attempt_start: _Optional[_Union[Call.Attempt.Start, _Mapping]] = ..., call_attempt_complete: _Optional[_Union[Call.Attempt.Complete, _Mapping]] = ..., state: _Optional[_Union[SessionState, _Mapping]] = ..., stop_request: _Optional[_Union[SessionLogRecord.StopRequest, _Mapping]] = ...) -> None: ...
 
-class SessionLog(_message.Message):
-    __slots__ = ["records"]
-    RECORDS_FIELD_NUMBER: _ClassVar[int]
-    records: _containers.RepeatedCompositeFieldContainer[SessionLogRecord]
-    def __init__(self, records: _Optional[_Iterable[_Union[SessionLogRecord, _Mapping]]] = ...) -> None: ...
-
 class Session(_message.Message):
     __slots__ = ["session_id", "build_id", "project_id", "entrypoint", "inputs", "parent_session_id", "memo", "created_at", "updated_at", "state", "deployment_id", "event_id"]
     class InputsEntry(_message.Message):

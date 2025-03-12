@@ -235,6 +235,7 @@ class Runner(pb.runner_rpc.RunnerService):
         autokitteh.unsubscribe = self.syscalls.ak_unsubscribe
 
     def Start(self, request: pb.runner.StartRequest, context: grpc.ServicerContext):
+        # NOTE: Don't do any prints here, ak is not ready for them yet.
         if self._start_called:
             log.error("already called start before")
             return pb.runner.StartResponse(error="start already called")
@@ -257,11 +258,13 @@ class Runner(pb.runner_rpc.RunnerService):
         try:
             mod = loader.load_code(self.code_dir, ak_call, mod_name)
         except Exception as err:
+            err_text = result_error(err)
             print(result_error(err))
             context.abort(
                 grpc.StatusCode.INVALID_ARGUMENT,
-                f"can't load {mod_name} from {self.code_dir} - {err}",
+                f"can't load {mod_name} from {self.code_dir} - {err_text}",
             )
+            return  # Make linter happy
 
         ak_call.set_module(mod)
 

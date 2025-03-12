@@ -5,7 +5,7 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Duration, Message, proto3, protoInt64, Timestamp } from "@bufbuild/protobuf";
-import { Session, SessionLog, SessionLogRecord, SessionLogRecord_Type, SessionStateType } from "./session_pb.js";
+import { Session, SessionLogRecord, SessionLogRecord_Type, SessionStateType } from "./session_pb.js";
 import { Value } from "../../values/v1/values_pb.js";
 
 /**
@@ -504,13 +504,6 @@ export class GetLogRequest extends Message<GetLogRequest> {
  */
 export class GetLogResponse extends Message<GetLogResponse> {
   /**
-   * deprecated, use records.
-   *
-   * @generated from field: autokitteh.sessions.v1.SessionLog log = 1;
-   */
-  log?: SessionLog;
-
-  /**
    * @generated from field: int64 count = 2;
    */
   count = protoInt64.zero;
@@ -533,7 +526,6 @@ export class GetLogResponse extends Message<GetLogResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "autokitteh.sessions.v1.GetLogResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "log", kind: "message", T: SessionLog },
     { no: 2, name: "count", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 3, name: "records", kind: "message", T: SessionLogRecord, repeated: true },
     { no: 10, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },

@@ -27,7 +27,6 @@ const (
 	getSessionStopReasonActivityName        = "get_session_stop_reason"
 	getSignalEventActivityName              = "get_signal_event"
 	removeSignalActivityName                = "remove_signal"
-	legacyAddSessionPrintActivityName       = "add_session_print"
 	addSessionPrintActivityName             = "add_session_print_value"
 	deactivateDrainedDeploymentActivityName = "deactivate_drained_deployment"
 	getDeploymentStateActivityName          = "get_deployment_state"
@@ -71,11 +70,6 @@ func (ws *workflows) registerActivities() {
 	)
 
 	ws.worker.RegisterActivityWithOptions(
-		ws.legacyAddSessionPrintActivity,
-		activity.RegisterOptions{Name: legacyAddSessionPrintActivityName},
-	)
-
-	ws.worker.RegisterActivityWithOptions(
 		ws.addSessionPrintActivity,
 		activity.RegisterOptions{Name: addSessionPrintActivityName},
 	)
@@ -115,10 +109,6 @@ func (ws *workflows) getDeploymentStateActivity(ctx context.Context, did sdktype
 
 func (ws *workflows) addSessionPrintActivity(ctx context.Context, sid sdktypes.SessionID, v sdktypes.Value, callSeq uint32) error {
 	return temporalclient.TranslateError(ws.svcs.DB.AddSessionPrint(ctx, sid, v, callSeq), "%v: add session print", sid)
-}
-
-func (ws *workflows) legacyAddSessionPrintActivity(ctx context.Context, sid sdktypes.SessionID, txt string) error {
-	return temporalclient.TranslateError(ws.svcs.DB.AddSessionPrint(ctx, sid, sdktypes.NewStringValue(txt), 0), "%v: legacy add session print", sid)
 }
 
 func (ws *workflows) removeSignalActivity(ctx context.Context, sigid uuid.UUID) error {

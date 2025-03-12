@@ -836,45 +836,6 @@ export class SessionLogRecord_StopRequest extends Message<SessionLogRecord_StopR
 }
 
 /**
- * @generated from message autokitteh.sessions.v1.SessionLog
- */
-export class SessionLog extends Message<SessionLog> {
-  /**
-   * Chronological order: the last item is the latest.
-   *
-   * @generated from field: repeated autokitteh.sessions.v1.SessionLogRecord records = 1;
-   */
-  records: SessionLogRecord[] = [];
-
-  constructor(data?: PartialMessage<SessionLog>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "autokitteh.sessions.v1.SessionLog";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "records", kind: "message", T: SessionLogRecord, repeated: true },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SessionLog {
-    return new SessionLog().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SessionLog {
-    return new SessionLog().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SessionLog {
-    return new SessionLog().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: SessionLog | PlainMessage<SessionLog> | undefined, b: SessionLog | PlainMessage<SessionLog> | undefined): boolean {
-    return proto3.util.equals(SessionLog, a, b);
-  }
-}
-
-/**
  * @generated from message autokitteh.sessions.v1.Session
  */
 export class Session extends Message<Session> {

@@ -46,6 +46,18 @@ def caller_info():
         return "<unknown>", 0
 
 
+def is_ak_func(fn):
+    mod = getattr(fn, "__module__", None)
+    if not mod:
+        if (inst := getattr(fn, "__self__", None)) is not None:
+            mod = inst.__class__.__module__
+
+    if not mod:
+        return False
+
+    return mod == ak_mod_name or mod.startswith(ak_mod_name + ".")
+
+
 class AKCall:
     """Callable wrapping functions with activities."""
 
@@ -81,8 +93,7 @@ class AKCall:
         if mark in (True, False):
             return mark
 
-        fnmod = fn.__module__
-        if fnmod and (fnmod == ak_mod_name or fnmod.startswith(ak_mod_name + ".")):
+        if is_ak_func(fn):
             return False
 
         if is_deterministic(fn):

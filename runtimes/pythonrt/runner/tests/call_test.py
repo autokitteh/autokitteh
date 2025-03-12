@@ -1,11 +1,12 @@
 import re
+import sys
 from pathlib import Path
 from time import sleep
 from types import ModuleType
 from unittest.mock import MagicMock
 
 import pytest
-from autokitteh import activity
+from autokitteh import activity, AttrDict
 from conftest import clear_module_cache, workflows
 
 import call
@@ -41,37 +42,51 @@ def test_call_non_func():
         ak_call("hello")
 
 
-def test_should_run_as_activity():
+def test_should_run_as_activity(monkeypatch):
+    code_dir = Path(__file__).parent
     mod_name = "ak_test_module_name"
     mod = ModuleType(mod_name)
+    mod.__file__ = str(code_dir / (mod_name + ".py"))
 
-    ak_call = call.AKCall(None, Path("/tmp"))
+    monkeypatch.setitem(sys.modules, mod_name, mod)
+
+    ak_call = call.AKCall(None, code_dir)
 
     def fn():
         pass
 
+    fn.__module__ = "/tmp"  # Not from user dir
+
     # loading
     assert not ak_call.should_run_as_activity(fn)
-    ak_call.set_module(mod)
 
     # after loading
+    ak_call.set_module(mod)
     assert ak_call.should_run_as_activity(fn)
 
     # Function from same module
     fn.__module__ = mod_name
     assert not ak_call.should_run_as_activity(fn)
 
+    # Function from user code dir
+    fn.__file__ = str(code_dir / "other.py")
+    assert not ak_call.should_run_as_activity(fn)
+
     # Marked activity
-    fn = activity(fn)
-    assert ak_call.should_run_as_activity(fn)
+    act_fn = activity(fn)
+    assert ak_call.should_run_as_activity(act_fn)
 
     # In activity
     ak_call.in_activity = True
-    assert not ak_call.should_run_as_activity(fn)
+    assert not ak_call.should_run_as_activity(act_fn)
     ak_call.in_activity = False
 
     # Deterministic
     assert not ak_call.should_run_as_activity(re.compile)
+
+    # AutoKitteh function
+    evt = AttrDict()
+    assert not ak_call.should_run_as_activity(evt.get)
 
 
 def test_is_module_func(monkeypatch: pytest.MonkeyPatch):
