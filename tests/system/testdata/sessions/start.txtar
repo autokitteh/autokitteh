@@ -18,7 +18,7 @@ capture_jq sid .session_id
 ak session watch $sid --timeout 5s
 return code == 0
 
-ak session log $sid --no-timestamps --prints-only
+ak session prints $sid --no-timestamps
 return code == 0
 output equals file last.txt
 

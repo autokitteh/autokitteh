@@ -45,6 +45,7 @@ func init() {
 	sessionCmd.AddCommand(getCmd)
 	sessionCmd.AddCommand(listCmd)
 	sessionCmd.AddCommand(logCmd)
+	sessionCmd.AddCommand(printsCmd)
 	sessionCmd.AddCommand(restartCmd)
 	sessionCmd.AddCommand(startCmd)
 	sessionCmd.AddCommand(stopCmd)

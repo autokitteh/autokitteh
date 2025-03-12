@@ -13,12 +13,12 @@ return code == 0
 output equals 'trigger_id: trg_00000000000000000000000004'
 
 wait 5s for session ses_0000000000000000000000000b
-ak session log ses_0000000000000000000000000b --no-timestamps --prints-only
+ak session prints ses_0000000000000000000000000b --no-timestamps
 return code == 0
 output equals 'cron'
 
 wait 5s for session ses_0000000000000000000000000f
-ak session log ses_0000000000000000000000000f --no-timestamps --prints-only
+ak session prints ses_0000000000000000000000000f --no-timestamps
 return code == 0
 output equals 'cron'
 
