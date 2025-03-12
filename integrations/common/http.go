@@ -129,7 +129,7 @@ func httpRequest(ctx context.Context, method, u, auth, contentType string, body 
 	defer resp.Body.Close()
 
 	// Read the response's body.
-	payload, err := io.ReadAll(io.LimitReader(resp.Body, HTTPMaxSize))
+	payload, err := io.ReadAll(http.MaxBytesReader(nil, resp.Body, HTTPMaxSize))
 	if err != nil {
 		return nil, fmt.Errorf("failed to read HTTP response's body: %w", err)
 	}

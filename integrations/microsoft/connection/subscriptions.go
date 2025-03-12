@@ -206,7 +206,7 @@ func sendRequest(ctx context.Context, svc Services, cid sdktypes.ConnectionID, h
 	defer resp.Body.Close()
 
 	// Read the response's body, up to 1 MiB.
-	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	body, err := io.ReadAll(http.MaxBytesReader(nil, resp.Body, 1<<20))
 	if err != nil {
 		l.Warn("failed to read MS Graph subscription response", zap.Error(err))
 		return nil, err

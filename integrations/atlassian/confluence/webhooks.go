@@ -132,7 +132,7 @@ func getWebhook(ctx context.Context, l *zap.Logger, base, user, key, category st
 	defer resp.Body.Close()
 
 	// Read the response's body, up to 1 MiB.
-	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	body, err := io.ReadAll(http.MaxBytesReader(nil, resp.Body, 1<<20))
 	if err != nil {
 		l.Warn("Failed to read Confluence webhooks list response", zap.Error(err))
 		return 0, false
@@ -217,7 +217,7 @@ func registerWebhook(ctx context.Context, l *zap.Logger, base, user, key, catego
 	defer resp.Body.Close()
 
 	// Read the response's body, up to 1 MiB.
-	body, err = io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	body, err = io.ReadAll(http.MaxBytesReader(nil, resp.Body, 1<<20))
 	if err != nil {
 		l.Warn("Failed to read Confluence webhook registration response", zap.Error(err))
 		return 0, "", err
