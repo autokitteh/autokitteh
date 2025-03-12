@@ -31,9 +31,7 @@ message ExecuteRequest {
 }
 
 message ExecuteResponse {
-  autokitteh.values.v1.Value result = 1;
-  string error = 2;
-  repeated autokitteh.user_code.v1.Frame traceback = 3;
+  string error = 1;
 }
 
 message StartResponse {

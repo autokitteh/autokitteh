@@ -283,3 +283,21 @@ class HandlerHealthResponse(_message.Message):
     ERROR_FIELD_NUMBER: _ClassVar[int]
     error: str
     def __init__(self, error: _Optional[str] = ...) -> None: ...
+
+class ExecuteReplyRequest(_message.Message):
+    __slots__ = ["runner_id", "result", "error", "traceback"]
+    RUNNER_ID_FIELD_NUMBER: _ClassVar[int]
+    RESULT_FIELD_NUMBER: _ClassVar[int]
+    ERROR_FIELD_NUMBER: _ClassVar[int]
+    TRACEBACK_FIELD_NUMBER: _ClassVar[int]
+    runner_id: str
+    result: _values_pb2.Value
+    error: str
+    traceback: _containers.RepeatedCompositeFieldContainer[_user_code_pb2.Frame]
+    def __init__(self, runner_id: _Optional[str] = ..., result: _Optional[_Union[_values_pb2.Value, _Mapping]] = ..., error: _Optional[str] = ..., traceback: _Optional[_Iterable[_Union[_user_code_pb2.Frame, _Mapping]]] = ...) -> None: ...
+
+class ExecuteReplyResponse(_message.Message):
+    __slots__ = ["error"]
+    ERROR_FIELD_NUMBER: _ClassVar[int]
+    error: str
+    def __init__(self, error: _Optional[str] = ...) -> None: ...
