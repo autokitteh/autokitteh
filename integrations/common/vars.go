@@ -8,6 +8,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 
+	"go.autokitteh.dev/autokitteh/integrations/salesforce/salesforceauth"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -105,15 +106,18 @@ func FreshOAuthToken(ctx context.Context, l *zap.Logger, o sdkservices.OAuth, v 
 	if err != nil {
 		return t1
 	}
+	vsid := vs.Get(OAuthAccessTokenVar).ScopeID()
 
 	// Special case: Salesforce access tokens are time-limited and yet
 	// they don't have an expiry timestamp - so we add it on our own.
 	if i.UniqueName().String() == "salesforce" && t2.Expiry.IsZero() {
-		// TODO(INT-322): Reuse "accessTokenExpiration" in SFDC's OAuth handler.
-		t2.Expiry = time.Now().UTC().Add(2 * time.Hour)
+		err := salesforceauth.AccessTokenExpiration(ctx, cfg.Endpoint.TokenURL, t2, vsid, v)
+		if err != nil {
+			l.Warn("failed to get access token expiration for salesforce", zap.Error(err))
+			t2.Expiry = time.Now().UTC().Add(2 * time.Hour)
+		}
 	}
 
-	vsid := vs.Get(OAuthAccessTokenVar).ScopeID()
 	l.Debug("refreshed OAuth token",
 		zap.String("integration", intg),
 		zap.String("connection_id", vsid.String()),

@@ -2,18 +2,15 @@ package salesforce
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
-	"strings"
-	"time"
 
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 
 	"go.autokitteh.dev/autokitteh/integrations/common"
+	"go.autokitteh.dev/autokitteh/integrations/salesforce/salesforceauth"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -71,15 +68,15 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	orgID := userInfo["organization_id"].(string)
+	vsid := sdktypes.NewVarScopeID(cid)
 
 	// Set the access token expiration time.
-	if err := h.accessTokenExpiration(ctx, instanceURL, data.Token, cid); err != nil {
+	if err := salesforceauth.AccessTokenExpiration(ctx, instanceURL, data.Token, vsid, h.vars); err != nil {
 		l.Error("failed to get access token expiration", zap.Error(err))
 		c.AbortServerError("failed to get access token expiration")
 		return
 	}
 
-	vsid := sdktypes.NewVarScopeID(cid)
 	if err := h.saveConnection(ctx, vsid, data.Token, data.Extra, orgID); err != nil {
 		l.Error("failed to save OAuth connection details", zap.Error(err))
 		c.AbortServerError("failed to save connection details")
@@ -117,51 +114,4 @@ func (h handler) saveConnection(ctx context.Context, vsid sdktypes.VarScopeID, t
 	vs = vs.Append(sdktypes.NewVar(orgIDVar).SetValue(orgID))
 
 	return h.vars.Set(ctx, vs.WithScopeID(vsid)...)
-}
-
-func (h handler) accessTokenExpiration(ctx context.Context, instanceURL string, t *oauth2.Token, cid sdktypes.ConnectionID) error {
-	vs, errStatus, err := common.ReadVarsWithStatus(ctx, h.vars, cid)
-	if errStatus.IsValid() || err != nil {
-		return err
-	}
-
-	formData := url.Values{
-		"token":           {t.AccessToken},
-		"token_type_hint": {"access_token"},
-		"client_id":       {vs.GetValueByString("private_client_id")},
-		"client_secret":   {vs.GetValueByString("private_client_secret")},
-	}
-
-	u, err := url.JoinPath(instanceURL, "services/oauth2/introspect")
-	if err != nil {
-		return err
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u, strings.NewReader(formData.Encode()))
-	if err != nil {
-		return err
-	}
-
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	var tokenInfo map[string]any
-	if err := json.NewDecoder(resp.Body).Decode(&tokenInfo); err != nil {
-		return errors.New("failed to parse token info")
-	}
-
-	// Extract the expiration timestamp.
-	expFloat, ok := tokenInfo["exp"].(float64)
-	if !ok {
-		return errors.New("missing or invalid expiration time in response")
-	}
-	t.Expiry = time.Unix(int64(expFloat), 0)
-
-	return nil
 }
