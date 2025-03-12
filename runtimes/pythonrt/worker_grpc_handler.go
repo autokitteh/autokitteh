@@ -95,16 +95,21 @@ func (s *workerGRPCHandler) IsActiveRunner(ctx context.Context, req *userCode.Is
 	return &userCode.IsActiveRunnerResponse{}, nil
 }
 
+func (s *workerGRPCHandler) runnerByID(rid string) *pySvc {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	return w.runnerIDsToRuntime[rid]
+}
+
 func (s *workerGRPCHandler) Log(ctx context.Context, req *userCode.LogRequest) (*userCode.LogResponse, error) {
 	if req.Level == "" {
 		w.log.Error("empty log level")
 		return nil, status.Error(codes.InvalidArgument, "empty level")
 	}
 
-	w.mu.Lock()
-	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
-	w.mu.Unlock()
-	if !ok {
+	runner := s.runnerByID(req.RunnerId)
+	if runner == nil {
 		w.log.Error("unknown runner ID", zap.String("id", req.RunnerId))
 		return &userCode.LogResponse{Error: "unknown runner ID"}, nil
 	}
@@ -124,10 +129,9 @@ func (s *workerGRPCHandler) Log(ctx context.Context, req *userCode.LogRequest) (
 }
 
 func (s *workerGRPCHandler) Print(ctx context.Context, req *userCode.PrintRequest) (*userCode.PrintResponse, error) {
-	w.mu.Lock()
-	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
-	w.mu.Unlock()
-	if !ok {
+	s.log.Info("Print request", zap.String("message", req.Message))
+	runner := s.runnerByID(req.RunnerId)
+	if runner == nil {
 		w.log.Error("unknown runner ID", zap.String("id", req.RunnerId))
 		return &userCode.PrintResponse{Error: "unknown runner ID"}, nil
 	}
@@ -146,12 +150,26 @@ func (s *workerGRPCHandler) Print(ctx context.Context, req *userCode.PrintReques
 	}
 }
 
+func (s *workerGRPCHandler) ExecuteReply(ctx context.Context, req *userCode.ExecuteReplyRequest) (*userCode.ExecuteReplyResponse, error) {
+	s.log.Info("ExecuteReply request", zap.String("error", req.Error))
+	runner := s.runnerByID(req.RunnerId)
+	if runner == nil {
+		w.log.Error("unknown runner ID", zap.String("id", req.RunnerId))
+		resp := userCode.ExecuteReplyResponse{
+			Error: fmt.Sprintf("unknown runner ID: %s", req.RunnerId),
+		}
+
+		return &resp, nil
+	}
+
+	runner.channels.execute <- req
+	return &userCode.ExecuteReplyResponse{}, nil
+}
+
 func (s *workerGRPCHandler) Done(ctx context.Context, req *userCode.DoneRequest) (*userCode.DoneResponse, error) {
 	s.log.Info("Done request", zap.String("error", req.Error))
-	w.mu.Lock()
-	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
-	w.mu.Unlock()
-	if !ok {
+	runner := s.runnerByID(req.RunnerId)
+	if runner == nil {
 		w.log.Error("unknown runner ID", zap.String("id", req.RunnerId))
 		return &userCode.DoneResponse{}, nil
 	}
@@ -163,10 +181,9 @@ func (s *workerGRPCHandler) Done(ctx context.Context, req *userCode.DoneRequest)
 
 // Runner starting activity
 func (s *workerGRPCHandler) Activity(ctx context.Context, req *userCode.ActivityRequest) (*userCode.ActivityResponse, error) {
-	w.mu.Lock()
-	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
-	w.mu.Unlock()
-	if !ok {
+	s.log.Info("Activity request", zap.String("runner_id", req.RunnerId))
+	runner := s.runnerByID(req.RunnerId)
+	if runner == nil {
 		w.log.Error("unknown runner ID", zap.String("id", req.RunnerId))
 		return &userCode.ActivityResponse{Error: "unknown runner ID"}, nil
 	}
@@ -190,10 +207,8 @@ func (w *workerGRPCHandler) callback(ctx context.Context, rid string, name strin
 
 	startedAt := time.Now()
 
-	w.mu.Lock()
-	runner, ok := w.runnerIDsToRuntime[rid]
-	w.mu.Unlock()
-	if !ok {
+	runner := w.runnerByID(rid)
+	if runner == nil {
 		l.Error("unknown runner ID", zap.String("id", rid))
 		return nil, errors.New("unknown runner ID")
 	}

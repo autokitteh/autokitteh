@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	HandlerService_Activity_FullMethodName          = "/autokitteh.user_code.v1.HandlerService/Activity"
+	HandlerService_ExecuteReply_FullMethodName      = "/autokitteh.user_code.v1.HandlerService/ExecuteReply"
 	HandlerService_Done_FullMethodName              = "/autokitteh.user_code.v1.HandlerService/Done"
 	HandlerService_Log_FullMethodName               = "/autokitteh.user_code.v1.HandlerService/Log"
 	HandlerService_Print_FullMethodName             = "/autokitteh.user_code.v1.HandlerService/Print"
@@ -42,6 +43,8 @@ const (
 type HandlerServiceClient interface {
 	// Runner starting activity
 	Activity(ctx context.Context, in *ActivityRequest, opts ...grpc.CallOption) (*ActivityResponse, error)
+	// Runner result from execute
+	ExecuteReply(ctx context.Context, in *ExecuteReplyRequest, opts ...grpc.CallOption) (*ExecuteReplyResponse, error)
 	// Runner done with activity
 	Done(ctx context.Context, in *DoneRequest, opts ...grpc.CallOption) (*DoneResponse, error)
 	// Session logs
@@ -75,6 +78,16 @@ func (c *handlerServiceClient) Activity(ctx context.Context, in *ActivityRequest
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ActivityResponse)
 	err := c.cc.Invoke(ctx, HandlerService_Activity_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *handlerServiceClient) ExecuteReply(ctx context.Context, in *ExecuteReplyRequest, opts ...grpc.CallOption) (*ExecuteReplyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ExecuteReplyResponse)
+	err := c.cc.Invoke(ctx, HandlerService_ExecuteReply_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -227,6 +240,8 @@ func (c *handlerServiceClient) IsActiveRunner(ctx context.Context, in *IsActiveR
 type HandlerServiceServer interface {
 	// Runner starting activity
 	Activity(context.Context, *ActivityRequest) (*ActivityResponse, error)
+	// Runner result from execute
+	ExecuteReply(context.Context, *ExecuteReplyRequest) (*ExecuteReplyResponse, error)
 	// Runner done with activity
 	Done(context.Context, *DoneRequest) (*DoneResponse, error)
 	// Session logs
@@ -258,6 +273,9 @@ type UnimplementedHandlerServiceServer struct{}
 
 func (UnimplementedHandlerServiceServer) Activity(context.Context, *ActivityRequest) (*ActivityResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Activity not implemented")
+}
+func (UnimplementedHandlerServiceServer) ExecuteReply(context.Context, *ExecuteReplyRequest) (*ExecuteReplyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ExecuteReply not implemented")
 }
 func (UnimplementedHandlerServiceServer) Done(context.Context, *DoneRequest) (*DoneResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Done not implemented")
@@ -336,6 +354,24 @@ func _HandlerService_Activity_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(HandlerServiceServer).Activity(ctx, req.(*ActivityRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HandlerService_ExecuteReply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ExecuteReplyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HandlerServiceServer).ExecuteReply(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HandlerService_ExecuteReply_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HandlerServiceServer).ExecuteReply(ctx, req.(*ExecuteReplyRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -602,6 +638,10 @@ var HandlerService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Activity",
 			Handler:    _HandlerService_Activity_Handler,
+		},
+		{
+			MethodName: "ExecuteReply",
+			Handler:    _HandlerService_ExecuteReply_Handler,
 		},
 		{
 			MethodName: "Done",

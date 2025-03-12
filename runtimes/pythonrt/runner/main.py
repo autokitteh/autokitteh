@@ -300,6 +300,26 @@ class Runner(pb.runner_rpc.RunnerService):
 
         return pb.runner.StartResponse()
 
+    def execute(self, fn, args, kw):
+        req = pb.handler.ExecuteReplyRequest()
+
+        result = self._call(fn, args, kw)
+        try:
+            data = pickle.dumps(result)
+            req.result.custom.data = data
+            req.result.custom.value = values.safe_wrap(result.value)
+        except (TypeError, pickle.PickleError) as err:
+            # Print so it'll get to session log
+            msg = f"cannot pickle result - {err}"
+            print(f"error: {msg}")
+            print(pickle_help)
+            req.error = msg
+
+        log.info("execute reply: %r", req)
+        resp = self.worker.ExecuteReply(req)
+        if resp.error:
+            log.error("execute reply: %r", resp.error)
+
     def Execute(self, request: pb.runner.ExecuteRequest, context: grpc.ServicerContext):
         with self.lock:
             call: Call = self.activity_call
@@ -307,25 +327,8 @@ class Runner(pb.runner_rpc.RunnerService):
         if call is None:
             context.abort(grpc.StatusCode.INTERNAL, "no pending activity calls")
 
-        result = self._call(call.fn, call.args, call.kw)
-        try:
-            data = pickle.dumps(result)
-        except (TypeError, pickle.PickleError) as err:
-            # Print so it'll get to session log
-            print(f"error: cannot pickle result - {err}")
-            print(pickle_help)
-            context.abort(grpc.StatusCode.INTERNAL, f"can't pickle result - {err}")
-
-        resp = pb.runner.ExecuteResponse(
-            result=pb.values.Value(
-                custom=pb.values.Custom(
-                    data=data,
-                    value=values.safe_wrap(result.value),
-                ),
-            )
-        )
-
-        return resp
+        self.executor.submit(self.execute, call.fn, call.args, call.kw)
+        return pb.runner.ExecuteResponse()
 
     def ActivityReply(
         self, request: pb.runner.ActivityReplyRequest, context: grpc.ServicerContext
