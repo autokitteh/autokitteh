@@ -301,13 +301,15 @@ class Runner(pb.runner_rpc.RunnerService):
         return pb.runner.StartResponse()
 
     def execute(self, fn, args, kw):
-        req = pb.handler.ExecuteReplyRequest()
+        req = pb.handler.ExecuteReplyRequest(
+            runner_id=self.id,
+        )
 
         result = self._call(fn, args, kw)
         try:
             data = pickle.dumps(result)
             req.result.custom.data = data
-            req.result.custom.value = values.safe_wrap(result.value)
+            req.result.custom.value.CopyFrom(values.safe_wrap(result.value))
         except (TypeError, pickle.PickleError) as err:
             # Print so it'll get to session log
             msg = f"cannot pickle result - {err}"
