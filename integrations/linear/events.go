@@ -74,8 +74,8 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request) map[string
 	// No need to check the HTTP method, as we only accept POST requests.
 
 	// Check the request's HTTP headers.
-	ct := r.Header.Get("Content-Type")
-	if !strings.HasPrefix(ct, "application/json") {
+	if common.PostWithoutJSONContentType(r) {
+		ct := r.Header.Get(common.HeaderContentType)
 		l.Warn("incoming event: unexpected content type", zap.String("content_type", ct))
 		common.HTTPError(w, http.StatusBadRequest)
 		return nil

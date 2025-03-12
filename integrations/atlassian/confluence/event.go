@@ -40,18 +40,18 @@ func NewHTTPHandler(l *zap.Logger, o sdkservices.OAuth, v sdkservices.Vars, d sd
 // Note 3: The requests are sent by a service, so no need to respond
 // with user-friendly error web pages.
 func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
-	l := h.logger.With(zap.String("urlPath", r.URL.Path))
-
-	// TODO(ENG-1081): Verify the HMAC signature in "X-Hub-Signature"
-	// (Confluence doesn't recognize secrets when creating webhooks).
+	l := h.logger.With(zap.String("url_path", r.URL.Path))
 
 	// Check the "Content-Type" header.
-	contentType := r.Header.Get(common.HeaderContentType)
-	if !strings.HasPrefix(contentType, common.ContentTypeJSON) {
-		l.Warn("Incoming Atlassian event with bad header", zap.String(common.HeaderContentType, contentType))
+	if common.PostWithoutJSONContentType(r) {
+		ct := r.Header.Get(common.HeaderContentType)
+		l.Warn("incoming event: unexpected content type", zap.String("content_type", ct))
 		common.HTTPError(w, http.StatusBadRequest)
 		return
 	}
+
+	// TODO(ENG-1081): Verify the HMAC signature in "X-Hub-Signature"
+	// (Confluence doesn't recognize secrets when creating webhooks).
 
 	// Parse some of the metadata in the Atlassian event's JSON content.
 	body, err := io.ReadAll(r.Body)

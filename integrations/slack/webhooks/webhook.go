@@ -58,7 +58,7 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Log
 	// "Content-Type" header.
 	gotContentType := r.Header.Get(common.HeaderContentType)
 	if gotContentType == "" || gotContentType != wantContentType {
-		l.Error("unexpected header value",
+		l.Warn("incoming event: unexpected header value",
 			zap.String("header", common.HeaderContentType),
 			zap.String("got", gotContentType),
 			zap.String("want", wantContentType),

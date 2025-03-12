@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -24,6 +25,16 @@ const (
 	HTTPTimeout = 3 * time.Second
 	HTTPMaxSize = 1 << 23 // 2^23 bytes = 8 MiB
 )
+
+func PostWithoutFormContentType(r *http.Request) bool {
+	contentType := r.Header.Get(HeaderContentType)
+	return r.Method == http.MethodPost && !strings.HasPrefix(contentType, ContentTypeForm)
+}
+
+func PostWithoutJSONContentType(r *http.Request) bool {
+	contentType := r.Header.Get(HeaderContentType)
+	return r.Method == http.MethodPost && !strings.HasPrefix(contentType, ContentTypeJSON)
+}
 
 func HTTPDeleteJSON(ctx context.Context, u, auth string, payload any) ([]byte, error) {
 	if s, ok := payload.(string); ok {

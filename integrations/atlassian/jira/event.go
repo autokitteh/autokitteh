@@ -42,21 +42,21 @@ func NewHTTPHandler(l *zap.Logger, o sdkservices.OAuth, v sdkservices.Vars, d sd
 // Note 2: The requests are sent by a service, so no need to respond
 // with user-friendly error web pages.
 func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
-	l := h.logger.With(zap.String("urlPath", r.URL.Path))
+	l := h.logger.With(zap.String("url_path", r.URL.Path))
+
+	// Check the "Content-Type" header.
+	if common.PostWithoutJSONContentType(r) {
+		ct := r.Header.Get(common.HeaderContentType)
+		l.Warn("incoming event: unexpected content type", zap.String("content_type", ct))
+		common.HTTPError(w, http.StatusBadRequest)
+		return
+	}
 
 	// Verify the JWT in the event's "Authorization" header.
 	token := r.Header.Get(common.HeaderAuthorization)
 	if !verifyJWT(l, strings.TrimPrefix(token, "Bearer ")) {
 		l.Warn("Incoming Jira event with bad Authorization header")
 		common.HTTPError(w, http.StatusUnauthorized)
-		return
-	}
-
-	// Check the "Content-Type" header.
-	contentType := r.Header.Get(common.HeaderContentType)
-	if !strings.HasPrefix(contentType, common.ContentTypeJSON) {
-		l.Warn("Incoming Jira event with bad header", zap.String(common.HeaderContentType, contentType))
-		common.HTTPError(w, http.StatusBadRequest)
 		return
 	}
 

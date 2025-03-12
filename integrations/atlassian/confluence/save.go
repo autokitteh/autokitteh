@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 
 	"go.uber.org/zap"
 
@@ -31,9 +30,10 @@ var eventCategories = []string{
 func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, desc)
 
-	// Check "Content-Type" header.
-	contentType := r.Header.Get(common.HeaderContentType)
-	if !strings.HasPrefix(contentType, common.ContentTypeForm) {
+	// Check the "Content-Type" header.
+	if common.PostWithoutFormContentType(r) {
+		ct := r.Header.Get(common.HeaderContentType)
+		l.Warn("save connection: unexpected POST content type", zap.String("content_type", ct))
 		c.AbortBadRequest("unexpected content type")
 		return
 	}
