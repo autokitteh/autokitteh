@@ -21,7 +21,7 @@ var (
 )
 
 var watchCmd = common.StandardCommand(&cobra.Command{
-	Use:   "watch [sessions ID | project] [--fail] [--end-state <state>] [--end-print-re <re>] [--timeout <duration>] [--poll-interval <duration>] [--no-timestamps] [--quiet] [--prints-only] [--wait-created]",
+	Use:   "watch [sessions ID | project] [--fail] [--end-state <state>] [--end-print-re <re>] [--timeout <duration>] [--poll-interval <duration>] [--no-timestamps] [--quiet] [--wait-created]",
 	Short: "Watch session runtime logs (prints, calls, errors, state changes)",
 	Args:  cobra.ExactArgs(1),
 
@@ -50,7 +50,6 @@ func init() {
 	watchCmd.Flags().DurationVarP(&pollInterval, "poll-interval", "i", defaultPollInterval, "poll interval")
 	watchCmd.Flags().BoolVarP(&noTimestamps, "no-timestamps", "n", false, "omit timestamps from output")
 	watchCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "don't print anything, just wait to finish")
-	watchCmd.Flags().BoolVarP(&printsOnly, "just-prints", "p", false, "output only session print messages")
 
 	watchCmd.Flags().BoolVar(&waitCreated, "wait-created", false, "wait for session to exist")
 
