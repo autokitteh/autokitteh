@@ -1,4 +1,3 @@
-import builtins
 import inspect
 import json
 import pickle
@@ -24,7 +23,8 @@ import values
 from autokitteh import AttrDict, Event, connections
 from autokitteh.errors import AutoKittehError
 from call import AKCall, full_func_name, activity_marker
-from syscalls import SysCalls, mark_no_activity
+from syscalls import SysCalls
+from tee import Tee
 
 # Timeouts are in seconds
 SERVER_GRACE_TIMEOUT = 3
@@ -234,9 +234,6 @@ class Runner(pb.runner_rpc.RunnerService):
         autokitteh.subscribe = self.syscalls.ak_subscribe
         autokitteh.unsubscribe = self.syscalls.ak_unsubscribe
 
-        # Not ak, but patching print as well
-        builtins.print = self.ak_print
-
     def Start(self, request: pb.runner.StartRequest, context: grpc.ServicerContext):
         if self._start_called:
             log.error("already called start before")
@@ -250,6 +247,9 @@ class Runner(pb.runner_rpc.RunnerService):
         self.syscalls = SysCalls(self.id, self.worker, log)
         mod_name, fn_name = parse_entry_point(request.entry_point)
 
+        sys.stdout = Tee(sys.stdout, self.id, self.worker)
+        sys.stderr = Tee(sys.stderr, self.id, self.worker)
+
         # Must be before we load user code
         self.patch_ak_funcs()
 
@@ -257,7 +257,7 @@ class Runner(pb.runner_rpc.RunnerService):
         try:
             mod = loader.load_code(self.code_dir, ak_call, mod_name)
         except Exception as err:
-            self.ak_print(result_error(err))
+            print(result_error(err))
             context.abort(
                 grpc.StatusCode.INVALID_ARGUMENT,
                 f"can't load {mod_name} from {self.code_dir} - {err}",
@@ -463,18 +463,6 @@ class Runner(pb.runner_rpc.RunnerService):
             self.worker.Done(req)
         except Exception as err:
             log.error("on_event: done send error: %r", err)
-
-    @mark_no_activity
-    def ak_print(self, *objects, sep=" ", end="\n", file=None, flush=False):
-        io = StringIO()
-        self._orig_print(*objects, sep=sep, end=end, flush=flush, file=io)
-        text = io.getvalue()
-        self._orig_print(text, file=file)  # Print also to original destination
-
-        req = pb.handler.PrintRequest(
-            runner_id=self.id,
-            message=text,
-        )
 
         try:
             self.worker.Print(req)
