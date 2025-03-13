@@ -10,7 +10,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"strings"
 
 	"go.uber.org/zap"
 
@@ -87,8 +86,8 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request) map[string
 	l := h.logger.With(zap.String("url_path", r.URL.Path))
 
 	// Check the request's HTTP headers.
-	ct := r.Header.Get("Content-Type")
-	if !strings.HasPrefix(ct, "application/json") {
+	if common.PostWithoutJSONContentType(r) {
+		ct := r.Header.Get(common.HeaderContentType)
 		l.Warn("incoming event: unexpected content type", zap.String("content_type", ct))
 		common.HTTPError(w, http.StatusBadRequest)
 		return nil
