@@ -6,18 +6,6 @@ from typing import ClassVar as _ClassVar, Iterable as _Iterable, Mapping as _Map
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
-class RegisterRequest(_message.Message):
-    __slots__ = ["id", "config"]
-    ID_FIELD_NUMBER: _ClassVar[int]
-    CONFIG_FIELD_NUMBER: _ClassVar[int]
-    id: str
-    config: OAuthConfig
-    def __init__(self, id: _Optional[str] = ..., config: _Optional[_Union[OAuthConfig, _Mapping]] = ...) -> None: ...
-
-class RegisterResponse(_message.Message):
-    __slots__ = []
-    def __init__(self) -> None: ...
-
 class GetRequest(_message.Message):
     __slots__ = ["id"]
     ID_FIELD_NUMBER: _ClassVar[int]

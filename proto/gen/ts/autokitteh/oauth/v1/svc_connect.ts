@@ -3,13 +3,13 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { ExchangeRequest, ExchangeResponse, GetRequest, GetResponse, RegisterRequest, RegisterResponse, StartFlowRequest, StartFlowResponse } from "./svc_pb.js";
+import { ExchangeRequest, ExchangeResponse, GetRequest, GetResponse, StartFlowRequest, StartFlowResponse } from "./svc_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
- * OAuthService is a generic implementation of 3-legged OAuth v2 flows,
- * reusable by OAuth-based integrations and autokitteh user authentication.
- * It assumes that the autokitteh server has a public address for callbacks,
+ * OAuthService is a generic implementation of 3-legged OAuth 2.0 flows,
+ * reusable by OAuth-based integrations and AutoKitteh user authentication.
+ * It assumes that the AutoKitteh server has a public address for callbacks,
  * which allows callers of this service not to care about this requirement.
  *
  * @generated from service autokitteh.oauth.v1.OAuthService
@@ -17,15 +17,6 @@ import { MethodKind } from "@bufbuild/protobuf";
 export const OAuthService = {
   typeName: "autokitteh.oauth.v1.OAuthService",
   methods: {
-    /**
-     * @generated from rpc autokitteh.oauth.v1.OAuthService.Register
-     */
-    register: {
-      name: "Register",
-      I: RegisterRequest,
-      O: RegisterResponse,
-      kind: MethodKind.Unary,
-    },
     /**
      * @generated from rpc autokitteh.oauth.v1.OAuthService.Get
      */

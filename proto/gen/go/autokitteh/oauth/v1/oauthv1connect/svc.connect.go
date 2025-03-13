@@ -33,8 +33,6 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// OAuthServiceRegisterProcedure is the fully-qualified name of the OAuthService's Register RPC.
-	OAuthServiceRegisterProcedure = "/autokitteh.oauth.v1.OAuthService/Register"
 	// OAuthServiceGetProcedure is the fully-qualified name of the OAuthService's Get RPC.
 	OAuthServiceGetProcedure = "/autokitteh.oauth.v1.OAuthService/Get"
 	// OAuthServiceStartFlowProcedure is the fully-qualified name of the OAuthService's StartFlow RPC.
@@ -45,7 +43,6 @@ const (
 
 // OAuthServiceClient is a client for the autokitteh.oauth.v1.OAuthService service.
 type OAuthServiceClient interface {
-	Register(context.Context, *connect.Request[v1.RegisterRequest]) (*connect.Response[v1.RegisterResponse], error)
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
 	StartFlow(context.Context, *connect.Request[v1.StartFlowRequest]) (*connect.Response[v1.StartFlowResponse], error)
 	Exchange(context.Context, *connect.Request[v1.ExchangeRequest]) (*connect.Response[v1.ExchangeResponse], error)
@@ -61,11 +58,6 @@ type OAuthServiceClient interface {
 func NewOAuthServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) OAuthServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
 	return &oAuthServiceClient{
-		register: connect.NewClient[v1.RegisterRequest, v1.RegisterResponse](
-			httpClient,
-			baseURL+OAuthServiceRegisterProcedure,
-			opts...,
-		),
 		get: connect.NewClient[v1.GetRequest, v1.GetResponse](
 			httpClient,
 			baseURL+OAuthServiceGetProcedure,
@@ -86,15 +78,9 @@ func NewOAuthServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 
 // oAuthServiceClient implements OAuthServiceClient.
 type oAuthServiceClient struct {
-	register  *connect.Client[v1.RegisterRequest, v1.RegisterResponse]
 	get       *connect.Client[v1.GetRequest, v1.GetResponse]
 	startFlow *connect.Client[v1.StartFlowRequest, v1.StartFlowResponse]
 	exchange  *connect.Client[v1.ExchangeRequest, v1.ExchangeResponse]
-}
-
-// Register calls autokitteh.oauth.v1.OAuthService.Register.
-func (c *oAuthServiceClient) Register(ctx context.Context, req *connect.Request[v1.RegisterRequest]) (*connect.Response[v1.RegisterResponse], error) {
-	return c.register.CallUnary(ctx, req)
 }
 
 // Get calls autokitteh.oauth.v1.OAuthService.Get.
@@ -114,7 +100,6 @@ func (c *oAuthServiceClient) Exchange(ctx context.Context, req *connect.Request[
 
 // OAuthServiceHandler is an implementation of the autokitteh.oauth.v1.OAuthService service.
 type OAuthServiceHandler interface {
-	Register(context.Context, *connect.Request[v1.RegisterRequest]) (*connect.Response[v1.RegisterResponse], error)
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
 	StartFlow(context.Context, *connect.Request[v1.StartFlowRequest]) (*connect.Response[v1.StartFlowResponse], error)
 	Exchange(context.Context, *connect.Request[v1.ExchangeRequest]) (*connect.Response[v1.ExchangeResponse], error)
@@ -126,11 +111,6 @@ type OAuthServiceHandler interface {
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
 func NewOAuthServiceHandler(svc OAuthServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
-	oAuthServiceRegisterHandler := connect.NewUnaryHandler(
-		OAuthServiceRegisterProcedure,
-		svc.Register,
-		opts...,
-	)
 	oAuthServiceGetHandler := connect.NewUnaryHandler(
 		OAuthServiceGetProcedure,
 		svc.Get,
@@ -148,8 +128,6 @@ func NewOAuthServiceHandler(svc OAuthServiceHandler, opts ...connect.HandlerOpti
 	)
 	return "/autokitteh.oauth.v1.OAuthService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case OAuthServiceRegisterProcedure:
-			oAuthServiceRegisterHandler.ServeHTTP(w, r)
 		case OAuthServiceGetProcedure:
 			oAuthServiceGetHandler.ServeHTTP(w, r)
 		case OAuthServiceStartFlowProcedure:
@@ -164,10 +142,6 @@ func NewOAuthServiceHandler(svc OAuthServiceHandler, opts ...connect.HandlerOpti
 
 // UnimplementedOAuthServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedOAuthServiceHandler struct{}
-
-func (UnimplementedOAuthServiceHandler) Register(context.Context, *connect.Request[v1.RegisterRequest]) (*connect.Response[v1.RegisterResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.oauth.v1.OAuthService.Register is not implemented"))
-}
 
 func (UnimplementedOAuthServiceHandler) Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.oauth.v1.OAuthService.Get is not implemented"))

@@ -23,28 +23,6 @@ func New(p sdkclient.Params) sdkservices.OAuth {
 	return &client{client: internal.New(oauthv1connect.NewOAuthServiceClient, p)}
 }
 
-func (c *client) Register(ctx context.Context, id string, cfg *oauth2.Config, opts map[string]string) error {
-	config := &oauthv1.OAuthConfig{
-		ClientId:     cfg.ClientID,
-		ClientSecret: cfg.ClientSecret,
-
-		AuthUrl:       cfg.Endpoint.AuthURL,
-		DeviceAuthUrl: cfg.Endpoint.DeviceAuthURL,
-		TokenUrl:      cfg.Endpoint.TokenURL,
-		RedirectUrl:   cfg.RedirectURL,
-
-		AuthStyle: int32(cfg.Endpoint.AuthStyle),
-		Options:   opts,
-		Scopes:    cfg.Scopes,
-	}
-	req := &oauthv1.RegisterRequest{Id: id, Config: config}
-	_, err := c.client.Register(ctx, connect.NewRequest(req))
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (c *client) Get(ctx context.Context, id string) (*oauth2.Config, map[string]string, error) {
 	req := &oauthv1.GetRequest{Id: id}
 	resp, err := c.client.Get(ctx, connect.NewRequest(req))

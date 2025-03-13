@@ -6,9 +6,9 @@ from autokitteh_pb.oauth.v1 import svc_pb2 as autokitteh_dot_oauth_dot_v1_dot_sv
 
 
 class OAuthServiceStub(object):
-    """OAuthService is a generic implementation of 3-legged OAuth v2 flows,
-    reusable by OAuth-based integrations and autokitteh user authentication.
-    It assumes that the autokitteh server has a public address for callbacks,
+    """OAuthService is a generic implementation of 3-legged OAuth 2.0 flows,
+    reusable by OAuth-based integrations and AutoKitteh user authentication.
+    It assumes that the AutoKitteh server has a public address for callbacks,
     which allows callers of this service not to care about this requirement.
     """
 
@@ -18,11 +18,6 @@ class OAuthServiceStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.Register = channel.unary_unary(
-                '/autokitteh.oauth.v1.OAuthService/Register',
-                request_serializer=autokitteh_dot_oauth_dot_v1_dot_svc__pb2.RegisterRequest.SerializeToString,
-                response_deserializer=autokitteh_dot_oauth_dot_v1_dot_svc__pb2.RegisterResponse.FromString,
-                )
         self.Get = channel.unary_unary(
                 '/autokitteh.oauth.v1.OAuthService/Get',
                 request_serializer=autokitteh_dot_oauth_dot_v1_dot_svc__pb2.GetRequest.SerializeToString,
@@ -41,17 +36,11 @@ class OAuthServiceStub(object):
 
 
 class OAuthServiceServicer(object):
-    """OAuthService is a generic implementation of 3-legged OAuth v2 flows,
-    reusable by OAuth-based integrations and autokitteh user authentication.
-    It assumes that the autokitteh server has a public address for callbacks,
+    """OAuthService is a generic implementation of 3-legged OAuth 2.0 flows,
+    reusable by OAuth-based integrations and AutoKitteh user authentication.
+    It assumes that the AutoKitteh server has a public address for callbacks,
     which allows callers of this service not to care about this requirement.
     """
-
-    def Register(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
 
     def Get(self, request, context):
         """Missing associated documentation comment in .proto file."""
@@ -74,11 +63,6 @@ class OAuthServiceServicer(object):
 
 def add_OAuthServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'Register': grpc.unary_unary_rpc_method_handler(
-                    servicer.Register,
-                    request_deserializer=autokitteh_dot_oauth_dot_v1_dot_svc__pb2.RegisterRequest.FromString,
-                    response_serializer=autokitteh_dot_oauth_dot_v1_dot_svc__pb2.RegisterResponse.SerializeToString,
-            ),
             'Get': grpc.unary_unary_rpc_method_handler(
                     servicer.Get,
                     request_deserializer=autokitteh_dot_oauth_dot_v1_dot_svc__pb2.GetRequest.FromString,
@@ -102,28 +86,11 @@ def add_OAuthServiceServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class OAuthService(object):
-    """OAuthService is a generic implementation of 3-legged OAuth v2 flows,
-    reusable by OAuth-based integrations and autokitteh user authentication.
-    It assumes that the autokitteh server has a public address for callbacks,
+    """OAuthService is a generic implementation of 3-legged OAuth 2.0 flows,
+    reusable by OAuth-based integrations and AutoKitteh user authentication.
+    It assumes that the AutoKitteh server has a public address for callbacks,
     which allows callers of this service not to care about this requirement.
     """
-
-    @staticmethod
-    def Register(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/autokitteh.oauth.v1.OAuthService/Register',
-            autokitteh_dot_oauth_dot_v1_dot_svc__pb2.RegisterRequest.SerializeToString,
-            autokitteh_dot_oauth_dot_v1_dot_svc__pb2.RegisterResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
     def Get(request,

@@ -5,7 +5,6 @@ import (
 
 	"connectrpc.com/connect"
 	"go.uber.org/zap"
-	"golang.org/x/oauth2"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/proto"
@@ -29,32 +28,6 @@ func Init(muxes *muxes.Muxes, l *zap.Logger, oauth sdkservices.OAuth) {
 	srv := server{logger: l, impl: oauth}
 	path, handler := oauthv1connect.NewOAuthServiceHandler(&srv)
 	muxes.Auth.Handle(path, handler)
-}
-
-func (s *server) Register(ctx context.Context, req *connect.Request[oauthv1.RegisterRequest]) (*connect.Response[oauthv1.RegisterResponse], error) {
-	// Validate & parse the request.
-	if err := proto.Validate(req.Msg); err != nil {
-		return nil, sdkerrors.AsConnectError(err)
-	}
-	cfg := &oauth2.Config{
-		ClientID:     req.Msg.Config.ClientId,
-		ClientSecret: req.Msg.Config.ClientSecret,
-		Endpoint: oauth2.Endpoint{
-			AuthURL:       req.Msg.Config.AuthUrl,
-			DeviceAuthURL: req.Msg.Config.DeviceAuthUrl,
-			TokenURL:      req.Msg.Config.TokenUrl,
-			AuthStyle:     oauth2.AuthStyle(req.Msg.Config.AuthStyle),
-		},
-		RedirectURL: req.Msg.Config.RedirectUrl,
-		Scopes:      req.Msg.Config.Scopes,
-	}
-
-	// Register a new OAuth handler for the caller's configuration.
-	err := s.impl.Register(ctx, req.Msg.Id, cfg, req.Msg.Config.Options)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeUnknown, err)
-	}
-	return connect.NewResponse(&oauthv1.RegisterResponse{}), nil
 }
 
 func (s *server) Get(ctx context.Context, req *connect.Request[oauthv1.GetRequest]) (*connect.Response[oauthv1.GetResponse], error) {

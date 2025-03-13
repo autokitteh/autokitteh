@@ -608,13 +608,6 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 	}
 }
 
-func (o *oauth) Register(ctx context.Context, intg string, cfg *oauth2.Config, opts map[string]string) error {
-	cfg.RedirectURL = fmt.Sprintf("https://%s/oauth/redirect/%s", os.Getenv("WEBHOOK_ADDRESS"), intg)
-	o.configs[intg] = cfg
-	o.opts[intg] = opts
-	return nil
-}
-
 func (o *oauth) Get(ctx context.Context, intg string) (*oauth2.Config, map[string]string, error) {
 	cfg, ok := o.configs[intg]
 	if !ok {
