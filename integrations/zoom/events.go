@@ -1,7 +1,6 @@
 package zoom
 
 import (
-	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -85,10 +84,7 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 // required headers, and signature and returns the parsed JSON payload if valid.
 // Otherwise it returns nil with an HTTP error response.
 func (h handler) checkRequest(w http.ResponseWriter, r *http.Request) map[string]any {
-	l := h.logger.With(
-		zap.String("url_path", r.URL.Path),
-		zap.String("event_type", r.Header.Get("Zoom-Event")),
-	)
+	l := h.logger.With(zap.String("url_path", r.URL.Path))
 
 	// Check the request's HTTP headers.
 	ct := r.Header.Get("Content-Type")
@@ -114,7 +110,6 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request) map[string
 		common.HTTPError(w, http.StatusInternalServerError)
 		return nil
 	}
-	r.Body = io.NopCloser(bytes.NewBuffer(body))
 
 	secret, err := h.signingSecret()
 	if err != nil {
@@ -130,7 +125,7 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request) map[string
 	}
 
 	// Verify Zoom signature.
-	if !h.checkSignature(signature, timestamp, secret, body) {
+	if !checkSignature(signature, timestamp, secret, body) {
 		l.Warn("incoming event: invalid Zoom signature")
 		common.HTTPError(w, http.StatusUnauthorized)
 		return nil
@@ -142,6 +137,8 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request) map[string
 		common.HTTPError(w, http.StatusBadRequest)
 		return nil
 	}
+
+	l.Warn("incoming event: missing Zoom verification headers")
 
 	return payload
 }
@@ -160,7 +157,7 @@ func (h handler) signingSecret() (string, error) {
 // Zoom webhook secret token, to the signature provided in the request's `x-zm-signature`
 // header, using HMAC-SHA256 for integrity verification.
 // (based on https://developers.zoom.us/docs/api/webhooks/#verify-with-zooms-header)
-func (h handler) checkSignature(signature, timestamp, secret string, body []byte) bool {
+func checkSignature(signature, timestamp, secret string, body []byte) bool {
 	// Create HMAC SHA-256 hash using the webhook secret token.
 	mac := hmac.New(sha256.New, []byte(secret))
 	mac.Write([]byte(fmt.Sprintf("v0:%s:%s", timestamp, string(body))))
