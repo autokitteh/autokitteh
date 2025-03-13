@@ -3,33 +3,35 @@ import {EventEmitter, once} from "node:events";
 import { Client } from "@connectrpc/connect";
 import {HandlerService, DoneRequest} from "./pb/autokitteh/user_code/v1/handler_svc_pb";
 
+type AnyFunction = (...args: unknown[]) => unknown;
 
 export interface Waiter {
-    wait:  (f: Function, v: any, token: string) => Promise<any>
-    execute_signal: (token: string) => Promise<any>
-    reply_signal: (token: string, value: any) => Promise<void>
-    setRunnerId: (id: string) => void
-    setRunId: (id: string) => void
-    getRunId: () => string
-    done: () => void
+    wait: (f: AnyFunction, v: unknown[], token: string) => Promise<unknown>;
+    execute_signal: (token: string) => Promise<unknown>;
+    reply_signal: (token: string, value: unknown) => Promise<void>;
+    setRunnerId: (id: string) => void;
+    setRunId: (id: string) => void;
+    getRunId: () => string;
+    done: () => void;
 }
 
-export class ActivityWaiter implements Waiter{
+export class ActivityWaiter implements Waiter {
     event: EventEmitter;
-    f: Function
-    a: any
-    token: string
-    client: Client<typeof HandlerService>
-    runnerId: string
-    runId: string
+    f: AnyFunction;
+    a: unknown[];
+    token: string;
+    client: Client<typeof HandlerService>;
+    runnerId: string;
+    runId: string;
 
     constructor(client: Client<typeof HandlerService>, runnerId: string) {
         this.client = client;
         this.event = new EventEmitter();
-        this.f = () => {}
-        this.token = ""
+        this.f = () => {};
+        this.a = [];
+        this.token = "";
         this.runnerId = runnerId;
-        this.runId = ""
+        this.runId = "";
     }
 
     setRunId(id: string): void {
@@ -37,25 +39,25 @@ export class ActivityWaiter implements Waiter{
     }
 
     getRunId(): string {
-        return this.runId
+        return this.runId;
     }
 
     async done(): Promise<void> {
         const encoder = new TextEncoder();
         const r: DoneRequest = {
-            $typeName:"autokitteh.user_code.v1.DoneRequest",
+            $typeName: "autokitteh.user_code.v1.DoneRequest",
             runnerId: this.runnerId,
             error: '',
             traceback: [],
             result: {
                 $typeName: "autokitteh.values.v1.Value",
                 custom: {
-                    $typeName:"autokitteh.values.v1.Custom",
+                    $typeName: "autokitteh.values.v1.Custom",
                     data: encoder.encode(JSON.stringify({results: "yay"})),
                     executorId: this.runId,
                 }
             }
-        }
+        };
         await this.client.done(r);
     }
 
@@ -63,90 +65,107 @@ export class ActivityWaiter implements Waiter{
         this.runnerId = id;
     }
 
-    async execute_signal(token: string): Promise<any> {
-        if (token != this.token) {
-            throw new Error('tokens do not match')
+    async execute_signal(token: string): Promise<unknown> {
+        if (token !== this.token) {
+            throw new Error('tokens do not match');
         }
-
-        return await this.f(...this.a)
+        return await this.f(...this.a);
     }
 
-    async reply_signal(token: string, value: any): Promise<void> {
-        if (token != this.token) {
-            throw new Error('tokens do not match')
+    async reply_signal(token: string, value: unknown): Promise<void> {
+        if (token !== this.token) {
+            throw new Error('tokens do not match');
         }
-
         this.event.emit('return', value);
     }
 
-    async wait(f: Function, v: any, token: string): Promise<any> {
-        this.f = f
-        this.a = v
-        this.token = token
-        const encoder = new TextEncoder()
+    async wait(f: AnyFunction, v: unknown[], token: string): Promise<unknown> {
+        this.f = f;
+        this.a = v;
+        this.token = token;
+        const encoder = new TextEncoder();
 
-        // await this.client.activity({
-        //     runnerId: this.runnerId,
-        //     data: encoder.encode(JSON.stringify({token}))
-        // })
-
-
-        const resp = await this.client.activity({
+        await this.client.activity({
             runnerId: this.runnerId,
-            data: encoder.encode(JSON.stringify({token: token})),
+            data: encoder.encode(JSON.stringify({token}))
+        });
+
+        await this.client.activity({
+            runnerId: this.runnerId,
+            data: encoder.encode(JSON.stringify({token})),
             callInfo: {
                 function: f.name,
                 args: [],
             }
         });
-        console.log("activity resp", resp, "call", f.name)
-        const r = (await once(this.event, 'return'))[0]
-        console.log("got return value", r)
-        return r
+        console.log("activity resp", "call", f.name);
+        const r = (await once(this.event, 'return'))[0];
+        console.log("got return value", r);
+        return r;
     }
 }
 
-export const ak_call = (waiter: Waiter) => {
-    return async (...args: any) => {
+export const ak_call = (waiter: Waiter, projectRoot: string) => {
+    function isInternalFunction(func: AnyFunction): boolean {
+        // Case 1: Already marked as internal
+        if ((func as unknown as { _ak_direct_call?: boolean })._ak_direct_call === true) {
+            return true;
+        }
+
+        // Case 2: Native methods
+        if (func.toString().includes('[native code]')) {
+            return false;
+        }
+
+        // Case 3: Check module path of the function
+        const moduleFile = module.filename;
+        if (moduleFile && 
+            moduleFile.startsWith(projectRoot) && 
+            !moduleFile.includes('node_modules')) {
+            return true;
+        }
+
+        return false;
+    }
+
+    return async (...args: unknown[]): Promise<unknown> => {
         if (typeof args[0] === "object") {
             const ak_call_obj = () => {
-                return async (...args: any) => {
-                    let o = args[0];
-                    let m = args[1];
-                    let m_args: any = []
-                    if (args.length > 2) {
-                        m_args = args.slice(1);
+                return async (...args: unknown[]): Promise<unknown> => {
+                    const obj = args[0] as Record<string, AnyFunction>;
+                    const method = args[1] as string;
+                    const methodArgs = args.length > 2 ? args.slice(2) : [];
+
+                    const func = obj[method];
+                    if (!func) {
+                        throw new Error(`Method ${method} not found`);
                     }
 
-
-                    if (o._ak_direct_call === true) {
-                        console.log("direct obj call", o.name, m ,m_args)
-                        return await o[m](...m_args);
+                    if (isInternalFunction(func)) {
+                        console.log("direct obj call", method, methodArgs);
+                        return await func.apply(obj, methodArgs);
                     }
 
-                    console.log("remote obj call", o.name, m_args);
-                    const results = await waiter.wait(o[m], m_args, randomUUID());
-                    console.log("got obj call results", results)
+                    console.log("remote obj call", method, methodArgs);
+                    const results = await waiter.wait(func.bind(obj), methodArgs, randomUUID());
+                    console.log("got obj call results", results);
                     return results;
-                }
-            }
+                };
+            };
             return ak_call_obj()(...args);
         }
-        let f = args[0];
-        let f_args: any = []
-        if (args.length > 1) {
-            f_args = args.slice(1);
+
+        const func = args[0] as AnyFunction;
+        const funcArgs = args.length > 1 ? args.slice(1) : [];
+
+        if (isInternalFunction(func)) {
+            console.log("direct call", func.name, funcArgs);
+            return await func(...funcArgs);
         }
 
-
-        if (f._ak_direct_call === true) {
-            console.log("direct call", f.name, f_args)
-            return await f(...f_args);
-        }
-
-        console.log("remote func call", f.name, f_args);
-        const results = await waiter.wait(f, f_args, randomUUID());
-        console.log("got func results", results)
+        console.log("remote func call", func.name, funcArgs);
+        const results = await waiter.wait(func, funcArgs, randomUUID());
+        console.log("got func results", results);
         return results;
-    }
-}
+    };
+};
