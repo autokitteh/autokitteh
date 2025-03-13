@@ -520,6 +520,8 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 		}
 	}
 
+	defer py.drainPrints(ctx)
+
 	// Wait for client Done or ActivityReplyRequest message
 	// This *can't* run in an different goroutine since callbacks to temporal need to be in the same goroutine.
 	for {
@@ -592,7 +594,6 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 			}
 		case done := <-py.channels.done:
 			py.log.Info("done signal")
-			py.drainPrints(ctx)
 
 			if done.Error != "" {
 				py.log.Info("done error", zap.String("error", done.Error))
@@ -612,7 +613,6 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 			done.Result.Custom.ExecutorId = py.xid.String()
 			return sdktypes.ValueFromProto(done.Result)
 		case <-ctx.Done():
-			py.drainPrints(ctx)
 			return sdktypes.InvalidValue, fmt.Errorf("context expired - %w", ctx.Err())
 		}
 	}
