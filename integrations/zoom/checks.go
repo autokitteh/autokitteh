@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"time"
 
@@ -14,6 +13,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
+	"go.uber.org/zap"
 )
 
 // status checks the connection's initialization status (is it
@@ -41,7 +41,7 @@ func status(v sdkservices.Vars) sdkintegrations.OptFn {
 
 // test checks whether the connection is actually usable, i.e. the configured
 // authentication credentials are valid and can be used to make API calls.
-func test(v sdkservices.Vars) sdkintegrations.OptFn {
+func test(v sdkservices.Vars, o sdkservices.OAuth) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
 		vs, errStatus, err := common.ReadVarsWithStatus(ctx, v, cid)
 		if errStatus.IsValid() || err != nil {
@@ -52,7 +52,7 @@ func test(v sdkservices.Vars) sdkintegrations.OptFn {
 		case "":
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 		case integrations.OAuthDefault, integrations.OAuthPrivate:
-			return oauthTest(ctx, vs)
+			return oauthTest(ctx, v, o, vs)
 		case integrations.ServerToServer:
 			return ServerToServerTest(ctx, vs)
 		default:
@@ -63,35 +63,20 @@ func test(v sdkservices.Vars) sdkintegrations.OptFn {
 
 // oauthTest verifies the OAuth authentication with Zoom API using the "me" context.
 // (Based on: https://developers.zoom.us/docs/integrations/oauth/#the-me-context).
-func oauthTest(ctx context.Context, vs sdktypes.Vars) (sdktypes.Status, error) {
-	data := common.OAuthData{}
-	vs.Decode(&data)
-	clientID := os.Getenv("ZOOM_CLIENT_ID")
-	clientSecret := os.Getenv("ZOOM_CLIENT_SECRET")
-	url := "https://api.zoom.us/v2/users/me"
-
+func oauthTest(ctx context.Context, v sdkservices.Vars, o sdkservices.OAuth, vs sdktypes.Vars) (sdktypes.Status, error) {
+	// TODO(INT-338): Suppport private OAuth.
 	// Check if the token is expired and refresh it.
-	expiry, err := time.Parse(time.RFC3339, data.Expiry)
-	if err == nil {
-		if time.Now().After(expiry) && data.RefreshToken != "" {
-			data.AccessToken, err = refreshToken(ctx, data.RefreshToken, clientID, clientSecret, vs)
-			if err != nil {
-				return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
-			}
-		}
-	}
+	desc := common.Descriptor("zoom", "", "")
+	token := common.FreshOAuthToken(ctx, zap.L(), o, v, desc, vs)
 
-	resp, err := httpGet(ctx, data.AccessToken, url)
+	url := "https://api.zoom.us/v2/users/me"
+	auth := "Bearer " + token.AccessToken
+	_, err := common.HTTPGet(ctx, url, auth)
 	if err != nil {
 		return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode == http.StatusOK {
-		return sdktypes.NewStatus(sdktypes.StatusCodeOK, "OAuth connection successful"), nil
-	}
-
-	return sdktypes.NewStatus(sdktypes.StatusCodeError, "Failed to connect to Zoom API"), nil
+	return sdktypes.NewStatus(sdktypes.StatusCodeOK, "OAuth connection successful"), nil
 }
 
 // ServerToServerTest validates the Server-to-Server authentication test for Zoom.
@@ -107,47 +92,21 @@ func ServerToServerTest(ctx context.Context, vs sdktypes.Vars) (sdktypes.Status,
 	}
 
 	url := "https://api.zoom.us/v2/users"
-	resp, err := httpGet(ctx, token, url)
+	auth := "Bearer " + token
+	_, err = common.HTTPGet(ctx, url, auth)
 	if err != nil {
 		return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode == http.StatusOK {
-		return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Server-to-Server connection successful"), nil
-	}
-
-	return sdktypes.NewStatus(sdktypes.StatusCodeError, "Failed to connect to Zoom API"), nil
-}
-
-// httpGet sends an HTTP GET request to the specified URL with a Bearer token for authentication.
-func httpGet(ctx context.Context, bearerToken string, url string) (*http.Response, error) {
-	timeoutCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
-	defer cancel()
-	req, err := http.NewRequestWithContext(timeoutCtx, http.MethodGet, url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to create request: %v", err)
-	}
-
-	req.Header.Set("Authorization", "Bearer "+bearerToken)
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("API request failed: %v", err)
-	}
-	return resp, nil
+	return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Server-to-Server connection successful"), nil
 }
 
 // httpPost sends an HTTP POST request with a URL-encoded body and basic authentication.
-func httpPost(ctx context.Context, data url.Values, clientID, clientSecret string) (*http.Response, error) {
-	timeoutCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
+func httpPost(ctx context.Context, data url.Values, clientID, clientSecret, url string) (*http.Response, error) {
+	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
 
-	body := strings.NewReader(data.Encode())
-	req, err := http.NewRequestWithContext(timeoutCtx, http.MethodPost, "https://zoom.us/oauth/token", body)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(data.Encode()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %v", err)
 	}
@@ -157,10 +116,9 @@ func httpPost(ctx context.Context, data url.Values, clientID, clientSecret strin
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("request failed: %v", err)
+		return nil, fmt.Errorf("failed to send HTTP request: %w", err)
 	}
 
 	return resp, nil
