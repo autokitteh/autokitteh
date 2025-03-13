@@ -449,7 +449,9 @@ func (py *pySvc) drainPrints(ctx context.Context) {
 		case r := <-py.channels.log:
 			py.log.Log(pyLevelToZap(r.level), r.message)
 		case r := <-py.channels.print:
-			_ = py.cbs.Print(ctx, py.runID, r.message)
+			if err := py.cbs.Print(ctx, py.runID, r.message); err != nil {
+				py.log.Error("print error", zap.Error(err))
+			}
 			close(r.doneChannel)
 		}
 	}
