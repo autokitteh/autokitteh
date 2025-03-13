@@ -133,7 +133,7 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request) map[string
 	return payload
 }
 
-// TODO(INT-284): Support all AutoKitteh connection auth types.
+// TODO(INT-332): Support all AutoKitteh connection auth types.
 func (h handler) signingSecret() (string, error) {
 	secret := os.Getenv("LINEAR_WEBHOOK_SECRET")
 	if secret == "" {
