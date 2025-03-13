@@ -156,7 +156,7 @@ func (s *workerGRPCHandler) ExecuteReply(ctx context.Context, req *userCode.Exec
 	if runner == nil {
 		w.log.Error("unknown runner ID", zap.String("id", req.RunnerId))
 		resp := userCode.ExecuteReplyResponse{
-			Error: fmt.Sprintf("unknown runner ID: %s", req.RunnerId),
+			Error: "unknown runner ID: " + req.RunnerId,
 		}
 
 		return &resp, nil
