@@ -1,4 +1,4 @@
-package svc
+package svccommon
 
 import (
 	"go.uber.org/fx"
@@ -37,7 +37,7 @@ func runtime[T any](name string, cfg configset.Set[T], init any, opts ...fx.Opti
 	return Component(name, cfg, opts...)
 }
 
-func runtimesFXOption() fx.Option {
+func FXRuntimes() fx.Option {
 	return fx.Options(
 		runtime("starlarkrt", configset.Empty, starlarkrt.New),
 		runtime("configrt", configset.Empty, configrt.New),
