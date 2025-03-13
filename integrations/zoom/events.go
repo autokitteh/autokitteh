@@ -107,7 +107,8 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request) map[string
 		return nil
 	}
 
-	body, err := io.ReadAll(r.Body)
+	// Read the request's JSON body, up to 8 MiB, to prevent DDoS attacks.
+	body, err := io.ReadAll(http.MaxBytesReader(nil, r.Body, 1<<23))
 	if err != nil {
 		l.Error("incoming event: failed to read request body", zap.Error(err))
 		common.HTTPError(w, http.StatusInternalServerError)
