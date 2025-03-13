@@ -1,52 +1,41 @@
 {
-  "name": "ak-nojs-runtime",
+  "name": "nodejsrt-runner",
   "version": "1.0.0",
-  "main": "index.ts",
+  "description": "NodeJS runtime runner for autokitteh",
   "scripts": {
-    "test": "jest",
-    "exports": "bin/ts-node exports.ts",
-    "runner": "ts-node ts-node main.ts",
-    "proxy": "ts-node proxy.ts"
+    "test": "jest"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
-  "devDependencies": {
-    "@babel/cli": "^7.26.4",
+  "dependencies": {
     "@babel/core": "^7.26.0",
-    "@babel/eslint-parser": "^7.26.5",
     "@babel/generator": "^7.26.5",
-    "@babel/plugin-syntax-top-level-await": "^7.14.5",
-    "@babel/preset-env": "^7.26.0",
-    "@babel/preset-typescript": "^7.26.0",
+    "@babel/parser": "^7.26.5",
     "@babel/traverse": "^7.26.5",
     "@bufbuild/protobuf": "^2.2.3",
     "@connectrpc/connect": "^2.0.1",
     "@connectrpc/connect-fastify": "^2.0.1",
     "@connectrpc/connect-node": "^2.0.1",
-    "@eslint/js": "^9.18.0",
-    "@types/babel__generator": "^7.6.8",
-    "@types/babel__traverse": "^7.20.6",
-    "@types/jest": "^29.5.14",
-    "@types/node": "^22.10.7",
-    "@typescript-eslint/parser": "^8.19.1",
+    "@types/node": "^22.13.10",
     "commander": "^13.1.0",
-    "eslint": "^9.18.0",
     "fastify": "^5.2.1",
-    "jest": "^29.7.0",
-    "jiti": "^2.4.2",
-    "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
-    "ts-proto": "^2.6.1",
-    "tslint": "^5.20.1",
-    "typescript": "^5.7.3",
-    "typescript-eslint": "^8.19.1"
+    "typescript": "^5.8.2"
   },
-  "dependencies": {
-    "@grpc/grpc-js": "^1.12.5",
-    "@grpc/proto-loader": "^0.7.13",
+  "devDependencies": {
     "@jest/globals": "^29.7.0",
-    "natives": "^1.1.6"
+    "@types/jest": "^29.5.12",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.2"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "jsx",
+      "json",
+      "node"
+    ]
   }
 }

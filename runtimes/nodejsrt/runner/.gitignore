@@ -3,3 +3,4 @@
 .ruff_cache/
 .venv
 build/
+node_modules/

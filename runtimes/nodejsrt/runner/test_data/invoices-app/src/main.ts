@@ -1,10 +1,10 @@
-import './akLocal'
 import config from './config';
 import GmailClient from './GmailClient';
 import ChatGPTClient from './ChatGPTClient';
 import InvoiceStorage from './InvoiceStorage';
 import InvoiceProcessor from './InvoiceProcessor';
 import startServer from './server';
+import Any = jasmine.Any;
 
 /**
  * The main entry point for the application. This function initializes necessary components
@@ -36,6 +36,17 @@ async function main(): Promise<void> {
     }
 }
 
-main().catch((error: unknown) => {
-    console.error("Fatal error:", error);
-});
+async function total(event: Any): Promise<number> {
+    const storage = new InvoiceStorage();
+    const gmailClient = await new GmailClient().init();
+    const chatGPTClient = await new ChatGPTClient(config.chatGPT.promptTemplate).init();
+    const processor = new InvoiceProcessor(gmailClient, chatGPTClient, storage);
+    await processor.processNewEmails();
+    return storage.getTotalAmount()
+}
+
+// main().catch((error: unknown) => {
+//     console.error("Fatal error:", error);
+// });
+
+export default main;

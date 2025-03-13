@@ -11,7 +11,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
@@ -43,6 +42,10 @@ func validateTar(t *testing.T, tarData []byte, fsys fs.FS) {
 		}
 
 		require.NoError(t, err, "iterate tar")
+		// Skip directories in tar
+		if hdr.Typeflag == tar.TypeDir {
+			continue
+		}
 		require.Truef(t, isFSFile(fsys, hdr.Name), "%q - not on fs", hdr.Name)
 		inTar[hdr.Name] = true
 	}
@@ -54,9 +57,6 @@ func validateTar(t *testing.T, tarData []byte, fsys fs.FS) {
 			continue
 		}
 		name := e.Name()
-		if name == "__pycache__" {
-			continue
-		}
 		require.Containsf(t, inTar, name, "%q not in tar", name)
 	}
 }
@@ -82,27 +82,39 @@ func newSVC(t *testing.T) *nodejsSvc {
 func TestConfigureLocalRuntime(t *testing.T) {
 	l := kittehs.Must1(zap.NewDevelopment())
 
-	err := configureLocalRunnerManager(l, LocalRunnerManagerConfig{})
+	// Test with no worker address and no provider
+	cfg := &Config{
+		RunnerType: "local",
+	}
+	_, err := New(cfg, l, nil)
 	require.Error(t, err, "should fail on not set worker address")
 
-	err = configureLocalRunnerManager(l, LocalRunnerManagerConfig{WorkerAddress: "0.0.0.0:123"})
+	// Test with worker address
+	cfg = &Config{
+		RunnerType:    "local",
+		WorkerAddress: "0.0.0.0:123",
+	}
+	_, err = New(cfg, l, nil)
 	require.NoError(t, err, "should succeed to configure")
 
-	err = configureLocalRunnerManager(l, LocalRunnerManagerConfig{WorkerAddressProvider: func() string { return "" }})
+	// Test with worker address provider
+	cfg = &Config{
+		RunnerType: "local",
+	}
+	_, err = New(cfg, l, func() string { return "0.0.0.0:123" })
 	require.NoError(t, err, "should succeed to configure")
 }
 
-func Test_pySvc_Get(t *testing.T) {
+func Test_nodeSvc_Get(t *testing.T) {
 	svc := newSVC(t)
 	rt := svc.Get()
 	require.NotNil(t, rt)
 }
 
-func Test_pySvc_Build(t *testing.T) {
-	skipIfNoPython(t)
+func Test_nodeSvc_Build(t *testing.T) {
 	svc := newSVC(t)
 
-	rootPath := "testdata/simple/"
+	rootPath := "testdata/simple_test/"
 	fsys := os.DirFS(rootPath)
 
 	ctx, cancel := testCtx(t)
@@ -153,7 +165,9 @@ func newCallbacks(svc *nodejsSvc) *sdkservices.RunCallbacks {
 		Load: func(ctx context.Context, rid sdktypes.RunID, path string) (map[string]sdktypes.Value, error) {
 			return map[string]sdktypes.Value{}, nil
 		},
-		Print: func(ctx context.Context, rid sdktypes.RunID, msg string) {},
+		Print: func(ctx context.Context, rid sdktypes.RunID, text string) error {
+			return nil
+		},
 	}
 
 	return &cbs
@@ -167,14 +181,19 @@ func setupServer(l *zap.Logger) (net.Listener, error) {
 		return nil, err
 	}
 
-	if err := configureLocalRunnerManager(l, LocalRunnerManagerConfig{
-		WorkerAddressProvider: func() string {
-			port := listener.Addr().(*net.TCPAddr).Port
-			return fmt.Sprintf("localhost:%d", port)
-		},
-		LogCodeRunnerCode: true,
-	}); err != nil {
-		return nil, err
+	// Create config for local runner
+	cfg := &Config{
+		RunnerType:    "local",
+		LogRunnerCode: true,
+	}
+
+	// Create NodeJS runtime which will configure the local runner manager
+	_, err = New(cfg, l, func() string {
+		port := listener.Addr().(*net.TCPAddr).Port
+		return fmt.Sprintf("localhost:%d", port)
+	})
+	if err != nil {
+		return nil, fmt.Errorf("configure local runner manager: %w", err)
 	}
 
 	errChan := make(chan error)
@@ -193,20 +212,18 @@ func setupServer(l *zap.Logger) (net.Listener, error) {
 	}
 }
 
-func Test_pySvc_Run(t *testing.T) {
-	skipIfNoPython(t)
-
+func Test_nodeSvc_Run(t *testing.T) {
 	svc := newSVC(t)
 	require.NotNil(t, svc.log, "nil logger")
 
-	fsys := os.DirFS("testdata/simple")
+	fsys := os.DirFS("testdata/simple_test")
 	tarData, err := createTar(fsys)
 	require.NoError(t, err, "create tar")
 
 	ctx, cancel := testCtx(t)
 	defer cancel()
 	runID := sdktypes.NewRunID()
-	mainPath := "simple.js"
+	mainPath := "index.ts"
 	compiled := map[string][]byte{
 		archiveKey: tarData,
 	}
@@ -229,69 +246,33 @@ func Test_pySvc_Run(t *testing.T) {
 	run, err := svc.Run(ctx, runID, sessionID, mainPath, compiled, values, cbs)
 	require.NoError(t, err, "run")
 
-	fn, err := sdktypes.NewFunctionValue(xid, "greet", nil, nil, mod)
+	fn, err := sdktypes.NewFunctionValue(xid, "hello", nil, nil, mod)
 	require.NoError(t, err, "new function")
 
-	body := sdktypes.NewDictValueFromStringMap(map[string]sdktypes.Value{
-		"bytes": sdktypes.NewBytesValue([]byte(`{"user": "joe", "id": 7}`)),
-	})
-	kwargs := map[string]sdktypes.Value{
-		"event_id": sdktypes.NewStringValue("007"),
-		"data": sdktypes.NewDictValueFromStringMap(map[string]sdktypes.Value{
-			"body": body,
-		}),
-	}
-	_, err = run.Call(ctx, fn, nil, kwargs)
+	_, err = run.Call(ctx, fn, nil, nil)
 	require.NoError(t, err, "call")
 }
 
-func Test_pySvc_Build_PyCache(t *testing.T) {
-	skipIfNoPython(t)
-	svc := newSVC(t)
-
-	rootPath := "testdata/pycache/"
-	fsys := os.DirFS(rootPath)
-
-	ctx, cancel := testCtx(t)
-	defer cancel()
-	art, err := svc.Build(ctx, fsys, ".", nil)
-	require.NoError(t, err)
-
-	p := art.ToProto()
-	data := p.CompiledData[archiveKey]
-	r := tar.NewReader(bytes.NewReader(data))
-
-	for {
-		hdr, err := r.Next()
-		if errors.Is(err, io.EOF) {
-			break
-		}
-
-		require.NoError(t, err, "iterate tar")
-		require.Falsef(t, strings.Contains(hdr.Name, "__pycache__"), "%q", hdr.Name)
-	}
-}
-
-var progErrCode = []byte(`
-def handle(event):
-    1 / 0
-`)
-
 func TestProgramError(t *testing.T) {
-	skipIfNoPython(t)
+	// Create a simple JS file that will throw an error
+	jsCode := []byte(`
+		function handle() {
+			throw new Error("test error");
+		}
+		module.exports = { handle };
+	`)
 
-	// configureLocalRunnerManager()
-	pyFile := "progerr.py"
+	jsFile := "error.js"
 	var buf bytes.Buffer
 	tw := tar.NewWriter(&buf)
 	hdr := &tar.Header{
-		Name: pyFile,
-		Size: int64(len(progErrCode)),
+		Name: jsFile,
+		Size: int64(len(jsCode)),
 		Mode: 0o644,
 	}
 	err := tw.WriteHeader(hdr)
 	require.NoError(t, err)
-	_, err = tw.Write(progErrCode)
+	_, err = tw.Write(jsCode)
 	tw.Close()
 
 	compiled := map[string][]byte{
@@ -315,19 +296,16 @@ func TestProgramError(t *testing.T) {
 	ctx, cancel := testCtx(t)
 	defer cancel()
 	sid := sdktypes.NewSessionID()
-	_, err = svc.Run(ctx, runID, sid, pyFile, compiled, values, cbs)
+	_, err = svc.Run(ctx, runID, sid, jsFile, compiled, values, cbs)
 	require.NoError(t, err)
 
 	xid := sdktypes.NewExecutorID(runID)
 	fn, err := sdktypes.NewFunctionValue(xid, "handle", nil, nil, mod)
 	require.NoError(t, err, "new function")
 
-	kwargs := map[string]sdktypes.Value{}
-
-	_, err = svc.Call(ctx, fn, nil, kwargs)
+	_, err = svc.Call(ctx, fn, nil, nil)
 	require.Error(t, err)
 	t.Logf("ERROR:\n%s", err)
-	// There no way to check that err is a ProgramError since it's wrapped by unexported programError
-	require.Contains(t, err.Error(), "division by zero")
-	require.Contains(t, err.Error(), "progerr.py")
+	require.Contains(t, err.Error(), "test error")
+	require.Contains(t, err.Error(), "error.js")
 }

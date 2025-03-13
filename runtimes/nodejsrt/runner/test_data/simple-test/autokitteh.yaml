@@ -1,0 +1,22 @@
+version: v1
+
+project:
+  name: simple_test
+  description: A simple test project for autokitteh runner
+
+  # Define the functions we want to expose
+  triggers:
+    - name: greet
+      type: webhook
+      event_type: get
+      call: index.js:greet
+
+    - name: divide
+      type: webhook
+      event_type: post
+      call: index.js:divide
+
+    - name: delayed
+      type: webhook
+      event_type: post
+      call: index.js:delayedResponse 

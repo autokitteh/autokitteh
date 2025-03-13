@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"embed"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -25,14 +26,13 @@ import (
 )
 
 var (
-	//go:embed all:runner
+	//go:embed runner/main.ts runner/sandbox.ts runner/runtime.ts runner/server.ts runner/proxy.ts runner/server_proxy.ts runner/pb/autokitteh/*/v1/*.ts
 	runnerJsCode embed.FS
 )
 
 type LocalNodeJS struct {
 	log                *zap.Logger
-	userDir            string
-	runnerDir          string
+	projectDir         string
 	port               int
 	proc               *os.Process
 	id                 string
@@ -40,6 +40,13 @@ type LocalNodeJS struct {
 	sessionID          sdktypes.SessionID
 	stdoutRunnerLogger *zapio.Writer
 	stderrRunnerLogger *zapio.Writer
+}
+
+// NewLocalNodeJS creates a new LocalNodeJS instance with the given logger
+func NewLocalNodeJS(logger *zap.Logger) *LocalNodeJS {
+	return &LocalNodeJS{
+		log: logger,
+	}
 }
 
 func (r *LocalNodeJS) Close() error {
@@ -56,15 +63,9 @@ func (r *LocalNodeJS) Close() error {
 		}
 	}
 
-	if r.userDir != "" {
-		if uerr := os.RemoveAll(r.userDir); uerr != nil {
-			err = errors.Join(err, fmt.Errorf("clean user dir %q - %w", r.userDir, uerr))
-		}
-	}
-
-	if r.runnerDir != "" {
-		if perr := os.RemoveAll(r.runnerDir); perr != nil {
-			err = errors.Join(err, fmt.Errorf("clean runner dir %q - %w", r.runnerDir, perr))
+	if r.projectDir != "" {
+		if uerr := os.RemoveAll(r.projectDir); uerr != nil {
+			err = errors.Join(err, fmt.Errorf("clean project dir %q - %w", r.projectDir, uerr))
 		}
 	}
 
@@ -92,6 +93,110 @@ func freePort() (int, error) {
 	return conn.Addr().(*net.TCPAddr).Port, nil
 }
 
+func (r *LocalNodeJS) PrepareProject(tarData []byte, outputDir string) error {
+	r.projectDir = outputDir
+
+	if err := extractTar(r.projectDir, tarData); err != nil {
+		return fmt.Errorf("extract user tar - %w", err)
+	}
+	r.log.Info("extracted tar to project dir")
+
+	akDir := path.Join(r.projectDir, ".ak")
+	if err := os.MkdirAll(akDir, 0o755); err != nil {
+		return fmt.Errorf("create .ak directory - %w", err)
+	}
+
+	if err := copyFSToDir(runnerJsCode, akDir); err != nil {
+		return fmt.Errorf("copy runner code - %w", err)
+	}
+	r.log.Info("copied runner code to .ak directory")
+
+	return nil
+}
+
+func (r *LocalNodeJS) setupDependencies() error {
+	if err := setupTypeScript(r.projectDir); err != nil {
+		return fmt.Errorf("setup typescript: %w", err)
+	}
+	r.log.Info("typescript setup complete")
+
+	if err := installDependencies(r.projectDir); err != nil {
+		return fmt.Errorf("install dependencies: %w", err)
+	}
+	r.log.Info("dependencies installed")
+
+	return nil
+}
+
+// PrepareEnvironment sets up the project directory with the code.
+// It extracts the tar and copies runner code.
+func (r *LocalNodeJS) PrepareEnvironment(tarData []byte) error {
+	// Create temporary directory for the project
+	projectDir, err := os.MkdirTemp("", "ak-project-")
+	if err != nil {
+		return fmt.Errorf("create project directory - %w", err)
+	}
+	r.projectDir = projectDir
+	r.log.Info("project root dir", zap.String("path", r.projectDir))
+
+	// Extract tar and setup runner code
+	if err := r.PrepareProject(tarData, projectDir); err != nil {
+		return fmt.Errorf("prepare project: %w", err)
+	}
+
+	return nil
+}
+
+// RunNode starts the Node.js process in the prepared environment.
+// This should only be called after PrepareEnvironment.
+func (r *LocalNodeJS) RunNode(workerAddr string) error {
+	if r.projectDir == "" {
+		return fmt.Errorf("project directory not set - call PrepareEnvironment first")
+	}
+
+	port, err := freePort()
+	if err != nil {
+		return fmt.Errorf("cannot find free port: %w", err)
+	}
+	r.port = port
+	r.log.Info("found free port", zap.Int("port", port))
+
+	id, err := typeid.WithPrefix("runner")
+	if err != nil {
+		return err
+	}
+	r.id = id.String()
+
+	cmd := exec.Command(
+		"node",
+		"node_modules/ts-node/dist/bin.ts",
+		".ak/runner/main.ts",
+		"--worker-address", workerAddr,
+		"--port", strconv.Itoa(r.port),
+		"--runner-id", r.id,
+		"--code-dir", r.projectDir,
+	)
+	cmd.Dir = r.projectDir
+
+	if r.logRunnerCode {
+		r.stdoutRunnerLogger = &zapio.Writer{Log: r.log.With(zap.String("stream", "stdout")), Level: zap.InfoLevel}
+		cmd.Stdout = r.stdoutRunnerLogger
+		r.stderrRunnerLogger = &zapio.Writer{Log: r.log.With(zap.String("stream", "stderr")), Level: zap.WarnLevel}
+		cmd.Stderr = r.stderrRunnerLogger
+	}
+
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("start runner - %w", err)
+	}
+
+	r.proc = cmd.Process
+	r.log.Info("started nodejs runner", zap.String("command", cmd.String()), zap.Int("pid", r.proc.Pid))
+	return nil
+}
+
+// Start is now a sequence of PrepareEnvironment, setupDependencies, and RunNode
 func (r *LocalNodeJS) Start(pyExe string, tarData []byte, env map[string]string, workerAddr string) error {
 	runOK := false
 
@@ -103,70 +208,22 @@ func (r *LocalNodeJS) Start(pyExe string, tarData []byte, env map[string]string,
 		}
 	}()
 
-	port, err := freePort()
-	if err != nil {
-		return fmt.Errorf("cannot find free port: %w", err)
-	}
-	r.port = port
-
-	userDir, err := os.MkdirTemp("", "ak-user-")
-	if err != nil {
-		return fmt.Errorf("create user directory - %w", err)
-	}
-	r.userDir = userDir
-	r.log.Info("user root dir", zap.String("path", r.userDir))
-
-	if err := extractTar(r.userDir, tarData); err != nil {
-		return fmt.Errorf("extract user tar - %w", err)
-	}
-
-	runnerDir, err := os.MkdirTemp("", "ak-runner-")
-	if err != nil {
-		return fmt.Errorf("create runner dir - %w", err)
-	}
-	r.runnerDir = runnerDir
-	r.log.Info("nodejs root dir", zap.String("path", r.runnerDir))
-
-	if err := copyFS(runnerJsCode, r.runnerDir); err != nil {
-		return fmt.Errorf("copy runner code - %w", err)
-	}
-
-	id, err := typeid.WithPrefix("runner")
-	if err != nil {
+	// First prepare the environment (extract tar and copy runner code)
+	if err := r.PrepareEnvironment(tarData); err != nil {
 		return err
 	}
-	r.id = id.String()
 
-	cmd := exec.Command(
-		"node",
-		"node_modules/ts-node/dist/bin.js",
-		"proxy.ts",
-		"--worker-address", workerAddr,
-		"--port", strconv.Itoa(r.port),
-		"--runner-id", r.id,
-		"--code-dir", r.userDir,
-	)
-	cmd.Dir = r.runnerDir + "/runner"
-
-	if r.logRunnerCode {
-		r.stdoutRunnerLogger = &zapio.Writer{Log: r.log.With(zap.String("stream", "stdout")), Level: zap.InfoLevel}
-		cmd.Stdout = r.stdoutRunnerLogger
-		// Why warn instead of error? (1) We're using stdout too much, (2) Python errors are not
-		// necessarily AK errors, and (3) errors include a stack trace, which is irrelevant here.
-		r.stderrRunnerLogger = &zapio.Writer{Log: r.log.With(zap.String("stream", "stderr")), Level: zap.WarnLevel}
-		cmd.Stderr = r.stderrRunnerLogger
+	// Then setup dependencies
+	if err := r.setupDependencies(); err != nil {
+		return err
 	}
 
-	// make sure runner is killed if ak is killed
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-
-	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("start runner - %w", err)
+	// Finally run the node process
+	if err := r.RunNode(workerAddr); err != nil {
+		return err
 	}
 
-	runOK = true // signal we're good to cleanup
-	r.proc = cmd.Process
-	r.log.Info("started nodejs runner", zap.String("command", cmd.String()), zap.Int("pid", r.proc.Pid))
+	runOK = true
 	return nil
 }
 
@@ -178,14 +235,13 @@ func (r *LocalNodeJS) Health() error {
 		return fmt.Errorf("wait proc: %w", err)
 	}
 
-	if pid == r.proc.Pid { // state changed
+	if pid == r.proc.Pid {
 		if status.Signaled() {
 			sig := status.Signal()
 			switch sig {
 			case syscall.SIGKILL, syscall.SIGTERM, syscall.SIGABRT, syscall.SIGSEGV, syscall.SIGBUS:
 				return fmt.Errorf("proc signaled (%v)", sig)
 			default:
-				// maybe process communicates with itself? do nothing meanwhile
 				return nil
 			}
 		}
@@ -203,21 +259,63 @@ func (r *LocalNodeJS) Health() error {
 	return err
 }
 
-func createTar(fs fs.FS) ([]byte, error) {
+func createTar(fsys fs.FS) ([]byte, error) {
 	var buf bytes.Buffer
 	w := tar.NewWriter(&buf)
-	if err := w.AddFS(fs); err != nil {
+	defer w.Close()
+
+	err := fs.WalkDir(fsys, ".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Get file info
+		info, err := d.Info()
+		if err != nil {
+			return err
+		}
+
+		// Skip symbolic links
+		if info.Mode()&os.ModeSymlink != 0 {
+			return nil
+		}
+
+		// Create tar header
+		header, err := tar.FileInfoHeader(info, "")
+		if err != nil {
+			return err
+		}
+		header.Name = path
+
+		// Write header
+		if err := w.WriteHeader(header); err != nil {
+			return err
+		}
+
+		// If it's a directory, we're done
+		if info.IsDir() {
+			return nil
+		}
+
+		// Copy file content
+		file, err := fsys.Open(path)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+
+		_, err = io.Copy(w, file)
+		return err
+	})
+
+	if err != nil {
 		return nil, err
 	}
 
-	w.Close()
 	return buf.Bytes(), nil
 }
 
-// Copy fs to file so Python can inspect
-// TODO: Once os.CopyFS makes it out we can remove this
-// https://github.com/golang/go/issues/62484
-func copyFS(fsys fs.FS, root string) error {
+func copyFSToDir(fsys fs.FS, root string) error {
 	return fs.WalkDir(fsys, ".", func(name string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -258,7 +356,6 @@ type Version struct {
 	Minor int
 }
 
-// extractTar extracts a project deployment tar file into a random directory.
 func extractTar(rootDir string, data []byte) error {
 	rootDir = filepath.Clean(rootDir)
 	rdr := tar.NewReader(bytes.NewReader(data))
@@ -277,7 +374,6 @@ func extractTar(rootDir string, data []byte) error {
 
 		outPath := filepath.Clean(path.Join(rootDir, hdr.Name))
 
-		// Prevent "zip slips": we generate the tar file, but better safe than sorry.
 		if !strings.HasPrefix(outPath, rootDir) {
 			return fmt.Errorf("extracted file %q is outside root dir", hdr.Name)
 		}
@@ -300,13 +396,146 @@ func extractTar(rootDir string, data []byte) error {
 	return nil
 }
 
-func createVEnv(pyExe string, venvPath string) error {
-	cmd := exec.Command(pyExe, "-m", "venv", venvPath)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+// setupTypeScript ensures proper TypeScript configuration
+func setupTypeScript(projectDir string) error {
+	// Create .ak/types directory
+	typesDir := filepath.Join(projectDir, ".ak", "types")
+	if err := os.MkdirAll(typesDir, 0o755); err != nil {
+		return fmt.Errorf("create types directory: %w", err)
+	}
 
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("create venv: %w", err)
+	// Create global.d.ts
+	globalDTS := `declare global {
+    /**
+     * Autokitteh activity call function
+     * @param activityName Name of the activity to call
+     * @param args Arguments for the activity
+     * @returns Promise with the activity result
+     */
+    function ak_call(activityName: string, ...args: unknown[]): Promise<unknown>;
+}
+
+export {};`
+
+	if err := os.WriteFile(filepath.Join(typesDir, "global.d.ts"), []byte(globalDTS), 0644); err != nil {
+		return fmt.Errorf("write global.d.ts: %w", err)
+	}
+
+	// Create package.json if it doesn't exist
+	pkgPath := filepath.Join(projectDir, "package.json")
+	if _, err := os.Stat(pkgPath); os.IsNotExist(err) {
+		minimalPkg := `{
+  "name": "ak-project",
+  "version": "1.0.0",
+  "private": true
+}`
+		if err := os.WriteFile(pkgPath, []byte(minimalPkg), 0644); err != nil {
+			return fmt.Errorf("write package.json: %w", err)
+		}
+	}
+
+	// Setup tsconfig.json
+	tsConfig := map[string]interface{}{
+		"compilerOptions": map[string]interface{}{
+			"typeRoots": []string{
+				"node_modules/@types",
+				".ak/types",
+			},
+			"esModuleInterop":  true,
+			"skipLibCheck":     true,
+			"target":           "ES2020",
+			"module":           "CommonJS",
+			"moduleResolution": "node",
+			"sourceMap":        true,
+			"outDir":           "dist",
+			"strict":           true,
+		},
+	}
+
+	// Read existing tsconfig if it exists
+	tsconfigPath := filepath.Join(projectDir, "tsconfig.json")
+	if existingConfig, err := os.ReadFile(tsconfigPath); err == nil {
+		var existing map[string]interface{}
+		if err := json.Unmarshal(existingConfig, &existing); err == nil {
+			// Merge with existing config
+			tsConfig = mergeConfigs(existing, tsConfig)
+		}
+	}
+
+	// Write back tsconfig
+	tsconfigBytes, _ := json.MarshalIndent(tsConfig, "", "  ")
+	if err := os.WriteFile(tsconfigPath, tsconfigBytes, 0644); err != nil {
+		return fmt.Errorf("write tsconfig.json: %w", err)
+	}
+
+	return nil
+}
+
+// mergeConfigs merges two configuration objects
+func mergeConfigs(existing, new map[string]interface{}) map[string]interface{} {
+	result := make(map[string]interface{})
+	for k, v := range existing {
+		result[k] = v
+	}
+	for k, v := range new {
+		if existingVal, ok := result[k]; ok {
+			if existingMap, ok := existingVal.(map[string]interface{}); ok {
+				if newMap, ok := v.(map[string]interface{}); ok {
+					result[k] = mergeConfigs(existingMap, newMap)
+					continue
+				}
+			}
+		}
+		result[k] = v
+	}
+	return result
+}
+
+// installDependencies installs both user and ak dependencies
+func installDependencies(projectDir string) error {
+	// Helper function for npm commands
+	runNpm := func(args ...string) error {
+		cmd := exec.Command("npm", args...)
+		cmd.Dir = projectDir
+
+		var stdout, stderr bytes.Buffer
+		cmd.Stdout = &stdout
+		cmd.Stderr = &stderr
+
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("npm command failed: %w\nstdout: %s\nstderr: %s",
+				err, stdout.String(), stderr.String())
+		}
+		return nil
+	}
+
+	// First install user's dependencies
+	if err := runNpm("install"); err != nil {
+		return fmt.Errorf("user dependencies install failed: %w", err)
+	}
+
+	// Install ak framework dependencies
+	akDeps := map[string]string{
+		"@connectrpc/connect":         "^2.0.1",
+		"@connectrpc/connect-fastify": "^2.0.1",
+		"@connectrpc/connect-node":    "^2.0.1",
+		"@bufbuild/protobuf":          "^2.2.3",
+		"fastify":                     "^5.2.1",
+		"commander":                   "^13.1.0",
+		"@babel/core":                 "^7.26.0",
+		"@babel/traverse":             "^7.26.5",
+		"@babel/generator":            "^7.26.5",
+		"@babel/parser":               "^7.26.5",
+		"typescript":                  "^5.7.3",
+		"ts-node":                     "^10.9.2",
+		"@types/node":                 "^22.13.10",
+	}
+
+	// Install ak dependencies
+	for pkg, version := range akDeps {
+		if err := runNpm("install", "--save", pkg+"@"+version); err != nil {
+			return fmt.Errorf("failed to install %s: %w", pkg, err)
+		}
 	}
 
 	return nil
