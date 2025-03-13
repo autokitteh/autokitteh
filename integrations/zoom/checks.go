@@ -8,12 +8,13 @@ import (
 	"strings"
 	"time"
 
+	"go.uber.org/zap"
+
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.uber.org/zap"
 )
 
 // status checks the connection's initialization status (is it
