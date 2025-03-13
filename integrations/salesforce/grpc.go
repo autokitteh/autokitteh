@@ -19,6 +19,9 @@ type grpcAuth struct {
 	tenantID    string
 }
 
+// Based on:
+// - https://grpc.io/docs/guides/retry/
+// - https://github.com/grpc/grpc-proto/blob/master/grpc/service_config/service_config.proto
 const retryPolicy = `{
 	"methodConfig": [{
 		"name": [{"service": "eventbus.v1.PubSub", "method": "Subscribe"}],
