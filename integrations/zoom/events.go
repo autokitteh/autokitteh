@@ -145,7 +145,8 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request) map[string
 	return payload
 }
 
-// retrieves the Zoom secret token from environment variables.
+// signingSecret retrieves the Zoom secret token from environment variables.
+// TODO(INT-332): Support all AutoKitteh connection auth types.
 func (h handler) signingSecret() (string, error) {
 	secret := os.Getenv("ZOOM_SECRET_TOKEN")
 	if secret == "" {
