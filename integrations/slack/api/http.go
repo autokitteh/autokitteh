@@ -52,12 +52,7 @@ func Post(ctx context.Context, botToken, slackMethod string, jsonBody, jsonResp 
 		botToken = "Bearer " + botToken
 	}
 
-	body, err := json.Marshal(jsonBody)
-	if err != nil {
-		return err
-	}
-
-	resp, err := common.HTTPPostJSON(ctx, u, botToken, body)
+	resp, err := common.HTTPPostJSON(ctx, u, botToken, jsonBody)
 	if err != nil {
 		return err
 	}
