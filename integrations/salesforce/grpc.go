@@ -28,9 +28,9 @@ const retryPolicy = `{
 		"retryPolicy": {
 			"MaxAttempts": 4,
 			"InitialBackoff": "1s",
-			"MaxBackoff": "128s",
+			"MaxBackoff": "10s",
 			"BackoffMultiplier": 2.0,
-			"RetryableStatusCodes": [ "UNAVAILABLE" ]
+			"RetryableStatusCodes": [ ]
 		}
 	}]
 }`
