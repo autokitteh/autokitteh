@@ -64,7 +64,7 @@ func test(v sdkservices.Vars, o sdkservices.OAuth) sdkintegrations.OptFn {
 // oauthTest verifies the OAuth authentication with Zoom API using the "me" context.
 // (Based on: https://developers.zoom.us/docs/integrations/oauth/#the-me-context).
 func oauthTest(ctx context.Context, v sdkservices.Vars, o sdkservices.OAuth, vs sdktypes.Vars) (sdktypes.Status, error) {
-	// TODO(INT-338): Suppport private OAuth.
+	// TODO(INT-338): Support private OAuth.
 	// Check if the token is expired and refresh it.
 	desc := common.Descriptor("zoom", "", "")
 	token := common.FreshOAuthToken(ctx, zap.L(), o, v, desc, vs)
