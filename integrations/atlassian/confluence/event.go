@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"time"
 
 	"go.uber.org/zap"
 
@@ -17,15 +16,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
-
-const (
-	headerContentType   = "Content-Type"
-	headerAuthorization = "Authorization"
-	contentTypeJSON     = "application/json"
-)
-
-// Default HTTP client with a timeout for short-lived HTTP requests.
-var httpClient = http.Client{Timeout: 3 * time.Second}
 
 // handler is an autokitteh webhook which implements [http.Handler]
 // to receive and dispatch asynchronous event notifications.
@@ -37,6 +27,7 @@ type handler struct {
 }
 
 func NewHTTPHandler(l *zap.Logger, o sdkservices.OAuth, v sdkservices.Vars, d sdkservices.DispatchFunc) handler {
+	l = l.With(zap.String("integration", desc.UniqueName().String()))
 	return handler{logger: l, oauth: o, vars: v, dispatch: d}
 }
 
@@ -49,18 +40,18 @@ func NewHTTPHandler(l *zap.Logger, o sdkservices.OAuth, v sdkservices.Vars, d sd
 // Note 3: The requests are sent by a service, so no need to respond
 // with user-friendly error web pages.
 func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
-	l := h.logger.With(zap.String("urlPath", r.URL.Path))
-
-	// TODO(ENG-1081): Verify the HMAC signature in "X-Hub-Signature"
-	// (Confluence doesn't recognize secrets when creating webhooks).
+	l := h.logger.With(zap.String("url_path", r.URL.Path))
 
 	// Check the "Content-Type" header.
-	contentType := r.Header.Get(headerContentType)
-	if !strings.HasPrefix(contentType, contentTypeJSON) {
-		l.Warn("Incoming Atlassian event with bad header", zap.String(headerContentType, contentType))
+	if common.PostWithoutJSONContentType(r) {
+		ct := r.Header.Get(common.HeaderContentType)
+		l.Warn("incoming event: unexpected content type", zap.String("content_type", ct))
 		common.HTTPError(w, http.StatusBadRequest)
 		return
 	}
+
+	// TODO(ENG-1081): Verify the HMAC signature in "X-Hub-Signature"
+	// (Confluence doesn't recognize secrets when creating webhooks).
 
 	// Parse some of the metadata in the Atlassian event's JSON content.
 	body, err := io.ReadAll(r.Body)

@@ -11,7 +11,7 @@ import (
 )
 
 func (h *handler) handleEvent(event any, eventType string) {
-	l := h.logger.With(zap.String("eventType", eventType))
+	l := h.logger.With(zap.String("event_type", eventType))
 
 	var initiatorID string
 	switch e := event.(type) {

@@ -4,28 +4,24 @@ import (
 	"encoding/json"
 	"net/http"
 	"path/filepath"
-	"strings"
 
 	"github.com/google/go-github/v60/github"
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/github/internal/vars"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-)
-
-const (
-	headerContentType = "Content-Type"
-	contentTypeForm   = "application/x-www-form-urlencoded"
 )
 
 // HandlePAT saves a new autokitteh connection with a user-submitted token.
 func (h handler) handlePAT(w http.ResponseWriter, r *http.Request) {
 	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, desc)
 
-	// Check "Content-Type" header.
-	contentType := r.Header.Get(headerContentType)
-	if !strings.HasPrefix(contentType, contentTypeForm) {
+	// Check the "Content-Type" header.
+	if !common.PostWithoutFormContentType(r) {
+		ct := r.Header.Get(common.HeaderContentType)
+		l.Warn("save connection: unexpected POST content type", zap.String("content_type", ct))
 		c.AbortBadRequest("unexpected content type")
 		return
 	}

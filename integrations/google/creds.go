@@ -10,6 +10,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/google/calendar"
 	"go.autokitteh.dev/autokitteh/integrations/google/drive"
 	"go.autokitteh.dev/autokitteh/integrations/google/forms"
@@ -21,20 +22,16 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-const (
-	headerContentType = "Content-Type"
-	contentTypeForm   = "application/x-www-form-urlencoded"
-)
-
 // handleCreds saves a new AutoKitteh connection with a user-submitted JSON key.
 // It also acts as a passthrough for the OAuth connection mode, to save optional
 // details (e.g. Google Form ID), to support and manage incoming events.
 func (h handler) handleCreds(w http.ResponseWriter, r *http.Request) {
 	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, desc)
 
-	// Check "Content-Type" header.
-	contentType := r.Header.Get(headerContentType)
-	if r.Method == http.MethodPost && !strings.HasPrefix(contentType, contentTypeForm) {
+	// Check the "Content-Type" header.
+	if common.PostWithoutFormContentType(r) {
+		ct := r.Header.Get(common.HeaderContentType)
+		l.Warn("save connection: unexpected POST content type", zap.String("content_type", ct))
 		c.AbortBadRequest("unexpected content type")
 		return
 	}

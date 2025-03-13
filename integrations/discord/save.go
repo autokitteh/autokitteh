@@ -3,29 +3,25 @@ package discord
 import (
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/bwmarrin/discordgo"
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations"
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/discord/internal/vars"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-)
-
-const (
-	headerContentType = "Content-Type"
-	contentTypeForm   = "application/x-www-form-urlencoded"
 )
 
 // ServeHTTP saves a new autokitteh connection with user-submitted data.
 func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, desc)
 
-	// Check "Content-Type" header.
-	contentType := r.Header.Get(headerContentType)
-	if !strings.HasPrefix(contentType, contentTypeForm) {
+	// Check the "Content-Type" header.
+	if common.PostWithoutFormContentType(r) {
+		ct := r.Header.Get(common.HeaderContentType)
+		l.Warn("save connection: unexpected POST content type", zap.String("content_type", ct))
 		c.AbortBadRequest("unexpected content type")
 		return
 	}

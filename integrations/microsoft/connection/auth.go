@@ -5,10 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
 	"net/url"
-	"strings"
 
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
@@ -35,39 +32,24 @@ func DaemonToken(ctx context.Context, vs sdktypes.Vars) (*oauth2.Token, error) {
 	u := fmt.Sprintf("https://login.microsoftonline.com/%s/oauth2/v2.0/token", tenantID)
 
 	// TODO(INT-227): Add support for certificate-based authentication.
-	data := url.Values{}
-	data.Set("grant_type", "client_credentials")
-	data.Set("client_id", vs.GetValue(privateClientIDVar))
-	data.Set("client_secret", vs.GetValue(privateClientSecretVar))
-	data.Set("scope", "https://graph.microsoft.com/.default")
+	form := url.Values{
+		"grant_type":    {"client_credentials"},
+		"client_id":     {vs.GetValue(privateClientIDVar)},
+		"client_secret": {vs.GetValue(privateClientSecretVar)},
+		"scope":         {"https://graph.microsoft.com/.default"},
+	}
 
-	if data.Get("client_id") == "" || data.Get("client_secret") == "" {
+	if form.Get("client_id") == "" || form.Get("client_secret") == "" {
 		return nil, errors.New("missing required connection variables")
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u, strings.NewReader(data.Encode()))
+	resp, err := common.HTTPPostForm(ctx, u, "", form)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("request for token failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read token response: %w", err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("request for token failed: %s (%s)", resp.Status, body)
-	}
-
 	var t oauth2.Token
-	if err := json.Unmarshal(body, &t); err != nil {
+	if err := json.Unmarshal(resp, &t); err != nil {
 		return nil, fmt.Errorf("failed to parse token: %w", err)
 	}
 

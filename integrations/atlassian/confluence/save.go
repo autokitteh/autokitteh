@@ -5,16 +5,12 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-)
-
-const (
-	contentTypeForm = "application/x-www-form-urlencoded"
 )
 
 // See [webhookEvents] in "webhooks.go" for more details.
@@ -34,9 +30,10 @@ var eventCategories = []string{
 func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, desc)
 
-	// Check "Content-Type" header.
-	contentType := r.Header.Get(headerContentType)
-	if !strings.HasPrefix(contentType, contentTypeForm) {
+	// Check the "Content-Type" header.
+	if common.PostWithoutFormContentType(r) {
+		ct := r.Header.Get(common.HeaderContentType)
+		l.Warn("save connection: unexpected POST content type", zap.String("content_type", ct))
 		c.AbortBadRequest("unexpected content type")
 		return
 	}
@@ -69,16 +66,17 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 		initData = initData.Set(authType, "pat", false)
 	}
 
+	ctx := r.Context()
 	for _, category := range eventCategories {
 		// Register a new webhook to receive, parse, and dispatch
 		// Confluence events, if there isn't one already.
-		id, ok := getWebhook(r.Context(), l, b, e, t, category)
+		id, ok := getWebhook(ctx, l, b, e, t, category)
 		if ok {
 			// TODO: In the future, when we're sure which events we want to
 			// subscribe to, uncomment this line and don't delete the webhook.
 			// initData = initData.Set(webhookID, fmt.Sprintf("%d", id), false)
 
-			if err := deleteWebhook(r.Context(), l, b, e, t, id); err != nil {
+			if err := deleteWebhook(ctx, l, b, e, t, id); err != nil {
 				l.Error("Failed to delete existing webhook", zap.Error(err))
 				c.AbortServerError("failed to delete existing webhook")
 				return
@@ -86,7 +84,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 		} // else {
 		var secret string
 		var err error
-		id, secret, err = registerWebhook(r.Context(), l, b, e, t, category)
+		id, secret, err = registerWebhook(ctx, l, b, e, t, category)
 		if err != nil {
 			l.Error("Failed to register webhook", zap.Error(err))
 			c.AbortServerError("failed to register webhook")

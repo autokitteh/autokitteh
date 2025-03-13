@@ -18,7 +18,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations/common"
-	"go.autokitteh.dev/autokitteh/integrations/slack/api"
 	"go.autokitteh.dev/autokitteh/integrations/slack/events"
 	"go.autokitteh.dev/autokitteh/integrations/slack/vars"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -57,10 +56,10 @@ func NewHandler(l *zap.Logger, v sdkservices.Vars, d sdkservices.DispatchFunc, i
 // it returns nil, and sends an HTTP error to the Slack platform's client.
 func (h handler) checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Logger, wantContentType string) []byte {
 	// "Content-Type" header.
-	gotContentType := r.Header.Get(api.HeaderContentType)
+	gotContentType := r.Header.Get(common.HeaderContentType)
 	if gotContentType == "" || gotContentType != wantContentType {
-		l.Error("unexpected header value",
-			zap.String("header", api.HeaderContentType),
+		l.Warn("incoming event: unexpected header value",
+			zap.String("header", common.HeaderContentType),
 			zap.String("got", gotContentType),
 			zap.String("want", wantContentType),
 		)
