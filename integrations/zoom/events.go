@@ -160,11 +160,9 @@ func (h handler) signingSecret() (string, error) {
 // header, using HMAC-SHA256 for integrity verification.
 // (based on https://developers.zoom.us/docs/api/webhooks/#verify-with-zooms-header)
 func (h handler) checkSignature(signature, timestamp, secret string, body []byte) bool {
-	message := fmt.Sprintf("v0:%s:%s", timestamp, string(body))
-
 	// Create HMAC SHA-256 hash using the webhook secret token.
 	mac := hmac.New(sha256.New, []byte(secret))
-	mac.Write([]byte(message))
+	mac.Write([]byte(fmt.Sprintf("v0:%s:%s", timestamp, string(body))))
 	expectedSignature := "v0=" + hex.EncodeToString(mac.Sum(nil))
 
 	return hmac.Equal([]byte(signature), []byte(expectedSignature))
