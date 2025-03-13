@@ -19,6 +19,19 @@ type grpcAuth struct {
 	tenantID    string
 }
 
+const retryPolicy = `{
+	"methodConfig": [{
+		"name": [{"service": "eventbus.v1.PubSub", "method": "Subscribe"}],
+		"retryPolicy": {
+			"MaxAttempts": 4,
+			"InitialBackoff": "1s",
+			"MaxBackoff": "128s",
+			"BackoffMultiplier": 2.0,
+			"RetryableStatusCodes": [ "UNAVAILABLE" ]
+		}
+	}]
+}`
+
 func initConn(l *zap.Logger, cfg *oauth2.Config, token *oauth2.Token, instanceURL, orgID string) (*grpc.ClientConn, error) {
 	conn, err := grpc.NewClient(
 		"api.pubsub.salesforce.com:443",
@@ -29,6 +42,7 @@ func initConn(l *zap.Logger, cfg *oauth2.Config, token *oauth2.Token, instanceUR
 			instanceURL: instanceURL,
 			tenantID:    orgID,
 		}),
+		grpc.WithDefaultServiceConfig(retryPolicy),
 	)
 	if err != nil {
 		l.Error("failed to create gRPC connection for Salesforce events", zap.Error(err))
