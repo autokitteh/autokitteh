@@ -80,7 +80,6 @@ func (h handler) eventLoop(ctx context.Context, clientID string, subscribeTopic 
 			n, err := renewSubscription(l, stream, defaultBatchSize, subscribeTopic)
 			if err != nil {
 				l.Error("failed to renew Salesforce events subscription", zap.Error(err))
-				// TODO(INT-333): Add exponential backoff.
 				continue
 			}
 			numLeftToReceive = n
@@ -153,7 +152,6 @@ func initStream(ctx context.Context, l *zap.Logger, client pb.PubSubClient) pb.P
 		stream, err := client.Subscribe(ctx)
 		if err != nil {
 			l.Error("failed to create gRPC stream for Salesforce events", zap.Error(err))
-			// TODO(INT-333): Add exponential backoff.
 			continue
 		}
 
