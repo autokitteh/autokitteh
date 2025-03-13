@@ -26,11 +26,28 @@ const retryPolicy = `{
 	"methodConfig": [{
 		"name": [{"service": "eventbus.v1.PubSub", "method": "Subscribe"}],
 		"retryPolicy": {
-			"MaxAttempts": 4,
-			"InitialBackoff": "1s",
-			"MaxBackoff": "10s",
-			"BackoffMultiplier": 2.0,
-			"RetryableStatusCodes": [ ]
+			"maxAttempts": 4,
+			"initialBackoff": "1s",
+			"maxBackoff": "10s",
+			"backoffMultiplier": 2.0,
+			"retryableStatusCodes": [
+				"CANCELLED", 
+				"UNKNOWN", 
+				"INVALID_ARGUMENT",
+				"DEADLINE_EXCEEDED",
+				"NOT_FOUND",
+				"ALREADY_EXISTS",
+				"PERMISSION_DENIED",
+				"RESOURCE_EXHAUSTED",
+				"FAILED_PRECONDITION",
+				"ABORTED",
+				"OUT_OF_RANGE",
+				"UNIMPLEMENTED",
+				"INTERNAL",
+				"UNAVAILABLE",
+				"DATA_LOSS",
+				"UNAUTHENTICATED"
+			]
 		}
 	}]
 }`
