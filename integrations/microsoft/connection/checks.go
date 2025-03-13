@@ -6,8 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
@@ -79,29 +77,13 @@ func Test(v sdkservices.Vars, o sdkservices.OAuth) sdkintegrations.OptFn {
 // Graph (based on: https://learn.microsoft.com/en-us/graph/api/user-get).
 func GetUserInfo(ctx context.Context, t *oauth2.Token) (*UserInfo, error) {
 	u := "https://graph.microsoft.com/v1.0/me"
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, http.NoBody)
+	resp, err := common.HTTPGet(ctx, u, "Bearer "+t.AccessToken)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header.Set("Authorization", "Bearer "+t.AccessToken)
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("request for user info failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read user info response: %w", err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("request for user info failed: %s (%s)", resp.Status, body)
-	}
-
 	var user UserInfo
-	if err := json.Unmarshal(body, &user); err != nil {
+	if err := json.Unmarshal(resp, &user); err != nil {
 		return nil, fmt.Errorf("failed to parse user info: %w", err)
 	}
 
@@ -112,35 +94,19 @@ func GetUserInfo(ctx context.Context, t *oauth2.Token) (*UserInfo, error) {
 // Graph (based on: https://learn.microsoft.com/en-us/graph/api/organization-get).
 func GetOrgInfo(ctx context.Context, t *oauth2.Token) (*OrgInfo, error) {
 	u := "https://graph.microsoft.com/v1.0/organization"
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, http.NoBody)
+	resp, err := common.HTTPGet(ctx, u, "Bearer "+t.AccessToken)
 	if err != nil {
 		return nil, err
-	}
-
-	req.Header.Set("Authorization", "Bearer "+t.AccessToken)
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("request for org info failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read org info response: %w", err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("request for org info failed: %s (%s)", resp.Status, body)
 	}
 
 	org := new(struct {
 		Value []OrgInfo `json:"value"`
 	})
-	if err := json.Unmarshal(body, org); err != nil {
+	if err := json.Unmarshal(resp, org); err != nil {
 		return nil, fmt.Errorf("failed to parse org info: %w", err)
 	}
 	if len(org.Value) != 1 {
-		return nil, fmt.Errorf("unexpected number of Entra organizations: %s", body)
+		return nil, fmt.Errorf("unexpected number of Entra organizations: %s", resp)
 	}
 
 	return &org.Value[0], nil

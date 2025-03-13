@@ -74,8 +74,8 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request) map[string
 	// No need to check the HTTP method, as we only accept POST requests.
 
 	// Check the request's HTTP headers.
-	ct := r.Header.Get("Content-Type")
-	if !strings.HasPrefix(ct, "application/json") {
+	if common.PostWithoutJSONContentType(r) {
+		ct := r.Header.Get(common.HeaderContentType)
 		l.Warn("incoming event: unexpected content type", zap.String("content_type", ct))
 		common.HTTPError(w, http.StatusBadRequest)
 		return nil
@@ -89,7 +89,7 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request) map[string
 	}
 
 	// Read the request's JSON body, up to 8 MiB, to prevent DDoS attacks.
-	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<23))
+	body, err := io.ReadAll(http.MaxBytesReader(nil, r.Body, 1<<23))
 	if err != nil {
 		l.Error("incoming event: failed to read HTTP body", zap.Error(err))
 		common.HTTPError(w, http.StatusBadRequest)

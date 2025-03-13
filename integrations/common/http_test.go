@@ -11,6 +11,35 @@ import (
 	"gotest.tools/v3/assert"
 )
 
+func TestHTTPGet(t *testing.T) {
+	payload := `{"foo": "bar"}`
+
+	// Create a fake HTTP server.
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+
+		assert.Equal(t, r.Header.Get(HeaderAccept), ContentTypeJSON)
+		assert.Equal(t, r.Header.Get(HeaderContentType), "")
+
+		body, err := io.ReadAll(r.Body)
+		assert.NilError(t, err)
+		assert.Equal(t, len(body), 0)
+
+		w.WriteHeader(http.StatusOK)
+		_, err = w.Write([]byte(payload))
+		assert.NilError(t, err)
+	}))
+	t.Cleanup(server.Close)
+
+	// Call the function under test.
+	ctx := context.TODO() // TODO(INT-312): Use "t.Context()".
+	resp, err := HTTPGet(ctx, server.URL, "")
+	assert.NilError(t, err)
+
+	// Check the response.
+	assert.Equal(t, string(resp), payload)
+}
+
 func TestHTTPPostForm(t *testing.T) {
 	payload := `{"foo": "bar"}`
 
@@ -18,8 +47,8 @@ func TestHTTPPostForm(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer r.Body.Close()
 
-		assert.Equal(t, r.Header.Get(HeaderContentType), ContentTypeForm)
 		assert.Equal(t, r.Header.Get(HeaderAccept), ContentTypeJSON)
+		assert.Equal(t, r.Header.Get(HeaderContentType), ContentTypeForm)
 
 		assert.NilError(t, r.ParseForm())
 		assert.Equal(t, r.FormValue("key"), "value")

@@ -15,6 +15,8 @@ import (
 
 	"go.jetify.com/typeid"
 	"go.uber.org/zap"
+
+	"go.autokitteh.dev/autokitteh/integrations/common"
 )
 
 const (
@@ -110,8 +112,11 @@ var webhookEvents = map[string][]string{
 // https://developer.atlassian.com/server/confluence/webhooks/
 // https://confluence.atlassian.com/doc/managing-webhooks-1021225606.html
 func getWebhook(ctx context.Context, l *zap.Logger, base, user, key, category string) (int, bool) {
+	ctx, cancel := context.WithTimeout(ctx, common.HTTPTimeout)
+	defer cancel()
+
 	// TODO(ENG-965): Support pagination.
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, base+restPath, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, base+restPath, http.NoBody)
 	if err != nil {
 		l.Warn("Failed to construct HTTP request to list Confluence webhooks", zap.Error(err))
 		return 0, false
@@ -119,14 +124,15 @@ func getWebhook(ctx context.Context, l *zap.Logger, base, user, key, category st
 
 	req.SetBasicAuth(user, key)
 
-	resp, err := httpClient.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		l.Warn("Failed to list Confluence webhooks", zap.Error(err))
 		return 0, false
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	// Read the response's body, up to 1 MiB.
+	body, err := io.ReadAll(http.MaxBytesReader(nil, resp.Body, 1<<20))
 	if err != nil {
 		l.Warn("Failed to read Confluence webhooks list response", zap.Error(err))
 		return 0, false
@@ -168,6 +174,9 @@ func getWebhook(ctx context.Context, l *zap.Logger, base, user, key, category st
 // https://developer.atlassian.com/cloud/jira/platform/webhooks/#registering-a-webhook-using-the-jira-rest-api--other-integrations-
 // https://developer.atlassian.com/cloud/confluence/modules/webhook/#confluence-webhook-events
 func registerWebhook(ctx context.Context, l *zap.Logger, base, user, key, category string) (int, string, error) {
+	ctx, cancel := context.WithTimeout(ctx, common.HTTPTimeout)
+	defer cancel()
+
 	l = l.With(zap.String("category", category))
 
 	webhookBase := os.Getenv("WEBHOOK_ADDRESS")
@@ -200,14 +209,15 @@ func registerWebhook(ctx context.Context, l *zap.Logger, base, user, key, catego
 	req.SetBasicAuth(user, key)
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := httpClient.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		l.Warn("Failed to register Confluence webhook", zap.Error(err))
 		return 0, "", err
 	}
 	defer resp.Body.Close()
 
-	body, err = io.ReadAll(resp.Body)
+	// Read the response's body, up to 1 MiB.
+	body, err = io.ReadAll(http.MaxBytesReader(nil, resp.Body, 1<<20))
 	if err != nil {
 		l.Warn("Failed to read Confluence webhook registration response", zap.Error(err))
 		return 0, "", err
@@ -258,8 +268,11 @@ func extractIDSuffixFromURL(url string) (int, error) {
 }
 
 func deleteWebhook(ctx context.Context, l *zap.Logger, base, user, key string, id int) error {
+	ctx, cancel := context.WithTimeout(ctx, common.HTTPTimeout)
+	defer cancel()
+
 	url := fmt.Sprintf("%s%s/%d", base, restPath, id)
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, url, http.NoBody)
 	if err != nil {
 		l.Error("Failed to construct HTTP request to delete Confluence webhook", zap.Error(err))
 		return err
@@ -267,7 +280,7 @@ func deleteWebhook(ctx context.Context, l *zap.Logger, base, user, key string, i
 
 	req.SetBasicAuth(user, key)
 
-	resp, err := httpClient.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		l.Error("Failed to delete Confluence webhook", zap.Error(err))
 		return err

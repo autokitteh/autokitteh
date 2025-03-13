@@ -1,12 +1,9 @@
 package jira
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"slices"
 	"strings"
@@ -14,6 +11,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )
 
@@ -84,39 +82,17 @@ type webhookListResponse struct {
 // https://developer.atlassian.com/server/jira/platform/webhooks/
 func getWebhook(ctx context.Context, l *zap.Logger, baseURL, token string) (int, bool) {
 	// TODO(ENG-965): Support pagination.
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"/rest/api/3/webhook", nil)
+	u := baseURL + "/rest/api/3/webhook"
+	resp, err := common.HTTPGet(ctx, u, "Bearer "+token)
 	if err != nil {
-		l.Warn("Failed to construct HTTP request to list Jira webhooks", zap.Error(err))
-		return 0, false
-	}
-
-	req.Header.Set("Authorization", "Bearer "+token)
-
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		l.Warn("Failed to list Jira webhooks", zap.Error(err))
-		return 0, false
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		l.Warn("Failed to read Jira webhooks list response", zap.Error(err))
-		return 0, false
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		l.Warn("Unexpected response to Jira webhooks list request",
-			zap.Int("status", resp.StatusCode),
-			zap.ByteString("body", body),
-		)
+		l.Warn("Failed to request Jira webhook", zap.Error(err))
 		return 0, false
 	}
 
 	var list webhookListResponse
-	if err := json.Unmarshal(body, &list); err != nil {
+	if err := json.Unmarshal(resp, &list); err != nil {
 		l.Warn("Failed to unmarshal Jira webhooks list from JSON",
-			zap.ByteString("body", body),
+			zap.ByteString("body", resp),
 			zap.Error(err),
 		)
 		return 0, false
@@ -150,40 +126,18 @@ func getWebhook(ctx context.Context, l *zap.Logger, baseURL, token string) (int,
 // This function logs errors but doesn't return them, because the only caller is [getWebhook],
 // which uses this function to clean up duplicates and doesn't need to know about the errors.
 func deleteWebhook(ctx context.Context, l *zap.Logger, baseURL, oauthToken string, id int) {
-	jsonReader := bytes.NewReader([]byte(fmt.Sprintf(`{"webhookIds": [%d]}`, id)))
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, baseURL+"/rest/api/3/webhook", jsonReader)
-	if err != nil {
-		l.Error("Failed to construct HTTP request to delete Jira webhook",
-			zap.Int("id", id),
-			zap.Error(err),
-		)
-		return
-	}
+	ctx, cancel := context.WithTimeout(ctx, common.HTTPTimeout)
+	defer cancel()
 
-	req.Header.Set("Authorization", "Bearer "+oauthToken)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		l.Error("Failed to delete Jira webhook",
-			zap.Int("id", id),
-			zap.Error(err),
-		)
-		return
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusAccepted {
-		l.Error("Unexpected response to Jira webhook delete request",
-			zap.Int("id", id),
-			zap.Int("status", resp.StatusCode),
-		)
+	u := baseURL + "/rest/api/3/webhook"
+	req := fmt.Sprintf(`{"webhookIds": [%d]}`, id)
+	if _, err := common.HTTPDeleteJSON(ctx, u, "Bearer "+oauthToken, req); err != nil {
+		l.Error("failed to delete Jira webhook", zap.Int("id", id), zap.Error(err))
 		return
 	}
 
 	l.Debug("Deleted a duplicate Jira webhook",
-		zap.String("base_url", baseURL),
-		zap.Int("id", id),
+		zap.String("base_url", baseURL), zap.Int("id", id),
 	)
 }
 
@@ -208,7 +162,7 @@ type webhookRegistrationResult struct {
 // https://developer.atlassian.com/server/jira/platform/webhooks/
 func registerWebhook(ctx context.Context, l *zap.Logger, baseURL, token string) (int, bool) {
 	webhookBase := os.Getenv("WEBHOOK_ADDRESS")
-	r := webhookRegisterRequest{
+	req := webhookRegisterRequest{
 		URL: fmt.Sprintf("https://%s/jira/webhook", webhookBase),
 		Webhooks: []webhook{
 			{
@@ -225,58 +179,24 @@ func registerWebhook(ctx context.Context, l *zap.Logger, baseURL, token string) 
 		},
 	}
 
-	body, err := json.Marshal(r)
+	u := baseURL + "/rest/api/3/webhook"
+	resp, err := common.HTTPPostJSON(ctx, u, "Bearer "+token, req)
 	if err != nil {
-		l.Error("Failed to marshal Jira webhook registration request",
-			zap.Any("request", r),
-			zap.Error(err),
-		)
-	}
-
-	jsonReader := bytes.NewReader(body)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, baseURL+"/rest/api/3/webhook", jsonReader)
-	if err != nil {
-		l.Error("Failed to construct HTTP request to register Jira webhook", zap.Error(err))
-		return 0, false
-	}
-
-	req.Header.Set("Authorization", "Bearer "+token)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		l.Error("Failed to register Jira webhook", zap.Error(err))
-		return 0, false
-	}
-	defer resp.Body.Close()
-
-	body, err = io.ReadAll(resp.Body)
-	if err != nil {
-		l.Error("Failed to read Jira webhook registration response", zap.Error(err))
-		return 0, false
-	}
-
-	// Error mode 1: based on HTTP status code.
-	if resp.StatusCode != http.StatusOK {
-		l.Error("Unexpected response to Jira webhook registration request",
-			zap.Int("status", resp.StatusCode),
-			zap.ByteString("body", body),
-		)
+		l.Error("failed to register Jira webhook", zap.Error(err))
 		return 0, false
 	}
 
 	var reg webhookRegisterResponse
-	if err := json.Unmarshal(body, &reg); err != nil {
-		l.Error("Failed to unmarshal Jira webhook registration result from JSON",
-			zap.ByteString("body", body),
+	if err := json.Unmarshal(resp, &reg); err != nil {
+		l.Error("failed to unmarshal Jira webhook registration result from JSON",
+			zap.ByteString("body", resp),
 			zap.Error(err),
 		)
 		return 0, false
 	}
 
-	// Error mode 2: based on error messages in the parsed JSON response.
 	if len(reg.Result) == 0 {
-		l.Error("Jira webhook registration result not found", zap.ByteString("body", body))
+		l.Error("Jira webhook registration result not found", zap.ByteString("body", resp))
 	}
 	if len(reg.Result[0].Errors) > 0 {
 		l.Error("Jira webhook registration errors", zap.Strings("errors", reg.Result[0].Errors))
@@ -300,41 +220,18 @@ type webhookRefreshResponse struct {
 // https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-webhooks/#api-rest-api-3-webhook-refresh-put
 // https://developer.atlassian.com/server/jira/platform/webhooks/
 func ExtendWebhookLife(ctx context.Context, l *zap.Logger, baseURL, oauthToken string, id int) (time.Time, bool) {
-	jsonReader := bytes.NewReader([]byte(fmt.Sprintf(`{"webhookIds": [%d]}`, id)))
-	req, err := http.NewRequestWithContext(ctx, http.MethodPut, baseURL+"/rest/api/3/webhook/refresh", jsonReader)
+	u := baseURL + "/rest/api/3/webhook/refresh"
+	req := fmt.Sprintf(`{"webhookIds": [%d]}`, id)
+	resp, err := common.HTTPPutJSON(ctx, u, "Bearer "+oauthToken, req)
 	if err != nil {
-		l.Error("Failed to construct HTTP request to refresh Jira webhook", zap.Error(err))
-		return time.Time{}, false
-	}
-
-	req.Header.Set("Authorization", "Bearer "+oauthToken)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		l.Error("Failed to refresh Jira webhook", zap.Error(err))
-		return time.Time{}, false
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		l.Error("Failed to read Jira webhook refresh response", zap.Error(err))
-		return time.Time{}, false
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		l.Error("Unexpected response to Jira webhook refresh request",
-			zap.Int("status", resp.StatusCode),
-			zap.ByteString("body", body),
-		)
+		l.Error("failed to refresh Jira webhook", zap.Error(err))
 		return time.Time{}, false
 	}
 
 	var ref webhookRefreshResponse
-	if err := json.Unmarshal(body, &ref); err != nil {
-		l.Error("Failed to unmarshal Jira webhook refresh result from JSON",
-			zap.ByteString("body", body),
+	if err := json.Unmarshal(resp, &ref); err != nil {
+		l.Error("failed to unmarshal Jira webhook refresh result from JSON",
+			zap.ByteString("body", resp),
 			zap.Error(err),
 		)
 		return time.Time{}, false

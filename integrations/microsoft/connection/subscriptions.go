@@ -14,6 +14,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -192,9 +193,9 @@ func sendRequest(ctx context.Context, svc Services, cid sdktypes.ConnectionID, h
 		return nil, err
 	}
 
-	req.Header.Set("Authorization", bearerToken(ctx, l, svc, cid))
+	req.Header.Set(common.HeaderAuthorization, bearerToken(ctx, l, svc, cid))
 	if s != nil {
-		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set(common.HeaderContentType, common.ContentTypeJSON)
 	}
 
 	resp, err := http.DefaultClient.Do(req)
@@ -204,7 +205,8 @@ func sendRequest(ctx context.Context, svc Services, cid sdktypes.ConnectionID, h
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	// Read the response's body, up to 1 MiB.
+	body, err := io.ReadAll(http.MaxBytesReader(nil, resp.Body, 1<<20))
 	if err != nil {
 		l.Warn("failed to read MS Graph subscription response", zap.Error(err))
 		return nil, err
