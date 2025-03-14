@@ -8,7 +8,7 @@ import * as fs from "fs";
 import { HandlerService } from "./pb/autokitteh/user_code/v1/handler_svc_pb";
 import { RunnerService, Export } from "./pb/autokitteh/user_code/v1/runner_svc_pb";
 import { ActivityWaiter } from "./ak_call";
-import { listExports } from "./ast_utils";
+import { listExports } from "../common/ast_utils";
 
 type AkCallFunction = (...args: unknown[]) => Promise<unknown>;
 

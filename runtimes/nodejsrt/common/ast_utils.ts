@@ -5,7 +5,7 @@ import { isMemberExpression, identifier, isIdentifier, isAwaitExpression, isVari
 
 import {listFiles} from "./file_utils";
 import fs from "fs"
-import {Export} from "./pb/autokitteh/user_code/v1/runner_svc_pb";
+import {Export} from "../runtime/pb/autokitteh/user_code/v1/runner_svc_pb";
 import {ParserOptions} from "@babel/core";
 
 export interface Symbol {

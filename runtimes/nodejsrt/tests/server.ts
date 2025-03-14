@@ -3,15 +3,15 @@ import {
     ActivityReplyResponse, ExecuteRequest, ExecuteResponse, Export,
     ExportsRequest, ExportsResponse,
     RunnerService, StartRequest, StartResponse
-} from "./pb/autokitteh/user_code/v1/runner_svc_pb";
+} from "../runtime/pb/autokitteh/user_code/v1/runner_svc_pb";
 
-import {Sandbox} from "./sandbox";
+import {Sandbox} from "../runtime/sandbox";
 import fs from "fs";
-import {listExports} from "./ast_utils";
+import {listExports} from "../common/ast_utils";
 
 import type { ConnectRouter } from "@connectrpc/connect";
-import {HealthRequest, HealthResponse} from "./pb/autokitteh/runner_manager/v1/runner_manager_svc_pb";
-import {Waiter} from "./ak_call";
+import {HealthRequest, HealthResponse} from "../runtime/pb/autokitteh/runner_manager/v1/runner_manager_svc_pb";
+import {Waiter} from "../runtime/ak_call";
 
 function getCircularReplacer() {
     const seen = new WeakSet();
