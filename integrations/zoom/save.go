@@ -85,7 +85,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 			c.AbortBadRequest("missing private app details")
 			return
 		}
-		if _, err := serverToken(r.Context(), app); err != nil {
+		if _, err := serverToken(r.Context(), *app); err != nil {
 			l.Error("save connection: " + err.Error())
 			c.AbortBadRequest(err.Error())
 			return
