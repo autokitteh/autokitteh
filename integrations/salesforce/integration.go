@@ -71,9 +71,8 @@ func (h handler) reopenExistingPubSubConnections(ctx context.Context) {
 		orgID := data.GetValue(orgIDVar)
 
 		var clientID string
-		if common.ReadAuthType(data) == integrations.OAuthPrivate {
-			clientID = data.GetValue(clientIDVar)
-		} else {
+		clientID = data.GetValue(clientIDVar)
+		if common.ReadAuthType(data) == integrations.OAuthDefault {
 			cfg, _, err := h.oauth.Get(ctx, desc.UniqueName().String())
 			if err != nil {
 				h.logger.Error("failed to get Salesforce OAuth config", zap.Error(err))

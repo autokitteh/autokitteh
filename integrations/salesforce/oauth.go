@@ -125,10 +125,11 @@ func (h handler) accessTokenExpiration(ctx context.Context, instanceURL string, 
 	if err != nil {
 		return "", err
 	}
-	if common.ReadAuthType(vs) == integrations.OAuthPrivate {
-		clientID = vs.GetValue(clientIDVar)
-		clientSecret = vs.GetValue(clientSecretVar)
-	} else {
+
+	clientID = vs.GetValue(clientIDVar)
+	clientSecret = vs.GetValue(clientSecretVar)
+
+	if common.ReadAuthType(vs) == integrations.OAuthDefault {
 		cfg, _, err := h.oauth.Get(ctx, desc.UniqueName().String())
 		if err != nil {
 			return "", err
