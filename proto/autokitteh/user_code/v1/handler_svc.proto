@@ -167,9 +167,24 @@ message HandlerHealthResponse {
   string error = 1;
 }
 
+message ExecuteReplyRequest {
+  string runner_id = 1;
+  autokitteh.values.v1.Value result = 2;
+  string error = 3;
+  repeated autokitteh.user_code.v1.Frame traceback = 4;
+}
+
+message ExecuteReplyResponse {
+  string error = 1;
+}
+
 service HandlerService {
   // Runner starting activity
   rpc Activity(ActivityRequest) returns (ActivityResponse) {}
+
+  // Runner result from execute
+  rpc ExecuteReply(ExecuteReplyRequest) returns (ExecuteReplyResponse) {}
+
   // Runner done with activity
   rpc Done(DoneRequest) returns (DoneResponse) {}
   // Session logs

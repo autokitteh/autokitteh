@@ -13,15 +13,14 @@ from concurrent.futures import Future
 from subprocess import Popen, TimeoutExpired, run
 from unittest.mock import MagicMock
 
-import pytest
-
-from conftest import clear_module_cache, workflows
-
 import main
 import pb.autokitteh.user_code.v1.runner_svc_pb2 as runner_pb
 import pb.autokitteh.user_code.v1.user_code_pb2 as user_code
 import pb.autokitteh.values.v1.values_pb2 as pb_values
+import pytest
 import values
+from conftest import clear_module_cache, workflows
+from mock_worker import MockWorker
 
 
 def test_help():
@@ -185,3 +184,10 @@ def test_pickle_exception(err):
     result2 = pickle.loads(data)
     error = main.restore_error(result2.error)
     assert isinstance(error, err.__class__)
+
+
+def test_activity():
+    runner = new_test_runner(workflows.activity)
+    worker = MockWorker(runner)
+    event = json.dumps({"data": {"cat": "mitzi"}})
+    worker.start("program.py:on_event", event.encode())
