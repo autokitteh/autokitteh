@@ -1,7 +1,6 @@
-.benchmarks
-.pytest_cache
-.ruff_cache
+*.egg-info/
+.envrc
+.ruff_cache/
 .venv
-__pycache__
-credentials.json
-token.json
+build/
+node_modules/
