@@ -5,6 +5,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
@@ -69,6 +70,18 @@ func (h handler) reopenExistingPubSubConnections(ctx context.Context) {
 		instanceURL := data.GetValue(instanceURLVar)
 		orgID := data.GetValue(orgIDVar)
 
-		h.subscribe(instanceURL, orgID, cid)
+		var clientID string
+		if common.ReadAuthType(data) == integrations.OAuthPrivate {
+			clientID = data.GetValue(clientIDVar)
+		} else {
+			cfg, _, err := h.oauth.Get(ctx, desc.UniqueName().String())
+			if err != nil {
+				h.logger.Error("failed to get Salesforce OAuth config", zap.Error(err))
+				continue
+			}
+			clientID = cfg.ClientID
+		}
+
+		h.subscribe(clientID, orgID, instanceURL, cid)
 	}
 }

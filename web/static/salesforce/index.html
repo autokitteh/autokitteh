@@ -53,10 +53,13 @@
       <h2>Authentication Type</h2>
 
       <div class="form-group">
-        <input type="text" name="auth_type" value="oauthPrivate" readonly />
+        <select name="auth_type" id="authType">
+          <option value="oauthDefault">Default OAuth app</option>
+          <option value="oauthPrivate">Private OAuth app</option>
+        </select>
       </div>
 
-      <div>
+      <div id="privateOauthSection" class="hidden">
         <h2>Private OAuth App</h2>
 
         <div class="form-group">

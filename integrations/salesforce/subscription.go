@@ -27,7 +27,7 @@ var (
 
 // subscribe creates a new gRPC client and subscribes to a generic Salesforce Change Data Capture channel.
 // https://developer.salesforce.com/docs/platform/pub-sub-api/references/methods/subscribe-rpc.html
-func (h handler) subscribe(clientID, orgID string, cid sdktypes.ConnectionID) {
+func (h handler) subscribe(clientID, orgID, instanceURL string, cid sdktypes.ConnectionID) {
 	// Prevent duplication due to race conditions.
 	mu.Lock()
 	defer mu.Unlock()
@@ -52,7 +52,7 @@ func (h handler) subscribe(clientID, orgID string, cid sdktypes.ConnectionID) {
 		l.Error("failed to get Salesforce OAuth config", zap.Error(err))
 		return
 	}
-	conn, err := initConn(l, cfg, t, clientID, orgID)
+	conn, err := initConn(l, cfg, t, instanceURL, orgID)
 	if err != nil {
 		return
 	}
