@@ -1,0 +1,18 @@
+start request: rpc error: code = InvalidArgument desc = can't load main from /tmp/ak-user-2718613765 - error: No module named 'garfield_loves_pizza'
+
+Traceback (most recent call last):
+  File "/tmp/ak-runner-2231914505/runner/main.py", line 259, in Start
+    mod = loader.load_code(self.code_dir, ak_call, mod_name)
+  File "/tmp/ak-runner-2231914505/runner/loader.py", line 114, in load_code
+    return __import__(module_name)
+  File "/tmp/ak-runner-2231914505/runner/loader.py", line 78, in exec_module
+    exec(code, module.__dict__)
+    ~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/ak-user-2718613765/main.py", line 1, in <module>
+    import garfield_loves_pizza
+ModuleNotFoundError: No module named 'garfield_loves_pizza'
+-- main.py:main --
+import garfield_loves_pizza
+
+def main(event):
+    raise X()
