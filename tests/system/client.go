@@ -35,7 +35,7 @@ func waitForSession(akPath, akAddr, step string) (string, error) {
 	waitType := match[2]
 	id := match[3]
 
-	stateRegex := sessionStateAll // wait .. unless .. session, wait for eany session state
+	stateRegex := sessionStateAll // wait .. unless .. session, wait for any session state
 	isSessionExpected := waitType == "for"
 	if isSessionExpected {
 		stateRegex = sessionStateFinal // wait .. for .. session

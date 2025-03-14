@@ -11,14 +11,11 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var (
-	// skip       int
-	printsOnly bool
-	logOrder   string
-)
+// skip       int
+var logOrder string
 
 var logCmd = common.StandardCommand(&cobra.Command{
-	Use:   "log [sessions ID | project] [--fail] [--skip <N>] [--no-timestamps] [--prints-only]",
+	Use:   "log [sessions ID | project] [--fail] [--skip <N>] [--no-timestamps]",
 	Short: "Get session runtime logs (prints, calls, errors, state changes)",
 	Args:  cobra.ExactArgs(1),
 
@@ -54,7 +51,6 @@ func init() {
 	// Command-specific flags.
 	// logCmd.Flags().IntVarP(&skip, "skip", "s", 0, "number of entries to skip")
 	logCmd.Flags().BoolVarP(&noTimestamps, "no-timestamps", "n", false, "omit timestamps from watch output")
-	logCmd.Flags().BoolVarP(&printsOnly, "prints-only", "p", false, "output only session print messages")
 	logCmd.Flags().StringVarP(&logOrder, "order", "o", "desc", "logs order can be asc or desc")
 	logCmd.Flags().StringVar(&nextPageToken, "next-page-token", "", "provide the returned page token to get next")
 	logCmd.Flags().IntVar(&pageSize, "page-size", 20, "page size")
@@ -92,30 +88,6 @@ func printLogs(logs []sdktypes.SessionLogRecord) {
 	for _, r := range logs {
 		if noTimestamps {
 			r = r.WithoutTimestamp().WithProcessID("")
-		}
-
-		msg := ""
-		if printsOnly {
-			if p, ok := r.GetPrint(); ok {
-				s, err := p.ToString()
-				if err != nil {
-					s = fmt.Sprintf("error converting print to string: %v", err.Error())
-				}
-				msg = s
-			} else if state := r.GetState(); state.IsValid() && state.Type() == sdktypes.SessionStateTypeError {
-				if stateErr := state.GetError(); stateErr.IsValid() {
-					pe := stateErr.GetProgramError()
-					msg = "Error: " + pe.ErrorString()
-				}
-			}
-
-			if msg != "" {
-				if !noTimestamps {
-					fmt.Printf("[%s] ", r.Timestamp().String())
-				}
-				fmt.Println(msg)
-			}
-			continue
 		}
 
 		if !quiet {

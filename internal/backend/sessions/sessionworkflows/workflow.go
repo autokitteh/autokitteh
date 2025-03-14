@@ -402,8 +402,8 @@ func (w *sessionWorkflow) removeEventSubscription(wctx workflow.Context, signalI
 	delete(w.lastReadEventSeqForSignal, signalID)
 }
 
-func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []sdkservices.SessionPrint, retVal sdktypes.Value, err error) {
-	sid := w.data.Session.ID()
+func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (_ []sdkservices.SessionPrint, retVal sdktypes.Value, _ error) {
+	session := w.data.Session
 
 	newRunID := func() (runID sdktypes.RunID, err error) {
 		if err = workflow.SideEffect(wctx, func(workflow.Context) any {
@@ -413,6 +413,9 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []sd
 		}
 		return
 	}
+
+	printer := w.newPrinter()
+	defer printer.Close()
 
 	var run sdkservices.Run
 
@@ -452,43 +455,21 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []sd
 		Print: func(printCtx context.Context, runID sdktypes.RunID, text string) error {
 			isActivity := activity.IsActivity(printCtx)
 
-			// Trim single trailing space, but no other spaces.
-			if text[len(text)-1] == '\n' {
-				text = text[:len(text)-1]
+			l.Debug("print", zap.Any("run_id", runID), zap.Bool("is_activity", isActivity), zap.String("text", text))
+
+			print := sdkservices.SessionPrint{
+				Value: sdktypes.NewStringValue(strings.TrimSuffix(text, "\n")),
 			}
-
-			l := l.With(zap.Any("run_id", runID), zap.Bool("is_activity", isActivity))
-			l.Debug("print", zap.String("text", text))
-
-			pv := sdktypes.NewStringValue(text)
-
-			var now time.Time
 
 			if isActivity {
-				now = kittehs.Now()
-
-				// TODO(ENG-1554): we might need to retry here.
-				err = w.ws.svcs.DB.AddSessionPrint(printCtx, sid, pv, w.callSeq)
+				print.Timestamp = kittehs.Now()
+				printer.Print(print, w.callSeq, false)
 			} else {
-				now = workflow.Now(wctx)
-
-				err = workflow.ExecuteActivity(wctx, addSessionPrintActivityName, sid, pv, 0).Get(wctx, nil)
+				print.Timestamp = workflow.Now(wctx)
+				printer.Print(print, 0, workflow.IsReplaying(wctx))
 			}
 
-			prints = append(prints, sdkservices.SessionPrint{
-				Timestamp: now,
-				Value:     pv,
-			})
-
-			// We do not consider print failure as a critical error, since we don't want to hold back the
-			// workflow for potential user debugging prints. Just log the error and move on. Nevertheless,
-			// this is a problem to be aware of, because errors cause the loss of valuable debugging data
-			// (because the workflow context is canceled).
-			if err != nil {
-				l.With(zap.String("text", text)).Sugar().Warnf("failed to add print session record: %v", err)
-			}
-
-			return err
+			return nil
 		},
 		Now: func(nowCtx context.Context, runID sdktypes.RunID) (time.Time, error) {
 			if activity.IsActivity(nowCtx) {
@@ -527,7 +508,7 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []sd
 		return nil, sdktypes.InvalidValue, err
 	}
 
-	entryPoint := w.data.Session.EntryPoint()
+	entryPoint := session.EntryPoint()
 
 	ctx := temporalclient.NewWorkflowContextAsGOContext(wctx)
 
@@ -543,7 +524,7 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []sd
 					RunID:                runID,
 					FallthroughCallbacks: cbs,
 					EntryPointPath:       entryPoint.Path(),
-					SessionID:            w.data.Session.ID(),
+					SessionID:            session.ID(),
 				},
 			)
 		},
@@ -561,32 +542,34 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (prints []sd
 		if !ok {
 			// The user specified an entry point that does not exist.
 			// WrapError so it will be a program error and not considered as an internal error.
-			return prints, sdktypes.InvalidValue, sdktypes.WrapError(fmt.Errorf("entry point %q not found after evaluation", epName)).ToError()
+			return printer.Finalize(), sdktypes.InvalidValue, sdktypes.WrapError(fmt.Errorf("entry point %q not found after evaluation", epName)).ToError()
 		}
 
 		if !callValue.IsFunction() {
 			// The user specified an entry point that is not a function.
 			// WrapError so it will be a program error and not considered as an internal error.
-			return prints, sdktypes.InvalidValue, sdktypes.WrapError(fmt.Errorf("entry point %q is not a function", epName)).ToError()
+			return printer.Finalize(), sdktypes.InvalidValue, sdktypes.WrapError(fmt.Errorf("entry point %q is not a function", epName)).ToError()
 		}
 
 		if callValue.GetFunction().ExecutorID().ToRunID() != runID {
-			return prints, sdktypes.InvalidValue, errors.New("entry point does not belong to main run")
+			return printer.Finalize(), sdktypes.InvalidValue, errors.New("entry point does not belong to main run")
 		}
 
 		if err := w.updateState(wctx, sdktypes.NewSessionStateRunning(runID, callValue)); err != nil {
-			return prints, sdktypes.InvalidValue, err
+			return printer.Finalize(), sdktypes.InvalidValue, err
 		}
 
 		inputs := map[string]sdktypes.Value{
-			"data":       sdktypes.NewDictValueFromStringMap(w.data.Session.Inputs()),
-			"session_id": sdktypes.NewStringValue(sid.String()),
+			"data":       sdktypes.NewDictValueFromStringMap(session.Inputs()),
+			"session_id": sdktypes.NewStringValue(session.ID().String()),
 		}
 
 		if retVal, err = run.Call(ctx, callValue, nil, inputs); err != nil {
-			return prints, sdktypes.InvalidValue, err
+			return printer.Finalize(), sdktypes.InvalidValue, err
 		}
 	}
+
+	prints := printer.Finalize()
 
 	return prints, retVal, w.updateState(
 		wctx,
