@@ -279,7 +279,7 @@ func (s *workerGRPCHandler) StartSession(ctx context.Context, req *userCode.Star
 		return &userCode.StartSessionResponse{Error: err.Error()}, nil
 	}
 
-	return &userCode.StartSessionResponse{SessionId: resp.value.(sdktypes.SessionID).String()}, nil
+	return &userCode.StartSessionResponse{SessionId: resp.value.(string)}, nil
 }
 
 func (s *workerGRPCHandler) Subscribe(ctx context.Context, req *userCode.SubscribeRequest) (*userCode.SubscribeResponse, error) {
@@ -441,18 +441,13 @@ func (s *workerGRPCHandler) RefreshOAuthToken(ctx context.Context, req *userCode
 func (s *workerGRPCHandler) Signal(ctx context.Context, req *userCode.SignalRequest) (*userCode.SignalResponse, error) {
 	pbsig := req.Signal
 
-	sid, err := sdktypes.ParseSessionID(req.SessionId)
-	if err != nil {
-		return &userCode.SignalResponse{Error: fmt.Sprintf("invalid session id: %v", err)}, nil
-	}
-
 	payload, err := sdktypes.ValueFromProto(pbsig.Payload)
 	if err != nil {
 		return &userCode.SignalResponse{Error: fmt.Sprintf("invalid payload: %v", err)}, nil
 	}
 
 	fn := func(ctx context.Context, cbs *sdkservices.RunCallbacks, rid sdktypes.RunID) (any, error) {
-		return nil, cbs.Signal(ctx, rid, sid, pbsig.Name, payload)
+		return nil, cbs.Signal(ctx, rid, req.SessionId, pbsig.Name, payload)
 	}
 
 	resp, err := s.callback(ctx, req.RunnerId, "signal", fn)
@@ -461,7 +456,7 @@ func (s *workerGRPCHandler) Signal(ctx context.Context, req *userCode.SignalRequ
 	}
 
 	if resp.err != nil {
-		err = status.Errorf(codes.Internal, "signal(%s,%s) -> %s", pbsig.Name, sid.String(), err)
+		err = status.Errorf(codes.Internal, "signal(%s,%s) -> %s", pbsig.Name, req.SessionId, err)
 		return &userCode.SignalResponse{Error: err.Error()}, nil
 	}
 
