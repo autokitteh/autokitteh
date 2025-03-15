@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { build } from '../build';
+import { build } from '../builder/build';
 
 describe('Simple Build Process', () => {
     const testDir = path.join(__dirname, 'temp_test');

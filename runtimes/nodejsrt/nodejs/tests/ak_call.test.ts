@@ -1,4 +1,4 @@
-import {Waiter, ak_call} from "../ak_call";
+import {Waiter, ak_call} from "../runtime/ak_call";
 import {EventEmitter, once} from "node:events";
 
 // Define a type for the function

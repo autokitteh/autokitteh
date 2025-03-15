@@ -1,9 +1,9 @@
 import { describe, expect, test, jest, beforeEach, afterEach } from '@jest/globals';
 import { createClient } from '@connectrpc/connect';
-import { HandlerService } from '../pb/autokitteh/user_code/v1/handler_svc_pb';
-import Runner from '../runner';
+import { HandlerService } from '../runtime/pb/autokitteh/user_code/v1/handler_svc_pb';
+import Runner from '../runtime/runner';
 import { EventEmitter } from 'events';
-import { HandlerHealthResponse, IsActiveRunnerResponse, PrintResponse } from '../pb/autokitteh/user_code/v1/handler_svc_pb';
+import { HandlerHealthResponse, IsActiveRunnerResponse, PrintResponse } from '../runtime/pb/autokitteh/user_code/v1/handler_svc_pb';
 
 // Mock the client type
 type MockClient = {

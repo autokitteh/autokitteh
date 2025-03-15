@@ -1,4 +1,4 @@
-import {Sandbox} from "./sandbox";
+import {Sandbox} from "../runtime/sandbox";
 
 test('typescript hooking async', async () => {
     let hookCalled = false

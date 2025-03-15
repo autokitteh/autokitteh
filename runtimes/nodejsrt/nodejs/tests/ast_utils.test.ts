@@ -1,5 +1,5 @@
-import { listExports, patchCode } from '../ast_utils';
-import { Export } from "../pb/autokitteh/user_code/v1/runner_svc_pb";
+import { listExports, patchCode } from '../common/ast_utils';
+import { Export } from "../runtime/pb/autokitteh/user_code/v1/runner_svc_pb";
 
 test('test list symbols', async () => {
     const code = `

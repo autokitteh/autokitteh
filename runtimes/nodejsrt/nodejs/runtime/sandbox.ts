@@ -2,8 +2,8 @@ import * as vm from 'vm';
 import * as fs from 'fs';
 import path from "path";
 import {transformAsync} from "@babel/core";
-import {patchCode} from "./ast_utils";
-import {listFiles} from "./file_utils";
+import {patchCode} from "../common/ast_utils";
+import {listFiles} from "../common/file_utils";
 import {execSync} from "node:child_process";
 import {createRequire} from "module";
 
