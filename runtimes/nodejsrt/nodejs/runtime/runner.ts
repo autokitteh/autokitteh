@@ -9,6 +9,7 @@ import { HandlerService } from "./pb/autokitteh/user_code/v1/handler_svc_pb";
 import { RunnerService, Export } from "./pb/autokitteh/user_code/v1/runner_svc_pb";
 import { ActivityWaiter } from "./ak_call";
 import { listExports } from "../common/ast_utils";
+import { initializeGlobals } from "./runtime";
 
 type AkCallFunction = (...args: unknown[]) => Promise<unknown>;
 
@@ -344,7 +345,7 @@ export default class Runner {
                     }
 
                     // Initialize global ak_call
-                    await import('./runtime');
+                    initializeGlobals(this.waiter, this.codeDir);
 
                     // Import and execute user code
                     const modulePath = path.join(this.codeDir, fileName);

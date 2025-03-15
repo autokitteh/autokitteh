@@ -1,12 +1,11 @@
 import traverse, {NodePath} from "@babel/traverse";
 import {parse} from "@babel/parser";
 import generate from "@babel/generator";
-import { isMemberExpression, identifier, isIdentifier, isAwaitExpression, isVariableDeclarator, stringLiteral, CallExpression } from "@babel/types";
+import {isMemberExpression, identifier, isIdentifier, isAwaitExpression, isVariableDeclarator, stringLiteral} from "@babel/types";
 
 import {listFiles} from "./file_utils";
-import fs from "fs"
+import fs from "fs";
 import {Export} from "../runtime/pb/autokitteh/user_code/v1/runner_svc_pb";
-import {ParserOptions} from "@babel/core";
 
 export interface Symbol {
     file: string;

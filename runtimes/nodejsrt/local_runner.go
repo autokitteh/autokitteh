@@ -26,7 +26,7 @@ import (
 )
 
 var (
-	//go:embed runner/main.ts runner/sandbox.ts runner/runtime.ts runner/server.ts runner/proxy.ts runner/server_proxy.ts runner/pb/autokitteh/*/v1/*.ts
+	//go:embed all:nodejs
 	runnerJsCode embed.FS
 )
 
@@ -40,6 +40,7 @@ type LocalNodeJS struct {
 	sessionID          sdktypes.SessionID
 	stdoutRunnerLogger *zapio.Writer
 	stderrRunnerLogger *zapio.Writer
+	cleanupWorkspace   bool // If true, workspace will be removed on Close
 }
 
 // NewLocalNodeJS creates a new LocalNodeJS instance with the given logger
@@ -63,7 +64,7 @@ func (r *LocalNodeJS) Close() error {
 		}
 	}
 
-	if r.projectDir != "" {
+	if r.projectDir != "" && r.cleanupWorkspace {
 		if uerr := os.RemoveAll(r.projectDir); uerr != nil {
 			err = errors.Join(err, fmt.Errorf("clean project dir %q - %w", r.projectDir, uerr))
 		}
@@ -93,8 +94,29 @@ func freePort() (int, error) {
 	return conn.Addr().(*net.TCPAddr).Port, nil
 }
 
-func (r *LocalNodeJS) PrepareProject(tarData []byte, outputDir string) error {
-	r.projectDir = outputDir
+// PrepareWorkspace prepares the runtime workspace. Creates a new temporary workspace if no directory was set.
+func (r *LocalNodeJS) PrepareWorkspace() error {
+	if strings.TrimSpace(r.projectDir) != "" {
+		r.log.Info("using provided project dir", zap.String("path", r.projectDir))
+		return nil
+	}
+
+	// Create temporary directory for the project
+	tempDir, err := os.MkdirTemp("", "ak-project-")
+	if err != nil {
+		return fmt.Errorf("create project directory - %w", err)
+	}
+	r.projectDir = tempDir
+	r.cleanupWorkspace = true
+	r.log.Info("created temporary project dir", zap.String("path", r.projectDir))
+	return nil
+}
+
+// PrepareProject extracts the tar and sets up the runner code in r.projectDir
+func (r *LocalNodeJS) PrepareProject(tarData []byte) error {
+	if strings.TrimSpace(r.projectDir) == "" {
+		return fmt.Errorf("project directory not set - call PrepareWorkspace first")
+	}
 
 	if err := extractTar(r.projectDir, tarData); err != nil {
 		return fmt.Errorf("extract user tar - %w", err)
@@ -106,7 +128,11 @@ func (r *LocalNodeJS) PrepareProject(tarData []byte, outputDir string) error {
 		return fmt.Errorf("create .ak directory - %w", err)
 	}
 
-	if err := copyFSToDir(runnerJsCode, akDir); err != nil {
+	nodejsFS, err := fs.Sub(runnerJsCode, "nodejs")
+	if err != nil {
+		return fmt.Errorf("get nodejs subdir: %w", err)
+	}
+	if err := copyFSToDir(nodejsFS, akDir); err != nil {
 		return fmt.Errorf("copy runner code - %w", err)
 	}
 	r.log.Info("copied runner code to .ak directory")
@@ -128,30 +154,78 @@ func (r *LocalNodeJS) setupDependencies() error {
 	return nil
 }
 
-// PrepareEnvironment sets up the project directory with the code.
-// It extracts the tar and copies runner code.
-func (r *LocalNodeJS) PrepareEnvironment(tarData []byte) error {
-	// Create temporary directory for the project
-	projectDir, err := os.MkdirTemp("", "ak-project-")
-	if err != nil {
-		return fmt.Errorf("create project directory - %w", err)
+// SetProjectDir sets the project directory for the runner.
+// If the directory doesn't exist, it will be created.
+// When a directory is set, it won't be cleaned up on Close.
+func (r *LocalNodeJS) SetProjectDir(dir string) error {
+	if strings.TrimSpace(dir) == "" {
+		return fmt.Errorf("project directory cannot be empty")
 	}
-	r.projectDir = projectDir
-	r.log.Info("project root dir", zap.String("path", r.projectDir))
 
-	// Extract tar and setup runner code
-	if err := r.PrepareProject(tarData, projectDir); err != nil {
+	dir = filepath.Clean(dir)
+
+	// Check if directory exists
+	info, err := os.Stat(dir)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return fmt.Errorf("check directory %q: %w", dir, err)
+		}
+		// Directory doesn't exist, create it
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return fmt.Errorf("create directory %q: %w", dir, err)
+		}
+		r.log.Info("created project directory", zap.String("path", dir))
+	} else {
+		// Directory exists, verify it's a directory
+		if !info.IsDir() {
+			return fmt.Errorf("path %q exists but is not a directory", dir)
+		}
+		// Check if we have write permission by attempting to create a temporary file
+		testFile := filepath.Join(dir, ".ak.test")
+		f, err := os.Create(testFile)
+		if err != nil {
+			return fmt.Errorf("directory %q is not writable: %w", dir, err)
+		}
+		f.Close()
+		os.Remove(testFile)
+	}
+
+	r.projectDir = dir
+	r.cleanupWorkspace = false
+	r.log.Info("using project directory", zap.String("path", dir))
+	return nil
+}
+
+// Start prepares the workspace, project, dependencies and runs the node process.
+func (r *LocalNodeJS) Start(pyExe string, tarData []byte, env map[string]string, workerAddr string) error {
+	// Prepare the workspace (either temporary or provided)
+	if err := r.PrepareWorkspace(); err != nil {
+		return fmt.Errorf("prepare workspace: %w", err)
+	}
+
+	// Prepare the project in the workspace
+	if err := r.PrepareProject(tarData); err != nil {
 		return fmt.Errorf("prepare project: %w", err)
+	}
+
+	// Setup dependencies
+	if err := r.setupDependencies(); err != nil {
+		return fmt.Errorf("setup dependencies: %w", err)
+	}
+
+	// Finally run the node process
+	if err := r.RunNode(workerAddr); err != nil {
+		return fmt.Errorf("run node: %w", err)
 	}
 
 	return nil
 }
 
-// RunNode starts the Node.js process in the prepared environment.
-// This should only be called after PrepareEnvironment.
+// RunNode starts the Node.js process in the prepared workspace.
+// This should only be called after PrepareWorkspace.
 func (r *LocalNodeJS) RunNode(workerAddr string) error {
-	if r.projectDir == "" {
-		return fmt.Errorf("project directory not set - call PrepareEnvironment first")
+	if strings.TrimSpace(r.projectDir) == "" {
+		return fmt.Errorf("project directory not set - call PrepareWorkspace first")
 	}
 
 	port, err := freePort()
@@ -168,9 +242,9 @@ func (r *LocalNodeJS) RunNode(workerAddr string) error {
 	r.id = id.String()
 
 	cmd := exec.Command(
-		"node",
-		"node_modules/ts-node/dist/bin.ts",
-		".ak/runner/main.ts",
+		"npx",
+		"ts-node",
+		".ak/runtime/main.ts",
 		"--worker-address", workerAddr,
 		"--port", strconv.Itoa(r.port),
 		"--runner-id", r.id,
@@ -193,37 +267,6 @@ func (r *LocalNodeJS) RunNode(workerAddr string) error {
 
 	r.proc = cmd.Process
 	r.log.Info("started nodejs runner", zap.String("command", cmd.String()), zap.Int("pid", r.proc.Pid))
-	return nil
-}
-
-// Start is now a sequence of PrepareEnvironment, setupDependencies, and RunNode
-func (r *LocalNodeJS) Start(pyExe string, tarData []byte, env map[string]string, workerAddr string) error {
-	runOK := false
-
-	defer func() {
-		if !runOK {
-			if err := r.Close(); err != nil {
-				r.log.Warn("cleanup runner", zap.Error(err))
-			}
-		}
-	}()
-
-	// First prepare the environment (extract tar and copy runner code)
-	if err := r.PrepareEnvironment(tarData); err != nil {
-		return err
-	}
-
-	// Then setup dependencies
-	if err := r.setupDependencies(); err != nil {
-		return err
-	}
-
-	// Finally run the node process
-	if err := r.RunNode(workerAddr); err != nil {
-		return err
-	}
-
-	runOK = true
 	return nil
 }
 
@@ -539,4 +582,9 @@ func installDependencies(projectDir string) error {
 	}
 
 	return nil
+}
+
+// SetupDependencies installs TypeScript and project dependencies
+func (r *LocalNodeJS) SetupDependencies() error {
+	return r.setupDependencies()
 }

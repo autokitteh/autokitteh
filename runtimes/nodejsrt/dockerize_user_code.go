@@ -2,6 +2,7 @@ package nodejsrt
 
 import (
 	_ "embed"
+	"fmt"
 	"io/fs"
 	"os"
 	"path"
@@ -32,16 +33,16 @@ func prepareUserCode(code []byte, gzipped bool) (string, error) {
 		return "", err
 	}
 
-	pycode, err := fs.Sub(runnerJsCode, "runner")
+	nodejsFS, err := fs.Sub(runnerJsCode, "nodejs")
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("get nodejs subdir: %w", err)
 	}
 	runnerDir := path.Join(tmpDir, "/runner")
 	if err := os.Mkdir(runnerDir, 0o777); err != nil {
 		return "", err
 	}
 
-	if err := copyFS(pycode, runnerDir); err != nil {
+	if err := copyFSToDir(nodejsFS, runnerDir); err != nil {
 		return "", err
 	}
 

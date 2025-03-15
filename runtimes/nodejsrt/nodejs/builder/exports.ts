@@ -1,4 +1,4 @@
-import {listExportsInDirectory} from "./ast_utils";
+import {listExportsInDirectory} from "../common/ast_utils";
 
 (async () => {
     const codeDir = process.argv[2];

@@ -64,12 +64,16 @@ func (js *nodejsSvc) Build(ctx context.Context, fsys fs.FS, path string, values 
 	defer os.RemoveAll(runnerDir)
 
 	// Copy runner tools using copyFSToDir
-	if err := copyFSToDir(runnerJsCode, runnerDir); err != nil {
+	nodejsFS, err := fs.Sub(runnerJsCode, "nodejs")
+	if err != nil {
+		return sdktypes.InvalidBuildArtifact, fmt.Errorf("get nodejs subdir: %w", err)
+	}
+	if err := copyFSToDir(nodejsFS, runnerDir); err != nil {
 		return sdktypes.InvalidBuildArtifact, err
 	}
 
 	// 4. Run build.ts to copy and modify the code
-	buildCmd := exec.Command("node", "runner/node_modules/ts-node/dist/bin.js", "runner/build.ts", inputDir, outputDir)
+	buildCmd := exec.Command("npx", "ts-node", "builder/build.ts", inputDir, outputDir)
 	buildCmd.Dir = runnerDir
 	var buildStdout, buildStderr bytes.Buffer
 	buildCmd.Stdout = &buildStdout
@@ -143,13 +147,17 @@ func findExports(log *zap.Logger, fsys fs.FS) ([]sdktypes.BuildExport, error) {
 	}
 	defer os.RemoveAll(runnerDir)
 
-	if err := copyFSToDir(runnerJsCode, runnerDir); err != nil {
+	nodejsFS, err := fs.Sub(runnerJsCode, "nodejs")
+	if err != nil {
+		return nil, fmt.Errorf("get nodejs subdir: %w", err)
+	}
+	if err := copyFSToDir(nodejsFS, runnerDir); err != nil {
 		return nil, err
 	}
 
 	// Run exports discovery
 	log.Info("discovering exports")
-	cmd := exec.Command("node", "runner/node_modules/ts-node/dist/bin.js", "runner/exports.ts", codeDir)
+	cmd := exec.Command("npx", "ts-node", "builder/exports.ts", codeDir)
 	cmd.Dir = runnerDir
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout

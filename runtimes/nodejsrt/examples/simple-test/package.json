@@ -2,15 +2,18 @@
   "name": "simple-test",
   "version": "1.0.0",
   "description": "A simple test project for autokitteh runner",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "ts-node test.ts"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
+    "axios": "^1.6.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.28",
     "ts-node": "^10.9.2",
-    "typescript": "^5.8.2"
+    "typescript": "^5.4.2"
   }
 }
