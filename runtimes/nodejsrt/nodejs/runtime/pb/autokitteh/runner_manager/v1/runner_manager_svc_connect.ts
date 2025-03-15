@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { HealthRequest, HealthResponse, RunnerHealthRequest, RunnerHealthResponse, StartRunnerRequest, StartRunnerResponse, StopRunnerRequest, StopRunnerResponse } from "./runner_manager_svc_pb.js";
+import { HealthRequest, HealthResponse, RunnerHealthRequest, RunnerHealthResponse, StartRunnerRequest, StartRunnerResponse, StopRunnerRequest, StopRunnerResponse } from "./runner_manager_svc_pb";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
