@@ -8,38 +8,72 @@ import (
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 
+	"go.autokitteh.dev/autokitteh/integrations"
+	"go.autokitteh.dev/autokitteh/integrations/auth0"
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 func TestOAuthConfig(t *testing.T) {
-	o := &OAuth{cfg: &Config{}, BaseURL: "https://example.com"}
+	vs := newFakeVars()
+	cid := sdktypes.NewConnectionID()
+	vsid := sdktypes.NewVarScopeID(cid)
+	require.NoError(t, vs.Set(t.Context(),
+		sdktypes.NewVar(auth0.ClientIDVar).SetValue("id").WithScopeID(vsid),
+		sdktypes.NewVar(auth0.ClientSecretVar).SetValue("secret").WithScopeID(vsid),
+		sdktypes.NewVar(auth0.DomainVar).SetValue("domain").WithScopeID(vsid),
+
+		sdktypes.NewVar(common.PrivateClientIDVar).SetValue("id").WithScopeID(vsid),
+		sdktypes.NewVar(common.PrivateClientSecretVar).SetValue("secret").WithScopeID(vsid),
+	))
+
+	o := &OAuth{cfg: &Config{}, vars: vs}
 	require.NoError(t, o.Start(nil))
+
+	wantAuth0 := deepCopy(o.oauthConfigs["auth0"])
+	wantAuth0.Config.ClientID = "id"
+	wantAuth0.Config.ClientSecret = "secret"
+	wantAuth0.Config.Endpoint.AuthURL = "https://domain/oauth/authorize"
+	wantAuth0.Config.Endpoint.DeviceAuthURL = "https://domain/oauth/device/code"
+	wantAuth0.Config.Endpoint.TokenURL = "https://domain/oauth/token"
+	wantAuth0.Opts["audience"] = "https://domain/api/v2/"
 
 	tests := []struct {
 		name        string
 		integration string
 		cid         sdktypes.ConnectionID
+		authType    string
 		want        oauthConfig
 		wantErr     bool
 	}{
 		{
 			name:        "default_auth0",
 			integration: "auth0",
-			cid:         sdktypes.InvalidConnectionID,
-			want:        oauthConfig{},
+			authType:    integrations.OAuthDefault,
+			cid:         cid,
+			want:        wantAuth0,
 		},
 		{
 			name:        "default_slack",
 			integration: "slack",
+			authType:    integrations.OAuthDefault,
 			cid:         sdktypes.InvalidConnectionID,
 			want:        o.oauthConfigs["slack"],
 		},
-		// TODO: "private_auth0"
-		// TODO: "private_slack"
+		{
+			name:        "private_auth0",
+			integration: "auth0",
+			authType:    integrations.OAuthPrivate,
+			cid:         cid,
+			want:        wantAuth0,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := t.Context()
+			v := sdktypes.NewVar(common.AuthTypeVar).SetValue(tt.authType)
+			require.NoError(t, vs.Set(ctx, v.WithScopeID(vsid)))
+
 			got, err := o.OAuthConfig(ctx, tt.integration, tt.cid)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("OAuth.OAuthConfig() error = %v, wantErr %v", err, tt.wantErr)
@@ -53,7 +87,7 @@ func TestOAuthConfig(t *testing.T) {
 }
 
 func TestDeepCopy(t *testing.T) {
-	o := &OAuth{cfg: &Config{}, BaseURL: "https://example.com"}
+	o := &OAuth{cfg: &Config{}}
 	require.NoError(t, o.Start(nil))
 
 	orig := o.oauthConfigs["slack"]
@@ -66,16 +100,42 @@ func TestDeepCopy(t *testing.T) {
 	copy.Config.Endpoint.TokenURL = "new_token_url"
 	copy.Config.Endpoint.AuthStyle = oauth2.AuthStyleAutoDetect
 	copy.Config.RedirectURL = "new_redirect_url"
-	copy.Config.Scopes = []string{"new_scope"}
+	copy.Config.Scopes[0] = "new_scope"
 	copy.Opts["new_key"] = "new_value"
 
-	assert.NotEqual(t, copy.Config.ClientID, orig.Config.ClientID)
-	assert.NotEqual(t, copy.Config.ClientSecret, orig.Config.ClientSecret)
-	assert.NotEqual(t, copy.Config.Endpoint.AuthURL, orig.Config.Endpoint.AuthURL)
-	assert.NotEqual(t, copy.Config.Endpoint.DeviceAuthURL, orig.Config.Endpoint.DeviceAuthURL)
-	assert.NotEqual(t, copy.Config.Endpoint.TokenURL, orig.Config.Endpoint.TokenURL)
-	assert.Equal(t, oauth2.AuthStyleInHeader, orig.Config.Endpoint.AuthStyle)
-	assert.NotEqual(t, copy.Config.RedirectURL, orig.Config.RedirectURL)
-	assert.NotEqual(t, copy.Config.Scopes, orig.Config.Scopes)
+	assert.NotEqual(t, orig.Config.ClientID, copy.Config.ClientID)
+	assert.NotEqual(t, orig.Config.ClientSecret, copy.Config.ClientSecret)
+	assert.NotEqual(t, orig.Config.Endpoint.AuthURL, copy.Config.Endpoint.AuthURL)
+	assert.NotEqual(t, orig.Config.Endpoint.DeviceAuthURL, copy.Config.Endpoint.DeviceAuthURL)
+	assert.NotEqual(t, orig.Config.Endpoint.TokenURL, copy.Config.Endpoint.TokenURL)
+	assert.Equal(t, orig.Config.Endpoint.AuthStyle, oauth2.AuthStyleInHeader)
+	assert.NotEqual(t, orig.Config.RedirectURL, copy.Config.RedirectURL)
+	assert.NotEqual(t, orig.Config.Scopes, copy.Config.Scopes)
 	assert.NotContains(t, orig.Opts, "new_key")
+}
+
+func TestFixAuth0(t *testing.T) {
+	v := newFakeVars()
+	cid := sdktypes.NewConnectionID()
+	vsid := sdktypes.NewVarScopeID(cid)
+	require.NoError(t, v.Set(t.Context(),
+		sdktypes.NewVar(auth0.ClientIDVar).SetValue("id").WithScopeID(vsid),
+		sdktypes.NewVar(auth0.ClientSecretVar).SetValue("secret").WithScopeID(vsid),
+		sdktypes.NewVar(auth0.DomainVar).SetValue("domain").WithScopeID(vsid),
+	))
+
+	o := &OAuth{cfg: &Config{Address: "example.com"}, vars: v}
+	require.NoError(t, o.Start(nil))
+
+	c, err := o.OAuthConfig(t.Context(), "auth0", cid)
+	require.NoError(t, err)
+
+	assert.Equal(t, "id", c.Config.ClientID)
+	assert.Equal(t, "secret", c.Config.ClientSecret)
+	assert.Equal(t, "https://example.com/oauth/redirect/auth0", c.Config.RedirectURL)
+	assert.Contains(t, c.Config.Endpoint.AuthURL, "https://domain/")
+	assert.Contains(t, c.Config.Endpoint.DeviceAuthURL, "https://domain/")
+	assert.Contains(t, c.Config.Endpoint.TokenURL, "https://domain/")
+	assert.Contains(t, c.Opts, "audience")
+	assert.Contains(t, c.Opts["audience"], "https://domain/")
 }

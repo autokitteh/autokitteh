@@ -12,6 +12,7 @@ import (
 	"golang.org/x/oauth2"
 
 	"go.autokitteh.dev/autokitteh/integrations"
+	"go.autokitteh.dev/autokitteh/integrations/auth0"
 	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -26,7 +27,30 @@ type oauthConfig struct {
 // for all AutoKitteh integrations. This map must not be modified during runtime.
 func (o *OAuth) initConfigs() {
 	o.oauthConfigs = map[string]oauthConfig{
-		"auth0": {},
+		// https://auth0.com/docs/api/authentication
+		// https://auth0.com/docs/get-started/authentication-and-authorization-flow/authorization-code-flow
+		"auth0": {
+			Config: &oauth2.Config{
+				// Special case: the client ID, secret, and URLs always
+				// depend on a connection variable (Auth0 domain); they
+				// are not global even in the default OAuth mode.
+				Scopes: []string{
+					// https://auth0.com/docs/get-started/apis/scopes/openid-connect-scopes
+					"openid",
+					"profile",
+					"email",
+					// https://auth0.com/docs/get-started/authentication-and-authorization-flow/authorization-code-flow/add-login-auth-code-flow#post-to-token-url-example
+					"offline_access", // For refresh tokens
+
+					"read:users", // For reading user data
+					"read:users_app_metadata",
+				},
+			},
+			Opts: map[string]string{
+				// https://auth0.com/docs/get-started/applications/application-grant-types
+				"grant_type": "client_credentials",
+			},
+		},
 
 		"confluence": {},
 
@@ -222,7 +246,7 @@ func (o *OAuth) OAuthConfig(ctx context.Context, integration string, cid sdktype
 
 	switch integration {
 	case "auth0":
-		privatizeAuth0(vs, &cfg)
+		fixAuth0(vs, &cfg)
 	case "github":
 		privatizeGitHub(vs, &cfg)
 	case "height":
@@ -264,10 +288,18 @@ func deepCopy(c oauthConfig) oauthConfig {
 	}
 }
 
-// Note that this particular function needs to run even when the
-// connection is using the AutoKitteh server's default OAuth app.
-func privatizeAuth0(vs sdktypes.Vars, c *oauthConfig) {
-	// TODO: Implement this function.
+// fixAuth0 needs to run even when the connection is using the AutoKitteh server's
+// default OAuth app, not just a private one like the other "privatize*" functions.
+func fixAuth0(vs sdktypes.Vars, c *oauthConfig) {
+	c.Config.ClientID = vs.GetValue(auth0.ClientIDVar)
+	c.Config.ClientSecret = vs.GetValue(auth0.ClientSecretVar)
+
+	domain := vs.GetValue(auth0.DomainVar)
+	c.Config.Endpoint.AuthURL = fmt.Sprintf("https://%s/oauth/authorize", domain)
+	c.Config.Endpoint.DeviceAuthURL = fmt.Sprintf("https://%s/oauth/device/code", domain)
+	c.Config.Endpoint.TokenURL = fmt.Sprintf("https://%s/oauth/token", domain)
+
+	c.Opts["audience"] = fmt.Sprintf("https://%s/api/v2/", domain)
 }
 
 func privatizeGitHub(vs sdktypes.Vars, c *oauthConfig) {
