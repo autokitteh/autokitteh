@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authsessions"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens/authjwttokens"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktest"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -132,7 +133,8 @@ func TestNewSuccessLoginHandlerSessions(t *testing.T) {
 		},
 	}
 
-	sessions := kittehs.Must1(authsessions.New(authsessions.Configs.Dev))
+	tokens, _ := authjwttokens.New(authjwttokens.Configs.Dev)
+	sessions := kittehs.Must1(authsessions.New(authsessions.Configs.Dev, tokens))
 
 	s := &svc{
 		Deps: Deps{
@@ -162,7 +164,7 @@ func TestNewSuccessLoginHandlerSessions(t *testing.T) {
 
 			sd, err := sessions.Get(r)
 			if assert.NoError(t, err) {
-				assert.Equal(t, testUser.ID(), sd.UserID)
+				assert.Equal(t, testUser.ID(), sd.ID())
 			}
 		}
 	}

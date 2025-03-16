@@ -250,7 +250,7 @@ func (a *svc) newSuccessLoginHandler(ctx context.Context, ld *loginData) http.Ha
 	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if err := a.Deps.Sessions.Set(w, authsessions.NewSessionData(uid)); err != nil {
+		if err := a.Deps.Sessions.Set(w, u); err != nil {
 			sl.With("err", err).Errorf("failed storing session: %v", err)
 			http.Error(w, "internal server error", http.StatusInternalServerError)
 			return
