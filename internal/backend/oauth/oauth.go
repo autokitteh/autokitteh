@@ -23,6 +23,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/github"
+	newoauth "go.autokitteh.dev/autokitteh/integrations/oauth"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -31,8 +32,9 @@ import (
 )
 
 type oauth struct {
-	logger *zap.Logger
-	vars   sdkservices.Vars
+	logger   *zap.Logger
+	vars     sdkservices.Vars
+	newOAuth *newoauth.OAuth
 
 	// Configs and opts store registration data together.
 	// If we replace these in-memory maps with persistent
@@ -50,8 +52,7 @@ type intgSetup struct {
 	vars sdktypes.Vars
 }
 
-func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
-	// TODO(ENG-112): Remove (see Register below).
+func New(l *zap.Logger, vars sdkservices.Vars, newOAuth *newoauth.OAuth) sdkservices.OAuth {
 	redirectURL := fmt.Sprintf("https://%s/oauth/redirect/", os.Getenv("WEBHOOK_ADDRESS"))
 
 	// Determine Atlassian base URL (to support Confluence and Jira on-prem).
@@ -92,8 +93,10 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 	}
 
 	return &oauth{
-		logger: l,
-		vars:   vars,
+		logger:   l,
+		vars:     vars,
+		newOAuth: newOAuth,
+
 		// TODO(ENG-112): Construct the following 2 maps with dynamic integration
 		// registrations, where each integration registration will call Register
 		// below (if it uses OAuth). This hard-coding is EXTREMELY TEMPORARY!
@@ -475,80 +478,6 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 					// "Teamwork.Migrate.All", // Application-only.
 				},
 			},
-
-			// Based on:
-			// https://help.salesforce.com/s/articleView?id=xcloud.remoteaccess_oauth_web_server_flow.htm
-			"salesforce": {
-				// Salesforce is a special case: environment variables are not supported.
-				// All authentication credentials must be stored in `vars`.
-				ClientID:     os.Getenv("SALESFORCE_CLIENT_ID"),
-				ClientSecret: os.Getenv("SALESFORCE_CLIENT_SECRET"),
-				Endpoint: oauth2.Endpoint{
-					AuthURL:  "https://login.salesforce.com/services/oauth2/authorize",
-					TokenURL: "https://login.salesforce.com/services/oauth2/token",
-				},
-				RedirectURL: redirectURL + "salesforce",
-				// https://help.salesforce.com/s/articleView?id=xcloud.remoteaccess_oauth_tokens_scopes.htm
-				// TODO: decrease scopes if possible
-				Scopes: []string{"full", "refresh_token"},
-			},
-
-			// Based on:
-			// https://api.slack.com/apps/A05F30M6W3H
-			"slack": {
-				ClientID:     os.Getenv("SLACK_CLIENT_ID"),
-				ClientSecret: os.Getenv("SLACK_CLIENT_SECRET"),
-				Endpoint: oauth2.Endpoint{
-					// https://api.slack.com/authentication/oauth-v2
-					AuthURL: "https://slack.com/oauth/v2/authorize",
-					// https://api.slack.com/methods/oauth.v2.access
-					TokenURL: "https://slack.com/api/oauth.v2.access",
-					// https://api.slack.com/authentication/oauth-v2#using
-					AuthStyle: oauth2.AuthStyleInHeader,
-				},
-				RedirectURL: redirectURL + "slack", // TODO(ENG-112): Remove (see Register below).
-				// https://api.slack.com/apps/A05F30M6W3H/oauth
-				Scopes: []string{
-					"app_mentions:read",
-					"bookmarks:read",
-					"bookmarks:write",
-					"channels:history",
-					"channels:manage",
-					"channels:read",
-					"chat:write",
-					"chat:write.customize",
-					"chat:write.public",
-					"commands",
-					"dnd:read",
-					"groups:history",
-					"groups:read",
-					"groups:write",
-					"im:history",
-					"im:read",
-					"im:write",
-					"mpim:history",
-					"mpim:read",
-					"mpim:write",
-					"reactions:read",
-					"reactions:write",
-					"users.profile:read",
-					"users:read",
-					"users:read.email",
-				},
-			},
-
-			// Based on: https://developers.zoom.us/docs/integrations/oauth/
-			"zoom": {
-				ClientID:     os.Getenv("ZOOM_CLIENT_ID"),
-				ClientSecret: os.Getenv("ZOOM_CLIENT_SECRET"),
-				Endpoint: oauth2.Endpoint{
-					AuthURL:       "https://zoom.us/oauth/authorize",
-					TokenURL:      "https://zoom.us/oauth/token",
-					DeviceAuthURL: "https://zoom.us/oauth/devicecode",
-				},
-				RedirectURL: redirectURL + "zoom",
-				Scopes:      []string{},
-			},
 		},
 
 		opts: map[string]map[string]string{
@@ -601,14 +530,15 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 				"access_type": "offline", // oauth2.AccessTypeOffline
 				"prompt":      "consent", // oauth2.ApprovalForce
 			},
-			"salesforce": {
-				"prompt": "consent", // oauth2.ApprovalForce
-			},
 		},
 	}
 }
 
 func (o *oauth) Get(ctx context.Context, intg string) (*oauth2.Config, map[string]string, error) {
+	if intg == "salesforce" || intg == "slack" || intg == "zoom" {
+		return o.newOAuth.SimpleConfig(intg), nil, nil
+	}
+
 	cfg, ok := o.configs[intg]
 	if !ok {
 		return nil, nil, fmt.Errorf("%w: %q not registered as an OAuth ID", sdkerrors.ErrNotFound, intg)

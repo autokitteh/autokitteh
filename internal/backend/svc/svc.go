@@ -17,6 +17,7 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
+	newoauth "go.autokitteh.dev/autokitteh/integrations/oauth"
 	"go.autokitteh.dev/autokitteh/internal/backend/applygrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authhttpmiddleware"
@@ -218,6 +219,16 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component("builds", configset.Empty, fx.Provide(builds.New)),
 		Component("connections", configset.Empty, fx.Provide(connections.New)),
 		Component("deployments", deployments.Configs, fx.Provide(deployments.New)),
+		Component(
+			"webhooks", // Koanf config prefix, reused by all integrations.
+			newoauth.Configs,
+			fx.Provide(newoauth.New),
+			fx.Invoke(func(lc fx.Lifecycle, o *newoauth.OAuth, m *muxes.Muxes) {
+				HookOnStart(lc, func(ctx context.Context) error {
+					return o.Start(m)
+				})
+			}),
+		),
 		Component("projects", configset.Empty, fx.Provide(projects.New)),
 		Component("projectsgrpcsvc", projectsgrpcsvc.Configs, fx.Provide(projectsgrpcsvc.New)),
 		Component(
