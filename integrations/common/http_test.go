@@ -32,7 +32,7 @@ func TestHTTPGet(t *testing.T) {
 	t.Cleanup(server.Close)
 
 	// Call the function under test.
-	ctx := context.TODO() // TODO(INT-312): Use "t.Context()".
+	ctx := t.Context()
 	resp, err := HTTPGet(ctx, server.URL, "")
 	assert.NilError(t, err)
 
@@ -64,7 +64,7 @@ func TestHTTPPostForm(t *testing.T) {
 	req.Set("key", "value")
 
 	// Call the function under test.
-	ctx := context.TODO() // TODO(INT-312): Use "t.Context()".
+	ctx := t.Context()
 	resp, err := HTTPPostForm(ctx, server.URL, "", req)
 	assert.NilError(t, err)
 

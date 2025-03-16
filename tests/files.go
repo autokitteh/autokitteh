@@ -34,19 +34,7 @@ func AKPath(t *testing.T) string {
 func SwitchToTempDir(t *testing.T, venvPath string) string {
 	tmpPath := t.TempDir()
 
-	origPath, err := os.Getwd()
-	if err != nil {
-		t.Fatal("failed to get current working directory:", err)
-	}
-	t.Cleanup(func() { // TODO(INT-312): Remove this t.Cleanup after using t.Chdir below.
-		if err := os.Chdir(origPath); err != nil {
-			t.Error("failed to restore working directory:", err)
-		}
-	})
-
-	if err := os.Chdir(tmpPath); err != nil { // TODO(INT-312): Use t.Chdir instead.
-		t.Fatal("failed to switch to temporary directory:", err)
-	}
+	t.Chdir(tmpPath)
 
 	// Don't use the user's "config.yaml" file, it may violate isolation
 	// by forcing tests to use shared and/or persistent resources.

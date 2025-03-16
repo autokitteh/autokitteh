@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os/exec"
 	"strings"
+	"testing"
 	"time"
 )
 
@@ -17,8 +18,8 @@ type AKResult struct {
 // to ensure isolation with the server and other client executions.
 // The first 2 "ak*" parameters are required, the rest are optional.
 // It is assumed that the AK binary was built before running the test.
-func RunAKClient(akPath, akAddr, userToken string, timeout time.Duration, args []string) (*AKResult, error) {
-	ctx := context.Background() // TODO(INT-312): Use t.Context instead.
+func RunAKClient(t *testing.T, akPath, akAddr, userToken string, timeout time.Duration, args []string) (*AKResult, error) {
+	ctx := t.Context()
 	if timeout > 0 {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, timeout)

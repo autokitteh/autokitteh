@@ -30,13 +30,13 @@ func runAction(t *testing.T, akPath, akAddr string, i int, step string, cfg *tes
 		args := make([]string, len(cfg.AK.ExtraArgs))
 		copy(args, cfg.AK.ExtraArgs)
 		args = append(args, splitToArgs(match[3])...)
-		return tests.RunAKClient(akPath, akAddr, token, 0, args)
+		return tests.RunAKClient(t, akPath, akAddr, token, 0, args)
 	case "http get", "http post":
 		method := strings.ToUpper(match[2])
 		url, body, _ := strings.Cut(match[3], " ")
 		return &httpRequest{method: method, url: url, body: body}, nil
 	case "wait":
-		return waitForSession(akPath, akAddr, step)
+		return waitForSession(t, akPath, akAddr, step)
 	default:
 		return nil, errors.New("unhandled action")
 	}
