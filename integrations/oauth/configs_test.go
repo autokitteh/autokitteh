@@ -38,6 +38,10 @@ func TestOAuthConfig(t *testing.T) {
 	wantAuth0.Config.Endpoint.TokenURL = "https://domain/oauth/token"
 	wantAuth0.Opts["audience"] = "https://domain/api/v2/"
 
+	wantPrivateSlack := deepCopy(o.oauthConfigs["slack"])
+	wantPrivateSlack.Config.ClientID = "id"
+	wantPrivateSlack.Config.ClientSecret = "secret"
+
 	tests := []struct {
 		name        string
 		integration string
@@ -66,6 +70,13 @@ func TestOAuthConfig(t *testing.T) {
 			authType:    integrations.OAuthPrivate,
 			cid:         cid,
 			want:        wantAuth0,
+		},
+		{
+			name:        "private_slack",
+			integration: "slack",
+			authType:    integrations.OAuthPrivate,
+			cid:         cid,
+			want:        wantPrivateSlack,
 		},
 	}
 	for _, tt := range tests {
@@ -116,9 +127,10 @@ func TestDeepCopy(t *testing.T) {
 
 func TestFixAuth0(t *testing.T) {
 	v := newFakeVars()
+	ctx := t.Context()
 	cid := sdktypes.NewConnectionID()
 	vsid := sdktypes.NewVarScopeID(cid)
-	require.NoError(t, v.Set(t.Context(),
+	require.NoError(t, v.Set(ctx,
 		sdktypes.NewVar(auth0.ClientIDVar).SetValue("id").WithScopeID(vsid),
 		sdktypes.NewVar(auth0.ClientSecretVar).SetValue("secret").WithScopeID(vsid),
 		sdktypes.NewVar(auth0.DomainVar).SetValue("domain").WithScopeID(vsid),
@@ -127,15 +139,64 @@ func TestFixAuth0(t *testing.T) {
 	o := &OAuth{cfg: &Config{Address: "example.com"}, vars: v}
 	require.NoError(t, o.Start(nil))
 
-	c, err := o.OAuthConfig(t.Context(), "auth0", cid)
+	c, err := o.OAuthConfig(ctx, "auth0", cid)
 	require.NoError(t, err)
 
 	assert.Equal(t, "id", c.Config.ClientID)
 	assert.Equal(t, "secret", c.Config.ClientSecret)
 	assert.Equal(t, "https://example.com/oauth/redirect/auth0", c.Config.RedirectURL)
+
 	assert.Contains(t, c.Config.Endpoint.AuthURL, "https://domain/")
 	assert.Contains(t, c.Config.Endpoint.DeviceAuthURL, "https://domain/")
 	assert.Contains(t, c.Config.Endpoint.TokenURL, "https://domain/")
 	assert.Contains(t, c.Opts, "audience")
 	assert.Contains(t, c.Opts["audience"], "https://domain/")
+}
+
+func TestPrivatize(t *testing.T) {
+	tests := []struct {
+		name       string
+		vars       sdktypes.Vars
+		wantID     string
+		wantSecret string
+	}{
+		{
+			name: "default_slack",
+			vars: sdktypes.NewVars(
+				sdktypes.NewVar(common.AuthTypeVar).SetValue(integrations.OAuthDefault),
+			),
+			wantID:     "",
+			wantSecret: "",
+		},
+		{
+			name: "private_slack",
+			vars: sdktypes.NewVars(
+				sdktypes.NewVar(common.AuthTypeVar).SetValue(integrations.OAuthPrivate),
+				sdktypes.NewVar(common.PrivateClientIDVar).SetValue("id"),
+				sdktypes.NewVar(common.PrivateClientSecretVar).SetValue("secret"),
+			),
+			wantID:     "id",
+			wantSecret: "secret",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := newFakeVars()
+			ctx := t.Context()
+			cid := sdktypes.NewConnectionID()
+			vsid := sdktypes.NewVarScopeID(cid)
+			vs := tt.vars.WithScopeID(vsid)
+			require.NoError(t, v.Set(ctx, vs...))
+
+			o := &OAuth{cfg: &Config{Address: "example.com"}, vars: v}
+			require.NoError(t, o.Start(nil))
+
+			c, err := o.OAuthConfig(ctx, "slack", cid)
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.wantID, c.Config.ClientID)
+			assert.Equal(t, tt.wantSecret, c.Config.ClientSecret)
+			assert.Equal(t, "https://example.com/oauth/redirect/slack", c.Config.RedirectURL)
+		})
+	}
 }

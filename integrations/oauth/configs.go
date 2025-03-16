@@ -249,18 +249,10 @@ func (o *OAuth) OAuthConfig(ctx context.Context, integration string, cid sdktype
 		fixAuth0(vs, &cfg)
 	case "github":
 		privatizeGitHub(vs, &cfg)
-	case "height":
-		privatizeHeight(vs, &cfg)
-	case "linear":
-		privatizeLinear(vs, &cfg)
 	case "microsoft", "microsoft_teams":
 		privatizeMicrosoft(vs, &cfg)
-	case "salesforce":
-		privatizeSalesforce(vs, &cfg)
-	case "slack":
-		privatizeSlack(vs, &cfg)
-	case "zoom":
-		privatizeZoom(vs, &cfg)
+	default:
+		privatize(vs, &cfg)
 	}
 
 	return cfg, nil
@@ -289,7 +281,7 @@ func deepCopy(c oauthConfig) oauthConfig {
 }
 
 // fixAuth0 needs to run even when the connection is using the AutoKitteh server's
-// default OAuth app, not just a private one like the other "privatize*" functions.
+// default OAuth app, not just a private one like the [privatize] function.
 func fixAuth0(vs sdktypes.Vars, c *oauthConfig) {
 	c.Config.ClientID = vs.GetValue(auth0.ClientIDVar)
 	c.Config.ClientSecret = vs.GetValue(auth0.ClientSecretVar)
@@ -306,26 +298,11 @@ func privatizeGitHub(vs sdktypes.Vars, c *oauthConfig) {
 	// TODO: Implement this function.
 }
 
-func privatizeHeight(vs sdktypes.Vars, c *oauthConfig) {
-	// TODO: Implement this function.
-}
-
-func privatizeLinear(vs sdktypes.Vars, c *oauthConfig) {
-	// TODO: Implement this function.
-}
-
 func privatizeMicrosoft(vs sdktypes.Vars, c *oauthConfig) {
 	// TODO: Implement this function.
 }
 
-func privatizeSalesforce(vs sdktypes.Vars, c *oauthConfig) {
-	// TODO: Implement this function.
-}
-
-func privatizeSlack(vs sdktypes.Vars, c *oauthConfig) {
-	// TODO: Implement this function.
-}
-
-func privatizeZoom(vs sdktypes.Vars, c *oauthConfig) {
-	// TODO: Implement this function.
+func privatize(vs sdktypes.Vars, c *oauthConfig) {
+	c.Config.ClientID = vs.GetValue(common.PrivateClientIDVar)
+	c.Config.ClientSecret = vs.GetValue(common.PrivateClientSecretVar)
 }
