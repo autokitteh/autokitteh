@@ -506,10 +506,6 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 		if err := py.startRequest(ctx, fnName, eventData); err != nil {
 			return sdktypes.InvalidValue, fmt.Errorf("start request: %w", err)
 		}
-
-		if err := py.startRequest(ctx, fnName, eventData); err != nil {
-			return sdktypes.InvalidValue, fmt.Errorf("start request: %w", err)
-		}
 	} else {
 		// If we're here, it's an activity call
 		req := pbUserCode.ExecuteRequest{Data: fn.Data()}
