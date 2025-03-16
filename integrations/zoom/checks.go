@@ -55,7 +55,7 @@ func test(v sdkservices.Vars, o sdkservices.OAuth) sdkintegrations.OptFn {
 		case integrations.OAuthDefault, integrations.OAuthPrivate:
 			return oauthTest(ctx, v, o, vs)
 		case integrations.ServerToServer:
-			return ServerToServerTest(ctx, vs)
+			return serverToServerTest(ctx, vs)
 		default:
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil
 		}
@@ -67,7 +67,6 @@ func test(v sdkservices.Vars, o sdkservices.OAuth) sdkintegrations.OptFn {
 func oauthTest(ctx context.Context, v sdkservices.Vars, o sdkservices.OAuth, vs sdktypes.Vars) (sdktypes.Status, error) {
 	// TODO(INT-338): Support private OAuth.
 	// Check if the token is expired and refresh it.
-	desc := common.Descriptor("zoom", "", "")
 	token := common.FreshOAuthToken(ctx, zap.L(), o, v, desc, vs)
 
 	url := "https://api.zoom.us/v2/users/me"
@@ -80,9 +79,9 @@ func oauthTest(ctx context.Context, v sdkservices.Vars, o sdkservices.OAuth, vs 
 	return sdktypes.NewStatus(sdktypes.StatusCodeOK, "OAuth connection successful"), nil
 }
 
-// ServerToServerTest validates the Server-to-Server authentication test for Zoom.
+// serverToServerTest validates the Server-to-Server authentication test for Zoom.
 // (Based on: https://developers.zoom.us/docs/internal-apps/s2s-oauth/).
-func ServerToServerTest(ctx context.Context, vs sdktypes.Vars) (sdktypes.Status, error) {
+func serverToServerTest(ctx context.Context, vs sdktypes.Vars) (sdktypes.Status, error) {
 	var app privateApp
 	vs.Decode(&app)
 
