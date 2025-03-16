@@ -121,19 +121,18 @@ def test_activity_reply():
 
 # TODO: This test takes about 14 seconds to finish, can we do it faster?
 def test_start_timeout(tmp_path):
+    timeout = 1
     cmd = [
         sys.executable,
         "main.py",
         "--skip-check-worker",
-        "--port",
-        "0",
-        "--runner-id",
-        "r1",
-        "--code-dir",
-        str(tmp_path),
-    ]
+        "--port", "0",
+        "--runner-id", "r1",
+        "--code-dir", str(tmp_path),
+        "--start-timeout", str(timeout),
+    ]  # fmt: skip
 
-    timeout = main.START_TIMEOUT + main.SERVER_GRACE_TIMEOUT + 1
+    timeout = timeout + main.SERVER_GRACE_TIMEOUT + 1
     p = Popen(cmd)
     try:
         p.wait(timeout)
