@@ -3,11 +3,11 @@ import {
     ActivityReplyResponse, ExecuteRequest, ExecuteResponse,
     ExportsRequest, ExportsResponse,
     RunnerService, StartRequest, StartResponse
-} from "./runtime/pb/autokitteh/user_code/v1/runner_svc_pb";
+} from "../../runtime/pb/autokitteh/user_code/v1/runner_svc_pb";
 
 
 import {ConnectRouter, createClient} from "@connectrpc/connect";
-import {HealthRequest, HealthResponse} from "./runtime/pb/autokitteh/runner_manager/v1/runner_manager_svc_pb";
+import {HealthRequest, HealthResponse} from "../../runtime/pb/autokitteh/runner_manager/v1/runner_manager_svc_pb";
 import {createGrpcTransport} from "@connectrpc/connect-node";
 
 

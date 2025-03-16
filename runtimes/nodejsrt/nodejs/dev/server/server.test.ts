@@ -1,10 +1,10 @@
 import {createRouterTransport, createClient, ConnectRouter} from "@connectrpc/connect";
-import { createService } from "./server";
+import { createService } from "./server_proxy";
 
-import {RunnerService } from "./pb/autokitteh/user_code/v1/runner_svc_pb";
-import {Sandbox} from "./sandbox";
-import {ActivityWaiter} from "./ak_call";
-import {HandlerService} from "./pb/autokitteh/user_code/v1/handler_svc_pb";
+import {RunnerService } from "../../runtime/pb/autokitteh/user_code/v1/runner_svc_pb";
+import {Sandbox} from "../../runtime/sandbox";
+import {ActivityWaiter} from "../../runtime/ak_call";
+import {HandlerService} from "../../runtime/pb/autokitteh/user_code/v1/handler_svc_pb";
 import {EventEmitter, once} from "node:events";
 
 const mockSandbox = new Sandbox("", async (f: Function, args: any) => { return await f(...args)})

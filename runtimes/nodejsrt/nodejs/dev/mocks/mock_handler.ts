@@ -1,4 +1,4 @@
-import {HandlerService} from "./pb/autokitteh/user_code/v1/handler_svc_pb";
+import {HandlerService} from "../../runtime/pb/autokitteh/user_code/v1/handler_svc_pb";
 import {ConnectRouter, createClient} from "@connectrpc/connect";
 import {createGrpcTransport} from "@connectrpc/connect-node";
 
