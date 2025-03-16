@@ -1,6 +1,8 @@
 # yaml-language-server: $schema=https://goreleaser.com/static/schema.json
 # vim: set ts=2 sw=2 tw=0 fo=cnqoj
 
+version: 2
+
 builds:
   - id: ak
     binary: ak
@@ -52,7 +54,6 @@ release:
 archives:
   - files:
       - none*
-    format: tar.gz
     # this name template makes the OS and Arch compatible with the results of `uname`.
     name_template: >-
       {{ tolower .ProjectName }}_{{ .Os }}_
