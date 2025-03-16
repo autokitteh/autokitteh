@@ -34,8 +34,8 @@ func DaemonToken(ctx context.Context, vs sdktypes.Vars) (*oauth2.Token, error) {
 	// TODO(INT-227): Add support for certificate-based authentication.
 	form := url.Values{
 		"grant_type":    {"client_credentials"},
-		"client_id":     {vs.GetValue(privateClientIDVar)},
-		"client_secret": {vs.GetValue(privateClientSecretVar)},
+		"client_id":     {vs.GetValue(common.PrivateClientIDVar)},
+		"client_secret": {vs.GetValue(common.PrivateClientSecretVar)},
 		"scope":         {"https://graph.microsoft.com/.default"},
 	}
 

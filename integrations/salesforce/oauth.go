@@ -120,15 +120,13 @@ func (h handler) saveConnection(ctx context.Context, vsid sdktypes.VarScopeID, t
 // so we need to add it on our own. This function also returns the connection's client ID.
 // Based on: https://help.salesforce.com/s/articleView?id=xcloud.remoteaccess_oidc_token_introspection_endpoint.htm
 func (h handler) accessTokenExpiration(ctx context.Context, instanceURL string, t *oauth2.Token, vsid sdktypes.VarScopeID) (string, error) {
-	var clientID, clientSecret string
-
-	vs, err := h.vars.Get(ctx, vsid, common.AuthTypeVar, clientIDVar, clientSecretVar)
+	vs, err := h.vars.Get(ctx, vsid, common.AuthTypeVar, common.PrivateClientIDVar, common.PrivateClientSecretVar)
 	if err != nil {
 		return "", err
 	}
 
-	clientID = vs.GetValue(clientIDVar)
-	clientSecret = vs.GetValue(clientSecretVar)
+	clientID := vs.GetValue(common.PrivateClientIDVar)
+	clientSecret := vs.GetValue(common.PrivateClientSecretVar)
 
 	if common.ReadAuthType(vs) == integrations.OAuthDefault {
 		cfg, _, err := h.oauth.Get(ctx, desc.UniqueName().String())

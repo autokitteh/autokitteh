@@ -21,6 +21,9 @@ var (
 	OAuthTokenTypeVar    = sdktypes.NewSymbol("oauth_token_type")
 
 	LegacyOAuthAccessTokenVar = sdktypes.NewSymbol("oauth_AccessToken")
+
+	PrivateClientIDVar     = sdktypes.NewSymbol("private_client_id")
+	PrivateClientSecretVar = sdktypes.NewSymbol("private_client_secret")
 )
 
 // OAuthData contains OAuth 2.0 token details.
