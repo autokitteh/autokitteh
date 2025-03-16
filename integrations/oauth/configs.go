@@ -235,7 +235,7 @@ func (o *OAuth) OAuthConfig(ctx context.Context, integration string, cid sdktype
 	}
 
 	// The connection doesn't use private OAuth - return the default configuration.
-	// Special case: Auth0 requires manipulation even in the default OAuth mode.
+	// Special exception: Auth0 requires manipulation even in the default OAuth mode.
 	if integration != "auth0" && common.ReadAuthType(vs) != integrations.OAuthPrivate {
 		return cfg, nil
 	}
@@ -294,15 +294,15 @@ func fixAuth0(vs sdktypes.Vars, c *oauthConfig) {
 	c.Opts["audience"] = fmt.Sprintf("https://%s/api/v2/", domain)
 }
 
+func privatize(vs sdktypes.Vars, c *oauthConfig) {
+	c.Config.ClientID = vs.GetValue(common.PrivateClientIDVar)
+	c.Config.ClientSecret = vs.GetValue(common.PrivateClientSecretVar)
+}
+
 func privatizeGitHub(vs sdktypes.Vars, c *oauthConfig) {
 	// TODO: Implement this function.
 }
 
 func privatizeMicrosoft(vs sdktypes.Vars, c *oauthConfig) {
 	// TODO: Implement this function.
-}
-
-func privatize(vs sdktypes.Vars, c *oauthConfig) {
-	c.Config.ClientID = vs.GetValue(common.PrivateClientIDVar)
-	c.Config.ClientSecret = vs.GetValue(common.PrivateClientSecretVar)
 }
