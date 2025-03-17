@@ -204,6 +204,14 @@ export default class Runner {
                     this.stop();
                     break;
                 }
+
+                // Check if the runner is no longer active
+                if (!response.isActive) {
+                    console.log('Runner is no longer active, stopping...');
+                    this.stop();
+                    break;
+                }
+
                 // Reset retries on successful check
                 retries = 0;
             } catch (err) {
