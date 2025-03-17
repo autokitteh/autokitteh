@@ -123,7 +123,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h handler) tokenSource(ctx context.Context, t *oauth2.Token) oauth2.TokenSource {
-	cfg, _, err := h.oauth.Get(ctx, "google")
+	cfg, _, err := h.oauth.GetConfig(ctx, "google", sdktypes.InvalidConnectionID)
 	if err != nil {
 		return nil
 	}

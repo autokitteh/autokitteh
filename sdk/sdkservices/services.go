@@ -7,7 +7,6 @@ type Services interface {
 
 	Auth() Auth
 	Dispatcher() Dispatcher
-	OAuth() OAuth
 	Runtimes() Runtimes
 	Store() Store
 }
@@ -36,7 +35,6 @@ type ServicesStruct struct {
 	Dispatcher_   Dispatcher   `optional:"true"`
 	Events_       Events       `optional:"true"`
 	Integrations_ Integrations `optional:"true"`
-	OAuth_        OAuth        `optional:"true"`
 	Orgs_         Orgs         `optional:"true"`
 	Projects_     Projects     `optional:"true"`
 	Runtimes_     Runtimes     `optional:"true"`
@@ -56,7 +54,6 @@ func (s *ServicesStruct) Deployments() Deployments   { return s.Deployments_ }
 func (s *ServicesStruct) Dispatcher() Dispatcher     { return s.Dispatcher_ }
 func (s *ServicesStruct) Events() Events             { return s.Events_ }
 func (s *ServicesStruct) Integrations() Integrations { return s.Integrations_ }
-func (s *ServicesStruct) OAuth() OAuth               { return s.OAuth_ }
 func (s *ServicesStruct) Orgs() Orgs                 { return s.Orgs_ }
 func (s *ServicesStruct) Projects() Projects         { return s.Projects_ }
 func (s *ServicesStruct) Runtimes() Runtimes         { return s.Runtimes_ }

@@ -15,6 +15,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations/common"
+	"go.autokitteh.dev/autokitteh/integrations/oauth"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -29,10 +30,10 @@ const (
 type Services struct {
 	Logger *zap.Logger
 	Vars   sdkservices.Vars
-	OAuth  sdkservices.OAuth
+	OAuth  *oauth.OAuth
 }
 
-func NewServices(l *zap.Logger, v sdkservices.Vars, o sdkservices.OAuth) Services {
+func NewServices(l *zap.Logger, v sdkservices.Vars, o *oauth.OAuth) Services {
 	return Services{Logger: l, Vars: v, OAuth: o}
 }
 

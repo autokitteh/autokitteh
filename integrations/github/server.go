@@ -6,6 +6,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations/github/webhooks"
+	"go.autokitteh.dev/autokitteh/integrations/oauth"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/web/github/connect"
@@ -25,7 +26,7 @@ const (
 
 // Start initializes all the HTTP handlers of the GitHub integration.
 // This includes connection UIs, initialization webhooks, and event webhooks.
-func Start(l *zap.Logger, muxes *muxes.Muxes, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.DispatchFunc) {
+func Start(l *zap.Logger, muxes *muxes.Muxes, v sdkservices.Vars, o *oauth.OAuth, d sdkservices.DispatchFunc) {
 	// Non-typical dynamic connection UI, so we can't call "common.ServeStaticUI".
 	uiPath := fmt.Sprintf("GET %s/", desc.ConnectionURL().Path)
 	muxes.Auth.HandleFunc(uiPath, connect.ServeHTTP)

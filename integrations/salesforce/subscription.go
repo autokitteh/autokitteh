@@ -189,7 +189,7 @@ func (h handler) initPubSubClient(cid sdktypes.ConnectionID, clientID string, l 
 	}
 
 	t := common.FreshOAuthToken(ctx, l, h.oauth, h.vars, desc, vs)
-	cfg, _, err := h.oauth.Get(ctx, desc.UniqueName().String())
+	cfg, _, err := h.oauth.GetConfig(ctx, desc.UniqueName().String(), cid)
 	if err != nil {
 		l.Error("failed to get Salesforce OAuth config", zap.Error(err))
 		if errorMessage != "" {
@@ -198,7 +198,8 @@ func (h handler) initPubSubClient(cid sdktypes.ConnectionID, clientID string, l 
 		return nil, nil
 	}
 
-	conn, err := initConn(l, cfg, t, vs.GetValue(instanceURLVar), vs.GetValue(orgIDVar))
+	instanceURL := vs.GetValue(instanceURLVar)
+	conn, err := initConn(l, cfg, t, instanceURL, vs.GetValue(orgIDVar))
 	if err != nil {
 		if errorMessage != "" {
 			l.Error(errorMessage, zap.Error(err))

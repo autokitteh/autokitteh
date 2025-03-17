@@ -122,7 +122,7 @@ func (cr *Cron) renewJiraEventWatchActivity(ctx context.Context, cid sdktypes.Co
 	}
 
 	// Update the Jira OAuth configuration, to get a fresh OAuth access token.
-	cfg, _, err := cr.oauth.Get(ctx, "jira")
+	cfg, _, err := cr.oauth.GetConfig(ctx, "jira", cid)
 	if err != nil {
 		l.Error("failed to get OAuth config for Jira event watch renewal", zap.Error(err))
 		return err
