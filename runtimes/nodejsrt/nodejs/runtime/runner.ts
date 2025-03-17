@@ -99,11 +99,11 @@ export default class Runner {
     private originalConsoleLog: typeof console.log;
     private isShuttingDown = false;
 
-    constructor(id: string, codeDir: string, client: ReturnType<typeof createClient<typeof HandlerService>>) {
+    constructor(id: string, codeDir: string, client: ReturnType<typeof createClient<typeof HandlerService>>, customWaiter?: ActivityWaiter) {
         this.id = id;
         this.codeDir = codeDir;
         this.client = client;
-        this.waiter = new ActivityWaiter(client, id);
+        this.waiter = customWaiter || new ActivityWaiter(client, id);
         this.originalConsoleLog = console.log;
         
         // Setup start timeout
