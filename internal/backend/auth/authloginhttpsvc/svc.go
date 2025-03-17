@@ -84,19 +84,6 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 		http.Redirect(w, r, "/", http.StatusFound)
 	})
 
-	muxes.Auth.HandleFunc("/refresh", func(w http.ResponseWriter, r *http.Request) {
-		u := authcontext.GetAuthnUser(r.Context())
-		if !u.IsValid() {
-			http.Error(w, "unable to identify user", http.StatusInternalServerError)
-			return
-		}
-		a.Deps.Sessions.Set(w, u)
-
-		w.WriteHeader(http.StatusOK)
-
-		a.L.Info("session refreshed for user: " + u.ID().String())
-	})
-
 	muxes.NoAuth.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
 		if len(loginPaths) == 0 {
 			http.Error(w, "login is not supported", http.StatusForbidden)
@@ -173,9 +160,15 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 	muxes.Auth.HandleFunc("/whoami", func(w http.ResponseWriter, r *http.Request) {
 		u := authcontext.GetAuthnUser(r.Context())
 		if !u.IsValid() {
+			// enforce logout
+			a.Deps.Sessions.Delete(w)
+
 			fmt.Fprint(w, "You are not logged in")
 			return
 		}
+
+		// renew cookie expiration time
+		a.Deps.Sessions.Set(w, u)
 
 		w.Header().Add("Content-Type", "application/json")
 
