@@ -14,7 +14,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func TestOAuthConfig(t *testing.T) {
+func TestGetConfig(t *testing.T) {
 	vs := newFakeVars()
 	cid := sdktypes.NewConnectionID()
 	vsid := sdktypes.NewVarScopeID(cid)
@@ -85,13 +85,16 @@ func TestOAuthConfig(t *testing.T) {
 			v := sdktypes.NewVar(common.AuthTypeVar).SetValue(tt.authType)
 			require.NoError(t, vs.Set(ctx, v.WithScopeID(vsid)))
 
-			got, err := o.OAuthConfig(ctx, tt.integration, tt.cid)
+			gotConfig, gotOpts, err := o.GetConfig(ctx, tt.integration, tt.cid)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("OAuth.OAuthConfig() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("OAuth.OAuthConfig() = %v, want %v", got, tt.want)
+			if !reflect.DeepEqual(gotConfig, tt.want.Config) {
+				t.Errorf("OAuth.OAuthConfig() = %v, want %v", gotConfig, tt.want.Config)
+			}
+			if !reflect.DeepEqual(gotOpts, tt.want.Opts) {
+				t.Errorf("OAuth.OAuthConfig() = %v, want %v", gotOpts, tt.want.Opts)
 			}
 		})
 	}
@@ -139,18 +142,18 @@ func TestFixAuth0(t *testing.T) {
 	o := &OAuth{cfg: &Config{Address: "example.com"}, vars: v}
 	require.NoError(t, o.Start(nil))
 
-	c, err := o.OAuthConfig(ctx, "auth0", cid)
+	cfg, opts, err := o.GetConfig(ctx, "auth0", cid)
 	require.NoError(t, err)
 
-	assert.Equal(t, "id", c.Config.ClientID)
-	assert.Equal(t, "secret", c.Config.ClientSecret)
-	assert.Equal(t, "https://example.com/oauth/redirect/auth0", c.Config.RedirectURL)
+	assert.Equal(t, "id", cfg.ClientID)
+	assert.Equal(t, "secret", cfg.ClientSecret)
+	assert.Equal(t, "https://example.com/oauth/redirect/auth0", cfg.RedirectURL)
 
-	assert.Contains(t, c.Config.Endpoint.AuthURL, "https://domain/")
-	assert.Contains(t, c.Config.Endpoint.DeviceAuthURL, "https://domain/")
-	assert.Contains(t, c.Config.Endpoint.TokenURL, "https://domain/")
-	assert.Contains(t, c.Opts, "audience")
-	assert.Contains(t, c.Opts["audience"], "https://domain/")
+	assert.Contains(t, cfg.Endpoint.AuthURL, "https://domain/")
+	assert.Contains(t, cfg.Endpoint.DeviceAuthURL, "https://domain/")
+	assert.Contains(t, cfg.Endpoint.TokenURL, "https://domain/")
+	assert.Contains(t, opts, "audience")
+	assert.Contains(t, opts["audience"], "https://domain/")
 }
 
 func TestPrivatize(t *testing.T) {
@@ -191,12 +194,12 @@ func TestPrivatize(t *testing.T) {
 			o := &OAuth{cfg: &Config{Address: "example.com"}, vars: v}
 			require.NoError(t, o.Start(nil))
 
-			c, err := o.OAuthConfig(ctx, "slack", cid)
+			cfg, _, err := o.GetConfig(ctx, "slack", cid)
 			require.NoError(t, err)
 
-			assert.Equal(t, tt.wantID, c.Config.ClientID)
-			assert.Equal(t, tt.wantSecret, c.Config.ClientSecret)
-			assert.Equal(t, "https://example.com/oauth/redirect/slack", c.Config.RedirectURL)
+			assert.Equal(t, tt.wantID, cfg.ClientID)
+			assert.Equal(t, tt.wantSecret, cfg.ClientSecret)
+			assert.Equal(t, "https://example.com/oauth/redirect/slack", cfg.RedirectURL)
 		})
 	}
 }

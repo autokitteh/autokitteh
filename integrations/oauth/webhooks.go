@@ -40,7 +40,7 @@ func (o *OAuth) startOAuthFlow(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cfg, err := o.OAuthConfig(r.Context(), integ, cid)
+	cfg, opts, err := o.GetConfig(r.Context(), integ, cid)
 	if err != nil {
 		l.Warn("failed to get OAuth config", zap.Error(err))
 		common.HTTPError(w, http.StatusBadRequest)
@@ -57,7 +57,7 @@ func (o *OAuth) startOAuthFlow(w http.ResponseWriter, r *http.Request) {
 	// Identify the relevant connection when we get an OAuth response.
 	state := strings.Replace(id, "con_", "", 1) + "_" + origin
 
-	u := cfg.Config.AuthCodeURL(state, authCodes(cfg.Opts)...)
+	u := cfg.AuthCodeURL(state, authCodes(opts)...)
 	http.Redirect(w, r, u, http.StatusFound)
 }
 
@@ -167,7 +167,7 @@ func (o *OAuth) exchangeCodeToToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cfg, err := o.OAuthConfig(ctx, integ, cid)
+	cfg, opts, err := o.GetConfig(ctx, integ, cid)
 	if err != nil {
 		l.Warn("failed to get OAuth config", zap.Error(err))
 		abort(w, r, cid, integ, origin, http.StatusText(http.StatusInternalServerError))
@@ -176,7 +176,7 @@ func (o *OAuth) exchangeCodeToToken(w http.ResponseWriter, r *http.Request) {
 
 	client := &http.Client{Timeout: 3 * time.Second}
 	ctx = context.WithValue(ctx, oauth2.HTTPClient, client)
-	token, err := cfg.Config.Exchange(ctx, code, authCodes(cfg.Opts)...)
+	token, err := cfg.Exchange(ctx, code, authCodes(opts)...)
 	if err != nil {
 		l.Warn("OAuth code exchange error", zap.Error(err))
 		abort(w, r, cid, integ, origin, "OAuth code exchange error")

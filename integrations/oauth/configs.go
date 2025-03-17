@@ -209,18 +209,18 @@ func (o *OAuth) SimpleConfig(integration string) *oauth2.Config {
 	return c.Config
 }
 
-// OAuthConfig returns the OAuth 2.0 configuration for the given integration.
+// GetConfig returns the OAuth 2.0 configuration for the given integration.
 // The connection ID may be nil, but if it's not, this function tries to use private
 // OAuth app settings from the connection's variables instead of the integration's defaults.
-func (o *OAuth) OAuthConfig(ctx context.Context, integration string, cid sdktypes.ConnectionID) (oauthConfig, error) {
+func (o *OAuth) GetConfig(ctx context.Context, integration string, cid sdktypes.ConnectionID) (*oauth2.Config, map[string]string, error) {
 	cfg, ok := o.oauthConfigs[integration]
 	if !ok {
-		return oauthConfig{}, fmt.Errorf("%w: OAuth ID: %s", sdkerrors.ErrNotFound, integration)
+		return nil, nil, fmt.Errorf("%w: OAuth ID: %s", sdkerrors.ErrNotFound, integration)
 	}
 
 	// No connection ID - return the default configuration.
 	if !cid.IsValid() {
-		return cfg, nil
+		return cfg.Config, cfg.Opts, nil
 	}
 
 	// Failed to read connection variables - return the default configuration.
@@ -231,13 +231,13 @@ func (o *OAuth) OAuthConfig(ctx context.Context, integration string, cid sdktype
 			zap.String("connection_id", cid.String()),
 			zap.Error(err),
 		)
-		return cfg, nil
+		return cfg.Config, cfg.Opts, nil
 	}
 
 	// The connection doesn't use private OAuth - return the default configuration.
 	// Special exception: Auth0 requires manipulation even in the default OAuth mode.
 	if integration != "auth0" && common.ReadAuthType(vs) != integrations.OAuthPrivate {
-		return cfg, nil
+		return cfg.Config, cfg.Opts, nil
 	}
 
 	// From this point on, we manipulate the config based on the connection's
@@ -256,7 +256,7 @@ func (o *OAuth) OAuthConfig(ctx context.Context, integration string, cid sdktype
 		privatize(vs, &cfg)
 	}
 
-	return cfg, nil
+	return cfg.Config, cfg.Opts, nil
 }
 
 // deepCopy ensures that we don't modify the server's default OAuth 2.0 configurations.
