@@ -250,6 +250,7 @@ func (o *OAuth) OAuthConfig(ctx context.Context, integration string, cid sdktype
 	case "github":
 		privatizeGitHub(vs, &cfg)
 	case "microsoft", "microsoft_teams":
+		privatize(vs, &cfg)
 		privatizeMicrosoft(vs, &cfg)
 	default:
 		privatize(vs, &cfg)
@@ -304,5 +305,5 @@ func privatizeGitHub(vs sdktypes.Vars, c *oauthConfig) {
 }
 
 func privatizeMicrosoft(vs sdktypes.Vars, c *oauthConfig) {
-	// TODO: Implement this function.
+	// TODO(INT-202): Update MS endpoints ("common" --> tenant ID).
 }

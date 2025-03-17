@@ -41,13 +41,14 @@ func (o *OAuth) Start(m *muxes.Muxes) error {
 
 	o.initConfigs()
 
-	// TODO: Change to "/oauth" once the old OAuth service is removed.
 	if m != nil {
-		m.Auth.HandleFunc("GET /oauth2/start/{key}", o.startOAuthFlow)
-		m.NoAuth.HandleFunc("GET /oauth2/redirect/{key}", o.exchangeCodeToToken)
+		m.Auth.HandleFunc("GET /oauth/start/{integration}", o.startOAuthFlow)
+		m.NoAuth.HandleFunc("GET /oauth/redirect/{integration}", o.exchangeCodeToToken)
 	}
 	return nil
 }
+
+const defaultPublicBackendBaseURL = "https://address-not-configured"
 
 func (o *OAuth) normalizeAddress() error {
 	// Construct a URL from the address.
@@ -56,7 +57,7 @@ func (o *OAuth) normalizeAddress() error {
 		a = os.Getenv("WEBHOOK_ADDRESS") // Legacy
 	}
 	if a == "" {
-		o.BaseURL = "https://address-not-configured"
+		o.BaseURL = defaultPublicBackendBaseURL
 		return nil
 	}
 	if strings.HasPrefix(a, "http://") {
