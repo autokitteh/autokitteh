@@ -169,7 +169,7 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 
 		// renew cookie expiration time
 		if err := a.Deps.Sessions.Set(w, u); err != nil {
-			a.L.Warn("failed renewing session for user: "+string(u.ID().UUIDValue().String()), zap.Error(err))
+			a.L.Warn("failed renewing session for user: "+u.ID().UUIDValue().String(), zap.Error(err), zap.String("user_id", u.ID().String()))
 		}
 
 		w.Header().Add("Content-Type", "application/json")
