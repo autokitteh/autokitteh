@@ -4,7 +4,6 @@ import ChatGPTClient from './ChatGPTClient';
 import InvoiceStorage from './InvoiceStorage';
 import InvoiceProcessor from './InvoiceProcessor';
 import startServer from './server';
-import Any = jasmine.Any;
 
 /**
  * The main entry point for the application. This function initializes necessary components
@@ -17,11 +16,17 @@ import Any = jasmine.Any;
  */
 async function main(): Promise<void> {
     const storage = new InvoiceStorage();
-    const gmailClient = await new GmailClient().init();
-    const chatGPTClient = await new ChatGPTClient(config.chatGPT.promptTemplate).init();
+    
+    // Initialize clients with connection names from config
+    const gmailClient = await new GmailClient(config.gmail.connectionName).init();
+    const chatGPTClient = await new ChatGPTClient(
+        config.chatGPT.promptTemplate,
+        config.chatGPT.connectionName
+    ).init();
+    
     const processor = new InvoiceProcessor(gmailClient, chatGPTClient, storage);
 
-    startServer(storage, 3001);
+    startServer(storage, config.server.port);
 
     while (true) {
         console.log("Checking for new emails...");
@@ -36,17 +41,23 @@ async function main(): Promise<void> {
     }
 }
 
-async function total(event: Any): Promise<number> {
+async function total(event: any): Promise<number> {
     const storage = new InvoiceStorage();
-    const gmailClient = await new GmailClient().init();
-    const chatGPTClient = await new ChatGPTClient(config.chatGPT.promptTemplate).init();
+    
+    // Initialize clients with connection names from config
+    const gmailClient = await new GmailClient(config.gmail.connectionName).init();
+    const chatGPTClient = await new ChatGPTClient(
+        config.chatGPT.promptTemplate,
+        config.chatGPT.connectionName
+    ).init();
+    
     const processor = new InvoiceProcessor(gmailClient, chatGPTClient, storage);
     await processor.processNewEmails();
-    return storage.getTotalAmount()
+    return storage.getTotalAmount();
 }
 
-// main().catch((error: unknown) => {
-//     console.error("Fatal error:", error);
-// });
+main().catch((error: unknown) => {
+    console.error("Fatal error:", error);
+});
 
-export default main;
+// export default main;

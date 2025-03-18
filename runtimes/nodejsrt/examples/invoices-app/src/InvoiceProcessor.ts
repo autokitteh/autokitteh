@@ -35,6 +35,10 @@ export class InvoiceProcessor {
      */
     async processEmail(email: EmailMessage): Promise<void> {
         for (const attachment of email.attachments) {
+            if (!attachment.filePath) {
+                console.warn(`Attachment ${attachment.fileName} has no file path and will be skipped.`);
+                continue;
+            }
             const invoiceData = await this.chatGPTClient.analyzeAttachment(attachment.filePath);
             if (invoiceData && this.validateInvoice(invoiceData)) {
                 this.storage.addOrUpdateInvoice({ ...invoiceData, date: email.date });
@@ -55,14 +59,14 @@ export class InvoiceProcessor {
 
         await Promise.all(
             (emails || []).map(async (email) => {
-                if (email) {
+            if (email) {
                     const emailData = await this.gmailClient.fetchMessage(email);
                     if (emailData) {
                         await this.processEmail(emailData);
-                    }
+            }
                     this.storage.markProcessed(email)
                     console.log(`Processed email: ${email}`);
-                }
+        }
             })
         );
     }

@@ -3,15 +3,13 @@ dotenv.config();
 import * as fs from 'fs';
 import * as path from 'path';
 
-
 interface GmailConfig {
-    credentialsPath: string;
-    tokenPath: string;
+    connectionName: string;
     subjectFilter: string;
 }
 
 interface ChatGPTConfig {
-    apiKey: string;
+    connectionName: string;
     promptTemplate: string;
     model: string;
 }
@@ -30,14 +28,13 @@ interface Config {
 const config: Config = {
     sleepIntervalSec: Number(process.env.SLEEP_INTERVAL_SEC) || 60,
     gmail: {
-        credentialsPath: process.env.GMAIL_CREDENTIALS_PATH || '',
-        tokenPath: process.env.GMAIL_TOKEN_PATH || '',
+        connectionName: process.env.GMAIL_CONNECTION_NAME || 'gmail',
         subjectFilter: process.env.SUBJECT_FILTER || '.*invoice.*',
     },
     chatGPT: {
-        apiKey: process.env.OPENAI_API_KEY || '',
+        connectionName: process.env.OPENAI_CONNECTION_NAME || 'openai',
         promptTemplate: fs.readFileSync(path.join(__dirname,'../src/chatgpt_prompt.txt'), 'utf8'),
-        model: 'gpt-4',
+        model: 'gpt-4o',
     },
     server: {
         port: Number(process.env.SERVER_PORT) || 3000,

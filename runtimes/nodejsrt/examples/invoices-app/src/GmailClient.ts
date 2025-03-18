@@ -1,13 +1,9 @@
-import fs from "fs";
-import os from "os";
-import path from "path";
-import {google, gmail_v1} from "googleapis";
-import {authenticate} from "@google-cloud/local-auth";
-import config from "./config";
-
-const SCOPES = ['https://www.googleapis.com/auth/gmail.readonly'];
-const CREDENTIALS_PATH = config.gmail.credentialsPath;
-const TOKEN_PATH = config.gmail.tokenPath;
+import { gmailClient } from './autokitteh/google';
+import config from './config';
+import fs from 'fs';
+import path from 'path';
+import * as os from "node:os";
+import { gmail_v1 } from 'googleapis';
 
 export interface EmailAttachment {
     id: string;
@@ -23,48 +19,31 @@ export interface EmailMessage {
 }
 
 /**
- * Class to fetch new emails with attachments from a Gmail account using the Gmail API.
- * Handles email retrieval based on a start timestamp and processes attachments found in the emails.
+ * GmailClient is a client for interacting with the Gmail API, specifically tailored
+ * to fetch emails with PDF attachments.
  */
 class GmailClient {
     private lastProcessedTime: number;
+    private connectionName: string;
     private subjectRegex: RegExp;
-    private gmail: gmail_v1.Gmail | null = null;
+    private client: any;
 
     constructor(
+        connectionName?: string,
         startTimestamp: number = 0,
         subjectRegex: string = config.gmail.subjectFilter
     ) {
+        this.connectionName = connectionName || 'gmail';
         this.lastProcessedTime = startTimestamp;
         this.subjectRegex = new RegExp(subjectRegex, "i");
     }
 
     async init(): Promise<GmailClient> {
-        const authClient = await this.authenticate();
-        this.gmail = google.gmail({version: 'v1', auth: authClient});
-        return this;
-    }
 
-    private async authenticate() {
-        if (!fs.existsSync(CREDENTIALS_PATH)) {
-            throw new Error('credentials.json file not found. Please provide it in the application directory.');
-        }
-        let authClient;
-        if (fs.existsSync(TOKEN_PATH)) {
-            const token = JSON.parse(fs.readFileSync(TOKEN_PATH, 'utf-8'));
-            authClient = new google.auth.OAuth2();
-            authClient.setCredentials(token);
-            console.log('Using saved token for authentication.');
-        } else {
-            authClient = await authenticate({keyfilePath: CREDENTIALS_PATH, scopes: SCOPES});
-            // Save token for future use
-            const credentials = authClient.credentials;
-            if (credentials) {
-                fs.writeFileSync(TOKEN_PATH, JSON.stringify(credentials));
-                console.log('Token stored to', TOKEN_PATH);
-            }
-        }
-        return authClient;
+        // Initialize the Gmail client using autokitteh's gmailClient
+        this.client = gmailClient(this.connectionName);
+        console.log("Gmail client initialized successfully");
+        return this;
     }
 
 
@@ -100,12 +79,13 @@ class GmailClient {
     }
 
     /**
-     * Fetches new emails from the Gmail inbox, optionally filtering for attachments and messages
-     * received after the last processed time.
+     * Fetches new emails with attachments that have been received since the last processed time.
      *
-     * @return A promise that resolves to an array of message objects representing the new emails.
+     * @return A promise that resolves to an array of email messages with their attachments.
      */
-    async fetchNewEmails(): Promise<gmail_v1.Schema$Message[] | undefined> {
+    async fetchNewEmails(): Promise<EmailMessage[]> {
+
+        // Create query to find emails with attachments after the lastProcessedTime
         const query = [
             "in:inbox",
             "has:attachment",
@@ -113,14 +93,16 @@ class GmailClient {
         ].join(" ");
 
         console.log(`Fetching emails with query: ${query}`);
-        const listRes = await this.gmail.users.messages.list({
-            userId: "me",
-            q: query,
+
+        // List messages matching the query
+        const response = await this.client.users.messages.list({
+            userId: 'me',
+            q: query
         });
 
-        console.log('emails fetched:', listRes.data.messages?.length || '')
+        console.log('emails fetched:', response.data.messages?.length || '')
 
-        return listRes.data.messages || [];
+        return response.data.messages || [];
     }
 
     /**
@@ -137,7 +119,7 @@ class GmailClient {
      *         - fileName: The filename of the attachment.
      */
     async fetchMessage(msgId: string): Promise<EmailMessage | undefined> {
-        const {data: message} = await this.gmail.users.messages.get({
+        const {data: message} = await this.client.users.messages.get({
             userId: "me",
             id: msgId,
             format: "full",
@@ -146,33 +128,33 @@ class GmailClient {
 
         if (!message || !(await this.isRelevant(message))) {
             this.updateLastProcessedTime(message);
-            return null;
+            return undefined;
         }
 
         // Process attachments and metadata
         const attachments: EmailAttachment[] = [];
         const parts = message.payload?.parts || [];
 
-        for (const part of parts) {
+            for (const part of parts) {
             if (part.filename && part.filename.endsWith('.pdf') && part.body?.attachmentId) {
                 const attachId = part.body.attachmentId;
-                const {data: attachmentData} = await this.gmail.users.messages.attachments.get({
+                const {data: attachmentData} = await this.client.users.messages.attachments.get({
                     userId: "me",
                     messageId: msgId,
                     id: attachId,
-                });
+                    });
 
                 // write to temp file TODO in-memory
                 const filePath = path.join(os.tmpdir(), part.filename);
                 fs.writeFileSync(filePath, attachmentData.data, "base64");
 
-                attachments.push({
+                    attachments.push({
                     id: attachId,
                     filePath,
                     fileName: part.filename,
-                });
-            }
-        }
+                    });
+                }
+                }
 
         this.updateLastProcessedTime(message);
         const date = this.getMessageDate(message);

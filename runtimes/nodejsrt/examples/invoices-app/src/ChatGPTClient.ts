@@ -1,5 +1,5 @@
 import config from "./config";
-import {OpenAI} from 'openai';
+import { openaiClient } from "./autokitteh/openai";
 import {InvoiceData} from "./InvoiceStorage";
 import fs from 'fs';
 
@@ -12,21 +12,21 @@ import fs from 'fs';
 
 class ChatGPTClient {
     private readonly promptTemplate: string;
-    private readonly apiKey: string;
-    private openai: OpenAI;
+    private readonly connectionName: string;
+    private openai: any;
     private assistant: any;
 
-    constructor(promptTemplate: string, apiKey?: string) {
+    constructor(promptTemplate: string, connectionName?: string) {
         this.promptTemplate = promptTemplate;
-        this.apiKey = apiKey || config.chatGPT.apiKey;
-        if (!this.apiKey) {
-            throw new Error("Missing OPENAI_API_KEY. Please set it in your environment.");
-        }
+        this.connectionName = connectionName || 'openai';
     }
+
     async init(): Promise<ChatGPTClient> {
-        console.log('init');
-        this.openai = new OpenAI({apiKey: this.apiKey});
+        console.log('Initializing OpenAI client');
+        // Initialize the OpenAI client using autokitteh's openaiClient
+        this.openai = openaiClient(this.connectionName);
         this.assistant = await this.createAssistant();
+        console.log('OpenAI client initialized successfully');
         return this;
     }
 
@@ -88,7 +88,7 @@ class ChatGPTClient {
             role: "user",
             content: prompt,
             attachments: [{file_id: fileId, tools: [{type: "file_search"}]}]
-        })
+        });
 
         console.log("Message sent:", message.id);
         return thread.id;

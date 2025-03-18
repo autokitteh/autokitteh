@@ -1,4 +1,3 @@
-
 /**
  * Interface defining the structure of an invoice object.
  */
@@ -38,7 +37,11 @@ class InvoiceStorage {
      */
     addOrUpdateInvoice(invoice: InvoiceData): void {
         const existing = this.invoices.get(invoice.invoiceId);
-        if (!existing || invoice.date > existing.date) {
+        // Handle undefined dates by using nullish coalescing
+        const invoiceDate = invoice.date ?? 0;
+        const existingDate = existing?.date ?? 0;
+        
+        if (!existing || invoiceDate > existingDate) {
             this.invoices.set(invoice.invoiceId, invoice);
         }
     }
