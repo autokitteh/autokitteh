@@ -52,7 +52,7 @@ function formatError(err: unknown): { message: string, traceback: { name: string
             code: line.trim()
         };
     }).filter((f): f is { name: string; filename: string; lineno: number; code: string } => f !== null);
-    
+
     return {
         message: error.message,
         traceback: frames
@@ -69,12 +69,12 @@ function createResult(value: unknown = null, error: unknown = null): Result {
 
 function fixHttpBody(data: unknown): void {
     if (typeof data !== 'object' || data === null) return;
-    
+
     const eventData = data as Record<string, unknown>;
     const body = eventData.body;
-    
+
     if (typeof body !== 'object' || body === null) return;
-    
+
     const bodyData = body as Record<string, unknown>;
     if (typeof bodyData.bytes === 'string') {
         try {
@@ -105,10 +105,10 @@ export default class Runner {
         this.client = client;
         this.waiter = customWaiter || new ActivityWaiter(client, id);
         this.originalConsoleLog = console.log;
-        
+
         // Setup start timeout
         this.startTimer = setTimeout(() => this.stopIfStartNotCalled(), START_TIMEOUT);
-        
+
         // Intercept console.log with typed parameters
         console.log = (...args: unknown[]) => {
             this.akPrint(...args);
@@ -144,14 +144,14 @@ export default class Runner {
         this.isShuttingDown = true;
 
         console.log('Starting graceful shutdown...');
-        
+
         try {
             // Stop the runner
             this.stop();
-            
+
             // Give some time for cleanup
             await new Promise(resolve => setTimeout(resolve, SERVER_GRACE_TIMEOUT));
-            
+
             console.log('Shutdown complete');
         } catch (err) {
             console.error('Error during shutdown:', err);
@@ -164,7 +164,7 @@ export default class Runner {
     private async akPrint(...args: unknown[]) {
         const message = args.map(arg => String(arg)).join(' ');
         this.originalConsoleLog(message);
-        
+
         try {
             await this.client.print({
                 runnerId: this.id,
@@ -185,47 +185,64 @@ export default class Runner {
     private async startHealthCheck() {
         const maxRetries = 10;
         const retryDelay = 1000; // 1 second
-        let retries = 0;
+        let isRunning = true;
 
-        while (true) {
-            try {
-                const response = await this.client.isActiveRunner({
-                    runnerId: this.id
-                });
-                
-                if (response.error) {
-                    console.error('Health check failed:', response.error);
-                    if (retries < maxRetries) {
+        // Note: We don't need to clear the timer here as it should be set up in the start() method
+
+        // Initial active runner check with retry logic
+        while (isRunning) {
+            let retries = 0;
+            let success = false;
+
+            while (retries < maxRetries && !success) {
+                try {
+                    const response = await this.client.isActiveRunner({
+                        runnerId: this.id
+                    });
+
+                    // Handle response error
+                    if (response.error) {
+                        console.error('Active runner check failed:', response.error);
                         retries++;
-                        console.log(`Retrying health check (${retries}/${maxRetries})...`);
+
+                        if (retries >= maxRetries) {
+                            console.error(`Maximum retries (${maxRetries}) reached. Stopping runner.`);
+                            this.stop();
+                            return; // Exit the method completely
+                        }
+
+                        console.log(`Retrying active runner check (${retries}/${maxRetries})...`);
                         await new Promise(resolve => setTimeout(resolve, retryDelay));
                         continue;
                     }
-                    this.stop();
-                    break;
-                }
 
-                // Check if the runner is no longer active
-                if (!response.isActive) {
-                    console.log('Runner is no longer active, stopping...');
-                    this.stop();
-                    break;
-                }
+                    // Check if runner is active
+                    if (!response.isActive) {
+                        console.log('Runner is no longer active, stopping...');
+                        this.stop();
+                        return; // Exit the method completely
+                    }
 
-                // Reset retries on successful check
-                retries = 0;
-            } catch (err) {
-                console.error('Health check error:', err);
-                if (retries < maxRetries) {
+                    // Success case
+                    success = true;
+                    console.log('Active runner check successful');
+
+                } catch (err) {
+                    console.error('Active runner check error:', err);
                     retries++;
-                    console.log(`Retrying health check (${retries}/${maxRetries})...`);
+
+                    if (retries >= maxRetries) {
+                        console.error(`Maximum retries (${maxRetries}) reached. Stopping runner.`);
+                        this.stop();
+                        return; // Exit the method completely
+                    }
+
+                    console.log(`Retrying active runner check (${retries}/${maxRetries})...`);
                     await new Promise(resolve => setTimeout(resolve, retryDelay));
-                    continue;
                 }
-                this.stop();
-                break;
             }
-            
+
+            // Wait for next check interval before running another active check
             await new Promise(resolve => setTimeout(resolve, HEALTH_CHECK_INTERVAL));
         }
     }
@@ -246,7 +263,7 @@ export default class Runner {
         console.log("Starting health checks...");
         this.startHealthCheck();
 
-        // Start health check timer
+        // Start regular health check timer (separate from the active runner check)
         this.healthcheckTimer = setInterval(async () => {
             try {
                 console.log("Sending health check...");
@@ -256,7 +273,10 @@ export default class Runner {
                 console.error("Health check failed:", err);
                 this.stop();
             }
-        }, 10000);
+        }, HEALTH_CHECK_INTERVAL);
+
+        // Make sure the timer doesn't prevent Node.js from exiting
+        this.healthcheckTimer.unref();
 
         console.log("Setting up started event listener...");
         this.events.once("started", () => {
@@ -271,10 +291,10 @@ export default class Runner {
         if (this.healthcheckTimer) {
             clearInterval(this.healthcheckTimer);
         }
-        
+
         // Restore original console.log
         console.log = this.originalConsoleLog;
-        
+
         this.events.emit("stop");
     }
 
@@ -317,11 +337,11 @@ export default class Runner {
                     };
                 }
 
-                const serialized = JSON.stringify({ 
-                    token: execReq.token, 
-                    results: result.value 
+                const serialized = JSON.stringify({
+                    token: execReq.token,
+                    results: result.value
                 });
-                
+
                 return {
                     error: "",
                     result: {
@@ -345,9 +365,9 @@ export default class Runner {
                 try {
                     const eventData = JSON.parse(this.decoder.decode(data));
                     fixHttpBody(eventData.data);
-                    
+
                     const [fileName, funcName] = (req.entryPoint || "").split(":");
-                    
+
                     if (!fileName || !funcName) {
                         return { error: "Invalid entry point format", traceback: [] };
                     }
@@ -358,7 +378,7 @@ export default class Runner {
                     // Import and execute user code
                     const modulePath = path.join(this.codeDir, fileName);
                     const module = await import(modulePath);
-                    
+
                     // Get the function and call it
                     const func = module[funcName];
                     if (typeof func !== 'function') {
@@ -371,18 +391,18 @@ export default class Runner {
                         result.value = await func();
                     } catch (err) {
                         const { message, traceback } = formatError(err);
-                        return { 
+                        return {
                             error: message,
-                            traceback 
+                            traceback
                         };
                     }
-                    
+
                     return { error: "", traceback: [] };
                 } catch (err) {
                     const { message, traceback } = formatError(err);
-                    return { 
+                    return {
                         error: message,
-                        traceback 
+                        traceback
                     };
                 }
             },

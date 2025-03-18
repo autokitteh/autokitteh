@@ -42,7 +42,7 @@ describe('Simple Build Process', () => {
         // Create test TS file
         const tsContent = `
             async function greet(name: string): Promise<string> {
-                return await Promise.resolve(\`Hello \${name}!\`);
+                return await fetch(\`aa.com\`);
             }
             export { greet };
         `;
@@ -106,7 +106,7 @@ describe('Simple Build Process', () => {
 
         const jsContent = `
             async function Component() {
-                return await Promise.resolve('Hello');
+                return await fetch('www.example.com');
             }
         `;
         await fs.writeFile(path.join(nestedDir, 'component.js'), jsContent);
@@ -148,4 +148,4 @@ describe('Simple Build Process', () => {
         expect(outputContent).toContain('evalFn');
         expect(outputContent).toContain('arrowFn');
     });
-}); 
+});
