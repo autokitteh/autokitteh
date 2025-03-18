@@ -1,4 +1,4 @@
-package svc
+package svccommon
 
 import (
 	"context"
@@ -13,9 +13,9 @@ import (
 )
 
 // TODO: need this so RunOptions would not needed to be passed every time Component is called. This is ugly, fix.
-var fxRunOpts RunOptions
+var mode configset.Mode
 
-func setFXRunOpts(opts RunOptions) { fxRunOpts = opts }
+func SetMode(m configset.Mode) { mode = m }
 
 func fxGetConfig[T any](path string, def T) func(c *Config) (*T, error) {
 	return func(c *Config) (*T, error) {
@@ -24,7 +24,7 @@ func fxGetConfig[T any](path string, def T) func(c *Config) (*T, error) {
 }
 
 func chooseConfig[T any](set configset.Set[T]) (T, error) {
-	return set.Choose(fxRunOpts.Mode)
+	return set.Choose(mode)
 }
 
 // Make a specific configuration available to all components in the application.
@@ -60,7 +60,7 @@ func Component[T any](name string, set configset.Set[T], opts ...fx.Option) fx.O
 	)
 }
 
-func fxLogger(z *zap.Logger) fxevent.Logger {
+func FXLogger(z *zap.Logger) fxevent.Logger {
 	l := &fxevent.ZapLogger{Logger: z.Named("fx")}
 	// When Zap writes a log message, it checks that the message's logging level
 	// is >= AK's (configurable) logging threshold. "Debug" (-1) is the lowest

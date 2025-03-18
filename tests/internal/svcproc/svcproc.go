@@ -10,19 +10,19 @@ import (
 
 	"go.uber.org/fx"
 
-	"go.autokitteh.dev/autokitteh/backend/svc"
+	"go.autokitteh.dev/autokitteh/backend/aksvc"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
 
 type svcProc struct {
 	binPath string
 	cfg     map[string]any
-	ropts   svc.RunOptions
+	ropts   aksvc.RunOptions
 	cmd     *exec.Cmd
-	wait    chan svc.ShutdownSignal
+	wait    chan aksvc.ShutdownSignal
 }
 
-func NewSvcProc(binPath string, cfg map[string]any, ropts svc.RunOptions) (svc.Service, error) {
+func NewSvcProc(binPath string, cfg map[string]any, ropts aksvc.RunOptions) (aksvc.Service, error) {
 	if ropts.TemporalClient != nil {
 		return nil, sdkerrors.ErrNotImplemented
 	}
@@ -66,7 +66,7 @@ func (s *svcProc) Start(ctx context.Context) error {
 		}
 
 		// TODO: Pass which signal killed it somehow?
-		s.wait <- svc.ShutdownSignal{ExitCode: exitCode}
+		s.wait <- aksvc.ShutdownSignal{ExitCode: exitCode}
 	}()
 
 	return nil
@@ -85,4 +85,4 @@ func (s *svcProc) Stop(ctx context.Context) error {
 	return err
 }
 
-func (s *svcProc) Wait() <-chan svc.ShutdownSignal { return s.wait }
+func (s *svcProc) Wait() <-chan aksvc.ShutdownSignal { return s.wait }
