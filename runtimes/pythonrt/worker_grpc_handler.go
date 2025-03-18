@@ -144,6 +144,7 @@ func (s *workerGRPCHandler) Print(ctx context.Context, req *userCode.PrintReques
 	case <-m.doneChannel:
 		return &userCode.PrintResponse{}, nil
 	case <-time.After(runnerChResponseTimeout):
+		s.log.Warn("print timeout")
 		return &userCode.PrintResponse{
 			Error: "timeout",
 		}, nil
