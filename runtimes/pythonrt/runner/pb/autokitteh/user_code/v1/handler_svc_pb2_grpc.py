@@ -19,6 +19,11 @@ class HandlerServiceStub(object):
                 request_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.ActivityRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.ActivityResponse.FromString,
                 _registered_method=True)
+        self.ExecuteReply = channel.unary_unary(
+                '/autokitteh.user_code.v1.HandlerService/ExecuteReply',
+                request_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.ExecuteReplyRequest.SerializeToString,
+                response_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.ExecuteReplyResponse.FromString,
+                _registered_method=True)
         self.Done = channel.unary_unary(
                 '/autokitteh.user_code.v1.HandlerService/Done',
                 request_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.DoneRequest.SerializeToString,
@@ -96,6 +101,13 @@ class HandlerServiceServicer(object):
 
     def Activity(self, request, context):
         """Runner starting activity
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ExecuteReply(self, request, context):
+        """Runner result from execute
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -198,6 +210,11 @@ def add_HandlerServiceServicer_to_server(servicer, server):
                     request_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.ActivityRequest.FromString,
                     response_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.ActivityResponse.SerializeToString,
             ),
+            'ExecuteReply': grpc.unary_unary_rpc_method_handler(
+                    servicer.ExecuteReply,
+                    request_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.ExecuteReplyRequest.FromString,
+                    response_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.ExecuteReplyResponse.SerializeToString,
+            ),
             'Done': grpc.unary_unary_rpc_method_handler(
                     servicer.Done,
                     request_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.DoneRequest.FromString,
@@ -296,6 +313,33 @@ class HandlerService(object):
             '/autokitteh.user_code.v1.HandlerService/Activity',
             autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.ActivityRequest.SerializeToString,
             autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.ActivityResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ExecuteReply(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/autokitteh.user_code.v1.HandlerService/ExecuteReply',
+            autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.ExecuteReplyRequest.SerializeToString,
+            autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.ExecuteReplyResponse.FromString,
             options,
             channel_credentials,
             insecure,

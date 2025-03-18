@@ -28,7 +28,7 @@ from syscalls import SysCalls, mark_no_activity
 
 # Timeouts are in seconds
 SERVER_GRACE_TIMEOUT = 3
-START_TIMEOUT = 10
+DEFAULT_START_TIMEOUT = 10
 
 
 class ActivityError(Exception):
@@ -168,7 +168,9 @@ def restore_error(err):
 
 
 class Runner(pb.runner_rpc.RunnerService):
-    def __init__(self, id, worker, code_dir, server):
+    def __init__(
+        self, id, worker, code_dir, server, start_timeout=DEFAULT_START_TIMEOUT
+    ):
         self.id = id
         self.worker: pb.handler_rpc.HandlerServiceStub = worker
         self.code_dir = code_dir
@@ -180,11 +182,13 @@ class Runner(pb.runner_rpc.RunnerService):
         self.activity_call = None
         self._orig_print = print
         self._start_called = False
-        self._inactivty_timer = Timer(START_TIMEOUT, self.stop_if_start_not_called)
+        self._inactivty_timer = Timer(
+            start_timeout, self.stop_if_start_not_called, args=(start_timeout,)
+        )
         self._inactivty_timer.start()
 
-    def stop_if_start_not_called(self):
-        log.error("Start not called after %s seconds, terminating", START_TIMEOUT)
+    def stop_if_start_not_called(self, timeout):
+        log.error("Start not called after %s seconds, terminating", timeout)
         if self.server:
             self.server.stop(SERVER_GRACE_TIMEOUT)
 
@@ -300,6 +304,28 @@ class Runner(pb.runner_rpc.RunnerService):
 
         return pb.runner.StartResponse()
 
+    def execute(self, fn, args, kw):
+        req = pb.handler.ExecuteReplyRequest(
+            runner_id=self.id,
+        )
+
+        result = self._call(fn, args, kw)
+        try:
+            data = pickle.dumps(result)
+            req.result.custom.data = data
+            req.result.custom.value.CopyFrom(values.safe_wrap(result.value))
+        except (TypeError, pickle.PickleError) as err:
+            # Print so it'll get to session log
+            msg = f"cannot pickle result - {err}"
+            print(f"error: {msg}")
+            print(pickle_help)
+            req.error = msg
+
+        log.info("execute reply: %r", req)
+        resp = self.worker.ExecuteReply(req)
+        if resp.error:
+            log.error("execute reply: %r", resp.error)
+
     def Execute(self, request: pb.runner.ExecuteRequest, context: grpc.ServicerContext):
         with self.lock:
             call: Call = self.activity_call
@@ -307,25 +333,8 @@ class Runner(pb.runner_rpc.RunnerService):
         if call is None:
             context.abort(grpc.StatusCode.INTERNAL, "no pending activity calls")
 
-        result = self._call(call.fn, call.args, call.kw)
-        try:
-            data = pickle.dumps(result)
-        except (TypeError, pickle.PickleError) as err:
-            # Print so it'll get to session log
-            print(f"error: cannot pickle result - {err}")
-            print(pickle_help)
-            context.abort(grpc.StatusCode.INTERNAL, f"can't pickle result - {err}")
-
-        resp = pb.runner.ExecuteResponse(
-            result=pb.values.Value(
-                custom=pb.values.Custom(
-                    data=data,
-                    value=values.safe_wrap(result.value),
-                ),
-            )
-        )
-
-        return resp
+        self.executor.submit(self.execute, call.fn, call.args, call.kw)
+        return pb.runner.ExecuteResponse()
 
     def ActivityReply(
         self, request: pb.runner.ActivityReplyRequest, context: grpc.ServicerContext
@@ -508,6 +517,9 @@ def validate_args(args):
     if args.runner_id == "":
         raise ValueError("runner ID cannot be empty")
 
+    if args.start_timeout <= 0:
+        raise ValueError("start timeout must be positive")
+
 
 class LoggingInterceptor(grpc.ServerInterceptor):
     runner_id = None
@@ -549,6 +561,12 @@ if __name__ == "__main__":
         default="/workflow",
         type=dir_type,
     )
+    parser.add_argument(
+        "--start-timeout",
+        help="timeout in seconds for start to be called",
+        default=DEFAULT_START_TIMEOUT,
+        type=int,
+    )
     args = parser.parse_args()
 
     try:
@@ -574,7 +592,7 @@ if __name__ == "__main__":
         thread_pool=ThreadPoolExecutor(max_workers=cpu_count() * 8),
         interceptors=[LoggingInterceptor(args.runner_id)],
     )
-    runner = Runner(args.runner_id, worker, args.code_dir, server)
+    runner = Runner(args.runner_id, worker, args.code_dir, server, args.start_timeout)
     # rpc.add_RunnerServicer_to_server(runner, server)
     pb.runner_rpc.add_RunnerServiceServicer_to_server(runner, server)
 
