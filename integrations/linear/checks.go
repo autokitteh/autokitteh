@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"go.uber.org/zap"
+
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
@@ -37,26 +39,37 @@ func status(v sdkservices.Vars) sdkintegrations.OptFn {
 
 // test checks whether the connection is actually usable, i.e. the configured
 // authentication credentials are valid and can be used to make API calls.
-func test(v sdkservices.Vars) sdkintegrations.OptFn {
+func test(v sdkservices.Vars, o sdkservices.OAuth) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
 		vs, errStatus, err := common.ReadVarsWithStatus(ctx, v, cid)
 		if errStatus.IsValid() || err != nil {
 			return errStatus, err
 		}
 
+		body := `{ "query": "{ viewer { id  } }" }`
 		switch common.ReadAuthType(vs) {
 		case "":
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+
 		case integrations.OAuthDefault, integrations.OAuthPrivate:
-			// TODO(INT-269): Implement.
+			token := common.FreshOAuthToken(ctx, zap.L(), o, v, desc, vs)
+			_, err := common.HTTPPostJSON(ctx, linearAPIURL, token.AccessToken, body)
+			if err != nil {
+				return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
+			}
+
 		case integrations.APIKey:
-			// TODO(INT-269): Implement.
+			apiKey := vs.GetValue(apiKeyVar)
+			_, err := common.HTTPPostJSON(ctx, linearAPIURL, apiKey, body)
+			if err != nil {
+				return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), err
+			}
+
 		default:
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil
 		}
 
-		// TODO(INT-269): return sdktypes.NewStatus(sdktypes.StatusCodeOK, ""), nil
-		return sdktypes.NewStatus(sdktypes.StatusCodeError, "Not implemented"), nil
+		return sdktypes.NewStatus(sdktypes.StatusCodeOK, ""), nil
 	})
 }
 
