@@ -17,6 +17,15 @@
     "@babel/parser": "^7.26.5",
     "typescript": "^5.7.3",
     "ts-node": "^10.9.2",
-    "@types/node": "^22.13.10"
+    "@types/node": "^22.13.10",
+    "axios": "^1.6.7",
+    "googleapis": "^134.0.0",
+    "google-auth-library": "^9.6.3",
+    "openai": "^4.28.0",
+    "gaxios": "^6.3.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/axios": "^0.14.0"
   }
 }
