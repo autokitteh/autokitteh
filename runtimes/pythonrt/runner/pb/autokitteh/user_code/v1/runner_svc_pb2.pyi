@@ -48,14 +48,10 @@ class ExecuteRequest(_message.Message):
     def __init__(self, data: _Optional[bytes] = ...) -> None: ...
 
 class ExecuteResponse(_message.Message):
-    __slots__ = ["result", "error", "traceback"]
-    RESULT_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ["error"]
     ERROR_FIELD_NUMBER: _ClassVar[int]
-    TRACEBACK_FIELD_NUMBER: _ClassVar[int]
-    result: _values_pb2.Value
     error: str
-    traceback: _containers.RepeatedCompositeFieldContainer[_user_code_pb2.Frame]
-    def __init__(self, result: _Optional[_Union[_values_pb2.Value, _Mapping]] = ..., error: _Optional[str] = ..., traceback: _Optional[_Iterable[_Union[_user_code_pb2.Frame, _Mapping]]] = ...) -> None: ...
+    def __init__(self, error: _Optional[str] = ...) -> None: ...
 
 class StartResponse(_message.Message):
     __slots__ = ["error", "traceback"]

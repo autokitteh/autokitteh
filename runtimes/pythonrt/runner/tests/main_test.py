@@ -11,11 +11,12 @@ import pickle
 import sys
 from concurrent.futures import Future
 from subprocess import Popen, TimeoutExpired, run
+from threading import Event
 from unittest.mock import MagicMock
 
 import pytest
-
 from conftest import clear_module_cache, workflows
+from mock_worker import MockWorker
 
 import main
 import pb.autokitteh.user_code.v1.runner_svc_pb2 as runner_pb
@@ -74,11 +75,27 @@ def new_test_runner(code_dir):
 
 def test_execute():
     runner = new_test_runner(workflows.simple)
+
+    class Worker:
+        def __init__(self):
+            self.event = Event()
+
+        def ExecuteReply(self, msg):
+            self.msg = msg
+            self.event.set()
+            return MagicMock()
+
+    runner.worker = Worker()
     runner.activity_call = main.Call(sub, [1, 7], {}, Future())
+
     req = runner_pb.ExecuteRequest()
     resp = runner.Execute(req, None)
     assert resp.error == ""
-    result = pickle.loads(resp.result.custom.data)
+
+    triggered = runner.worker.event.wait(1)
+    assert triggered, "timeout waiting for worker event"
+
+    result = pickle.loads(runner.worker.msg.result.custom.data)
     assert result.value == -6
 
 
@@ -104,19 +121,18 @@ def test_activity_reply():
 
 # TODO: This test takes about 14 seconds to finish, can we do it faster?
 def test_start_timeout(tmp_path):
+    timeout = 1
     cmd = [
         sys.executable,
         "main.py",
         "--skip-check-worker",
-        "--port",
-        "0",
-        "--runner-id",
-        "r1",
-        "--code-dir",
-        str(tmp_path),
-    ]
+        "--port", "0",
+        "--runner-id", "r1",
+        "--code-dir", str(tmp_path),
+        "--start-timeout", str(timeout),
+    ]  # fmt: skip
 
-    timeout = main.START_TIMEOUT + main.SERVER_GRACE_TIMEOUT + 1
+    timeout = timeout + main.SERVER_GRACE_TIMEOUT + 1
     p = Popen(cmd)
     try:
         p.wait(timeout)
@@ -143,7 +159,7 @@ def test_result_error():
     except ZeroDivisionError as e:
         err = e
 
-    text = main.result_error(err)
+    text = main.Runner(None, None, None, None).result_error(err)
 
     assert msg in text
     for name in ("fn_a", "fn_b", "fn_c"):
@@ -185,3 +201,10 @@ def test_pickle_exception(err):
     result2 = pickle.loads(data)
     error = main.restore_error(result2.error)
     assert isinstance(error, err.__class__)
+
+
+def test_activity():
+    runner = new_test_runner(workflows.activity)
+    worker = MockWorker(runner)
+    event = json.dumps({"data": {"cat": "mitzi"}})
+    worker.start("program.py:on_event", event.encode())
