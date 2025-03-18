@@ -35,10 +35,10 @@ var printsCmd = common.StandardCommand(&cobra.Command{
 			}
 
 			if !noTimestamps {
-				fmt.Printf("[%s] ", p.Timestamp.String())
+				fmt.Fprintf(cmd.OutOrStdout(), "[%s] ", p.Timestamp.String())
 			}
 
-			fmt.Println(text)
+			fmt.Fprintln(cmd.OutOrStdout(), text)
 		}
 
 		return nil

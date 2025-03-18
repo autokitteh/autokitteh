@@ -415,7 +415,6 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (_ []sdkserv
 	}
 
 	printer := w.newPrinter()
-	defer printer.Close()
 
 	var run sdkservices.Run
 
@@ -512,6 +511,8 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (_ []sdkserv
 
 	ctx := temporalclient.NewWorkflowContextAsGOContext(wctx)
 
+	printer.Start()
+
 	temporalclient.WithoutDeadlockDetection(
 		wctx,
 		func() {
@@ -531,7 +532,7 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (_ []sdkserv
 	)
 
 	if err != nil {
-		return nil, sdktypes.InvalidValue, err
+		return printer.Finalize(), sdktypes.InvalidValue, err
 	}
 
 	kittehs.Must0(w.executors.AddExecutor(fmt.Sprintf("run_%s", run.ID().Value()), run))
