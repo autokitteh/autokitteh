@@ -88,9 +88,8 @@ func TestTokensMiddleware(t *testing.T) {
 	// correct token.
 	tok := kittehs.Must1(tokens.Create(testUser1))
 	uid, mwErr = mw(newRequest(t, "Bearer "+tok, nil))
-	if assert.Nil(t, mwErr) {
-		assert.True(t, uid.IsValid())
-	}
+	require.NoError(t, mwErr)
+	require.True(t, uid.IsValid())
 
 	// bad token.
 	uid, mwErr = mw(newRequest(t, "hiss", nil))
