@@ -232,7 +232,7 @@ func TestBuildInputUser(t *testing.T) {
 			ctx := context.Background()
 
 			if test.authn.IsValid() {
-				ctx = authcontext.SetAuthnUser(context.Background(), test.authn)
+				ctx = authcontext.SetAuthnUser(t.Context(), test.authn)
 			}
 
 			inputs, err := buildInput(ctx, db, test.id, test.action, configure(test.opts))

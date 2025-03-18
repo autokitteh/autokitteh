@@ -128,7 +128,7 @@ func testCtx(t *testing.T) (context.Context, context.CancelFunc) {
 		d = time.Now().Add(3 * time.Second)
 	}
 
-	return context.WithDeadline(context.Background(), d)
+	return context.WithDeadline(t.Context(), d)
 }
 
 func newValues(t *testing.T, runID sdktypes.RunID) (sdktypes.ModuleFunction, map[string]sdktypes.Value) {

@@ -1,7 +1,6 @@
 package dbgorm
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -118,7 +117,7 @@ func TestDeleteConnectionForeignKeys(t *testing.T) {
 }
 
 func TestDeleteConnectionAndVars(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	f, p := preConnectionTest(t)
 
@@ -135,7 +134,7 @@ func TestDeleteConnectionAndVars(t *testing.T) {
 }
 
 func TestCantDeleteConnectionWithTriggers(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	f, p := preConnectionTest(t)
 
 	c := f.newConnection(p)

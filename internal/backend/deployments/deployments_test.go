@@ -108,8 +108,8 @@ func TestActivateSimple(t *testing.T) {
 		ids[0]: {State: sdktypes.DeploymentStateInactive},
 	})
 
-	if assert.NoError(t, deps.Activate(context.Background(), ids[0])) {
-		d, err := deps.Get(context.Background(), ids[0])
+	if assert.NoError(t, deps.Activate(t.Context(), ids[0])) {
+		d, err := deps.Get(t.Context(), ids[0])
 		if assert.NoError(t, err) {
 			assert.Equal(t, sdktypes.DeploymentStateActive, d.State())
 		}
@@ -122,13 +122,13 @@ func TestActivateAndDeactivateOthers(t *testing.T) {
 		ids[1]: {State: sdktypes.DeploymentStateActive},
 	})
 
-	if assert.NoError(t, deps.Activate(context.Background(), ids[0])) {
-		d, err := deps.Get(context.Background(), ids[0])
+	if assert.NoError(t, deps.Activate(t.Context(), ids[0])) {
+		d, err := deps.Get(t.Context(), ids[0])
 		if assert.NoError(t, err) {
 			assert.Equal(t, sdktypes.DeploymentStateActive, d.State())
 		}
 
-		d, err = deps.Get(context.Background(), ids[1])
+		d, err = deps.Get(t.Context(), ids[1])
 		if assert.NoError(t, err) {
 			assert.Equal(t, sdktypes.DeploymentStateInactive, d.State())
 		}
@@ -142,18 +142,18 @@ func TestActivateAndDrainOthers(t *testing.T) {
 		ids[2]: {State: sdktypes.DeploymentStateActive, NumRunningSessions: 1},
 	})
 
-	if assert.NoError(t, deps.Activate(context.Background(), ids[0])) {
-		d, err := deps.Get(context.Background(), ids[0])
+	if assert.NoError(t, deps.Activate(t.Context(), ids[0])) {
+		d, err := deps.Get(t.Context(), ids[0])
 		if assert.NoError(t, err) {
 			assert.Equal(t, sdktypes.DeploymentStateActive, d.State())
 		}
 
-		d, err = deps.Get(context.Background(), ids[1])
+		d, err = deps.Get(t.Context(), ids[1])
 		if assert.NoError(t, err) {
 			assert.Equal(t, sdktypes.DeploymentStateInactive, d.State())
 		}
 
-		d, err = deps.Get(context.Background(), ids[2])
+		d, err = deps.Get(t.Context(), ids[2])
 		if assert.NoError(t, err) {
 			assert.Equal(t, sdktypes.DeploymentStateDraining, d.State())
 		}
@@ -165,8 +165,8 @@ func TestDeactivateSimple(t *testing.T) {
 		ids[0]: {State: sdktypes.DeploymentStateActive},
 	})
 
-	if assert.NoError(t, deps.Deactivate(context.Background(), ids[0])) {
-		d, err := deps.Get(context.Background(), ids[0])
+	if assert.NoError(t, deps.Deactivate(t.Context(), ids[0])) {
+		d, err := deps.Get(t.Context(), ids[0])
 		if assert.NoError(t, err) {
 			assert.Equal(t, sdktypes.DeploymentStateInactive, d.State())
 		}
@@ -178,8 +178,8 @@ func TestDeactivateDrain(t *testing.T) {
 		ids[0]: {State: sdktypes.DeploymentStateActive, NumRunningSessions: 1},
 	})
 
-	if assert.NoError(t, deps.Deactivate(context.Background(), ids[0])) {
-		d, err := deps.Get(context.Background(), ids[0])
+	if assert.NoError(t, deps.Deactivate(t.Context(), ids[0])) {
+		d, err := deps.Get(t.Context(), ids[0])
 		if assert.NoError(t, err) {
 			assert.Equal(t, sdktypes.DeploymentStateDraining, d.State())
 		}

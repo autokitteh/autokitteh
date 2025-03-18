@@ -1,7 +1,6 @@
 package common
 
 import (
-	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -127,7 +126,7 @@ func TestHTTPPostJSON(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Call the function under test.
-			ctx := context.TODO() // TODO(INT-312): Use "t.Context()".
+			ctx := t.Context()
 			resp, err := HTTPPostJSON(ctx, server.URL, tt.auth, tt.req)
 
 			// Check the response.

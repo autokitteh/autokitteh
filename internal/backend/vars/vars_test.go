@@ -64,7 +64,7 @@ func TestGetVarNotFound(t *testing.T) {
 	}
 
 	vv := sdktypes.NewVar(sdktypes.NewSymbol("efi")).SetValue("value")
-	result, err := v.Get(context.Background(), vv.ScopeID(), sdktypes.Symbol{})
+	result, err := v.Get(t.Context(), vv.ScopeID(), sdktypes.Symbol{})
 
 	require.Nil(t, err, "error should not be")
 	require.Empty(t, result, "no vars should be returned")
@@ -86,7 +86,7 @@ func TestGetVarFound(t *testing.T) {
 		secrets: secretsMock{},
 	}
 
-	result, err := v.Get(context.Background(), vv.ScopeID(), sdktypes.Symbol{})
+	result, err := v.Get(t.Context(), vv.ScopeID(), sdktypes.Symbol{})
 
 	require.Nil(t, err, "error should not be")
 	require.Len(t, result, 1, "should return one variable")
@@ -195,7 +195,7 @@ func TestSetMultipleSecretVar(t *testing.T) {
 	va := sdktypes.NewVar(sdktypes.NewSymbol("test")).SetValue("1").SetSecret(true)
 	va2 := sdktypes.NewVar(sdktypes.NewSymbol("test2")).SetValue("2").SetSecret(true)
 
-	err := v.Set(context.TODO(), va, va2)
+	err := v.Set(t.Context(), va, va2)
 
 	require.Nil(t, err)
 	require.Equal(t, sCallCounter, 2, "should call secrets service set function")
