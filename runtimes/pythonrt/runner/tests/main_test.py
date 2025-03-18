@@ -159,7 +159,7 @@ def test_result_error():
     except ZeroDivisionError as e:
         err = e
 
-    text = main.result_error(err)
+    text = main.Runner(None, None, None, None).result_error(err)
 
     assert msg in text
     for name in ("fn_a", "fn_b", "fn_c"):
