@@ -26,7 +26,7 @@ import (
 )
 
 var (
-	//go:embed all:nodejs
+	//go:embed all:nodejs/runtime all:nodejs/common
 	runnerJsCode embed.FS
 )
 
@@ -558,24 +558,22 @@ func installDependencies(projectDir string) error {
 	}
 
 	// Install ak framework dependencies
-	akDeps := map[string]string{
-		"@connectrpc/connect":         "^2.0.1",
-		"@connectrpc/connect-fastify": "^2.0.1",
-		"@connectrpc/connect-node":    "^2.0.1",
-		"@bufbuild/protobuf":          "^2.2.3",
-		"fastify":                     "^5.2.1",
-		"commander":                   "^13.1.0",
-		"@babel/core":                 "^7.26.0",
-		"@babel/traverse":             "^7.26.5",
-		"@babel/generator":            "^7.26.5",
-		"@babel/parser":               "^7.26.5",
-		"typescript":                  "^5.7.3",
-		"ts-node":                     "^10.9.2",
-		"@types/node":                 "^22.13.10",
+	pkgPath := filepath.Join(projectDir, ".ak/runtime", "package.json")
+	pkgData, err := os.ReadFile(pkgPath)
+	if err != nil {
+		return fmt.Errorf("read .ak/package.json: %w", err)
 	}
 
-	// Install ak dependencies
-	for pkg, version := range akDeps {
+	var pkgJSON struct {
+		Dependencies map[string]string `json:"dependencies"`
+	}
+
+	if err := json.Unmarshal(pkgData, &pkgJSON); err != nil {
+		return fmt.Errorf("parse .ak/package.json: %w", err)
+	}
+
+	// Install ak dependencies from .ak/package.json
+	for pkg, version := range pkgJSON.Dependencies {
 		if err := runNpm("install", "--save", pkg+"@"+version); err != nil {
 			return fmt.Errorf("failed to install %s: %w", pkg, err)
 		}

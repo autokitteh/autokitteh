@@ -3,11 +3,20 @@
   "version": "0.1.2",
   "description": "Node.js Runtime Core for Autokitteh",
   "private": true,
+  "type": "commonjs",
   "dependencies": {
+    "@connectrpc/connect": "^2.0.1",
+    "@connectrpc/connect-fastify": "^2.0.1",
+    "@connectrpc/connect-node": "^2.0.1",
     "@bufbuild/protobuf": "^2.2.3",
-    "@connectrpc/connect": "^1.4.0",
-    "@connectrpc/connect-node": "^1.4.0",
-    "@connectrpc/connect-fastify": "^1.4.0",
-    "fastify": "^4.26.0"
+    "fastify": "^5.2.1",
+    "commander": "^13.1.0",
+    "@babel/core": "^7.26.0",
+    "@babel/traverse": "^7.26.5",
+    "@babel/generator": "^7.26.5",
+    "@babel/parser": "^7.26.5",
+    "typescript": "^5.7.3",
+    "ts-node": "^10.9.2",
+    "@types/node": "^22.13.10"
   }
-} 
+}
