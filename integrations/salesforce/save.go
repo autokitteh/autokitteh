@@ -51,7 +51,12 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	l = l.With(zap.String("auth_type", authType))
 
 	switch authType {
-	// First save the user-provided details of a private Zoom OAuth 2.0 app,
+	// Use the AutoKitteh server's default Salesforce OAuth 2.0 app, i.e.
+	// immediately redirect to the 3-legged OAuth 2.0 flow's starting point.
+	// THIS IS ONLY USED ON PRIVATE INSTANCES.
+	case integrations.OAuthDefault:
+		startOAuth(w, r, c, l)
+	// First save the user-provided details of a private Salesforce OAuth 2.0 app,
 	// and only then redirect to the 3-legged OAuth 2.0 flow's starting point.
 	case integrations.OAuthPrivate:
 		if err := h.savePrivateOAuth(r, vsid); err != nil {

@@ -1,6 +1,9 @@
 package zoom
 
 import (
+	"fmt"
+	"net/http"
+
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations/common"
@@ -15,9 +18,9 @@ var desc = common.Descriptor("zoom", "Zoom", "/static/images/zoom.svg")
 
 // New defines an AutoKitteh integration, which
 // is registered when the AutoKitteh server starts.
-func New(v sdkservices.Vars) sdkservices.Integration {
+func New(v sdkservices.Vars, o sdkservices.OAuth) sdkservices.Integration {
 	return sdkintegrations.NewIntegration(
-		desc, sdkmodule.New(), status(v), test(v),
+		desc, sdkmodule.New(), status(v), test(v, o),
 		sdkintegrations.WithConnectionConfigFromVars(v))
 }
 
@@ -31,8 +34,10 @@ func Start(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, o sdkservices.OAut
 	common.RegisterSaveHandler(m, desc, h.handleSave)
 	common.RegisterOAuthHandler(m, desc, h.handleOAuth)
 
-	// TODO: Event webhooks (no AutoKitteh user authentication by definition, because
+	// Event webhooks (no AutoKitteh user authentication by definition, because
 	// these asynchronous requests are sent to us by third-party services).
+	pattern := fmt.Sprintf("%s %s/event", http.MethodPost, desc.ConnectionURL().Path)
+	m.NoAuth.HandleFunc(pattern, h.handleEvent)
 }
 
 // handler implements several HTTP webhooks to save authentication data, as

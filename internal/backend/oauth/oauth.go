@@ -481,8 +481,8 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 			"salesforce": {
 				// Salesforce is a special case: environment variables are not supported.
 				// All authentication credentials must be stored in `vars`.
-				ClientID:     "",
-				ClientSecret: "",
+				ClientID:     os.Getenv("SALESFORCE_CLIENT_ID"),
+				ClientSecret: os.Getenv("SALESFORCE_CLIENT_SECRET"),
 				Endpoint: oauth2.Endpoint{
 					AuthURL:  "https://login.salesforce.com/services/oauth2/authorize",
 					TokenURL: "https://login.salesforce.com/services/oauth2/token",

@@ -41,11 +41,17 @@ type Config struct {
 	Worker   temporalclient.WorkerConfig   `koanf:"worker"`
 	Workflow temporalclient.WorkflowConfig `koanf:"workflow"`
 	Activity temporalclient.ActivityConfig `koanf:"activity"`
+	Enabled  bool
 }
 
 var (
 	Configs = configset.Set[Config]{
-		Default: &Config{},
+		Default: &Config{
+			Enabled: true,
+		},
+		Test: &Config{
+			Enabled: false,
+		},
 	}
 
 	scheduleSpec = client.ScheduleSpec{
@@ -76,6 +82,10 @@ func New(c *Config, l *zap.Logger, t temporalclient.Client) *Cron {
 }
 
 func (cr *Cron) Start(ctx context.Context, c sdkservices.Connections, v sdkservices.Vars, o sdkservices.OAuth) error {
+	if !cr.cfg.Enabled {
+		cr.logger.Info("internal maintenance cron is disabled")
+		return nil
+	}
 	cr.connections = c
 	cr.vars = v
 	cr.oauth = o

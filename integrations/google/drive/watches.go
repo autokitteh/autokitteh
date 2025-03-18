@@ -2,10 +2,14 @@ package drive
 
 import (
 	"context"
+	"net/http"
 	"strconv"
 	"strings"
 
+	"go.uber.org/zap"
+	"golang.org/x/oauth2/google"
 	"google.golang.org/api/drive/v3"
+	"google.golang.org/api/option"
 
 	"go.autokitteh.dev/autokitteh/integrations/google/vars"
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
@@ -66,9 +70,25 @@ func gotDriveScope(ctx context.Context, v sdkservices.Vars, connID sdktypes.Conn
 		return strings.Contains(userScope, "https://www.googleapis.com/auth/drive")
 	}
 
-	// If using service account (JSON), assume it has the necessary scope
+	// If using service account (JSON), verify it has the necessary scope
 	if jsonCreds := vs.GetValue(vars.JSON); jsonCreds != "" {
-		return true
+		client, err := createServiceAccountClient(ctx, jsonCreds)
+		if err != nil {
+			l := extrazap.ExtractLoggerFromContext(ctx)
+			l.Error("Failed to create service account client to check scopes", zap.Error(err))
+			return false
+		}
+
+		// Create Drive service to verify access
+		driveService, err := drive.NewService(ctx, option.WithHTTPClient(client))
+		if err != nil {
+			l := extrazap.ExtractLoggerFromContext(ctx)
+			l.Error("Failed to create Drive service to check scopes", zap.Error(err))
+			return false
+		}
+
+		_, err = driveService.About.Get().Fields("user").Do()
+		return err == nil
 	}
 
 	return false
@@ -91,4 +111,17 @@ func (a api) saveWatchChannel(ctx context.Context, cid sdktypes.ConnectionID, wc
 	}
 
 	return nil
+}
+
+// createServiceAccountClient creates an HTTP client using service account credentials
+func createServiceAccountClient(ctx context.Context, jsonCredentials string) (*http.Client, error) {
+	config, err := google.JWTConfigFromJSON(
+		[]byte(jsonCredentials),
+		"https://www.googleapis.com/auth/drive",
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return config.Client(ctx), nil
 }

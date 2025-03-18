@@ -25,9 +25,9 @@ var (
 
 // OAuthData contains OAuth 2.0 token details.
 type OAuthData struct {
-	AccessToken  string `var:"oauth_access_token,secret"`
+	AccessToken  string `var:"oauth_access_token,secret" json:"access_token"`
 	Expiry       string `var:"oauth_expiry"`
-	RefreshToken string `var:"oauth_refresh_token,secret"`
+	RefreshToken string `var:"oauth_refresh_token,secret" json:"refresh_token"`
 	TokenType    string `var:"oauth_token_type"`
 }
 
