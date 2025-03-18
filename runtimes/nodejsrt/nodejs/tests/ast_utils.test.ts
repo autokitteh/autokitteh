@@ -80,7 +80,7 @@ test('patch async function call', async () => {
 
     const expected = `import { f } from "lib";
 async function some_func() {
-  await ak_call(f, "test");
+  await (global as any).ak_call(f, "test");
 }`
     const patch = await patchCode(code)
     expect(patch).toEqual(expected);
@@ -97,7 +97,7 @@ test('patch async member call', async () => {
 
     const expected = `import { a } from "lib";
 async function some_func() {
-  await ak_call(a, "b", "test");
+  await (global as any).ak_call(a, "b", "test");
 }`
     const patch = await patchCode(code)
     expect(patch).toEqual(expected);
@@ -114,7 +114,7 @@ test('patch async nested member call', async () => {
 
     const expected = `import { a } from "lib";
 async function some_func() {
-  await ak_call(a.b.c, "d", "test");
+  await (global as any).ak_call(a.b.c, "d", "test");
 }`
     const patch = await patchCode(code)
     expect(patch).toEqual(expected);
@@ -150,8 +150,8 @@ test('should handle multiple await calls in one function', async () => {
 
     const expected = `import { service1, service2 } from "external";
 async function some_func() {
-  const result1 = await ak_call(service1, "method1");
-  const result2 = await ak_call(service2, "method2");
+  const result1 = await (global as any).ak_call(service1, "method1");
+  const result2 = await (global as any).ak_call(service2, "method2");
   return result1 + result2;
 }`
     const patch = await patchCode(code)
@@ -169,7 +169,7 @@ test('should handle async arrow functions', async () => {
 
     const expected = `import { api } from "external";
 const some_func = async () => {
-  return await ak_call(api, "getData");
+  return await (global as any).ak_call(api, "getData");
 };`
     const patch = await patchCode(code)
     expect(patch).toEqual(expected);
@@ -195,7 +195,7 @@ interface Data {
   value: number;
 }
 async function getData(): Promise<Data> {
-  return await ak_call<Data>(api, "fetchData");
+  return await (global as any).ak_call<Data>(api, "fetchData");
 }`
     const patch = await patchCode(code)
     expect(patch).toEqual(expected);
