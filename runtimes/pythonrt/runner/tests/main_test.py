@@ -10,19 +10,19 @@ import json
 import pickle
 import sys
 from concurrent.futures import Future
+from pathlib import Path
 from subprocess import Popen, TimeoutExpired, run
 from threading import Event
 from unittest.mock import MagicMock
-
-import pytest
-from conftest import clear_module_cache, workflows
-from mock_worker import MockWorker
 
 import main
 import pb.autokitteh.user_code.v1.runner_svc_pb2 as runner_pb
 import pb.autokitteh.user_code.v1.user_code_pb2 as user_code
 import pb.autokitteh.values.v1.values_pb2 as pb_values
+import pytest
 import values
+from conftest import clear_module_cache, workflows
+from mock_worker import MockWorker
 
 
 def test_help():
@@ -35,12 +35,8 @@ def test_start():
     mod_name = "program"
     clear_module_cache(mod_name)
 
-    runner = main.Runner(
-        id="runner1",
-        worker=MagicMock(),
-        code_dir=workflows.simple,
-        server=None,
-    )
+    runner = new_test_runner(workflows.simple)
+    runner.worker = MagicMock()
 
     event_data = json.dumps(
         {
@@ -66,7 +62,7 @@ def new_test_runner(code_dir):
     runner = main.Runner(
         id="runner1",
         worker=None,
-        code_dir=code_dir,
+        code_dir=Path(code_dir),
         server=None,
     )
     runner._inactivty_timer.cancel()
@@ -159,7 +155,7 @@ def test_result_error():
     except ZeroDivisionError as e:
         err = e
 
-    text = main.Runner(None, None, None, None).result_error(err)
+    text = new_test_runner("/tmp").result_error(err)
 
     assert msg in text
     for name in ("fn_a", "fn_b", "fn_c"):

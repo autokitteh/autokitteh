@@ -2,8 +2,9 @@
 name = "runner"
 version = "0.1.2"
 dependencies = [
-	"grpcio ~= 1.68",
 	"autokitteh[all] ~= 0.4",
+	"dill ~= 0.3",
+	"grpcio ~= 1.68",
 ]
 
 [project.optional-dependencies]

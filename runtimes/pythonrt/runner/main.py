@@ -1,7 +1,6 @@
 import builtins
 import inspect
 import json
-import pickle
 import sys
 from base64 import b64decode
 from collections import namedtuple
@@ -14,6 +13,7 @@ from time import sleep
 from traceback import TracebackException, format_exception
 
 import autokitteh
+import dill as pickle
 import grpc
 import loader
 import log
@@ -23,7 +23,7 @@ import values
 # from audit import make_audit_hook  # TODO(ENG-1893): uncomment this.
 from autokitteh import AttrDict, Event, connections
 from autokitteh.errors import AutoKittehError
-from call import AKCall, full_func_name, activity_marker
+from call import AKCall, activity_marker, full_func_name
 from syscalls import SysCalls, mark_no_activity
 
 # Timeouts are in seconds
@@ -160,7 +160,7 @@ class Runner(pb.runner_rpc.RunnerService):
     ):
         self.id = id
         self.worker: pb.handler_rpc.HandlerServiceStub = worker
-        self.code_dir = code_dir
+        self.code_dir: Path = code_dir
         self.server: grpc.Server = server
 
         self.executor = ThreadPoolExecutor()
