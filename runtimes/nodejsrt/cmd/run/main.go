@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"os/signal"
 	"path/filepath"
 
 	"go.autokitteh.dev/autokitteh/runtimes/nodejsrt"
@@ -108,7 +107,7 @@ func main() {
 	fmt.Printf("Press Ctrl+C to exit.\n\n")
 
 	// Wait for Ctrl+C
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt)
-	<-sigChan
+	//sigChan := make(chan os.Signal, 1)
+	//signal.Notify(sigChan, os.Interrupt)
+	//<-sigChan
 }

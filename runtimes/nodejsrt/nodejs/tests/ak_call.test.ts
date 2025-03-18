@@ -63,7 +63,7 @@ test('ak_call execute and reply', async () => {
     };
 
     const waiter = new mockWaiter();
-    const _ak_call = ak_call(waiter, process.cwd());
+    const _ak_call = ak_call(waiter);
     const p = _ak_call(testFunc, 1, 2);
 
     const v = await waiter.execute_signal(waiter.token);
@@ -84,7 +84,7 @@ test('ak_call reply only', async () => {
     testFunc.ak_call = true;
 
     const waiter = new mockWaiter()
-    const _ak_call = ak_call(waiter, process.cwd())
+    const _ak_call = ak_call(waiter)
     const p = _ak_call(testFunc, 1, 2)
     await waiter.reply_signal(waiter.token, 3)
 
@@ -98,7 +98,7 @@ test('ak_call wrong token', async () => {
     }
 
     const waiter = new mockWaiter()
-    const _ak_call = ak_call(waiter, process.cwd())
+    const _ak_call = ak_call(waiter)
     _ak_call([testFunc, 1, 2])
     try {
         await waiter.reply_signal('wrong token', 3)

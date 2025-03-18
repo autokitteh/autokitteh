@@ -353,7 +353,7 @@ export default class Runner {
                     }
 
                     // Initialize global ak_call
-                    initializeGlobals(this.waiter, this.codeDir);
+                    initializeGlobals(this.waiter);
 
                     // Import and execute user code
                     const modulePath = path.join(this.codeDir, fileName);

@@ -105,7 +105,7 @@ export class ActivityWaiter implements Waiter {
     }
 }
 
-export const ak_call = (waiter: Waiter, projectRoot: string) => {
+export const ak_call = (waiter: Waiter) => {
     // Only keeping the _ak_direct_call check for functions explicitly marked as internal
     function isInternalFunction(func: AnyFunction): boolean {
         // Check if function is explicitly marked as internal
