@@ -1,7 +1,6 @@
 package authloginhttpsvc
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -44,7 +43,7 @@ func TestNewSuccessLoginHandlerImmediate(t *testing.T) {
 		DisplayName:  "test",
 	}
 
-	ctx := context.TODO()
+	ctx := t.Context()
 
 	// cannot login without email.
 	h := s.newSuccessLoginHandler(ctx, ld)
@@ -150,7 +149,7 @@ func TestNewSuccessLoginHandlerSessions(t *testing.T) {
 	}
 
 	// new user.
-	h := s.newSuccessLoginHandler(context.TODO(), ld)
+	h := s.newSuccessLoginHandler(t.Context(), ld)
 
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/?noredir=1", nil))

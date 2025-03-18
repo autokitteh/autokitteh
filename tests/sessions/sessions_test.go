@@ -75,7 +75,7 @@ func runTest(t *testing.T, akPath, venvPath, txtarPath string) {
 		// Create project.
 		projName := fmt.Sprintf("test_%d", rand.Uint32())
 		args := []string{"project", "create", "--name", projName}
-		result, err := tests.RunAKClient(akPath, server.Addr, "", clientTimeout, args)
+		result, err := tests.RunAKClient(t, akPath, server.Addr, "", clientTimeout, args)
 		if err != nil {
 			server.PrintLog(t)
 			t.Fatal("project creation error:", err)
@@ -87,7 +87,7 @@ func runTest(t *testing.T, akPath, venvPath, txtarPath string) {
 
 		// Run session test.
 		args = []string{"session", "test", absPath, "--project", projName}
-		result, err = tests.RunAKClient(akPath, server.Addr, "", clientTimeout, args)
+		result, err = tests.RunAKClient(t, akPath, server.Addr, "", clientTimeout, args)
 		if err != nil {
 			server.PrintLog(t)
 			t.Fatal("session test error:", err)

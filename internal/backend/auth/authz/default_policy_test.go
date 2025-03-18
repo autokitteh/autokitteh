@@ -1,7 +1,6 @@
 package authz
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -78,7 +77,7 @@ func TestDefaultPolicy(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ctx := authcontext.SetAuthnUser(context.Background(), test.authn)
+			ctx := authcontext.SetAuthnUser(t.Context(), test.authn)
 			err := p(ctx, test.id, test.action, test.opts...)
 			assert.Equal(t, test.err, err)
 		})

@@ -1,7 +1,6 @@
 package extrazap
 
 import (
-	"context"
 	"testing"
 
 	"go.uber.org/zap"
@@ -30,7 +29,7 @@ func TestAttachExtract(t *testing.T) {
 			globalLogger := zap.L()
 			zap.ReplaceGlobals(zap.Must(zap.NewDevelopment()))
 
-			ctx := context.Background()
+			ctx := t.Context()
 			if tt.attach {
 				ctx = AttachLoggerToContext(zap.Must(zap.NewProduction()), ctx)
 			}

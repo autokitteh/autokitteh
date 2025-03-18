@@ -35,7 +35,7 @@ func TestSaveClientIDAndSecret(t *testing.T) {
 				vars: &mockVars{},
 			},
 			args: args{
-				ctx: context.Background(),
+				ctx: t.Context(),
 				c: sdkintegrations.ConnectionInit{
 					ConnectionID: "invalid",
 				},
@@ -49,7 +49,7 @@ func TestSaveClientIDAndSecret(t *testing.T) {
 				vars: &mockVars{},
 			},
 			args: args{
-				ctx: context.Background(),
+				ctx: t.Context(),
 				c: sdkintegrations.ConnectionInit{
 					ConnectionID: "con_01234567890123456789012345",
 				},

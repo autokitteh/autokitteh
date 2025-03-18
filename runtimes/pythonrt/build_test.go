@@ -3,7 +3,6 @@ package pythonrt
 import (
 	"archive/tar"
 	"bytes"
-	"context"
 	"errors"
 	"io"
 	"testing"
@@ -31,7 +30,7 @@ func TestBuildFiles(t *testing.T) {
 		log: log,
 	}
 
-	ba, err := py.Build(context.Background(), mfs, ".", nil)
+	ba, err := py.Build(t.Context(), mfs, ".", nil)
 	require.NoError(t, err)
 
 	tarData, ok := ba.CompiledData()[archiveKey]

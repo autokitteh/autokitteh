@@ -40,7 +40,7 @@ func TestStarlark(t *testing.T) {
 func runTest(t *testing.T, akPath, txtarPath string) {
 	t.Run(txtarPath, func(t *testing.T) {
 		args := []string{"runtime", "test", "--local", "--quiet", txtarPath}
-		result, err := tests.RunAKClient(akPath, "", "", clientTimeout, args)
+		result, err := tests.RunAKClient(t, akPath, "", "", clientTimeout, args)
 		if err != nil {
 			t.Fatal("runtime test error:", err)
 		}

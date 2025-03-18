@@ -1,7 +1,6 @@
 package dbgorm
 
 import (
-	"context"
 	"testing"
 
 	"github.com/google/uuid"
@@ -397,7 +396,7 @@ func TestSessionLogRecordNextPageTokenEmpty(t *testing.T) {
 	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr, ""))
 
 	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](s.SessionID)
-	res, err := f.gormdb.GetSessionLog(context.Background(),
+	res, err := f.gormdb.GetSessionLog(t.Context(),
 		sdkservices.SessionLogRecordsFilter{
 			SessionID:         sid,
 			PaginationRequest: sdktypes.PaginationRequest{},
@@ -422,7 +421,7 @@ func TestSessionLogRecordNextPageTokenNotEmpty(t *testing.T) {
 	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr, ""))
 
 	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](s.SessionID)
-	res, err := f.gormdb.GetSessionLog(context.Background(),
+	res, err := f.gormdb.GetSessionLog(t.Context(),
 		sdkservices.SessionLogRecordsFilter{
 			SessionID:         sid,
 			PaginationRequest: sdktypes.PaginationRequest{PageSize: 2, Ascending: true},
@@ -434,7 +433,7 @@ func TestSessionLogRecordNextPageTokenNotEmpty(t *testing.T) {
 	assert.NotEmpty(t, res.NextPageToken)
 
 	// Get Next Batch to exhaust next page token
-	res, err = f.gormdb.GetSessionLog(context.Background(),
+	res, err = f.gormdb.GetSessionLog(t.Context(),
 		sdkservices.SessionLogRecordsFilter{
 			SessionID:         sid,
 			PaginationRequest: sdktypes.PaginationRequest{PageToken: res.PaginationResult.NextPageToken},

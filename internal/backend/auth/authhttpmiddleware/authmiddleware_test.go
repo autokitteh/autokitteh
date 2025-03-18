@@ -53,8 +53,11 @@ func assertCalledWithUser(t *testing.T, expected sdktypes.UserID, given *sdktype
 	}
 }
 
-func newRequest(authHeader string, cookies []*http.Cookie) *http.Request {
-	req := kittehs.Must1(http.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil))
+func newRequest(t *testing.T, authHeader string, cookies []*http.Cookie) *http.Request {
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	if authHeader != "" {
 		req.Header.Set("Authorization", authHeader)
@@ -68,7 +71,7 @@ func newRequest(authHeader string, cookies []*http.Cookie) *http.Request {
 }
 
 func TestDefaultUserMiddleware(t *testing.T) {
-	uid, mwErr := setDefaultUserMiddleware(newRequest("", nil))
+	uid, mwErr := setDefaultUserMiddleware(newRequest(t, "", nil))
 	if assert.Nil(t, mwErr) {
 		assert.Equal(t, authusers.DefaultUser.ID(), uid)
 	}
@@ -80,20 +83,20 @@ func TestTokensMiddleware(t *testing.T) {
 	mw := newTokensMiddleware(tokens)
 
 	// no header - should be nop.
-	uid, mwErr := mw(newRequest("", nil))
+	uid, mwErr := mw(newRequest(t, "", nil))
 	if assert.Nil(t, mwErr) {
 		assert.False(t, uid.IsValid())
 	}
 
 	// correct token.
 	tok := kittehs.Must1(tokens.Create(testUser1))
-	uid, mwErr = mw(newRequest("Bearer "+tok, nil))
+	uid, mwErr = mw(newRequest(t, "Bearer "+tok, nil))
 	if assert.Nil(t, mwErr) {
 		assert.True(t, uid.IsValid())
 	}
 
 	// bad token.
-	uid, mwErr = mw(newRequest("hiss", nil))
+	uid, mwErr = mw(newRequest(t, "hiss", nil))
 	if assert.NotNil(t, mwErr) {
 		assert.Equal(t, http.StatusUnauthorized, mwErr.code)
 	}
@@ -106,7 +109,7 @@ func TestSessionsMiddleware(t *testing.T) {
 	mw := newSessionsMiddleware(sessions)
 
 	// no session - should be nop.
-	uid, mwErr := mw(newRequest("", nil))
+	uid, mwErr := mw(newRequest(t, "", nil))
 	if assert.Nil(t, mwErr) {
 		assert.False(t, uid.IsValid())
 	}
@@ -116,7 +119,7 @@ func TestSessionsMiddleware(t *testing.T) {
 	cookies := w.Result().Cookies()
 
 	// legit cookies.
-	uid, mwErr = mw(newRequest("", cookies))
+	uid, mwErr = mw(newRequest(t, "", cookies))
 	if assert.Nil(t, mwErr) {
 		assert.True(t, uid.IsValid())
 	}
@@ -127,7 +130,7 @@ func TestSessionsMiddleware(t *testing.T) {
 		copy(badCookies, cookies)
 		badCookies[i].Value = "hiss"
 
-		uid, mwErr = mw(newRequest("", badCookies))
+		uid, mwErr = mw(newRequest(t, "", badCookies))
 		if assert.Nil(t, mwErr) {
 			assert.False(t, uid.IsValid())
 		}
@@ -184,7 +187,7 @@ func TestMiddlewareError(t *testing.T) {
 	h := newTestHarness(t, false)
 
 	w := httptest.NewRecorder()
-	h.mw.ServeHTTP(w, newRequest("Bearer hisss", nil))
+	h.mw.ServeHTTP(w, newRequest(t, "Bearer hisss", nil))
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 	assert.Nil(t, h.check())
 
@@ -196,14 +199,14 @@ func TestNewWithoutDefaultUser(t *testing.T) {
 
 	// no auth - reject.
 	w := httptest.NewRecorder()
-	h.mw.ServeHTTP(w, newRequest("", nil))
+	h.mw.ServeHTTP(w, newRequest(t, "", nil))
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 	assert.Nil(t, h.check())
 
 	// correct token, but no such user.
 	tok1 := kittehs.Must1(h.tokens.Create(testUser1))
 	w = httptest.NewRecorder()
-	h.mw.ServeHTTP(w, newRequest("Bearer "+tok1, nil))
+	h.mw.ServeHTTP(w, newRequest(t, "Bearer "+tok1, nil))
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 	assert.Nil(t, h.check())
 
@@ -213,7 +216,7 @@ func TestNewWithoutDefaultUser(t *testing.T) {
 	cookies := w.Result().Cookies()
 
 	w = httptest.NewRecorder()
-	h.mw.ServeHTTP(w, newRequest("", cookies))
+	h.mw.ServeHTTP(w, newRequest(t, "", cookies))
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 	assert.Nil(t, h.check())
 
@@ -224,13 +227,13 @@ func TestNewWithoutDefaultUser(t *testing.T) {
 
 	// correct token, user is disabled.
 	w = httptest.NewRecorder()
-	h.mw.ServeHTTP(w, newRequest("Bearer "+tok1, nil))
+	h.mw.ServeHTTP(w, newRequest(t, "Bearer "+tok1, nil))
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 	assert.Nil(t, h.check())
 
 	// correct session, user is disabled.
 	w = httptest.NewRecorder()
-	h.mw.ServeHTTP(w, newRequest("", cookies))
+	h.mw.ServeHTTP(w, newRequest(t, "", cookies))
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 	assert.Nil(t, h.check())
 
@@ -241,13 +244,13 @@ func TestNewWithoutDefaultUser(t *testing.T) {
 
 	// correct token, user is invited.
 	w = httptest.NewRecorder()
-	h.mw.ServeHTTP(w, newRequest("Bearer "+tok1, nil))
+	h.mw.ServeHTTP(w, newRequest(t, "Bearer "+tok1, nil))
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 	assert.Nil(t, h.check())
 
 	// correct session, user is invited.
 	w = httptest.NewRecorder()
-	h.mw.ServeHTTP(w, newRequest("", cookies))
+	h.mw.ServeHTTP(w, newRequest(t, "", cookies))
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 	assert.Nil(t, h.check())
 
@@ -258,19 +261,19 @@ func TestNewWithoutDefaultUser(t *testing.T) {
 
 	// correct token, user is ok.
 	w = httptest.NewRecorder()
-	h.mw.ServeHTTP(w, newRequest("Bearer "+tok1, nil))
+	h.mw.ServeHTTP(w, newRequest(t, "Bearer "+tok1, nil))
 	assert.Equal(t, http.StatusOK, w.Code)
 	assertCalledWithUser(t, testUser1.ID(), h.check())
 
 	// correct session, user is ok.
 	w = httptest.NewRecorder()
-	h.mw.ServeHTTP(w, newRequest("", cookies))
+	h.mw.ServeHTTP(w, newRequest(t, "", cookies))
 	assert.Equal(t, http.StatusOK, w.Code)
 	assertCalledWithUser(t, testUser1.ID(), h.check())
 
 	// both token and session for same user.
 	w = httptest.NewRecorder()
-	h.mw.ServeHTTP(w, newRequest("Bearer "+tok1, cookies))
+	h.mw.ServeHTTP(w, newRequest(t, "Bearer "+tok1, cookies))
 	assert.Equal(t, http.StatusOK, w.Code)
 	assertCalledWithUser(t, testUser1.ID(), h.check())
 
@@ -279,7 +282,7 @@ func TestNewWithoutDefaultUser(t *testing.T) {
 	h.users.Users[testUser2.ID()] = testUser2
 	w = httptest.NewRecorder()
 	tok2 := kittehs.Must1(h.tokens.Create(testUser2))
-	h.mw.ServeHTTP(w, newRequest("Bearer "+tok2, cookies))
+	h.mw.ServeHTTP(w, newRequest(t, "Bearer "+tok2, cookies))
 	assert.Equal(t, http.StatusOK, w.Code)
 	assertCalledWithUser(t, testUser2.ID(), h.check())
 
@@ -287,7 +290,7 @@ func TestNewWithoutDefaultUser(t *testing.T) {
 	// token > session, and is rejected.
 	h.users.Users[testUser2.ID()] = testUser2.WithStatus(sdktypes.UserStatusDisabled)
 	w = httptest.NewRecorder()
-	h.mw.ServeHTTP(w, newRequest("Bearer "+tok2, cookies))
+	h.mw.ServeHTTP(w, newRequest(t, "Bearer "+tok2, cookies))
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 	assert.Nil(t, h.check())
 }
@@ -297,14 +300,14 @@ func TestNewWithDefaultUser(t *testing.T) {
 
 	// no auth.
 	w := httptest.NewRecorder()
-	h.mw.ServeHTTP(w, newRequest("", nil))
+	h.mw.ServeHTTP(w, newRequest(t, "", nil))
 	assert.Equal(t, http.StatusOK, w.Code)
 	assertCalledWithUser(t, authusers.DefaultUser.ID(), h.check())
 
 	// correct token, but no such user.
 	tok1 := kittehs.Must1(h.tokens.Create(testUser1))
 	w = httptest.NewRecorder()
-	h.mw.ServeHTTP(w, newRequest("Bearer "+tok1, nil))
+	h.mw.ServeHTTP(w, newRequest(t, "Bearer "+tok1, nil))
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 	assert.Nil(t, h.check())
 
@@ -314,7 +317,7 @@ func TestNewWithDefaultUser(t *testing.T) {
 	cookies := w.Result().Cookies()
 
 	w = httptest.NewRecorder()
-	h.mw.ServeHTTP(w, newRequest("", cookies))
+	h.mw.ServeHTTP(w, newRequest(t, "", cookies))
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 	assert.Nil(t, h.check())
 
@@ -323,13 +326,13 @@ func TestNewWithDefaultUser(t *testing.T) {
 
 	// correct token, user is disabled.
 	w = httptest.NewRecorder()
-	h.mw.ServeHTTP(w, newRequest("Bearer "+tok1, nil))
+	h.mw.ServeHTTP(w, newRequest(t, "Bearer "+tok1, nil))
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 	assert.Nil(t, h.check())
 
 	// correct token, user is disabled.
 	w = httptest.NewRecorder()
-	h.mw.ServeHTTP(w, newRequest("", cookies))
+	h.mw.ServeHTTP(w, newRequest(t, "", cookies))
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 	assert.Nil(t, h.check())
 
@@ -338,13 +341,13 @@ func TestNewWithDefaultUser(t *testing.T) {
 
 	// correct token, user is invited.
 	w = httptest.NewRecorder()
-	h.mw.ServeHTTP(w, newRequest("Bearer "+tok1, nil))
+	h.mw.ServeHTTP(w, newRequest(t, "Bearer "+tok1, nil))
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 	assert.Nil(t, h.check())
 
 	// correct token, user is invited.
 	w = httptest.NewRecorder()
-	h.mw.ServeHTTP(w, newRequest("", cookies))
+	h.mw.ServeHTTP(w, newRequest(t, "", cookies))
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 	assert.Nil(t, h.check())
 
@@ -355,13 +358,13 @@ func TestNewWithDefaultUser(t *testing.T) {
 
 	// correct token, user is ok.
 	w = httptest.NewRecorder()
-	h.mw.ServeHTTP(w, newRequest("Bearer "+tok1, nil))
+	h.mw.ServeHTTP(w, newRequest(t, "Bearer "+tok1, nil))
 	assert.Equal(t, http.StatusOK, w.Code)
 	assertCalledWithUser(t, testUser1.ID(), h.check())
 
 	// correct session, user is ok.
 	w = httptest.NewRecorder()
-	h.mw.ServeHTTP(w, newRequest("", cookies))
+	h.mw.ServeHTTP(w, newRequest(t, "", cookies))
 	assert.Equal(t, http.StatusOK, w.Code)
 	assertCalledWithUser(t, testUser1.ID(), h.check())
 }

@@ -1,7 +1,6 @@
 package dbgorm
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,7 +16,7 @@ import (
 func TestUpdatedFields(t *testing.T) {
 	kittehs.FreezeTimeForTest()
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	u := sdktypes.NewUser().WithNewID().WithDisplayName("DISPLAY_NAME")
 
