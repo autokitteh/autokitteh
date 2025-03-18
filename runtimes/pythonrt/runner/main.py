@@ -72,19 +72,6 @@ for more details.
 """
 
 
-def result_error(err):
-    io = StringIO()
-
-    if "pickle" in str(err):
-        print(pickle_help, file=io)
-
-    exc = "".join(format_exception(err))
-    message = s if (s := str(err)) else repr(err)
-    print(f"error: {message}\n\n{exc}", file=io)
-
-    return io.getvalue()
-
-
 # Go passes HTTP event.data.body.bytes as base64 encode string
 def fix_http_body(inputs):
     data = inputs.get("data")
@@ -187,6 +174,18 @@ class Runner(pb.runner_rpc.RunnerService):
         )
         self._inactivty_timer.start()
 
+    def result_error(self, err):
+        io = StringIO()
+
+        if "pickle" in str(err):
+            self._orig_print(pickle_help, file=io)
+
+        exc = "".join(format_exception(err))
+        message = s if (s := str(err)) else repr(err)
+        self._orig_print(f"error: {message}\n\n{exc}", file=io)
+
+        return io.getvalue()
+
     def stop_if_start_not_called(self, timeout):
         log.error("Start not called after %s seconds, terminating", timeout)
         if self.server:
@@ -262,7 +261,7 @@ class Runner(pb.runner_rpc.RunnerService):
         try:
             mod = loader.load_code(self.code_dir, ak_call, mod_name)
         except Exception as err:
-            err_text = result_error(err)
+            err_text = self.result_error(err)
             context.abort(
                 grpc.StatusCode.INVALID_ARGUMENT,
                 f"can't load {mod_name} from {self.code_dir} - {err_text}",
@@ -457,7 +456,7 @@ class Runner(pb.runner_rpc.RunnerService):
 
         try:
             if result.error:
-                req.error = result_error(result.error)
+                req.error = self.result_error(result.error)
                 tb = pb_traceback(result.traceback)
                 req.traceback.extend(tb)
             else:
