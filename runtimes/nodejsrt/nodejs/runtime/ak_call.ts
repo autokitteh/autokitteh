@@ -106,26 +106,10 @@ export class ActivityWaiter implements Waiter {
 }
 
 export const ak_call = (waiter: Waiter, projectRoot: string) => {
+    // Only keeping the _ak_direct_call check for functions explicitly marked as internal
     function isInternalFunction(func: AnyFunction): boolean {
-        // Case 1: Already marked as internal
-        if ((func as unknown as { _ak_direct_call?: boolean })._ak_direct_call === true) {
-            return true;
-        }
-
-        // Case 2: Native methods
-        if (func.toString().includes('[native code]')) {
-            return false;
-        }
-
-        // Case 3: Check module path of the function
-        const moduleFile = module.filename;
-        if (moduleFile && 
-            moduleFile.startsWith(projectRoot) && 
-            !moduleFile.includes('node_modules')) {
-            return true;
-        }
-
-        return false;
+        // Check if function is explicitly marked as internal
+        return (func as unknown as { _ak_direct_call?: boolean })._ak_direct_call === true;
     }
 
     return async (...args: unknown[]): Promise<unknown> => {
@@ -141,6 +125,7 @@ export const ak_call = (waiter: Waiter, projectRoot: string) => {
                         throw new Error(`Method ${method} not found`);
                     }
 
+                    // Check for explicitly marked internal functions
                     if (isInternalFunction(func)) {
                         console.log("direct obj call", method, methodArgs);
                         return await func.apply(obj, methodArgs);
@@ -158,6 +143,7 @@ export const ak_call = (waiter: Waiter, projectRoot: string) => {
         const func = args[0] as AnyFunction;
         const funcArgs = args.length > 1 ? args.slice(1) : [];
 
+        // Check for explicitly marked internal functions
         if (isInternalFunction(func)) {
             console.log("direct call", func.name, funcArgs);
             return await func(...funcArgs);

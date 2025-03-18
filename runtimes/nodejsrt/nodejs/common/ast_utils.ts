@@ -98,6 +98,28 @@ export async function listExportsInDirectory(dirPath: string): Promise<Export[]>
     return exports;
 }
 
+// Helper function to check if an identifier is from a relative import
+function isFromRelativeImport(path: NodePath, identifierName: string): boolean {
+    const binding = path.scope.getBinding(identifierName);
+    if (binding?.path.parent?.type === 'ImportDeclaration') {
+        const importSource = binding.path.parent.source.value;
+        return importSource.startsWith('.');
+    }
+    return false;
+}
+
+// List of standard JavaScript built-in objects that don't need wrapping
+const standardBuiltIns = new Set([
+    'console', 'Promise', 'JSON'
+    // Removed objects that don't have async methods: Math, Object, Array, String, 
+    // Number, Date, RegExp, Map, Set
+]);
+
+// Check if an identifier refers to a standard JavaScript built-in
+function isStandardBuiltIn(name: string): boolean {
+    return standardBuiltIns.has(name);
+}
+
 export async function patchCode(code: string): Promise<string> {
     const ast = parse(code, {sourceType: "module", plugins: ["typescript"]});
 
@@ -107,30 +129,36 @@ export async function patchCode(code: string): Promise<string> {
                 return;
             }
 
-            // Skip wrapping if it's a relative import
+            // For direct function calls
             if (isIdentifier(path.node.callee)) {
-                const binding = path.scope.getBinding(path.node.callee.name);
-                if (binding?.path.parent?.type === 'ImportDeclaration') {
-                    const importSource = binding.path.parent.source.value;
-                    if (importSource.startsWith('.')) {
+                const identifierName = path.node.callee.name;
+                
+                // Skip wrapping if it's a relative import or a standard built-in
+                if (isFromRelativeImport(path, identifierName) || isStandardBuiltIn(identifierName)) {
+                    return;
+                }
+                
+                // Wrap the direct function call
+                path.node.callee = identifier("ak_call");
+                path.node.arguments.unshift(identifier(identifierName));
+            } 
+            // For method calls (obj.method())
+            else if (isMemberExpression(path.node.callee)) {
+                const object = path.node.callee.object;
+                const method = isIdentifier(path.node.callee.property) ? path.node.callee.property.name : '';
+                
+                // Skip wrapping if the object is from a relative import or is a standard built-in
+                if (isIdentifier(object)) {
+                    if (isFromRelativeImport(path, object.name) || isStandardBuiltIn(object.name)) {
                         return;
                     }
                 }
-            }
-
-            if (isMemberExpression(path.node.callee)) {
-                const parts = {
-                    object: path.node.callee.object,
-                    method: isIdentifier(path.node.callee.property) ? path.node.callee.property.name : ''
-                };
-                if (parts.method) {
+                
+                // Only wrap if we have a valid method name
+                if (method) {
                     path.node.callee = identifier("ak_call");
-                    path.node.arguments = [parts.object, stringLiteral(parts.method), ...path.node.arguments];
+                    path.node.arguments = [object, stringLiteral(method), ...path.node.arguments];
                 }
-            } else if (isIdentifier(path.node.callee)) {
-                const name = path.node.callee.name;
-                path.node.callee = identifier("ak_call");
-                path.node.arguments.unshift(identifier(name));
             }
         }
     });

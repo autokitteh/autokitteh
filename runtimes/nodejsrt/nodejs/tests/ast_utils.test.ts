@@ -200,3 +200,38 @@ async function getData(): Promise<Data> {
     const patch = await patchCode(code)
     expect(patch).toEqual(expected);
 })
+
+test('should not patch method calls on objects from relative imports', async () => {
+    const code = `
+    import {localService} from "./local-service"
+    
+    async function some_func() {
+        await localService.method("test");
+    }
+    `
+
+    const expected = `import { localService } from "./local-service";
+async function some_func() {
+  await localService.method("test");
+}`
+    const patch = await patchCode(code)
+    expect(patch).toEqual(expected);
+})
+
+test('should not patch calls to native objects', async () => {
+    const code = `
+    async function some_func() {
+        await console.log("test");
+        await Promise.resolve("value");
+        await JSON.parse('{"key": "value"}');
+    }
+    `
+
+    const expected = `async function some_func() {
+  await console.log("test");
+  await Promise.resolve("value");
+  await JSON.parse('{"key": "value"}');
+}`
+    const patch = await patchCode(code)
+    expect(patch).toEqual(expected);
+})
