@@ -23,7 +23,7 @@ endif
 ARCH=$(shell uname -m)
 
 ifeq ($(COMMIT),)
-COMMIT=$(shell git rev-parse HEAD)$(shell git diff --quiet || echo '_dirty')
+COMMIT=$(shell git rev-parse HEAD 2>/dev/null || echo "unknown")$(shell git diff --quiet 2>/dev/null || : && echo '')
 endif
 
 ifeq ($(TIMESTAMP),)
