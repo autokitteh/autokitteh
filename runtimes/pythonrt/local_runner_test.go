@@ -22,10 +22,7 @@ func skipIfNoPython(t *testing.T) {
 		t.Skip("no python installed")
 	}
 
-	ctx, cancel := testCtx(t)
-	defer cancel()
-
-	_, err = pyExeInfo(ctx, pyExe)
+	_, err = pyExeInfo(t.Context(), pyExe)
 	if errors.Is(err, exec.ErrNotFound) {
 		t.Skip("no python installed")
 	}
@@ -45,10 +42,7 @@ func Test_createVEnv(t *testing.T) {
 	pyExe, err := findPython()
 	require.NoError(t, err)
 
-	ctx, cancel := testCtx(t)
-	defer cancel()
-
-	info, err := pyExeInfo(ctx, pyExe)
+	info, err := pyExeInfo(t.Context(), pyExe)
 	require.NoError(t, err)
 
 	venvPath := path.Join(t.TempDir(), "venv")

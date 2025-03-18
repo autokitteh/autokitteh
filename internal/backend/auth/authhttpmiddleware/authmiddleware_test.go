@@ -54,7 +54,10 @@ func assertCalledWithUser(t *testing.T, expected sdktypes.UserID, given *sdktype
 }
 
 func newRequest(t *testing.T, authHeader string, cookies []*http.Cookie) *http.Request {
-	req := kittehs.Must1(http.NewRequestWithContext(t.Context(), http.MethodGet, "/", nil))
+	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	if authHeader != "" {
 		req.Header.Set("Authorization", authHeader)
@@ -88,8 +91,9 @@ func TestTokensMiddleware(t *testing.T) {
 	// correct token.
 	tok := kittehs.Must1(tokens.Create(testUser1))
 	uid, mwErr = mw(newRequest(t, "Bearer "+tok, nil))
-	require.NoError(t, mwErr)
-	require.True(t, uid.IsValid())
+	if assert.Nil(t, mwErr) {
+		assert.True(t, uid.IsValid())
+	}
 
 	// bad token.
 	uid, mwErr = mw(newRequest(t, "hiss", nil))
