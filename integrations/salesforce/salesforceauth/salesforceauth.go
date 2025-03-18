@@ -15,6 +15,9 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+// AccessTokenExpiration sends a request to the given instance's OAuth2 introspection endpoint to retrieve
+// the expiration timestamp of the token and updates the provided token's expiry field.
+// Returns an error if the request fails, the response is invalid, or the expiration timestamp is missing.
 func AccessTokenExpiration(ctx context.Context, instanceURL string, t *oauth2.Token, vsid sdktypes.VarScopeID, vars sdkservices.Vars) error {
 	vs, err := vars.Get(ctx, vsid)
 	if err != nil {

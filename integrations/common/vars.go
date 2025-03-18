@@ -113,7 +113,7 @@ func FreshOAuthToken(ctx context.Context, l *zap.Logger, o sdkservices.OAuth, v 
 	if i.UniqueName().String() == "salesforce" && t2.Expiry.IsZero() {
 		err := salesforceauth.AccessTokenExpiration(ctx, cfg.Endpoint.TokenURL, t2, vsid, v)
 		if err != nil {
-			l.Warn("failed to get access token expiration for salesforce", zap.Error(err))
+			l.Error("failed to get access token expiration for salesforce", zap.Error(err))
 			t2.Expiry = time.Now().UTC().Add(2 * time.Hour)
 		}
 	}
