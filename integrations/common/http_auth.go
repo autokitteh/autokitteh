@@ -9,13 +9,22 @@ import (
 	"net/http"
 )
 
-func HTTPGetWithAuth(ctx context.Context, u, username, password, contentType string, body []byte) ([]byte, error) {
-	return httpRequestWithBasicAuth(ctx, http.MethodGet, u, username, password, contentType, body)
+type Credentials struct {
+	Username string
+	Password string
+}
+
+func HTTPGetWithAuth(ctx context.Context, u string, cred Credentials) ([]byte, error) {
+	return httpRequestWithBasicAuth(ctx, http.MethodGet, u, cred, "", nil)
+}
+
+func HTTPGetJSONWithAuth(ctx context.Context, u string, cred Credentials, body []byte) ([]byte, error) {
+	return httpRequestWithBasicAuth(ctx, http.MethodGet, u, cred, ContentTypeJSONCharsetUTF8, body)
 }
 
 // httpRequestWithBasicAuth sends an HTTP request with basic authentication and returns the response's body.
 // This function accepts only JSON responses, even though it doesn't parse them.
-func httpRequestWithBasicAuth(ctx context.Context, method, u, username, password, contentType string, body []byte) ([]byte, error) {
+func httpRequestWithBasicAuth(ctx context.Context, method, u string, cred Credentials, contentType string, body []byte) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(ctx, HTTPTimeout)
 	defer cancel()
 
@@ -26,7 +35,7 @@ func httpRequestWithBasicAuth(ctx context.Context, method, u, username, password
 
 	req.Header.Set(HeaderAccept, ContentTypeJSON)
 
-	req.SetBasicAuth(username, password)
+	req.SetBasicAuth(cred.Username, cred.Password)
 
 	if len(body) > 0 {
 		req.Header.Set(HeaderContentType, contentType)

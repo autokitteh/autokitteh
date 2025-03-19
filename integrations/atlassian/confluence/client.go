@@ -136,10 +136,10 @@ func apiTokenConnTest(ctx context.Context, l *zap.Logger, vs sdktypes.Vars) erro
 	baseURL := vs.Get(baseURL).Value()
 	email := vs.Get(email).Value()
 	token := vs.Get(token).Value()
-
+	cred := common.Credentials{Username: email, Password: token}
 	u := baseURL + "/wiki/rest/api/user/current"
 
-	_, err := common.HTTPGetWithAuth(ctx, u, email, token, "", nil)
+	_, err := common.HTTPGetWithAuth(ctx, u, cred)
 	if err != nil {
 		logWarnIfNotNil(l, "Unexpected response on current user info", zap.Error(err))
 		return fmt.Errorf("current user info: unexpected status code %d", err)

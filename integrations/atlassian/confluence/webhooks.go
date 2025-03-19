@@ -114,35 +114,12 @@ var webhookEvents = map[string][]string{
 func getWebhook(ctx context.Context, l *zap.Logger, base, user, key, category string) (int, bool) {
 	ctx, cancel := context.WithTimeout(ctx, common.HTTPTimeout)
 	defer cancel()
+	cred := common.Credentials{Username: user, Password: key}
 
 	// TODO(ENG-965): Support pagination.
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, base+restPath, http.NoBody)
+	body, err := common.HTTPGetWithAuth(ctx, base+restPath, cred)
 	if err != nil {
-		l.Warn("Failed to construct HTTP request to list Confluence webhooks", zap.Error(err))
-		return 0, false
-	}
-
-	req.SetBasicAuth(user, key)
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		l.Warn("Failed to list Confluence webhooks", zap.Error(err))
-		return 0, false
-	}
-	defer resp.Body.Close()
-
-	// Read the response's body, up to 1 MiB.
-	body, err := io.ReadAll(http.MaxBytesReader(nil, resp.Body, 1<<20))
-	if err != nil {
-		l.Warn("Failed to read Confluence webhooks list response", zap.Error(err))
-		return 0, false
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		l.Warn("Unexpected response to Confluence webhooks list request",
-			zap.Int("status", resp.StatusCode),
-			zap.ByteString("body", body),
-		)
+		l.Warn("Failed to get Confluence webhooks list", zap.Error(err))
 		return 0, false
 	}
 
