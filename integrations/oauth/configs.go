@@ -107,9 +107,44 @@ func (o *OAuth) initConfigs() {
 
 		"googlesheets": {},
 
-		"height": {},
+		// https://height.notion.site/OAuth-Apps-on-Height-a8ebeab3f3f047e3857bd8ce60c2f640
+		"height": {
+			Config: &oauth2.Config{
+				ClientID:     os.Getenv("HEIGHT_CLIENT_ID"),
+				ClientSecret: os.Getenv("HEIGHT_CLIENT_SECRET"),
+				Endpoint: oauth2.Endpoint{
+					AuthURL:  "https://height.app/oauth/authorization",
+					TokenURL: "https://api.height.app/oauth/tokens",
+				},
+				Scopes: []string{"api"},
+			},
+			Opts: map[string]string{
+				// This is a workaround for Height's non-standard OAuth 2.0 flow
+				// which expects the scopes string in the exchange request as well.
+				"scope": "api",
+			},
+		},
 
-		"hubspot": {},
+		// https://developers.hubspot.com/beta-docs/guides/apps/authentication/working-with-oauth
+		"hubspot": {
+			Config: &oauth2.Config{
+				ClientID:     os.Getenv("HUBSPOT_CLIENT_ID"),
+				ClientSecret: os.Getenv("HUBSPOT_CLIENT_SECRET"),
+				Endpoint: oauth2.Endpoint{
+					AuthURL:  "https://app.hubspot.com/oauth/authorize",
+					TokenURL: "https://api.hubapi.com/oauth/v1/token",
+				},
+				Scopes: []string{
+					"crm.objects.companies.read",
+					"crm.objects.companies.write",
+					"crm.objects.contacts.read",
+					"crm.objects.contacts.write",
+					"crm.objects.deals.read",
+					"crm.objects.deals.write",
+					"crm.objects.owners.read",
+				},
+			},
+		},
 
 		// https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/
 		"jira": {
@@ -131,7 +166,18 @@ func (o *OAuth) initConfigs() {
 			},
 		},
 
-		"linear": {},
+		// https://developers.linear.app/docs/oauth/authentication
+		"linear": {
+			Config: &oauth2.Config{
+				ClientID:     os.Getenv("LINEAR_CLIENT_ID"),
+				ClientSecret: os.Getenv("LINEAR_CLIENT_SECRET"),
+				Endpoint: oauth2.Endpoint{
+					AuthURL:  "https://linear.app/oauth/authorize",
+					TokenURL: "https://api.linear.app/oauth/token",
+				},
+				Scopes: []string{"read", "write"},
+			},
+		},
 
 		"microsoft": {},
 
