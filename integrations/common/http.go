@@ -38,64 +38,72 @@ func PostWithoutJSONContentType(r *http.Request) bool {
 
 func HTTPDeleteJSON(ctx context.Context, u, auth string, payload any) ([]byte, error) {
 	if s, ok := payload.(string); ok {
-		return httpRequest(ctx, http.MethodDelete, u, auth, ContentTypeJSONCharsetUTF8, []byte(s))
+		return httpRequest(ctx, http.MethodDelete, u, auth, ContentTypeJSONCharsetUTF8, []byte(s), nil)
 	}
 
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal JSON payload: %w", err)
 	}
-	return httpRequest(ctx, http.MethodDelete, u, auth, ContentTypeJSONCharsetUTF8, body)
+	return httpRequest(ctx, http.MethodDelete, u, auth, ContentTypeJSONCharsetUTF8, body, nil)
 }
 
 func HTTPGet(ctx context.Context, u, auth string) ([]byte, error) {
-	return httpRequest(ctx, http.MethodGet, u, auth, "", nil)
+	return httpRequest(ctx, http.MethodGet, u, auth, "", nil, nil)
 }
 
 func HTTPGetJSON(ctx context.Context, u, auth string, payload any) ([]byte, error) {
 	if s, ok := payload.(string); ok {
-		return httpRequest(ctx, http.MethodGet, u, auth, ContentTypeJSONCharsetUTF8, []byte(s))
+		return httpRequest(ctx, http.MethodGet, u, auth, ContentTypeJSONCharsetUTF8, []byte(s), nil)
 	}
 
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal JSON payload: %w", err)
 	}
-	return httpRequest(ctx, http.MethodGet, u, auth, ContentTypeJSONCharsetUTF8, body)
+	return httpRequest(ctx, http.MethodGet, u, auth, ContentTypeJSONCharsetUTF8, body, nil)
+}
+
+func HTTPGetWithAuth(ctx context.Context, u string, cred Credentials) ([]byte, error) {
+	return httpRequest(ctx, http.MethodGet, u, "", "", nil, &cred)
+}
+
+func HTTPGetJSONWithAuth(ctx context.Context, u string, cred Credentials) ([]byte, error) {
+	return httpRequest(ctx, http.MethodGet, u, ContentTypeJSONCharsetUTF8, "", nil, &cred)
 }
 
 func HTTPPostForm(ctx context.Context, u, auth string, payload url.Values) ([]byte, error) {
 	body := []byte(payload.Encode())
-	return httpRequest(ctx, http.MethodPost, u, auth, ContentTypeForm, body)
+	return httpRequest(ctx, http.MethodPost, u, auth, ContentTypeForm, body, nil)
 }
 
 func HTTPPostJSON(ctx context.Context, u, auth string, payload any) ([]byte, error) {
 	if s, ok := payload.(string); ok {
-		return httpRequest(ctx, http.MethodPost, u, auth, ContentTypeJSONCharsetUTF8, []byte(s))
+		return httpRequest(ctx, http.MethodPost, u, auth, ContentTypeJSONCharsetUTF8, []byte(s), nil)
 	}
 
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal JSON payload: %w", err)
 	}
-	return httpRequest(ctx, http.MethodPost, u, auth, ContentTypeJSONCharsetUTF8, body)
+	return httpRequest(ctx, http.MethodPost, u, auth, ContentTypeJSONCharsetUTF8, body, nil)
 }
 
 func HTTPPutJSON(ctx context.Context, u, auth string, payload any) ([]byte, error) {
 	if s, ok := payload.(string); ok {
-		return httpRequest(ctx, http.MethodPut, u, auth, ContentTypeJSONCharsetUTF8, []byte(s))
+		return httpRequest(ctx, http.MethodPut, u, auth, ContentTypeJSONCharsetUTF8, []byte(s), nil)
 	}
 
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal JSON payload: %w", err)
 	}
-	return httpRequest(ctx, http.MethodPut, u, auth, ContentTypeJSONCharsetUTF8, body)
+	return httpRequest(ctx, http.MethodPut, u, auth, ContentTypeJSONCharsetUTF8, body, nil)
 }
 
 // httpRequest sends an HTTP GET or POST request and returns the response's body.
 // This function accepts only JSON responses, even though it doesn't parse them.
-func httpRequest(ctx context.Context, method, u, auth, contentType string, body []byte) ([]byte, error) {
+func httpRequest(ctx context.Context, method, u, auth, contentType string, body []byte, creds *Credentials) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(ctx, HTTPTimeout)
 	defer cancel()
 
@@ -103,6 +111,10 @@ func httpRequest(ctx context.Context, method, u, auth, contentType string, body 
 	req, err := http.NewRequestWithContext(ctx, method, u, bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct HTTP request: %w", err)
+	}
+
+	if creds != nil {
+		req.SetBasicAuth(creds.Username, creds.Password)
 	}
 
 	req.Header.Set(HeaderAccept, ContentTypeJSON)

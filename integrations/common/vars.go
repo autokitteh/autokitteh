@@ -31,6 +31,11 @@ type OAuthData struct {
 	TokenType    string `var:"oauth_token_type"`
 }
 
+type Credentials struct {
+	Username string
+	Password string
+}
+
 // ToToken converts OAuthData to an OAuth 2.0 token. If the expiry
 // is missing or invalid (not RFC-3339), we use the zero time.
 func (o OAuthData) ToToken() *oauth2.Token {
