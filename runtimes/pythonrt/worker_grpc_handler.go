@@ -19,7 +19,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/oauth"
+	"go.autokitteh.dev/autokitteh/integrations/oauth"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	userCode "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/user_code/v1"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -427,8 +427,9 @@ func (s *workerGRPCHandler) RefreshOAuthToken(ctx context.Context, req *userCode
 
 	// Get the integration's OAuth configuration.
 	// TODO(INT-46): pass vars service instead of nil.
-	// TODO(INT-320): pass new OAuth service instead of nil.
-	cfg, _, err := oauth.New(runner.log, nil, nil).Get(ctx, req.Integration)
+	// TODO(INT-46): pass new OAuth service instead of constructing with nil params.
+	o := oauth.New(nil, runner.log, nil)
+	cfg, _, err := o.GetConfig(ctx, req.Integration, sdktypes.InvalidConnectionID)
 	if err != nil {
 		return &userCode.RefreshResponse{Error: err.Error()}, nil
 	}

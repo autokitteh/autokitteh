@@ -56,7 +56,7 @@ func Test(v sdkservices.Vars, o *oauth.OAuth) sdkintegrations.OptFn {
 
 		case integrations.OAuthDefault, integrations.OAuthPrivate:
 			desc := common.Descriptor("microsoft", "", "")
-			t := common.FreshOAuthToken(ctx, zap.L(), o, v, desc, vs)
+			t := o.FreshToken(ctx, zap.L(), desc, vs)
 			if _, err = GetUserInfo(ctx, t); err != nil {
 				return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 			}

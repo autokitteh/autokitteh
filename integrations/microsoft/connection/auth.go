@@ -71,7 +71,7 @@ func bearerToken(ctx context.Context, l *zap.Logger, svc Services, cid sdktypes.
 	switch authType := common.ReadAuthType(vs); authType {
 	case integrations.OAuthDefault, integrations.OAuthPrivate:
 		desc := common.Descriptor("microsoft", "", "")
-		t := common.FreshOAuthToken(ctx, l, svc.OAuth, svc.Vars, desc, vs)
+		t := svc.OAuth.FreshToken(ctx, l, desc, vs)
 		return "Bearer " + t.AccessToken
 
 	case integrations.DaemonApp:

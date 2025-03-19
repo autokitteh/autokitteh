@@ -12,7 +12,6 @@ import (
 	"google.golang.org/grpc/codes"
 	gstatus "google.golang.org/grpc/status"
 
-	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -188,7 +187,7 @@ func (h handler) initPubSubClient(cid sdktypes.ConnectionID, clientID string, l 
 		return nil, nil
 	}
 
-	t := common.FreshOAuthToken(ctx, l, h.oauth, h.vars, desc, vs)
+	t := h.oauth.FreshToken(ctx, l, desc, vs)
 	cfg, _, err := h.oauth.GetConfig(ctx, desc.UniqueName().String(), cid)
 	if err != nil {
 		l.Error("failed to get Salesforce OAuth config", zap.Error(err))

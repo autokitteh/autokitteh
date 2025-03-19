@@ -193,22 +193,6 @@ func (o *OAuth) initGitHubURLs() {
 	// TODO: Implement this function.
 }
 
-// SimpleConfig is a temporary function while we transition from the
-// configs in "/internal/backend/oauth/oauth.go" to the new ones here.
-// It will be removed once all config data is moved here and tested.
-func (o *OAuth) SimpleConfig(integration string) *oauth2.Config {
-	c, ok := o.oauthConfigs[integration]
-	if !ok {
-		o.logger.Error("requested OAuth config not found", zap.String("integration", integration))
-		return nil
-	}
-	if c.Config == nil {
-		o.logger.Error("requested OAuth config not set", zap.String("integration", integration))
-		return nil
-	}
-	return c.Config
-}
-
 // GetConfig returns the OAuth 2.0 configuration for the given integration.
 // The connection ID may be nil, but if it's not, this function tries to use private
 // OAuth app settings from the connection's variables instead of the integration's defaults.
