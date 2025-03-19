@@ -21,7 +21,7 @@ func (tokens) Parse(token string) (sdktypes.User, error) {
 func TestCreateToken(t *testing.T) {
 	u := sdktypes.NewUser().WithNewID()
 
-	tok, err := New(nil).CreateToken(authcontext.SetAuthnUser(context.Background(), u))
+	tok, err := New(nil).CreateToken(authcontext.SetAuthnUser(t.Context(), u))
 	assert.ErrorIs(t, err, sdkerrors.ErrNotImplemented)
 	assert.Equal(t, tok, "")
 
@@ -31,11 +31,11 @@ func TestCreateToken(t *testing.T) {
 	assert.ErrorIs(t, err, sdkerrors.ErrUnauthenticated)
 	assert.Equal(t, tok, "")
 
-	tok, err = a.CreateToken(authcontext.SetAuthnSystemUser(context.Background()))
+	tok, err = a.CreateToken(authcontext.SetAuthnSystemUser(t.Context()))
 	assert.ErrorIs(t, err, sdkerrors.ErrUnauthorized)
 	assert.Equal(t, tok, "")
 
-	tok, err = a.CreateToken(authcontext.SetAuthnUser(context.Background(), u))
+	tok, err = a.CreateToken(authcontext.SetAuthnUser(t.Context(), u))
 	if assert.NoError(t, err) {
 		assert.Equal(t, tok, u.ID().String())
 	}

@@ -1,7 +1,6 @@
 package api
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -54,7 +53,7 @@ func TestGet(t *testing.T) {
 
 			slackURL = s.URL
 			got := &httpTestResponse{}
-			err := get(context.TODO(), "", "slack.method", got)
+			err := get(t.Context(), "", "slack.method", got)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("get() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -106,7 +105,7 @@ func TestPost(t *testing.T) {
 
 			slackURL = s.URL
 			got := &httpTestResponse{}
-			err := Post(context.TODO(), "", "slack.method", nil, got)
+			err := Post(t.Context(), "", "slack.method", nil, got)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Post() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -1,7 +1,6 @@
 package temporalclient
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -29,7 +28,7 @@ func TestStartDevServer(t *testing.T) {
 		l:    zaptest.NewLogger(t),
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 	err := c.startDevServer(ctx)
 	require.NoError(t, err)
 	defer func() {

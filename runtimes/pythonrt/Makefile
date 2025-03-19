@@ -30,7 +30,7 @@ run-simple:
 	go run ./testdata/trigger_webhook.go
 
 test-simple: deploy-simple run-simple
-	ak session log --prints-only --no-timestamps
+	ak session prints --no-timestamps
 	sleep 3
 	ak session list -j | jq .state
 

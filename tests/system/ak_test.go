@@ -18,20 +18,14 @@ profiling, and load/stress testing.
 package systest
 
 import (
-	"context"
 	"embed"
 	"fmt"
 	"io/fs"
 	"strings"
 	"testing"
-	"time"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/tests"
-)
-
-const (
-	stopTimeout = 3 * time.Second
 )
 
 //go:embed *
@@ -114,7 +108,7 @@ func setUpTest(t *testing.T, akPath string, cfg map[string]any) string {
 	setFirstUser()
 
 	// Start the AK server.
-	ctx := context.Background()
+	ctx := t.Context()
 	svc, addr, err := startAKServer(t, ctx, akPath, cfg)
 	if err != nil {
 		t.Fatalf("start AK server error: %v", err)
@@ -122,9 +116,7 @@ func setUpTest(t *testing.T, akPath string, cfg map[string]any) string {
 
 	// Eventual cleanup when the test is done.
 	t.Cleanup(func() {
-		ctx, cancel := context.WithTimeout(ctx, stopTimeout)
-		defer cancel()
-		if err := svc.Stop(ctx); err != nil {
+		if err := svc.Stop(t.Context()); err != nil {
 			t.Log(fmt.Errorf("stop AK server: %w", err))
 		}
 	})

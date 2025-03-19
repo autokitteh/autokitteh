@@ -1,7 +1,6 @@
 package opapolicy
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -69,7 +68,7 @@ func TestPassthrough(t *testing.T) {
 
 	for i, tt := range tests {
 		t.Run(fmt.Sprintf("%s_%d", tt.name, i), func(t *testing.T) {
-			v, err := d(context.Background(), "policy/"+tt.name, tt.in)
+			v, err := d(t.Context(), "policy/"+tt.name, tt.in)
 			if assert.NoError(t, err) {
 				assert.Equal(t, tt.expected, v)
 			}

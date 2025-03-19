@@ -1,7 +1,6 @@
 package dbtest
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -17,7 +16,7 @@ func NewTestDB(t *testing.T, objs ...sdktypes.Object) db.DB {
 	tdb, err := dbfactory.New(zaptest.NewLogger(t), &gormkitteh.Config{DSN: "sqlite::memory:" /* not shared! */})
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	require.NoError(t, tdb.Connect(ctx))
 	require.NoError(t, tdb.Setup(ctx))

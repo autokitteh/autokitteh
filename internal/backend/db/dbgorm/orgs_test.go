@@ -1,7 +1,6 @@
 package dbgorm
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -15,7 +14,7 @@ func TestDupOrgName(t *testing.T) {
 	db, err := New(zaptest.NewLogger(t), &Config{})
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	require.NoError(t, db.Connect(ctx))
 	require.NoError(t, db.Setup(ctx))

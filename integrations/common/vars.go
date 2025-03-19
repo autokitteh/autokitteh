@@ -56,9 +56,9 @@ func CheckOAuthToken(vs sdktypes.Vars) (sdktypes.Status, error) {
 	return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using OAuth 2.0"), nil
 }
 
-// CheckLegacyOAuthToken returns a warning status if [LegacyOAuthAccessTokenVar] is missing in [sdktypes.Vars]; otherwise,
-// it returns OK. It depends on [sdktypes.Vars] being preloaded with [LegacyOAuthAccessTokenVar], which isn't validated.
-// This is reused in connection status and test functions of all integrations.
+// CheckLegacyOAuthToken returns a warning status if [LegacyOAuthAccessTokenVar] is
+// missing in [sdktypes.Vars]; otherwise, it returns OK. It depends on [sdktypes.Vars]
+// being preloaded with [LegacyOAuthAccessTokenVar], which isn't validated.
 func CheckLegacyOAuthToken(vs sdktypes.Vars) (sdktypes.Status, error) {
 	if vs.GetValue(LegacyOAuthAccessTokenVar) == "" {
 		return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
