@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"slices"
+	"strings"
 
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
@@ -52,7 +53,35 @@ func (o *OAuth) initConfigs() {
 			},
 		},
 
-		"confluence": {},
+		// https://developer.atlassian.com/cloud/confluence/oauth-2-3lo-apps/
+		"confluence": {
+			Config: &oauth2.Config{
+				ClientID:     os.Getenv("CONFLUENCE_CLIENT_ID"),
+				ClientSecret: os.Getenv("CONFLUENCE_CLIENT_SECRET"),
+				// Special case: the addresses in the endpoint URLs may be
+				// customized even in the default OAuth mode: see [initAtlassianURLs].
+				Scopes: []string{
+					"write:confluence-content",
+					"read:confluence-space.summary", // Needed?
+					"write:confluence-space",
+					"write:confluence-file",
+					"read:confluence-props", // Needed?
+					"write:confluence-props",
+					"manage:confluence-configuration",    // Needed?
+					"read:confluence-content.all",        // Needed?
+					"search:confluence",                  // Needed?
+					"read:confluence-content.permission", // Needed?
+					"read:confluence-user",
+					"read:confluence-groups", // Needed?
+					"write:confluence-groups",
+					"readonly:content.attachment:confluence", // Needed?
+					// User identity API.
+					"read:account",
+					// https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/#use-a-refresh-token-to-get-another-access-token-and-refresh-token-pair
+					"offline_access",
+				},
+			},
+		},
 
 		"discord": {},
 
@@ -76,7 +105,25 @@ func (o *OAuth) initConfigs() {
 
 		"hubspot": {},
 
-		"jira": {},
+		// https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/
+		"jira": {
+			Config: &oauth2.Config{
+				ClientID:     os.Getenv("JIRA_CLIENT_ID"),
+				ClientSecret: os.Getenv("JIRA_CLIENT_SECRET"),
+				// Special case: the addresses in the endpoint URLs may be
+				// customized even in the default OAuth mode: see [initAtlassianURLs].
+				Scopes: []string{
+					"read:jira-work", // Needed?
+					"read:jira-user",
+					"write:jira-work",
+					"manage:jira-webhook",
+					// User identity API.
+					"read:account",
+					// https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/#use-a-refresh-token-to-get-another-access-token-and-refresh-token-pair
+					"offline_access",
+				},
+			},
+		},
 
 		"linear": {},
 
@@ -159,7 +206,9 @@ func (o *OAuth) initConfigs() {
 	o.initRedirectURLs()
 
 	// Optional integration-specific customizations.
-	o.initAtlassianURLs()
+	for _, name := range []string{"confluence", "jira"} {
+		o.initAtlassianURLs(name)
+	}
 	o.initGitHubURLs()
 }
 
@@ -185,8 +234,31 @@ func (o *OAuth) initRedirectURLs() {
 	}
 }
 
-func (o *OAuth) initAtlassianURLs() {
-	// TODO: Implement this function.
+const defaultAtlassianBaseURL = "https://autokitteh.com"
+
+// initAtlassianURLs initializes the endpoint URLs of Confluence and Jira,
+// for on-prem Atlassian servers in both the default and private OAuth modes
+// (see also: https://auth.atlassian.com/.well-known/openid-configuration).
+func (o *OAuth) initAtlassianURLs(name string) {
+	// TODO(ENG-965): From new-connection form instead of env var.
+	baseURL := os.Getenv("ATLASSIAN_BASE_URL")
+	if baseURL == "" {
+		baseURL = "https://api.atlassian.com"
+	}
+
+	var err error
+	baseURL, err = normalizeAddress(baseURL, defaultAtlassianBaseURL)
+	if err != nil {
+		o.logger.Error("invalid Atlassian base URL", zap.Error(err))
+		baseURL = defaultAtlassianBaseURL
+	}
+
+	baseURL = strings.Replace(baseURL, "api", "auth", 1)
+
+	c := o.oauthConfigs[name].Config
+	c.Endpoint.AuthURL = baseURL + "/authorize"
+	c.Endpoint.DeviceAuthURL = baseURL + "/oauth/device/code"
+	c.Endpoint.TokenURL = baseURL + "/oauth/token"
 }
 
 func (o *OAuth) initGitHubURLs() {

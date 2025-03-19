@@ -2,9 +2,11 @@ package oauth
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func TestOAuthNormalizeAddress(t *testing.T) {
+func TestNormalizeAddress(t *testing.T) {
 	tests := []struct {
 		name    string
 		address string
@@ -14,7 +16,7 @@ func TestOAuthNormalizeAddress(t *testing.T) {
 		{
 			name:    "empty",
 			address: "",
-			want:    "https://address-not-configured",
+			want:    defaultPublicBackendBaseURL,
 		},
 		{
 			name:    "address_only",
@@ -44,13 +46,11 @@ func TestOAuthNormalizeAddress(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			o := &OAuth{cfg: &Config{Address: tt.address}}
-			if err := o.normalizeAddress(); (err != nil) != tt.wantErr {
+			got, err := normalizeAddress(tt.address, defaultPublicBackendBaseURL)
+			if (err != nil) != tt.wantErr {
 				t.Errorf("normalizeConfig() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			if o.BaseURL != tt.want {
-				t.Errorf("cfg.Address = %q, want %q", o.BaseURL, tt.want)
-			}
+			assert.Equal(t, got, tt.want)
 		})
 	}
 }

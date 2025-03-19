@@ -13,6 +13,8 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
 
+const defaultPublicBackendBaseURL = "https://address-not-configured"
+
 type Config struct {
 	Address string `koanf:"address"` // Prefix: webhooks
 }
@@ -35,51 +37,53 @@ func New(c *Config, l *zap.Logger, v sdkservices.Vars) *OAuth {
 }
 
 func (o *OAuth) Start(m *muxes.Muxes) error {
-	if err := o.normalizeAddress(); err != nil {
-		return fmt.Errorf("invalid server config: %w", err)
+	// Set the AutoKitteh server's base URL for webhooks.
+	o.BaseURL = o.cfg.Address
+	if o.BaseURL == "" {
+		o.BaseURL = os.Getenv("WEBHOOK_ADDRESS") // Legacy
 	}
 
+	var err error
+	o.BaseURL, err = normalizeAddress(o.BaseURL, defaultPublicBackendBaseURL)
+	if err != nil {
+		return fmt.Errorf("invalid server webhooks config: %w", err)
+	}
+
+	// Initialize all the default OAuth 2.0 configurations.
 	o.initConfigs()
 
+	// Register the server's general-purpose OAuth 2.0 webhooks.
 	if m != nil {
 		m.Auth.HandleFunc("GET /oauth/start/{integration}", o.startOAuthFlow)
 		m.NoAuth.HandleFunc("GET /oauth/redirect/{integration}", o.exchangeCodeToToken)
 	}
+
 	return nil
 }
 
-const defaultPublicBackendBaseURL = "https://address-not-configured"
-
-func (o *OAuth) normalizeAddress() error {
+func normalizeAddress(addr, defaultAddr string) (string, error) {
 	// Construct a URL from the address.
-	a := o.cfg.Address
-	if a == "" {
-		a = os.Getenv("WEBHOOK_ADDRESS") // Legacy
+	if addr == "" {
+		return defaultAddr, nil
 	}
-	if a == "" {
-		o.BaseURL = defaultPublicBackendBaseURL
-		return nil
+	if strings.HasPrefix(addr, "http://") {
+		addr = strings.Replace(addr, "http://", "https://", 1)
 	}
-	if strings.HasPrefix(a, "http://") {
-		a = strings.Replace(a, "http://", "https://", 1)
-	}
-	if !strings.HasPrefix(a, "https://") {
-		a = "https://" + a
+	if !strings.HasPrefix(addr, "https://") {
+		addr = "https://" + addr
 	}
 
 	// Parse and normalize the URL.
-	u, err := url.Parse(a)
+	u, err := url.Parse(addr)
 	if err != nil {
-		return fmt.Errorf("webhooks.address = %q: %w", o.cfg.Address, err)
+		return "", fmt.Errorf("bad address %q: %w", addr, err)
 	}
 	if u.Host == "" {
-		return fmt.Errorf("webhooks.address = %q: missing host", o.cfg.Address)
+		return "", fmt.Errorf("missing host in address %q", addr)
 	}
 	u.Path = ""
 	u.RawQuery = ""
 	u.Fragment = ""
 
-	// Set it as the AutoKitteh server's base URL for webhooks.
-	o.BaseURL = u.String()
-	return nil
+	return u.String(), nil
 }
