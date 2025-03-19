@@ -160,8 +160,16 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 	muxes.Auth.HandleFunc("/whoami", func(w http.ResponseWriter, r *http.Request) {
 		u := authcontext.GetAuthnUser(r.Context())
 		if !u.IsValid() {
+			// enforce logout
+			a.Deps.Sessions.Delete(w)
+
 			fmt.Fprint(w, "You are not logged in")
 			return
+		}
+
+		// renew cookie expiration time
+		if err := a.Deps.Sessions.Set(w, u); err != nil {
+			a.L.Warn("failed renewing session for user: "+u.ID().UUIDValue().String(), zap.Error(err), zap.String("user_id", u.ID().String()))
 		}
 
 		w.Header().Add("Content-Type", "application/json")
@@ -250,7 +258,7 @@ func (a *svc) newSuccessLoginHandler(ctx context.Context, ld *loginData) http.Ha
 	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if err := a.Deps.Sessions.Set(w, authsessions.NewSessionData(uid)); err != nil {
+		if err := a.Deps.Sessions.Set(w, u); err != nil {
 			sl.With("err", err).Errorf("failed storing session: %v", err)
 			http.Error(w, "internal server error", http.StatusInternalServerError)
 			return

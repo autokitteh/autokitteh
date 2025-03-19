@@ -104,7 +104,8 @@ func TestTokensMiddleware(t *testing.T) {
 }
 
 func TestSessionsMiddleware(t *testing.T) {
-	sessions := kittehs.Must1(authsessions.New(authsessions.Configs.Dev))
+	tokens, _ := authjwttokens.New(authjwttokens.Configs.Dev)
+	sessions := kittehs.Must1(authsessions.New(authsessions.Configs.Dev, tokens))
 
 	mw := newSessionsMiddleware(sessions)
 
@@ -115,7 +116,7 @@ func TestSessionsMiddleware(t *testing.T) {
 	}
 
 	w := httptest.NewRecorder()
-	kittehs.Must0(sessions.Set(w, authsessions.NewSessionData(testUser1.ID())))
+	kittehs.Must0(sessions.Set(w, testUser1))
 	cookies := w.Result().Cookies()
 
 	// legit cookies.
@@ -156,9 +157,8 @@ func (u testUsers) Setup(context.Context) error { return nil }
 
 func newTestHarness(t *testing.T, useDefaultUser bool) *harness {
 	h, check := newTestHandler(t, authcontext.GetAuthnUserID)
-
-	sessions := kittehs.Must1(authsessions.New(authsessions.Configs.Dev))
-	tokens := kittehs.Must1(authjwttokens.New(authjwttokens.Configs.Dev))
+	tokens, _ := authjwttokens.New(authjwttokens.Configs.Dev)
+	sessions := kittehs.Must1(authsessions.New(authsessions.Configs.Dev, tokens))
 	users := &sdktest.TestUsers{}
 
 	if useDefaultUser {
@@ -212,7 +212,7 @@ func TestNewWithoutDefaultUser(t *testing.T) {
 
 	// correct token, but no such user.
 	w = httptest.NewRecorder()
-	kittehs.Must0(h.sessions.Set(w, authsessions.NewSessionData(testUser1.ID())))
+	kittehs.Must0(h.sessions.Set(w, testUser1))
 	cookies := w.Result().Cookies()
 
 	w = httptest.NewRecorder()
@@ -313,7 +313,7 @@ func TestNewWithDefaultUser(t *testing.T) {
 
 	// correct session, but no such user.
 	w = httptest.NewRecorder()
-	kittehs.Must0(h.sessions.Set(w, authsessions.NewSessionData(testUser1.ID())))
+	kittehs.Must0(h.sessions.Set(w, testUser1))
 	cookies := w.Result().Cookies()
 
 	w = httptest.NewRecorder()

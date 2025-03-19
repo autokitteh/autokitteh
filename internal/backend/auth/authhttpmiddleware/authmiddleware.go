@@ -67,10 +67,10 @@ func newTokensMiddleware(tokens authtokens.Tokens) middlewareFn {
 
 func newSessionsMiddleware(sessions authsessions.Store) middlewareFn {
 	return func(r *http.Request) (sdktypes.UserID, *middlewareError) {
-		session, err := sessions.Get(r)
+		user, err := sessions.Get(r)
 		// Do not fail on error - graceful degradation in case of session structure changes.
-		if err == nil && session != nil {
-			return session.UserID, nil
+		if err == nil && user.IsValid() {
+			return user.ID(), nil
 		}
 
 		return sdktypes.InvalidUserID, nil
