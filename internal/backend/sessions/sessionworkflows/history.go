@@ -263,24 +263,6 @@ func parseTemporalHistoryEvent(l *zap.Logger, t time.Time, event *historypb.Hist
 
 			return sdktypes.NewStateSessionLogRecord(t, state), nil
 
-		case addSessionPrintActivityName:
-			if types != 0 && types&sdktypes.PrintSessionLogRecordType == 0 {
-				return sdktypes.InvalidSessionLogRecord, nil
-			}
-
-			payloads := attrs.Input.GetPayloads()
-			if len(payloads) != 3 {
-				l.Error("unexpected number of payloads for activity task print event", zap.Int("payloads", len(payloads)))
-				return sdktypes.InvalidSessionLogRecord, nil
-			}
-
-			var v sdktypes.Value
-			if err := dc.FromPayload(payloads[1], &v); err != nil {
-				return sdktypes.InvalidSessionLogRecord, temporalclient.TranslateError(err, "unmarshal print text")
-			}
-
-			return sdktypes.NewPrintSessionLogRecord(t, v, 0), nil
-
 		default:
 			return sdktypes.InvalidSessionLogRecord, nil
 		}
