@@ -83,9 +83,15 @@ func (o *OAuth) initConfigs() {
 			},
 		},
 
-		"discord": {},
-
-		"github": {},
+		// https://docs.github.com/en/apps/using-github-apps/about-using-github-apps
+		"github": {
+			Config: &oauth2.Config{
+				ClientID:     os.Getenv("GITHUB_CLIENT_ID"),
+				ClientSecret: os.Getenv("GITHUB_CLIENT_SECRET"),
+				// Special case: the addresses in the endpoint URLs may be
+				// customized even in the default OAuth mode: see [initGitHubURLs].
+			},
+		},
 
 		"gmail": {},
 
@@ -206,9 +212,7 @@ func (o *OAuth) initConfigs() {
 	o.initRedirectURLs()
 
 	// Optional integration-specific customizations.
-	for _, name := range []string{"confluence", "jira"} {
-		o.initAtlassianURLs(name)
-	}
+	o.initAtlassianURLs()
 	o.initGitHubURLs()
 }
 
@@ -234,35 +238,68 @@ func (o *OAuth) initRedirectURLs() {
 	}
 }
 
-const defaultAtlassianBaseURL = "https://autokitteh.com"
+const defaultAtlassianBaseURL = "https://api.atlassian.com"
 
-// initAtlassianURLs initializes the endpoint URLs of Confluence and Jira,
-// for on-prem Atlassian servers in both the default and private OAuth modes
+// initAtlassianURLs initializes the endpoint URLs of Confluence and
+// Jira, to support on-prem Atlassian servers in the default OAuth mode
 // (see also: https://auth.atlassian.com/.well-known/openid-configuration).
-func (o *OAuth) initAtlassianURLs(name string) {
-	// TODO(ENG-965): From new-connection form instead of env var.
+func (o *OAuth) initAtlassianURLs() {
 	baseURL := os.Getenv("ATLASSIAN_BASE_URL")
-	if baseURL == "" {
-		baseURL = "https://api.atlassian.com"
-	}
 
 	var err error
 	baseURL, err = normalizeAddress(baseURL, defaultAtlassianBaseURL)
 	if err != nil {
 		o.logger.Error("invalid Atlassian base URL", zap.Error(err))
-		baseURL = defaultAtlassianBaseURL
+		baseURL = defaultPublicBackendBaseURL
 	}
 
 	baseURL = strings.Replace(baseURL, "api", "auth", 1)
 
-	c := o.oauthConfigs[name].Config
-	c.Endpoint.AuthURL = baseURL + "/authorize"
-	c.Endpoint.DeviceAuthURL = baseURL + "/oauth/device/code"
-	c.Endpoint.TokenURL = baseURL + "/oauth/token"
+	for _, name := range []string{"confluence", "jira"} {
+		c := o.oauthConfigs[name].Config
+		c.Endpoint.AuthURL = baseURL + "/authorize"
+		c.Endpoint.DeviceAuthURL = baseURL + "/oauth/device/code"
+		c.Endpoint.TokenURL = baseURL + "/oauth/token"
+	}
 }
 
+const (
+	defaultGitHubAppName = "unknown-app-name"
+	defaultGitHubBaseURL = "https://github.com"
+)
+
+// initGitHubURLs initializes GitHub's endpoint URLs, to support GitHub Enterprise
+// Server (GHES, i.e. on-prem) in the default OAuth mode. See also [privatizeGitHub].
 func (o *OAuth) initGitHubURLs() {
-	// TODO: Implement this function.
+	baseURL := os.Getenv("GITHUB_ENTERPRISE_URL")
+
+	appsDir := "apps" // github.com
+	if baseURL != "" {
+		appsDir = "github-apps" // GHES
+	}
+
+	appName := os.Getenv("GITHUB_APP_NAME")
+	if appName == "" {
+		appName = defaultGitHubAppName
+	}
+
+	var err error
+	baseURL, err = normalizeAddress(baseURL, defaultGitHubBaseURL)
+	if err != nil {
+		o.logger.Error("invalid GitHub base URL", zap.Error(err))
+		baseURL = defaultPublicBackendBaseURL
+	}
+
+	c := o.oauthConfigs["github"].Config
+	// https://docs.github.com/en/apps/using-github-apps/installing-a-github-app-from-a-third-party#installing-a-github-app
+	c.Endpoint.AuthURL = fmt.Sprintf("%s/%s/%s/installations/new", baseURL, appsDir, appName)
+	// https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#device-flow
+	c.Endpoint.DeviceAuthURL = baseURL + "/login/device/code"
+	// https://docs.github.com/en/enterprise-server/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#2-users-are-redirected-back-to-your-site-by-github
+	// https://docs.github.com/en/enterprise-server/apps/sharing-github-apps/making-your-github-app-available-for-github-enterprise-server#the-app-code-must-use-the-correct-urls
+	c.Endpoint.TokenURL = baseURL + "/login/oauth/access_token"
+	// https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/authorizing-oauth-apps#3-use-the-access-token-to-access-the-api
+	c.Endpoint.AuthStyle = oauth2.AuthStyleInHeader
 }
 
 // GetConfig returns the OAuth 2.0 configuration for the given integration.
@@ -300,16 +337,15 @@ func (o *OAuth) GetConfig(ctx context.Context, integration string, cid sdktypes.
 	// variables, so ensure we no longer reference the server's default.
 	cfg = deepCopy(cfg)
 
+	privatizeClient(vs, &cfg)
+
 	switch integration {
 	case "auth0":
 		fixAuth0(vs, &cfg)
 	case "github":
 		privatizeGitHub(vs, &cfg)
 	case "microsoft", "microsoft_teams":
-		privatize(vs, &cfg)
 		privatizeMicrosoft(vs, &cfg)
-	default:
-		privatize(vs, &cfg)
 	}
 
 	return cfg.Config, cfg.Opts, nil
@@ -337,12 +373,21 @@ func deepCopy(c oauthConfig) oauthConfig {
 	}
 }
 
+func privatizeClient(vs sdktypes.Vars, c *oauthConfig) {
+	c.Config.ClientID = vs.GetValue(common.PrivateClientIDVar)
+	if c.Config.ClientID == "" {
+		c.Config.ClientID = vs.GetValueByString("client_id") // Deprecate this.
+	}
+
+	c.Config.ClientSecret = vs.GetValue(common.PrivateClientSecretVar)
+	if c.Config.ClientSecret == "" {
+		c.Config.ClientSecret = vs.GetValueByString("client_secret") // Deprecate this.
+	}
+}
+
 // fixAuth0 needs to run even when the connection is using the AutoKitteh server's
 // default OAuth app, not just a private one like the [privatize] function.
 func fixAuth0(vs sdktypes.Vars, c *oauthConfig) {
-	c.Config.ClientID = vs.GetValue(auth0.ClientIDVar)
-	c.Config.ClientSecret = vs.GetValue(auth0.ClientSecretVar)
-
 	domain := vs.GetValue(auth0.DomainVar)
 	c.Config.Endpoint.AuthURL = fmt.Sprintf("https://%s/oauth/authorize", domain)
 	c.Config.Endpoint.DeviceAuthURL = fmt.Sprintf("https://%s/oauth/device/code", domain)
@@ -351,13 +396,18 @@ func fixAuth0(vs sdktypes.Vars, c *oauthConfig) {
 	c.Opts["audience"] = fmt.Sprintf("https://%s/api/v2/", domain)
 }
 
-func privatize(vs sdktypes.Vars, c *oauthConfig) {
-	c.Config.ClientID = vs.GetValue(common.PrivateClientIDVar)
-	c.Config.ClientSecret = vs.GetValue(common.PrivateClientSecretVar)
-}
-
+// TODO(INT-349): Support GHES in private OAuth mode too.
 func privatizeGitHub(vs sdktypes.Vars, c *oauthConfig) {
-	// TODO: Implement this function.
+	defaultAppName := os.Getenv("GITHUB_APP_NAME")
+	if defaultAppName == "" {
+		defaultAppName = defaultGitHubAppName
+	}
+	defaultAppName = fmt.Sprintf("/%s/", defaultAppName)
+
+	authURL := c.Config.Endpoint.AuthURL
+	// TODO: Make GitHub var symbols non-internal, and reuse here.
+	privateAppName := fmt.Sprintf("/%s/", vs.GetValueByString("app_name"))
+	c.Config.Endpoint.AuthURL = strings.Replace(authURL, defaultAppName, privateAppName, 1)
 }
 
 func privatizeMicrosoft(vs sdktypes.Vars, c *oauthConfig) {
