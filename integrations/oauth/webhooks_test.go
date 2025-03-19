@@ -63,7 +63,7 @@ func TestGuessFrontendURL(t *testing.T) {
 			want:    "https://app.autokitteh.cloud",
 		},
 		{
-			name:    "mutli_tenant_cloud",
+			name:    "multi_tenant_cloud",
 			baseURL: "https://api.autokitteh.cloud",
 			want:    "https://app.autokitteh.cloud",
 		},
