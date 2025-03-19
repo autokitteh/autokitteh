@@ -1,4 +1,5 @@
-error: cannot pickle result - cannot pickle '_thread.lock' object
+start
+error: cannot pickle result - cannot pickle 'generator' object
 
 =======================================================================================================
 The below error means you need to use the @autokitteh.activity decorator.
@@ -6,12 +7,17 @@ See https://docs.autokitteh.com/develop/python/#function-arguments-and-return-va
 for more details.
 =======================================================================================================
 -- main.py:main --
-from threading import Lock
+import autokitteh
 
 def main(event):
-    lock = Lock()
-    with lock:
-        print('locked')
-    print('unlocked')
+    print('start')
+    for n in values():
+        print(n)
+    print('done')
+
+
+@autokitteh.activity
+def values():
+    return (n for n in range(3))
 
 # This should fail, which is OK since you can't pickle Lock objects
