@@ -16,8 +16,7 @@ type fakeVarsService struct {
 
 var _ sdkservices.Vars = &fakeVarsService{}
 
-// TODO(INT-227): rename back to "newFakeVars" when #1151 is merged.
-func NewFakeVars() *fakeVarsService {
+func newFakeVars() *fakeVarsService {
 	return &fakeVarsService{
 		data: make(map[sdktypes.VarScopeID]map[sdktypes.Symbol]sdktypes.Var),
 	}

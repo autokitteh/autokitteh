@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"regexp"
 	"strconv"
 	"time"
 
@@ -15,6 +14,7 @@ import (
 	"golang.org/x/oauth2"
 
 	"go.autokitteh.dev/autokitteh/integrations/atlassian/jira"
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -199,11 +199,8 @@ func (cr *Cron) deleteInvalidWatchID(ctx context.Context, cid sdktypes.Connectio
 }
 
 func parseTimeSafely(s string) time.Time {
-	// Remove unnecessary suffixes, e.g. "PST m=+3759.281638293".
-	s = regexp.MustCompile(`\s+[A-Z].*`).ReplaceAllString(s, "")
-
 	// Go time format.
-	if t, err := time.Parse("2006-01-02 15:04:05.999999999 -0700", s); err == nil {
+	if t, err := common.ParseGoTimestamp(s); err == nil {
 		return t
 	}
 
