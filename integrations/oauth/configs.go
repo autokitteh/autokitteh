@@ -11,6 +11,15 @@ import (
 
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
+	"golang.org/x/oauth2/microsoft"
+	"google.golang.org/api/calendar/v3"
+	"google.golang.org/api/chat/v1"
+	"google.golang.org/api/drive/v3"
+	"google.golang.org/api/forms/v1"
+	"google.golang.org/api/gmail/v1"
+	googleoauth2 "google.golang.org/api/oauth2/v2"
+	"google.golang.org/api/sheets/v4"
 
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/auth0"
@@ -93,19 +102,113 @@ func (o *OAuth) initConfigs() {
 			},
 		},
 
-		"gmail": {},
+		// https://developers.google.com/gmail/api/auth/scopes
+		"gmail": {
+			Config: googleConfig([]string{
+				// Non-sensitive.
+				googleoauth2.OpenIDScope,
+				googleoauth2.UserinfoEmailScope,
+				googleoauth2.UserinfoProfileScope,
+				// Restricted.
+				gmail.GmailModifyScope,
+				gmail.GmailSettingsBasicScope,
+			}),
+			Opts: offlineOpts(),
+		},
 
-		"google": {},
+		"google": {
+			Config: googleConfig([]string{
+				// Non-sensitive.
+				googleoauth2.OpenIDScope,
+				googleoauth2.UserinfoEmailScope,
+				googleoauth2.UserinfoProfileScope,
+				drive.DriveFileScope, // See ENG-1701
+				// Sensitive.
+				calendar.CalendarScope,
+				calendar.CalendarEventsScope,
+				chat.ChatMembershipsScope,
+				chat.ChatMessagesScope,
+				chat.ChatSpacesScope,
+				forms.FormsBodyScope,
+				forms.FormsResponsesReadonlyScope,
+				sheets.SpreadsheetsScope,
+				// Restricted.
+				// drive.DriveScope, // See ENG-1701
+				gmail.GmailModifyScope,
+				gmail.GmailSettingsBasicScope,
+			}),
+			Opts: offlineOpts(),
+		},
 
-		"googlecalendar": {},
+		// https://developers.google.com/calendar/api/auth
+		"googlecalendar": {
+			Config: googleConfig([]string{
+				// Non-sensitive.
+				googleoauth2.OpenIDScope,
+				googleoauth2.UserinfoEmailScope,
+				googleoauth2.UserinfoProfileScope,
+				// Sensitive.
+				calendar.CalendarScope,
+				calendar.CalendarEventsScope,
+			}),
+			Opts: offlineOpts(),
+		},
 
-		"googlechat": {},
+		// https://developers.google.com/chat/api/guides/auth#chat-api-scopes
+		"googlechat": {
+			Config: googleConfig([]string{
+				// Non-sensitive.
+				googleoauth2.OpenIDScope,
+				googleoauth2.UserinfoEmailScope,
+				googleoauth2.UserinfoProfileScope,
+				// Sensitive.
+				chat.ChatMembershipsScope,
+				chat.ChatMessagesScope,
+				chat.ChatSpacesScope,
+			}),
+			Opts: offlineOpts(),
+		},
 
-		"googledrive": {},
+		// https://developers.google.com/drive/api/guides/api-specific-auth
+		"googledrive": {
+			Config: googleConfig([]string{
+				// Non-sensitive.
+				googleoauth2.OpenIDScope,
+				googleoauth2.UserinfoEmailScope,
+				googleoauth2.UserinfoProfileScope,
+				drive.DriveFileScope, // See ENG-1701
+				// Restricted.
+				// drive.DriveScope, // See ENG-1701
+			}),
+			Opts: offlineOpts(),
+		},
 
-		"googleforms": {},
+		// https://developers.google.com/identity/protocols/oauth2/scopes#script
+		"googleforms": {
+			Config: googleConfig([]string{
+				// Non-sensitive.
+				googleoauth2.OpenIDScope,
+				googleoauth2.UserinfoEmailScope,
+				googleoauth2.UserinfoProfileScope,
+				// Sensitive.
+				forms.FormsBodyScope,
+				forms.FormsResponsesReadonlyScope,
+			}),
+			Opts: offlineOpts(),
+		},
 
-		"googlesheets": {},
+		// https://developers.google.com/sheets/api/scopes
+		"googlesheets": {
+			Config: googleConfig([]string{
+				// Non-sensitive.
+				googleoauth2.OpenIDScope,
+				googleoauth2.UserinfoEmailScope,
+				googleoauth2.UserinfoProfileScope,
+				// Sensitive.
+				sheets.SpreadsheetsScope,
+			}),
+			Opts: offlineOpts(),
+		},
 
 		// https://height.notion.site/OAuth-Apps-on-Height-a8ebeab3f3f047e3857bd8ce60c2f640
 		"height": {
@@ -179,9 +282,56 @@ func (o *OAuth) initConfigs() {
 			},
 		},
 
-		"microsoft": {},
+		// https://learn.microsoft.com/en-us/entra/identity-platform/v2-app-types
+		"microsoft": {
+			Config: microsoftConfig([]string{
+				// Teams.
+				"Channel.Create",
+				"Channel.Delete.All",
+				// "ChannelMember.ReadWrite.All", // Application-only.
+				"ChannelMessage.Read.All",
+				"ChannelMessage.ReadWrite", // Delegated-only.
+				"ChannelMessage.Send",      // Delegated-only.
+				"ChannelSettings.ReadWrite.All",
+				"Chat.Create",
+				"Chat.ManageDeletion.All",
+				"Chat.ReadWrite.All",
+				"ChatMember.ReadWrite", // Delegated-only.
+				// "ChatMember.ReadWrite.All", // App-only, alternative: WhereInstalled.
+				// "Group.ReadWrite.All", // Special: allow apps to update messages.
+				// "Organization.Read.All", // Optional, for daemon apps to get org info.
+				"Team.ReadBasic.All",
+				"TeamMember.ReadWrite.All",
+				// TODO: TeamsAppInstallation.ReadForXXX? TeamsTab?
+				// "Teamwork.Migrate.All", // Application-only.
+			}),
+			Opts: offlineOpts(),
+		},
 
-		"microsoft_teams": {},
+		// https://learn.microsoft.com/en-us/entra/identity-platform/v2-app-types
+		"microsoft_teams": {
+			Config: microsoftConfig([]string{
+				"Channel.Create",
+				"Channel.Delete.All",
+				// "ChannelMember.ReadWrite.All", // Application-only.
+				"ChannelMessage.Read.All",
+				"ChannelMessage.ReadWrite", // Delegated-only.
+				"ChannelMessage.Send",      // Delegated-only.
+				"ChannelSettings.ReadWrite.All",
+				"Chat.Create",
+				"Chat.ManageDeletion.All",
+				"Chat.ReadWrite.All",
+				"ChatMember.ReadWrite", // Delegated-only.
+				// "ChatMember.ReadWrite.All", // App-only, alternative: WhereInstalled.
+				// "Group.ReadWrite.All", // Special: allow apps to update messages.
+				// "Organization.Read.All", // Optional, for daemon apps to get org info.
+				"Team.ReadBasic.All",
+				"TeamMember.ReadWrite.All",
+				// TODO: TeamsAppInstallation.ReadForXXX? TeamsTab?
+				// "Teamwork.Migrate.All", // Application-only.
+			}),
+			Opts: offlineOpts(),
+		},
 
 		// https://help.salesforce.com/s/articleView?id=xcloud.remoteaccess_oauth_web_server_flow.htm
 		"salesforce": {
@@ -262,10 +412,51 @@ func (o *OAuth) initConfigs() {
 	o.initGitHubURLs()
 }
 
+func googleConfig(scopes []string) *oauth2.Config {
+	return &oauth2.Config{
+		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
+		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
+		Endpoint:     google.Endpoint,
+		Scopes:       scopes,
+	}
+}
+
+// https://learn.microsoft.com/en-us/graph/permissions-overview
+// https://learn.microsoft.com/en-us/graph/permissions-reference
+func microsoftConfig(scopes []string) *oauth2.Config {
+	scopes = append(scopes,
+		// Non-sensitive delegated-only permissions:
+		// https://learn.microsoft.com/en-us/entra/identity-platform/scopes-oidc#openid-connect-scopes
+		"email", "offline_access", "openid", "profile",
+		"User.Read",
+
+		// Admin consent required, but important for many operations.
+		"User.ReadBasic.All",
+	)
+	return &oauth2.Config{
+		ClientID:     os.Getenv("MICROSOFT_CLIENT_ID"),
+		ClientSecret: os.Getenv("MICROSOFT_CLIENT_SECRET"),
+		// TODO(INT-202): Update MS endpoints ("common" --> tenant ID).
+		Endpoint: microsoft.AzureADEndpoint("common"),
+		Scopes:   scopes,
+	}
+}
+
+func offlineOpts() map[string]string {
+	return map[string]string{
+		"access_type": "offline", // oauth2.AccessTypeOffline
+	}
+}
+
 func (o *OAuth) initRedirectURLs() {
 	for k, v := range o.oauthConfigs {
 		if v.Config == nil {
 			continue
+		}
+
+		// Special case: Microsoft integrations all use "microsoft".
+		if strings.HasPrefix(k, "microsoft") {
+			k = "microsoft"
 		}
 
 		// The redirect URL should be based on the AutoKitteh
