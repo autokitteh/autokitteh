@@ -28,9 +28,19 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+// internalFlags is a central place to define flags for special integration-specific
+// handling in this package. These flags are set in [initConfigs] and
+// checked with [flags], but never exposed outside this package.
+type internalFlags struct {
+	customizeDefaultEndpoint bool // Auth0 (used in this file)
+	expiryMissingInToken     bool // Salesforce (used in token.go)
+	useJWTsNotOAuth          bool // GitHub (used in webhooks.go)
+}
+
 type oauthConfig struct {
 	Config *oauth2.Config
 	Opts   map[string]string
+	flags  internalFlags
 }
 
 // initConfigs initializes the AutoKitteh server's default OAuth 2.0 configurations
@@ -59,6 +69,9 @@ func (o *OAuth) initConfigs() {
 			Opts: map[string]string{
 				// https://auth0.com/docs/get-started/applications/application-grant-types
 				"grant_type": "client_credentials",
+			},
+			flags: internalFlags{
+				customizeDefaultEndpoint: true,
 			},
 		},
 
@@ -99,6 +112,9 @@ func (o *OAuth) initConfigs() {
 				ClientSecret: os.Getenv("GITHUB_CLIENT_SECRET"),
 				// Special case: the addresses in the endpoint URLs may be
 				// customized even in the default OAuth mode: see [initGitHubURLs].
+			},
+			flags: internalFlags{
+				useJWTsNotOAuth: true,
 			},
 		},
 
@@ -345,6 +361,9 @@ func (o *OAuth) initConfigs() {
 				// https://help.salesforce.com/s/articleView?id=xcloud.remoteaccess_oauth_tokens_scopes.htm
 				Scopes: []string{"api", "refresh_token"},
 			},
+			flags: internalFlags{
+				expiryMissingInToken: true,
+			},
 		},
 
 		// https://api.slack.com/authentication/oauth-v2
@@ -539,6 +558,10 @@ func (o *OAuth) initGitHubURLs() {
 	c.Endpoint.AuthStyle = oauth2.AuthStyleInHeader
 }
 
+func (o *OAuth) flags(integration string) internalFlags {
+	return o.oauthConfigs[integration].flags
+}
+
 // GetConfig returns the OAuth 2.0 configuration for the given integration.
 // The connection ID may be nil, but if it's not, this function tries to use private
 // OAuth app settings from the connection's variables instead of the integration's defaults.
@@ -565,8 +588,8 @@ func (o *OAuth) GetConfig(ctx context.Context, integration string, cid sdktypes.
 	}
 
 	// The connection doesn't use private OAuth - return the default configuration.
-	// Special exception: Auth0 requires manipulation even in the default OAuth mode.
-	if integration != "auth0" && common.ReadAuthType(vs) != integrations.OAuthPrivate {
+	// Special case: Auth0 requires manipulation even in the default OAuth mode.
+	if !o.flags(integration).customizeDefaultEndpoint && common.ReadAuthType(vs) != integrations.OAuthPrivate {
 		return cfg.Config, cfg.Opts, nil
 	}
 

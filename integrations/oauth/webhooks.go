@@ -137,7 +137,7 @@ func (o *OAuth) exchangeCodeToToken(w http.ResponseWriter, r *http.Request) {
 
 	// Special case: we already have what we need to generate JWTs for GitHub connections
 	// (i.e. the GitHub app's installation ID), no need to exchange the OAuth code.
-	if integ == "github" {
+	if o.flags(integ).useJWTsNotOAuth {
 		l = l.With(
 			zap.String("github_setup_action", r.FormValue("setup_action")),
 			zap.String("github_installation_id", r.FormValue("installation_id")),
