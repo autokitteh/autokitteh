@@ -100,6 +100,35 @@ func TestGetConfig(t *testing.T) {
 	}
 }
 
+func TestDefaultGHESGitHubURLs(t *testing.T) {
+	t.Setenv("GITHUB_APP_NAME", "app-name")
+	t.Setenv("GITHUB_CLIENT_ID", "id")
+	t.Setenv("GITHUB_CLIENT_SECRET", "secret")
+	t.Setenv("GITHUB_ENTERPRISE_URL", "https://github.test.com")
+
+	v := newFakeVars()
+	ctx := t.Context()
+	cid := sdktypes.NewConnectionID()
+	vsid := sdktypes.NewVarScopeID(cid)
+	require.NoError(t, v.Set(ctx,
+		sdktypes.NewVar(common.AuthTypeVar).SetValue(integrations.OAuthDefault).WithScopeID(vsid),
+	))
+
+	o := &OAuth{cfg: &Config{Address: "example.com"}, vars: v}
+	require.NoError(t, o.Start(nil))
+
+	cfg, _, err := o.GetConfig(ctx, "github", cid)
+	require.NoError(t, err)
+
+	assert.Equal(t, "id", cfg.ClientID)
+	assert.Equal(t, "secret", cfg.ClientSecret)
+	assert.Equal(t, "https://example.com/oauth/redirect/github", cfg.RedirectURL)
+
+	assert.Equal(t, "https://github.test.com/github-apps/app-name/installations/new", cfg.Endpoint.AuthURL)
+	assert.Equal(t, "https://github.test.com/login/device/code", cfg.Endpoint.DeviceAuthURL)
+	assert.Equal(t, "https://github.test.com/login/oauth/access_token", cfg.Endpoint.TokenURL)
+}
+
 func TestDeepCopy(t *testing.T) {
 	o := &OAuth{cfg: &Config{}}
 	require.NoError(t, o.Start(nil))
@@ -126,34 +155,6 @@ func TestDeepCopy(t *testing.T) {
 	assert.NotEqual(t, orig.Config.RedirectURL, copy.Config.RedirectURL)
 	assert.NotEqual(t, orig.Config.Scopes, copy.Config.Scopes)
 	assert.NotContains(t, orig.Opts, "new_key")
-}
-
-func TestFixAuth0(t *testing.T) {
-	v := newFakeVars()
-	ctx := t.Context()
-	cid := sdktypes.NewConnectionID()
-	vsid := sdktypes.NewVarScopeID(cid)
-	require.NoError(t, v.Set(ctx,
-		sdktypes.NewVar(auth0.ClientIDVar).SetValue("id").WithScopeID(vsid),
-		sdktypes.NewVar(auth0.ClientSecretVar).SetValue("secret").WithScopeID(vsid),
-		sdktypes.NewVar(auth0.DomainVar).SetValue("domain").WithScopeID(vsid),
-	))
-
-	o := &OAuth{cfg: &Config{Address: "example.com"}, vars: v}
-	require.NoError(t, o.Start(nil))
-
-	cfg, opts, err := o.GetConfig(ctx, "auth0", cid)
-	require.NoError(t, err)
-
-	assert.Equal(t, "id", cfg.ClientID)
-	assert.Equal(t, "secret", cfg.ClientSecret)
-	assert.Equal(t, "https://example.com/oauth/redirect/auth0", cfg.RedirectURL)
-
-	assert.Contains(t, cfg.Endpoint.AuthURL, "https://domain/")
-	assert.Contains(t, cfg.Endpoint.DeviceAuthURL, "https://domain/")
-	assert.Contains(t, cfg.Endpoint.TokenURL, "https://domain/")
-	assert.Contains(t, opts, "audience")
-	assert.Contains(t, opts["audience"], "https://domain/")
 }
 
 func TestPrivatize(t *testing.T) {
@@ -202,4 +203,59 @@ func TestPrivatize(t *testing.T) {
 			assert.Equal(t, "https://example.com/oauth/redirect/slack", cfg.RedirectURL)
 		})
 	}
+}
+
+func TestFixAuth0(t *testing.T) {
+	v := newFakeVars()
+	ctx := t.Context()
+	cid := sdktypes.NewConnectionID()
+	vsid := sdktypes.NewVarScopeID(cid)
+	require.NoError(t, v.Set(ctx,
+		sdktypes.NewVar(auth0.ClientIDVar).SetValue("id").WithScopeID(vsid),
+		sdktypes.NewVar(auth0.ClientSecretVar).SetValue("secret").WithScopeID(vsid),
+		sdktypes.NewVar(auth0.DomainVar).SetValue("domain").WithScopeID(vsid),
+	))
+
+	o := &OAuth{cfg: &Config{Address: "example.com"}, vars: v}
+	require.NoError(t, o.Start(nil))
+
+	cfg, opts, err := o.GetConfig(ctx, "auth0", cid)
+	require.NoError(t, err)
+
+	assert.Equal(t, "id", cfg.ClientID)
+	assert.Equal(t, "secret", cfg.ClientSecret)
+	assert.Equal(t, "https://example.com/oauth/redirect/auth0", cfg.RedirectURL)
+
+	assert.Contains(t, cfg.Endpoint.AuthURL, "https://domain/")
+	assert.Contains(t, cfg.Endpoint.DeviceAuthURL, "https://domain/")
+	assert.Contains(t, cfg.Endpoint.TokenURL, "https://domain/")
+	assert.Contains(t, opts, "audience")
+	assert.Contains(t, opts["audience"], "https://domain/")
+}
+
+func TestPrivatizeGitHub(t *testing.T) {
+	v := newFakeVars()
+	ctx := t.Context()
+	cid := sdktypes.NewConnectionID()
+	vsid := sdktypes.NewVarScopeID(cid)
+	require.NoError(t, v.Set(ctx,
+		sdktypes.NewVar(common.AuthTypeVar).SetValue(integrations.OAuthPrivate).WithScopeID(vsid),
+		sdktypes.NewVar(common.PrivateClientIDVar).SetValue("id").WithScopeID(vsid),
+		sdktypes.NewVar(common.PrivateClientSecretVar).SetValue("secret").WithScopeID(vsid),
+		sdktypes.NewVar(sdktypes.NewSymbol("app_name")).SetValue("app-name").WithScopeID(vsid),
+	))
+
+	o := &OAuth{cfg: &Config{Address: "example.com"}, vars: v}
+	require.NoError(t, o.Start(nil))
+
+	cfg, _, err := o.GetConfig(ctx, "github", cid)
+	require.NoError(t, err)
+
+	assert.Equal(t, "id", cfg.ClientID)
+	assert.Equal(t, "secret", cfg.ClientSecret)
+	assert.Equal(t, "https://example.com/oauth/redirect/github", cfg.RedirectURL)
+
+	assert.Equal(t, "https://github.com/apps/app-name/installations/new", cfg.Endpoint.AuthURL)
+	assert.Equal(t, "https://github.com/login/device/code", cfg.Endpoint.DeviceAuthURL)
+	assert.Equal(t, "https://github.com/login/oauth/access_token", cfg.Endpoint.TokenURL)
 }
