@@ -83,6 +83,11 @@ func New(c *Config, l *zap.Logger, t temporalclient.Client) *Cron {
 }
 
 func (cr *Cron) Start(ctx context.Context, c sdkservices.Connections, v sdkservices.Vars, o *oauth.OAuth) error {
+	if !cr.cfg.Enabled {
+		cr.logger.Info("internal maintenance cron is disabled")
+		return nil
+	}
+
 	cr.connections = c
 	cr.vars = v
 	cr.oauth = o
