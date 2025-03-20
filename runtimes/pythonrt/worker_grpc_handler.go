@@ -313,7 +313,7 @@ func (s *workerGRPCHandler) Subscribe(ctx context.Context, req *userCode.Subscri
 	}
 
 	if resp.err != nil {
-		err = status.Errorf(codes.Internal, "subscribe(%s, %s) -> %s", req.Connection, req.Filter, err)
+		err = status.Errorf(codes.Internal, "subscribe(%s, %s) -> %s", req.Connection, req.Filter, resp.err)
 		return &userCode.SubscribeResponse{Error: err.Error()}, nil
 	}
 
