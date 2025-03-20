@@ -426,7 +426,6 @@ func (s *workerGRPCHandler) RefreshOAuthToken(ctx context.Context, req *userCode
 	}
 
 	// Get the integration's OAuth configuration.
-	// TODO(INT-46): pass vars service instead of nil.
 	// TODO(INT-46): pass new OAuth service instead of constructing with nil params.
 	o := oauth.New(nil, runner.log, nil)
 	cfg, _, err := o.GetConfig(ctx, req.Integration, sdktypes.InvalidConnectionID)
