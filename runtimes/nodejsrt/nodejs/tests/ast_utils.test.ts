@@ -235,3 +235,109 @@ test('should not patch calls to native objects', async () => {
     const patch = await patchCode(code)
     expect(patch).toEqual(expected);
 })
+
+test('should handle locally declared function calls', async () => {
+    const code = `
+    async function helper() {
+        return "helper result";
+    }
+    
+    async function main() {
+        return await helper();
+    }
+    `;
+
+    const expected = `async function helper() {
+  return "helper result";
+}
+async function main() {
+  return await helper();
+}`; // Should NOT wrap local function calls
+    const patch = await patchCode(code);
+    expect(patch).toEqual(expected);
+});
+
+test('should handle objects created from local constructors', async () => {
+    const code = `
+    class LocalService {
+        async getData() {
+            return "data";
+        }
+    }
+    
+    async function main() {
+        const service = new LocalService();
+        return await service.getData();
+    }
+    `;
+
+    const expected = `class LocalService {
+  async getData() {
+    return "data";
+  }
+}
+async function main() {
+  const service = new LocalService();
+  return await service.getData();
+}`; // Should NOT wrap methods on local class instances
+    const patch = await patchCode(code);
+    expect(patch).toEqual(expected);
+});
+
+test('should handle objects created from imported constructors', async () => {
+    const code = `
+    import { ExternalService } from "external-package";
+    import { LocalService } from "./local-service";
+    
+    async function main() {
+        const externalService = new ExternalService();
+        const localService = new LocalService();
+        
+        const externalResult = await externalService.getData();
+        const localResult = await localService.getData();
+        
+        return { externalResult, localResult };
+    }
+    `;
+
+    const expected = `import { ExternalService } from "external-package";
+import { LocalService } from "./local-service";
+async function main() {
+  const externalService = new ExternalService();
+  const localService = new LocalService();
+  const externalResult = await (global as any).ak_call(externalService, "getData");
+  const localResult = await localService.getData();
+  return {
+    externalResult,
+    localResult
+  };
+}`; // Should wrap external but not local service
+    const patch = await patchCode(code);
+    expect(patch).toEqual(expected);
+});
+
+test('should handle nested member expressions', async () => {
+    const code = `
+    import { client } from "external-api";
+    import { localClient } from "./local-client";
+    
+    async function main() {
+        const externalResult = await client.api.methods.call();
+        const localResult = await localClient.api.methods.call();
+        return { externalResult, localResult };
+    }
+    `;
+
+    const expected = `import { client } from "external-api";
+import { localClient } from "./local-client";
+async function main() {
+  const externalResult = await (global as any).ak_call(client.api.methods, "call");
+  const localResult = await localClient.api.methods.call();
+  return {
+    externalResult,
+    localResult
+  };
+}`; // Should wrap nested methods on external but not local objects
+    const patch = await patchCode(code);
+    expect(patch).toEqual(expected);
+});

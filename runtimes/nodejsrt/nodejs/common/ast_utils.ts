@@ -98,13 +98,39 @@ export async function listExportsInDirectory(dirPath: string): Promise<Export[]>
     return exports;
 }
 
-// Helper function to check if an identifier is from a relative import
+// Helper function to check if an identifier is from a relative import or local
 function isFromRelativeImport(path: NodePath, identifierName: string): boolean {
     const binding = path.scope.getBinding(identifierName);
+    
+    // Check for import from relative path
     if (binding?.path.parent?.type === 'ImportDeclaration') {
         const importSource = binding.path.parent.source.value;
         return importSource.startsWith('.');
     }
+    
+    // Special case: For variables initialized with a constructor
+    if (binding?.path.node.type === 'VariableDeclarator' && 
+        binding.path.node.init?.type === 'NewExpression' &&
+        binding.path.node.init.callee.type === 'Identifier') {
+        
+        // Get the class name
+        const className = binding.path.node.init.callee.name;
+        
+        // Look up where the class comes from
+        const classBinding = path.scope.getBinding(className);
+        
+        // If the class is imported, check if it's from a relative path
+        if (classBinding?.path.parent?.type === 'ImportDeclaration') {
+            const importSource = classBinding.path.parent.source.value;
+            return importSource.startsWith('.');
+        }
+    }
+    
+    // If binding exists but wasn't imported, it's defined in this file
+    if (binding && !binding.path.findParent(p => p.isImportDeclaration())) {
+        return true;
+    }
+    
     return false;
 }
 
@@ -133,7 +159,7 @@ export async function patchCode(code: string): Promise<string> {
             if (isIdentifier(path.node.callee)) {
                 const identifierName = path.node.callee.name;
 
-                // Skip wrapping if it's a relative import or a standard built-in
+                // Skip wrapping if it's a relative import, local function, or a standard built-in
                 if (isFromRelativeImport(path, identifierName) || isStandardBuiltIn(identifierName)) {
                     return;
                 }
@@ -144,20 +170,32 @@ export async function patchCode(code: string): Promise<string> {
             }
             // For method calls (obj.method())
             else if (isMemberExpression(path.node.callee)) {
-                const object = path.node.callee.object;
-                const method = isIdentifier(path.node.callee.property) ? path.node.callee.property.name : '';
-
-                // Skip wrapping if the object is from a relative import or is a standard built-in
-                if (isIdentifier(object)) {
-                    if (isFromRelativeImport(path, object.name) || isStandardBuiltIn(object.name)) {
+                // Get the root object of the member expression
+                let rootObject = path.node.callee.object;
+                
+                // Traverse to the root object in case of nested member expressions
+                while (isMemberExpression(rootObject)) {
+                    rootObject = rootObject.object;
+                }
+                
+                // Only proceed if the root is an identifier
+                if (isIdentifier(rootObject)) {
+                    const rootName = rootObject.name;
+                    
+                    // Skip wrapping if the root object is from a relative import, local, or a standard built-in
+                    if (isFromRelativeImport(path, rootName) || isStandardBuiltIn(rootName)) {
                         return;
                     }
-                }
-
-                // Only wrap if we have a valid method name
-                if (method) {
-                    path.node.callee = identifier("(global as any).ak_call");
-                    path.node.arguments = [object, stringLiteral(method), ...path.node.arguments];
+                    
+                    // Get the method name
+                    const method = isIdentifier(path.node.callee.property) ? path.node.callee.property.name : '';
+                    
+                    // Only wrap if we have a valid method name
+                    if (method) {
+                        const originalObject = path.node.callee.object;
+                        path.node.callee = identifier("(global as any).ak_call");
+                        path.node.arguments = [originalObject, stringLiteral(method), ...path.node.arguments];
+                    }
                 }
             }
         }
