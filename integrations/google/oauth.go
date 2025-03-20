@@ -123,7 +123,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h handler) tokenSource(ctx context.Context, t *oauth2.Token, cid sdktypes.ConnectionID) oauth2.TokenSource {
-	cfg, _, err := h.oauth.GetConfig(ctx, "google", cid)
+	cfg, _, err := h.oauth.GetConfig(ctx, desc.UniqueName().String(), cid)
 	if err != nil {
 		return nil
 	}
