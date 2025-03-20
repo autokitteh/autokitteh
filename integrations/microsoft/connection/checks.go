@@ -50,13 +50,18 @@ func Test(v sdkservices.Vars, o *oauth.OAuth) sdkintegrations.OptFn {
 			return errStatus, err
 		}
 
-		switch common.ReadAuthType(vs) {
+		switch authType := common.ReadAuthType(vs); authType {
 		case "":
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 
 		case integrations.OAuthDefault, integrations.OAuthPrivate:
 			desc := common.Descriptor("microsoft", "", "")
-			t := o.FreshToken(ctx, zap.L(), desc, vs)
+			l := zap.L().With(
+				zap.String("integration", desc.UniqueName().String()),
+				zap.String("connection_id", cid.String()),
+				zap.String("auth_type", authType),
+			)
+			t := o.FreshToken(ctx, l, desc, vs)
 			if _, err = GetUserInfo(ctx, t); err != nil {
 				return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 			}
