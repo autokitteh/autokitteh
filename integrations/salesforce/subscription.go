@@ -94,6 +94,7 @@ func (h handler) eventLoop(ctx context.Context, clientID string, subscribeTopic 
 		for _, event := range msg.Events {
 			schema, err := client.GetSchema(ctx, &pb.SchemaRequest{SchemaId: event.Event.SchemaId})
 			if err != nil {
+				l.Error("failed to get Salesforce event schema", zap.String("schema_id", event.Event.SchemaId), zap.Error(err))
 				if gstatus.Code(err) != codes.Unauthenticated {
 					continue
 				}
@@ -216,7 +217,6 @@ func (h handler) initStream(ctx context.Context, l *zap.Logger, client pb.PubSub
 			cleanupClient(l, clientID)
 			h.initPubSubClient(cid, clientID, l, "failed to create gRPC stream for Salesforce events")
 			// TODO(INT-352): error handling
-			l.Error("failed to create gRPC stream for Salesforce events", zap.Error(err))
 			continue
 		}
 
