@@ -1,24 +1,21 @@
-import Runner from "../../runtime/runner";
+// import Runner from "../../runtime/runner";
+import Runner from "../../testdata/simple-test/runtime/.ak/runtime/runner";
 import { DirectHandlerClient } from "./direct_client";
 import * as path from "path";
-import * as fs from "fs";
+import fs from "fs";
 import { TextEncoder, TextDecoder } from "util";
-import { ConnectRouter } from "@connectrpc/connect";
 import { test } from '@jest/globals';
 
 test('full flow', async () => {
   console.log("Starting direct runner test...");
 
   // Create absolute path to the test directory
-  const testDir = path.resolve(__dirname);
-  console.log(`Using absolute test directory: ${testDir}`);
-
-  // Confirm test module exists
-  const testModulePath = path.join(testDir, "test_module.ts");
-  if (!fs.existsSync(testModulePath)) {
-    throw new Error(`Test module not found at ${testModulePath}`);
+  const testDir = path.resolve('testdata/simple-test/runtime');
+  if (!fs.existsSync(testDir)) {
+    throw new Error(`Test dir not found at ${testDir}`);
   }
-  console.log(`Using test module at ${testModulePath}`);
+  const entryPoint = 'index.ts:getUserInfo1';
+  console.log(`Using absolute test directory: ${testDir}`);
 
   // Create direct client - no need for separate waiter
   const directClient = new DirectHandlerClient();
@@ -27,10 +24,9 @@ test('full flow', async () => {
   // Create runner with direct client - it will create its own ActivityWaiter internally
   console.log("Creating runner...");
   const runner = new Runner(
-    "test-runner-id",
-    testDir,
-    directClient as any
-    // No need for a separate waiter - Runner will create its own
+      "test-runner-id",
+      testDir,
+      directClient as any
   );
   console.log("Runner created");
 
@@ -86,26 +82,26 @@ test('full flow', async () => {
   // Create the start request with entry point and event
   console.log("Executing test function...");
   const startRequest = {
-    entryPoint: "test_module.ts:callExternalService",
+    entryPoint: entryPoint,
     event: {
       data: encoder.encode(JSON.stringify(eventData))
     }
   };
   console.log("Created start request with entry point:", startRequest.entryPoint);
-  
+
   // Add timeout in case the call hangs
   console.log("Calling start method...");
   const startPromise = mockServiceImplementation.start(startRequest);
-  
+
   const timeoutPromise = new Promise((_, reject) => {
     setTimeout(() => reject(new Error("Test timed out after 10 seconds")), 10000);
   });
-  
+
   const result = await Promise.race([startPromise, timeoutPromise])
-    .catch(error => {
-      console.error("Error during start execution:", error);
-      throw error;
-    });
+      .catch(error => {
+        console.error("Error during start execution:", error);
+        throw error;
+      });
 
   // Log the result
   console.log("Execution result:", result);
@@ -128,7 +124,7 @@ test('full flow', async () => {
     runnerAny.healthcheckTimer = undefined;
     console.log("Health check timer cleared");
   }
-  
+
   // Set internal flag to prevent further health checks
   if (typeof runnerAny._isRunningHealthCheck !== 'undefined') {
     runnerAny._isRunningHealthCheck = false;

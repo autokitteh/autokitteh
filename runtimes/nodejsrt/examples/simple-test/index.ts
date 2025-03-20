@@ -36,11 +36,18 @@ interface UserInfo {
 async function getUserInfo(userId: number): Promise<UserInfo> {
   const userService = new UserService();
   const user = await userService.getUserById(userId);
+  console.log(user);
   const posts = await userService.getUserPosts(userId);
+  console.log(posts);
   return {
     user,
     posts: posts.slice(0, 3) // Get first 3 posts only
   };
+}
+
+async function getUserInfo1() {
+  const users = await getUserInfo(1);
+  console.log(users);
 }
 
 // Export the functions
@@ -49,5 +56,6 @@ export {
   divide,
   delayedResponse,
   getUserInfo,
-  UserService
+  UserService,
+  getUserInfo1
 };
