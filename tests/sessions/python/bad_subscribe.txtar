@@ -1,0 +1,11 @@
+subscribe: rpc error: code = Internal desc = subscribe(meow, woof) -> source "meow" not found
+
+-- main.py main --
+
+from autokitteh import subscribe
+
+def main(_):
+    try:
+        subscribe("meow", "woof")
+    except Exception as e:
+        print(e)
