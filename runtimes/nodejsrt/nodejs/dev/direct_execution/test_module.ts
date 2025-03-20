@@ -13,7 +13,7 @@ async function callExternalService(): Promise<string> {
   // This is what the code looks like AFTER patching
   // Original: return await externalServiceMock(name);
   // Patched:  return await ak_call(externalServiceMock, name);
-  return await ak_call(externalServiceMock, name);
+  return await (global as any).ak_call(externalServiceMock, name);
 }
 
 // This simulates an external service function

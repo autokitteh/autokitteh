@@ -17,9 +17,10 @@ export interface Waiter {
 
 export class ActivityWaiter implements Waiter {
     event: EventEmitter;
-    f: AnyFunction;
-    a: unknown[];
-    token: string;
+    private pendingActivities = new Map<string, {
+        f: AnyFunction;
+        a: unknown[];
+    }>();
     client: Client<typeof HandlerService>;
     runnerId: string;
     runId: string;
@@ -27,9 +28,6 @@ export class ActivityWaiter implements Waiter {
     constructor(client: Client<typeof HandlerService>, runnerId: string) {
         this.client = client;
         this.event = new EventEmitter();
-        this.f = () => {};
-        this.a = [];
-        this.token = "";
         this.runnerId = runnerId;
         this.runId = "";
     }
@@ -66,23 +64,19 @@ export class ActivityWaiter implements Waiter {
     }
 
     async execute_signal(token: string): Promise<unknown> {
-        if (token !== this.token) {
+        const activity = this.pendingActivities.get(token);
+        if (!activity) {
             throw new Error('tokens do not match');
         }
-        return await this.f(...this.a);
+        return await activity.f(...activity.a);
     }
 
     async reply_signal(token: string, value: unknown): Promise<void> {
-        if (token !== this.token) {
-            throw new Error('tokens do not match');
-        }
-        this.event.emit('return', value);
+        this.event.emit(`return:${token}`, value);
     }
 
     async wait(f: AnyFunction, v: unknown[], token: string): Promise<unknown> {
-        this.f = f;
-        this.a = v;
-        this.token = token;
+        this.pendingActivities.set(token, { f, a: v });
         const encoder = new TextEncoder();
 
         await this.client.activity({
@@ -99,8 +93,9 @@ export class ActivityWaiter implements Waiter {
             }
         });
         console.log("activity resp", "call", f.name);
-        const r = (await once(this.event, 'return'))[0];
+        const r = (await once(this.event, `return:${token}`))[0];
         console.log("got return value", r);
+        this.pendingActivities.delete(token);
         return r;
     }
 }

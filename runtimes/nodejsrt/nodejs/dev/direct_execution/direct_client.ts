@@ -1,22 +1,18 @@
-import { DirectActivityWaiter, IDirectHandlerClient } from "./direct_waiter";
-import { TextDecoder } from "util";
+import { TextDecoder, TextEncoder } from "util";
 
 /**
  * DirectHandlerClient mocks the HandlerService gRPC client.
- * This implementation works with DirectActivityWaiter to simulate the activity flow.
+ * This implementation acts as a bridge between the ActivityWaiter and 
+ * the Runner's service methods, simulating server behavior.
  */
-export class DirectHandlerClient implements IDirectHandlerClient {
+export class DirectHandlerClient {
     private originalConsoleLog: typeof console.log;
     private isActive: boolean = true;
-    private waiter: DirectActivityWaiter;
-
-    constructor(waiter: DirectActivityWaiter) {
+    private runnerService: any = null;
+    
+    constructor() {
         // Store the original console.log
         this.originalConsoleLog = console.log;
-        this.waiter = waiter;
-        
-        // Set the client reference in the waiter
-        waiter.setClient(this);
     }
 
     // Method to set active state - used for testing
@@ -25,40 +21,86 @@ export class DirectHandlerClient implements IDirectHandlerClient {
         this.originalConsoleLog("[DirectClient] Setting isActive to:", active);
     }
 
+    // Method to set the runner service after it's captured from createService
+    setRunnerService(service: any): void {
+        this.runnerService = service;
+        this.originalConsoleLog("[DirectClient] Runner service connected");
+    }
+
+    // Called by the ActivityWaiter to request an activity
     async activity(request: any) {
-        this.originalConsoleLog("[DirectClient] activity called:", request);
+        this.originalConsoleLog("[DirectClient] activity called");
         
-        // If this is an activity request with a token, process it
-        if (request.data) {
-            try {
-                // Parse the token from the request data
-                const dataStr = new TextDecoder().decode(request.data);
-                const parsedData = JSON.parse(dataStr);
-                
-                if (parsedData.token) {
-                    // In a real implementation, this would trigger the handler service
-                    // For our direct execution, we'll execute the function right away
-                    this.originalConsoleLog("[DirectClient] Processing activity with token:", parsedData.token);
-                    
-                    setTimeout(async () => {
-                        try {
-                            // Execute the function
-                            const result = await this.waiter.execute_signal(parsedData.token);
-                            
-                            // Reply with the result
-                            await this.waiter.reply_signal(parsedData.token, result);
-                        } catch (error) {
-                            this.originalConsoleLog("[DirectClient] Error executing activity:", error);
-                        }
-                    }, 0); // Use setTimeout to make this async
-                }
-            } catch (error) {
-                this.originalConsoleLog("[DirectClient] Error parsing activity data:", error);
-            }
+        if (!request.data || !this.runnerService) {
+            return { error: "Runner service not connected" };
         }
         
+        try {
+            // Parse the token from the request data
+            const dataStr = new TextDecoder().decode(request.data);
+            const parsedData = JSON.parse(dataStr);
+            
+            if (!parsedData.token) {
+                return { error: "No token in request" };
+            }
+            
+            // If this is the second call (with callInfo), schedule execution
+            if (request.callInfo) {
+                this.originalConsoleLog(`[DirectClient] Scheduling execution for token: ${parsedData.token}`);
+                
+                // Schedule execution to happen AFTER this method returns
+                // This gives the waiter time to set up its listener
+                queueMicrotask(() => this.executeActivity(request));
+            } else {
+                // First call just logging the token
+                this.originalConsoleLog(`[DirectClient] Registered token: ${parsedData.token}`);
+            }
+        } catch (error) {
+            this.originalConsoleLog("[DirectClient] Error parsing activity data:", error);
+            return { error: String(error) };
+        }
+        
+        // Return success immediately
         return { error: "" };
     }
+    
+    // Helper method to execute an activity asynchronously
+    private async executeActivity(request: any): Promise<void> {
+        try {
+            // Parse token from request data
+            const dataStr = new TextDecoder().decode(request.data);
+            const parsedData = JSON.parse(dataStr);
+            const token = parsedData.token;
+            
+            this.originalConsoleLog(`[DirectClient] Executing activity for token: ${token}`);
+            
+            // Execute via runner service
+            const executeResult = await this.runnerService.execute({
+                data: request.data
+            });
+            
+            // Send reply
+            const encoder = new TextEncoder();
+            await this.runnerService.activityReply({
+                error: "",
+                result: {
+                    custom: {
+                        data: encoder.encode(JSON.stringify({
+                            token: token,
+                            results: executeResult.value
+                        })),
+                        executorId: ""
+                    }
+                }
+            });
+            
+            this.originalConsoleLog(`[DirectClient] Activity completed for token: ${token}`);
+        } catch (error) {
+            this.originalConsoleLog("[DirectClient] Execution error:", error);
+        }
+    }
+
+    // Other required client methods
 
     async done(request: any) {
         this.originalConsoleLog("[DirectClient] done called:", request);
@@ -89,6 +131,8 @@ export class DirectHandlerClient implements IDirectHandlerClient {
         this.originalConsoleLog("[DirectClient] isActiveRunner called, returning:", this.isActive);
         return { isActive: this.isActive, error: "" };
     }
+    
+    // Other client methods with minimal implementations
     
     async subscribe(request: any) {
         this.originalConsoleLog("[DirectClient] subscribe called:", request);

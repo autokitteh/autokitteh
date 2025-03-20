@@ -98,6 +98,7 @@ export default class Runner {
     private startTimer?: NodeJS.Timeout;
     private originalConsoleLog: typeof console.log;
     private isShuttingDown = false;
+    private _isRunningHealthCheck: boolean = false;
 
     constructor(id: string, codeDir: string, client: ReturnType<typeof createClient<typeof HandlerService>>, customWaiter?: ActivityWaiter) {
         this.id = id;
@@ -185,12 +186,10 @@ export default class Runner {
     private async startHealthCheck() {
         const maxRetries = 10;
         const retryDelay = 1000; // 1 second
-        let isRunning = true;
-
-        // Note: We don't need to clear the timer here as it should be set up in the start() method
+        this._isRunningHealthCheck = true;
 
         // Initial active runner check with retry logic
-        while (isRunning) {
+        while (this._isRunningHealthCheck) {
             let retries = 0;
             let success = false;
 
@@ -288,8 +287,11 @@ export default class Runner {
     }
 
     stop() {
+        this._isRunningHealthCheck = false;
+
         if (this.healthcheckTimer) {
             clearInterval(this.healthcheckTimer);
+            this.healthcheckTimer = undefined;
         }
 
         // Restore original console.log
