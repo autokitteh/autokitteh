@@ -1,13 +1,10 @@
 package confluence
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -167,51 +164,11 @@ func registerWebhook(ctx context.Context, l *zap.Logger, base, user, key, catego
 		Secret:      secret,
 	}
 
-	body, err := json.Marshal(r)
-	if err != nil {
-		l.Warn("Failed to marshal Confluence webhook registration request",
-			zap.Any("request", r),
-			zap.Error(err),
-		)
-		return 0, "", err
-	}
-
-	jsonReader := bytes.NewReader(body)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, base+restPath, jsonReader)
-	if err != nil {
-		l.Warn("Failed to construct HTTP request to register Confluence webhook", zap.Error(err))
-		return 0, "", err
-	}
-
-	req.SetBasicAuth(user, key)
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := http.DefaultClient.Do(req)
+	creds := common.Credentials{Username: user, Password: key}
+	body, err := common.HTTPPostJSONWithAuth(ctx, base+restPath, creds, r)
 	if err != nil {
 		l.Warn("Failed to register Confluence webhook", zap.Error(err))
 		return 0, "", err
-	}
-	defer resp.Body.Close()
-
-	// Read the response's body, up to 1 MiB.
-	body, err = io.ReadAll(http.MaxBytesReader(nil, resp.Body, 1<<20))
-	if err != nil {
-		l.Warn("Failed to read Confluence webhook registration response", zap.Error(err))
-		return 0, "", err
-	}
-
-	// Error mode 1: based on HTTP status code.
-	if resp.StatusCode != http.StatusCreated {
-		l.Warn("Unexpected response to Confluence webhook registration request",
-			zap.Int("status", resp.StatusCode),
-			zap.ByteString("body", body),
-		)
-		s := strings.TrimSpace(string(body))
-		s = s[:min(len(s), 256)]
-		if s == "" {
-			s = "no error message"
-		}
-		return 0, "", errors.New(s)
 	}
 
 	var reg webhook
@@ -245,30 +202,13 @@ func extractIDSuffixFromURL(url string) (int, error) {
 }
 
 func deleteWebhook(ctx context.Context, l *zap.Logger, base, user, key string, id int) error {
-	ctx, cancel := context.WithTimeout(ctx, common.HTTPTimeout)
-	defer cancel()
-
 	url := fmt.Sprintf("%s%s/%d", base, restPath, id)
-	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, url, http.NoBody)
-	if err != nil {
-		l.Error("Failed to construct HTTP request to delete Confluence webhook", zap.Error(err))
-		return err
-	}
+	creds := common.Credentials{Username: user, Password: key}
 
-	req.SetBasicAuth(user, key)
-
-	resp, err := http.DefaultClient.Do(req)
+	_, err := common.HTTPDeleteWithAuth(ctx, url, creds)
 	if err != nil {
 		l.Error("Failed to delete Confluence webhook", zap.Error(err))
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode >= http.StatusBadRequest {
-		l.Error("Unexpected response to Confluence webhook deletion request",
-			zap.Int("status", resp.StatusCode),
-		)
-		return fmt.Errorf("existing webhook deletion failed: %d", resp.StatusCode)
+		return fmt.Errorf("webhook deletion failed: %w", err)
 	}
 
 	return nil
