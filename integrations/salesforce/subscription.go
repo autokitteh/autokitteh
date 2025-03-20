@@ -36,29 +36,10 @@ func (h handler) subscribe(clientID, orgID, instanceURL string, cid sdktypes.Con
 		return
 	}
 
-	ctx := authcontext.SetAuthnSystemUser(context.Background())
-	l := h.logger.With(zap.String("connection_id", cid.String()))
-	vs, err := h.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
-	if err != nil {
-		l.Error("failed to read connection vars",
-			zap.String("connection_id", cid.String()), zap.Error(err),
-		)
+	ctx, client := h.initPubSubClient(cid, clientID, nil, "")
+	if ctx == nil || client == nil {
 		return
 	}
-
-	t := common.FreshOAuthToken(ctx, l, h.oauth, h.vars, desc, vs)
-	cfg, _, err := h.oauth.Get(ctx, desc.UniqueName().String())
-	if err != nil {
-		l.Error("failed to get Salesforce OAuth config", zap.Error(err))
-		return
-	}
-	conn, err := initConn(l, cfg, t, instanceURL, orgID)
-	if err != nil {
-		return
-	}
-
-	client := pb.NewPubSubClient(conn)
-	pubSubClients[clientID] = client
 
 	// https://developer.salesforce.com/docs/atlas.en-us.platform_events.meta/platform_events/platform_events_objects_change_data_capture.htm
 	go h.eventLoop(ctx, clientID, "/data/ChangeEvents", cid)
@@ -72,7 +53,7 @@ func (h handler) eventLoop(ctx context.Context, clientID string, subscribeTopic 
 	numLeftToReceive := 0
 
 	client := pubSubClients[clientID]
-	stream := initStream(ctx, l, client)
+	stream := h.initStream(ctx, l, client, cid, clientID)
 
 	// Start receiving messages.
 	for {
@@ -89,12 +70,19 @@ func (h handler) eventLoop(ctx context.Context, clientID string, subscribeTopic 
 		// https://developer.salesforce.com/docs/platform/pub-sub-api/references/methods/subscribe-rpc.html#subscribe-keepalive-behavior
 		msg, err := stream.Recv()
 		if err != nil {
-			if gstatus.Code(err) != codes.Unauthenticated {
+			switch {
+			case gstatus.Code(err) == codes.Unauthenticated:
 				l.Error("authentication error receiving Salesforce event", zap.Error(err))
-			} else {
+				ctx, client = h.initPubSubClient(cid, clientID, l, "failed to reinitialize Salesforce client")
+				cleanupClient(l, clientID)
+			case err.Error() == "EOF":
+				l.Warn("Salesforce stream connection closed (EOF), reconnecting...", zap.Error(err))
+				ctx, client = h.initPubSubClient(cid, clientID, l, "failed to reinitialize Salesforce client after EOF")
+				cleanupClient(l, clientID)
+			default:
 				l.Error("error receiving Salesforce event", zap.Error(err))
 			}
-			stream = initStream(ctx, l, client)
+			stream = h.initStream(ctx, l, client, cid, clientID)
 			continue
 		}
 
@@ -106,9 +94,25 @@ func (h handler) eventLoop(ctx context.Context, clientID string, subscribeTopic 
 		for _, event := range msg.Events {
 			schema, err := client.GetSchema(ctx, &pb.SchemaRequest{SchemaId: event.Event.SchemaId})
 			if err != nil {
-				l.Error("failed to get Salesforce event schema", zap.String("schema_id", event.Event.SchemaId), zap.Error(err))
-				continue
+				if gstatus.Code(err) != codes.Unauthenticated {
+					continue
+				}
+
+				// If it's an authentication error, try to reinitialize the client.
+				cleanupClient(l, clientID)
+				ctx, client = h.initPubSubClient(cid, clientID, l, "failed to reinitialize Salesforce client after schema auth error")
+				if ctx == nil || client == nil {
+					continue
+				}
+
+				// Try to get the schema again with the new client.
+				schema, err = client.GetSchema(ctx, &pb.SchemaRequest{SchemaId: event.Event.SchemaId})
+				if err != nil {
+					l.Error("still failed to get Salesforce schema after client reinitialization", zap.Error(err))
+					continue
+				}
 			}
+
 			data, err := decodePayload(l, schema, event.Event.Payload)
 			if err != nil {
 				continue
@@ -147,10 +151,71 @@ func (h handler) eventLoop(ctx context.Context, clientID string, subscribeTopic 
 	}
 }
 
-func initStream(ctx context.Context, l *zap.Logger, client pb.PubSubClient) pb.PubSub_SubscribeClient {
+// initPubSubClient initializes or reinitializes a PubSub client
+// If errorMessage is provided, errors will be logged with this message
+// Returns the context and client, which may be nil on error
+func (h handler) initPubSubClient(cid sdktypes.ConnectionID, clientID string, l *zap.Logger, errorMessage string) (context.Context, pb.PubSubClient) {
+	// TODO: return error to handle error outside this function
+	ctx := authcontext.SetAuthnSystemUser(context.Background())
+
+	// Use the provided logger if available, otherwise create one
+	if l == nil {
+		l = h.logger.With(zap.String("connection_id", cid.String()))
+	}
+
+	vs, err := h.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+	if err != nil {
+		l.Error("failed to read connection vars",
+			zap.String("connection_id", cid.String()), zap.Error(err),
+		)
+		if errorMessage != "" {
+			l.Error(errorMessage, zap.Error(err))
+		}
+		return nil, nil
+	}
+
+	t := common.FreshOAuthToken(ctx, l, h.oauth, h.vars, desc, vs)
+	cfg, _, err := h.oauth.Get(ctx, desc.UniqueName().String())
+	if err != nil {
+		l.Error("failed to get Salesforce OAuth config", zap.Error(err))
+		if errorMessage != "" {
+			l.Error(errorMessage, zap.Error(err))
+		}
+		return nil, nil
+	}
+
+	conn, err := initConn(l, cfg, t, vs.GetValue(instanceURLVar), vs.GetValue(orgIDVar))
+	if err != nil {
+		if errorMessage != "" {
+			l.Error(errorMessage, zap.Error(err))
+		}
+		return nil, nil
+	}
+
+	client := pb.NewPubSubClient(conn)
+	pubSubClients[clientID] = client
+	return ctx, client
+}
+
+// cleanupClient removes a client from the pubSubClients map.
+// This allows the underlying connection to be garbage collected.
+func cleanupClient(l *zap.Logger, clientID string) {
+	mu.Lock()
+	defer mu.Unlock()
+
+	if _, ok := pubSubClients[clientID]; ok {
+		delete(pubSubClients, clientID)
+		l.Debug("cleaned up Salesforce client", zap.String("client_id", clientID))
+	}
+}
+
+func (h handler) initStream(ctx context.Context, l *zap.Logger, client pb.PubSubClient, cid sdktypes.ConnectionID, clientID string) pb.PubSub_SubscribeClient {
 	for {
 		stream, err := client.Subscribe(ctx)
 		if err != nil {
+			cleanupClient(l, clientID)
+			h.initPubSubClient(cid, clientID, l, "failed to create gRPC stream for Salesforce events")
+			// TODO(INT-352): error handling
 			l.Error("failed to create gRPC stream for Salesforce events", zap.Error(err))
 			continue
 		}
