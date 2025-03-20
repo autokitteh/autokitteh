@@ -10,6 +10,8 @@ var (
 	orgIDVar  = sdktypes.NewSymbol("org_id")
 )
 
+const linearAPIURL = "https://api.linear.app/graphql"
+
 // privateOAuth contains the user-provided details of a private Linear OAuth 2.0 app.
 type privateOAuth struct {
 	ClientID      string `var:"private_client_id"`
