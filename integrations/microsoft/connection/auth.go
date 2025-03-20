@@ -34,8 +34,8 @@ func DaemonToken(ctx context.Context, vs sdktypes.Vars) (*oauth2.Token, error) {
 	// TODO(INT-227): Add support for certificate-based authentication.
 	form := url.Values{
 		"grant_type":    {"client_credentials"},
-		"client_id":     {vs.GetValue(privateClientIDVar)},
-		"client_secret": {vs.GetValue(privateClientSecretVar)},
+		"client_id":     {vs.GetValue(common.PrivateClientIDVar)},
+		"client_secret": {vs.GetValue(common.PrivateClientSecretVar)},
 		"scope":         {"https://graph.microsoft.com/.default"},
 	}
 
@@ -71,7 +71,7 @@ func bearerToken(ctx context.Context, l *zap.Logger, svc Services, cid sdktypes.
 	switch authType := common.ReadAuthType(vs); authType {
 	case integrations.OAuthDefault, integrations.OAuthPrivate:
 		desc := common.Descriptor("microsoft", "", "")
-		t := common.FreshOAuthToken(ctx, l, svc.OAuth, svc.Vars, desc, vs)
+		t := svc.OAuth.FreshToken(ctx, l, desc, vs)
 		return "Bearer " + t.AccessToken
 
 	case integrations.DaemonApp:

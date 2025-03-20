@@ -5,8 +5,8 @@ import (
 
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/common"
+	"go.autokitteh.dev/autokitteh/integrations/oauth"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
@@ -28,7 +28,7 @@ func New(v sdkservices.Vars) sdkservices.Integration {
 // Start initializes all the HTTP handlers of the integration.
 // This includes an internal connection UI, webhooks for AutoKitteh
 // connection initialization, and asynchronous event webhooks.
-func Start(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.DispatchFunc) {
+func Start(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, o *oauth.OAuth, d sdkservices.DispatchFunc) {
 	common.ServeStaticUI(m, desc, static.SalesforceWebContent)
 
 	h := newHTTPHandler(l, v, o, d)
@@ -43,11 +43,11 @@ func Start(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, o sdkservices.OAut
 type handler struct {
 	logger   *zap.Logger
 	vars     sdkservices.Vars
-	oauth    sdkservices.OAuth
+	oauth    *oauth.OAuth
 	dispatch sdkservices.DispatchFunc
 }
 
-func newHTTPHandler(l *zap.Logger, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.DispatchFunc) handler {
+func newHTTPHandler(l *zap.Logger, v sdkservices.Vars, o *oauth.OAuth, d sdkservices.DispatchFunc) handler {
 	l = l.With(zap.String("integration", desc.UniqueName().String()))
 	return handler{logger: l, oauth: o, vars: v, dispatch: d}
 }
@@ -60,27 +60,23 @@ func (h handler) reopenExistingPubSubConnections(ctx context.Context) {
 	}
 
 	for _, cid := range cids {
-		data, err := h.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+		vs, err := h.vars.Get(ctx, sdktypes.NewVarScopeID(cid), orgIDVar, instanceURLVar)
 		if err != nil {
 			h.logger.Error("can't restart Salesforce PubSub connection",
 				zap.String("connection_id", cid.String()), zap.Error(err),
 			)
 			continue
 		}
-		instanceURL := data.GetValue(instanceURLVar)
-		orgID := data.GetValue(orgIDVar)
 
-		var clientID string
-		clientID = data.GetValue(clientIDVar)
-		if common.ReadAuthType(data) == integrations.OAuthDefault {
-			cfg, _, err := h.oauth.Get(ctx, desc.UniqueName().String())
-			if err != nil {
-				h.logger.Error("failed to get Salesforce OAuth config", zap.Error(err))
-				continue
-			}
-			clientID = cfg.ClientID
+		cfg, _, err := h.oauth.GetConfig(ctx, desc.UniqueName().String(), cid)
+		if err != nil {
+			h.logger.Error("failed to get Salesforce OAuth config", zap.Error(err))
+			continue
 		}
 
-		h.subscribe(clientID, orgID, instanceURL, cid)
+		orgID := vs.GetValue(orgIDVar)
+		instanceURL := vs.GetValue(instanceURLVar)
+
+		h.subscribe(cfg.ClientID, orgID, instanceURL, cid)
 	}
 }

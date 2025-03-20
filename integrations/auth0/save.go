@@ -42,9 +42,9 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vs := sdktypes.NewVars().
-		Set(clientIDNameVar, clientID, false).
-		Set(clientSecretNameVar, clientSecret, true).
-		Set(domainNameVar, auth0Domain, false)
+		Set(ClientIDVar, clientID, false).
+		Set(ClientSecretVar, clientSecret, true).
+		Set(DomainVar, auth0Domain, false)
 
 	if err := h.saveAuthCredentials(r.Context(), c, vs); err != nil {
 		l.Error("Failed to save Auth0 credentials", zap.Error(err))

@@ -12,6 +12,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/common"
+	"go.autokitteh.dev/autokitteh/integrations/oauth"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -42,7 +43,7 @@ func status(v sdkservices.Vars) sdkintegrations.OptFn {
 
 // test checks whether the connection is actually usable, i.e. the configured
 // authentication credentials are valid and can be used to make API calls.
-func test(v sdkservices.Vars, o sdkservices.OAuth) sdkintegrations.OptFn {
+func test(v sdkservices.Vars, o *oauth.OAuth) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
 		vs, errStatus, err := common.ReadVarsWithStatus(ctx, v, cid)
 		if errStatus.IsValid() || err != nil {
@@ -53,7 +54,7 @@ func test(v sdkservices.Vars, o sdkservices.OAuth) sdkintegrations.OptFn {
 		case "":
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 		case integrations.OAuthDefault, integrations.OAuthPrivate:
-			return oauthTest(ctx, v, o, vs)
+			return oauthTest(ctx, o, vs)
 		case integrations.ServerToServer:
 			return serverToServerTest(ctx, vs)
 		default:
@@ -64,15 +65,15 @@ func test(v sdkservices.Vars, o sdkservices.OAuth) sdkintegrations.OptFn {
 
 // oauthTest verifies the OAuth authentication with Zoom API using the "me" context.
 // (Based on: https://developers.zoom.us/docs/integrations/oauth/#the-me-context).
-func oauthTest(ctx context.Context, v sdkservices.Vars, o sdkservices.OAuth, vs sdktypes.Vars) (sdktypes.Status, error) {
+func oauthTest(ctx context.Context, o *oauth.OAuth, vs sdktypes.Vars) (sdktypes.Status, error) {
 	// TODO(INT-338): Support private OAuth.
 	// Check if the token is expired and refresh it.
-	token := common.FreshOAuthToken(ctx, zap.L(), o, v, desc, vs)
+	l := zap.L().With(zap.String("integration", desc.UniqueName().String()))
+	token := o.FreshToken(ctx, l, desc, vs)
 
 	url := "https://api.zoom.us/v2/users/me"
 	auth := "Bearer " + token.AccessToken
-	_, err := common.HTTPGet(ctx, url, auth)
-	if err != nil {
+	if _, err := common.HTTPGet(ctx, url, auth); err != nil {
 		return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 	}
 

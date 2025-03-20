@@ -7,8 +7,8 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations/common"
+	"go.autokitteh.dev/autokitteh/integrations/oauth"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
-	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -16,10 +16,10 @@ import (
 // to receive and dispatch asynchronous event notifications.
 type handler struct {
 	logger *zap.Logger
-	oauth  sdkservices.OAuth
+	oauth  *oauth.OAuth
 }
 
-func NewHTTPHandler(l *zap.Logger, o sdkservices.OAuth) http.Handler {
+func NewHTTPHandler(l *zap.Logger, o *oauth.OAuth) http.Handler {
 	return handler{logger: l, oauth: o}
 }
 

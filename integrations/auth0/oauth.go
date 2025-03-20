@@ -80,5 +80,5 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c.Finalize(sdktypes.NewVars(data.ToVars()...).
-		Append(sdktypes.NewVar(authTypeVar).SetValue(integrations.OAuth)))
+		Append(sdktypes.NewVar(common.AuthTypeVar).SetValue(integrations.OAuth)))
 }

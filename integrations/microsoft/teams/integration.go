@@ -3,6 +3,7 @@ package teams
 import (
 	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/microsoft/connection"
+	"go.autokitteh.dev/autokitteh/integrations/oauth"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -17,7 +18,7 @@ var desc = common.Descriptor(IntegrationName, "Microsoft Teams", "/static/images
 
 // New defines an AutoKitteh integration, which
 // is registered when the AutoKitteh server starts.
-func New(v sdkservices.Vars, o sdkservices.OAuth) sdkservices.Integration {
+func New(v sdkservices.Vars, o *oauth.OAuth) sdkservices.Integration {
 	return sdkintegrations.NewIntegration(
 		desc, sdkmodule.New(),
 		connection.Status(v), connection.Test(v, o),

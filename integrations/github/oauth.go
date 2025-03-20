@@ -14,6 +14,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/github/internal/vars"
+	"go.autokitteh.dev/autokitteh/integrations/oauth"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -23,11 +24,11 @@ import (
 // to receive and dispatch asynchronous event notifications.
 type handler struct {
 	logger *zap.Logger
-	oauth  sdkservices.OAuth
+	oauth  *oauth.OAuth
 	vars   sdkservices.Vars
 }
 
-func NewHandler(l *zap.Logger, o sdkservices.OAuth, v sdkservices.Vars) handler {
+func NewHandler(l *zap.Logger, o *oauth.OAuth, v sdkservices.Vars) handler {
 	return handler{logger: l, oauth: o, vars: v}
 }
 

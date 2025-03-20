@@ -12,6 +12,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
+	"go.autokitteh.dev/autokitteh/integrations/oauth"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -21,12 +22,12 @@ import (
 // to receive and dispatch asynchronous event notifications.
 type handler struct {
 	logger   *zap.Logger
-	oauth    sdkservices.OAuth
+	oauth    *oauth.OAuth
 	vars     sdkservices.Vars
 	dispatch sdkservices.DispatchFunc
 }
 
-func NewHTTPHandler(l *zap.Logger, o sdkservices.OAuth, v sdkservices.Vars, d sdkservices.DispatchFunc) handler {
+func NewHTTPHandler(l *zap.Logger, o *oauth.OAuth, v sdkservices.Vars, d sdkservices.DispatchFunc) handler {
 	l = l.With(zap.String("integration", desc.UniqueName().String()))
 	return handler{logger: l, oauth: o, vars: v, dispatch: d}
 }
