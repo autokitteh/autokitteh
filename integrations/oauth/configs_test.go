@@ -205,7 +205,7 @@ func TestPrivatize(t *testing.T) {
 	}
 }
 
-func TestFixAuth0(t *testing.T) {
+func TestSrtupAuth0(t *testing.T) {
 	v := newFakeVars()
 	ctx := t.Context()
 	cid := sdktypes.NewConnectionID()

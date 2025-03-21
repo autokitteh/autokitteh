@@ -431,6 +431,8 @@ func (o *OAuth) initConfigs() {
 	o.initGitHubURLs()
 }
 
+// googleConfig sets some common hard-coded OAuth 2.0 configuration
+// details in all Google integrations, instead of copy-pasting them.
 func googleConfig(scopes []string) *oauth2.Config {
 	return &oauth2.Config{
 		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
@@ -440,7 +442,9 @@ func googleConfig(scopes []string) *oauth2.Config {
 	}
 }
 
-// https://learn.microsoft.com/en-us/graph/permissions-overview
+// microsoftConfig sets some common hard-coded OAuth 2.0 configuration
+// details in all Microsoft integrations, instead of copy-pasting them.
+// See: https://learn.microsoft.com/en-us/graph/permissions-overview,
 // https://learn.microsoft.com/en-us/graph/permissions-reference
 func microsoftConfig(scopes []string) *oauth2.Config {
 	scopes = append(scopes,
@@ -461,6 +465,8 @@ func microsoftConfig(scopes []string) *oauth2.Config {
 	}
 }
 
+// offlineOpts sets some common hard-coded OAuth 2.0 configuration details
+// in all Google and Microsoft integrations, instead of copy-pasting them.
 func offlineOpts() map[string]string {
 	return map[string]string{
 		"access_type": "offline", // oauth2.AccessTypeOffline
@@ -601,7 +607,7 @@ func (o *OAuth) GetConfig(ctx context.Context, integration string, cid sdktypes.
 
 	switch integration {
 	case "auth0":
-		fixAuth0(vs, &cfg)
+		setupAuth0(vs, &cfg)
 	case "github":
 		privatizeGitHub(vs, &cfg)
 	case "microsoft", "microsoft_teams":
@@ -612,62 +618,62 @@ func (o *OAuth) GetConfig(ctx context.Context, integration string, cid sdktypes.
 }
 
 // deepCopy ensures that we don't modify the server's default OAuth 2.0 configurations.
-func deepCopy(c oauthConfig) oauthConfig {
-	optsCopy := make(map[string]string, len(c.Opts))
-	maps.Copy(optsCopy, c.Opts) // maps.Clone won't work because it's shallow.
+func deepCopy(cfg oauthConfig) oauthConfig {
+	optsCopy := make(map[string]string, len(cfg.Opts))
+	maps.Copy(optsCopy, cfg.Opts) // maps.Clone won't work because it's shallow.
 
 	return oauthConfig{
 		Config: &oauth2.Config{
-			ClientID:     c.Config.ClientID,
-			ClientSecret: c.Config.ClientSecret,
+			ClientID:     cfg.Config.ClientID,
+			ClientSecret: cfg.Config.ClientSecret,
 			Endpoint: oauth2.Endpoint{
-				AuthURL:       c.Config.Endpoint.AuthURL,
-				DeviceAuthURL: c.Config.Endpoint.DeviceAuthURL,
-				TokenURL:      c.Config.Endpoint.TokenURL,
-				AuthStyle:     c.Config.Endpoint.AuthStyle,
+				AuthURL:       cfg.Config.Endpoint.AuthURL,
+				DeviceAuthURL: cfg.Config.Endpoint.DeviceAuthURL,
+				TokenURL:      cfg.Config.Endpoint.TokenURL,
+				AuthStyle:     cfg.Config.Endpoint.AuthStyle,
 			},
-			RedirectURL: c.Config.RedirectURL,
-			Scopes:      slices.Clone(c.Config.Scopes), // Shallow, but sufficient.
+			RedirectURL: cfg.Config.RedirectURL,
+			Scopes:      slices.Clone(cfg.Config.Scopes), // Shallow, but sufficient.
 		},
 		Opts: optsCopy,
 	}
 }
 
-func privatizeClient(vs sdktypes.Vars, c *oauthConfig) {
-	c.Config.ClientID = vs.GetValue(common.PrivateClientIDVar)
-	if c.Config.ClientID == "" {
-		c.Config.ClientID = vs.GetValueByString("client_id") // Deprecate this.
+func privatizeClient(vs sdktypes.Vars, cfg *oauthConfig) {
+	cfg.Config.ClientID = vs.GetValue(common.PrivateClientIDVar)
+	if cfg.Config.ClientID == "" {
+		cfg.Config.ClientID = vs.GetValueByString("client_id") // Deprecate this.
 	}
 
-	c.Config.ClientSecret = vs.GetValue(common.PrivateClientSecretVar)
-	if c.Config.ClientSecret == "" {
-		c.Config.ClientSecret = vs.GetValueByString("client_secret") // Deprecate this.
+	cfg.Config.ClientSecret = vs.GetValue(common.PrivateClientSecretVar)
+	if cfg.Config.ClientSecret == "" {
+		cfg.Config.ClientSecret = vs.GetValueByString("client_secret") // Deprecate this.
 	}
 }
 
-// fixAuth0 needs to run even when the connection is using the AutoKitteh server's
+// setupAuth0 needs to run even when the connection is using the AutoKitteh server's
 // default OAuth app, not just a private one like the [privatize] function.
-func fixAuth0(vs sdktypes.Vars, c *oauthConfig) {
+func setupAuth0(vs sdktypes.Vars, cfg *oauthConfig) {
 	domain := vs.GetValue(auth0.DomainVar)
-	c.Config.Endpoint.AuthURL = fmt.Sprintf("https://%s/oauth/authorize", domain)
-	c.Config.Endpoint.DeviceAuthURL = fmt.Sprintf("https://%s/oauth/device/code", domain)
-	c.Config.Endpoint.TokenURL = fmt.Sprintf("https://%s/oauth/token", domain)
+	cfg.Config.Endpoint.AuthURL = fmt.Sprintf("https://%s/oauth/authorize", domain)
+	cfg.Config.Endpoint.DeviceAuthURL = fmt.Sprintf("https://%s/oauth/device/code", domain)
+	cfg.Config.Endpoint.TokenURL = fmt.Sprintf("https://%s/oauth/token", domain)
 
-	c.Opts["audience"] = fmt.Sprintf("https://%s/api/v2/", domain)
+	cfg.Opts["audience"] = fmt.Sprintf("https://%s/api/v2/", domain)
 }
 
 // TODO(INT-349): Support GHES in private OAuth mode too.
-func privatizeGitHub(vs sdktypes.Vars, c *oauthConfig) {
+func privatizeGitHub(vs sdktypes.Vars, cfg *oauthConfig) {
 	defaultAppName := os.Getenv("GITHUB_APP_NAME")
 	if defaultAppName == "" {
 		defaultAppName = defaultGitHubAppName
 	}
 	defaultAppName = fmt.Sprintf("/%s/", defaultAppName)
 
-	authURL := c.Config.Endpoint.AuthURL
-	// TODO: Make GitHub var symbols non-internal, and reuse here.
+	authURL := cfg.Config.Endpoint.AuthURL
+	// TODO(INT-353): Make GitHub var symbols non-internal, and reuse here.
 	privateAppName := fmt.Sprintf("/%s/", vs.GetValueByString("app_name"))
-	c.Config.Endpoint.AuthURL = strings.Replace(authURL, defaultAppName, privateAppName, 1)
+	cfg.Config.Endpoint.AuthURL = strings.Replace(authURL, defaultAppName, privateAppName, 1)
 }
 
 func privatizeMicrosoft(vs sdktypes.Vars, c *oauthConfig) {
