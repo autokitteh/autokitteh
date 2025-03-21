@@ -1,0 +1,6 @@
+*.egg-info/
+.envrc
+.ruff_cache/
+.venv
+build/
+node_modules/

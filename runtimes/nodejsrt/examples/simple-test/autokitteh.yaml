@@ -1,0 +1,12 @@
+version: v1
+
+project:
+  name: simple_test
+  description: A simple test project for autokitteh runner
+
+  # Define the functions we want to expose
+  triggers:
+    - name: test
+      type: webhook
+      event_type: get
+      call: test.js:test
