@@ -11,10 +11,12 @@ test('full flow', async () => {
 
   // Create absolute path to the test directory
   const testDir = path.resolve('testdata/simple-test/runtime');
+  // const testDir = path.resolve('examples/simple-test');
+  const entryPoint = 'test.ts:test';
   if (!fs.existsSync(testDir)) {
     throw new Error(`Test dir not found at ${testDir}`);
   }
-  const entryPoint = 'index.ts:getUserInfo1';
+
   console.log(`Using absolute test directory: ${testDir}`);
 
   // Create direct client - no need for separate waiter
@@ -90,46 +92,36 @@ test('full flow', async () => {
   console.log("Created start request with entry point:", startRequest.entryPoint);
 
   // Add timeout in case the call hangs
-  console.log("Calling start method...");
-  const startPromise = mockServiceImplementation.start(startRequest);
-
-  const timeoutPromise = new Promise((_, reject) => {
-    setTimeout(() => reject(new Error("Test timed out after 10 seconds")), 10000);
-  });
-
-  const result = await Promise.race([startPromise, timeoutPromise])
-      .catch(error => {
-        console.error("Error during start execution:", error);
-        throw error;
-      });
+  console.log("Calling start method directly on client...");
+  const result = await directClient.start(startRequest);
 
   // Log the result
   console.log("Execution result:", result);
 
   // Clean up the runner
-  console.log("Stopping runner...");
-  runner.stop();
-  console.log("Runner stopped");
+  // console.log("Stopping runner...");
+  // runner.stop();
+  // console.log("Runner stopped");
 
   // Set the client's active state to false so the runner can exit
   console.log("Setting client isActive to false...");
   directClient.setActive(false);
   console.log("Client isActive set to false");
 
-  // Force exit any pending health check intervals
-  console.log("Forcing health check cleanup...");
-  const runnerAny = runner as any;
-  if (runnerAny.healthcheckTimer) {
-    clearInterval(runnerAny.healthcheckTimer);
-    runnerAny.healthcheckTimer = undefined;
-    console.log("Health check timer cleared");
-  }
-
-  // Set internal flag to prevent further health checks
-  if (typeof runnerAny._isRunningHealthCheck !== 'undefined') {
-    runnerAny._isRunningHealthCheck = false;
-    console.log("Running health check flag set to false");
-  }
+  // // Force exit any pending health check intervals
+  // console.log("Forcing health check cleanup...");
+  // const runnerAny = runner as any;
+  // if (runnerAny.healthcheckTimer) {
+  //   clearInterval(runnerAny.healthcheckTimer);
+  //   runnerAny.healthcheckTimer = undefined;
+  //   console.log("Health check timer cleared");
+  // }
+  //
+  // // Set internal flag to prevent further health checks
+  // if (typeof runnerAny._isRunningHealthCheck !== 'undefined') {
+  //   runnerAny._isRunningHealthCheck = false;
+  //   console.log("Running health check flag set to false");
+  // }
 
   console.log("Test completed successfully!");
 });

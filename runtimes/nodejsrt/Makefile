@@ -4,63 +4,90 @@ else
 	open=open
 endif
 
-export PYTHONPATH=$(PWD)/py-sdk
+# Set default directories
+EXAMPLES_DIR=examples
+TESTDATA_DIR=nodejs/testdata
+DEFAULT_EXAMPLE=simple-test
 
-test: test-py test-go
+# Detect OS for correct open command
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Linux)
+	OPEN_CMD = xdg-open
+else
+	OPEN_CMD = open
+endif
 
-ci: deps test-py check-sdk-docs-requirements
+.PHONY: test-nodejs build run execute direct-run clean-nodejs deps-nodejs lint-nodejs
 
-test-py:
-	cd runner && $(MAKE) test
+# Default target
+all: build run execute
 
-# You can set the TESTOPTS to pass options to `go test`
-test-go:
-	../../bin/tools/golangci-lint run ./...
-	go test -v $(TESTOPTS)
+# Run tests for Node.js runtime
+test-nodejs:
+	cd nodejs && npm test
 
-deps:
-	cd runner && $(MAKE) install-deps
+# Install dependencies for Node.js runtime
+deps-nodejs:
+	cd nodejs && npm install
 
-# The below targets are for local testing.
+# Lint Node.js code
+lint-nodejs:
+	cd nodejs && npm run lint
 
+# Build target - compile the code and create a tar file
+build:
+	go run cmd/build/main.go -input=$(EXAMPLES_DIR)/$(DEFAULT_EXAMPLE) -output=$(TESTDATA_DIR)/$(DEFAULT_EXAMPLE)/code.tar -extract=true
+
+# Alternative build with custom input
+build-example:
+	@read -p "Enter example directory name (default: $(DEFAULT_EXAMPLE)): " example; \
+	example=$${example:-$(DEFAULT_EXAMPLE)}; \
+	go run cmd/build/main.go -input=$(EXAMPLES_DIR)/$$example -output=$(TESTDATA_DIR)/$$example/code.tar -extract=true
+
+# Run target - run the code from tar file
+run:
+	go run cmd/run/main.go -tar=$(TESTDATA_DIR)/$(DEFAULT_EXAMPLE)/code.tar -output=$(TESTDATA_DIR)/$(DEFAULT_EXAMPLE)/runtime -setup-deps=true
+
+# Execute target - directly execute the runtime
+execute:
+	cd nodejs && npx ts-node dev/direct_execution/run_direct.ts ../$(TESTDATA_DIR)/$(DEFAULT_EXAMPLE)/runtime
+
+# Directly run with debug output
+debug-execute:
+	cd nodejs && DEBUG=1 npx ts-node dev/direct_execution/run_direct.ts $(TESTDATA_DIR)/$(DEFAULT_EXAMPLE)/runtime
+
+# Clean target
+clean-nodejs:
+	rm -rf $(TESTDATA_DIR)/$(DEFAULT_EXAMPLE)
+
+# Local development workflow - build, run, and execute in sequence
+dev: build run execute
+
+# Deploy a test example
 deploy-simple:
-	ak deploy -m ./testdata/simple/autokitteh.yaml -d ./testdata/simple/
+	ak deploy -m ./examples/$(DEFAULT_EXAMPLE)/autokitteh.yaml -d ./examples/$(DEFAULT_EXAMPLE)/
 
-run-simple:
+# Run a webhook trigger
+run-webhook:
 	go run ./testdata/trigger_webhook.go
 
-deploy-issues:
-	ak deploy -m ./testdata/issues/autokitteh.yaml -d ./testdata/issues/
+# Run the Node.js runner directly (useful for debugging)
+direct-run:
+	cd nodejs && npx ts-node dev/direct_execution/direct_runner.test.ts
 
-temporal-ui:
-	$(open) http://localhost:8233
-
-ngrok:
-	ngrok http --domain autokitteh-${USER}.ngrok.dev 9980
-
-ngrok-prod:
-	ngrok http --domain autokitteh.ngrok.dev 9980
-
-
-cfg_dir = $(shell ak config where  | grep 'Data home' | awk '{print $$NF}')
-
-clean-dbs:
-	rm -f $(cfg_dir)/*sql*
-
-test-workflow: deploy-workflow run
-
-check-sdk-docs-requirements:
-	cd py-sdk/docs && ./gen-reqs.py
-	git add -N .
-	git diff --name-only --exit-code
-
-clean-temporal:
-	killall -9 "temporal-cli-go-sdk-1.31.0" || true
-	rm "/Users/adiludmer/Library/Application Support/autokitteh/temporal_dev.sqlite"
-	rm "/Users/adiludmer/Library/Application Support/autokitteh/autokitteh.sqlite"
-	rm -rf "/Users/adiludmer/GolandProjects/autokitteh/runtimes/nodejsrt/testdata/simple/dist"
-
-webhook = $(shell ../../bin/ak trigger list | grep -o 'webhook_slug:"[^"]*"' | awk -F'"' '{print $2}' | cut -d '"' -f 2)
-
-start-workflow:
-	curl -d'{"user": "joe", "action": "read"}' http://localhost:9980/webhooks/$(webhook)
+# Show help
+help:
+	@echo "Available targets:"
+	@echo "  make build          - Build the example code and create a tar file"
+	@echo "  make run            - Run the code from the tar file"
+	@echo "  make execute        - Execute the runtime directly"
+	@echo "  make dev            - Run build, run, and execute in sequence"
+	@echo "  make test-nodejs    - Run Node.js tests"
+	@echo "  make deps-nodejs    - Install Node.js dependencies"
+	@echo "  make lint-nodejs    - Lint Node.js code"
+	@echo "  make clean-nodejs   - Clean output files"
+	@echo "  make direct-run     - Run the Node.js runner directly (for debugging)"
+	@echo "  make debug-execute  - Run execute with debug output"
+	@echo ""
+	@echo "Example:"
+	@echo "  make dev            - Build, run, and execute default example" 
