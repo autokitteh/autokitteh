@@ -97,7 +97,7 @@ test('patch async member call', async () => {
 
     const expected = `import { a } from "lib";
 async function some_func() {
-  await (global as any).ak_call(a, "b", "test");
+  await (global as any).ak_call(a.b, "test");
 }`
     const patch = await patchCode(code)
     expect(patch).toEqual(expected);
@@ -114,7 +114,7 @@ test('patch async nested member call', async () => {
 
     const expected = `import { a } from "lib";
 async function some_func() {
-  await (global as any).ak_call(a.b.c, "d", "test");
+  await (global as any).ak_call(a.b.c.d, "test");
 }`
     const patch = await patchCode(code)
     expect(patch).toEqual(expected);
@@ -150,8 +150,8 @@ test('should handle multiple await calls in one function', async () => {
 
     const expected = `import { service1, service2 } from "external";
 async function some_func() {
-  const result1 = await (global as any).ak_call(service1, "method1");
-  const result2 = await (global as any).ak_call(service2, "method2");
+  const result1 = await (global as any).ak_call(service1.method1);
+  const result2 = await (global as any).ak_call(service2.method2);
   return result1 + result2;
 }`
     const patch = await patchCode(code)
@@ -169,7 +169,7 @@ test('should handle async arrow functions', async () => {
 
     const expected = `import { api } from "external";
 const some_func = async () => {
-  return await (global as any).ak_call(api, "getData");
+  return await (global as any).ak_call(api.getData);
 };`
     const patch = await patchCode(code)
     expect(patch).toEqual(expected);
@@ -195,7 +195,7 @@ interface Data {
   value: number;
 }
 async function getData(): Promise<Data> {
-  return await (global as any).ak_call<Data>(api, "fetchData");
+  return await (global as any).ak_call<Data>(api.fetchData);
 }`
     const patch = await patchCode(code)
     expect(patch).toEqual(expected);
@@ -305,7 +305,7 @@ import { LocalService } from "./local-service";
 async function main() {
   const externalService = new ExternalService();
   const localService = new LocalService();
-  const externalResult = await (global as any).ak_call(externalService, "getData");
+  const externalResult = await (global as any).ak_call(externalService.getData);
   const localResult = await localService.getData();
   return {
     externalResult,
@@ -331,13 +331,53 @@ test('should handle nested member expressions', async () => {
     const expected = `import { client } from "external-api";
 import { localClient } from "./local-client";
 async function main() {
-  const externalResult = await (global as any).ak_call(client.api.methods, "call");
+  const externalResult = await (global as any).ak_call(client.api.methods.call);
   const localResult = await localClient.api.methods.call();
   return {
     externalResult,
     localResult
   };
 }`; // Should wrap nested methods on external but not local objects
+    const patch = await patchCode(code);
+    expect(patch).toEqual(expected);
+});
+
+test('should properly handle axios.get method call', async () => {
+    const code = `
+    import axios from "axios";
+    
+    async function fetchUserData(userId) {
+        const response = await axios.get(\`\${this.baseUrl}/users/\${userId}\`);
+        return response.data;
+    }
+    `;
+
+    const expected = `import axios from "axios";
+async function fetchUserData(userId) {
+  const response = await (global as any).ak_call(axios.get, \`\${this.baseUrl}/users/\${userId}\`);
+  return response.data;
+}`;
+    const patch = await patchCode(code);
+    expect(patch).toEqual(expected);
+});
+
+test('should wrap axios.get properly if passed as reference', async () => {
+    const code = `
+    import axios from "axios";
+    
+    async function fetchUserData(userId) {
+        const getFunc = axios.get;
+        const response = await getFunc(\`\${this.baseUrl}/users/\${userId}\`);
+        return response.data;
+    }
+    `;
+
+    const expected = `import axios from "axios";
+async function fetchUserData(userId) {
+  const getFunc = axios.get;
+  const response = await (global as any).ak_call(getFunc, \`\${this.baseUrl}/users/\${userId}\`);
+  return response.data;
+}`;
     const patch = await patchCode(code);
     expect(patch).toEqual(expected);
 });

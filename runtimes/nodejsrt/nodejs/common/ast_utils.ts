@@ -158,8 +158,26 @@ export async function patchCode(code: string): Promise<string> {
             // For direct function calls
             if (isIdentifier(path.node.callee)) {
                 const identifierName = path.node.callee.name;
-
-                // Skip wrapping if it's a relative import, local function, or a standard built-in
+                const binding = path.scope.getBinding(identifierName);
+                
+                // Check if it's a variable that references an external method
+                if (binding?.path.node.type === 'VariableDeclarator' && 
+                    isMemberExpression(binding.path.node.init)) {
+                    
+                    const objExpr = binding.path.node.init.object;
+                    if (isIdentifier(objExpr)) {
+                        const objectName = objExpr.name;
+                        
+                        // If the object is from an external module, wrap the function call
+                        if (!isFromRelativeImport(binding.path, objectName) && !isStandardBuiltIn(objectName)) {
+                            path.node.callee = identifier("(global as any).ak_call");
+                            path.node.arguments.unshift(identifier(identifierName));
+                            return;
+                        }
+                    }
+                }
+                
+                // Check if it's a direct external function
                 if (isFromRelativeImport(path, identifierName) || isStandardBuiltIn(identifierName)) {
                     return;
                 }
@@ -187,15 +205,10 @@ export async function patchCode(code: string): Promise<string> {
                         return;
                     }
                     
-                    // Get the method name
-                    const method = isIdentifier(path.node.callee.property) ? path.node.callee.property.name : '';
-                    
-                    // Only wrap if we have a valid method name
-                    if (method) {
-                        const originalObject = path.node.callee.object;
-                        path.node.callee = identifier("(global as any).ak_call");
-                        path.node.arguments = [originalObject, stringLiteral(method), ...path.node.arguments];
-                    }
+                    // Wrap the entire method expression rather than passing object and method separately
+                    const originalCallee = path.node.callee;
+                    path.node.callee = identifier("(global as any).ak_call");
+                    path.node.arguments.unshift(originalCallee);
                 }
             }
         }

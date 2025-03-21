@@ -1,4 +1,5 @@
 import {Waiter, ak_call} from "../runtime/ak_call";
+import axios from 'axios';
 import {EventEmitter, once} from "node:events";
 
 // Define a type for the function
@@ -22,7 +23,8 @@ class mockWaiter implements Waiter {
             throw new Error('tokens do not match');
         }
 
-        return await this.f(...this.a);
+        const result= await this.f(...this.a);
+        return result
     }
 
     async reply_signal(token: string, value: unknown): Promise<void> {
@@ -99,11 +101,28 @@ test('ak_call wrong token', async () => {
 
     const waiter = new mockWaiter()
     const _ak_call = ak_call(waiter)
-    _ak_call([testFunc, 1, 2])
+    _ak_call(testFunc, 1, 2)
     try {
         await waiter.reply_signal('wrong token', 3)
     } catch (e) {
         expect(e).toStrictEqual(new Error('tokens do not match'))
     }
+})
 
+test('ak_call axios', async () => {
+
+    const waiter = new mockWaiter();
+    const _ak_call = ak_call(waiter);
+
+    const p = _ak_call(axios.get, "https://jsonplaceholder.typicode.com/users/1");
+    const v = await waiter.execute_signal(waiter.token);
+    await waiter.reply_signal(waiter.token, v);
+
+    expect(v).toHaveProperty('data');
+    const response = v as { data: { id: number, name: string, email: string } };
+    expect(response.data).toHaveProperty('id', 1);
+    expect(response.data).toHaveProperty('name');
+    expect(response.data).toHaveProperty('email');
+    
+    expect(await p).toBe(v);
 })
