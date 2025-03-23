@@ -9,4 +9,4 @@ project:
     - name: test
       type: webhook
       event_type: get
-      call: test.js:test
+      call: test.ts:test

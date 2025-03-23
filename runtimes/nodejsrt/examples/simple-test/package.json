@@ -9,7 +9,8 @@
     "test": "ts-node test.ts"
   },
   "dependencies": {
-    "axios": "^1.6.8"
+    "axios": "^1.6.8",
+    "get-json": "^1.1.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.28",

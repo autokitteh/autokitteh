@@ -5,27 +5,31 @@
   "private": true,
   "type": "commonjs",
   "dependencies": {
+    "@babel/core": "^7.26.0",
+    "@babel/generator": "^7.26.5",
+    "@babel/parser": "^7.26.5",
+    "@babel/traverse": "^7.26.5",
+    "@bufbuild/protobuf": "^2.2.3",
     "@connectrpc/connect": "^2.0.1",
     "@connectrpc/connect-fastify": "^2.0.1",
     "@connectrpc/connect-node": "^2.0.1",
-    "@bufbuild/protobuf": "^2.2.3",
-    "fastify": "^5.2.1",
-    "commander": "^13.1.0",
-    "@babel/core": "^7.26.0",
-    "@babel/traverse": "^7.26.5",
-    "@babel/generator": "^7.26.5",
-    "@babel/parser": "^7.26.5",
-    "typescript": "^5.7.3",
-    "ts-node": "^10.9.2",
     "@types/node": "^22.13.10",
+    "@types/serialize-javascript": "^5.0.4",
     "axios": "^1.6.7",
-    "googleapis": "^134.0.0",
+    "commander": "^13.1.0",
+    "fastify": "^5.2.1",
+    "gaxios": "^6.3.0",
     "google-auth-library": "^9.6.3",
+    "googleapis": "^134.0.0",
     "openai": "^4.28.0",
-    "gaxios": "^6.3.0"
+    "serialize-javascript": "^6.0.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3"
   },
   "devDependencies": {
+    "@types/axios": "^0.14.0",
     "@types/express": "^4.17.21",
-    "@types/axios": "^0.14.0"
+    "@types/nock": "^11.1.0",
+    "nock": "^13.5.4"
   }
 }

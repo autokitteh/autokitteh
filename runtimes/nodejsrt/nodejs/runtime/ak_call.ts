@@ -68,7 +68,14 @@ export class ActivityWaiter implements Waiter {
         if (!activity) {
             throw new Error('tokens do not match');
         }
-        return await activity.f(...activity.a);
+        try {
+            const result = await activity.f(...activity.a);
+            return result;
+        }
+        catch (err) {
+            throw err;
+        }
+
     }
 
     async reply_signal(token: string, value: unknown): Promise<void> {

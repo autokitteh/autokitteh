@@ -1,16 +1,16 @@
-// import Runner from "../../runtime/runner";
-import Runner from "../../testdata/simple-test/runtime/.ak/runtime/runner";
+
+// import Runner from "../../runtime/runner"
+import Runner from "../../testdata/simple-test/runtime/.ak/runtime/runner"
 import { DirectHandlerClient } from "./direct_client";
 import * as path from "path";
 import fs from "fs";
 import { TextEncoder } from "util";
 import * as yaml from "js-yaml";
-
 /**
  * Directly run a function in a specified directory by extracting the entry point from autokitteh.yaml
  * Example usage: ts-node run_direct.ts ../../examples/simple-test
  */
-async function runDirect() {
+export async function runDirect(inputDir: string = ""){
   // Parse command line arguments
   const args = process.argv.slice(2);
   if (args.length < 1) {
@@ -19,7 +19,6 @@ async function runDirect() {
     process.exit(1);
   }
 
-  const inputDir = args[0];
   console.log(`Input directory: ${inputDir}`);
 
   console.log("Starting direct runner execution...");
@@ -146,9 +145,3 @@ async function runDirect() {
     }, 1000);
   }
 }
-
-// Run the direct execution
-runDirect().catch(error => {
-  console.error("Direct execution failed:", error);
-  process.exit(1);
-});

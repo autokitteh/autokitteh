@@ -81,18 +81,7 @@ export class DirectHandlerClient {
 
             // Send reply
             const encoder = new TextEncoder();
-            await this.runnerService.activityReply({
-                error: "",
-                result: {
-                    custom: {
-                        data: encoder.encode(JSON.stringify({
-                            token: token,
-                            results: executeResult.value
-                        })),
-                        executorId: ""
-                    }
-                }
-            });
+            await this.runnerService.activityReply(executeResult);
 
             this.originalConsoleLog(`[DirectClient] Activity completed for token: ${token}`);
         } catch (error) {

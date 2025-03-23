@@ -36,7 +36,8 @@ lint-nodejs:
 
 # Build target - compile the code and create a tar file
 build:
-	go run cmd/build/main.go -input=$(EXAMPLES_DIR)/$(DEFAULT_EXAMPLE) -output=$(TESTDATA_DIR)/$(DEFAULT_EXAMPLE)/code.tar -extract=true
+	go run cmd/build/main.go -input=$(EXAMPLES_DIR)/$(DEFAULT_EXAMPLE) -output=$(TESTDATA_DIR)/$(DEFAULT_EXAMPLE)/code.tar
+	# -extract=true
 
 # Alternative build with custom input
 build-example:
@@ -45,12 +46,12 @@ build-example:
 	go run cmd/build/main.go -input=$(EXAMPLES_DIR)/$$example -output=$(TESTDATA_DIR)/$$example/code.tar -extract=true
 
 # Run target - run the code from tar file
-run:
+deploy:
 	go run cmd/run/main.go -tar=$(TESTDATA_DIR)/$(DEFAULT_EXAMPLE)/code.tar -output=$(TESTDATA_DIR)/$(DEFAULT_EXAMPLE)/runtime -setup-deps=true
 
 # Execute target - directly execute the runtime
 execute:
-	cd nodejs && npx ts-node dev/direct_execution/run_direct.ts ../$(TESTDATA_DIR)/$(DEFAULT_EXAMPLE)/runtime
+	cd nodejs && npx ts-node dev/direct_execution/main.ts --input-dir=../$(TESTDATA_DIR)/$(DEFAULT_EXAMPLE)/runtime
 
 # Directly run with debug output
 debug-execute:
@@ -90,4 +91,4 @@ help:
 	@echo "  make debug-execute  - Run execute with debug output"
 	@echo ""
 	@echo "Example:"
-	@echo "  make dev            - Build, run, and execute default example" 
+	@echo "  make dev            - Build, run, and execute default example"
