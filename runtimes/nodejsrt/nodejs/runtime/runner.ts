@@ -10,6 +10,7 @@ import { RunnerService, Export } from "./pb/autokitteh/user_code/v1/runner_svc_p
 import { ActivityWaiter } from "./ak_call";
 import { listExports } from "../common/ast_utils";
 import { initializeGlobals } from "./runtime";
+import { safeSerialize } from "../common/serializer";
 
 type AkCallFunction = (...args: unknown[]) => Promise<unknown>;
 
@@ -341,7 +342,7 @@ export default class Runner {
 
                 const serialized = JSON.stringify({
                     token: execReq.token,
-                    results: result.value
+                    results: safeSerialize(result.value)
                 });
 
                 return {
