@@ -36,18 +36,18 @@ lint-nodejs:
 
 # Build target - compile the code and create a tar file
 build:
-	go run cmd/build/main.go -input=$(EXAMPLES_DIR)/$(DEFAULT_EXAMPLE) -output=$(TESTDATA_DIR)/$(DEFAULT_EXAMPLE)/code.tar
+	go run cmd/buildjs/main.go -input=$(EXAMPLES_DIR)/$(DEFAULT_EXAMPLE) -output=$(TESTDATA_DIR)/$(DEFAULT_EXAMPLE)/code.tar
 	# -extract=true
 
 # Alternative build with custom input
-build-example:
-	@read -p "Enter example directory name (default: $(DEFAULT_EXAMPLE)): " example; \
-	example=$${example:-$(DEFAULT_EXAMPLE)}; \
-	go run cmd/build/main.go -input=$(EXAMPLES_DIR)/$$example -output=$(TESTDATA_DIR)/$$example/code.tar -extract=true
+#build-example:
+#	@read -p "Enter example directory name (default: $(DEFAULT_EXAMPLE)): " example; \
+#	example=$${example:-$(DEFAULT_EXAMPLE)}; \
+#	go run cmd/buildjs/main.go -input=$(EXAMPLES_DIR)/$$example -output=$(TESTDATA_DIR)/$$example/code.tar -extract=true
 
 # Run target - run the code from tar file
 deploy:
-	go run cmd/run/main.go -tar=$(TESTDATA_DIR)/$(DEFAULT_EXAMPLE)/code.tar -output=$(TESTDATA_DIR)/$(DEFAULT_EXAMPLE)/runtime -setup-deps=true
+	go run cmd/deployjs/main.go -tar=$(TESTDATA_DIR)/$(DEFAULT_EXAMPLE)/code.tar -output=$(TESTDATA_DIR)/$(DEFAULT_EXAMPLE)/runtime -setup-deps=true
 
 # Execute target - directly execute the runtime
 execute:
@@ -80,7 +80,7 @@ direct-run:
 help:
 	@echo "Available targets:"
 	@echo "  make build          - Build the example code and create a tar file"
-	@echo "  make run            - Run the code from the tar file"
+	@echo "  make deploy            - Run the code from the tar file"
 	@echo "  make execute        - Execute the runtime directly"
 	@echo "  make dev            - Run build, run, and execute in sequence"
 	@echo "  make test-nodejs    - Run Node.js tests"
