@@ -261,6 +261,7 @@ class Runner(pb.runner_rpc.RunnerService):
         try:
             mod = loader.load_code(self.code_dir, ak_call, mod_name)
         except Exception as err:
+            # Can't use ak_print here - ak not ready yet.
             err_text = self.result_error(err)
             context.abort(
                 grpc.StatusCode.INVALID_ARGUMENT,

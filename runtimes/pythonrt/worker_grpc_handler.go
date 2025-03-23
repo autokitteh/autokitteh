@@ -144,6 +144,7 @@ func (s *workerGRPCHandler) Print(ctx context.Context, req *userCode.PrintReques
 	case <-m.doneChannel:
 		return &userCode.PrintResponse{}, nil
 	case <-time.After(runnerChResponseTimeout):
+		s.log.Warn("print timeout")
 		return &userCode.PrintResponse{
 			Error: "timeout",
 		}, nil
@@ -312,7 +313,7 @@ func (s *workerGRPCHandler) Subscribe(ctx context.Context, req *userCode.Subscri
 	}
 
 	if resp.err != nil {
-		err = status.Errorf(codes.Internal, "subscribe(%s, %s) -> %s", req.Connection, req.Filter, err)
+		err = status.Errorf(codes.Internal, "subscribe(%s, %s) -> %s", req.Connection, req.Filter, resp.err)
 		return &userCode.SubscribeResponse{Error: err.Error()}, nil
 	}
 

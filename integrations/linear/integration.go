@@ -18,9 +18,9 @@ var desc = common.Descriptor("linear", "Linear", "/static/images/linear.svg")
 
 // New defines an AutoKitteh integration, which
 // is registered when the AutoKitteh server starts.
-func New(v sdkservices.Vars) sdkservices.Integration {
+func New(v sdkservices.Vars, o sdkservices.OAuth) sdkservices.Integration {
 	return sdkintegrations.NewIntegration(
-		desc, sdkmodule.New(), status(v), test(v),
+		desc, sdkmodule.New(), status(v), test(v, o),
 		sdkintegrations.WithConnectionConfigFromVars(v))
 }
 

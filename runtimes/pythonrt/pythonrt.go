@@ -504,6 +504,10 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 		}
 
 		if err := py.startRequest(ctx, fnName, eventData); err != nil {
+			// We won't get print from python here, write the error to the session log.
+			if err := py.cbs.Print(ctx, py.runID, err.Error()); err != nil {
+				py.log.Error("cbs.Print error", zap.Error(err))
+			}
 			return sdktypes.InvalidValue, fmt.Errorf("start request: %w", err)
 		}
 	} else {
