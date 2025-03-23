@@ -25,6 +25,7 @@ buf-gen: buf-build
 	./scripts/fixpy.sh
 	buf generate --template buf.remote.gen.yaml # --include-imports
 	./scripts/fix_remote_py.sh
+	cp -r ./gen/ts/autokitteh/runner_manager ../runtimes/nodejsrt/runner/pb/autokitteh
 
 .PHONY: clean
 clean:
