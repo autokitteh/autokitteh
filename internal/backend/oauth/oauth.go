@@ -489,7 +489,8 @@ func New(l *zap.Logger, vars sdkservices.Vars) sdkservices.OAuth {
 				},
 				RedirectURL: redirectURL + "salesforce",
 				// https://help.salesforce.com/s/articleView?id=xcloud.remoteaccess_oauth_tokens_scopes.htm
-				Scopes: []string{"api", "refresh_token"},
+				// TODO: decrease scopes if possible
+				Scopes: []string{"full", "refresh_token"},
 			},
 
 			// Based on:

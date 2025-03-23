@@ -25,7 +25,8 @@ import (
 
 var (
 	// /tmp/ak-user-2767870919/main.py:6.1,main
-	userRe = regexp.MustCompile(`\/.*\/ak-user-.*?\/`)
+	// can't load main from /tmp/ak-user-1368663929 - error: No module named 'garfield_loves_pizza'
+	userRe = regexp.MustCompile(`/.*/ak-user-.*?[/ ]`)
 	// runner/main.py:6.1,main, in _call
 	runnerRe = regexp.MustCompile(`.*runner.*/.*\.py.*`)
 
