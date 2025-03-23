@@ -101,6 +101,10 @@ func walk(basePath string, uploads map[string][]byte) fs.WalkDirFunc {
 			return nil // Skip directory analysis, focus on files.
 		}
 
+		if path[0] == '.' {
+			return nil // Skip hidden files.
+		}
+
 		// Upload a single file, relative to the base path.
 		relPath, err := filepath.Rel(basePath, path)
 		if err != nil {
