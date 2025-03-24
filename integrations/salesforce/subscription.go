@@ -21,6 +21,8 @@ var (
 	// Writes happen during server startup, and when a user
 	// creates a new Salesforce connection in the UI.
 	pubSubClients = make(map[string]pb.PubSubClient)
+	// Store connections so we can close them properly.
+	pubSubConnections = make(map[string]*grpc.ClientConn)
 
 	mu = &sync.Mutex{}
 )
@@ -205,6 +207,8 @@ func (h handler) initPubSubClient(cid sdktypes.ConnectionID, clientID string, l 
 
 	client := pb.NewPubSubClient(conn)
 	pubSubClients[clientID] = client
+	pubSubConnections[clientID] = conn
+
 	return ctx, client
 }
 
@@ -215,7 +219,15 @@ func cleanupClient(l *zap.Logger, clientID string) {
 	defer mu.Unlock()
 
 	if _, ok := pubSubClients[clientID]; ok {
+		if conn, ok := pubSubConnections[clientID]; ok {
+			if err := conn.Close(); err != nil {
+				l.Error("error closing Salesforce connection",
+					zap.String("client_id", clientID),
+					zap.Error(err))
+			}
+		}
 		delete(pubSubClients, clientID)
+		delete(pubSubConnections, clientID)
 		l.Debug("cleaned up Salesforce client", zap.String("client_id", clientID))
 	}
 }
