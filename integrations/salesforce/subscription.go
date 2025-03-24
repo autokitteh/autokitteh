@@ -236,9 +236,20 @@ func (h handler) initStream(ctx context.Context, l *zap.Logger, client pb.PubSub
 	for {
 		stream, err := client.Subscribe(ctx)
 		if err != nil {
+			l.Error("error creating subscription stream", zap.Error(err))
 			cleanupClient(l, clientID)
-			h.initPubSubClient(cid, clientID, l, "failed to create gRPC stream for Salesforce events")
-			// TODO(INT-352): error handling
+			newCtx, newClient := h.initPubSubClient(cid, clientID, l, "failed to create gRPC stream for Salesforce events")
+			if newCtx == nil || newClient == nil {
+				l.Error("failed to create new client, retrying in 1 second")
+				time.Sleep(time.Second)
+				// Try to fetch the client from the map if available
+				if c, ok := pubSubClients[clientID]; ok {
+					client = c
+				}
+				continue
+			}
+			ctx = newCtx
+			client = newClient
 			continue
 		}
 
