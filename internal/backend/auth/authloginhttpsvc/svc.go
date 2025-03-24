@@ -253,9 +253,12 @@ func (a *svc) newSuccessLoginHandler(ctx context.Context, ld *loginData) http.Ha
 			return newErrHandler("internal server error", http.StatusInternalServerError)
 		}
 
+		u = u.WithID(uid)
+
 		sl = sl.With("user_id", uid)
 
 		sl.Infof("created user %v for %q", uid, ld.Email)
+
 	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
