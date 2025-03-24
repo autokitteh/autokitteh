@@ -87,12 +87,12 @@ func (h handler) eventLoop(ctx context.Context, clientID string, subscribeTopic 
 			switch {
 			case gstatus.Code(err) == codes.Unauthenticated:
 				l.Error("authentication error receiving Salesforce event", zap.Error(err))
-				ctx, client = h.initPubSubClient(cid, clientID, l, "failed to reinitialize Salesforce client")
 				cleanupClient(l, clientID)
+				ctx, client = h.initPubSubClient(cid, clientID, l, "failed to reinitialize Salesforce client")
 			case err.Error() == "EOF":
 				l.Warn("Salesforce stream connection closed (EOF), reconnecting...", zap.Error(err))
-				ctx, client = h.initPubSubClient(cid, clientID, l, "failed to reinitialize Salesforce client after EOF")
 				cleanupClient(l, clientID)
+				ctx, client = h.initPubSubClient(cid, clientID, l, "failed to reinitialize Salesforce client after EOF")
 			default:
 				l.Error("error receiving Salesforce event", zap.Error(err))
 			}
