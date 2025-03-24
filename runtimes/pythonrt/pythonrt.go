@@ -90,6 +90,8 @@ type pySvc struct {
 	channels comChannels
 
 	metrics struct {
+		tele *telemetry.Telemetry
+
 		runDuration   metric.Int64Histogram
 		startDuration metric.Int64Histogram
 		runErrors     metric.Int64Counter
@@ -187,30 +189,30 @@ func newSvc(cfg *Config, l *zap.Logger) (sdkservices.Runtime, error) {
 
 func (py *pySvc) setupMetrics() error {
 	// FIXME: Get config
-	tele, err := telemetry.New(py.log, &telemetry.Config{})
+	tele, err := telemetry.New(py.log, &telemetry.Config{}, "runtime", "python")
 	if err != nil {
 		return fmt.Errorf("create telemetry: %w", err)
 	}
 
-	mRun, err := tele.NewHistogram("python.run.duration", "Duration of Python runtime Run (ms)")
+	mRun, err := tele.NewHistogram("run.duration", "Duration of Python runtime Run (ms)")
 	if err != nil {
 		return fmt.Errorf("create histogram: %w", err)
 	}
 	py.metrics.runDuration = mRun
 
-	mErr, err := tele.NewCounter("python.run.error", "Python Run error count")
+	mErr, err := tele.NewCounter("run.error", "Python Run error count")
 	if err != nil {
 		return fmt.Errorf("create counter: %w", err)
 	}
 	py.metrics.runErrors = mErr
 
-	mStart, err := tele.NewHistogram("python.start.duration", "Duration of Python Start (ms)")
+	mStart, err := tele.NewHistogram("start.duration", "Duration of Python Start (ms)")
 	if err != nil {
 		return fmt.Errorf("create histogram: %w", err)
 	}
 	py.metrics.startDuration = mStart
 
-	mErr, err = tele.NewCounter("python.start.error", "Python Start error count")
+	mErr, err = tele.NewCounter("start.error", "Python Start error count")
 	if err != nil {
 		return fmt.Errorf("create counter: %w", err)
 	}
@@ -288,7 +290,9 @@ func (py *pySvc) Run(
 	defer func() {
 		duration := time.Since(startTime)
 		if runnerOK {
-			py.metrics.runDuration.Record(ctx, duration.Milliseconds())
+			py.metrics.tele.RecordInt64Histogram(ctx, py.metrics.runDuration, duration.Milliseconds())
+		} else {
+			py.metrics.tele.AddInt64Counter(ctx, py.metrics.runErrors, 1)
 		}
 	}()
 
@@ -443,11 +447,11 @@ func (py *pySvc) startRequest(ctx context.Context, funcName string, eventData []
 	}
 	if _, err := py.runner.Start(ctx, &req); err != nil {
 		// TODO: Handle traceback
-		py.metrics.startErrors.Add(ctx, 1)
+		py.metrics.tele.AddInt64Counter(ctx, py.metrics.startErrors, 1)
 		return err
 	}
 
-	py.metrics.startDuration.Record(ctx, time.Since(startTime).Milliseconds())
+	py.metrics.tele.RecordInt64Histogram(ctx, py.metrics.startDuration, time.Since(startTime).Milliseconds())
 	return nil
 }
 
