@@ -206,7 +206,7 @@ func (py *pySvc) setupMetrics() error {
 
 	mStart, err := tele.NewHistogram("python.start.duration", "Duration of Python Start (ms)")
 	if err != nil {
-		return fmt.Errorf("create counter: %w", err)
+		return fmt.Errorf("create histogram: %w", err)
 	}
 	py.metrics.startDuration = mStart
 
