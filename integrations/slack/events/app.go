@@ -17,8 +17,9 @@ type AppMentionEvent struct {
 	TS      string `json:"ts,omitempty"`
 	EventTS string `json:"event_ts,omitempty"`
 
-	Text   string           `json:"text,omitempty"`
-	Blocks []map[string]any `json:"blocks,omitempty"`
+	ThreadTS string           `json:"thread_ts,omitempty"`
+	Text     string           `json:"text,omitempty"`
+	Blocks   []map[string]any `json:"blocks,omitempty"`
 
 	ClientMsgID string `json:"client_msg_id,omitempty"`
 }
