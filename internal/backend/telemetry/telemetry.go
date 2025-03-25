@@ -2,6 +2,7 @@ package telemetry
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -102,7 +103,7 @@ func parseAttributes(attrs []string) ([]attribute.KeyValue, error) {
 	case len(attrs) == 0:
 		return nil, nil
 	case len(attrs)%2 != 0:
-		return nil, fmt.Errorf("attributes must be key-value pairs")
+		return nil, errors.New("attributes must be key-value pairs")
 	}
 
 	attributes := make([]attribute.KeyValue, 0, len(attrs)/2)
