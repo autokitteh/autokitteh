@@ -103,7 +103,11 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	for _, id := range ids {
 		u, err := transformIssueURL(jiraEvent, l)
 		if err != nil {
-			l.Error("Failed to transform Jira URL", zap.Error(err))
+			l.Error("Failed to transform Jira URL",
+				zap.Error(err),
+				zap.Any("webhookEvent", jiraEvent["webhookEvent"]),
+				zap.Any("issue", jiraEvent["issue"]),
+			)
 			http.Error(w, "Bad Request", http.StatusBadRequest)
 			return
 		}
