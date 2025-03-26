@@ -40,6 +40,21 @@ func TestStoreGetNoLoggedinCookie(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func TestCookieIsHttpOnly(t *testing.T) {
+	s := newStore(t)
+	w := httptest.NewRecorder()
+
+	err := s.Set(w, sdktypes.NewUser().WithID(testUID))
+	require.Nil(t, err)
+	cookies := w.Result().Cookies()
+	for _, cookie := range cookies {
+		if cookie.Name == sessionName {
+			require.True(t, cookie.HttpOnly)
+			break
+		}
+	}
+}
+
 func TestStoreGetInvalidLoggedInCookie(t *testing.T) {
 	s := newStore(t)
 	r := http.Request{

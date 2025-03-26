@@ -58,6 +58,7 @@ func (s store) Set(w http.ResponseWriter, user sdktypes.User) error {
 		Domain:   s.domain,
 		SameSite: s.sameSite,
 		Secure:   s.secure,
+		HttpOnly: true,
 		Expires:  time.Now().Add(s.expiration),
 	})
 
