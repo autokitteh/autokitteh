@@ -169,7 +169,6 @@ func registerWebhook(ctx context.Context, l *zap.Logger, baseURL, token string) 
 				Events: []string{
 					"jira:issue_created", "jira:issue_updated", "jira:issue_deleted",
 					"comment_created", "comment_updated", "comment_deleted",
-					"issue_property_set", "issue_property_deleted",
 				},
 				// "GET .../webhook" doesn't show webhook URLs in the response,
 				// so we use a trick: we specify the AutoKitteh server address in
