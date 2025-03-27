@@ -1,4 +1,4 @@
-import {runDirect} from "./run_direct";
+import {mainDirect} from "./main_direct";
 import {Command} from "commander";
 
 const program = new Command();
@@ -9,7 +9,6 @@ program.parse(process.argv);
 const options = program.opts();
 
 async function main() {
-    await runDirect(options.inputDir);
+    await mainDirect(options.inputDir);
 }
-
 void main();

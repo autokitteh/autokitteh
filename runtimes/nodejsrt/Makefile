@@ -36,8 +36,7 @@ lint-nodejs:
 
 # Build target - compile the code and create a tar file
 build:
-	go run cmd/buildjs/main.go -input=$(EXAMPLES_DIR)/$(DEFAULT_EXAMPLE) -output=$(TESTDATA_DIR)/$(DEFAULT_EXAMPLE)/code.tar
-	# -extract=true
+	go run cmd/buildjs/main.go -input=$(EXAMPLES_DIR)/$(DEFAULT_EXAMPLE) -output=$(TESTDATA_DIR)/$(DEFAULT_EXAMPLE)/code.tar -extract=true
 
 # Alternative build with custom input
 #build-example:
@@ -55,7 +54,7 @@ execute:
 
 # Directly run with debug output
 debug-execute:
-	cd nodejs && DEBUG=1 npx ts-node dev/direct_execution/run_direct.ts $(TESTDATA_DIR)/$(DEFAULT_EXAMPLE)/runtime
+	cd nodejs && DEBUG=1 npx ts-node dev/direct_execution/runner_direct.ts $(TESTDATA_DIR)/$(DEFAULT_EXAMPLE)/runtime
 
 # Clean target
 clean-nodejs:

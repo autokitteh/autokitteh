@@ -101,11 +101,11 @@ export default class Runner {
     private isShuttingDown = false;
     private _isRunningHealthCheck: boolean = false;
 
-    constructor(id: string, codeDir: string, client: ReturnType<typeof createClient<typeof HandlerService>>, customWaiter?: ActivityWaiter) {
+    constructor(id: string, codeDir: string, client: ReturnType<typeof createClient<typeof HandlerService>>) {
         this.id = id;
         this.codeDir = codeDir;
         this.client = client;
-        this.waiter = customWaiter || new ActivityWaiter(client, id);
+        this.waiter = new ActivityWaiter(client, id);
         this.originalConsoleLog = console.log;
 
         // Setup start timeout
@@ -379,7 +379,7 @@ export default class Runner {
                     initializeGlobals(this.waiter);
 
                     // Import and execute user code
-                    const modulePath = path.join(this.codeDir, fileName);
+                    const modulePath = path.resolve(path.join(this.codeDir, fileName));
                     const module = await import(modulePath);
 
                     // Get the function and call it

@@ -88,11 +88,6 @@ export class ActivityWaiter implements Waiter {
 
         await this.client.activity({
             runnerId: this.runnerId,
-            data: encoder.encode(JSON.stringify({token}))
-        });
-
-        await this.client.activity({
-            runnerId: this.runnerId,
             data: encoder.encode(JSON.stringify({token})),
             callInfo: {
                 function: f.name,

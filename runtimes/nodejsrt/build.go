@@ -11,6 +11,8 @@ import (
 	"io/fs"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"runtime"
 	"strings"
 
 	"go.uber.org/zap"
@@ -23,8 +25,12 @@ func runNodeScript(log *zap.Logger, scriptPath string, args ...string) ([]byte, 
 		zap.String("scriptPath", scriptPath),
 		zap.Strings("args", args),
 	)
+	_, currentFile, _, _ := runtime.Caller(0)
+	baseDir := filepath.Dir(currentFile)
+	nodeDir := filepath.Join(baseDir, "nodejs") // adjust as needed
+
 	cmd := exec.Command("npx", append([]string{"ts-node", scriptPath}, args...)...)
-	cmd.Dir = "nodejs"
+	cmd.Dir = nodeDir
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
