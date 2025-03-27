@@ -77,7 +77,7 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 
 	// issue_property_set and issue_property_deleted events aren’t supported or relevant to AutoKitteh.
 	// They occur when custom fields are programmatically changed on an issue.
-	// We ignore them because our webhook only extends expiration and can’t update subscriptions.
+	// We ignore them because our webhook only extends expiration and doesn't update subscriptions.
 	if jiraEvent["webhookEvent"] == "issue_property_set" || jiraEvent["webhookEvent"] == "issue_property_deleted" {
 		l.Debug("Jira issue property set/deleted event", zap.Any("event", jiraEvent))
 		return
