@@ -3,7 +3,7 @@ import { fastifyConnectPlugin } from "@connectrpc/connect-fastify";
 import { Command } from "commander";
 import { createClient } from "@connectrpc/connect";
 import { createGrpcTransport } from "@connectrpc/connect-node";
-import { HandlerService } from "./pb/autokitteh/user_code/v1/handler_svc_pb";
+import { HandlerService } from "../pb/autokitteh/user_code/v1/handler_svc_pb";
 import Runner from "./runner";
 import { FastifyReply, FastifyInstance } from "fastify";
 

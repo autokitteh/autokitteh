@@ -1,7 +1,7 @@
 import {randomUUID} from "node:crypto";
 import {EventEmitter, once} from "node:events";
 import { Client } from "@connectrpc/connect";
-import {HandlerService, DoneRequest} from "./pb/autokitteh/user_code/v1/handler_svc_pb";
+import {HandlerService, DoneRequest} from "../pb/autokitteh/user_code/v1/handler_svc_pb";
 
 type AnyFunction = (...args: unknown[]) => unknown;
 

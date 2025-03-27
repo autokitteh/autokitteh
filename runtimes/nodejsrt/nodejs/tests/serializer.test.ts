@@ -1,6 +1,8 @@
-import { safeSerialize, safeStringify } from '../common/serializer';
+import {describe, expect, test, beforeAll, afterAll} from '@jest/globals';
+import {safeSerialize, safeStringify} from '../runtime/common/serializer';
 import axios from 'axios';
-import nock from 'nock';
+import * as nock from 'nock';
+import {fail} from "node:assert";
 
 describe('serializer utility', () => {
     describe('safeSerialize', () => {
@@ -13,9 +15,9 @@ describe('serializer utility', () => {
         });
 
         test('handles arrays', () => {
-            const arr = [1, 'two', { three: 3 }];
+            const arr = [1, 'two', {three: 3}];
             const result = safeSerialize(arr);
-            expect(result).toEqual([1, 'two', { three: 3 }]);
+            expect(result).toEqual([1, 'two', {three: 3}]);
         });
 
         test('handles nested objects', () => {
@@ -33,9 +35,9 @@ describe('serializer utility', () => {
         });
 
         test('handles circular references', () => {
-            const obj: any = { a: 1 };
+            const obj: any = {a: 1};
             obj.self = obj;
-            obj.nested = { ref: obj };
+            obj.nested = {ref: obj};
 
             const result = safeSerialize(obj) as any;
             expect(result.a).toBe(1);
@@ -45,7 +47,8 @@ describe('serializer utility', () => {
 
         test('handles non-serializable values', () => {
             const obj = {
-                fn: () => {},
+                fn: () => {
+                },
                 sym: Symbol('test'),
                 undef: undefined,
                 normal: 'value'
@@ -60,20 +63,20 @@ describe('serializer utility', () => {
 
         test('handles Axios response-like objects', () => {
             const axiosResponse = {
-                data: { id: 1, name: 'test' },
+                data: {id: 1, name: 'test'},
                 status: 200,
                 statusText: 'OK',
-                headers: { 'content-type': 'application/json' },
-                config: { timeout: 1000 }, // should be excluded
+                headers: {'content-type': 'application/json'},
+                config: {timeout: 1000}, // should be excluded
                 request: {}, // should be excluded
             };
 
             const result = safeSerialize(axiosResponse) as any;
             expect(result).toEqual({
-                data: { id: 1, name: 'test' },
+                data: {id: 1, name: 'test'},
                 status: 200,
                 statusText: 'OK',
-                headers: { 'content-type': 'application/json' }
+                headers: {'content-type': 'application/json'}
             });
             expect(result.config).toBeUndefined();
             expect(result.request).toBeUndefined();
@@ -86,9 +89,9 @@ describe('serializer utility', () => {
                         id: 1,
                         responses: [
                             {
-                                data: { value: 'nested' },
+                                data: {value: 'nested'},
                                 status: 200,
-                                headers: { 'x-test': 'true' }
+                                headers: {'x-test': 'true'}
                             }
                         ]
                     }
@@ -105,7 +108,7 @@ describe('serializer utility', () => {
         test('handles arrays with circular references', () => {
             const arr: any[] = [1, 2, 3];
             arr.push(arr);
-            const obj = { ref: arr };
+            const obj = {ref: arr};
             arr.push(obj);
 
             const result = safeSerialize(arr) as any[];
@@ -123,7 +126,7 @@ describe('serializer utility', () => {
                 num: 42,
                 str: 'hello',
                 nested: {
-                    arr: [1, 2, { value: 3 }]
+                    arr: [1, 2, {value: 3}]
                 }
             };
             const result = safeStringify(obj);
@@ -131,7 +134,7 @@ describe('serializer utility', () => {
         });
 
         test('handles circular references in stringification', () => {
-            const obj: any = { a: 1 };
+            const obj: any = {a: 1};
             obj.self = obj;
 
             const result = safeStringify(obj);
@@ -142,16 +145,16 @@ describe('serializer utility', () => {
 
         test('produces valid JSON for Axios responses', () => {
             const axiosResponse = {
-                data: { id: 1 },
+                data: {id: 1},
                 status: 200,
                 statusText: 'OK',
-                headers: { 'content-type': 'application/json' },
-                config: { timeout: 1000 }
+                headers: {'content-type': 'application/json'},
+                config: {timeout: 1000}
             };
 
             const result = safeStringify(axiosResponse);
             const parsed = JSON.parse(result);
-            expect(parsed.data).toEqual({ id: 1 });
+            expect(parsed.data).toEqual({id: 1});
             expect(parsed.status).toBe(200);
             expect(parsed.config).toBeUndefined();
         });
@@ -162,13 +165,13 @@ describe('serializer utility', () => {
             // Mock API responses
             nock('https://api.example.com')
                 .get('/data')
-                .reply(200, { message: 'success' }, {
+                .reply(200, {message: 'success'}, {
                     'content-type': 'application/json'
                 });
 
             nock('https://api.example.com')
                 .get('/error')
-                .reply(404, { error: 'not found' });
+                .reply(404, {error: 'not found'});
         });
 
         afterAll(() => {
@@ -180,7 +183,7 @@ describe('serializer utility', () => {
             const result = safeSerialize(response) as any;
 
             // Check that we have the essential Axios response properties
-            expect(result.data).toEqual({ message: 'success' });
+            expect(result.data).toEqual({message: 'success'});
             expect(result.status).toBe(200);
             expect(result.statusText).toBeDefined();
             expect(result.headers).toBeDefined();
@@ -199,7 +202,7 @@ describe('serializer utility', () => {
                 const result = safeSerialize(error) as any;
 
                 // Check error response structure
-                expect(result.response.data).toEqual({ error: 'not found' });
+                expect(result.response.data).toEqual({error: 'not found'});
                 expect(result.response.status).toBe(404);
                 expect(result.response.headers).toBeDefined();
 
@@ -210,7 +213,7 @@ describe('serializer utility', () => {
                 // Verify that sensitive/internal properties are excluded or properly handled
                 expect(result.stack).toBeUndefined();
                 expect(result.cause).toBeUndefined();
-                
+
                 // The config object should be serialized but simplified
                 if (result.config) {
                     expect(result.config.url).toBeDefined();
@@ -229,8 +232,8 @@ describe('serializer utility', () => {
                 .get('/nested')
                 .reply(200, {
                     users: [
-                        { id: 1, details: { name: 'John', age: 30 } },
-                        { id: 2, details: { name: 'Jane', age: 25 } }
+                        {id: 1, details: {name: 'John', age: 30}},
+                        {id: 2, details: {name: 'Jane', age: 25}}
                     ],
                     metadata: {
                         total: 2,
@@ -252,4 +255,4 @@ describe('serializer utility', () => {
             expect(result.config).toBeUndefined();
         });
     });
-}); 
+});

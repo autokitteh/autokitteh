@@ -1,4 +1,4 @@
-import {Waiter, ak_call} from "../runtime/ak_call";
+import {Waiter, ak_call} from "../runtime/runner/ak_call";
 import axios from 'axios';
 import {EventEmitter, once} from "node:events";
 
@@ -123,6 +123,6 @@ test('ak_call axios', async () => {
     expect(response.data).toHaveProperty('id', 1);
     expect(response.data).toHaveProperty('name');
     expect(response.data).toHaveProperty('email');
-    
+
     expect(await p).toBe(v);
 })

@@ -1,4 +1,4 @@
-import { listExports, patchCode } from '../common/ast_utils';
+import { listExports, patchCode } from '../runtime/common/ast_utils';
 import { Export } from "../runtime/pb/autokitteh/user_code/v1/runner_svc_pb";
 
 test('test list symbols', async () => {

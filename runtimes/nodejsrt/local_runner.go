@@ -26,7 +26,7 @@ import (
 )
 
 var (
-	//go:embed all:nodejs/runtime all:nodejs/common
+	//go:embed all:nodejs/runtime
 	runnerJsCode embed.FS
 )
 
@@ -141,10 +141,10 @@ func (r *LocalNodeJS) PrepareProject(tarData []byte) error {
 }
 
 func (r *LocalNodeJS) setupDependencies() error {
-	if err := setupTypeScript(r.projectDir); err != nil {
-		return fmt.Errorf("setup typescript: %w", err)
-	}
-	r.log.Info("typescript setup complete")
+	//if err := setupTypeScript(r.projectDir); err != nil {
+	//	return fmt.Errorf("setup typescript: %w", err)
+	//}
+	//r.log.Info("typescript setup complete")
 
 	if err := installDependencies(r.projectDir); err != nil {
 		return fmt.Errorf("install dependencies: %w", err)

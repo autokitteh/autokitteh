@@ -4,8 +4,8 @@ import generate from "@babel/generator";
 import {isMemberExpression, identifier, isIdentifier, isAwaitExpression, isVariableDeclarator, stringLiteral} from "@babel/types";
 
 import {listFiles} from "./file_utils";
-import fs from "fs";
-import {Export} from "../runtime/pb/autokitteh/user_code/v1/runner_svc_pb";
+import * as fs from "fs";
+import {Export} from "../pb/autokitteh/user_code/v1/runner_svc_pb";
 
 export interface Symbol {
     file: string;
@@ -101,36 +101,36 @@ export async function listExportsInDirectory(dirPath: string): Promise<Export[]>
 // Helper function to check if an identifier is from a relative import or local
 function isFromRelativeImport(path: NodePath, identifierName: string): boolean {
     const binding = path.scope.getBinding(identifierName);
-    
+
     // Check for import from relative path
     if (binding?.path.parent?.type === 'ImportDeclaration') {
         const importSource = binding.path.parent.source.value;
         return importSource.startsWith('.');
     }
-    
+
     // Special case: For variables initialized with a constructor
-    if (binding?.path.node.type === 'VariableDeclarator' && 
+    if (binding?.path.node.type === 'VariableDeclarator' &&
         binding.path.node.init?.type === 'NewExpression' &&
         binding.path.node.init.callee.type === 'Identifier') {
-        
+
         // Get the class name
         const className = binding.path.node.init.callee.name;
-        
+
         // Look up where the class comes from
         const classBinding = path.scope.getBinding(className);
-        
+
         // If the class is imported, check if it's from a relative path
         if (classBinding?.path.parent?.type === 'ImportDeclaration') {
             const importSource = classBinding.path.parent.source.value;
             return importSource.startsWith('.');
         }
     }
-    
+
     // If binding exists but wasn't imported, it's defined in this file
     if (binding && !binding.path.findParent(p => p.isImportDeclaration())) {
         return true;
     }
-    
+
     return false;
 }
 
@@ -159,15 +159,15 @@ export async function patchCode(code: string): Promise<string> {
             if (isIdentifier(path.node.callee)) {
                 const identifierName = path.node.callee.name;
                 const binding = path.scope.getBinding(identifierName);
-                
+
                 // Check if it's a variable that references an external method
-                if (binding?.path.node.type === 'VariableDeclarator' && 
+                if (binding?.path.node.type === 'VariableDeclarator' &&
                     isMemberExpression(binding.path.node.init)) {
-                    
+
                     const objExpr = binding.path.node.init.object;
                     if (isIdentifier(objExpr)) {
                         const objectName = objExpr.name;
-                        
+
                         // If the object is from an external module, wrap the function call
                         if (!isFromRelativeImport(binding.path, objectName) && !isStandardBuiltIn(objectName)) {
                             path.node.callee = identifier("(global as any).ak_call");
@@ -176,7 +176,7 @@ export async function patchCode(code: string): Promise<string> {
                         }
                     }
                 }
-                
+
                 // Check if it's a direct external function
                 if (isFromRelativeImport(path, identifierName) || isStandardBuiltIn(identifierName)) {
                     return;
@@ -190,21 +190,21 @@ export async function patchCode(code: string): Promise<string> {
             else if (isMemberExpression(path.node.callee)) {
                 // Get the root object of the member expression
                 let rootObject = path.node.callee.object;
-                
+
                 // Traverse to the root object in case of nested member expressions
                 while (isMemberExpression(rootObject)) {
                     rootObject = rootObject.object;
                 }
-                
+
                 // Only proceed if the root is an identifier
                 if (isIdentifier(rootObject)) {
                     const rootName = rootObject.name;
-                    
+
                     // Skip wrapping if the root object is from a relative import, local, or a standard built-in
                     if (isFromRelativeImport(path, rootName) || isStandardBuiltIn(rootName)) {
                         return;
                     }
-                    
+
                     // Wrap the entire method expression rather than passing object and method separately
                     const originalCallee = path.node.callee;
                     path.node.callee = identifier("(global as any).ak_call");

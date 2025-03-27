@@ -1,7 +1,7 @@
-import path from "path";
+import * as path from "path";
 import {patchCode} from "../common/ast_utils";
 import {listFiles} from "../common/file_utils";
-import fs from "fs";
+import * as fs from "fs";
 
 export async function build(inputDir: string, outputDir: string): Promise<void> {
     const files = await listFiles(inputDir);

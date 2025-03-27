@@ -5,8 +5,8 @@ import { EventEmitter } from "events";
 import * as path from "path";
 import * as fs from "fs";
 
-import { HandlerService } from "./pb/autokitteh/user_code/v1/handler_svc_pb";
-import { RunnerService, Export } from "./pb/autokitteh/user_code/v1/runner_svc_pb";
+import { HandlerService } from "../pb/autokitteh/user_code/v1/handler_svc_pb";
+import { RunnerService, Export } from "../pb/autokitteh/user_code/v1/runner_svc_pb";
 import { ActivityWaiter } from "./ak_call";
 import { listExports } from "../common/ast_utils";
 import { initializeGlobals } from "./runtime";

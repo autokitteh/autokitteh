@@ -1,25 +1,37 @@
-import { describe, expect, test, jest, beforeEach, afterEach } from '@jest/globals';
-import { createClient } from '@connectrpc/connect';
-import { HandlerService, ActivityRequest, ActivityResponse, DoneRequest, DoneResponse, HandlerHealthRequest, HandlerHealthResponse, IsActiveRunnerRequest, IsActiveRunnerResponse, LogRequest, LogResponse, PrintRequest, PrintResponse, SleepRequest, SleepResponse, SubscribeRequest, SubscribeResponse, NextEventRequest, NextEventResponse, UnsubscribeRequest, UnsubscribeResponse, StartSessionRequest, StartSessionResponse, EncodeJWTRequest, EncodeJWTResponse, RefreshRequest, RefreshResponse } from '../runtime/pb/autokitteh/user_code/v1/handler_svc_pb';
-import Runner from '../runtime/runner';
-import { EventEmitter } from 'events';
-import { Message } from '@bufbuild/protobuf';
+import {describe, expect, test, jest, beforeEach, afterEach} from '@jest/globals';
+import {
+    ActivityResponse,
+    DoneResponse,
+    HandlerHealthResponse,
+    IsActiveRunnerResponse,
+    LogResponse,
+    PrintResponse,
+    SleepResponse,
+    SubscribeResponse,
+    NextEventResponse,
+    UnsubscribeResponse,
+    StartSessionResponse,
+    EncodeJWTResponse,
+    RefreshResponse
+} from '../runtime/pb/autokitteh/user_code/v1/handler_svc_pb';
+import Runner from '../runtime/runner/runner';
+import {EventEmitter} from 'events';
 
 // Mock the client type with correct return types
 type MockClient = {
-  health: jest.Mock<() => Promise<HandlerHealthResponse>>;
-  isActiveRunner: jest.Mock<() => Promise<IsActiveRunnerResponse>>;
-  print: jest.Mock<() => Promise<PrintResponse>>;
-  activity: jest.Mock<() => Promise<ActivityResponse>>;
-  done: jest.Mock<() => Promise<DoneResponse>>;
-  log: jest.Mock<() => Promise<LogResponse>>;
-  sleep: jest.Mock<() => Promise<SleepResponse>>;
-  subscribe: jest.Mock<() => Promise<SubscribeResponse>>;
-  nextEvent: jest.Mock<() => Promise<NextEventResponse>>;
-  unsubscribe: jest.Mock<() => Promise<UnsubscribeResponse>>;
-  startSession: jest.Mock<() => Promise<StartSessionResponse>>;
-  encodeJWT: jest.Mock<() => Promise<EncodeJWTResponse>>;
-  refreshOAuthToken: jest.Mock<() => Promise<RefreshResponse>>;
+    health: jest.Mock<() => Promise<HandlerHealthResponse>>;
+    isActiveRunner: jest.Mock<() => Promise<IsActiveRunnerResponse>>;
+    print: jest.Mock<() => Promise<PrintResponse>>;
+    activity: jest.Mock<() => Promise<ActivityResponse>>;
+    done: jest.Mock<() => Promise<DoneResponse>>;
+    log: jest.Mock<() => Promise<LogResponse>>;
+    sleep: jest.Mock<() => Promise<SleepResponse>>;
+    subscribe: jest.Mock<() => Promise<SubscribeResponse>>;
+    nextEvent: jest.Mock<() => Promise<NextEventResponse>>;
+    unsubscribe: jest.Mock<() => Promise<UnsubscribeResponse>>;
+    startSession: jest.Mock<() => Promise<StartSessionResponse>>;
+    encodeJWT: jest.Mock<() => Promise<EncodeJWTResponse>>;
+    refreshOAuthToken: jest.Mock<() => Promise<RefreshResponse>>;
 };
 
 // Mock the HandlerService client
@@ -38,43 +50,47 @@ describe('Runner', () => {
         // Create mock client with proper response types
         mockClient = {
             health: jest.fn<() => Promise<HandlerHealthResponse>>().mockResolvedValue(
-                { error: '' } as HandlerHealthResponse
+                {error: ''} as HandlerHealthResponse
             ),
             isActiveRunner: jest.fn<() => Promise<IsActiveRunnerResponse>>().mockResolvedValue(
-                { error: '', isActive: true } as IsActiveRunnerResponse
+                {error: '', isActive: true} as IsActiveRunnerResponse
             ),
             print: jest.fn<() => Promise<PrintResponse>>().mockResolvedValue(
-                { error: '' } as PrintResponse
+                {error: ''} as PrintResponse
             ),
             activity: jest.fn<() => Promise<ActivityResponse>>().mockResolvedValue(
-                { error: '', $typeName: 'autokitteh.user_code.v1.ActivityResponse' } as ActivityResponse
+                {error: '', $typeName: 'autokitteh.user_code.v1.ActivityResponse'} as ActivityResponse
             ),
             done: jest.fn<() => Promise<DoneResponse>>().mockResolvedValue(
-                { $typeName: 'autokitteh.user_code.v1.DoneResponse' } as DoneResponse
+                {$typeName: 'autokitteh.user_code.v1.DoneResponse'} as DoneResponse
             ),
             log: jest.fn<() => Promise<LogResponse>>().mockResolvedValue(
-                { error: '', $typeName: 'autokitteh.user_code.v1.LogResponse' } as LogResponse
+                {error: '', $typeName: 'autokitteh.user_code.v1.LogResponse'} as LogResponse
             ),
             sleep: jest.fn<() => Promise<SleepResponse>>().mockResolvedValue(
-                { error: '', $typeName: 'autokitteh.user_code.v1.SleepResponse' } as SleepResponse
+                {error: '', $typeName: 'autokitteh.user_code.v1.SleepResponse'} as SleepResponse
             ),
             subscribe: jest.fn<() => Promise<SubscribeResponse>>().mockResolvedValue(
-                { signalId: '', error: '', $typeName: 'autokitteh.user_code.v1.SubscribeResponse' } as SubscribeResponse
+                {signalId: '', error: '', $typeName: 'autokitteh.user_code.v1.SubscribeResponse'} as SubscribeResponse
             ),
             nextEvent: jest.fn<() => Promise<NextEventResponse>>().mockResolvedValue(
-                { error: '', $typeName: 'autokitteh.user_code.v1.NextEventResponse' } as NextEventResponse
+                {error: '', $typeName: 'autokitteh.user_code.v1.NextEventResponse'} as NextEventResponse
             ),
             unsubscribe: jest.fn<() => Promise<UnsubscribeResponse>>().mockResolvedValue(
-                { error: '', $typeName: 'autokitteh.user_code.v1.UnsubscribeResponse' } as UnsubscribeResponse
+                {error: '', $typeName: 'autokitteh.user_code.v1.UnsubscribeResponse'} as UnsubscribeResponse
             ),
             startSession: jest.fn<() => Promise<StartSessionResponse>>().mockResolvedValue(
-                { sessionId: '', error: '', $typeName: 'autokitteh.user_code.v1.StartSessionResponse' } as StartSessionResponse
+                {
+                    sessionId: '',
+                    error: '',
+                    $typeName: 'autokitteh.user_code.v1.StartSessionResponse'
+                } as StartSessionResponse
             ),
             encodeJWT: jest.fn<() => Promise<EncodeJWTResponse>>().mockResolvedValue(
-                { jwt: '', error: '', $typeName: 'autokitteh.user_code.v1.EncodeJWTResponse' } as EncodeJWTResponse
+                {jwt: '', error: '', $typeName: 'autokitteh.user_code.v1.EncodeJWTResponse'} as EncodeJWTResponse
             ),
             refreshOAuthToken: jest.fn<() => Promise<RefreshResponse>>().mockResolvedValue(
-                { token: '', error: '', $typeName: 'autokitteh.user_code.v1.RefreshResponse' } as RefreshResponse
+                {token: '', error: '', $typeName: 'autokitteh.user_code.v1.RefreshResponse'} as RefreshResponse
             ),
         };
 
@@ -142,44 +158,64 @@ describe('Runner', () => {
 
             const mockClient = {
                 health: jest.fn<() => Promise<HandlerHealthResponse>>().mockResolvedValue(
-                    { error: '', $typeName: 'autokitteh.user_code.v1.HandlerHealthResponse' } as HandlerHealthResponse
+                    {error: '', $typeName: 'autokitteh.user_code.v1.HandlerHealthResponse'} as HandlerHealthResponse
                 ),
                 isActiveRunner: jest.fn<() => Promise<IsActiveRunnerResponse>>()
-                    .mockResolvedValueOnce({ isActive: false, error: 'test error', $typeName: 'autokitteh.user_code.v1.IsActiveRunnerResponse' } as IsActiveRunnerResponse)
-                    .mockResolvedValueOnce({ isActive: false, error: 'test error', $typeName: 'autokitteh.user_code.v1.IsActiveRunnerResponse' } as IsActiveRunnerResponse)
-                    .mockResolvedValue({ isActive: true, error: '', $typeName: 'autokitteh.user_code.v1.IsActiveRunnerResponse' } as IsActiveRunnerResponse),
+                    .mockResolvedValueOnce({
+                        isActive: false,
+                        error: 'test error',
+                        $typeName: 'autokitteh.user_code.v1.IsActiveRunnerResponse'
+                    } as IsActiveRunnerResponse)
+                    .mockResolvedValueOnce({
+                        isActive: false,
+                        error: 'test error',
+                        $typeName: 'autokitteh.user_code.v1.IsActiveRunnerResponse'
+                    } as IsActiveRunnerResponse)
+                    .mockResolvedValue({
+                        isActive: true,
+                        error: '',
+                        $typeName: 'autokitteh.user_code.v1.IsActiveRunnerResponse'
+                    } as IsActiveRunnerResponse),
                 print: jest.fn<() => Promise<PrintResponse>>().mockResolvedValue(
-                    { error: '', $typeName: 'autokitteh.user_code.v1.PrintResponse' } as PrintResponse
+                    {error: '', $typeName: 'autokitteh.user_code.v1.PrintResponse'} as PrintResponse
                 ),
                 activity: jest.fn<() => Promise<ActivityResponse>>().mockResolvedValue(
-                    { error: '', $typeName: 'autokitteh.user_code.v1.ActivityResponse' } as ActivityResponse
+                    {error: '', $typeName: 'autokitteh.user_code.v1.ActivityResponse'} as ActivityResponse
                 ),
                 done: jest.fn<() => Promise<DoneResponse>>().mockResolvedValue(
-                    { $typeName: 'autokitteh.user_code.v1.DoneResponse' } as DoneResponse
+                    {$typeName: 'autokitteh.user_code.v1.DoneResponse'} as DoneResponse
                 ),
                 log: jest.fn<() => Promise<LogResponse>>().mockResolvedValue(
-                    { error: '', $typeName: 'autokitteh.user_code.v1.LogResponse' } as LogResponse
+                    {error: '', $typeName: 'autokitteh.user_code.v1.LogResponse'} as LogResponse
                 ),
                 sleep: jest.fn<() => Promise<SleepResponse>>().mockResolvedValue(
-                    { error: '', $typeName: 'autokitteh.user_code.v1.SleepResponse' } as SleepResponse
+                    {error: '', $typeName: 'autokitteh.user_code.v1.SleepResponse'} as SleepResponse
                 ),
                 subscribe: jest.fn<() => Promise<SubscribeResponse>>().mockResolvedValue(
-                    { signalId: '', error: '', $typeName: 'autokitteh.user_code.v1.SubscribeResponse' } as SubscribeResponse
+                    {
+                        signalId: '',
+                        error: '',
+                        $typeName: 'autokitteh.user_code.v1.SubscribeResponse'
+                    } as SubscribeResponse
                 ),
                 nextEvent: jest.fn<() => Promise<NextEventResponse>>().mockResolvedValue(
-                    { error: '', $typeName: 'autokitteh.user_code.v1.NextEventResponse' } as NextEventResponse
+                    {error: '', $typeName: 'autokitteh.user_code.v1.NextEventResponse'} as NextEventResponse
                 ),
                 unsubscribe: jest.fn<() => Promise<UnsubscribeResponse>>().mockResolvedValue(
-                    { error: '', $typeName: 'autokitteh.user_code.v1.UnsubscribeResponse' } as UnsubscribeResponse
+                    {error: '', $typeName: 'autokitteh.user_code.v1.UnsubscribeResponse'} as UnsubscribeResponse
                 ),
                 startSession: jest.fn<() => Promise<StartSessionResponse>>().mockResolvedValue(
-                    { sessionId: '', error: '', $typeName: 'autokitteh.user_code.v1.StartSessionResponse' } as StartSessionResponse
+                    {
+                        sessionId: '',
+                        error: '',
+                        $typeName: 'autokitteh.user_code.v1.StartSessionResponse'
+                    } as StartSessionResponse
                 ),
                 encodeJWT: jest.fn<() => Promise<EncodeJWTResponse>>().mockResolvedValue(
-                    { jwt: '', error: '', $typeName: 'autokitteh.user_code.v1.EncodeJWTResponse' } as EncodeJWTResponse
+                    {jwt: '', error: '', $typeName: 'autokitteh.user_code.v1.EncodeJWTResponse'} as EncodeJWTResponse
                 ),
                 refreshOAuthToken: jest.fn<() => Promise<RefreshResponse>>().mockResolvedValue(
-                    { token: '', error: '', $typeName: 'autokitteh.user_code.v1.RefreshResponse' } as RefreshResponse
+                    {token: '', error: '', $typeName: 'autokitteh.user_code.v1.RefreshResponse'} as RefreshResponse
                 ),
             };
 
@@ -220,70 +256,82 @@ describe('Runner', () => {
         it('should clear health check timer and emit stop event', async () => {
             // Setup fake timers for better control
             jest.useFakeTimers();
-            
+
             const mockClient = {
                 health: jest.fn<() => Promise<HandlerHealthResponse>>().mockResolvedValue(
-                    { error: '', $typeName: 'autokitteh.user_code.v1.HandlerHealthResponse' } as HandlerHealthResponse
+                    {error: '', $typeName: 'autokitteh.user_code.v1.HandlerHealthResponse'} as HandlerHealthResponse
                 ),
                 isActiveRunner: jest.fn<() => Promise<IsActiveRunnerResponse>>()
-                    .mockResolvedValue({ isActive: true, error: '', $typeName: 'autokitteh.user_code.v1.IsActiveRunnerResponse' } as IsActiveRunnerResponse),
+                    .mockResolvedValue({
+                        isActive: true,
+                        error: '',
+                        $typeName: 'autokitteh.user_code.v1.IsActiveRunnerResponse'
+                    } as IsActiveRunnerResponse),
                 print: jest.fn<() => Promise<PrintResponse>>().mockResolvedValue(
-                    { error: '', $typeName: 'autokitteh.user_code.v1.PrintResponse' } as PrintResponse
+                    {error: '', $typeName: 'autokitteh.user_code.v1.PrintResponse'} as PrintResponse
                 ),
                 activity: jest.fn<() => Promise<ActivityResponse>>().mockResolvedValue(
-                    { error: '', $typeName: 'autokitteh.user_code.v1.ActivityResponse' } as ActivityResponse
+                    {error: '', $typeName: 'autokitteh.user_code.v1.ActivityResponse'} as ActivityResponse
                 ),
                 done: jest.fn<() => Promise<DoneResponse>>().mockResolvedValue(
-                    { $typeName: 'autokitteh.user_code.v1.DoneResponse' } as DoneResponse
+                    {$typeName: 'autokitteh.user_code.v1.DoneResponse'} as DoneResponse
                 ),
                 log: jest.fn<() => Promise<LogResponse>>().mockResolvedValue(
-                    { error: '', $typeName: 'autokitteh.user_code.v1.LogResponse' } as LogResponse
+                    {error: '', $typeName: 'autokitteh.user_code.v1.LogResponse'} as LogResponse
                 ),
                 sleep: jest.fn<() => Promise<SleepResponse>>().mockResolvedValue(
-                    { error: '', $typeName: 'autokitteh.user_code.v1.SleepResponse' } as SleepResponse
+                    {error: '', $typeName: 'autokitteh.user_code.v1.SleepResponse'} as SleepResponse
                 ),
                 subscribe: jest.fn<() => Promise<SubscribeResponse>>().mockResolvedValue(
-                    { signalId: '', error: '', $typeName: 'autokitteh.user_code.v1.SubscribeResponse' } as SubscribeResponse
+                    {
+                        signalId: '',
+                        error: '',
+                        $typeName: 'autokitteh.user_code.v1.SubscribeResponse'
+                    } as SubscribeResponse
                 ),
                 nextEvent: jest.fn<() => Promise<NextEventResponse>>().mockResolvedValue(
-                    { error: '', $typeName: 'autokitteh.user_code.v1.NextEventResponse' } as NextEventResponse
+                    {error: '', $typeName: 'autokitteh.user_code.v1.NextEventResponse'} as NextEventResponse
                 ),
                 unsubscribe: jest.fn<() => Promise<UnsubscribeResponse>>().mockResolvedValue(
-                    { error: '', $typeName: 'autokitteh.user_code.v1.UnsubscribeResponse' } as UnsubscribeResponse
+                    {error: '', $typeName: 'autokitteh.user_code.v1.UnsubscribeResponse'} as UnsubscribeResponse
                 ),
                 startSession: jest.fn<() => Promise<StartSessionResponse>>().mockResolvedValue(
-                    { sessionId: '', error: '', $typeName: 'autokitteh.user_code.v1.StartSessionResponse' } as StartSessionResponse
+                    {
+                        sessionId: '',
+                        error: '',
+                        $typeName: 'autokitteh.user_code.v1.StartSessionResponse'
+                    } as StartSessionResponse
                 ),
                 encodeJWT: jest.fn<() => Promise<EncodeJWTResponse>>().mockResolvedValue(
-                    { jwt: '', error: '', $typeName: 'autokitteh.user_code.v1.EncodeJWTResponse' } as EncodeJWTResponse
+                    {jwt: '', error: '', $typeName: 'autokitteh.user_code.v1.EncodeJWTResponse'} as EncodeJWTResponse
                 ),
                 refreshOAuthToken: jest.fn<() => Promise<RefreshResponse>>().mockResolvedValue(
-                    { token: '', error: '', $typeName: 'autokitteh.user_code.v1.RefreshResponse' } as RefreshResponse
+                    {token: '', error: '', $typeName: 'autokitteh.user_code.v1.RefreshResponse'} as RefreshResponse
                 ),
             };
 
             const runner = new Runner('test-id', '/test/dir', mockClient as any);
-            
+
             // Start the runner and wait for the promise to resolve
             const startPromise = runner.start();
             (runner as any).events.emit('started');
             await startPromise;
-            
+
             // Advance timers to ensure health check is started
             jest.advanceTimersByTime(1000);
-            
+
             // Create a spy for clearTimeout to verify it's called when stopping the runner
             const clearTimeoutSpy = jest.spyOn(global, 'clearTimeout');
-            
+
             // Stop the runner
             runner.stop();
-            
+
             // Verify clearTimeout was called (which means timer was cleared)
             expect(clearTimeoutSpy).toHaveBeenCalled();
-            
-            // Verify health check timer is reset 
+
+            // Verify health check timer is reset
             expect((runner as any).healthcheckTimer).toBeUndefined();
-            
+
             // Clean up
             clearTimeoutSpy.mockRestore();
             jest.useRealTimers();
@@ -294,40 +342,52 @@ describe('Runner', () => {
         it('should handle print failures gracefully', async () => {
             const mockClient = {
                 health: jest.fn<() => Promise<HandlerHealthResponse>>().mockResolvedValue(
-                    { error: '', $typeName: 'autokitteh.user_code.v1.HandlerHealthResponse' } as HandlerHealthResponse
+                    {error: '', $typeName: 'autokitteh.user_code.v1.HandlerHealthResponse'} as HandlerHealthResponse
                 ),
                 isActiveRunner: jest.fn<() => Promise<IsActiveRunnerResponse>>()
-                    .mockResolvedValue({ isActive: true, error: '', $typeName: 'autokitteh.user_code.v1.IsActiveRunnerResponse' } as IsActiveRunnerResponse),
+                    .mockResolvedValue({
+                        isActive: true,
+                        error: '',
+                        $typeName: 'autokitteh.user_code.v1.IsActiveRunnerResponse'
+                    } as IsActiveRunnerResponse),
                 print: jest.fn<() => Promise<PrintResponse>>().mockRejectedValue(new Error('print failed')),
                 activity: jest.fn<() => Promise<ActivityResponse>>().mockResolvedValue(
-                    { error: '', $typeName: 'autokitteh.user_code.v1.ActivityResponse' } as ActivityResponse
+                    {error: '', $typeName: 'autokitteh.user_code.v1.ActivityResponse'} as ActivityResponse
                 ),
                 done: jest.fn<() => Promise<DoneResponse>>().mockResolvedValue(
-                    { $typeName: 'autokitteh.user_code.v1.DoneResponse' } as DoneResponse
+                    {$typeName: 'autokitteh.user_code.v1.DoneResponse'} as DoneResponse
                 ),
                 log: jest.fn<() => Promise<LogResponse>>().mockResolvedValue(
-                    { error: '', $typeName: 'autokitteh.user_code.v1.LogResponse' } as LogResponse
+                    {error: '', $typeName: 'autokitteh.user_code.v1.LogResponse'} as LogResponse
                 ),
                 sleep: jest.fn<() => Promise<SleepResponse>>().mockResolvedValue(
-                    { error: '', $typeName: 'autokitteh.user_code.v1.SleepResponse' } as SleepResponse
+                    {error: '', $typeName: 'autokitteh.user_code.v1.SleepResponse'} as SleepResponse
                 ),
                 subscribe: jest.fn<() => Promise<SubscribeResponse>>().mockResolvedValue(
-                    { signalId: '', error: '', $typeName: 'autokitteh.user_code.v1.SubscribeResponse' } as SubscribeResponse
+                    {
+                        signalId: '',
+                        error: '',
+                        $typeName: 'autokitteh.user_code.v1.SubscribeResponse'
+                    } as SubscribeResponse
                 ),
                 nextEvent: jest.fn<() => Promise<NextEventResponse>>().mockResolvedValue(
-                    { error: '', $typeName: 'autokitteh.user_code.v1.NextEventResponse' } as NextEventResponse
+                    {error: '', $typeName: 'autokitteh.user_code.v1.NextEventResponse'} as NextEventResponse
                 ),
                 unsubscribe: jest.fn<() => Promise<UnsubscribeResponse>>().mockResolvedValue(
-                    { error: '', $typeName: 'autokitteh.user_code.v1.UnsubscribeResponse' } as UnsubscribeResponse
+                    {error: '', $typeName: 'autokitteh.user_code.v1.UnsubscribeResponse'} as UnsubscribeResponse
                 ),
                 startSession: jest.fn<() => Promise<StartSessionResponse>>().mockResolvedValue(
-                    { sessionId: '', error: '', $typeName: 'autokitteh.user_code.v1.StartSessionResponse' } as StartSessionResponse
+                    {
+                        sessionId: '',
+                        error: '',
+                        $typeName: 'autokitteh.user_code.v1.StartSessionResponse'
+                    } as StartSessionResponse
                 ),
                 encodeJWT: jest.fn<() => Promise<EncodeJWTResponse>>().mockResolvedValue(
-                    { jwt: '', error: '', $typeName: 'autokitteh.user_code.v1.EncodeJWTResponse' } as EncodeJWTResponse
+                    {jwt: '', error: '', $typeName: 'autokitteh.user_code.v1.EncodeJWTResponse'} as EncodeJWTResponse
                 ),
                 refreshOAuthToken: jest.fn<() => Promise<RefreshResponse>>().mockResolvedValue(
-                    { token: '', error: '', $typeName: 'autokitteh.user_code.v1.RefreshResponse' } as RefreshResponse
+                    {token: '', error: '', $typeName: 'autokitteh.user_code.v1.RefreshResponse'} as RefreshResponse
                 ),
             };
 

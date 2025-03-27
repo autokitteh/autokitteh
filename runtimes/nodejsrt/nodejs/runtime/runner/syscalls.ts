@@ -5,7 +5,7 @@
  */
 
 import { Client } from "@connectrpc/connect";
-import { HandlerService } from "./pb/autokitteh/user_code/v1/handler_svc_pb";
+import { HandlerService } from "../pb/autokitteh/user_code/v1/handler_svc_pb";
 
 /**
  * Error thrown when a system call fails.
