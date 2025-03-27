@@ -510,6 +510,9 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 			}
 			return sdktypes.InvalidValue, fmt.Errorf("start request: %w", err)
 		}
+		defer func() {
+			py.cleanup(ctx)
+		}()
 	} else {
 		// If we're here, it's an activity call
 		req := pbUserCode.ExecuteRequest{Data: fn.Data()}
