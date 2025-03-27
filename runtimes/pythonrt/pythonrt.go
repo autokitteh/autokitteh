@@ -14,9 +14,11 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
 	pbModule "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/module/v1"
@@ -86,6 +88,15 @@ type pySvc struct {
 	firstCall bool // first call is the trigger, other calls are activities
 
 	channels comChannels
+
+	metrics struct {
+		tele *telemetry.Telemetry
+
+		runDuration   metric.Int64Histogram
+		startDuration metric.Int64Histogram
+		runErrors     metric.Int64Counter
+		startErrors   metric.Int64Counter
+	}
 }
 
 func (py *pySvc) cleanup(ctx context.Context) {
@@ -169,7 +180,45 @@ func newSvc(cfg *Config, l *zap.Logger) (sdkservices.Runtime, error) {
 		},
 	}
 
+	if err := svc.setupMetrics(); err != nil {
+		return nil, fmt.Errorf("setup metrics: %w", err)
+	}
+
 	return &svc, nil
+}
+
+func (py *pySvc) setupMetrics() error {
+	// FIXME: Get config
+	tele, err := telemetry.New(py.log, &telemetry.Config{}, "runtime", "python")
+	if err != nil {
+		return fmt.Errorf("create telemetry: %w", err)
+	}
+
+	mRun, err := tele.NewHistogram("run.duration", "Duration of Python runtime Run (ms)")
+	if err != nil {
+		return fmt.Errorf("create histogram: %w", err)
+	}
+	py.metrics.runDuration = mRun
+
+	mErr, err := tele.NewCounter("run.error", "Python Run error count")
+	if err != nil {
+		return fmt.Errorf("create counter: %w", err)
+	}
+	py.metrics.runErrors = mErr
+
+	mStart, err := tele.NewHistogram("start.duration", "Duration of Python Start (ms)")
+	if err != nil {
+		return fmt.Errorf("create histogram: %w", err)
+	}
+	py.metrics.startDuration = mStart
+
+	mErr, err = tele.NewCounter("start.error", "Python Start error count")
+	if err != nil {
+		return fmt.Errorf("create counter: %w", err)
+	}
+	py.metrics.startErrors = mErr
+
+	return nil
 }
 
 func (py *pySvc) Get() sdktypes.Runtime { return desc }
@@ -235,7 +284,18 @@ func (py *pySvc) Run(
 	values map[string]sdktypes.Value,
 	cbs *sdkservices.RunCallbacks,
 ) (sdkservices.Run, error) {
+	startTime := time.Now()
 	runnerOK := false
+
+	defer func() {
+		duration := time.Since(startTime)
+		if runnerOK {
+			py.metrics.tele.RecordInt64Histogram(ctx, py.metrics.runDuration, duration.Milliseconds())
+		} else {
+			py.metrics.tele.AddInt64Counter(ctx, py.metrics.runErrors, 1)
+		}
+	}()
+
 	py.ctx = ctx
 	py.runID = runID
 	py.sessionID = sessionID
@@ -378,6 +438,7 @@ func (py *pySvc) sendDone(err error) {
 }
 
 func (py *pySvc) startRequest(ctx context.Context, funcName string, eventData []byte) error {
+	startTime := time.Now()
 	req := pbUserCode.StartRequest{
 		EntryPoint: fmt.Sprintf("%s:%s", py.fileName, funcName),
 		Event: &pbUserCode.Event{
@@ -386,9 +447,11 @@ func (py *pySvc) startRequest(ctx context.Context, funcName string, eventData []
 	}
 	if _, err := py.runner.Start(ctx, &req); err != nil {
 		// TODO: Handle traceback
+		py.metrics.tele.AddInt64Counter(ctx, py.metrics.startErrors, 1)
 		return err
 	}
 
+	py.metrics.tele.RecordInt64Histogram(ctx, py.metrics.startDuration, time.Since(startTime).Milliseconds())
 	return nil
 }
 
