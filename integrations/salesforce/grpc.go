@@ -8,13 +8,20 @@ import (
 	"golang.org/x/oauth2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+
+	"go.autokitteh.dev/autokitteh/integrations/common"
+	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 // https://developer.salesforce.com/docs/platform/pub-sub-api/guide/supported-auth.html
 // https://pkg.go.dev/google.golang.org/grpc/credentials#PerRPCCredentials
 type grpcAuth struct {
+	logger      *zap.Logger
 	cfg         *oauth2.Config
-	token       *oauth2.Token
+	oauth       sdkservices.OAuth
+	vars        sdkservices.Vars
+	cid         sdktypes.ConnectionID
 	instanceURL string
 	tenantID    string
 }
@@ -52,20 +59,23 @@ const retryPolicy = `{
 	}]
 }`
 
-func initConn(l *zap.Logger, cfg *oauth2.Config, token *oauth2.Token, instanceURL, orgID string) (*grpc.ClientConn, error) {
+func (h handler) initConn(cfg *oauth2.Config, cid sdktypes.ConnectionID, instanceURL, orgID string) (*grpc.ClientConn, error) {
 	conn, err := grpc.NewClient(
 		"api.pubsub.salesforce.com:443",
 		grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})),
 		grpc.WithPerRPCCredentials(&grpcAuth{
+			logger:      h.logger,
 			cfg:         cfg,
-			token:       token,
+			oauth:       h.oauth,
+			vars:        h.vars,
+			cid:         cid,
 			instanceURL: instanceURL,
 			tenantID:    orgID,
 		}),
 		grpc.WithDefaultServiceConfig(retryPolicy),
 	)
 	if err != nil {
-		l.Error("failed to create gRPC connection for Salesforce events", zap.Error(err))
+		h.logger.Error("failed to create gRPC connection for Salesforce events", zap.Error(err))
 		return nil, err
 	}
 
@@ -74,13 +84,20 @@ func initConn(l *zap.Logger, cfg *oauth2.Config, token *oauth2.Token, instanceUR
 
 func (a *grpcAuth) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
 	var err error
-	a.token, err = a.cfg.TokenSource(ctx, a.token).Token()
+	// TODO: Use common.FreshOAuthToken
+	// TODO: Need to have oauth service here
+	// a.token, err = a.cfg.TokenSource(ctx, a.token).Token()
+	vs, err := a.vars.Get(ctx, sdktypes.NewVarScopeID(a.cid))
+	// TODO: add comment. assumes there is a continuous grpc connection that refreshes itself
+	// an inactive connection becomes stale after some time.
+	token := common.FreshOAuthToken(ctx, a.logger, a.oauth, a.vars, desc, vs)
 	if err != nil {
 		return nil, err
 	}
-
+	// TODO: remove after testing
+	a.logger.Warn("refreshed Salesforce OAuth token", zap.String("client_id", a.cid.String()))
 	return map[string]string{
-		"accesstoken": a.token.AccessToken,
+		"accesstoken": token.AccessToken,
 		"instanceurl": a.instanceURL,
 		"tenantid":    a.tenantID,
 	}, nil
