@@ -86,9 +86,17 @@ type pySvc struct {
 	firstCall bool // first call is the trigger, other calls are activities
 
 	channels comChannels
+
+	didCleanup bool
 }
 
 func (py *pySvc) cleanup(ctx context.Context) {
+	if py.didCleanup {
+		return
+	}
+
+	py.didCleanup = true
+
 	if err := runnerManager.Stop(ctx, py.runnerID); err != nil {
 		py.log.Warn("stop manager", zap.Error(err))
 	}
@@ -510,6 +518,9 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 			}
 			return sdktypes.InvalidValue, fmt.Errorf("start request: %w", err)
 		}
+		defer func() {
+			py.cleanup(context.Background())
+		}()
 	} else {
 		// If we're here, it's an activity call
 		req := pbUserCode.ExecuteRequest{Data: fn.Data()}

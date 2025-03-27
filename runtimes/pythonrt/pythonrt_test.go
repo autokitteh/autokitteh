@@ -238,6 +238,8 @@ func Test_pySvc_Run(t *testing.T) {
 	}
 	_, err = run.Call(ctx, fn, nil, kwargs)
 	require.NoError(t, err, "call")
+
+	require.True(t, svc.didCleanup, "cleanup wasn't called")
 }
 
 var isGoodVersionCasess = []struct {
