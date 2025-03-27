@@ -519,7 +519,7 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 			return sdktypes.InvalidValue, fmt.Errorf("start request: %w", err)
 		}
 		defer func() {
-			py.cleanup(ctx)
+			py.cleanup(context.Background())
 		}()
 	} else {
 		// If we're here, it's an activity call
