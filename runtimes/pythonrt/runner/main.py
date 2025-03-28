@@ -457,7 +457,7 @@ class Runner(pb.runner_rpc.RunnerService):
 
         try:
             if result.error:
-                req.error = self.result_error(result.error)
+                req.error = self.result_error(restore_error(result.error))
                 tb = pb_traceback(result.traceback)
                 req.traceback.extend(tb)
             else:
