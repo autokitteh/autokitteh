@@ -123,6 +123,11 @@ var testCmd = common.StandardCommand(&cobra.Command{
 			return fmt.Errorf("open calls.txt: %w", err)
 		}
 
+		expectedErrTxt, err := fs.ReadFile(txtarFS, "error.txt")
+		if err != nil && !errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("open error.txt: %w", err)
+		}
+
 		s := sdktypes.NewSession(bid, ep, nil, nil).WithDeploymentID(did).WithProjectID(pid)
 
 		ctx, cancel := common.LimitedContext()
@@ -179,6 +184,32 @@ var testCmd = common.StandardCommand(&cobra.Command{
 			errs = append(errs, errors.New(fmt.Sprint("output:\n", gotextdiff.ToUnified("want", "got", expected, edits))))
 		}
 
+		if expectedErrTxt != nil {
+			results, err := sessions().GetLog(ctx, sdkservices.SessionLogRecordsFilter{
+				SessionID: sid,
+				Types:     sdktypes.StateSessionLogRecordType,
+				PaginationRequest: sdktypes.PaginationRequest{
+					PageSize: 1,
+				},
+			})
+			if err != nil {
+				return fmt.Errorf("get calls: %w", err)
+			}
+
+			var actual string
+
+			if len(results.Records) != 0 {
+				errState := results.Records[0].GetState().GetError()
+				if errState.IsValid() {
+					actual = strings.TrimSpace(errState.GetProgramError().Value().GetString().Value())
+				}
+			}
+
+			if err := testDiff("error", string(expectedErrTxt), actual); err != nil {
+				errs = append(errs, err)
+			}
+		}
+
 		if expectedCallsTxt != nil {
 			results, err := sessions().GetLog(ctx, sdkservices.SessionLogRecordsFilter{
 				SessionID: sid,
@@ -197,13 +228,8 @@ var testCmd = common.StandardCommand(&cobra.Command{
 				fmt.Fprintf(&callsTxt, "%s\n", f.GetFunction().Name())
 			}
 
-			expected := strings.TrimSpace(kittehs.StringWithoutComments(string(expectedCallsTxt)))
-			actual := strings.TrimSpace(callsTxt.String())
-
-			if expected != actual {
-				edits := myers.ComputeEdits(span.URIFromPath("want"), expected, actual)
-				diff := gotextdiff.ToUnified("want", "got", expected, edits)
-				errs = append(errs, errors.New(fmt.Sprint("calls:\n", diff)))
+			if err := testDiff("calls", kittehs.StringWithoutComments(string(expectedCallsTxt)), callsTxt.String()); err != nil {
+				errs = append(errs, err)
 			}
 		}
 
@@ -218,4 +244,17 @@ func init() {
 	testCmd.Flags().StringVarP(&project, "project", "p", "", "project name or ID")
 	testCmd.Flags().StringVarP(&deploymentID, "deployment-id", "d", "", "deployment ID")
 	testCmd.Flags().StringVarP(&buildID, "build-id", "b", "", "build ID, mutually exclusive with --deployment-id")
+}
+
+func testDiff(what, expected, actual string) error {
+	expected = strings.TrimSpace(expected)
+	actual = strings.TrimSpace(actual)
+
+	if expected == actual {
+		return nil
+	}
+
+	edits := myers.ComputeEdits(span.URIFromPath("want"), expected, actual)
+	diff := gotextdiff.ToUnified("want", "got", expected, edits)
+	return fmt.Errorf("%s:\n%s", what, diff)
 }
