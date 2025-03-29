@@ -122,6 +122,7 @@ message StartSessionRequest {
   string loc = 2;
   bytes data = 3;
   bytes memo = 4;
+  string project = 5;
 }
 
 message StartSessionResponse {

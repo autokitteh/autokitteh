@@ -20,6 +20,7 @@ type Svcs struct {
 	Runtimes     sdkservices.Runtimes
 	Triggers     sdkservices.Triggers
 	Vars         sdkservices.Vars
+	Projects     sdkservices.Projects
 
 	Temporal temporalclient.Client
 }
