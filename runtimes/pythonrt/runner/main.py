@@ -136,6 +136,11 @@ def is_pickleable(err):
         return True
     except (TypeError, pickle.PickleError):
         return False
+    except Exception:
+        # This is unexpected, but we can't not handle it.
+        # Logging so we can investigate.
+        log.exception("unexpected error: %r", err)
+        return False
 
 
 def restore_error(err):
