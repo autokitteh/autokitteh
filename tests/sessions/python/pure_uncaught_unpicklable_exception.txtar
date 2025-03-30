@@ -18,3 +18,5 @@ def main(_):
 
 -- error.txt --
 error: X()
+
+main.X
