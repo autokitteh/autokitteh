@@ -27,13 +27,14 @@ func runNodeScript(log *zap.Logger, scriptPath string, args ...string) ([]byte, 
 	)
 	_, currentFile, _, _ := runtime.Caller(0)
 	baseDir := filepath.Dir(currentFile)
-	nodeDir := filepath.Join(baseDir, "nodejs") // adjust as needed
+	nodeDir := filepath.Join(baseDir, "nodejs/runtime") // adjust as needed
 
 	cmd := exec.Command("npx", append([]string{"ts-node", scriptPath}, args...)...)
 	cmd.Dir = nodeDir
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
+	log.Info("started nodejs runner", zap.String("command", cmd.String()))
 
 	if err := cmd.Run(); err != nil {
 		return nil, nil, fmt.Errorf("script execution failed:\n%s", stderr.String())

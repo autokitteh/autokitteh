@@ -492,7 +492,7 @@ func (js *nodejsSvc) initialCall(ctx context.Context, funcName string, args []sd
 
 	defer func() {
 		js.cleanup(ctx)
-		js.log.Info("Python subprocess cleanup after initial call is done")
+		js.log.Info("Node subprocess cleanup after initial call is done")
 	}()
 
 	js.log.Info("initial call", zap.Any("func", funcName))
