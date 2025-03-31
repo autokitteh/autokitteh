@@ -1,4 +1,4 @@
-import {Waiter, ak_call} from "../runtime/runner/ak_call";
+import {ak_call, Waiter} from "../runtime/runner/ak_call";
 import axios from 'axios';
 import {EventEmitter, once} from "node:events";
 
@@ -23,7 +23,7 @@ class mockWaiter implements Waiter {
             throw new Error('tokens do not match');
         }
 
-        const result= await this.f(...this.a);
+        const result = await this.f(...this.a);
         return result
     }
 
@@ -43,7 +43,7 @@ class mockWaiter implements Waiter {
         return r[0];
     }
 
-    done(): void {
+    async done(result?: unknown, error?: Error): Promise<void> {
     }
 
     getRunId(): string {

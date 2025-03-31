@@ -1,4 +1,4 @@
-package runner
+package runner_test
 
 import (
 	"archive/tar"
@@ -108,7 +108,7 @@ func TestLocalRunner(t *testing.T) {
 			runID,
 			sessionID,
 			"index.ts",
-			map[string][]byte{"index.ts": tarData},
+			map[string][]byte{"code.tar": tarData},
 			map[string]sdktypes.Value{},
 			cbs,
 		)
