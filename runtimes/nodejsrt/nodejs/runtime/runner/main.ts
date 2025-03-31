@@ -66,8 +66,12 @@ export async function main(options: ReturnType<typeof program.opts>) {
     console.log("Starting main with options:", options);
 
     try {
+        const baseUrl = options.workerAddress.match(/^https?:\/\//)
+            ? options.workerAddress
+            : `http://${options.workerAddress}`;
+
         const transport = createGrpcTransport({
-            baseUrl: options.workerAddress,
+            baseUrl,
             nodeOptions: { rejectUnauthorized: false }
         });
 
@@ -88,7 +92,11 @@ export async function main(options: ReturnType<typeof program.opts>) {
 if (require.main === module) {
     program.parse(process.argv);
     const options = program.opts();
-    void main(options);
+    main(options).catch(err => {
+        console.error("Error in main:", err);
+        process.exit(1);
+    });
+    // void main(options);
 }
 
 export { setupRuntime, setupServer, configureServer, startRuntime };
