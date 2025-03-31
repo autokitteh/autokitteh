@@ -9,8 +9,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-const issuer = "ak"
-
 type Algorithm string
 
 const (

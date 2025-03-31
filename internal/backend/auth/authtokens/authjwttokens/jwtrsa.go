@@ -19,7 +19,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-const rsaIssuer = "ak-rsa"
+const issuer = "autokitteh.cloud"
 
 var rsaMethod = j.SigningMethodRS256
 
@@ -147,7 +147,7 @@ func (rs *rsaTokens) Create(u sdktypes.User) (string, error) {
 
 	claim := j.RegisteredClaims{
 		IssuedAt: j.NewNumericDate(time.Now()),
-		Issuer:   rsaIssuer,
+		Issuer:   issuer,
 		Subject:  string(bs),
 		ID:       uuid.String(),
 	}

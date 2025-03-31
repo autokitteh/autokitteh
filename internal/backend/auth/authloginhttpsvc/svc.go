@@ -194,7 +194,10 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(jwks)
+		if err := json.NewEncoder(w).Encode(jwks); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	})
 
 	return nil
