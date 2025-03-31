@@ -11,6 +11,7 @@ import (
 func (h handler) dispatchEvent(payload map[string]any, eventType string) {
 	akEvent, err := common.TransformEvent(h.logger, payload, eventType)
 	if err != nil {
+		h.logger.Error("failed to transform Salesforce event", zap.Error(err))
 		return
 	}
 
