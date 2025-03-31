@@ -12,7 +12,7 @@ export interface Waiter {
     setRunnerId: (id: string) => void;
     setRunId: (id: string) => void;
     getRunId: () => string;
-    done: () => void;
+    done: (result?: unknown, error?: Error) => Promise<void>;
 }
 
 export class ActivityWaiter implements Waiter {
@@ -40,7 +40,7 @@ export class ActivityWaiter implements Waiter {
         return this.runId;
     }
 
-    async done(): Promise<void> {
+    async done(result?: unknown, error?: Error): Promise<void> {
         const encoder = new TextEncoder();
         const r: DoneRequest = {
             $typeName: "autokitteh.user_code.v1.DoneRequest",
@@ -51,11 +51,17 @@ export class ActivityWaiter implements Waiter {
                 $typeName: "autokitteh.values.v1.Value",
                 custom: {
                     $typeName: "autokitteh.values.v1.Custom",
-                    data: encoder.encode(JSON.stringify({results: "yay"})),
+                    data: encoder.encode(JSON.stringify({results: result})),
                     executorId: this.runId,
                 }
             }
         };
+
+        if (error) {
+            r.error = error.message;
+            r.result = undefined;
+        }
+
         await this.client.done(r);
     }
 

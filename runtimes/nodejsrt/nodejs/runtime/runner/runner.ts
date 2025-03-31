@@ -362,6 +362,7 @@ export default class Runner {
                 this.events.emit("started");
                 const data = req.event?.data;
                 if (!data) {
+                    await this.waiter.done(undefined, new Error("No event data provided"));
                     return { error: "No event data provided", traceback: [] };
                 }
 
@@ -372,6 +373,7 @@ export default class Runner {
                     const [fileName, funcName] = (req.entryPoint || "").split(":");
 
                     if (!fileName || !funcName) {
+                        await this.waiter.done(undefined, new Error("Invalid entry point format"));
                         return { error: "Invalid entry point format", traceback: [] };
                     }
 
@@ -385,15 +387,19 @@ export default class Runner {
                     // Get the function and call it
                     const func = module[funcName];
                     if (typeof func !== 'function') {
-                        return { error: `Function ${funcName} not found in ${fileName}`, traceback: [] };
+                        const error = new Error(`Function ${funcName} not found in ${fileName}`);
+                        await this.waiter.done(undefined, error);
+                        return { error: error.message, traceback: [] };
                     }
 
                     // Call the function directly - ak_call is now globally available
                     const result = createResult();
                     try {
                         result.value = await func();
+                        await this.waiter.done(result.value);
                     } catch (err) {
                         const { message, traceback } = formatError(err);
+                        await this.waiter.done(undefined, err as Error);
                         return {
                             error: message,
                             traceback
@@ -403,6 +409,7 @@ export default class Runner {
                     return { error: "", traceback: [] };
                 } catch (err) {
                     const { message, traceback } = formatError(err);
+                    await this.waiter.done(undefined, err as Error);
                     return {
                         error: message,
                         traceback
