@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	pbValues "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/values/v1"
 	"maps"
 	"net"
 	"slices"
 	"strings"
 	"time"
+
+	pbValues "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/values/v1"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"

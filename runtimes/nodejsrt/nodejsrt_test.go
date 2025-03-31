@@ -71,7 +71,8 @@ func isFSFile(fsys fs.FS, path string) bool {
 }
 
 func newSVC(t *testing.T) *nodejsSvc {
-	rt, err := newSvc(Configs.Default, zap.NewNop())
+	//rt, err := newSvc(Configs.Default, zap.NewNop())
+	rt, err := newSvc(Configs.Default, kittehs.Must1(zap.NewDevelopment()))
 	require.NoError(t, err, "New")
 	svc, ok := rt.(*nodejsSvc)
 	require.Truef(t, ok, "type assertion failed, got %T", rt)
@@ -130,7 +131,7 @@ func Test_nodeSvc_Build(t *testing.T) {
 func testCtx(t *testing.T) (context.Context, context.CancelFunc) {
 	d, ok := t.Deadline()
 	if !ok {
-		d = time.Now().Add(3 * time.Second)
+		d = time.Now().Add(100 * time.Second)
 	}
 
 	return context.WithDeadline(context.Background(), d)

@@ -17,6 +17,7 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 
 	"go.jetify.com/typeid"
 	"go.uber.org/zap"
@@ -34,7 +35,7 @@ type LocalNodeJS struct {
 	log                *zap.Logger
 	projectDir         string
 	port               int
-	proc               *os.Process
+	cmd                *exec.Cmd // Store the full command instead of just the process
 	id                 string
 	logRunnerCode      bool
 	sessionID          sdktypes.SessionID
@@ -53,14 +54,29 @@ func NewLocalNodeJS(logger *zap.Logger) *LocalNodeJS {
 func (r *LocalNodeJS) Close() error {
 	var err error
 
-	if r.proc != nil {
-		if kerr := r.proc.Kill(); kerr != nil {
-			err = errors.Join(err, fmt.Errorf("kill runner (pid=%d) - %w", r.proc.Pid, kerr))
+	if r.cmd != nil && r.cmd.Process != nil {
+		// First try SIGTERM for graceful shutdown
+		if terr := r.cmd.Process.Signal(syscall.SIGTERM); terr != nil {
+			r.log.Warn("SIGTERM failed", zap.Error(terr))
 		}
 
-		_, waitErr := r.proc.Wait()
-		if waitErr != nil {
-			err = errors.Join(err, fmt.Errorf("wait runner (pid=%d) - %w", r.proc.Pid, waitErr))
+		// Give it a moment to shut down gracefully
+		done := make(chan error)
+		go func() {
+			done <- r.cmd.Wait()
+		}()
+
+		// Wait for process to exit or timeout
+		select {
+		case <-time.After(3 * time.Second):
+			// Force kill if still running
+			if kerr := r.cmd.Process.Kill(); kerr != nil {
+				err = errors.Join(err, fmt.Errorf("kill process (pid=%d) - %w", r.cmd.Process.Pid, kerr))
+			}
+		case werr := <-done:
+			if werr != nil && !strings.Contains(werr.Error(), "signal: terminated") {
+				err = errors.Join(err, fmt.Errorf("wait for process (pid=%d) - %w", r.cmd.Process.Pid, werr))
+			}
 		}
 	}
 
@@ -197,7 +213,7 @@ func (r *LocalNodeJS) SetProjectDir(dir string) error {
 }
 
 // Start prepares the workspace, project, dependencies and runs the node process.
-func (r *LocalNodeJS) Start(pyExe string, tarData []byte, env map[string]string, workerAddr string) error {
+func (r *LocalNodeJS) Start(nodeExe, tarData []byte, env map[string]string, workerAddr string) error {
 	// Prepare the workspace (either temporary or provided)
 	if err := r.PrepareWorkspace(); err != nil {
 		return fmt.Errorf("prepare workspace: %w", err)
@@ -224,6 +240,9 @@ func (r *LocalNodeJS) Start(pyExe string, tarData []byte, env map[string]string,
 // RunNode starts the Node.js process in the prepared workspace.
 // This should only be called after PrepareWorkspace.
 func (r *LocalNodeJS) RunNode(workerAddr string) error {
+	//absPath, err := filepath.Abs("nodejs/testdata/simple-test/runtime")
+	//r.projectDir = absPath
+
 	if strings.TrimSpace(r.projectDir) == "" {
 		return fmt.Errorf("project directory not set - call PrepareWorkspace first")
 	}
@@ -234,6 +253,7 @@ func (r *LocalNodeJS) RunNode(workerAddr string) error {
 	}
 	r.port = port
 	r.log.Info("found free port", zap.Int("port", port))
+	r.log.Info("projectDir", zap.String("path", r.projectDir))
 
 	id, err := typeid.WithPrefix("runner")
 	if err != nil {
@@ -244,7 +264,7 @@ func (r *LocalNodeJS) RunNode(workerAddr string) error {
 	cmd := exec.Command(
 		"npx",
 		"ts-node",
-		".ak/runtime/main.ts",
+		".ak/runtime/runner/main.ts",
 		"--worker-address", workerAddr,
 		"--port", strconv.Itoa(r.port),
 		"--runner-id", r.id,
@@ -259,26 +279,26 @@ func (r *LocalNodeJS) RunNode(workerAddr string) error {
 		cmd.Stderr = r.stderrRunnerLogger
 	}
 
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("start runner - %w", err)
 	}
 
-	r.proc = cmd.Process
-	r.log.Info("started nodejs runner", zap.String("command", cmd.String()), zap.Int("pid", r.proc.Pid))
+	r.cmd = cmd
+	r.log.Info("started nodejs runner",
+		zap.String("command", cmd.String()),
+		zap.Int("pid", cmd.Process.Pid))
 	return nil
 }
 
 func (r *LocalNodeJS) Health() error {
 	var status syscall.WaitStatus
 
-	pid, err := syscall.Wait4(r.proc.Pid, &status, syscall.WNOHANG, nil)
+	pid, err := syscall.Wait4(r.cmd.Process.Pid, &status, syscall.WNOHANG, nil)
 	if err != nil {
 		return fmt.Errorf("wait proc: %w", err)
 	}
 
-	if pid == r.proc.Pid {
+	if pid == r.cmd.Process.Pid {
 		if status.Signaled() {
 			sig := status.Signal()
 			switch sig {
@@ -293,9 +313,9 @@ func (r *LocalNodeJS) Health() error {
 		}
 	}
 
-	err = r.proc.Signal(syscall.Signal(0))
+	err = r.cmd.Process.Signal(syscall.Signal(0))
 	if err != nil {
-		if _, err := os.FindProcess(r.proc.Pid); err != nil {
+		if _, err := os.FindProcess(r.cmd.Process.Pid); err != nil {
 			return fmt.Errorf("no runner proc found. %w ", err)
 		}
 	}
