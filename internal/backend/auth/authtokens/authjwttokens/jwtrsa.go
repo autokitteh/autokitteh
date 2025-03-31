@@ -42,6 +42,16 @@ var RSAConfigs = configset.Set[RSAConfig]{
 	Test: &RSAConfig{},
 }
 
+var (
+	ErrNoPublicKey    = errors.New("no public key available")
+	ErrInvalidKeyType = errors.New("invalid key type")
+)
+
+type RSATokens interface {
+	authtokens.Tokens
+	GetJWKS() (*JWKS, error)
+}
+
 func parsePrivateKey(pemStr string) (*rsa.PrivateKey, error) {
 	block, _ := pem.Decode([]byte(pemStr))
 	if block == nil {
@@ -98,7 +108,7 @@ func parsePublicKey(pemStr string) (*rsa.PublicKey, error) {
 	return rsaPub, nil
 }
 
-func newRSA(cfg *RSAConfig) (authtokens.Tokens, error) {
+func newRSA(cfg *RSAConfig) (RSATokens, error) {
 	if cfg.PrivateKey == "" || cfg.PublicKey == "" {
 		return nil, errors.New("both private and public keys must be provided")
 	}
