@@ -38,7 +38,7 @@ func (wc WorkflowConfig) ToStartWorkflowOptions(qname, id, sum string, memo map[
 	}
 }
 
-func (wc WorkflowConfig) ToChildWorkflowOptions(qname, id, sum string, parentClosePolicy enumspb.ParentClosePolicy, memo map[string]string) workflow.ChildWorkflowOptions {
+func (wc WorkflowConfig) ToChildWorkflowOptions(qname, id, sum string, pcp enumspb.ParentClosePolicy, memo map[string]string) workflow.ChildWorkflowOptions {
 	wc = wc.With(defaultWorkflowConfig)
 	return workflow.ChildWorkflowOptions{
 		WorkflowID:          id,
