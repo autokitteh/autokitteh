@@ -44,7 +44,7 @@ func (wc WorkflowConfig) ToChildWorkflowOptions(qname, id, sum string, pcp enums
 		WorkflowID:          id,
 		TaskQueue:           qname,
 		StaticSummary:       sum,
-		ParentClosePolicy:   parentClosePolicy,
+		ParentClosePolicy:   pcp,
 		Memo:                kittehs.TransformMapValues(memo, func(v string) any { return v }),
 		WorkflowTaskTimeout: wc.WorkflowTaskTimeout,
 	}
