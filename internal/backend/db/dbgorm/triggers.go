@@ -3,6 +3,7 @@ package dbgorm
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -19,7 +20,13 @@ func (gdb *gormdb) createTrigger(ctx context.Context, trigger *scheme.Trigger) e
 
 func (gdb *gormdb) deleteTrigger(ctx context.Context, triggerID uuid.UUID) error {
 	// NOTE: we allow delettion of triggers referenced by events. see ENG-1535
-	return gdb.writer.WithContext(ctx).Delete(&scheme.Trigger{TriggerID: triggerID}).Error
+	return gdb.writer.WithContext(ctx).
+		Model(&scheme.Trigger{}).
+		Where("trigger_id = ?", triggerID).
+		Updates(map[string]any{
+			"unique_name": triggerID.String(),
+			"deleted_at":  time.Now(),
+		}).Error
 }
 
 func (gdb *gormdb) updateTrigger(ctx context.Context, trigger *scheme.Trigger) error {
