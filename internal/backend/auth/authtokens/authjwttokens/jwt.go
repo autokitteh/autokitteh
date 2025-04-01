@@ -1,38 +1,29 @@
 package authjwttokens
 
 import (
-	"encoding/hex"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"strings"
-	"time"
-
-	j "github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens"
-	"go.autokitteh.dev/autokitteh/internal/backend/auth/authusers"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
-	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-const issuer = "ak"
+type Algorithm string
 
-var (
-	method   = j.SigningMethodHS256
-	hashSize = method.Hash.Size()
+const (
+	AlgorithmHMAC Algorithm = "hmac"
+	AlgorithmRSA  Algorithm = "rsa"
 )
 
+// Config represents the top-level JWT configuration
 type Config struct {
-	SignKey string `koanf:"sign_key"`
+	Algorithm Algorithm  `koanf:"algorithm"`
+	HMAC      HMACConfig `koanf:"hmac"`
+	RSA       RSAConfig  `koanf:"rsa"`
 }
 
-type tokens struct {
-	signKey []byte
-}
-
+// token is shared between HMAC and RSA implementations
 type token struct {
 	User sdktypes.User
 }
@@ -40,68 +31,27 @@ type token struct {
 var Configs = configset.Set[Config]{
 	Default: &Config{},
 	Dev: &Config{
-		SignKey: strings.Repeat("00", hashSize),
+		Algorithm: AlgorithmHMAC,
+		HMAC: HMACConfig{
+			SignKey: strings.Repeat("00", hashSize),
+		},
 	},
 	Test: &Config{
-		SignKey: strings.Repeat("00", hashSize),
+		Algorithm: AlgorithmHMAC,
+		HMAC: HMACConfig{
+			SignKey: strings.Repeat("00", hashSize),
+		},
 	},
 }
 
+// New creates a new JWT token provider based on the configuration
 func New(cfg *Config) (authtokens.Tokens, error) {
-	key, err := hex.DecodeString(cfg.SignKey)
-	if err != nil {
-		return nil, fmt.Errorf("invalid signing key: %w", err)
+	switch cfg.Algorithm {
+	case AlgorithmHMAC:
+		return newHMAC(&cfg.HMAC)
+	case AlgorithmRSA:
+		return newRSA(&cfg.RSA)
+	default:
+		return nil, errors.New("unsupported JWT algorithm")
 	}
-
-	if len(key) != hashSize {
-		return nil, fmt.Errorf("invalid key len: %d != desired %d", len(key), hashSize)
-	}
-
-	return &tokens{signKey: key}, nil
-}
-
-func (js *tokens) Create(u sdktypes.User) (string, error) {
-	if authusers.IsSystemUserID(u.ID()) {
-		return "", sdkerrors.NewInvalidArgumentError("system user")
-	}
-
-	uuid, err := uuid.NewV7()
-	if err != nil {
-		return "", fmt.Errorf("generate UUID: %w", err)
-	}
-
-	tok := token{User: u}
-	bs, err := json.Marshal(tok)
-	if err != nil {
-		return "", fmt.Errorf("marshal token: %w", err)
-	}
-
-	claim := j.RegisteredClaims{
-		IssuedAt: j.NewNumericDate(time.Now()),
-		Issuer:   issuer,
-		Subject:  string(bs),
-		ID:       uuid.String(),
-	}
-
-	return j.NewWithClaims(method, claim).SignedString(js.signKey)
-}
-
-func (js *tokens) Parse(raw string) (sdktypes.User, error) {
-	var claims j.RegisteredClaims
-
-	t, err := j.ParseWithClaims(raw, &claims, func(t *j.Token) (interface{}, error) { return js.signKey, nil })
-	if err != nil {
-		return sdktypes.InvalidUser, err // TODO: better error handling
-	}
-
-	if !t.Valid {
-		return sdktypes.InvalidUser, errors.New("invalid token")
-	}
-
-	var tok token
-	if err := json.Unmarshal([]byte(claims.Subject), &tok); err != nil {
-		return sdktypes.InvalidUser, fmt.Errorf("unmarshal token: %w", err)
-	}
-
-	return tok.User, nil
 }
