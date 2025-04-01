@@ -232,6 +232,7 @@ func (h handler) extractIDs(l *zap.Logger, body []byte, wantContentType string) 
 		)
 		return "", "", "", err
 	}
+
 	eID := ""
 	if p.Enterprise != nil {
 		eID = p.Enterprise.ID
