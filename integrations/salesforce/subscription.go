@@ -127,20 +127,26 @@ func (h handler) eventLoop(ctx context.Context, clientID string, subscribeTopic 
 				l.Error("ChangeEventHeader is not a map in event data")
 				continue
 			}
+			commitUser, ok := header["commitUser"].(string)
+			if !ok {
+				l.Error("commitUser is not a string in ChangeEventHeader")
+				continue
+			}
 
-			// TODO(INT-329): Temporary filter to ignore self-triggered events.
-			changeOriginValue, ok := header["changeOrigin"]
-			if !ok {
-				l.Error("changeOrigin key is not present in Salesforce ChangeEventHeader")
+			vs, err := h.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+			if err != nil {
+				l.Error("failed to get connection vars", zap.Error(err))
 				continue
 			}
-			changeOrigin, ok := changeOriginValue.(string)
-			if !ok {
-				l.Error("changeOrigin is not a string in Salesforce ChangeEventHeader")
+			userID := vs.GetValue(userIDVar)
+			if userID == "" {
+				l.Error("user_id is not set in connection vars")
 				continue
 			}
-			if !strings.Contains(changeOrigin, "SfdcInternalAPI") {
-				l.Debug("ignoring Salesforce event", zap.String("changeOrigin", changeOrigin))
+
+			// Ignore self-triggered events.
+			if commitUser == userID {
+				l.Debug("ignoring Salesforce event", zap.String("commitUser", commitUser))
 				continue
 			}
 
