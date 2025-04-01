@@ -3,13 +3,16 @@ package telemetry
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/baggage"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/metric"
 	noop "go.opentelemetry.io/otel/metric/noop"
+	"go.opentelemetry.io/otel/propagation"
 	sdk "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -49,6 +52,15 @@ type Telemetry struct {
 	ra  *resource.Resource
 }
 
+func (t *Telemetry) Interceptor(next http.Handler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := baggage.ContextWithoutBaggage(r.Context())
+		ctx, span := t.tp.Tracer("api_call").Start(ctx, r.RequestURI)
+		defer span.End()
+		next.ServeHTTP(w, r.WithContext(ctx))
+	}
+}
+
 func New(z *zap.Logger, cfg *Config) (*Telemetry, error) {
 	telemetry := &Telemetry{l: z, cfg: fixConfig(*cfg)} // just ensure that endpoint and service name are set
 
@@ -64,17 +76,18 @@ func New(z *zap.Logger, cfg *Config) (*Telemetry, error) {
 	return telemetry, nil
 }
 
-func (t *Telemetry) Shutdown() {
+func (t *Telemetry) Shutdown(ctx context.Context) error {
 	if t.cfg.Enabled {
-		if err := t.mp.Shutdown(context.Background()); err != nil {
+		if err := t.mp.Shutdown(ctx); err != nil {
 			t.l.Error("failed to shutdown metric provider: %v", zap.Error(err))
 		}
 	}
 	if t.cfg.Tracing {
-		if err := t.tp.Shutdown(context.Background()); err != nil {
+		if err := t.tp.Shutdown(ctx); err != nil {
 			t.l.Error("failed to shutdown trace provider: %v", zap.Error(err))
 		}
 	}
+	return nil
 }
 
 func (t *Telemetry) setupMetrics() {
@@ -124,6 +137,10 @@ func (t *Telemetry) setupTracing() {
 	)
 
 	otel.SetTracerProvider(tracerProvider) // set global tracer provider
+
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
+		propagation.TraceContext{}, propagation.Baggage{}))
+
 	t.tp = tracerProvider
 
 }

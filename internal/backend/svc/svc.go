@@ -303,7 +303,10 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		fx.Invoke(sessionsgrpcsvc.Init),
 		fx.Invoke(triggersgrpcsvc.Init),
 		fx.Invoke(varsgrpcsvc.Init),
-		Component("telemetry", telemetry.Configs, fx.Provide(telemetry.New)),
+		Component("telemetry", telemetry.Configs, fx.Provide(telemetry.New),
+			fx.Invoke(func(lc fx.Lifecycle, t *telemetry.Telemetry) {
+				HookOnStop(lc, t.Shutdown)
+			})),
 		Component(
 			"http",
 			httpsvc.Configs,

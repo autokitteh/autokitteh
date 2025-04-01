@@ -51,6 +51,8 @@ func New(lc fx.Lifecycle, z *zap.Logger, cfg *Config, authzCheckFunc authz.Check
 		return nil, fmt.Errorf("interceptor: %w", err)
 	}
 
+	interceptor = telemetry.Interceptor(interceptor)
+
 	rootMux.Handle("/", cors.Handler(interceptor))
 
 	if cfg.EnableGRPCReflection {
