@@ -71,6 +71,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	orgID := userInfo["organization_id"].(string)
+	userID := userInfo["user_id"].(string)
 
 	// Set the access token expiration time.
 	vsid := sdktypes.NewVarScopeID(cid)
@@ -81,7 +82,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.saveConnection(ctx, vsid, data.Token, data.Extra, orgID); err != nil {
+	if err := h.saveConnection(ctx, vsid, data.Token, data.Extra, orgID, userID); err != nil {
 		l.Error("failed to save OAuth connection details", zap.Error(err))
 		c.AbortServerError("failed to save connection details")
 		return
@@ -100,7 +101,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 }
 
 // saveConnection saves OAuth token details as connection variables.
-func (h handler) saveConnection(ctx context.Context, vsid sdktypes.VarScopeID, t *oauth2.Token, extra map[string]any, orgID string) error {
+func (h handler) saveConnection(ctx context.Context, vsid sdktypes.VarScopeID, t *oauth2.Token, extra map[string]any, orgID, userID string) error {
 	if t == nil {
 		return errors.New("OAuth redirection missing token data")
 	}
@@ -110,7 +111,7 @@ func (h handler) saveConnection(ctx context.Context, vsid sdktypes.VarScopeID, t
 		vs = vs.Append(sdktypes.NewVar(sdktypes.NewSymbol(k)).SetValue(fmt.Sprintf("%v", v)))
 	}
 	vs = vs.Append(sdktypes.NewVar(orgIDVar).SetValue(orgID))
-
+	vs = vs.Append(sdktypes.NewVar(userIDVar).SetValue(userID))
 	return h.vars.Set(ctx, vs.WithScopeID(vsid)...)
 }
 
