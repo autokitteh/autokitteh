@@ -14,7 +14,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authusers"
-	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -31,15 +30,6 @@ type RSAConfig struct {
 type rsaTokens struct {
 	privateKey *rsa.PrivateKey
 	publicKey  *rsa.PublicKey
-}
-
-// Using same token structure as HMAC version
-
-var RSAConfigs = configset.Set[RSAConfig]{
-	Default: &RSAConfig{},
-	// For dev/test, you'll need to generate and provide RSA key pairs
-	Dev:  &RSAConfig{},
-	Test: &RSAConfig{},
 }
 
 var (
