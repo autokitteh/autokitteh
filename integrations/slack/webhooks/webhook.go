@@ -232,8 +232,16 @@ func (h handler) extractIDs(l *zap.Logger, body []byte, wantContentType string) 
 		)
 		return "", "", "", err
 	}
+	eID := ""
+	if p.Enterprise != nil {
+		eID = p.Enterprise.ID
+	}
 
-	return p.APIAppID, p.Enterprise.ID, p.Team.ID, nil
+	tID := ""
+	if p.Team != nil {
+		tID = p.Team.ID
+	}
+	return p.APIAppID, eID, tID, nil
 }
 
 // signingSecret reads the signing secret from the private connection's
