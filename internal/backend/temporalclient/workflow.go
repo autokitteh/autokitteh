@@ -3,6 +3,7 @@ package temporalclient
 import (
 	"time"
 
+	enumspb "go.temporal.io/api/enums/v1"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/workflow"
 
@@ -37,12 +38,13 @@ func (wc WorkflowConfig) ToStartWorkflowOptions(qname, id, sum string, memo map[
 	}
 }
 
-func (wc WorkflowConfig) ToChildWorkflowOptions(qname, id, sum string, memo map[string]string) workflow.ChildWorkflowOptions {
+func (wc WorkflowConfig) ToChildWorkflowOptions(qname, id, sum string, parentClosePolicy enumspb.ParentClosePolicy, memo map[string]string) workflow.ChildWorkflowOptions {
 	wc = wc.With(defaultWorkflowConfig)
 	return workflow.ChildWorkflowOptions{
 		WorkflowID:          id,
 		TaskQueue:           qname,
 		StaticSummary:       sum,
+		ParentClosePolicy:   parentClosePolicy,
 		Memo:                kittehs.TransformMapValues(memo, func(v string) any { return v }),
 		WorkflowTaskTimeout: wc.WorkflowTaskTimeout,
 	}
