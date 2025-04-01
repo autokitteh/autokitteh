@@ -56,6 +56,17 @@ func (h handler) eventLoop(ctx context.Context, clientID string, subscribeTopic 
 	client := pubSubClients[clientID]
 	stream := h.initStream(ctx, l, client, cid, clientID)
 
+	vs, err := h.vars.Get(ctx, sdktypes.NewVarScopeID(cid), userIDVar)
+	if err != nil {
+		l.Error("failed to get connection vars", zap.Error(err))
+		return
+	}
+	userID := vs.GetValue(userIDVar)
+	if userID == "" {
+		l.Error("user_id is not set in connection vars")
+		return
+	}
+
 	// Start receiving messages.
 	for {
 		if numLeftToReceive <= 0 {
@@ -130,17 +141,6 @@ func (h handler) eventLoop(ctx context.Context, clientID string, subscribeTopic 
 			commitUser, ok := header["commitUser"].(string)
 			if !ok {
 				l.Error("commitUser is not a string in ChangeEventHeader")
-				continue
-			}
-
-			vs, err := h.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
-			if err != nil {
-				l.Error("failed to get connection vars", zap.Error(err))
-				continue
-			}
-			userID := vs.GetValue(userIDVar)
-			if userID == "" {
-				l.Error("user_id is not set in connection vars")
 				continue
 			}
 
