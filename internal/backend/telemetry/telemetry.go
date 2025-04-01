@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.20.0"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
@@ -50,12 +51,13 @@ type Telemetry struct {
 	mp  *sdk.MeterProvider
 	tp  *sdktrace.TracerProvider
 	ra  *resource.Resource
+	tr  trace.Tracer
 }
 
 func (t *Telemetry) Interceptor(next http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := baggage.ContextWithoutBaggage(r.Context())
-		ctx, span := t.tp.Tracer("api_call").Start(ctx, r.RequestURI)
+		ctx, span := t.tr.Start(ctx, r.RequestURI)
 		defer span.End()
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
@@ -142,6 +144,7 @@ func (t *Telemetry) setupTracing() {
 		propagation.TraceContext{}, propagation.Baggage{}))
 
 	t.tp = tracerProvider
+	t.tr = tracerProvider.Tracer(t.cfg.ServiceName)
 
 }
 
@@ -192,4 +195,11 @@ func (t *Telemetry) NewHistogram(name string, description string) (metric.Int64H
 		return noop.Int64Histogram{}, err
 	}
 	return metric, nil
+}
+
+func (t *Telemetry) NewSpan(ctx context.Context, name string) (context.Context, func()) {
+	ctx, span := t.tr.Start(ctx, name)
+	return ctx, func() {
+		span.End()
+	}
 }

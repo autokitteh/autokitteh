@@ -49,12 +49,13 @@ type sessionWorkflowParams struct {
 }
 
 type workflows struct {
-	l        *zap.Logger
-	cfg      Config
-	worker   worker.Worker
-	svcs     *sessionsvcs.Svcs
-	sessions sdkservices.Sessions
-	calls    sessioncalls.Calls
+	l         *zap.Logger
+	cfg       Config
+	worker    worker.Worker
+	svcs      *sessionsvcs.Svcs
+	sessions  sdkservices.Sessions
+	calls     sessioncalls.Calls
+	telemetry *telemetry.Telemetry
 }
 
 func workflowID(sessionID sdktypes.SessionID) string { return sessionID.String() }
@@ -68,7 +69,7 @@ func New(
 	telemetry *telemetry.Telemetry,
 ) Workflows {
 	initMetrics(telemetry)
-	return &workflows{l: l, cfg: cfg, sessions: sessions, calls: calls, svcs: svcs}
+	return &workflows{l: l, cfg: cfg, sessions: sessions, calls: calls, svcs: svcs, telemetry: telemetry}
 }
 
 func (ws *workflows) StartWorkers(ctx context.Context) error {

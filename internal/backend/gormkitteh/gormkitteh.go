@@ -8,6 +8,7 @@ import (
 	// cross compiling.
 	// See https://github.com/go-gorm/gorm/issues/4101.
 	"github.com/glebarez/sqlite"
+	"github.com/uptrace/opentelemetry-go-extra/otelgorm"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -47,6 +48,10 @@ func Open(cfg *Config, f func(*gorm.Config)) (*gorm.DB, error) {
 
 	if cfg.Debug {
 		db = db.Debug()
+	}
+
+	if err := db.Use(otelgorm.NewPlugin()); err != nil {
+		panic(err)
 	}
 
 	return db, nil
