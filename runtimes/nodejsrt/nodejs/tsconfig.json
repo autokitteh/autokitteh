@@ -2,5 +2,5 @@
   "compilerOptions": {
     "composite": false
   },
-  "include": []
+  "include": ["."]
 }
