@@ -240,7 +240,6 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component("secrets", secrets.Configs, fx.Provide(secrets.New)),
 		Component("events", configset.Empty, fx.Provide(events.New)),
 		Component("triggers", configset.Empty, fx.Provide(triggers.New)),
-		Component("oauth", configset.Empty, fx.Provide(oauth.New)),
 		runtimesFXOption(),
 		Component("healthcheck", configset.Empty, fx.Provide(healthchecker.New)),
 		Component(
