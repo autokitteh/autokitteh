@@ -124,6 +124,7 @@ def set_exception_args(err):
 
     err.args += tuple(extra)
 
+
 Call = namedtuple("Call", "fn args kw fut")
 Result = namedtuple("Result", "value error traceback")
 
@@ -137,15 +138,15 @@ def is_pickleable(err):
         return False
     except Exception as pickle_err:
         # This is unexpected, but we can't not handle it.
-       # Logging so we can investigate.
+        # Logging so we can investigate.
         log.exception("unexpected error: %r", pickle_err)
         tb = "".join(format_exception(pickle_err))
         log.error("traceback:\n%r", tb)
-        log.error('error we tried to pickle: %r', err)
+        log.error("error we tried to pickle: %r", err)
         try:
             attrs = vars(err)
-            log.error('exception attributes: %r', attrs)
-        except TypeError:
+            log.error("exception attributes: %r", attrs)
+        except Exception:
             pass
         return False
 
