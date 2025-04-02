@@ -11,6 +11,7 @@ import { ActivityWaiter } from "./ak_call";
 import { listExports } from "../common/ast_utils";
 import { initializeGlobals } from "./runtime";
 import { safeSerialize } from "../common/serializer";
+import { EventSubscriber } from '../nodejs-sdk/autokitteh/events';
 
 type AkCallFunction = (...args: unknown[]) => Promise<unknown>;
 
@@ -100,6 +101,7 @@ export default class Runner {
     private originalConsoleLog: typeof console.log;
     private isShuttingDown = false;
     private _isRunningHealthCheck: boolean = false;
+    private readonly eventSubscriber: EventSubscriber;
 
     constructor(id: string, codeDir: string, client: ReturnType<typeof createClient<typeof HandlerService>>) {
         this.id = id;
@@ -107,6 +109,9 @@ export default class Runner {
         this.client = client;
         this.waiter = new ActivityWaiter(client, id);
         this.originalConsoleLog = console.log;
+
+        // Create event subscriber for event subscriptions
+        this.eventSubscriber = new EventSubscriber(client, id);
 
         // Setup start timeout
         this.startTimer = setTimeout(() => this.stopIfStartNotCalled(), START_TIMEOUT);
@@ -378,7 +383,7 @@ export default class Runner {
                     }
 
                     // Initialize global ak_call
-                    initializeGlobals(this.waiter);
+                    initializeGlobals(this.waiter,  this.eventSubscriber);
 
                     // Import and execute user code
                     const modulePath = path.resolve(path.join(this.codeDir, fileName));
