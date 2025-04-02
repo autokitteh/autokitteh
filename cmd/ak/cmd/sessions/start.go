@@ -9,6 +9,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
+	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -20,7 +21,7 @@ var (
 )
 
 var startCmd = common.StandardCommand(&cobra.Command{
-	Use:   "start {--deployment-id <ID>|--build-id <ID> --project <name or ID>} --entrypoint <...> [--memo <...>] [--input <JSON> [...]] [--watch [--watch-timeout <duration>] [--poll-interval <duration>] [--no-timestamps] [--quiet]]",
+	Use:   "start {--deployment-id <ID>|--build-id <ID> --project <name or ID>|--project <name or ID>} --entrypoint <...> [--memo <...>] [--input <JSON> [...]] [--watch [--watch-timeout <duration>] [--poll-interval <duration>] [--no-timestamps] [--quiet]]",
 	Short: "Start new session",
 	Args:  cobra.NoArgs,
 
@@ -36,6 +37,20 @@ var startCmd = common.StandardCommand(&cobra.Command{
 		inputs, err := parseinputs()
 		if err != nil {
 			return err
+		}
+
+		if !bid.IsValid() && !did.IsValid() && pid.IsValid() {
+			ds, err := deployments().List(ctx, sdkservices.ListDeploymentsFilter{ProjectID: pid, State: sdktypes.DeploymentStateActive, Limit: 1})
+			if err != nil {
+				return fmt.Errorf("list deployments: %w", err)
+			}
+
+			if len(ds) == 0 {
+				return fmt.Errorf("no active deployments found")
+			}
+
+			bid = ds[0].BuildID()
+			did = ds[0].ID()
 		}
 
 		s := sdktypes.NewSession(bid, ep, nil, nil).WithProjectID(pid).WithDeploymentID(did).WithInputs(inputs)
@@ -60,7 +75,7 @@ func init() {
 	startCmd.Flags().StringVarP(&deploymentID, "deployment-id", "d", "", "deployment ID, mutually exclusive with --build-id and --env")
 	startCmd.Flags().StringVarP(&buildID, "build-id", "b", "", "build ID, mutually exclusive with --deployment-id")
 	startCmd.Flags().StringVarP(&project, "project", "o", "", "project name or ID, mutually exclusive with --deployment-id")
-	startCmd.MarkFlagsOneRequired("deployment-id", "build-id")
+	startCmd.MarkFlagsOneRequired("deployment-id", "project")
 
 	startCmd.Flags().StringVarP(&entryPoint, "entrypoint", "p", "", `entry point ("file:function")`)
 

@@ -29,11 +29,11 @@ func LoadModule() starlark.StringDict {
 
 func start(th *starlark.Thread, bi *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 	var (
-		loc          string
+		loc, project string
 		inputs, memo *starlark.Dict
 	)
 
-	if err := starlark.UnpackArgs(bi.Name(), args, kwargs, "loc", &loc, "inputs?", &inputs, "memo?", &memo); err != nil {
+	if err := starlark.UnpackArgs(bi.Name(), args, kwargs, "loc", &loc, "inputs?", &inputs, "memo?", &memo, "project=?", &project); err != nil {
 		return nil, err
 	}
 
@@ -76,8 +76,13 @@ func start(th *starlark.Thread, bi *starlark.Builtin, args starlark.Tuple, kwarg
 		}
 	}
 
+	sdkProject, err := sdktypes.ParseSymbol(project)
+	if err != nil {
+		return nil, fmt.Errorf("project: %w", err)
+	}
+
 	tls := tls.Get(th)
-	sid, err := tls.Callbacks.Start(tls.GoCtx, tls.RunID, sdkLoc, sdkInputs, sdkMemo)
+	sid, err := tls.Callbacks.Start(tls.GoCtx, tls.RunID, sdkProject, sdkLoc, sdkInputs, sdkMemo)
 	if err != nil {
 		return nil, err
 	}

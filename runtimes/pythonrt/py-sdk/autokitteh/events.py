@@ -30,7 +30,12 @@ def next_event(
     return AttrDict()
 
 
-def start(loc: str, data: dict = None, memo: dict = None) -> str:
+def start(
+    loc: str,
+    data: dict | None = None,
+    memo: dict | None = None,
+    project: str | None = None,
+) -> str:
     """Start a new session."""
     # Dummy implementation for local development.
     return f"ses_{uuid4().hex}"
