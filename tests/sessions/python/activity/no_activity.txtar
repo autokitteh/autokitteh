@@ -1,0 +1,19 @@
+start
+end
+
+-- main.py:main --
+import autokitteh
+from random import randint, randrange
+
+autokitteh.register_no_activity([randint])
+
+def main(_):
+	print('start')
+
+	randint(1, 10)
+	randrange(1, 10)
+
+	print('end')
+
+-- calls.txt --
+randrange

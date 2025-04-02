@@ -4,17 +4,17 @@ import time
 from pathlib import Path
 
 import autokitteh
-from autokitteh import decorators
+from autokitteh import activities
 
 import log
-from deterministic import is_deterministic
+from deterministic import is_deterministic, is_no_activity
 
 
 ak_mod_name = autokitteh.__name__
 
 
 def activity_marker(fn):
-    return getattr(fn, decorators.ACTIVITY_ATTR, None)
+    return getattr(fn, activities.ACTIVITY_ATTR, None)
 
 
 def callable_name(fn):
@@ -99,6 +99,9 @@ class AKCall:
         if is_deterministic(fn):
             return False
 
+        if is_no_activity(fn):
+            return False
+
         if self.is_module_func(fn):
             return False
 
@@ -121,7 +124,7 @@ class AKCall:
             fn = time.sleep if self.in_activity else self.runner.syscalls.ak_sleep
             return fn(seconds)
 
-        inhibit = getattr(func, decorators.INHIBIT_ACTIVITIES_ATTR, False)
+        inhibit = getattr(func, activities.INHIBIT_ACTIVITIES_ATTR, False)
         if inhibit:
             self.activities_inhibitions += 1
             log.info(f"inhibiting activities: {self.activities_inhibitions}")

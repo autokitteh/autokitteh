@@ -34,3 +34,15 @@ def inhibit_activities(fn: callable) -> callable:
     """
     setattr(fn, INHIBIT_ACTIVITIES_ATTR, True)
     return fn
+
+
+_no_activity = set()
+
+
+def register_no_activity(functions):
+    """Mark functions that should not run as activities.
+    Each function must be hashable.
+
+    This helps speeding up your code, but you might risk non-deterministic behavior.
+    """
+    _no_activity.update(functions)

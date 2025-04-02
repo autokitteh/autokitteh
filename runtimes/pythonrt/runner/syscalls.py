@@ -12,7 +12,7 @@ import grpc
 import log
 import pb.autokitteh.user_code.v1.handler_svc_pb2 as pb
 from autokitteh import AttrDict, Signal
-from autokitteh.decorators import ACTIVITY_ATTR
+from autokitteh.activities import ACTIVITY_ATTR
 import values
 
 

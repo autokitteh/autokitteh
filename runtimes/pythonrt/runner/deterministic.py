@@ -6,7 +6,14 @@
 # So, `re` is OK, `random` is not
 
 import datetime
+import inspect
 import json
+
+from autokitteh import activities
+
+
+def attr_or_none(obj, attr):
+    return getattr(obj, attr, None)
 
 
 def is_deterministic(fn):
@@ -14,7 +21,7 @@ def is_deterministic(fn):
     if fn in functions:
         return True
 
-    if getattr(fn, "__module__", None) in modules:
+    if attr_or_none(fn, "__module__") in modules:
         return True
 
     if hasattr(fn, "__self__"):  # A bound method
@@ -25,6 +32,26 @@ def is_deterministic(fn):
         mod = cls.__module__
         if mod != "builtins" and mod in modules:
             return True
+
+    return False
+
+
+def is_no_activity(fn):
+    no_act = activities._no_activity
+
+    if fn in no_act:
+        return True
+
+    # Bound method
+    if inspect.ismethod(fn) and (cls_fn := attr_or_none(fn, "__func__")):
+        return cls_fn in no_act
+
+    # C class method (e.g. Exception.__init__)
+    if (cls := attr_or_none(fn, "__objclass__")) and (
+        name := attr_or_none(fn, "__name__")
+    ):
+        if cls_fn := attr_or_none(cls, name):
+            return cls_fn in no_act
 
     return False
 
@@ -81,6 +108,7 @@ modules = {
     "statistics",
     "stats",
     "struct",
+    "textwrap",
     "tomllib",
     "traceback",
     "types",
