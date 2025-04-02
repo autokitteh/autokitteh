@@ -53,6 +53,28 @@ func normalizePath(p string) string {
 	return userRe.ReplaceAllString(p, "")
 }
 
+func normalizeOutput(ps string) (string, error) {
+	var buf strings.Builder
+
+	s := bufio.NewScanner(strings.NewReader(ps))
+	for s.Scan() {
+		line := normalizePath(s.Text())
+
+		if pyAnnoyingErrorLocationMarkerRe.MatchString(line) {
+			continue
+		}
+
+		buf.WriteString(line)
+		buf.WriteRune('\n')
+	}
+
+	if err := s.Err(); err != nil {
+		return "", fmt.Errorf("normalize: %w", err)
+	}
+
+	return strings.TrimSpace(buf.String()), nil
+}
+
 var testCmd = common.StandardCommand(&cobra.Command{
 	Use:   "test <txtar-file> [--build-id=...] [--project project] [--deployment-id=...] [--entrypoint=...] [--quiet] [--timeout DURATION] [--poll-interval DURATION] [--no-timestamps]",
 	Short: "Test a session run",
@@ -149,33 +171,22 @@ var testCmd = common.StandardCommand(&cobra.Command{
 			return err
 		}
 
-		var prints strings.Builder
-
+		prints := make([]string, 0, len(rs.Prints))
 		for _, r := range rs.Prints {
 			ps, err := r.Value.ToString()
 			if err != nil {
 				ps = ""
 			}
 
-			s := bufio.NewScanner(strings.NewReader(ps))
-			for s.Scan() {
-				line := normalizePath(s.Text())
-
-				if pyAnnoyingErrorLocationMarkerRe.MatchString(line) {
-					continue
-				}
-
-				prints.WriteString(line)
-				prints.WriteRune('\n')
+			ps, err = normalizeOutput(ps)
+			if err != nil {
+				return err
 			}
-
-			if err := s.Err(); err != nil {
-				return fmt.Errorf("scan print: %w", err)
-			}
+			prints = append(prints, ps)
 		}
 
 		expected := strings.TrimSpace(string(a.Comment))
-		actual := strings.TrimSpace(prints.String())
+		actual := strings.TrimSpace(strings.Join(prints, "\n"))
 
 		var errs []error
 
@@ -205,7 +216,15 @@ var testCmd = common.StandardCommand(&cobra.Command{
 				}
 			}
 
-			if err := testDiff("error", string(expectedErrTxt), actual); err != nil {
+			expectedErrTxt, err := normalizeOutput(string(expectedErrTxt))
+			if err != nil {
+				return err
+			}
+			actual, err = normalizeOutput(actual)
+			if err != nil {
+				return err
+			}
+			if err := testDiff("error", expectedErrTxt, actual); err != nil {
 				errs = append(errs, err)
 			}
 		}
