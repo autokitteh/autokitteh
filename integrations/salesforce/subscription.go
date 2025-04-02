@@ -198,7 +198,7 @@ func (h handler) initPubSubClient(cid sdktypes.ConnectionID, clientID string, l 
 	}
 
 	instanceURL := vs.GetValue(instanceURLVar)
-	conn, err := initConn(l, cfg, t, instanceURL, vs.GetValue(orgIDVar))
+	conn, err := initConn(l, cfg, t, instanceURL, vs.GetValue(orgIDVar), h.oauth, desc, vs)
 	if err != nil {
 		if errorMessage != "" {
 			l.Error(errorMessage, zap.Error(err))

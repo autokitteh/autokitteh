@@ -8,15 +8,19 @@ import (
 	"golang.org/x/oauth2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+
+	"go.autokitteh.dev/autokitteh/integrations/oauth"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 // https://developer.salesforce.com/docs/platform/pub-sub-api/guide/supported-auth.html
 // https://pkg.go.dev/google.golang.org/grpc/credentials#PerRPCCredentials
 type grpcAuth struct {
-	cfg         *oauth2.Config
 	token       *oauth2.Token
-	instanceURL string
-	tenantID    string
+	oauth       *oauth.OAuth
+	logger      *zap.Logger
+	integration sdktypes.Integration
+	vars        sdktypes.Vars
 }
 
 // Based on:
@@ -52,15 +56,16 @@ const retryPolicy = `{
 	}]
 }`
 
-func initConn(l *zap.Logger, cfg *oauth2.Config, token *oauth2.Token, instanceURL, orgID string) (*grpc.ClientConn, error) {
+func initConn(l *zap.Logger, cfg *oauth2.Config, token *oauth2.Token, instanceURL, orgID string, oauth *oauth.OAuth, integration sdktypes.Integration, vars sdktypes.Vars) (*grpc.ClientConn, error) {
 	conn, err := grpc.NewClient(
 		"api.pubsub.salesforce.com:443",
 		grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})),
 		grpc.WithPerRPCCredentials(&grpcAuth{
-			cfg:         cfg,
 			token:       token,
-			instanceURL: instanceURL,
-			tenantID:    orgID,
+			oauth:       oauth,
+			logger:      l,
+			integration: integration,
+			vars:        vars,
 		}),
 		grpc.WithDefaultServiceConfig(retryPolicy),
 	)
@@ -73,16 +78,12 @@ func initConn(l *zap.Logger, cfg *oauth2.Config, token *oauth2.Token, instanceUR
 }
 
 func (a *grpcAuth) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
-	var err error
-	a.token, err = a.cfg.TokenSource(ctx, a.token).Token()
-	if err != nil {
-		return nil, err
-	}
+	a.token = a.oauth.FreshToken(ctx, a.logger, a.integration, a.vars)
 
 	return map[string]string{
 		"accesstoken": a.token.AccessToken,
-		"instanceurl": a.instanceURL,
-		"tenantid":    a.tenantID,
+		"instanceurl": a.vars.GetValue(instanceURLVar),
+		"tenantid":    a.vars.GetValue(orgIDVar),
 	}, nil
 }
 
