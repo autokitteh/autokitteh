@@ -71,10 +71,15 @@ class AKCall:
         self.module = None  # Module for "local" function, filled by "run"
 
     def is_module_func(self, fn):
-        if fn.__module__ == self.module.__name__:
+        mod_name = getattr(fn, '__module__', None)
+        if mod_name is None:
+            # Example: TypeError('int required').__init__
+            return False
+
+        if mod_name == self.module.__name__:
             return True
 
-        mod = sys.modules.get(fn.__module__)
+        mod = sys.modules.get(mod_name)
         if not mod:
             return False
 

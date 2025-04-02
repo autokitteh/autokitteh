@@ -124,7 +124,6 @@ def set_exception_args(err):
 
     err.args += tuple(extra)
 
-
 Call = namedtuple("Call", "fn args kw fut")
 Result = namedtuple("Result", "value error traceback")
 
@@ -136,10 +135,18 @@ def is_pickleable(err):
         return True
     except (TypeError, pickle.PickleError):
         return False
-    except Exception:
+    except Exception as pickle_err:
         # This is unexpected, but we can't not handle it.
-        # Logging so we can investigate.
-        log.exception("unexpected error: %r", err)
+       # Logging so we can investigate.
+        log.exception("unexpected error: %r", pickle_err)
+        tb = "".join(format_exception(pickle_err))
+        log.error("traceback:\n%r", tb)
+        log.error('error we tried to pickle: %r', err)
+        try:
+            attrs = vars(err)
+            log.error('exception attributes: %r', attrs)
+        except TypeError:
+            pass
         return False
 
 
@@ -186,8 +193,7 @@ class Runner(pb.runner_rpc.RunnerService):
             self._orig_print(pickle_help, file=io)
 
         exc = "".join(format_exception(err))
-        message = s if (s := str(err)) else repr(err)
-        self._orig_print(f"error: {message}\n\n{exc}", file=io)
+        self._orig_print(f"error: {err!r}\n\n{exc}", file=io)
 
         return io.getvalue()
 
@@ -321,7 +327,7 @@ class Runner(pb.runner_rpc.RunnerService):
             req.result.custom.value.CopyFrom(values.safe_wrap(result.value))
         except (TypeError, pickle.PickleError) as err:
             # Print so it'll get to session log
-            msg = f"cannot pickle result - {err}"
+            msg = f"cannot pickle result - {err!r}"
             print(f"error: {msg}")
             print(pickle_help)
             req.error = msg
@@ -444,7 +450,7 @@ class Runner(pb.runner_rpc.RunnerService):
             set_exception_args(value)
 
         if not is_pickleable(error):
-            log.info("non pickleable: %r", error)
+            log.warning("non pickleable: %r", error)
             error = error.__reduce__()
 
         return Result(value, error, tb)
@@ -462,7 +468,8 @@ class Runner(pb.runner_rpc.RunnerService):
 
         try:
             if result.error:
-                req.error = self.result_error(restore_error(result.error))
+                error = restore_error(result.error)
+                req.error = self.result_error(error)
                 tb = pb_traceback(result.traceback)
                 req.traceback.extend(tb)
             else:
