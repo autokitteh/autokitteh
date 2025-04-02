@@ -26,7 +26,7 @@ def is_deterministic(fn):
         if mod != "builtins" and mod in modules:
             return True
 
-    if (cls := getattr(fn, "__objclass__", None)):
+    if cls := getattr(fn, "__objclass__", None):
         # We don't check isinstance on built-in types since the user can subclass
         # and then override a method. For example:
         # class List(list):
