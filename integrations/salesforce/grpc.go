@@ -84,9 +84,6 @@ func (h handler) initConn(cfg *oauth2.Config, cid sdktypes.ConnectionID, instanc
 
 func (a *grpcAuth) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
 	var err error
-	// TODO: Use common.FreshOAuthToken
-	// TODO: Need to have oauth service here
-	// a.token, err = a.cfg.TokenSource(ctx, a.token).Token()
 	vs, err := a.vars.Get(ctx, sdktypes.NewVarScopeID(a.cid))
 	// TODO: add comment. assumes there is a continuous grpc connection that refreshes itself
 	// an inactive connection becomes stale after some time.

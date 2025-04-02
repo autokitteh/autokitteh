@@ -4,7 +4,6 @@ import (
 	"context"
 	"strings"
 	"sync"
-	"time"
 
 	pb "github.com/developerforce/pub-sub-api/go/proto"
 	"github.com/linkedin/goavro/v2"
@@ -39,19 +38,20 @@ func (h handler) subscribe(clientID, orgID, instanceURL string, cid sdktypes.Con
 		return
 	}
 
-	ctx, client := h.initPubSubClient(cid, clientID, nil, "")
-	if ctx == nil || client == nil {
+	err := h.initPubSubClient(cid, clientID)
+	if err != nil {
 		h.logger.Error("failed to create Salesforce client", zap.String("client_id", clientID))
 		return
 	}
 
 	// https://developer.salesforce.com/docs/atlas.en-us.platform_events.meta/platform_events/platform_events_objects_change_data_capture.htm
-	go h.eventLoop(ctx, clientID, "/data/ChangeEvents", cid)
+	go h.eventLoop(clientID, "/data/ChangeEvents", cid)
 }
 
 // eventLoop processes incoming messages, and automatically renews the subscription.
 // https://developer.salesforce.com/docs/platform/pub-sub-api/guide/pub-sub-features.html
-func (h handler) eventLoop(ctx context.Context, clientID string, subscribeTopic string, cid sdktypes.ConnectionID) {
+func (h handler) eventLoop(clientID string, subscribeTopic string, cid sdktypes.ConnectionID) {
+	ctx := context.Background()
 	l := h.logger.With(zap.String("connection_id", cid.String()))
 	const defaultBatchSize = int32(100)
 	numLeftToReceive := 0
@@ -89,11 +89,19 @@ func (h handler) eventLoop(ctx context.Context, clientID string, subscribeTopic 
 			case gstatus.Code(err) == codes.Unauthenticated:
 				l.Error("authentication error receiving Salesforce event", zap.Error(err))
 				cleanupClient(l, clientID)
-				ctx, client = h.initPubSubClient(cid, clientID, l, "failed to reinitialize Salesforce client")
+				err = h.initPubSubClient(cid, clientID)
+				if err != nil {
+					l.Error("failed to reinitialize Salesforce client", zap.Error(err))
+					continue
+				}
 			case err.Error() == "EOF":
 				l.Warn("Salesforce stream connection closed (EOF), reconnecting...", zap.Error(err))
 				cleanupClient(l, clientID)
-				ctx, client = h.initPubSubClient(cid, clientID, l, "failed to reinitialize Salesforce client after EOF")
+				err = h.initPubSubClient(cid, clientID)
+				if err != nil {
+					l.Error("failed to reinitialize Salesforce client", zap.Error(err))
+					continue
+				}
 			default:
 				l.Error("error receiving Salesforce event", zap.Error(err))
 			}
@@ -117,8 +125,9 @@ func (h handler) eventLoop(ctx context.Context, clientID string, subscribeTopic 
 
 				// If it's an authentication error, try to reinitialize the client.
 				cleanupClient(l, clientID)
-				ctx, client = h.initPubSubClient(cid, clientID, l, "failed to reinitialize Salesforce client after schema auth error")
-				if ctx == nil || client == nil {
+				err = h.initPubSubClient(cid, clientID)
+				if err != nil {
+					l.Error("failed to reinitialize Salesforce client", zap.Error(err))
 					continue
 				}
 
@@ -168,49 +177,30 @@ func (h handler) eventLoop(ctx context.Context, clientID string, subscribeTopic 
 // initPubSubClient initializes or reinitializes a PubSub client
 // If errorMessage is provided, errors will be logged with this message
 // Returns the context and client, which may be nil on error
-func (h handler) initPubSubClient(cid sdktypes.ConnectionID, clientID string, l *zap.Logger, errorMessage string) (context.Context, pb.PubSubClient) {
-	// TODO: return error to handle error outside this function
+func (h handler) initPubSubClient(cid sdktypes.ConnectionID, clientID string) error {
 	ctx := authcontext.SetAuthnSystemUser(context.Background())
-
-	// Use the provided logger if available, otherwise create one
-	if l == nil {
-		l = h.logger.With(zap.String("connection_id", cid.String()))
-	}
 
 	vs, err := h.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
 	if err != nil {
-		l.Error("failed to read connection vars",
-			zap.String("connection_id", cid.String()), zap.Error(err),
-		)
-		if errorMessage != "" {
-			l.Error(errorMessage, zap.Error(err))
-		}
-		return nil, nil
+		return err
 	}
 
 	// t := common.FreshOAuthToken(ctx, l, h.oauth, h.vars, desc, vs)
 	cfg, _, err := h.oauth.Get(ctx, desc.UniqueName().String())
 	if err != nil {
-		l.Error("failed to get Salesforce OAuth config", zap.Error(err))
-		if errorMessage != "" {
-			l.Error(errorMessage, zap.Error(err))
-		}
-		return nil, nil
+		return err
 	}
 
 	conn, err := h.initConn(cfg, cid, vs.GetValue(instanceURLVar), vs.GetValue(orgIDVar))
 	if err != nil {
-		if errorMessage != "" {
-			l.Error(errorMessage, zap.Error(err))
-		}
-		return nil, nil
+		return err
 	}
 
 	client := pb.NewPubSubClient(conn)
 	pubSubClients[clientID] = client
 	pubSubConnections[clientID] = conn
 
-	return ctx, client
+	return nil
 }
 
 // cleanupClient removes a client from the pubSubClients map.
@@ -234,28 +224,24 @@ func cleanupClient(l *zap.Logger, clientID string) {
 }
 
 func (h handler) initStream(ctx context.Context, l *zap.Logger, client pb.PubSubClient, cid sdktypes.ConnectionID, clientID string) pb.PubSub_SubscribeClient {
-	for {
-		stream, err := client.Subscribe(ctx)
-		if err != nil {
-			l.Error("error creating subscription stream", zap.Error(err))
-			cleanupClient(l, clientID)
-			newCtx, newClient := h.initPubSubClient(cid, clientID, l, "failed to create gRPC stream for Salesforce events")
-			if newCtx == nil || newClient == nil {
-				l.Error("failed to create new client, retrying in 1 second")
-				time.Sleep(time.Second)
-				// Try to fetch the client from the map if available
-				if c, ok := pubSubClients[clientID]; ok {
-					client = c
-				}
-				continue
-			}
-			ctx = newCtx
-			client = newClient
-			continue
-		}
-
-		return stream
+	stream, err := client.Subscribe(ctx)
+	if err != nil {
+		l.Error("error creating subscription stream", zap.Error(err))
+		// cleanupClient(l, clientID)
+		// newCtx, newClient := h.initPubSubClient(cid, clientID, l, "failed to create gRPC stream for Salesforce events")
+		// if newCtx == nil || newClient == nil {
+		// 	l.Error("failed to create new client, retrying in 1 second")
+		// 	time.Sleep(time.Second)
+		// 	// Try to fetch the client from the map if available
+		// 	if c, ok := pubSubClients[clientID]; ok {
+		// 		client = c
+		// 	}
+		// }
+		// ctx = newCtx
+		// client = newClient
 	}
+
+	return stream
 }
 
 func renewSubscription(l *zap.Logger, stream pb.PubSub_SubscribeClient, defaultBatchSize int32, topicName string) (int, error) {
