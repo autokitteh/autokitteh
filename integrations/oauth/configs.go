@@ -479,8 +479,13 @@ func (o *OAuth) initRedirectURLs() {
 			continue
 		}
 
-		// Special case: Microsoft integrations all use "microsoft".
-		if strings.HasPrefix(k, "microsoft") {
+		// Special case: Google and Microsoft integrations are generic.
+		switch {
+		case k == "gmail":
+			k = "google"
+		case strings.HasPrefix(k, "google"):
+			k = "google"
+		case strings.HasPrefix(k, "microsoft"):
 			k = "microsoft"
 		}
 
