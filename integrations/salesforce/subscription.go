@@ -8,6 +8,7 @@ import (
 	pb "github.com/developerforce/pub-sub-api/go/proto"
 	"github.com/linkedin/goavro/v2"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	gstatus "google.golang.org/grpc/status"
 
@@ -21,6 +22,8 @@ var (
 	// Writes happen during server startup, and when a user
 	// creates a new Salesforce connection in the UI.
 	pubSubClients = make(map[string]pb.PubSubClient)
+	// Store connections so we can close them properly.
+	pubSubConnections = make(map[string]*grpc.ClientConn)
 
 	mu = &sync.Mutex{}
 )
@@ -205,6 +208,8 @@ func (h handler) initPubSubClient(cid sdktypes.ConnectionID, clientID string, l 
 
 	client := pb.NewPubSubClient(conn)
 	pubSubClients[clientID] = client
+	pubSubConnections[clientID] = conn
+
 	return ctx, client
 }
 
