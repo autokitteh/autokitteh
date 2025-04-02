@@ -1,0 +1,12 @@
+version: v1
+
+project:
+  name: invoices-app
+  connections:
+  triggers:
+    - name: get
+      event_type: get
+      data:
+        path: test
+      call: main.js:total
+      webhook: {}
