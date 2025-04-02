@@ -38,6 +38,7 @@ func (h handler) subscribe(clientID, orgID, instanceURL string, cid sdktypes.Con
 
 	ctx, client := h.initPubSubClient(cid, clientID, nil, "")
 	if ctx == nil || client == nil {
+		h.logger.Error("failed to create Salesforce client", zap.String("client_id", clientID))
 		return
 	}
 
@@ -54,6 +55,17 @@ func (h handler) eventLoop(ctx context.Context, clientID string, subscribeTopic 
 
 	client := pubSubClients[clientID]
 	stream := h.initStream(ctx, l, client, cid, clientID)
+
+	vs, err := h.vars.Get(ctx, sdktypes.NewVarScopeID(cid), userIDVar)
+	if err != nil {
+		l.Error("failed to get connection vars", zap.Error(err))
+		return
+	}
+	userID := vs.GetValue(userIDVar)
+	if userID == "" {
+		l.Error("user_id is not set in connection vars")
+		return
+	}
 
 	// Start receiving messages.
 	for {
@@ -85,6 +97,7 @@ func (h handler) eventLoop(ctx context.Context, clientID string, subscribeTopic 
 			stream = h.initStream(ctx, l, client, cid, clientID)
 			continue
 		}
+		l.Debug("received Salesforce event", zap.Any("event", msg))
 
 		// TODO(INT-314): Save the latest replay ID.
 		// latestReplayId = msg.GetLatestReplayId()
@@ -116,6 +129,7 @@ func (h handler) eventLoop(ctx context.Context, clientID string, subscribeTopic 
 
 			data, err := decodePayload(l, schema, event.Event.Payload)
 			if err != nil {
+				l.Error("failed to decode Salesforce event", zap.Error(err))
 				continue
 			}
 
@@ -124,19 +138,15 @@ func (h handler) eventLoop(ctx context.Context, clientID string, subscribeTopic 
 				l.Error("ChangeEventHeader is not a map in event data")
 				continue
 			}
+			commitUser, ok := header["commitUser"].(string)
+			if !ok {
+				l.Error("commitUser is not a string in ChangeEventHeader")
+				continue
+			}
 
-			// TODO(INT-329): Temporary filter to ignore self-triggered events.
-			changeOriginValue, ok := header["changeOrigin"]
-			if !ok {
-				l.Error("changeOrigin key is not present in Salesforce ChangeEventHeader")
-				continue
-			}
-			changeOrigin, ok := changeOriginValue.(string)
-			if !ok {
-				l.Error("changeOrigin is not a string in Salesforce ChangeEventHeader")
-				continue
-			}
-			if !strings.Contains(changeOrigin, "SfdcInternalAPI") {
+			// Ignore self-triggered events.
+			if commitUser == userID {
+				l.Debug("ignoring Salesforce event", zap.String("commitUser", commitUser))
 				continue
 			}
 
@@ -243,7 +253,6 @@ func renewSubscription(l *zap.Logger, stream pb.PubSub_SubscribeClient, defaultB
 func decodePayload(l *zap.Logger, schema *pb.SchemaInfo, payload []byte) (map[string]any, error) {
 	codec, err := goavro.NewCodec(schema.SchemaJson)
 	if err != nil {
-		l.Error("failed to create codec for decoding Salesforce event", zap.Error(err))
 		return nil, err
 	}
 
@@ -253,12 +262,10 @@ func decodePayload(l *zap.Logger, schema *pb.SchemaInfo, payload []byte) (map[st
 		l.Warn("remaining bytes after decoding Salesforce event", zap.Int("len", len(remaining)), zap.Any("remaining", remaining))
 	}
 	if err != nil {
-		l.Error("failed to decode event", zap.Error(err))
 		return nil, err
 	}
 	data, ok := native.(map[string]any)
 	if !ok {
-		l.Error("failed to cast decoded event to map[string]any")
 		return nil, err
 	}
 	return data, nil

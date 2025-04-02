@@ -6,6 +6,7 @@ extend-exclude = [
     "runtimes/pythonrt/build_test.go",
     "sdk/sdktypes/integration_id_test.go",
     "go.mod",
+    "internal/backend/auth/authtokens/authjwttokens/jwt_test.go"
 ]
 
 [default.extend-identifiers]

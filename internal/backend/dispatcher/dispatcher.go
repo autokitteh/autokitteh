@@ -10,6 +10,7 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
@@ -120,7 +121,7 @@ func (d *Dispatcher) Redispatch(ctx context.Context, eventID sdktypes.EventID, o
 	memo["redispatch_of"] = eventID.String()
 	event = event.WithMemo(memo)
 
-	newEventID, err := d.Dispatch(ctx, event, opts)
+	newEventID, err := d.Dispatch(authcontext.SetAuthnSystemUser(ctx), event, opts)
 	if err != nil {
 		sl.With("err", err).Errorf("failed redispatching event %v: %v", eventID, err)
 		return sdktypes.InvalidEventID, fmt.Errorf("failed redispatching event %v: %w", eventID, err)

@@ -321,7 +321,7 @@ class Runner(pb.runner_rpc.RunnerService):
             print(pickle_help)
             req.error = msg
 
-        log.info("execute reply: %r", req)
+        log.info("execute reply")
         resp = self.worker.ExecuteReply(req)
         if resp.error:
             log.error("execute reply: %r", resp.error)
@@ -457,7 +457,7 @@ class Runner(pb.runner_rpc.RunnerService):
 
         try:
             if result.error:
-                req.error = self.result_error(result.error)
+                req.error = self.result_error(restore_error(result.error))
                 tb = pb_traceback(result.traceback)
                 req.traceback.extend(tb)
             else:

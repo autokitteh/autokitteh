@@ -304,7 +304,7 @@ allow if {
 
 allow if {
 	input.subject.kind == "evt"
-	input.action.name == "list"
+	input.action.name in ["list", "redispatch"]
 	is_active_member_of_single_assosicated_org_id
 }
 

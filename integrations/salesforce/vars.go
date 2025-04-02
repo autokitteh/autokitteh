@@ -8,6 +8,7 @@ var (
 
 	instanceURLVar = sdktypes.NewSymbol("instance_url")
 	orgIDVar       = sdktypes.NewSymbol("organization_id")
+	userIDVar      = sdktypes.NewSymbol("user_id")
 )
 
 // privateOAuth contains the user-provided details of a private Salesforce OAuth 2.0 app.

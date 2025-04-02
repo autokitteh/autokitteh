@@ -17,6 +17,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authloginhttpsvc/web"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authsessions"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens/authjwttokens"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authusers"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -177,6 +178,25 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 
 		if err := json.NewEncoder(w).Encode(u); err != nil {
 			a.L.Error("failed writing response", zap.Error(err))
+		}
+	})
+
+	muxes.NoAuth.HandleFunc("/.well-known/jwks.json", func(w http.ResponseWriter, r *http.Request) {
+		rsaTokens, ok := a.Deps.Tokens.(authjwttokens.RSATokens)
+		if !ok {
+			http.Error(w, "RSA tokens not configured", http.StatusBadRequest)
+			return
+		}
+		jwks, err := rsaTokens.GetJWKS()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(jwks); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 	})
 

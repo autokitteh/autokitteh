@@ -75,6 +75,14 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// issue_property_set and issue_property_deleted events aren’t supported or relevant to AutoKitteh.
+	// They occur when custom fields are programmatically changed on an issue.
+	// We ignore them because our webhook only extends expiration and doesn't update subscriptions.
+	if jiraEvent["webhookEvent"] == "issue_property_set" || jiraEvent["webhookEvent"] == "issue_property_deleted" {
+		l.Debug("Jira issue property set/deleted event", zap.Any("event", jiraEvent))
+		return
+	}
+
 	// Construct an AutoKitteh event from the Jira event.
 	akEvent, err := constructEvent(l, jiraEvent)
 	if err != nil {
@@ -104,7 +112,7 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 		u, err := transformIssueURL(jiraEvent, l)
 		if err != nil {
 			l.Error("Failed to transform Jira URL", zap.Error(err))
-			http.Error(w, "Bad Request", http.StatusBadRequest)
+			common.HTTPError(w, http.StatusBadRequest)
 			return
 		}
 		wk := webhookKey(u, strconv.Itoa(id))
