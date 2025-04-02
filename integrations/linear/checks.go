@@ -9,6 +9,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/common"
+	"go.autokitteh.dev/autokitteh/integrations/oauth"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -39,7 +40,7 @@ func status(v sdkservices.Vars) sdkintegrations.OptFn {
 
 // test checks whether the connection is actually usable, i.e. the configured
 // authentication credentials are valid and can be used to make API calls.
-func test(v sdkservices.Vars, o sdkservices.OAuth) sdkintegrations.OptFn {
+func test(v sdkservices.Vars, o *oauth.OAuth) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
 		vs, errStatus, err := common.ReadVarsWithStatus(ctx, v, cid)
 		if errStatus.IsValid() || err != nil {
@@ -52,7 +53,7 @@ func test(v sdkservices.Vars, o sdkservices.OAuth) sdkintegrations.OptFn {
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 
 		case integrations.OAuthDefault, integrations.OAuthPrivate:
-			token := common.FreshOAuthToken(ctx, zap.L(), o, v, desc, vs)
+			token := o.FreshToken(ctx, zap.L(), desc, vs)
 			_, err := common.HTTPPostJSON(ctx, linearAPIURL, token.AccessToken, body)
 			if err != nil {
 				return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
