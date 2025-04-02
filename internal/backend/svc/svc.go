@@ -155,6 +155,16 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		SupplyConfig("svc", svcConfigs),
 
 		LoggerFxOpt(opts.Silent),
+
+		Component(
+			"telemetry",
+			telemetry.Configs,
+			fx.Provide(telemetry.New),
+			fx.Invoke(func(lc fx.Lifecycle, t *telemetry.Telemetry) {
+				HookOnStop(lc, t.Shutdown)
+			}),
+		),
+
 		DBFxOpt(),
 
 		Component("auth", configset.Empty, fx.Provide(authsvc.New)),
@@ -303,7 +313,6 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		fx.Invoke(sessionsgrpcsvc.Init),
 		fx.Invoke(triggersgrpcsvc.Init),
 		fx.Invoke(varsgrpcsvc.Init),
-		Component("telemetry", telemetry.Configs, fx.Provide(telemetry.New)),
 		Component(
 			"http",
 			httpsvc.Configs,

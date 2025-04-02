@@ -3,6 +3,7 @@ package sessionworkflows
 import (
 	"context"
 
+	"go.opentelemetry.io/otel/trace"
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
 
@@ -10,8 +11,15 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+func (w *sessionWorkflow) startCallbackSpan(ctx context.Context, name string) (context.Context, trace.Span) {
+	return w.ws.telemetry.Tracer().Start(ctx, "sessionWorkflow.callbacks."+name)
+}
+
 func (w *sessionWorkflow) start(wctx workflow.Context) func(context.Context, sdktypes.RunID, sdktypes.CodeLocation, map[string]sdktypes.Value, map[string]string) (sdktypes.SessionID, error) {
 	return func(ctx context.Context, rid sdktypes.RunID, loc sdktypes.CodeLocation, inputs map[string]sdktypes.Value, memo map[string]string) (sdktypes.SessionID, error) {
+		ctx, span := w.startCallbackSpan(ctx, "start")
+		defer span.End()
+
 		l := w.l.With(zap.Any("rid", rid), zap.Any("loc", loc), zap.Any("inputs", inputs), zap.Any("memo", memo))
 
 		l.Info("child session start requested")
@@ -42,7 +50,10 @@ func (w *sessionWorkflow) start(wctx workflow.Context) func(context.Context, sdk
 }
 
 func (w *sessionWorkflow) isDeploymentActive(wctx workflow.Context) func(context.Context) (bool, error) {
-	return func(context.Context) (bool, error) {
+	return func(ctx context.Context) (bool, error) {
+		ctx, span := w.startCallbackSpan(ctx, "start")
+		defer span.End()
+
 		if did := w.data.Session.DeploymentID(); did.IsValid() {
 			var state sdktypes.DeploymentState
 

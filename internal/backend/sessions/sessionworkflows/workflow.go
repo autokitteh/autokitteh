@@ -403,6 +403,13 @@ func (w *sessionWorkflow) removeEventSubscription(wctx workflow.Context, signalI
 }
 
 func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (_ []sdkservices.SessionPrint, retVal sdktypes.Value, _ error) {
+	ctx := temporalclient.NewWorkflowContextAsGOContext(wctx)
+
+	startTrace := w.ws.telemetry.Tracer().Start
+
+	ctx, workflowSpan := startTrace(ctx, "sessionWorkflow.run")
+	defer workflowSpan.End()
+
 	session := w.data.Session
 
 	newRunID := func() (runID sdktypes.RunID, err error) {
@@ -422,6 +429,9 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (_ []sdkserv
 		NewRunID: newRunID,
 		Load:     w.load,
 		Call: func(callCtx context.Context, runID sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+			callCtx, span := w.startCallbackSpan(callCtx, "call")
+			defer span.End()
+
 			if f := v.GetFunction(); f.HasFlag(sdktypes.ConstFunctionFlag) {
 				l.Debug("const function call")
 				return f.ConstValue()
@@ -452,7 +462,10 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (_ []sdkserv
 			return w.call(wctx, runID, v, args, kwargs)
 		},
 		Print: func(printCtx context.Context, runID sdktypes.RunID, text string) error {
-			isActivity := activity.IsActivity(printCtx)
+			ctx, span := w.startCallbackSpan(printCtx, "print")
+			defer span.End()
+
+			isActivity := activity.IsActivity(ctx)
 
 			l.Debug("print", zap.Any("run_id", runID), zap.Bool("is_activity", isActivity), zap.String("text", text))
 
@@ -471,19 +484,25 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (_ []sdkserv
 			return nil
 		},
 		Now: func(nowCtx context.Context, runID sdktypes.RunID) (time.Time, error) {
-			if activity.IsActivity(nowCtx) {
+			ctx, span := w.startCallbackSpan(nowCtx, "now")
+			defer span.End()
+
+			if activity.IsActivity(ctx) {
 				return kittehs.Now().UTC(), nil
 			}
 
 			return workflow.Now(wctx).UTC(), nil
 		},
 		Sleep: func(sleepCtx context.Context, runID sdktypes.RunID, d time.Duration) error {
-			if activity.IsActivity(sleepCtx) {
+			ctx, span := w.startCallbackSpan(sleepCtx, "sleep")
+			defer span.End()
+
+			if activity.IsActivity(ctx) {
 				select {
 				case <-time.After(d):
 					return nil
-				case <-sleepCtx.Done():
-					return sleepCtx.Err()
+				case <-ctx.Done():
+					return ctx.Err()
 				}
 			}
 
@@ -509,15 +528,15 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (_ []sdkserv
 
 	entryPoint := session.EntryPoint()
 
-	ctx := temporalclient.NewWorkflowContextAsGOContext(wctx)
-
 	printer.Start()
+
+	runCtx, initialRunSpan := startTrace(ctx, "session.run")
 
 	temporalclient.WithoutDeadlockDetection(
 		wctx,
 		func() {
 			run, err = sdkruntimes.Run(
-				ctx,
+				runCtx,
 				sdkruntimes.RunParams{
 					Runtimes:             w.ws.svcs.Runtimes,
 					BuildFile:            w.data.BuildFile,
@@ -530,6 +549,8 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (_ []sdkserv
 			)
 		},
 	)
+
+	initialRunSpan.End()
 
 	if err != nil {
 		return printer.Finalize(), sdktypes.InvalidValue, err
@@ -565,9 +586,13 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (_ []sdkserv
 			"session_id": sdktypes.NewStringValue(session.ID().String()),
 		}
 
-		if retVal, err = run.Call(ctx, callValue, nil, inputs); err != nil {
+		callCtx, callSpan := startTrace(ctx, "session.call")
+
+		if retVal, err = run.Call(callCtx, callValue, nil, inputs); err != nil {
 			return printer.Finalize(), sdktypes.InvalidValue, err
 		}
+
+		callSpan.End()
 	}
 
 	prints := printer.Finalize()
