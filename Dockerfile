@@ -37,7 +37,7 @@ EOF
 # runtime dependencies for the application.
 FROM python:3.11-slim AS pydeps
 
-RUN apt-get update && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /runner
 
