@@ -16,10 +16,7 @@ import (
 // https://developer.salesforce.com/docs/platform/pub-sub-api/guide/supported-auth.html
 // https://pkg.go.dev/google.golang.org/grpc/credentials#PerRPCCredentials
 type grpcAuth struct {
-	cfg         *oauth2.Config
 	token       *oauth2.Token
-	instanceURL string
-	tenantID    string
 	oauth       *oauth.OAuth
 	logger      *zap.Logger
 	integration sdktypes.Integration
@@ -64,10 +61,7 @@ func initConn(l *zap.Logger, cfg *oauth2.Config, token *oauth2.Token, instanceUR
 		"api.pubsub.salesforce.com:443",
 		grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})),
 		grpc.WithPerRPCCredentials(&grpcAuth{
-			cfg:         cfg,
 			token:       token,
-			instanceURL: instanceURL,
-			tenantID:    orgID,
 			oauth:       oauth,
 			logger:      l,
 			integration: integration,
@@ -88,8 +82,8 @@ func (a *grpcAuth) GetRequestMetadata(ctx context.Context, uri ...string) (map[s
 
 	return map[string]string{
 		"accesstoken": a.token.AccessToken,
-		"instanceurl": a.instanceURL,
-		"tenantid":    a.tenantID,
+		"instanceurl": a.vars.GetValue(instanceURLVar),
+		"tenantid":    a.vars.GetValue(orgIDVar),
 	}, nil
 }
 
