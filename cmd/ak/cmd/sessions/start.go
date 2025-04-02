@@ -2,6 +2,7 @@ package sessions
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -46,7 +47,7 @@ var startCmd = common.StandardCommand(&cobra.Command{
 			}
 
 			if len(ds) == 0 {
-				return fmt.Errorf("no active deployments found")
+				return errors.New("no active deployments found")
 			}
 
 			bid = ds[0].BuildID()
