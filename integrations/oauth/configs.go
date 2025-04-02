@@ -24,6 +24,7 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/auth0"
 	"go.autokitteh.dev/autokitteh/integrations/common"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -588,7 +589,7 @@ func (o *OAuth) GetConfig(ctx context.Context, integration string, cid sdktypes.
 	}
 
 	// Failed to read connection variables - return the default configuration.
-	vs, err := o.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+	vs, err := o.vars.Get(authcontext.SetAuthnSystemUser(ctx), sdktypes.NewVarScopeID(cid))
 	if err != nil {
 		o.logger.Error("failed to read connection variables",
 			zap.String("integration", integration),
@@ -610,12 +611,12 @@ func (o *OAuth) GetConfig(ctx context.Context, integration string, cid sdktypes.
 
 	privatizeClient(vs, &cfg)
 
-	switch integration {
-	case "auth0":
+	switch {
+	case integration == "auth0":
 		setupAuth0(vs, &cfg)
-	case "github":
+	case integration == "github":
 		privatizeGitHub(vs, &cfg)
-	case "microsoft", "microsoft_teams":
+	case strings.HasPrefix(integration, "microsoft"):
 		privatizeMicrosoft(vs, &cfg)
 	}
 
