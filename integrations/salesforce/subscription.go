@@ -219,18 +219,20 @@ func cleanupClient(l *zap.Logger, clientID string) {
 	mu.Lock()
 	defer mu.Unlock()
 
-	if _, ok := pubSubClients[clientID]; ok {
-		if conn, ok := pubSubConnections[clientID]; ok {
-			if err := conn.Close(); err != nil {
-				l.Error("error closing Salesforce connection",
-					zap.String("client_id", clientID),
-					zap.Error(err))
-			}
-		}
-		delete(pubSubClients, clientID)
-		delete(pubSubConnections, clientID)
-		l.Debug("cleaned up Salesforce client", zap.String("client_id", clientID))
+	if _, ok := pubSubClients[clientID]; !ok {
+		l.Error("Salesforce pubSubClient already deleted", zap.Any("clientID", clientID))
+		return
 	}
+
+	conn := pubSubConnections[clientID]
+	if err := conn.Close(); err != nil {
+		l.Error("error closing Salesforce connection",
+			zap.String("client_id", clientID),
+			zap.Error(err))
+	}
+	delete(pubSubClients, clientID)
+	delete(pubSubConnections, clientID)
+	l.Debug("cleaned up Salesforce client", zap.String("client_id", clientID))
 }
 
 func (h handler) initStream(ctx context.Context, l *zap.Logger, client pb.PubSubClient, cid sdktypes.ConnectionID, clientID string) pb.PubSub_SubscribeClient {
