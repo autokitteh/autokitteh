@@ -17,6 +17,7 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/oauth"
 	"go.autokitteh.dev/autokitteh/internal/backend/applygrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authhttpmiddleware"
@@ -48,7 +49,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/integrationsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/logger"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
-	"go.autokitteh.dev/autokitteh/internal/backend/oauth"
 	"go.autokitteh.dev/autokitteh/internal/backend/orgs"
 	"go.autokitteh.dev/autokitteh/internal/backend/orgsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/policy/opapolicy"
@@ -218,6 +218,16 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component("builds", configset.Empty, fx.Provide(builds.New)),
 		Component("connections", configset.Empty, fx.Provide(connections.New)),
 		Component("deployments", deployments.Configs, fx.Provide(deployments.New)),
+		Component(
+			"webhooks", // Koanf config prefix, reused by all integrations.
+			oauth.Configs,
+			fx.Provide(oauth.New),
+			fx.Invoke(func(lc fx.Lifecycle, o *oauth.OAuth, m *muxes.Muxes) {
+				HookOnStart(lc, func(ctx context.Context) error {
+					return o.Start(m)
+				})
+			}),
+		),
 		Component("projects", configset.Empty, fx.Provide(projects.New)),
 		Component("projectsgrpcsvc", projectsgrpcsvc.Configs, fx.Provide(projectsgrpcsvc.New)),
 		Component(
@@ -230,7 +240,6 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component("secrets", secrets.Configs, fx.Provide(secrets.New)),
 		Component("events", configset.Empty, fx.Provide(events.New)),
 		Component("triggers", configset.Empty, fx.Provide(triggers.New)),
-		Component("oauth", configset.Empty, fx.Provide(oauth.New)),
 		runtimesFXOption(),
 		Component("healthcheck", configset.Empty, fx.Provide(healthchecker.New)),
 		Component(
@@ -250,7 +259,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			cron.Configs,
 			fx.Provide(cron.New),
 			fx.Invoke(
-				func(lc fx.Lifecycle, ct *cron.Cron, c sdkservices.Connections, v sdkservices.Vars, o sdkservices.OAuth) {
+				func(lc fx.Lifecycle, ct *cron.Cron, c sdkservices.Connections, v sdkservices.Vars, o *oauth.OAuth) {
 					HookOnStart(lc, func(ctx context.Context) error {
 						return ct.Start(ctx, c, v, o)
 					})
@@ -295,7 +304,6 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		fx.Invoke(usersgrpcsvc.Init),
 		fx.Invoke(orgsgrpcsvc.Init),
 		fx.Invoke(integrationsgrpcsvc.Init),
-		fx.Invoke(oauth.Init),
 		fx.Invoke(projectsgrpcsvc.Init),
 		fx.Invoke(func(z *zap.Logger, runtimes sdkservices.Runtimes, muxes *muxes.Muxes) {
 			sdkruntimessvc.Init(z, runtimes, muxes.Auth)
@@ -349,7 +357,6 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			muxes.NoAuth.Handle("GET /i/{$}", &h)
 		}),
 		fx.Invoke(dashboardsvc.Init),
-		fx.Invoke(oauth.InitWebhook),
 		fx.Invoke(connectionsinitsvc.Init),
 		Component(
 			"webhooks",

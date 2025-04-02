@@ -26,6 +26,7 @@ import (
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/oauth"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -74,18 +75,19 @@ type Cron struct {
 	temporal    temporalclient.Client
 	connections sdkservices.Connections
 	vars        sdkservices.Vars
-	oauth       sdkservices.OAuth
+	oauth       *oauth.OAuth
 }
 
 func New(c *Config, l *zap.Logger, t temporalclient.Client) *Cron {
 	return &Cron{cfg: c, logger: l, temporal: t}
 }
 
-func (cr *Cron) Start(ctx context.Context, c sdkservices.Connections, v sdkservices.Vars, o sdkservices.OAuth) error {
+func (cr *Cron) Start(ctx context.Context, c sdkservices.Connections, v sdkservices.Vars, o *oauth.OAuth) error {
 	if !cr.cfg.Enabled {
 		cr.logger.Info("internal maintenance cron is disabled")
 		return nil
 	}
+
 	cr.connections = c
 	cr.vars = v
 	cr.oauth = o

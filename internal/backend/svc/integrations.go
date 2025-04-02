@@ -27,6 +27,7 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/linear"
 	"go.autokitteh.dev/autokitteh/integrations/microsoft"
 	"go.autokitteh.dev/autokitteh/integrations/microsoft/teams"
+	"go.autokitteh.dev/autokitteh/integrations/oauth"
 	"go.autokitteh.dev/autokitteh/integrations/salesforce"
 	"go.autokitteh.dev/autokitteh/integrations/slack"
 	"go.autokitteh.dev/autokitteh/integrations/twilio"
@@ -112,7 +113,7 @@ func integrationsFXOption() fx.Option {
 		integration("slack", configset.Empty, slack.New),
 		integration("twilio", configset.Empty, twilio.New),
 		integration("zoom", configset.Empty, zoom.New),
-		fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, muxes *muxes.Muxes, vars sdkservices.Vars, dispatch sdkservices.DispatchFunc, oauth sdkservices.OAuth) {
+		fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, muxes *muxes.Muxes, vars sdkservices.Vars, oauth *oauth.OAuth, dispatch sdkservices.DispatchFunc) {
 			HookOnStart(lc, func(ctx context.Context) error {
 				asana.Start(l, muxes)
 				auth0.Start(l, muxes, vars)
