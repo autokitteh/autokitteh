@@ -16,6 +16,8 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+const defaultBatchSize = int32(100)
+
 var (
 	// Key = Salesforce instance URL (to ensure one gRPC client per app).
 	// Writes happen during server startup, and when a user
@@ -29,7 +31,7 @@ var (
 
 // subscribe creates a new gRPC client and subscribes to a generic Salesforce Change Data Capture channel.
 // https://developer.salesforce.com/docs/platform/pub-sub-api/references/methods/subscribe-rpc.html
-func (h handler) subscribe(clientID, orgID, instanceURL string, cid sdktypes.ConnectionID) {
+func (h handler) subscribe(l *zap.Logger, clientID string, cid sdktypes.ConnectionID) {
 	// Prevent duplication due to race conditions.
 	mu.Lock()
 	defer mu.Unlock()
@@ -38,21 +40,18 @@ func (h handler) subscribe(clientID, orgID, instanceURL string, cid sdktypes.Con
 		return
 	}
 
-	ctx, client := h.initPubSubClient(cid, clientID, nil, "")
+	ctx, client := h.initPubSubClient(l, cid, clientID, "")
 	if ctx == nil || client == nil {
-		h.logger.Error("failed to create Salesforce client", zap.String("client_id", clientID))
+		l.Error("failed to create Salesforce client")
 		return
 	}
 
-	// https://developer.salesforce.com/docs/atlas.en-us.platform_events.meta/platform_events/platform_events_objects_change_data_capture.htm
-	go h.eventLoop(ctx, clientID, "/data/ChangeEvents", cid)
+	go h.eventLoop(ctx, l, clientID, cid)
 }
 
 // eventLoop processes incoming messages, and automatically renews the subscription.
 // https://developer.salesforce.com/docs/platform/pub-sub-api/guide/pub-sub-features.html
-func (h handler) eventLoop(ctx context.Context, clientID string, subscribeTopic string, cid sdktypes.ConnectionID) {
-	l := h.logger.With(zap.String("connection_id", cid.String()))
-	const defaultBatchSize = int32(100)
+func (h handler) eventLoop(ctx context.Context, l *zap.Logger, clientID string, cid sdktypes.ConnectionID) {
 	numLeftToReceive := 0
 
 	client := pubSubClients[clientID]
@@ -65,19 +64,18 @@ func (h handler) eventLoop(ctx context.Context, clientID string, subscribeTopic 
 	}
 	userID := vs.GetValue(userIDVar)
 	if userID == "" {
-		l.Error("user_id is not set in connection vars")
+		l.Error("user_id is not set in Salesforce connection vars")
 		return
 	}
 
 	// Start receiving messages.
 	for {
 		if numLeftToReceive <= 0 {
-			n, err := renewSubscription(l, stream, defaultBatchSize, subscribeTopic)
-			if err != nil {
+			if err := renewSubscription(l, stream); err != nil {
 				l.Error("failed to renew Salesforce events subscription", zap.Error(err))
 				continue
 			}
-			numLeftToReceive = n
+			numLeftToReceive = int(defaultBatchSize)
 		}
 
 		// Assumes that the stream will abort after 270 seconds of inactivity.
@@ -88,11 +86,11 @@ func (h handler) eventLoop(ctx context.Context, clientID string, subscribeTopic 
 			case gstatus.Code(err) == codes.Unauthenticated:
 				l.Error("authentication error receiving Salesforce event", zap.Error(err))
 				cleanupClient(l, clientID)
-				ctx, client = h.initPubSubClient(cid, clientID, l, "failed to reinitialize Salesforce client")
+				ctx, client = h.initPubSubClient(l, cid, clientID, "failed to reinitialize Salesforce client")
 			case err.Error() == "EOF":
 				l.Warn("Salesforce stream connection closed (EOF), reconnecting...", zap.Error(err))
 				cleanupClient(l, clientID)
-				ctx, client = h.initPubSubClient(cid, clientID, l, "failed to reinitialize Salesforce client after EOF")
+				ctx, client = h.initPubSubClient(l, cid, clientID, "failed to reinitialize Salesforce client after EOF")
 			default:
 				l.Error("error receiving Salesforce event", zap.Error(err))
 			}
@@ -116,7 +114,7 @@ func (h handler) eventLoop(ctx context.Context, clientID string, subscribeTopic 
 
 				// If it's an authentication error, try to reinitialize the client.
 				cleanupClient(l, clientID)
-				ctx, client = h.initPubSubClient(cid, clientID, l, "failed to reinitialize Salesforce client after schema auth error")
+				ctx, client = h.initPubSubClient(l, cid, clientID, "failed to reinitialize Salesforce client after schema auth error")
 				if ctx == nil || client == nil {
 					continue
 				}
@@ -167,49 +165,24 @@ func (h handler) eventLoop(ctx context.Context, clientID string, subscribeTopic 
 // initPubSubClient initializes or reinitializes a PubSub client
 // If errorMessage is provided, errors will be logged with this message
 // Returns the context and client, which may be nil on error
-func (h handler) initPubSubClient(cid sdktypes.ConnectionID, clientID string, l *zap.Logger, errorMessage string) (context.Context, pb.PubSubClient) {
+func (h handler) initPubSubClient(l *zap.Logger, cid sdktypes.ConnectionID, clientID string, errorMessage string) (context.Context, pb.PubSubClient) {
 	// TODO: return error to handle error outside this function
-	ctx := authcontext.SetAuthnSystemUser(context.Background())
+	mu.Lock()
+	defer mu.Unlock()
 
-	// Use the provided logger if available, otherwise create one
-	if l == nil {
-		l = h.logger.With(zap.String("connection_id", cid.String()))
-	}
-
-	vs, err := h.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
-	if err != nil {
-		l.Error("failed to read connection vars",
-			zap.String("connection_id", cid.String()), zap.Error(err),
-		)
-		if errorMessage != "" {
-			l.Error(errorMessage, zap.Error(err))
-		}
-		return nil, nil
-	}
-
-	t := h.oauth.FreshToken(ctx, l, desc, vs)
-	cfg, _, err := h.oauth.GetConfig(ctx, desc.UniqueName().String(), cid)
-	if err != nil {
-		l.Error("failed to get Salesforce OAuth config", zap.Error(err))
-		if errorMessage != "" {
-			l.Error(errorMessage, zap.Error(err))
-		}
-		return nil, nil
-	}
-
-	instanceURL := vs.GetValue(instanceURLVar)
-	conn, err := initConn(l, cfg, t, instanceURL, vs.GetValue(orgIDVar), h.oauth, desc, vs)
+	conn, err := h.initConn(l, cid)
 	if err != nil {
 		if errorMessage != "" {
 			l.Error(errorMessage, zap.Error(err))
 		}
 		return nil, nil
 	}
+	pubSubConnections[clientID] = conn
 
 	client := pb.NewPubSubClient(conn)
 	pubSubClients[clientID] = client
-	pubSubConnections[clientID] = conn
 
+	ctx := authcontext.SetAuthnSystemUser(context.Background())
 	return ctx, client
 }
 
@@ -230,6 +203,7 @@ func cleanupClient(l *zap.Logger, clientID string) {
 			zap.String("client_id", clientID),
 			zap.Error(err))
 	}
+
 	delete(pubSubClients, clientID)
 	delete(pubSubConnections, clientID)
 	l.Debug("cleaned up Salesforce client", zap.String("client_id", clientID))
@@ -240,7 +214,7 @@ func (h handler) initStream(ctx context.Context, l *zap.Logger, client pb.PubSub
 		stream, err := client.Subscribe(ctx)
 		if err != nil {
 			cleanupClient(l, clientID)
-			h.initPubSubClient(cid, clientID, l, "failed to create gRPC stream for Salesforce events")
+			h.initPubSubClient(l, cid, clientID, "failed to create gRPC stream for Salesforce events")
 			// TODO(INT-352): error handling
 			continue
 		}
@@ -249,9 +223,10 @@ func (h handler) initStream(ctx context.Context, l *zap.Logger, client pb.PubSub
 	}
 }
 
-func renewSubscription(l *zap.Logger, stream pb.PubSub_SubscribeClient, defaultBatchSize int32, topicName string) (int, error) {
+// https://developer.salesforce.com/docs/atlas.en-us.platform_events.meta/platform_events/platform_events_objects_change_data_capture.htm
+func renewSubscription(l *zap.Logger, stream pb.PubSub_SubscribeClient) error {
 	fetchReq := &pb.FetchRequest{
-		TopicName:    topicName,
+		TopicName:    "/data/ChangeEvents",
 		NumRequested: defaultBatchSize,
 	}
 
@@ -260,9 +235,9 @@ func renewSubscription(l *zap.Logger, stream pb.PubSub_SubscribeClient, defaultB
 	err := stream.Send(fetchReq)
 	if err != nil {
 		l.Error("failed to request more Salesforce events", zap.Error(err))
-		return 0, err
+		return err
 	}
-	return int(defaultBatchSize), nil
+	return nil
 }
 
 func decodePayload(l *zap.Logger, schema *pb.SchemaInfo, payload []byte) (map[string]any, error) {
@@ -279,9 +254,11 @@ func decodePayload(l *zap.Logger, schema *pb.SchemaInfo, payload []byte) (map[st
 	if err != nil {
 		return nil, err
 	}
+
 	data, ok := native.(map[string]any)
 	if !ok {
 		return nil, err
 	}
+
 	return data, nil
 }
