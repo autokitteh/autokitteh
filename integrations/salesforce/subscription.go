@@ -68,13 +68,14 @@ func (h handler) eventLoop(ctx context.Context, clientID string, subscribeTopic 
 	userID := vs.GetValue(userIDVar)
 	if userID == "" {
 		l.Error("user_id is not set in connection vars")
+		// TODO: do we want to continue here instead of returning?
 		return
 	}
 
 	// Start receiving messages.
 	for {
 		if numLeftToReceive <= 0 {
-			n, err := renewSubscription(l, stream, defaultBatchSize, subscribeTopic)
+			n, err := renewSubscription(stream, defaultBatchSize, subscribeTopic)
 			if err != nil {
 				l.Error("failed to renew Salesforce events subscription", zap.Error(err))
 				continue
@@ -257,7 +258,7 @@ func (h handler) initStream(ctx context.Context, l *zap.Logger, client pb.PubSub
 	}
 }
 
-func renewSubscription(l *zap.Logger, stream pb.PubSub_SubscribeClient, defaultBatchSize int32, topicName string) (int, error) {
+func renewSubscription(stream pb.PubSub_SubscribeClient, defaultBatchSize int32, topicName string) (int, error) {
 	fetchReq := &pb.FetchRequest{
 		TopicName:    topicName,
 		NumRequested: defaultBatchSize,
@@ -267,7 +268,6 @@ func renewSubscription(l *zap.Logger, stream pb.PubSub_SubscribeClient, defaultB
 
 	err := stream.Send(fetchReq)
 	if err != nil {
-		l.Error("failed to request more Salesforce events", zap.Error(err))
 		return 0, err
 	}
 	return int(defaultBatchSize), nil
