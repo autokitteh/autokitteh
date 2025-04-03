@@ -4,6 +4,7 @@ import (
 	"context"
 	"strings"
 	"sync"
+	"time"
 
 	pb "github.com/developerforce/pub-sub-api/go/proto"
 	"github.com/linkedin/goavro/v2"
@@ -50,11 +51,9 @@ func (h handler) subscribe(l *zap.Logger, clientID string, cid sdktypes.Connecti
 	go h.eventLoop(ctx, l, clientID, cid)
 }
 
-// eventLoop processes incoming messages, and automatically renews the subscription.
+// eventLoop is a goroutine that processes incoming messages, and automatically renews the subscription.
 // https://developer.salesforce.com/docs/platform/pub-sub-api/guide/pub-sub-features.html
 func (h handler) eventLoop(ctx context.Context, l *zap.Logger, clientID string, cid sdktypes.ConnectionID) {
-	numLeftToReceive := 0
-
 	client := pubSubClients[clientID]
 	stream := h.initStream(ctx, l, cid, clientID)
 
@@ -71,94 +70,104 @@ func (h handler) eventLoop(ctx context.Context, l *zap.Logger, clientID string, 
 
 	// Start receiving messages.
 	for {
-		if numLeftToReceive <= 0 {
-			if err := renewSubscription(l, stream); err != nil {
-				l.Error("failed to renew Salesforce events subscription", zap.Error(err))
-				continue
-			}
-			numLeftToReceive = defaultBatchSize
-		}
-
-		// Assumes that the stream will abort after 270 seconds of inactivity.
-		// https://developer.salesforce.com/docs/platform/pub-sub-api/references/methods/subscribe-rpc.html#subscribe-keepalive-behavior
-		msg, err := stream.Recv()
-		if err != nil {
-			switch {
-			case gstatus.Code(err) == codes.Unauthenticated:
-				l.Error("authentication error receiving Salesforce event", zap.Error(err))
-				cleanupClient(l, clientID)
-				ctx, client = h.initPubSubClient(l, cid, clientID, "failed to reinitialize Salesforce client")
-			case err.Error() == "EOF":
-				l.Warn("Salesforce stream connection closed (EOF), reconnecting...", zap.Error(err))
-				cleanupClient(l, clientID)
-				ctx, client = h.initPubSubClient(l, cid, clientID, "failed to reinitialize Salesforce client after EOF")
-			default:
-				l.Error("error receiving Salesforce event", zap.Error(err))
-			}
-			stream = h.initStream(ctx, l, cid, clientID)
+		eventsLeftToReceive := defaultBatchSize
+		if err := renewSubscription(l, stream); err != nil {
+			l.Error("failed to renew Salesforce events subscription", zap.Error(err))
+			time.Sleep(time.Second)
 			continue
 		}
-		l.Debug("received Salesforce event", zap.Any("event", msg))
 
-		// TODO(INT-314): Save the latest replay ID.
-		// latestReplayId = msg.GetLatestReplayId()
-
-		// Process the received message.
-		numLeftToReceive -= len(msg.Events)
-		for _, event := range msg.Events {
-			schema, err := client.GetSchema(ctx, &pb.SchemaRequest{SchemaId: event.Event.SchemaId})
+		for eventsLeftToReceive > 0 {
+			// Assumes that the stream will abort after 270 seconds of inactivity.
+			// https://developer.salesforce.com/docs/platform/pub-sub-api/references/methods/subscribe-rpc.html#subscribe-keepalive-behavior
+			msg, err := stream.Recv()
+			shouldBreak := false
 			if err != nil {
-				l.Error("failed to get Salesforce event schema", zap.String("schema_id", event.Event.SchemaId), zap.Error(err))
-				if gstatus.Code(err) != codes.Unauthenticated {
-					continue
+				switch {
+				case gstatus.Code(err) == codes.Unauthenticated:
+					l.Error("authentication error receiving Salesforce event", zap.Error(err))
+					cleanupClient(l, clientID)
+					ctx, client = h.initPubSubClient(l, cid, clientID, "failed to reinitialize Salesforce client")
+					stream = h.initStream(ctx, l, cid, clientID)
+					shouldBreak = true
+				case err.Error() == "EOF":
+					l.Warn("Salesforce stream connection closed (EOF), reconnecting...", zap.Error(err))
+					cleanupClient(l, clientID)
+					ctx, client = h.initPubSubClient(l, cid, clientID, "failed to reinitialize Salesforce client after EOF")
+					stream = h.initStream(ctx, l, cid, clientID)
+					shouldBreak = true
+				default:
+					l.Error("error receiving Salesforce event", zap.Error(err))
 				}
 
-				// If it's an authentication error, try to reinitialize the client.
-				cleanupClient(l, clientID)
-				ctx, client = h.initPubSubClient(l, cid, clientID, "failed to reinitialize Salesforce client after schema auth error")
-				if ctx == nil || client == nil {
-					continue
+				if shouldBreak {
+					break
 				}
+				continue
+			}
 
-				// Try to get the schema again with the new client.
-				schema, err = client.GetSchema(ctx, &pb.SchemaRequest{SchemaId: event.Event.SchemaId})
+			l.Debug("received Salesforce event", zap.Any("event", msg))
+
+			// TODO(INT-314): Save the latest replay ID.
+			// latestReplayId = msg.GetLatestReplayId()
+
+			// Process the received message.
+			eventsLeftToReceive -= len(msg.Events)
+			for _, event := range msg.Events {
+				schema, err := client.GetSchema(ctx, &pb.SchemaRequest{SchemaId: event.Event.SchemaId})
 				if err != nil {
-					l.Error("still failed to get Salesforce schema after client reinitialization", zap.Error(err))
+					l.Error("failed to get Salesforce event schema", zap.String("schema_id", event.Event.SchemaId), zap.Error(err))
+					continue // TODO: handle authentication error differently?
+				}
+
+				data, err := decodePayload(l, schema, event.Event.Payload)
+				if err != nil {
+					l.Error("failed to decode Salesforce event", zap.Error(err))
 					continue
 				}
-			}
 
-			data, err := decodePayload(l, schema, event.Event.Payload)
-			if err != nil {
-				l.Error("failed to decode Salesforce event", zap.Error(err))
-				continue
-			}
+				header, ok := data["ChangeEventHeader"]
+				if !ok {
+					l.Error("ChangeEventHeader is not present in event data")
+					continue
+				}
+				change, ok := header.(map[string]any)
+				if !ok {
+					l.Error("ChangeEventHeader is not a map in event data")
+					continue
+				}
 
-			header, ok := data["ChangeEventHeader"].(map[string]any)
-			if !ok {
-				l.Error("ChangeEventHeader is not a map in event data")
-				continue
-			}
-			commitUser, ok := header["commitUser"].(string)
-			if !ok {
-				l.Error("commitUser is not a string in ChangeEventHeader")
-				continue
-			}
+				commitUser, ok := change["commitUser"]
+				if !ok {
+					l.Error("commitUser is not present in ChangeEventHeader")
+					continue
+				}
+				user, ok := commitUser.(string)
+				if !ok {
+					l.Error("commitUser is not a string in ChangeEventHeader")
+					continue
+				}
 
-			// Ignore self-triggered events.
-			if commitUser == userID {
-				l.Debug("ignoring Salesforce event", zap.String("commitUser", commitUser))
-				continue
-			}
+				// Ignore self-triggered events.
+				if user == userID {
+					l.Debug("ignoring Salesforce event", zap.String("commitUser", user))
+					continue
+				}
 
-			// Extract changed entity name for the event type.
-			entityName, ok := header["entityName"].(string)
-			if !ok {
-				l.Error("entityName is not a string in ChangeEventHeader")
-				continue
-			}
+				// Extract changed entity name for the event type.
+				entityName, ok := change["entityName"]
+				if !ok {
+					l.Error("entityName is not present in ChangeEventHeader")
+					continue
+				}
+				entity, ok := entityName.(string)
+				if !ok {
+					l.Error("entityName is not a string in ChangeEventHeader")
+					continue
+				}
 
-			h.dispatchEvent(data, strings.ToLower(entityName))
+				h.dispatchEvent(data, strings.ToLower(entity))
+			}
 		}
 	}
 }
