@@ -33,10 +33,12 @@ var (
 // https://developer.salesforce.com/docs/platform/pub-sub-api/references/methods/subscribe-rpc.html
 func (h handler) subscribe(l *zap.Logger, clientID string, cid sdktypes.ConnectionID) {
 	mu.Lock()
-	if _, ok := pubSubClients[clientID]; ok {
+	_, ok := pubSubClients[clientID]
+	mu.Unlock()
+
+	if ok {
 		return
 	}
-	mu.Unlock()
 
 	ctx, client := h.initPubSubClient(l, cid, clientID, "")
 	if ctx == nil || client == nil {
