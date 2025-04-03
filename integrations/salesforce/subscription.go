@@ -131,25 +131,25 @@ func (h handler) eventLoop(ctx context.Context, l *zap.Logger, clientID string, 
 					l.Error("ChangeEventHeader is not present in event data")
 					continue
 				}
-				change, ok := header.(map[string]any)
+				m, ok := header.(map[string]any)
 				if !ok {
 					l.Error("ChangeEventHeader is not a map in event data")
 					continue
 				}
 
-				commitUser, ok := change["commitUser"]
+				commitUser, ok := m["commitUser"]
 				if !ok {
 					l.Error("commitUser is not present in ChangeEventHeader")
 					continue
 				}
-				user, ok := commitUser.(string)
+				s, ok := commitUser.(string)
 				if !ok {
 					l.Error("commitUser is not a string in ChangeEventHeader")
 					continue
 				}
 
 				// Ignore self-triggered events.
-				if user == userID {
+				if s == userID {
 					l.Debug("ignoring Salesforce event", zap.String("commitUser", user))
 					continue
 				}
@@ -160,13 +160,13 @@ func (h handler) eventLoop(ctx context.Context, l *zap.Logger, clientID string, 
 					l.Error("entityName is not present in ChangeEventHeader")
 					continue
 				}
-				entity, ok := entityName.(string)
+				s, ok = entityName.(string)
 				if !ok {
 					l.Error("entityName is not a string in ChangeEventHeader")
 					continue
 				}
 
-				h.dispatchEvent(data, strings.ToLower(entity))
+				h.dispatchEvent(data, strings.ToLower(s))
 			}
 		}
 	}
