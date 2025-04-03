@@ -244,17 +244,21 @@ func cleanupClient(l *zap.Logger, clientID string) error {
 func (h handler) initStream(ctx context.Context, l *zap.Logger, client pb.PubSubClient, cid sdktypes.ConnectionID, clientID string) pb.PubSub_SubscribeClient {
 	for {
 		stream, err := client.Subscribe(ctx)
-		if err != nil {
-			err = cleanupClient(l, clientID)
-			if err != nil {
-				l.Error("failed to cleanup Salesforce client", zap.String("client_id", clientID), zap.Error(err))
-			}
-			h.initPubSubClient(cid, clientID, l, "failed to create gRPC stream for Salesforce events")
-			// TODO(INT-352): error handling
-			continue
+
+		if err == nil {
+			return stream
 		}
 
-		return stream
+		err = cleanupClient(l, clientID)
+		if err != nil {
+			l.Error("failed to cleanup Salesforce client", zap.String("client_id", clientID), zap.Error(err))
+		}
+
+		_, _, err = h.initPubSubClient(cid, clientID, l, "failed to create gRPC stream for Salesforce events")
+		if err != nil {
+			l.Error("failed to reinitialize Salesforce client", zap.Error(err))
+			continue
+		}
 	}
 }
 
