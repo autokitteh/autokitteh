@@ -39,13 +39,13 @@ type StartWorkflowOptions struct{}
 type Workflows interface {
 	StartWorkers(context.Context) error
 	StartWorkflow(ctx context.Context, session sdktypes.Session, opts StartWorkflowOptions) error
-	StartChildWorkflow(wctx workflow.Context, childSession sdktypes.Session, parentSessionData *sessiondata.Data) (workflow.ChildWorkflowFuture, error)
+	StartChildWorkflow(wctx workflow.Context, data sessiondata.Data) (workflow.ChildWorkflowFuture, error)
 	GetWorkflowLog(ctx context.Context, filter sdkservices.SessionLogRecordsFilter) (*sdkservices.GetLogResults, error)
 	StopWorkflow(ctx context.Context, sessionID sdktypes.SessionID, reason string, force bool, cancelTimeout time.Duration) error
 }
 
 type sessionWorkflowParams struct {
-	Data *sessiondata.Data
+	Data sessiondata.Data
 	Opts StartWorkflowOptions
 }
 
@@ -99,7 +99,7 @@ func (ws *workflows) StartWorkers(ctx context.Context) error {
 	return ws.worker.Start()
 }
 
-func memo(session sdktypes.Session, data sessiondata.Data) map[string]string {
+func memo(session sdktypes.Session, oid sdktypes.OrgID) map[string]string {
 	memo := map[string]string{
 		"process_id":      fixtures.ProcessID(),
 		"session_id":      session.ID().String(),
@@ -108,8 +108,8 @@ func memo(session sdktypes.Session, data sessiondata.Data) map[string]string {
 		"deployment_uuid": session.DeploymentID().UUIDValue().String(),
 		"project_id":      session.ProjectID().String(),
 		"project_uuid":    session.ProjectID().UUIDValue().String(),
-		"org_id":          data.OrgID.String(),
-		"org_uuid":        data.OrgID.UUIDValue().String(),
+		"org_id":          oid.String(),
+		"org_uuid":        oid.UUIDValue().String(),
 	}
 
 	if session.ParentSessionID().IsValid() {
@@ -124,15 +124,12 @@ func memo(session sdktypes.Session, data sessiondata.Data) map[string]string {
 	return memo
 }
 
-func (ws *workflows) StartChildWorkflow(wctx workflow.Context, childSession sdktypes.Session, parentSessionData *sessiondata.Data) (workflow.ChildWorkflowFuture, error) {
-	childSessionID := childSession.ID()
+func (ws *workflows) StartChildWorkflow(wctx workflow.Context, data sessiondata.Data) (workflow.ChildWorkflowFuture, error) {
+	childSessionID := data.Session.ID()
 
 	l := ws.l.With(zap.Any("child_session_id", childSessionID))
 
-	data := *parentSessionData
-	data.Session = childSession
-
-	memo := memo(childSession, data)
+	memo := memo(data.Session, data.OrgID)
 
 	f := workflow.ExecuteChildWorkflow(
 		workflow.WithChildOptions(
@@ -146,7 +143,7 @@ func (ws *workflows) StartChildWorkflow(wctx workflow.Context, childSession sdkt
 			),
 		),
 		sessionWorkflowName,
-		&sessionWorkflowParams{Data: &data},
+		sessionWorkflowParams{Data: data},
 	)
 
 	var r workflow.Execution
@@ -169,7 +166,7 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 		return fmt.Errorf("get session data: %w", err)
 	}
 
-	memo := memo(session, *data)
+	memo := memo(session, data.OrgID)
 
 	r, err := ws.svcs.Temporal.TemporalClient().ExecuteWorkflow(
 		ctx,
@@ -180,7 +177,7 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 			memo,
 		),
 		sessionWorkflowName,
-		&sessionWorkflowParams{Data: data, Opts: opts},
+		sessionWorkflowParams{Data: *data, Opts: opts},
 	)
 	if err != nil {
 		return fmt.Errorf("execute session workflow: %w", err)
@@ -191,9 +188,10 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 	return nil
 }
 
-func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkflowParams) error {
+func (ws *workflows) sessionWorkflow(wctx workflow.Context, params sessionWorkflowParams) error {
 	wi := workflow.GetInfo(wctx)
 	session := params.Data.Session
+	parentSessionID := session.ParentSessionID()
 	sid := session.ID()
 	isReplaying := workflow.IsReplaying(wctx)
 
@@ -203,6 +201,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 		zap.String("workflow_id", wi.WorkflowExecution.ID),
 		zap.String("run_id", wi.WorkflowExecution.RunID),
 		zap.Int32("attempt", wi.Attempt),
+		zap.String("parent_session_id", parentSessionID.String()),
 	)
 
 	eventTime := struct {
@@ -314,7 +313,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 	}
 
 	// Signal parent session on completion.
-	if pid := session.ParentSessionID(); pid.IsValid() {
+	if parentSessionID.IsValid() {
 		payload := map[string]sdktypes.Value{
 			"completed": sdktypes.NewBooleanValue(err == nil),
 		}
@@ -325,7 +324,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 
 		if err := workflow.SignalExternalWorkflow(
 			dwctx,
-			pid.String(),
+			parentSessionID.String(),
 			"",
 			sessionSignalName(session.ID()),
 			sdktypes.NewDictValueFromStringMap(payload),
