@@ -10,7 +10,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkdispatcherclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkeventsclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkintegrationsclient"
-	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkoauthclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkorgsclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkprojectsclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkruntimesclient"
@@ -30,7 +29,6 @@ type client struct {
 	dispatcher   func() sdkservices.Dispatcher
 	events       func() sdkservices.Events
 	integrations func() sdkservices.Integrations
-	oauth        func() sdkservices.OAuth
 	orgs         func() sdkservices.Orgs
 	params       sdkclient.Params
 	projects     func() sdkservices.Projects
@@ -53,7 +51,6 @@ func New(params sdkclient.Params) sdkservices.Services {
 		dispatcher:   kittehs.LazyCache(sdkdispatcherclient.New, params),
 		events:       kittehs.LazyCache(sdkeventsclient.New, params),
 		integrations: kittehs.LazyCache(sdkintegrationsclient.New, params),
-		oauth:        kittehs.LazyCache(sdkoauthclient.New, params),
 		projects:     kittehs.LazyCache(sdkprojectsclient.New, params),
 		runtimes:     kittehs.LazyCache(sdkruntimesclient.New, params),
 		sessions:     kittehs.LazyCache(sdksessionsclient.New, params),
@@ -72,7 +69,6 @@ func (c *client) Deployments() sdkservices.Deployments   { return c.deployments(
 func (c *client) Dispatcher() sdkservices.Dispatcher     { return c.dispatcher() }
 func (c *client) Events() sdkservices.Events             { return c.events() }
 func (c *client) Integrations() sdkservices.Integrations { return c.integrations() }
-func (c *client) OAuth() sdkservices.OAuth               { return c.oauth() }
 func (c *client) Projects() sdkservices.Projects         { return c.projects() }
 func (c *client) Runtimes() sdkservices.Runtimes         { return c.runtimes() }
 func (c *client) Sessions() sdkservices.Sessions         { return c.sessions() }

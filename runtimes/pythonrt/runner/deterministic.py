@@ -33,6 +33,18 @@ def is_deterministic(fn):
         if mod != "builtins" and mod in modules:
             return True
 
+    if cls := getattr(fn, "__objclass__", None):
+        # We don't check isinstance on built-in types since the user can subclass
+        # and then override a method. For example:
+        # class List(list):
+        #     def append(self, item):
+        #         ...
+        # And this append should run as an activity.
+        # We don't add Exception to builtin_types since then we'll need to add all
+        # built-in exceptions.
+        if cls in builtin_types or issubclass(cls, Exception):
+            return True
+
     return False
 
 

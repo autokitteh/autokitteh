@@ -1,0 +1,38 @@
+-- main.py main --
+from autokitteh import activity
+
+
+class X(Exception):
+    def __init__(self, a, b):
+        self._a, self._b = a, b
+        super().__init__(a, b)
+
+@activity
+def callstuff():
+    raise X(1, 2)
+
+
+def main(_):
+    callstuff()
+
+-- error.txt --
+error: X(1, 2)
+
+Traceback (most recent call last):
+  File "/tmp/ak-runner-210142359/runner/main.py", line 442, in _call
+    value = fn(*args, **kw)
+  File "/tmp/ak-user-4007724514/main.py", line 15, in main
+    callstuff()
+    ~~~~~~~~~^^
+  File "/tmp/ak-runner-210142359/runner/call.py", line 150, in __call__
+    return self.runner.call_in_activity(func, args, kw)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "/tmp/ak-runner-210142359/runner/main.py", line 410, in call_in_activity
+    return fut.result()
+           ~~~~~~~~~~^^
+  File "/usr/lib/python3.13/concurrent/futures/_base.py", line 456, in result
+    return self.__get_result()
+           ~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.13/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+main.X: (1, 2)

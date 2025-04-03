@@ -12,6 +12,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/common"
+	"go.autokitteh.dev/autokitteh/integrations/oauth"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -42,20 +43,25 @@ func Status(v sdkservices.Vars) sdkintegrations.OptFn {
 
 // Test checks whether the connection is actually usable, i.e. the configured
 // authentication credentials are valid and can be used to make API calls.
-func Test(v sdkservices.Vars, o sdkservices.OAuth) sdkintegrations.OptFn {
+func Test(v sdkservices.Vars, o *oauth.OAuth) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
 		vs, errStatus, err := common.ReadVarsWithStatus(ctx, v, cid)
 		if errStatus.IsValid() || err != nil {
 			return errStatus, err
 		}
 
-		switch common.ReadAuthType(vs) {
+		switch authType := common.ReadAuthType(vs); authType {
 		case "":
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 
 		case integrations.OAuthDefault, integrations.OAuthPrivate:
 			desc := common.Descriptor("microsoft", "", "")
-			t := common.FreshOAuthToken(ctx, zap.L(), o, v, desc, vs)
+			l := zap.L().With(
+				zap.String("integration", desc.UniqueName().String()),
+				zap.String("connection_id", cid.String()),
+				zap.String("auth_type", authType),
+			)
+			t := o.FreshToken(ctx, l, desc, vs)
 			if _, err = GetUserInfo(ctx, t); err != nil {
 				return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 			}

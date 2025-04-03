@@ -7,6 +7,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/oauth"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -15,7 +16,7 @@ import (
 func TestSaveClientIDAndSecret(t *testing.T) {
 	type fields struct {
 		logger *zap.Logger
-		oauth  sdkservices.OAuth
+		oauth  *oauth.OAuth
 		vars   sdkservices.Vars
 	}
 	type args struct {

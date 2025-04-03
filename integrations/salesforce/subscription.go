@@ -8,10 +8,10 @@ import (
 	pb "github.com/developerforce/pub-sub-api/go/proto"
 	"github.com/linkedin/goavro/v2"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	gstatus "google.golang.org/grpc/status"
 
-	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -21,6 +21,8 @@ var (
 	// Writes happen during server startup, and when a user
 	// creates a new Salesforce connection in the UI.
 	pubSubClients = make(map[string]pb.PubSubClient)
+	// Store connections so we can close them properly.
+	pubSubConnections = make(map[string]*grpc.ClientConn)
 
 	mu = &sync.Mutex{}
 )
@@ -85,12 +87,12 @@ func (h handler) eventLoop(ctx context.Context, clientID string, subscribeTopic 
 			switch {
 			case gstatus.Code(err) == codes.Unauthenticated:
 				l.Error("authentication error receiving Salesforce event", zap.Error(err))
-				ctx, client = h.initPubSubClient(cid, clientID, l, "failed to reinitialize Salesforce client")
 				cleanupClient(l, clientID)
+				ctx, client = h.initPubSubClient(cid, clientID, l, "failed to reinitialize Salesforce client")
 			case err.Error() == "EOF":
 				l.Warn("Salesforce stream connection closed (EOF), reconnecting...", zap.Error(err))
-				ctx, client = h.initPubSubClient(cid, clientID, l, "failed to reinitialize Salesforce client after EOF")
 				cleanupClient(l, clientID)
+				ctx, client = h.initPubSubClient(cid, clientID, l, "failed to reinitialize Salesforce client after EOF")
 			default:
 				l.Error("error receiving Salesforce event", zap.Error(err))
 			}
@@ -185,8 +187,8 @@ func (h handler) initPubSubClient(cid sdktypes.ConnectionID, clientID string, l 
 		return nil, nil
 	}
 
-	t := common.FreshOAuthToken(ctx, l, h.oauth, h.vars, desc, vs)
-	cfg, _, err := h.oauth.Get(ctx, desc.UniqueName().String())
+	t := h.oauth.FreshToken(ctx, l, desc, vs)
+	cfg, _, err := h.oauth.GetConfig(ctx, desc.UniqueName().String(), cid)
 	if err != nil {
 		l.Error("failed to get Salesforce OAuth config", zap.Error(err))
 		if errorMessage != "" {
@@ -195,7 +197,8 @@ func (h handler) initPubSubClient(cid sdktypes.ConnectionID, clientID string, l 
 		return nil, nil
 	}
 
-	conn, err := initConn(l, cfg, t, vs.GetValue(instanceURLVar), vs.GetValue(orgIDVar))
+	instanceURL := vs.GetValue(instanceURLVar)
+	conn, err := initConn(l, cfg, t, instanceURL, vs.GetValue(orgIDVar), h.oauth, desc, vs)
 	if err != nil {
 		if errorMessage != "" {
 			l.Error(errorMessage, zap.Error(err))
@@ -205,6 +208,8 @@ func (h handler) initPubSubClient(cid sdktypes.ConnectionID, clientID string, l 
 
 	client := pb.NewPubSubClient(conn)
 	pubSubClients[clientID] = client
+	pubSubConnections[clientID] = conn
+
 	return ctx, client
 }
 
@@ -214,10 +219,20 @@ func cleanupClient(l *zap.Logger, clientID string) {
 	mu.Lock()
 	defer mu.Unlock()
 
-	if _, ok := pubSubClients[clientID]; ok {
-		delete(pubSubClients, clientID)
-		l.Debug("cleaned up Salesforce client", zap.String("client_id", clientID))
+	if _, ok := pubSubClients[clientID]; !ok {
+		l.Error("Salesforce pubSubClient already deleted", zap.Any("clientID", clientID))
+		return
 	}
+
+	conn := pubSubConnections[clientID]
+	if err := conn.Close(); err != nil {
+		l.Error("error closing Salesforce connection",
+			zap.String("client_id", clientID),
+			zap.Error(err))
+	}
+	delete(pubSubClients, clientID)
+	delete(pubSubConnections, clientID)
+	l.Debug("cleaned up Salesforce client", zap.String("client_id", clientID))
 }
 
 func (h handler) initStream(ctx context.Context, l *zap.Logger, client pb.PubSubClient, cid sdktypes.ConnectionID, clientID string) pb.PubSub_SubscribeClient {

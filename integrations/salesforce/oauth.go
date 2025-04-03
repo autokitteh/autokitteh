@@ -12,7 +12,6 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 
-	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
@@ -74,14 +73,14 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	userID := userInfo["user_id"].(string)
 
 	// Set the access token expiration time.
-	vsid := sdktypes.NewVarScopeID(cid)
-	clientID, err := h.accessTokenExpiration(ctx, instanceURL, data.Token, vsid)
+	clientID, err := h.accessTokenExpiration(ctx, instanceURL, data.Token, cid)
 	if err != nil {
 		l.Error("failed to get OAuth access token expiration", zap.Error(err))
 		c.AbortServerError("failed to get OAuth access token expiration")
 		return
 	}
 
+	vsid := sdktypes.NewVarScopeID(cid)
 	if err := h.saveConnection(ctx, vsid, data.Token, data.Extra, orgID, userID); err != nil {
 		l.Error("failed to save OAuth connection details", zap.Error(err))
 		c.AbortServerError("failed to save connection details")
@@ -119,27 +118,13 @@ func (h handler) saveConnection(ctx context.Context, vsid sdktypes.VarScopeID, t
 // Salesforce access tokens are time-limited, but they don't have an expiry timestamp
 // so we need to add it on our own. This function also returns the connection's client ID.
 // Based on: https://help.salesforce.com/s/articleView?id=xcloud.remoteaccess_oidc_token_introspection_endpoint.htm
-func (h handler) accessTokenExpiration(ctx context.Context, instanceURL string, t *oauth2.Token, vsid sdktypes.VarScopeID) (string, error) {
-	var clientID, clientSecret string
-
-	vs, err := h.vars.Get(ctx, vsid, common.AuthTypeVar, clientIDVar, clientSecretVar)
+func (h handler) accessTokenExpiration(ctx context.Context, instanceURL string, t *oauth2.Token, cid sdktypes.ConnectionID) (string, error) {
+	u, err := url.JoinPath(instanceURL, "/services/oauth2/introspect")
 	if err != nil {
 		return "", err
 	}
 
-	clientID = vs.GetValue(clientIDVar)
-	clientSecret = vs.GetValue(clientSecretVar)
-
-	if common.ReadAuthType(vs) == integrations.OAuthDefault {
-		cfg, _, err := h.oauth.Get(ctx, desc.UniqueName().String())
-		if err != nil {
-			return "", err
-		}
-		clientID = cfg.ClientID
-		clientSecret = cfg.ClientSecret
-	}
-
-	u, err := url.JoinPath(instanceURL, "/services/oauth2/introspect")
+	cfg, _, err := h.oauth.GetConfig(ctx, desc.UniqueName().String(), cid)
 	if err != nil {
 		return "", err
 	}
@@ -147,8 +132,8 @@ func (h handler) accessTokenExpiration(ctx context.Context, instanceURL string, 
 	form := url.Values{
 		"token":           {t.AccessToken},
 		"token_type_hint": {"access_token"},
-		"client_id":       {clientID},
-		"client_secret":   {clientSecret},
+		"client_id":       {cfg.ClientID},
+		"client_secret":   {cfg.ClientSecret},
 	}
 
 	resp, err := common.HTTPPostForm(ctx, u, "", form)
@@ -164,5 +149,5 @@ func (h handler) accessTokenExpiration(ctx context.Context, instanceURL string, 
 	}
 
 	t.Expiry = time.Unix(int64(info.Exp), 0)
-	return clientID, nil
+	return cfg.ClientID, nil
 }
