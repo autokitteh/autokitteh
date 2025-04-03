@@ -46,7 +46,7 @@ func TestAuthCodes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := authCodes(tt.opts)
-			assert.Equal(t, tt.want, got)
+			assert.True(t, reflect.DeepEqual(tt.want, got))
 		})
 	}
 }
