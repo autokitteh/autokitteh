@@ -577,6 +577,7 @@ func (o *OAuth) flags(integration string) internalFlags {
 // GetConfig returns the OAuth 2.0 configuration for the given integration.
 // The connection ID may be nil, but if it's not, this function tries to use private
 // OAuth app settings from the connection's variables instead of the integration's defaults.
+// This function must be called only by trusted code, as it may return sensitive information!
 func (o *OAuth) GetConfig(ctx context.Context, integration string, cid sdktypes.ConnectionID) (*oauth2.Config, map[string]string, error) {
 	cfg, ok := o.oauthConfigs[integration]
 	if !ok {

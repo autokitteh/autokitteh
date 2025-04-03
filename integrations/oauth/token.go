@@ -8,6 +8,7 @@ import (
 	"golang.org/x/oauth2"
 
 	"go.autokitteh.dev/autokitteh/integrations/common"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -42,6 +43,7 @@ func (o *OAuth) FreshToken(ctx context.Context, l *zap.Logger, i sdktypes.Integr
 
 	t2, err := cfg.TokenSource(ctx, t1).Token()
 	if err != nil {
+		l.Warn("failed to refresh OAuth token, returning original one", zap.Error(err))
 		return t1
 	}
 
@@ -55,6 +57,7 @@ func (o *OAuth) FreshToken(ctx context.Context, l *zap.Logger, i sdktypes.Integr
 	l.Debug("refreshed OAuth token", zap.Time("new_expiry", t2.Expiry))
 
 	// Update the connection variables before returning the new token.
+	ctx = authcontext.SetAuthnSystemUser(ctx)
 	vs = sdktypes.EncodeVars(common.EncodeOAuthData(t2))
 	if err := o.vars.Set(ctx, vs.WithScopeID(vsid)...); err != nil {
 		l.Error("failed to save refreshed OAuth token in connection", zap.Error(err))
