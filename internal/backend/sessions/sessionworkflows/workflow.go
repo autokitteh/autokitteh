@@ -513,6 +513,7 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (_ []sdkserv
 
 	printer.Start()
 
+	_, endSpan := w.ws.telemetry.NewSpan(ctx, "start_runner")
 	temporalclient.WithoutDeadlockDetection(
 		wctx,
 		func() {
@@ -530,7 +531,7 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (_ []sdkserv
 			)
 		},
 	)
-
+	endSpan()
 	if err != nil {
 		return printer.Finalize(), sdktypes.InvalidValue, err
 	}
