@@ -1,5 +1,7 @@
 """Decorator to mark a function as a Temporal activity."""
 
+from typing import Callable
+
 ACTIVITY_ATTR = "__ak_activity__"
 INHIBIT_ACTIVITIES_ATTR = "__ak_inhibit_activities__"
 
@@ -39,10 +41,12 @@ def inhibit_activities(fn: callable) -> callable:
 _no_activity = set()
 
 
-def register_no_activity(functions):
-    """Mark functions that should not run as activities.
-    Each function must be hashable.
+def register_no_activity(items: list[Callable]) -> None:
+    """Mark items that should not run as activities.
+
+    Items should be callable and hashable. If an item is a class, all methods in the
+    class are marked as non-activities.
 
     This helps speeding up your code, but you might risk non-deterministic behavior.
     """
-    _no_activity.update(functions)
+    _no_activity.update(items)

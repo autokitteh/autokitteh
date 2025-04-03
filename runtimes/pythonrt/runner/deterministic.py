@@ -6,6 +6,7 @@
 # So, `re` is OK, `random` is not
 
 import datetime
+import functools
 import inspect
 import json
 
@@ -48,6 +49,31 @@ def is_deterministic(fn):
     return False
 
 
+# https://stackoverflow.com/questions/3589311/get-defining-class-of-unbound-method-object-in-python-3/25959545#25959545
+def fn_class(meth):
+    if isinstance(meth, functools.partial):
+        return fn_class(meth.func)
+
+    if inspect.ismethod(meth) or (
+        inspect.isbuiltin(meth)
+        and attr_or_none(meth, "__self__")
+        and attr_or_none(meth.__self__, "__class__")
+    ):
+        for cls in inspect.getmro(meth.__self__.__class__):
+            if meth.__name__ in cls.__dict__:
+                return cls
+        meth = getattr(meth, "__func__", meth)  # __qualname__ parsing
+
+    if inspect.isfunction(meth):
+        # TextCalender.prmonth -> TextCalendar
+        cls_name = meth.__qualname__.split(".")[0]
+        cls = attr_or_none(inspect.getmodule(meth), cls_name)
+        if isinstance(cls, type):
+            return cls
+
+    return attr_or_none(meth, "__objclass__")  # Descriptor objects
+
+
 def is_no_activity(fn):
     no_act = activities._no_activity
 
@@ -55,15 +81,19 @@ def is_no_activity(fn):
         return True
 
     # Bound method
-    if inspect.ismethod(fn) and (cls_fn := attr_or_none(fn, "__func__")):
-        return cls_fn in no_act
+    if inspect.ismethod(fn):
+        if (cls_fn := attr_or_none(fn, "__func__")) and cls_fn in no_act:
+            return True
 
-    # C class method (e.g. Exception.__init__)
+    # Descriptors
     if (cls := attr_or_none(fn, "__objclass__")) and (
         name := attr_or_none(fn, "__name__")
     ):
         if cls_fn := attr_or_none(cls, name):
             return cls_fn in no_act
+
+    if cls := fn_class(fn):
+        return cls in no_act
 
     return False
 
