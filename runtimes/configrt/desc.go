@@ -11,4 +11,5 @@ const runtimeName = "config"
 var desc = kittehs.Must1(sdktypes.StrictRuntimeFromProto(&sdktypes.RuntimePB{
 	Name:           runtimeName,
 	FileExtensions: parsers.Extensions,
+	FilewiseBuild:  true,
 }))

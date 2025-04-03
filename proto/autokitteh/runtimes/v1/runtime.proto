@@ -7,4 +7,5 @@ import "buf/validate/validate.proto";
 message Runtime {
   string name = 1 [(buf.validate.field).string.min_len = 1];
   repeated string file_extensions = 2 [(buf.validate.field).repeated.items.string.min_len = 1];
+  bool filewise_build = 3; // if true, builds are done per file. if false, builds are done per directory.
 }
