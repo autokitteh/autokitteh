@@ -150,12 +150,12 @@ func (h handler) eventLoop(ctx context.Context, l *zap.Logger, clientID string, 
 
 				// Ignore self-triggered events.
 				if s == userID {
-					l.Debug("ignoring Salesforce event", zap.String("commitUser", user))
+					l.Debug("ignoring Salesforce event", zap.String("commitUser", s))
 					continue
 				}
 
 				// Extract changed entity name for the event type.
-				entityName, ok := change["entityName"]
+				entityName, ok := m["entityName"]
 				if !ok {
 					l.Error("entityName is not present in ChangeEventHeader")
 					continue
