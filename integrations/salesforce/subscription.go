@@ -40,9 +40,9 @@ func (h handler) subscribe(clientID, orgID, instanceURL string, cid sdktypes.Con
 		return
 	}
 
-	ctx, client := h.initPubSubClient(cid, clientID, nil, "")
-	if ctx == nil || client == nil {
-		h.logger.Error("failed to create Salesforce client", zap.String("client_id", clientID))
+	ctx, _, err := h.initPubSubClient(cid, clientID, nil, "")
+	if err != nil {
+		h.logger.Error("failed to create Salesforce client", zap.String("client_id", clientID), zap.Error(err))
 		return
 	}
 
@@ -93,14 +93,22 @@ func (h handler) eventLoop(ctx context.Context, clientID string, subscribeTopic 
 				if err != nil {
 					l.Error("failed to cleanup Salesforce client", zap.String("client_id", clientID), zap.Error(err))
 				}
-				ctx, client = h.initPubSubClient(cid, clientID, l, "failed to reinitialize Salesforce client")
+				ctx, client, err = h.initPubSubClient(cid, clientID, l, "failed to reinitialize Salesforce client")
+				if err != nil {
+					l.Error("failed to reinitialize Salesforce client", zap.Error(err))
+					continue
+				}
 			case err.Error() == "EOF":
 				l.Warn("Salesforce stream connection closed (EOF), reconnecting...", zap.Error(err))
 				err = cleanupClient(l, clientID)
 				if err != nil {
 					l.Error("failed to cleanup Salesforce client", zap.String("client_id", clientID), zap.Error(err))
 				}
-				ctx, client = h.initPubSubClient(cid, clientID, l, "failed to reinitialize Salesforce client after EOF")
+				ctx, client, err = h.initPubSubClient(cid, clientID, l, "failed to reinitialize Salesforce client after EOF")
+				if err != nil {
+					l.Error("failed to reinitialize Salesforce client", zap.Error(err))
+					continue
+				}
 			default:
 				l.Error("error receiving Salesforce event", zap.Error(err))
 			}
@@ -127,8 +135,9 @@ func (h handler) eventLoop(ctx context.Context, clientID string, subscribeTopic 
 				if err != nil {
 					l.Error("failed to cleanup Salesforce client", zap.String("client_id", clientID), zap.Error(err))
 				}
-				ctx, client = h.initPubSubClient(cid, clientID, l, "failed to reinitialize Salesforce client after schema auth error")
-				if ctx == nil || client == nil {
+				ctx, client, err = h.initPubSubClient(cid, clientID, l, "failed to reinitialize Salesforce client after schema auth error")
+				if err != nil {
+					l.Error("failed to reinitialize Salesforce client", zap.Error(err))
 					continue
 				}
 
@@ -178,7 +187,7 @@ func (h handler) eventLoop(ctx context.Context, clientID string, subscribeTopic 
 // initPubSubClient initializes or reinitializes a PubSub client
 // If errorMessage is provided, errors will be logged with this message
 // Returns the context and client, which may be nil on error
-func (h handler) initPubSubClient(cid sdktypes.ConnectionID, clientID string, l *zap.Logger, errorMessage string) (context.Context, pb.PubSubClient) {
+func (h handler) initPubSubClient(cid sdktypes.ConnectionID, clientID string, l *zap.Logger, errorMessage string) (context.Context, pb.PubSubClient, error) {
 	// TODO: return error to handle error outside this function
 	ctx := authcontext.SetAuthnSystemUser(context.Background())
 
@@ -189,39 +198,26 @@ func (h handler) initPubSubClient(cid sdktypes.ConnectionID, clientID string, l 
 
 	vs, err := h.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
 	if err != nil {
-		l.Error("failed to read connection vars",
-			zap.String("connection_id", cid.String()), zap.Error(err),
-		)
-		if errorMessage != "" {
-			l.Error(errorMessage, zap.Error(err))
-		}
-		return nil, nil
+		return nil, nil, fmt.Errorf("failed to read connection vars: %w", err)
 	}
 
 	t := h.oauth.FreshToken(ctx, l, desc, vs)
 	cfg, _, err := h.oauth.GetConfig(ctx, desc.UniqueName().String(), cid)
 	if err != nil {
-		l.Error("failed to get Salesforce OAuth config", zap.Error(err))
-		if errorMessage != "" {
-			l.Error(errorMessage, zap.Error(err))
-		}
-		return nil, nil
+		return nil, nil, fmt.Errorf("failed to get Salesforce OAuth config: %w", err)
 	}
 
 	instanceURL := vs.GetValue(instanceURLVar)
 	conn, err := initConn(l, cfg, t, instanceURL, vs.GetValue(orgIDVar), h.oauth, desc, vs)
 	if err != nil {
-		if errorMessage != "" {
-			l.Error(errorMessage, zap.Error(err))
-		}
-		return nil, nil
+		return nil, nil, fmt.Errorf("failed to initialize Salesforce connection: %w", err)
 	}
 
 	client := pb.NewPubSubClient(conn)
 	pubSubClients[clientID] = client
 	pubSubConnections[clientID] = conn
 
-	return ctx, client
+	return ctx, client, nil
 }
 
 // cleanupClient removes a client from the pubSubClients map.
