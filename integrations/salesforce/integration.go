@@ -7,6 +7,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/oauth"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
@@ -35,7 +36,8 @@ func Start(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, o *oauth.OAuth, d 
 	common.RegisterSaveHandler(m, desc, h.handleSave)
 	common.RegisterOAuthHandler(m, desc, h.handleOAuth)
 
-	h.reopenExistingPubSubConnections(context.Background())
+	ctx := authcontext.SetAuthnSystemUser(context.Background())
+	h.reopenExistingPubSubConnections(ctx)
 }
 
 // handler implements several HTTP webhooks to save authentication data, as
