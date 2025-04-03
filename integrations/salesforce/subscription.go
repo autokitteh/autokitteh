@@ -56,7 +56,7 @@ func (h handler) eventLoop(ctx context.Context, l *zap.Logger, clientID string, 
 	numLeftToReceive := 0
 
 	client := pubSubClients[clientID]
-	stream := h.initStream(ctx, l, client, cid, clientID)
+	stream := h.initStream(ctx, l, cid, clientID)
 
 	vs, err := h.vars.Get(ctx, sdktypes.NewVarScopeID(cid), userIDVar)
 	if err != nil {
@@ -95,7 +95,7 @@ func (h handler) eventLoop(ctx context.Context, l *zap.Logger, clientID string, 
 			default:
 				l.Error("error receiving Salesforce event", zap.Error(err))
 			}
-			stream = h.initStream(ctx, l, client, cid, clientID)
+			stream = h.initStream(ctx, l, cid, clientID)
 			continue
 		}
 		l.Debug("received Salesforce event", zap.Any("event", msg))
@@ -211,8 +211,12 @@ func cleanupClient(l *zap.Logger, clientID string) {
 	l.Debug("cleaned up Salesforce client", zap.String("client_id", clientID))
 }
 
-func (h handler) initStream(ctx context.Context, l *zap.Logger, client pb.PubSubClient, cid sdktypes.ConnectionID, clientID string) pb.PubSub_SubscribeClient {
+func (h handler) initStream(ctx context.Context, l *zap.Logger, cid sdktypes.ConnectionID, clientID string) pb.PubSub_SubscribeClient {
 	for {
+		mu.Lock()
+		client := pubSubClients[clientID]
+		mu.Unlock()
+
 		stream, err := client.Subscribe(ctx)
 		if err != nil {
 			cleanupClient(l, clientID)
