@@ -16,7 +16,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-const defaultBatchSize = int32(100)
+const defaultBatchSize = 100
 
 var (
 	// Key = Salesforce instance URL (to ensure one gRPC client per app).
@@ -32,20 +32,19 @@ var (
 // subscribe creates a new gRPC client and subscribes to a generic Salesforce Change Data Capture channel.
 // https://developer.salesforce.com/docs/platform/pub-sub-api/references/methods/subscribe-rpc.html
 func (h handler) subscribe(l *zap.Logger, clientID string, cid sdktypes.ConnectionID) {
-	// Prevent duplication due to race conditions.
 	mu.Lock()
-	defer mu.Unlock()
-
 	if _, ok := pubSubClients[clientID]; ok {
 		return
 	}
+	mu.Unlock()
 
 	ctx, client := h.initPubSubClient(l, cid, clientID, "")
 	if ctx == nil || client == nil {
-		l.Error("failed to create Salesforce client")
+		l.Error("failed to create Salesforce client", zap.String("client_id", clientID))
 		return
 	}
 
+	// https://developer.salesforce.com/docs/atlas.en-us.platform_events.meta/platform_events/platform_events_objects_change_data_capture.htm
 	go h.eventLoop(ctx, l, clientID, cid)
 }
 
@@ -75,7 +74,7 @@ func (h handler) eventLoop(ctx context.Context, l *zap.Logger, clientID string, 
 				l.Error("failed to renew Salesforce events subscription", zap.Error(err))
 				continue
 			}
-			numLeftToReceive = int(defaultBatchSize)
+			numLeftToReceive = defaultBatchSize
 		}
 
 		// Assumes that the stream will abort after 270 seconds of inactivity.
@@ -167,8 +166,6 @@ func (h handler) eventLoop(ctx context.Context, l *zap.Logger, clientID string, 
 // Returns the context and client, which may be nil on error
 func (h handler) initPubSubClient(l *zap.Logger, cid sdktypes.ConnectionID, clientID string, errorMessage string) (context.Context, pb.PubSubClient) {
 	// TODO: return error to handle error outside this function
-	mu.Lock()
-	defer mu.Unlock()
 
 	conn, err := h.initConn(l, cid)
 	if err != nil {
@@ -177,10 +174,13 @@ func (h handler) initPubSubClient(l *zap.Logger, cid sdktypes.ConnectionID, clie
 		}
 		return nil, nil
 	}
-	pubSubConnections[clientID] = conn
 
 	client := pb.NewPubSubClient(conn)
+
+	mu.Lock()
+	pubSubConnections[clientID] = conn
 	pubSubClients[clientID] = client
+	mu.Unlock()
 
 	ctx := authcontext.SetAuthnSystemUser(context.Background())
 	return ctx, client
