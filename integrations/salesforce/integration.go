@@ -12,7 +12,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	"go.autokitteh.dev/autokitteh/web/static"
 )
 
@@ -62,23 +61,14 @@ func (h handler) reopenExistingPubSubConnections(ctx context.Context) {
 	}
 
 	for _, cid := range cids {
-		vs, err := h.vars.Get(ctx, sdktypes.NewVarScopeID(cid), orgIDVar, instanceURLVar)
-		if err != nil {
-			h.logger.Error("can't restart Salesforce PubSub connection",
-				zap.String("connection_id", cid.String()), zap.Error(err),
-			)
-			continue
-		}
+		l := h.logger.With(zap.String("connection_id", cid.String()))
 
 		cfg, _, err := h.oauth.GetConfig(ctx, desc.UniqueName().String(), cid)
 		if err != nil {
-			h.logger.Error("failed to get Salesforce OAuth config", zap.Error(err))
+			l.Error("failed to get Salesforce OAuth config", zap.Error(err))
 			continue
 		}
 
-		orgID := vs.GetValue(orgIDVar)
-		instanceURL := vs.GetValue(instanceURLVar)
-
-		h.subscribe(cfg.ClientID, orgID, instanceURL, cid)
+		h.subscribe(l, cfg.ClientID, cid)
 	}
 }

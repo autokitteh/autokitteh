@@ -87,7 +87,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.subscribe(clientID, orgID, instanceURL, cid)
+	h.subscribe(l, clientID, cid)
 
 	// Redirect the user back to the UI.
 	urlPath, err := c.FinalURL()
