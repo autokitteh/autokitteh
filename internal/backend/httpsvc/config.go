@@ -75,6 +75,7 @@ var Configs = configset.Set[Config]{
 				`^/oauth/|/oauth$|/save$`,     // Connection initialization
 			},
 			UnloggedRegexes: []string{
+				`/IsActiveRunner$`,                             // Runner health check
 				`/(healthz|readyz)$`,                           // Kubernetes health checks
 				`\.(css|html|ico|js|png|svg|txt|webmanifest)$`, // Static web content
 			},

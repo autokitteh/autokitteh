@@ -38,7 +38,6 @@ func NewPolicyCheckFunc(l *zap.Logger, db db.DB, decide policy.DecideFunc) Check
 		}
 
 		l := l.With(zap.Any("input", input), zap.Any("result", result))
-		l.Debug("authz opa decision")
 
 		if !decision {
 			l.WithOptions(zap.AddStacktrace(zap.WarnLevel)).Warn("authz opa decision: denied")
