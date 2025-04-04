@@ -10,8 +10,6 @@ import (
 	"github.com/linkedin/goavro/v2"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	gstatus "google.golang.org/grpc/status"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -41,9 +39,9 @@ func (h handler) subscribe(l *zap.Logger, clientID string, cid sdktypes.Connecti
 		return
 	}
 
-	ctx, client := h.initPubSubClient(l, cid, clientID, "")
-	if ctx == nil || client == nil {
-		l.Error("failed to create Salesforce client", zap.String("client_id", clientID))
+	ctx, _, err := h.initPubSubClient(l, cid, clientID)
+	if err != nil {
+		l.Error("failed to create Salesforce client", zap.String("client_id", clientID), zap.Error(err))
 		return
 	}
 
@@ -81,29 +79,17 @@ func (h handler) eventLoop(ctx context.Context, l *zap.Logger, clientID string, 
 			// Assumes that the stream will abort after 270 seconds of inactivity.
 			// https://developer.salesforce.com/docs/platform/pub-sub-api/references/methods/subscribe-rpc.html#subscribe-keepalive-behavior
 			msg, err := stream.Recv()
-			shouldBreak := false
 			if err != nil {
-				switch {
-				case gstatus.Code(err) == codes.Unauthenticated:
-					l.Error("authentication error receiving Salesforce event", zap.Error(err))
-					cleanupClient(l, clientID)
-					ctx, client = h.initPubSubClient(l, cid, clientID, "failed to reinitialize Salesforce client")
-					stream = h.initStream(ctx, l, cid, clientID)
-					shouldBreak = true
-				case err.Error() == "EOF":
-					l.Warn("Salesforce stream connection closed (EOF), reconnecting...", zap.Error(err))
-					cleanupClient(l, clientID)
-					ctx, client = h.initPubSubClient(l, cid, clientID, "failed to reinitialize Salesforce client after EOF")
-					stream = h.initStream(ctx, l, cid, clientID)
-					shouldBreak = true
-				default:
-					l.Error("error receiving Salesforce event", zap.Error(err))
-				}
-
-				if shouldBreak {
+				l.Error("error receiving Salesforce event", zap.Error(err))
+				cleanupClient(l, clientID)
+				ctx, client, err = h.initPubSubClient(l, cid, clientID)
+				if err != nil {
+					l.Error("failed to reinitialize Salesforce client", zap.Error(err))
+					time.Sleep(time.Second)
 					break
 				}
-				continue
+				stream = h.initStream(ctx, l, cid, clientID)
+				break
 			}
 
 			l.Debug("received Salesforce event", zap.Any("event", msg))
@@ -175,15 +161,10 @@ func (h handler) eventLoop(ctx context.Context, l *zap.Logger, clientID string, 
 // initPubSubClient initializes or reinitializes a PubSub client
 // If errorMessage is provided, errors will be logged with this message
 // Returns the context and client, which may be nil on error
-func (h handler) initPubSubClient(l *zap.Logger, cid sdktypes.ConnectionID, clientID string, errorMessage string) (context.Context, pb.PubSubClient) {
-	// TODO: return error to handle error outside this function
-
+func (h handler) initPubSubClient(l *zap.Logger, cid sdktypes.ConnectionID, clientID string) (context.Context, pb.PubSubClient, error) {
 	conn, err := h.initConn(l, cid)
 	if err != nil {
-		if errorMessage != "" {
-			l.Error(errorMessage, zap.Error(err))
-		}
-		return nil, nil
+		return nil, nil, err
 	}
 
 	client := pb.NewPubSubClient(conn)
@@ -194,7 +175,7 @@ func (h handler) initPubSubClient(l *zap.Logger, cid sdktypes.ConnectionID, clie
 	mu.Unlock()
 
 	ctx := authcontext.SetAuthnSystemUser(context.Background())
-	return ctx, client
+	return ctx, client, nil
 }
 
 // cleanupClient removes a client from the pubSubClients map.
@@ -228,9 +209,12 @@ func (h handler) initStream(ctx context.Context, l *zap.Logger, cid sdktypes.Con
 
 		stream, err := client.Subscribe(ctx)
 		if err != nil {
+			time.Sleep(time.Second)
 			cleanupClient(l, clientID)
-			h.initPubSubClient(l, cid, clientID, "failed to create gRPC stream for Salesforce events")
-			// TODO(INT-352): error handling
+			ctx, _, err = h.initPubSubClient(l, cid, clientID)
+			if err != nil {
+				l.Error("failed to reinitialize Salesforce client", zap.Error(err))
+			}
 			continue
 		}
 
