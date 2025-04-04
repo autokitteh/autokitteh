@@ -110,8 +110,7 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request) map[string
 		return nil
 	}
 
-	if !checkSignature(secret, sig, body) {
-		l.Warn("incoming event: signature check failed", zap.String("signature", sig))
+	if !checkSignature(l, secret, sig, body) {
 		common.HTTPError(w, http.StatusUnauthorized)
 		return nil
 	}
@@ -145,7 +144,7 @@ func (h handler) signingSecret() (string, error) {
 // checkSignature compares the event body's hash, using a preconfigured signing
 // secret, to a signature reported in the event's HTTP header, using SHA256 HMAC
 // (based on: https://developers.linear.app/docs/graphql/webhooks#securing-webhooks).
-func checkSignature(secret, want string, body []byte) bool {
+func checkSignature(l *zap.Logger, secret, want string, body []byte) bool {
 	mac := hmac.New(sha256.New, []byte(secret))
 
 	if n, err := mac.Write(body); err != nil || n != len(body) {
@@ -153,7 +152,14 @@ func checkSignature(secret, want string, body []byte) bool {
 	}
 
 	got := hex.EncodeToString(mac.Sum(nil))
-	return hmac.Equal([]byte(got), []byte(want))
+	match := hmac.Equal([]byte(got), []byte(want))
+	if !match {
+		l.Warn("incoming event: signature check failed",
+			zap.String("expected_signature", want),
+			zap.String("actual_signature", got),
+		)
+	}
+	return match
 }
 
 // checkTimestamp checks that the event is fresh, to prevent replay attacks
