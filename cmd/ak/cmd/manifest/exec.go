@@ -17,7 +17,7 @@ var execCmd = common.StandardCommand(&cobra.Command{
 	Args:    cobra.MaximumNArgs(1),
 
 	RunE: func(cmd *cobra.Command, args []string) error {
-		data, _, err := common.Consume(args)
+		data, err := common.Consume(args)
 		if err != nil {
 			return err
 		}

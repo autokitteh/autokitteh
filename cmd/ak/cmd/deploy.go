@@ -134,7 +134,7 @@ func applyManifest(cmd *cobra.Command, manifestPath, projectName string, oid sdk
 		return "", common.NewExitCodeError(common.NotFoundExitCode, err)
 	}
 
-	m, err := manifest.Read(data, manifestPath)
+	m, err := manifest.Read(data)
 	if err != nil {
 		return "", err
 	}
