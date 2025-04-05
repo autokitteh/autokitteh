@@ -19,6 +19,7 @@ import (
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/experimental"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/integrations"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/manifest"
+	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/mcp"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/orgs"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/projects"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/runtimes"
@@ -102,6 +103,7 @@ func init() {
 	RootCmd.AddCommand(versionCmd)
 
 	// Top-level parent commands.
+	mcp.AddSubcommands(RootCmd)
 	auth.AddSubcommands(RootCmd)
 	builds.AddSubcommands(RootCmd)
 	configuration.AddSubcommands(RootCmd)

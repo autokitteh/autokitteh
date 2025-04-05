@@ -30,12 +30,12 @@ var planCmd = common.StandardCommand(&cobra.Command{
 			return err
 		}
 
-		data, path, err := common.Consume(args)
+		data, err := common.Consume(args)
 		if err != nil {
 			return err
 		}
 
-		actions, err := plan(cmd, data, path, projectName, oid)
+		actions, err := plan(cmd, data, projectName, oid)
 		if err != nil {
 			return err
 		}
@@ -55,8 +55,8 @@ func init() {
 	planCmd.Flags().StringVarP(&org, "org", "o", "", "org name or id")
 }
 
-func plan(cmd *cobra.Command, data []byte, path, projectName string, oid sdktypes.OrgID) (manifest.Actions, error) {
-	m, err := manifest.Read(data, path)
+func plan(cmd *cobra.Command, data []byte, projectName string, oid sdktypes.OrgID) (manifest.Actions, error) {
+	m, err := manifest.Read(data)
 	if err != nil {
 		return nil, err
 	}

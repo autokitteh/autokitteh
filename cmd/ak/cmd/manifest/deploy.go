@@ -108,12 +108,12 @@ func applyManifest(ctx context.Context, cmd *cobra.Command, args []string, oid s
 	client := common.Client()
 
 	// Read and parse the manifest file.
-	data, path, err := common.Consume(args)
+	data, err := common.Consume(args)
 	if err != nil {
 		return nil, "", err
 	}
 
-	actions, err := plan(cmd, data, path, projectName, oid)
+	actions, err := plan(cmd, data, projectName, oid)
 	if err != nil {
 		return nil, "", err
 	}
@@ -130,7 +130,7 @@ func applyManifest(ctx context.Context, cmd *cobra.Command, args []string, oid s
 		// Execute didn't return a new project ID because the project already exists,
 		// so get the project name from the manifest instead. It's safe to ignore the
 		// error here because we already ran Read() successfully inside plan() above.
-		m := kittehs.Must1(manifest.Read(data, path))
+		m := kittehs.Must1(manifest.Read(data))
 		return effects, m.Project.Name, nil
 	}
 	if len(pids) > 1 {

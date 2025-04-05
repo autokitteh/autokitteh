@@ -26,12 +26,12 @@ var applyCmd = common.StandardCommand(&cobra.Command{
 			return err
 		}
 
-		data, path, err := common.Consume(args)
+		data, err := common.Consume(args)
 		if err != nil {
 			return err
 		}
 
-		actions, err := plan(cmd, data, path, projectName, oid)
+		actions, err := plan(cmd, data, projectName, oid)
 		if err != nil {
 			return err
 		}
