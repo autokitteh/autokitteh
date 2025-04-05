@@ -248,6 +248,7 @@ func (h handler) renewSubscription(ctx context.Context, l *zap.Logger, stream pb
 		NumRequested: defaultBatchSize,
 	}
 
+	// https://developer.salesforce.com/docs/platform/pub-sub-api/references/methods/subscribe-rpc.html?q=replay#replaying-an-event-stream
 	if replayID != "" {
 		fetchReq.ReplayPreset = pb.ReplayPreset_CUSTOM
 		decodedReplayID, err := base64.StdEncoding.DecodeString(replayID)
