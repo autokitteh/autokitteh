@@ -334,8 +334,21 @@ func findConnection(id sdktypes.ConnectionID, conns []sdktypes.Connection) (sdkt
 	return sdktypes.Connection{}, false
 }
 
-func (ps *Projects) Lint(ctx context.Context, projectID sdktypes.ProjectID, resources map[string][]byte, manifestFile string) ([]*sdktypes.CheckViolation, error) {
-	data, ok := resources[manifestFile]
+func (ps *Projects) Lint(ctx context.Context, projectID sdktypes.ProjectID, resources map[string][]byte, manifestPath string) ([]*sdktypes.CheckViolation, error) {
+	if projectID.IsValid() {
+		if err := authz.CheckContext(ctx, projectID, "read:lint"); err != nil {
+			return nil, err
+		}
+	}
+
+	if resources == nil {
+		var err error
+		if resources, err = ps.DB.GetProjectResources(ctx, projectID); err != nil {
+			return nil, err
+		}
+	}
+
+	data, ok := resources[manifestPath]
 	if !ok {
 		var err error
 		data, err = ps.exportManifest(ctx, projectID)
@@ -344,7 +357,7 @@ func (ps *Projects) Lint(ctx context.Context, projectID sdktypes.ProjectID, reso
 		}
 	}
 
-	m, err := manifest.Read(data, manifestFile)
+	m, err := manifest.Read(data)
 	if err != nil {
 		return nil, err
 	}
