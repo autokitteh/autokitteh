@@ -1,17 +1,18 @@
-import path from "path";
-import fs from "fs";
+import * as path from "path";
+import * as fs from "fs";
 import * as yaml from "js-yaml";
+import { mkdir, symlink } from 'fs/promises';
 
 export function validateInputDirectory(inputDir: string): string {
 
-    console.log(`Input directory: ${inputDir}`);
+    // console.log(`Input directory: ${inputDir}`);
     // Create absolute path to the test directory
     inputDir = path.resolve(inputDir);
     if (!fs.existsSync(inputDir)) {
         throw new Error(`Input directory not found at ${inputDir}`);
     }
 
-    console.log(`Using test directory: ${inputDir}`);
+    // console.log(`Using test directory: ${inputDir}`);
     return inputDir;
 }
 
@@ -22,7 +23,7 @@ export function readConfiguration(inputDir: string): any {
         throw new Error(`autokitteh.yaml not found at ${yamlPath}`);
     }
 
-    console.log(`Reading configuration from ${yamlPath}`);
+    // console.log(`Reading configuration from ${yamlPath}`);
     const yamlContent = fs.readFileSync(yamlPath, 'utf8');
 
     // Parse YAML file using js-yaml
@@ -33,7 +34,7 @@ export function setupMockRouter() {
     const mockServiceImplementation: any = {};
     const mockRouter = {
         service: (service: any, implementation: any) => {
-            console.info("Capturing service implementation");
+            // console.info("Capturing service implementation");
             Object.assign(mockServiceImplementation, implementation);
             return mockRouter;
         }
@@ -56,6 +57,23 @@ export function createRequest(config: any, args: string[] = []) {
         throw new Error("No entry point found in autokitteh.yaml triggers");
     }
     return Request;
+}
+
+
+
+export async function linkAutokitteh(userProjectDir: string) {
+    const linkPath = path.join(userProjectDir, 'node_modules', 'autokitteh');
+    const targetPath = path.resolve(__dirname, '../../nodejs-sdk/autokitteh');
+
+    await (path.dirname(linkPath), { recursive: true });
+    try {
+        await symlink(targetPath, linkPath, 'dir');
+    } catch (err: any) {
+        if (err.code !== 'EEXIST') {
+            throw err;
+        }
+    }
+
 }
 
 

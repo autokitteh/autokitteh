@@ -1,5 +1,5 @@
 import {describe, expect, test, jest, beforeEach} from '@jest/globals';
-import {EventSubscriber, EventSubscriptionError} from '../runtime/nodejs-sdk/autokitteh/events';
+import {SysCalls, SyscallError} from '../runtime/runner/syscalls';
 
 // Type for mocking the client
 interface MockClient {
@@ -8,8 +8,8 @@ interface MockClient {
     unsubscribe: jest.Mock;
 }
 
-describe('EventSubscriber', () => {
-    let eventSubscriber: EventSubscriber;
+describe('SysCalls', () => {
+    let sysCalls: SysCalls;
     let mockClient: MockClient;
     const testRunnerId = 'test-runner-id';
 
@@ -23,7 +23,7 @@ describe('EventSubscriber', () => {
 
         // We need to cast here because our mock doesn't fully implement the client interface
         // @ts-expect-error Mock client doesn't implement all methods
-        eventSubscriber = new EventSubscriber(mockClient, testRunnerId);
+        sysCalls = new SysCalls(testRunnerId,mockClient);
     });
 
     describe('subscribe', () => {
@@ -36,7 +36,7 @@ describe('EventSubscriber', () => {
                 $typeName: 'autokitteh.user_code.v1.SubscribeResponse'
             });
 
-            const result = await eventSubscriber.subscribe('test-source');
+            const result = await sysCalls.subscribe('test-source');
 
             expect(mockClient.subscribe).toHaveBeenCalledWith({
                 runnerId: testRunnerId,
@@ -55,7 +55,7 @@ describe('EventSubscriber', () => {
                 $typeName: 'autokitteh.user_code.v1.SubscribeResponse'
             });
 
-            const result = await eventSubscriber.subscribe('test-source', 'event.type == "test"');
+            const result = await sysCalls.subscribe('test-source', 'event.type == "test"');
 
             expect(mockClient.subscribe).toHaveBeenCalledWith({
                 runnerId: testRunnerId,
@@ -66,7 +66,7 @@ describe('EventSubscriber', () => {
         });
 
         test('should throw error if no source provided', async () => {
-            await expect(eventSubscriber.subscribe('')).rejects.toThrow(EventSubscriptionError);
+            await expect(sysCalls.subscribe('')).rejects.toThrow(Error);
         });
 
         test('should throw error if server returns error', async () => {
@@ -77,7 +77,7 @@ describe('EventSubscriber', () => {
                 $typeName: 'autokitteh.user_code.v1.SubscribeResponse'
             });
 
-            await expect(eventSubscriber.subscribe('test-source')).rejects.toThrow(EventSubscriptionError);
+            await expect(sysCalls.subscribe('test-source')).rejects.toThrow(SyscallError);
         });
     });
 
@@ -95,7 +95,7 @@ describe('EventSubscriber', () => {
                 $typeName: 'autokitteh.user_code.v1.NextEventResponse'
             });
 
-            const result = await eventSubscriber.nextEvent('test-signal-id');
+            const result = await sysCalls.nextEvent('test-signal-id');
 
             expect(mockClient.nextEvent).toHaveBeenCalledWith({
                 runnerId: testRunnerId,
@@ -118,7 +118,7 @@ describe('EventSubscriber', () => {
                 $typeName: 'autokitteh.user_code.v1.NextEventResponse'
             });
 
-            await eventSubscriber.nextEvent(['signal-1', 'signal-2']);
+            await sysCalls.nextEvent(['signal-1', 'signal-2']);
 
             expect(mockClient.nextEvent).toHaveBeenCalledWith({
                 runnerId: testRunnerId,
@@ -137,7 +137,7 @@ describe('EventSubscriber', () => {
                 $typeName: 'autokitteh.user_code.v1.NextEventResponse'
             });
 
-            await eventSubscriber.nextEvent('test-signal-id', {timeout: 5});
+            await sysCalls.nextEvent('test-signal-id', {timeout: 5});
 
             expect(mockClient.nextEvent).toHaveBeenCalledWith({
                 runnerId: testRunnerId,
@@ -156,7 +156,7 @@ describe('EventSubscriber', () => {
                 $typeName: 'autokitteh.user_code.v1.NextEventResponse'
             });
 
-            await eventSubscriber.nextEvent('test-signal-id', {timeout: {seconds: 10}});
+            await sysCalls.nextEvent('test-signal-id', {timeout: {seconds: 10}});
 
             expect(mockClient.nextEvent).toHaveBeenCalledWith({
                 runnerId: testRunnerId,
@@ -173,7 +173,7 @@ describe('EventSubscriber', () => {
                 $typeName: 'autokitteh.user_code.v1.NextEventResponse'
             });
 
-            const result = await eventSubscriber.nextEvent('test-signal-id');
+            const result = await sysCalls.nextEvent('test-signal-id');
             expect(result).toBeNull();
         });
 
@@ -184,7 +184,7 @@ describe('EventSubscriber', () => {
                 $typeName: 'autokitteh.user_code.v1.NextEventResponse'
             });
 
-            await expect(eventSubscriber.nextEvent('test-signal-id')).rejects.toThrow(EventSubscriptionError);
+            await expect(sysCalls.nextEvent('test-signal-id')).rejects.toThrow(SyscallError);
         });
     });
 
@@ -196,7 +196,7 @@ describe('EventSubscriber', () => {
                 $typeName: 'autokitteh.user_code.v1.UnsubscribeResponse'
             });
 
-            await eventSubscriber.unsubscribe('test-signal-id');
+            await sysCalls.unsubscribe('test-signal-id');
 
             expect(mockClient.unsubscribe).toHaveBeenCalledWith({
                 runnerId: testRunnerId,
@@ -211,7 +211,7 @@ describe('EventSubscriber', () => {
                 $typeName: 'autokitteh.user_code.v1.UnsubscribeResponse'
             });
 
-            await expect(eventSubscriber.unsubscribe('test-signal-id')).rejects.toThrow(EventSubscriptionError);
+            await expect(sysCalls.unsubscribe('test-signal-id')).rejects.toThrow(SyscallError);
         });
     });
 });

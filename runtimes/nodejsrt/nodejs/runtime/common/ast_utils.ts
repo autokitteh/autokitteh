@@ -1,7 +1,14 @@
 import traverse, {NodePath} from "@babel/traverse";
 import {parse} from "@babel/parser";
 import generate from "@babel/generator";
-import {isMemberExpression, identifier, isIdentifier, isAwaitExpression, isVariableDeclarator, stringLiteral} from "@babel/types";
+import {
+    isMemberExpression,
+    identifier,
+    isIdentifier,
+    isAwaitExpression,
+    isVariableDeclarator,
+    CallExpression
+} from "@babel/types";
 
 import {listFiles} from "./file_utils";
 import * as fs from "fs";
@@ -146,11 +153,73 @@ function isStandardBuiltIn(name: string): boolean {
     return standardBuiltIns.has(name);
 }
 
+// Helper function to check if a call is to a direct autokitteh method
+function isAutokittehMethod(path: NodePath<CallExpression>): { isAutokitteh: boolean; methodName: string | null } {
+    const callee = path.node.callee;
+
+    // Must be a member expression (e.g., autokitteh.something)
+    if (!isMemberExpression(callee)) {
+        return { isAutokitteh: false, methodName: null };
+    }
+
+    // Object must be the identifier 'autokitteh'
+    if (!isIdentifier(callee.object) || callee.object.name !== 'autokitteh') {
+        return { isAutokitteh: false, methodName: null };
+    }
+
+    // Property must be a direct identifier (not another member expression)
+    if (!isIdentifier(callee.property)) {
+        return { isAutokitteh: false, methodName: null };
+    }
+
+    // Only patch known event methods
+    const methodName = callee.property.name;
+    const knownMethods = new Set(['subscribe', 'unsubscribe', 'nextEvent']);
+    if (!knownMethods.has(methodName)) {
+        return { isAutokitteh: false, methodName: null };
+    }
+
+    return {
+        isAutokitteh: true,
+        methodName
+    };
+}
+
 export async function patchCode(code: string): Promise<string> {
     const ast = parse(code, {sourceType: "module", plugins: ["typescript"]});
 
     traverse(ast, {
+        ImportDeclaration(path) {
+            const source = path.node.source.value;
+            if (source === 'autokitteh' || source.startsWith('autokitteh/')) {
+                // Get the original import code for the comment
+                const importCode = generate(path.node).code;
+                // Add a comment indicating this was removed by the build process
+                const comment = ` ${importCode} - commented out by autokitteh build process`;
+
+                // Instead of replacing with a dummy import, we're going to completely remove it
+                // Add the comment as a standalone comment node
+                const parentPath = path.parentPath;
+
+                // Remove the import node completely
+                path.remove();
+
+                // Add a standalone comment where the import was
+                if (parentPath && parentPath.node) {
+                    parentPath.addComment('leading', comment);
+                }
+            }
+        },
         CallExpression(path) {
+            // Check for autokitteh method calls first
+            const { isAutokitteh, methodName } = isAutokittehMethod(path);
+            if (isAutokitteh && methodName) {
+                // Transform the call to use global syscalls with same method name
+                path.node.callee = identifier(`(global as any).syscalls.${methodName}`);
+                return;
+            }
+
+            // Handle other async calls as before
             if (!isAwaitExpression(path.parent)) {
                 return;
             }

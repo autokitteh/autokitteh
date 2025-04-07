@@ -16,4 +16,13 @@ export async function fetchData(url: string): Promise<unknown> {
 export async function remoteFunction(input: string): Promise<string> {
     return `Remote: ${input}`;
 }
-remoteFunction.ak_call = true; 
+remoteFunction.ak_call = true;
+
+// Function that uses autokitteh.subscribe for testing event handling
+export async function handleEvents(source: string): Promise<string> {
+    const signalId = await autokitteh.subscribe(source);
+    const event = await autokitteh.nextEvent(signalId);
+    await autokitteh.unsubscribe(signalId);
+    return `Handled event: ${JSON.stringify(event)}`;
+}
+handleEvents.ak_call = true; 

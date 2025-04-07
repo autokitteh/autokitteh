@@ -2,7 +2,7 @@
   "name": "test-project",
   "version": "1.0.0",
   "description": "Test project for autokitteh runtime tests",
-  "main": "src/index.ts",
+  "main": "index.ts",
   "scripts": {
     "build": "tsc",
     "test": "jest"

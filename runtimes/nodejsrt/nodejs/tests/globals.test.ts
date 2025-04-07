@@ -5,18 +5,15 @@
  * Since Jest runs tests in isolation, we can test the initialization
  * without worrying about conflicts with other tests.
  */
-import {describe, expect, test, jest, afterEach} from '@jest/globals';
-import {EventSubscriber} from '../runtime/nodejs-sdk/autokitteh/events';
+import {describe, expect, test, jest, beforeAll, afterAll} from '@jest/globals';
 import {initializeGlobals} from '../runtime/runner/runtime';
 import {Waiter} from '../runtime/runner/ak_call';
+import {SysCalls} from '../runtime/runner/syscalls';
 
-describe('Global autokitteh object initialization', () => {
-    // Mock EventSubscriber for initialization
-    const mockSubscribe = jest.fn().mockImplementation(() => Promise.resolve('test-signal-id'));
-    const mockNextEvent = jest.fn().mockImplementation(() => Promise.resolve({test: 'data'}));
-    const mockUnsubscribe = jest.fn().mockImplementation(() => Promise.resolve());
+// Extend the global object type
 
-    // Mock waiter with proper typing
+describe('Global Functions', () => {
+    // Mock waiter for initialization
     const mockWaiter = {
         execute_signal: jest.fn().mockImplementation(() => Promise.resolve({})),
         reply_signal: jest.fn().mockImplementation(() => Promise.resolve()),
@@ -27,72 +24,56 @@ describe('Global autokitteh object initialization', () => {
         setRunnerId: jest.fn()
     } as unknown as Waiter;
 
-    // Create event subscriber with mocked methods
-    const eventSubscriber = {
-        subscribe: mockSubscribe,
-        nextEvent: mockNextEvent,
-        unsubscribe: mockUnsubscribe
-    } as unknown as EventSubscriber;
+    // Mock syscalls for initialization
+    const mockSyscalls = {
+        subscribe: jest.fn(),
+        nextEvent: jest.fn(),
+        unsubscribe: jest.fn()
+    } as unknown as SysCalls;
 
-    beforeAll(() =>{
-        initializeGlobals(mockWaiter, eventSubscriber);
-    })
-
-    afterEach(() => {
-        jest.clearAllMocks();
+    beforeAll(() => {
+        initializeGlobals(mockWaiter, mockSyscalls);
     });
 
-    test('should initialize global.ak_call property', () => {
-        expect('ak_call' in global).toBe(true);
+    afterAll(() => {
+        // Clean up globals
+        const globalWithCustomProps = global as { ak_call?: unknown; syscalls?: unknown };
+        delete globalWithCustomProps.ak_call;
+        delete globalWithCustomProps.syscalls;
+    });
+
+    test('global.ak_call should be defined', () => {
+        expect((global as any).ak_call).toBeDefined();
         expect(typeof (global as any).ak_call).toBe('function');
     });
 
-    test('should initialize global.autokitteh property', () => {
-        expect('autokitteh' in global).toBe(true);
-        expect(typeof (global as any).autokitteh).toBe('object');
+    test('global.syscalls should be defined', () => {
+        expect((global as any).syscalls).toBeDefined();
+        expect(typeof (global as any).syscalls).toBe('object');
     });
 
-    test('global.autokitteh.subscribe should call EventSubscriber.subscribe', async () => {
-        await (global as any).autokitteh.subscribe('test-source', 'filter');
-
-        expect(mockSubscribe).toHaveBeenCalledWith('test-source', 'filter');
+    test('global.syscalls.subscribe should call SysCalls.subscribe', async () => {
+        await (global as any).syscalls.subscribe('test-source', 'test-filter');
+        expect(mockSyscalls.subscribe).toHaveBeenCalledWith('test-source', 'test-filter');
     });
 
-    test('global.autokitteh.nextEvent should call EventSubscriber.nextEvent', async () => {
-        await (global as any).autokitteh.nextEvent('test-signal-id', {timeout: 5});
-
-        expect(mockNextEvent).toHaveBeenCalledWith('test-signal-id', {timeout: 5});
+    test('global.syscalls.nextEvent should call SysCalls.nextEvent', async () => {
+        await (global as any).syscalls.nextEvent('test-id', {timeout: 30});
+        expect(mockSyscalls.nextEvent).toHaveBeenCalledWith('test-id', {timeout: 30});
     });
 
-    test('global.autokitteh.unsubscribe should call EventSubscriber.unsubscribe', async () => {
-        await (global as any).autokitteh.unsubscribe('test-signal-id');
-
-        expect(mockUnsubscribe).toHaveBeenCalledWith('test-signal-id');
+    test('global.syscalls.unsubscribe should call SysCalls.unsubscribe', async () => {
+        await (global as any).syscalls.unsubscribe('test-id');
+        expect(mockSyscalls.unsubscribe).toHaveBeenCalledWith('test-id');
     });
 
-    test('global properties should be non-configurable', () => {
+    test('global properties should be non-configurable and non-writable', () => {
         const akCallDescriptor = Object.getOwnPropertyDescriptor(global, 'ak_call');
         expect(akCallDescriptor?.configurable).toBe(false);
         expect(akCallDescriptor?.writable).toBe(false);
 
-        const autokittehDescriptor = Object.getOwnPropertyDescriptor(global, 'autokitteh');
-        expect(autokittehDescriptor?.configurable).toBe(false);
-        expect(autokittehDescriptor?.writable).toBe(false);
-    });
-});
-
-// Test to verify the actual functionality of the global object when used in user code
-describe('Global autokitteh usage', () => {
-    // These tests simulate how a user would call the global methods
-    // rather than testing that they're properly wired up
-
-    test('autokitteh global methods exist', () => {
-        expect(typeof (global as any).autokitteh.subscribe).toBe('function');
-        expect(typeof (global as any).autokitteh.nextEvent).toBe('function');
-        expect(typeof (global as any).autokitteh.unsubscribe).toBe('function');
-    });
-
-    test('ak_call global function exists', () => {
-        expect(typeof (global as any).ak_call).toBe('function');
+        const syscallsDescriptor = Object.getOwnPropertyDescriptor(global, 'syscalls');
+        expect(syscallsDescriptor?.configurable).toBe(false);
+        expect(syscallsDescriptor?.writable).toBe(false);
     });
 });

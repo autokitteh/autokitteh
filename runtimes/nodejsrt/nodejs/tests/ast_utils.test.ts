@@ -381,3 +381,144 @@ async function fetchUserData(userId) {
     const patch = await patchCode(code);
     expect(patch).toEqual(expected);
 });
+
+test('should transform autokitteh.subscribe calls', async () => {
+    const code = `
+    import { autokitteh } from 'autokitteh';
+    
+    async function handleEvents() {
+        const subId = await autokitteh.subscribe('my-source', 'event.type == "test"');
+        return subId;
+    }
+    `;
+
+    const expected = `/* import { autokitteh } from 'autokitteh'; - commented out by autokitteh build process*/
+async function handleEvents() {
+  const subId = await (global as any).syscalls.subscribe('my-source', 'event.type == "test"');
+  return subId;
+}`;
+    const patch = await patchCode(code);
+    expect(patch).toEqual(expected);
+});
+
+test('should transform autokitteh.nextEvent calls', async () => {
+    const code = `
+    import { autokitteh } from 'autokitteh';
+    
+    async function waitForEvent(subId) {
+        const event = await autokitteh.nextEvent(subId, {
+            timeout: 30
+        });
+        return event;
+    }
+    `;
+
+    const expected = `/* import { autokitteh } from 'autokitteh'; - commented out by autokitteh build process*/
+async function waitForEvent(subId) {
+  const event = await (global as any).syscalls.nextEvent(subId, {
+    timeout: 30
+  });
+  return event;
+}`;
+    const patch = await patchCode(code);
+    expect(patch).toEqual(expected);
+});
+
+test('should transform autokitteh.unsubscribe calls', async () => {
+    const code = `
+    import { autokitteh } from 'autokitteh';
+    
+    async function cleanup(subId) {
+        await autokitteh.unsubscribe(subId);
+    }
+    `;
+
+    const expected = `/* import { autokitteh } from 'autokitteh'; - commented out by autokitteh build process*/
+async function cleanup(subId) {
+  await (global as any).syscalls.unsubscribe(subId);
+}`;
+    const patch = await patchCode(code);
+    expect(patch).toEqual(expected);
+});
+
+test('should handle multiple autokitteh method calls in one function', async () => {
+    const code = `
+    import { autokitteh } from 'autokitteh';
+    
+    async function handleEventFlow() {
+        const subId = await autokitteh.subscribe('source', 'filter');
+        const event = await autokitteh.nextEvent(subId);
+        await autokitteh.unsubscribe(subId);
+        return event;
+    }
+    `;
+
+    const expected = `/* import { autokitteh } from 'autokitteh'; - commented out by autokitteh build process*/
+async function handleEventFlow() {
+  const subId = await (global as any).syscalls.subscribe('source', 'filter');
+  const event = await (global as any).syscalls.nextEvent(subId);
+  await (global as any).syscalls.unsubscribe(subId);
+  return event;
+}`;
+    const patch = await patchCode(code);
+    expect(patch).toEqual(expected);
+});
+
+test('should only patch direct autokitteh event methods', async () => {
+    const code = `
+    import { autokitteh } from 'autokitteh';
+    import { google } from 'autokitteh/google';
+    
+    async function handleEvents() {
+        // These should be patched
+        const subId = await autokitteh.subscribe('my-source', 'filter');
+        const event = await autokitteh.nextEvent(subId);
+        await autokitteh.unsubscribe(subId);
+
+        // These should NOT be patched
+        const gmail = await autokitteh.google.gmail_client('my_gmail');
+        const calendar = await autokitteh.google.calendar_client('my_calendar');
+    }
+    `;
+
+    const patch = await patchCode(code);
+    
+    // Check that standalone imports are gone (we only want them in comments)
+    expect(patch.match(/^import\s+{.*?}\s+from\s+['"]autokitteh.*?['"]/m)).toBe(null);
+    expect(patch.match(/^import\s+{.*?}\s+from\s+['"]autokitteh\/google.*?['"]/m)).toBe(null);
+    
+    // Check that comments about removed imports exist
+    expect(patch).toContain('import { autokitteh } from \'autokitteh\'; - commented out by autokitteh build process');
+    expect(patch).toContain('import { google } from \'autokitteh/google\'; - commented out by autokitteh build process');
+    
+    // Check that syscalls are properly transformed
+    expect(patch).toContain('await (global as any).syscalls.subscribe(\'my-source\', \'filter\')');
+    expect(patch).toContain('await (global as any).syscalls.nextEvent(subId)');
+    expect(patch).toContain('await (global as any).syscalls.unsubscribe(subId)');
+    
+    // Check that other method calls are properly transformed
+    expect(patch).toContain('await (global as any).ak_call(autokitteh.google.gmail_client, \'my_gmail\')');
+    expect(patch).toContain('await (global as any).ak_call(autokitteh.google.calendar_client, \'my_calendar\')');
+});
+
+test('should comment out autokitteh imports', async () => {
+    const code = `
+    import { autokitteh } from 'autokitteh';
+    
+    // Function that doesn't use autokitteh
+    function processData(data) {
+        return data;
+    }
+    `;
+
+    const patched = await patchCode(code);
+    
+    // The import should be converted to a comment
+    expect(patched).toContain('commented out by autokitteh build process');
+    
+    // Import statement should not appear as a standalone import
+    expect(patched).not.toContain('import "__autokitteh_dummy__"');
+    
+    // The function should still be present and unchanged
+    expect(patched).toContain('function processData(data)');
+});

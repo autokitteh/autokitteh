@@ -7,7 +7,7 @@ import * as helpers from "./helpers";
  * Directly run the main function with a specified directory by extracting configuration from autokitteh.yaml
  * Example usage: ts-node main_direct.ts ../../examples/simple-test
  */
-export async function mainDirect(inputDir: string = "", eventArgs: any = {}, mainPath: string = "../../runtime/main.ts") {
+export async function mainDirect(inputDir: string = "", eventArgs: any = {}, mainPath: string = "runtime/runner/main.ts") {
 
     mainPath = helpers.validateInputDirectory(mainPath);
     // const mainModule = require(mainPath);

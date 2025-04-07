@@ -58,7 +58,7 @@ async function startRuntime(runner: Runner, server: FastifyInstance, options: Re
 
     // Wait a bit to ensure everything is ready
     await new Promise(resolve => setTimeout(resolve, 1000));
-    console.log("Emitting started event...");
+    // console.log("Emitting started event...");
     runner.emit("started");
 }
 

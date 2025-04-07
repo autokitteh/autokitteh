@@ -113,10 +113,12 @@ describe('Simple Build Process', () => {
 
         const jsContent = `
             import { api } from 'external-api';
+            import { autokitteh } from 'autokitteh';
             
             export async function Component() {
                 const data = await api.getData();
-                return data;
+                const subId = await autokitteh.subscribe('my-source', 'event.type == "update"');
+                return { data, subId };
             }
         `;
         await fs.writeFile(path.join(nestedDir, 'component.js'), jsContent);
@@ -127,6 +129,7 @@ describe('Simple Build Process', () => {
         // Verify nested structure was preserved and file was patched
         const outputContent = await fs.readFile(path.join(outputDir, 'src/components/component.js'), 'utf8');
         expect(outputContent).toContain('ak_call');
+        expect(outputContent).toContain('syscalls.subscribe');
         expect(outputContent).toContain('Component');
     });
 });

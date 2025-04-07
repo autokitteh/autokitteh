@@ -11,7 +11,7 @@ import { ActivityWaiter } from "./ak_call";
 import { listExports } from "../common/ast_utils";
 import { initializeGlobals } from "./runtime";
 import { safeSerialize } from "../common/serializer";
-import { EventSubscriber } from '../nodejs-sdk/autokitteh/events';
+import { SysCalls } from "./syscalls";
 
 type AkCallFunction = (...args: unknown[]) => Promise<unknown>;
 
@@ -101,25 +101,23 @@ export default class Runner {
     private originalConsoleLog: typeof console.log;
     private isShuttingDown = false;
     private _isRunningHealthCheck: boolean = false;
-    private readonly eventSubscriber: EventSubscriber;
+    private readonly syscalls: SysCalls;
 
     constructor(id: string, codeDir: string, client: ReturnType<typeof createClient<typeof HandlerService>>) {
         this.id = id;
         this.codeDir = codeDir;
         this.client = client;
         this.waiter = new ActivityWaiter(client, id);
+        this.syscalls = new SysCalls(id, client);
         this.originalConsoleLog = console.log;
-
-        // Create event subscriber for event subscriptions
-        this.eventSubscriber = new EventSubscriber(client, id);
 
         // Setup start timeout
         this.startTimer = setTimeout(() => this.stopIfStartNotCalled(), START_TIMEOUT);
 
         // Intercept console.log with typed parameters
-        console.log = (...args: unknown[]) => {
-            this.akPrint(...args);
-        };
+        // console.log = (...args: unknown[]) => {
+        //     this.akPrint(...args);
+        // };
 
         // Handle graceful shutdown
         this.setupSignalHandlers();
@@ -383,7 +381,7 @@ export default class Runner {
                     }
 
                     // Initialize global ak_call
-                    initializeGlobals(this.waiter,  this.eventSubscriber);
+                    initializeGlobals(this.waiter, this.syscalls);
 
                     // Import and execute user code
                     const modulePath = path.resolve(path.join(this.codeDir, fileName));
@@ -400,7 +398,7 @@ export default class Runner {
                     // Call the function directly - ak_call is now globally available
                     const result = createResult();
                     try {
-                        result.value = await func();
+                        result.value = await func(eventData.args);
                         await this.waiter.done(result.value);
                     } catch (err) {
                         const { message, traceback } = formatError(err);
