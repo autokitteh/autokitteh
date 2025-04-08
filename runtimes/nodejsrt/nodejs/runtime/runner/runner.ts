@@ -1,7 +1,7 @@
 import { createClient } from "@connectrpc/connect";
 import { ConnectRouter } from "@connectrpc/connect";
 import { TextDecoder, TextEncoder } from "util";
-import { EventEmitter } from "events";
+import { EventEmitter } from "node:events";
 import * as path from "path";
 import * as fs from "fs";
 

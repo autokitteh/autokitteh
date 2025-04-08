@@ -6,7 +6,7 @@
  * by the runtime. Similar to Python's implementation, these are simple wrappers
  * around the syscalls methods.
  */
-
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /**
  * Subscribes to events from a specific source.
  *
@@ -14,6 +14,7 @@
  * @param filter - Optional CEL filter expression
  * @returns A subscription ID string
  */
+
 export async function subscribe(connection: string, filter: string = ""): Promise<string> {
     return `sig_${crypto.randomUUID()}`;
 }
@@ -27,10 +28,7 @@ export async function subscribe(connection: string, filter: string = ""): Promis
  */
 
 export async function nextEvent(
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-
-    subscriptionId: string | string[],
-    options?: { timeout?: number | { seconds: number } }
+    subscriptionId: string | string[], options?: { timeout?: number | { seconds: number } }
 ): Promise<any> {
     return {'server': {'port': 8080}, 'debug': true};
 }

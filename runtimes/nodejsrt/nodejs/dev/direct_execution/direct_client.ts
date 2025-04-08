@@ -117,22 +117,25 @@ export class DirectHandlerClient {
     async subscribe(request: any) {
         // console.debug("[DirectClient] subscribe called:", request);
         const signalId = "mock-signal-" + Date.now();
-        
+
         // Add the signal ID to our cache of subscribed signals
         this.subscribedSignals.add(signalId);
-        
+
         return {signalId: signalId, error: ""};
     }
 
-    async nextEvent(request: any) {
+    async nextEvent(request: any):Promise<{
+        error: string;
+        event: { data: Uint8Array } | null
+    }> {
         // console.debug("[DirectClient] nextEvent called:", request);
-        
+
         // Check if the requested signal ID exists in our cache
         if (request && request.signalIds && request.signalIds.length > 0) {
             const validSignal = request.signalIds.some(
                 (signalId: string) => this.subscribedSignals.has(signalId)
             );
-            
+
             if (!validSignal) {
                 // Return an error if no valid signal ID was found
                 return {
@@ -166,12 +169,12 @@ export class DirectHandlerClient {
 
     async unsubscribe(request: any) {
         // console.debug("[DirectClient] unsubscribe called:", request);
-        
+
         // Remove the signal ID from our cache if it exists
         if (request && request.signalId && this.subscribedSignals.has(request.signalId)) {
             this.subscribedSignals.delete(request.signalId);
         }
-        
+
         return {error: ""};
     }
 
