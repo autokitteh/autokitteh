@@ -47,7 +47,7 @@ func (s *server) Apply(ctx context.Context, req *connect.Request[applyv1.ApplyRe
 		oid = authcontext.GetAuthnInferredOrgID(ctx)
 	}
 
-	man, err := manifest.Read([]byte(msg.Manifest), msg.Path)
+	man, err := manifest.Read([]byte(msg.Manifest))
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}

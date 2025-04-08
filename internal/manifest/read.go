@@ -10,7 +10,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )
 
-func Read(data []byte, path string) (*Manifest, error) {
+func Read(data []byte) (*Manifest, error) {
 	var manifest Manifest
 	if err := yaml.Unmarshal(data, &manifest); err != nil {
 		return nil, err
