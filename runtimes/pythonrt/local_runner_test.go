@@ -2,6 +2,7 @@ package pythonrt
 
 import (
 	"bytes"
+	"context"
 	_ "embed"
 	"errors"
 	"fmt"
@@ -72,7 +73,7 @@ func TestRunner_Start(t *testing.T) {
 	r := LocalPython{
 		log: log,
 	}
-	err := r.Start("python", tarData, env, "")
+	err := r.Start(context.Background(), "python", tarData, env, "")
 	require.NoError(t, err)
 
 	defer r.Close() //nolint:all
@@ -254,7 +255,7 @@ func TestRunner_Close(t *testing.T) {
 		log: log,
 	}
 
-	err := r.Start("python", tarData, nil, "")
+	err := r.Start(context.Background(), "python", tarData, nil, "")
 	require.NoError(t, err)
 
 	r.Close()

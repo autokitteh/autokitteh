@@ -7,6 +7,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/backend/httpsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
+	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/runtimes/configrt"
 	"go.autokitteh.dev/autokitteh/runtimes/pythonrt"
@@ -44,8 +45,8 @@ func runtimesFXOption() fx.Option {
 		runtime(
 			"pythonrt",
 			pythonrt.Configs,
-			func(cfg *pythonrt.Config, l *zap.Logger, httpsvc httpsvc.Svc) (*sdkruntimes.Runtime, error) {
-				return pythonrt.New(cfg, l, httpsvc.Addr)
+			func(cfg *pythonrt.Config, t *telemetry.Telemetry, l *zap.Logger, httpsvc httpsvc.Svc) (*sdkruntimes.Runtime, error) {
+				return pythonrt.New(cfg, l, t, httpsvc.Addr)
 			},
 			fx.Invoke(func(l *zap.Logger, muxes *muxes.Muxes) {
 				pythonrt.ConfigureWorkerGRPCHandler(l, muxes.NoAuth)

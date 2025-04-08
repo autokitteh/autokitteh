@@ -13,6 +13,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -23,6 +24,7 @@ type localRunnerManager struct {
 	mu               *sync.Mutex
 	workerAddress    string
 	cfg              LocalRunnerManagerConfig
+	telemetry        *telemetry.Telemetry
 }
 
 type LocalRunnerManagerConfig struct {
@@ -32,7 +34,7 @@ type LocalRunnerManagerConfig struct {
 	LogCodeRunnerCode     bool
 }
 
-func configureLocalRunnerManager(log *zap.Logger, cfg LocalRunnerManagerConfig) error {
+func configureLocalRunnerManager(log *zap.Logger, telemetry *telemetry.Telemetry, cfg LocalRunnerManagerConfig) error {
 	pyExe, isUserPy, err := pythonToRun(log)
 	if err != nil {
 		return err
@@ -63,6 +65,7 @@ func configureLocalRunnerManager(log *zap.Logger, cfg LocalRunnerManagerConfig) 
 		mu:               new(sync.Mutex),
 		workerAddress:    cfg.WorkerAddress,
 		cfg:              cfg,
+		telemetry:        telemetry,
 	}
 
 	lm.pyExe = pyExe
@@ -85,18 +88,26 @@ func configureLocalRunnerManager(log *zap.Logger, cfg LocalRunnerManagerConfig) 
 }
 
 func (l *localRunnerManager) Start(ctx context.Context, sessionID sdktypes.SessionID, buildArtifacts []byte, vars map[string]string) (string, *RunnerClient, error) {
+	ctx, span := l.telemetry.Tracer().Start(ctx, "localRunnerManager.Start")
+	defer span.End()
+
 	log := l.logger.With(zap.String("session_id", sessionID.String()))
 	r := &LocalPython{
 		log:           log,
 		logRunnerCode: l.cfg.LogCodeRunnerCode,
 		sessionID:     sessionID,
+		telemetry:     l.telemetry,
 	}
 
 	if l.cfg.LazyLoadVEnv {
+		_, venvSpan := l.telemetry.Tracer().Start(ctx, "localRunnerManager.ehnsureVEnv")
+
 		log.Info("ensuring venv lazy")
 		if err := ensureVEnv(log, l.pyExe); err != nil {
+			venvSpan.End()
 			return "", nil, fmt.Errorf("create venv: %w", err)
 		}
+		venvSpan.End()
 		l.pyExe = venvPy
 	}
 
@@ -110,13 +121,13 @@ func (l *localRunnerManager) Start(ctx context.Context, sessionID sdktypes.Sessi
 		log.Info("worker address inferred", zap.String("workerAddress", l.workerAddress))
 	}
 
-	if err := r.Start(l.pyExe, buildArtifacts, vars, l.workerAddress); err != nil {
+	if err := r.Start(ctx, l.pyExe, buildArtifacts, vars, l.workerAddress); err != nil {
 		return "", nil, err
 	}
 
 	runnerAddr := fmt.Sprintf("0.0.0.0:%d", r.port)
 	log.Debug("dialing runner", zap.String("addr", runnerAddr))
-	client, err := dialRunner(runnerAddr)
+	client, err := dialRunner(ctx, l.telemetry, runnerAddr)
 	if err != nil {
 		if err := r.Close(); err != nil {
 			log.Warn("close runner", zap.Error(err))

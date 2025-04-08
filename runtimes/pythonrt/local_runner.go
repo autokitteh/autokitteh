@@ -3,6 +3,7 @@ package pythonrt
 import (
 	"archive/tar"
 	"bytes"
+	"context"
 	"embed"
 	"errors"
 	"fmt"
@@ -21,6 +22,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapio"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -46,6 +48,7 @@ type LocalPython struct {
 	sessionID          sdktypes.SessionID
 	stdoutRunnerLogger *zapio.Writer
 	stderrRunnerLogger *zapio.Writer
+	telemetry          *telemetry.Telemetry
 }
 
 func (r *LocalPython) Close() error {
@@ -98,7 +101,10 @@ func freePort() (int, error) {
 	return conn.Addr().(*net.TCPAddr).Port, nil
 }
 
-func (r *LocalPython) Start(pyExe string, tarData []byte, env map[string]string, workerAddr string) error {
+func (r *LocalPython) Start(ctx context.Context, pyExe string, tarData []byte, env map[string]string, workerAddr string) error {
+	ctx, span := r.telemetry.Tracer().Start(ctx, "LocalPython.Start")
+	defer span.End()
+
 	runOK := false
 
 	defer func() {
@@ -122,9 +128,12 @@ func (r *LocalPython) Start(pyExe string, tarData []byte, env map[string]string,
 	r.userDir = userDir
 	r.log.Info("user root dir", zap.String("path", r.userDir))
 
+	_, tarSpan := r.telemetry.Tracer().Start(ctx, "LocalPython.Start.createTar")
 	if err := extractTar(r.userDir, tarData); err != nil {
+		tarSpan.End()
 		return fmt.Errorf("extract user tar - %w", err)
 	}
+	tarSpan.End()
 
 	runnerDir, err := os.MkdirTemp("", "ak-runner-")
 	if err != nil {
@@ -133,9 +142,12 @@ func (r *LocalPython) Start(pyExe string, tarData []byte, env map[string]string,
 	r.runnerDir = runnerDir
 	r.log.Info("python root dir", zap.String("path", r.runnerDir))
 
+	_, cpSpan := r.telemetry.Tracer().Start(ctx, "LocalPython.Start.copyFS")
 	if err := copyFS(runnerPyCode, r.runnerDir); err != nil {
+		cpSpan.End()
 		return fmt.Errorf("copy runner code - %w", err)
 	}
+	cpSpan.End()
 
 	id, err := typeid.WithPrefix("runner")
 	if err != nil {
@@ -166,9 +178,12 @@ func (r *LocalPython) Start(pyExe string, tarData []byte, env map[string]string,
 	// make sure runner is killed if ak is killed
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 
+	_, execSpan := r.telemetry.Tracer().Start(ctx, "LocalPython.Start.Exec")
 	if err := cmd.Start(); err != nil {
+		execSpan.End()
 		return fmt.Errorf("start runner - %w", err)
 	}
+	execSpan.End()
 
 	runOK = true // signal we're good to cleanup
 	r.proc = cmd.Process

@@ -7,25 +7,35 @@ import (
 	"go.temporal.io/sdk/workflow"
 )
 
-var workflowContextKey = new(struct{})
+var (
+	workflowContextKey = new(struct{})
+	spanContextKey     = new(struct{})
+)
 
 type WorkflowContextAsGoContext struct {
 	workflow.Context
-	done chan struct{}
+	spanCtx context.Context
+	done    chan struct{}
 }
 
 // Creates a new GO context that gets the Done() signal from the workflow context.
 // Performing long running operations in the returned context will block the workflow execution,
 // which will result in Temporal's deadlock detector kicking in and kickking your butt.
-func NewWorkflowContextAsGOContext(ctx workflow.Context) context.Context {
+func NewWorkflowContextAsGOContext(wctx workflow.Context) context.Context {
 	done := make(chan struct{})
 
-	workflow.Go(ctx, func(ctx1 workflow.Context) {
-		_ = ctx.Done().Receive(ctx1, nil)
+	workflow.Go(wctx, func(ctx1 workflow.Context) {
+		_ = wctx.Done().Receive(ctx1, nil)
 		close(done)
 	})
 
-	return &WorkflowContextAsGoContext{Context: ctx, done: done}
+	spanCtx, _ := wctx.Value(spanContextKey).(context.Context)
+
+	return &WorkflowContextAsGoContext{
+		Context: wctx,
+		spanCtx: spanCtx,
+		done:    done,
+	}
 }
 
 func (wctx *WorkflowContextAsGoContext) Deadline() (time.Time, bool) { return wctx.Context.Deadline() }
@@ -33,6 +43,13 @@ func (wctx *WorkflowContextAsGoContext) Err() error                  { return wc
 func (wctx *WorkflowContextAsGoContext) Value(key any) any {
 	if key == workflowContextKey {
 		return true
+	}
+
+	if wctx.spanCtx != nil {
+		sv := wctx.spanCtx.Value(key)
+		if sv != nil {
+			return sv
+		}
 	}
 
 	return wctx.Context.Value(key)

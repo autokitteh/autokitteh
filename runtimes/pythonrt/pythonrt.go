@@ -17,6 +17,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
 	pbModule "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/module/v1"
@@ -88,6 +89,8 @@ type pySvc struct {
 	channels comChannels
 
 	didCleanup bool
+
+	telemetry *telemetry.Telemetry
 }
 
 func (py *pySvc) cleanup(ctx context.Context) {
@@ -110,13 +113,18 @@ func (py *pySvc) cleanup(ctx context.Context) {
 	}
 }
 
-func New(cfg *Config, l *zap.Logger, getLocalAddr func() string) (*sdkruntimes.Runtime, error) {
+func New(
+	cfg *Config,
+	l *zap.Logger,
+	telemetry *telemetry.Telemetry,
+	getLocalAddr func() string,
+) (*sdkruntimes.Runtime, error) {
 	switch cfg.RunnerType {
 	case "docker":
 		if cfg.WorkerAddress == "" {
 			return nil, errors.New("worker address is required for docker runner")
 		}
-		if err := configureDockerRunnerManager(l, DockerRuntimeConfig{
+		if err := configureDockerRunnerManager(l, telemetry, DockerRuntimeConfig{
 			LogRunnerCode: cfg.LogRunnerCode,
 			LogBuildCode:  cfg.LogBuildCode,
 			WorkerAddressProvider: func() string {
@@ -131,7 +139,7 @@ func New(cfg *Config, l *zap.Logger, getLocalAddr func() string) (*sdkruntimes.R
 		if len(cfg.RemoteRunnerEndpoints) == 0 {
 			return nil, errors.New("remote runner is enabled but no runner endpoints provided")
 		}
-		if err := configureRemoteRunnerManager(RemoteRuntimeConfig{
+		if err := configureRemoteRunnerManager(telemetry, RemoteRuntimeConfig{
 			ManagerAddress: cfg.RemoteRunnerEndpoints,
 			WorkerAddress:  cfg.WorkerAddress,
 		}); err != nil {
@@ -139,7 +147,7 @@ func New(cfg *Config, l *zap.Logger, getLocalAddr func() string) (*sdkruntimes.R
 		}
 		l.Info("remote runner configured")
 	default:
-		if err := configureLocalRunnerManager(l,
+		if err := configureLocalRunnerManager(l, telemetry,
 			LocalRunnerManagerConfig{
 				WorkerAddress:         cfg.WorkerAddress,
 				LazyLoadVEnv:          cfg.LazyLoadLocalVEnv,
@@ -155,17 +163,18 @@ func New(cfg *Config, l *zap.Logger, getLocalAddr func() string) (*sdkruntimes.R
 
 	return &sdkruntimes.Runtime{
 		Desc: desc,
-		New:  func() (sdkservices.Runtime, error) { return newSvc(cfg, l) },
+		New:  func() (sdkservices.Runtime, error) { return newSvc(cfg, l, telemetry) },
 	}, nil
 }
 
-func newSvc(cfg *Config, l *zap.Logger) (sdkservices.Runtime, error) {
+func newSvc(cfg *Config, l *zap.Logger, telemetry *telemetry.Telemetry) (sdkservices.Runtime, error) {
 	l = l.With(zap.String("runtime", "python"))
 
 	svc := pySvc{
 		cfg:       cfg,
 		log:       l,
 		firstCall: true,
+		telemetry: telemetry,
 		channels: comChannels{
 			done:     make(chan *pbUserCode.DoneRequest, 1),
 			err:      make(chan string, 1),
@@ -243,6 +252,9 @@ func (py *pySvc) Run(
 	values map[string]sdktypes.Value,
 	cbs *sdkservices.RunCallbacks,
 ) (sdkservices.Run, error) {
+	ctx, runSpan := py.telemetry.Tracer().Start(ctx, "pythonrt.Run")
+	defer runSpan.End()
+
 	runnerOK := false
 	py.ctx = ctx
 	py.runID = runID
