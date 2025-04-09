@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-func Consume(args []string) (data []byte, path string, err error) {
+func Consume(args []string) (data []byte, err error) {
 	switch len(args) {
 	case 0:
 		data, err = io.ReadAll(os.Stdin)
@@ -15,13 +15,12 @@ func Consume(args []string) (data []byte, path string, err error) {
 			err = fmt.Errorf("stdin: %w", err)
 		}
 	case 1:
-		path = args[0]
-		data, err = os.ReadFile(path)
+		data, err = os.ReadFile(args[0])
 		if err != nil {
 			err = NewExitCodeError(NotFoundExitCode, err)
 		}
 	default:
-		return nil, "", errors.New("too many arguments")
+		return nil, errors.New("too many arguments")
 	}
 
 	return

@@ -14,12 +14,12 @@ var validateCmd = common.StandardCommand(&cobra.Command{
 	Args:    cobra.MaximumNArgs(1),
 
 	RunE: func(cmd *cobra.Command, args []string) error {
-		data, path, err := common.Consume(args)
+		data, err := common.Consume(args)
 		if err != nil {
 			return err
 		}
 
-		if _, err := manifest.Read(data, path); err != nil {
+		if _, err := manifest.Read(data); err != nil {
 			return err
 		}
 
