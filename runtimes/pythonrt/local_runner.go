@@ -385,7 +385,7 @@ func createVEnv(pyExe string, venvPath string) error {
 		return err
 	}
 
-	if err = install(venvPy, path.Join(tmpDir, "/py-sdk"), "."); err != nil {
+	if err = install(venvPy, path.Join(tmpDir, "py-sdk"), "."); err != nil {
 		return fmt.Errorf("install autokitteh py sdk %w", err)
 	}
 	return nil
