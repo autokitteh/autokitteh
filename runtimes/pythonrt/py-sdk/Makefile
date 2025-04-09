@@ -30,4 +30,4 @@ test:
 venv:
 	uv venv
 
-ci: install-deps venv test
+ci: venv install-deps test
