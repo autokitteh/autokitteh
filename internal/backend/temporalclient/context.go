@@ -14,8 +14,7 @@ var (
 
 type WorkflowContextAsGoContext struct {
 	workflow.Context
-	spanCtx context.Context
-	done    chan struct{}
+	done chan struct{}
 }
 
 // Creates a new GO context that gets the Done() signal from the workflow context.
@@ -29,11 +28,8 @@ func NewWorkflowContextAsGOContext(wctx workflow.Context) context.Context {
 		close(done)
 	})
 
-	spanCtx, _ := wctx.Value(spanContextKey).(context.Context)
-
 	return &WorkflowContextAsGoContext{
 		Context: wctx,
-		spanCtx: spanCtx,
 		done:    done,
 	}
 }
@@ -43,13 +39,6 @@ func (wctx *WorkflowContextAsGoContext) Err() error                  { return wc
 func (wctx *WorkflowContextAsGoContext) Value(key any) any {
 	if key == workflowContextKey {
 		return true
-	}
-
-	if wctx.spanCtx != nil {
-		sv := wctx.spanCtx.Value(key)
-		if sv != nil {
-			return sv
-		}
 	}
 
 	return wctx.Context.Value(key)

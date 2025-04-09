@@ -48,7 +48,7 @@ func New(l *zap.Logger, config *Config, db db.DB, svcs sessionsvcs.Svcs, telemet
 }
 
 func (s *sessions) StartWorkers(ctx context.Context) error {
-	s.calls = sessioncalls.New(s.l.Named("sessionworkflows"), s.config.Calls, s.svcs)
+	s.calls = sessioncalls.New(s.l.Named("sessionworkflows"), s.config.Calls, s.telemetry, s.svcs)
 	s.workflows = sessionworkflows.New(s.l.Named("sessionworkflows"), s.config.Workflows, s, s.svcs, s.calls, s.telemetry)
 
 	if !s.config.EnableWorker {

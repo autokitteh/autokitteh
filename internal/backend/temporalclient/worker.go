@@ -5,10 +5,13 @@ import (
 	"time"
 
 	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/contrib/opentelemetry"
+	"go.temporal.io/sdk/interceptor"
 	"go.temporal.io/sdk/worker"
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
+	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )
 
@@ -34,10 +37,23 @@ func (wc WorkerConfig) With(other WorkerConfig) WorkerConfig {
 }
 
 // NewWorker creates a new Temporal worker. If the worker is disabled, returns nil.
-func NewWorker(l *zap.Logger, client client.Client, qname string, cfg WorkerConfig) worker.Worker {
+func NewWorker(l *zap.Logger, t *telemetry.Telemetry, client client.Client, qname string, cfg WorkerConfig) worker.Worker {
 	if cfg.Disable {
 		l.With(zap.String("queue_name", qname)).Info(fmt.Sprintf("temporal worker for queue %q is disabled", qname))
 		return nil
+	}
+
+	var interceptors []interceptor.WorkerInterceptor
+	tracingInterceptor, err := opentelemetry.NewTracingInterceptor(
+		opentelemetry.TracerOptions{
+			Tracer:         t.Tracer(),
+			SpanContextKey: spanContextKey,
+		},
+	)
+	if err != nil {
+		l.Warn("Unable to create interceptor", zap.Error(err))
+	} else {
+		interceptors = append(interceptors, tracingInterceptor)
 	}
 
 	cfg = defaultWorkerConfig.With(cfg)
@@ -48,6 +64,7 @@ func NewWorker(l *zap.Logger, client client.Client, qname string, cfg WorkerConf
 		Identity:                               fmt.Sprintf("%s__%s", qname, fixtures.ProcessID()),
 		MaxConcurrentWorkflowTaskExecutionSize: cfg.MaxConcurrentWorkflowTaskExecutionSize,
 		MaxConcurrentActivityExecutionSize:     cfg.MaxConcurrentActivityExecutionSize,
+		Interceptors:                           interceptors,
 	}
 
 	return worker.New(client, qname, opts)

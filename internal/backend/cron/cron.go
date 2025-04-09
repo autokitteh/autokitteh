@@ -28,6 +28,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/integrations/oauth"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
@@ -76,10 +77,11 @@ type Cron struct {
 	connections sdkservices.Connections
 	vars        sdkservices.Vars
 	oauth       *oauth.OAuth
+	telemetry   *telemetry.Telemetry
 }
 
-func New(c *Config, l *zap.Logger, t temporalclient.Client) *Cron {
-	return &Cron{cfg: c, logger: l, temporal: t}
+func New(c *Config, l *zap.Logger, t temporalclient.Client, telemetry *telemetry.Telemetry) *Cron {
+	return &Cron{cfg: c, logger: l, temporal: t, telemetry: telemetry}
 }
 
 func (cr *Cron) Start(ctx context.Context, c sdkservices.Connections, v sdkservices.Vars, o *oauth.OAuth) error {
@@ -93,7 +95,7 @@ func (cr *Cron) Start(ctx context.Context, c sdkservices.Connections, v sdkservi
 	cr.oauth = o
 
 	// Configure a worker for the internal maintenance workflow.
-	w := temporalclient.NewWorker(cr.logger, cr.temporal.TemporalClient(), taskQueueName, cr.cfg.Worker)
+	w := temporalclient.NewWorker(cr.logger, cr.telemetry, cr.temporal.TemporalClient(), taskQueueName, cr.cfg.Worker)
 	if w == nil {
 		return nil
 	}

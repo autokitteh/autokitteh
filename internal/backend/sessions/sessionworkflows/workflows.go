@@ -74,7 +74,7 @@ func New(
 }
 
 func (ws *workflows) StartWorkers(ctx context.Context) error {
-	ws.worker = temporalclient.NewWorker(ws.l.Named("sessionworkflowsworker"), ws.svcs.Temporal.TemporalClient(), taskQueueName, ws.cfg.Worker)
+	ws.worker = temporalclient.NewWorker(ws.l.Named("sessionworkflowsworker"), ws.telemetry, ws.svcs.Temporal.TemporalClient(), taskQueueName, ws.cfg.Worker)
 	if ws.worker == nil {
 		return nil
 	}

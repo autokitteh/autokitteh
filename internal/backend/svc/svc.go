@@ -192,9 +192,9 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component(
 			"temporalclient",
 			temporalclient.Configs,
-			fx.Provide(func(cfg *temporalclient.Config, z *zap.Logger) (temporalclient.Client, error) {
+			fx.Provide(func(cfg *temporalclient.Config, t *telemetry.Telemetry, z *zap.Logger) (temporalclient.Client, error) {
 				if opts.TemporalClient == nil {
-					return temporalclient.New(cfg, z)
+					return temporalclient.New(cfg, t, z)
 				}
 
 				return temporalclient.NewFromTemporalClient(&cfg.Monitor, z, opts.TemporalClient)
@@ -279,8 +279,8 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component(
 			"dispatcher",
 			dispatcher.Configs,
-			fx.Provide(func(lc fx.Lifecycle, l *zap.Logger, cfg *dispatcher.Config, svcs dispatcher.Svcs) (sdkservices.Dispatcher, sdkservices.DispatchFunc) {
-				d := dispatcher.New(l, cfg, svcs)
+			fx.Provide(func(lc fx.Lifecycle, l *zap.Logger, cfg *dispatcher.Config, svcs dispatcher.Svcs, t *telemetry.Telemetry) (sdkservices.Dispatcher, sdkservices.DispatchFunc) {
+				d := dispatcher.New(l, cfg, t, svcs)
 				HookOnStart(lc, d.Start)
 				return d, d.Dispatch
 			}),

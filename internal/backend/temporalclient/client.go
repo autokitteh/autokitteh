@@ -25,6 +25,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/health/healthreporter"
+	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
 )
 
@@ -57,7 +58,7 @@ func NewFromTemporalClient(cfg *MonitorConfig, l *zap.Logger, tclient client.Cli
 	return &impl{l: l, cfg: &Config{Monitor: *cfg}, client: tclient, done: make(chan struct{})}, nil
 }
 
-func New(cfg *Config, l *zap.Logger) (Client, error) {
+func New(cfg *Config, t *telemetry.Telemetry, l *zap.Logger) (Client, error) {
 	var tlsConfig *tls.Config
 	if cfg.TLS.Enabled {
 		var cert tls.Certificate
@@ -82,9 +83,10 @@ func New(cfg *Config, l *zap.Logger) (Client, error) {
 		return nil, fmt.Errorf("new data converter: %w", err)
 	}
 
-	interceptors := []interceptor.ClientInterceptor{}
+	var interceptors []interceptor.ClientInterceptor
 	tracingInterceptor, err := opentelemetry.NewTracingInterceptor(
 		opentelemetry.TracerOptions{
+			Tracer:         t.Tracer(),
 			SpanContextKey: spanContextKey,
 		},
 	)

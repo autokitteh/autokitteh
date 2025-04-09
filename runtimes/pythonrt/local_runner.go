@@ -19,6 +19,7 @@ import (
 	"syscall"
 
 	"go.jetify.com/typeid"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapio"
 
@@ -143,7 +144,9 @@ func (r *LocalPython) Start(ctx context.Context, pyExe string, tarData []byte, e
 	r.log.Info("python root dir", zap.String("path", r.runnerDir))
 
 	_, cpSpan := r.telemetry.Tracer().Start(ctx, "LocalPython.Start.copyFS")
-	if err := copyFS(runnerPyCode, r.runnerDir); err != nil {
+	wr, err := copyFS(runnerPyCode, r.runnerDir)
+	cpSpan.SetAttributes(attribute.Int64("written", wr))
+	if err != nil {
 		cpSpan.End()
 		return fmt.Errorf("copy runner code - %w", err)
 	}
@@ -238,8 +241,8 @@ func createTar(fs fs.FS) ([]byte, error) {
 // Copy fs to file so Python can inspect
 // TODO: Once os.CopyFS makes it out we can remove this
 // https://github.com/golang/go/issues/62484
-func copyFS(fsys fs.FS, root string) error {
-	return fs.WalkDir(fsys, ".", func(name string, entry fs.DirEntry, err error) error {
+func copyFS(fsys fs.FS, root string) (acc int64, err error) {
+	err = fs.WalkDir(fsys, ".", func(name string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -266,12 +269,17 @@ func copyFS(fsys fs.FS, root string) error {
 		}
 		defer w.Close()
 
-		if _, err := io.Copy(w, r); err != nil {
+		written, err := io.Copy(w, r)
+		if err != nil {
 			return err
 		}
 
+		acc += written
+
 		return nil
 	})
+
+	return
 }
 
 type Version struct {
@@ -396,7 +404,7 @@ func createVEnv(pyExe string, venvPath string) error {
 		return fmt.Errorf("install dependencies from %q: %w", file.Name(), err)
 	}
 
-	if err := copyFS(pysdk, tmpDir); err != nil {
+	if _, err := copyFS(pysdk, tmpDir); err != nil {
 		return err
 	}
 
