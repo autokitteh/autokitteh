@@ -7,7 +7,7 @@ test:
 	python -m pytest
 
 install-deps:
-	python -m pip install .[all]
+	uv pip install .[all]
 	rm -rf build *.egg-info
 
 ci: install-deps test

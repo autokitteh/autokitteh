@@ -14,8 +14,8 @@ upload: build
 		dist/autokitteh-*
 
 install-deps:
-	python -m pip install build twine
-	python -m pip install .[all,dev]
+	uv pip install build twine
+	uv pip install .[all,dev]
 	rm -rf build *.egg-info
 
 build-docs:
