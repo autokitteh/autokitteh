@@ -12,7 +12,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
-	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -41,18 +40,17 @@ type Scheduler struct {
 	sl         *zap.SugaredLogger
 	dispatcher sdkservices.Dispatcher
 	triggers   sdkservices.Triggers
-	telemetry  *telemetry.Telemetry
 }
 
-func New(l *zap.Logger, t *telemetry.Telemetry, tc temporalclient.Client, cfg *Config) *Scheduler {
-	return &Scheduler{sl: l.Sugar(), temporal: tc, cfg: cfg, telemetry: t}
+func New(l *zap.Logger, tc temporalclient.Client, cfg *Config) *Scheduler {
+	return &Scheduler{sl: l.Sugar(), temporal: tc, cfg: cfg}
 }
 
 func (sch *Scheduler) Start(ctx context.Context, dispatcher sdkservices.Dispatcher, triggers sdkservices.Triggers) error {
 	sch.dispatcher = dispatcher
 	sch.triggers = triggers
 
-	w := temporalclient.NewWorker(sch.sl.Desugar(), sch.telemetry, sch.temporal.TemporalClient(), taskQueueName, sch.cfg.Worker)
+	w := temporalclient.NewWorker(sch.sl.Desugar(), sch.temporal.TemporalClient(), taskQueueName, sch.cfg.Worker)
 	if w == nil {
 		return nil
 	}

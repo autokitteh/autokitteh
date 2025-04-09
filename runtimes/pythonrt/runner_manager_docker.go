@@ -10,7 +10,6 @@ import (
 	"go.jetify.com/typeid"
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -26,10 +25,9 @@ type dockerRunnerManager struct {
 	runnerIDToContainerID map[string]string
 	mu                    *sync.Mutex
 	workerAddressProvider func() string
-	telemetry             *telemetry.Telemetry
 }
 
-func configureDockerRunnerManager(log *zap.Logger, telemetry *telemetry.Telemetry, cfg DockerRuntimeConfig) error {
+func configureDockerRunnerManager(log *zap.Logger, cfg DockerRuntimeConfig) error {
 	dc, err := NewDockerClient(log, cfg.LogRunnerCode, cfg.LogBuildCode)
 	if err != nil {
 		return err
@@ -63,7 +61,6 @@ func configureDockerRunnerManager(log *zap.Logger, telemetry *telemetry.Telemetr
 		runnerIDToContainerID: map[string]string{},
 		mu:                    new(sync.Mutex),
 		workerAddressProvider: cfg.WorkerAddressProvider,
-		telemetry:             telemetry,
 	}
 
 	configuredRunnerType = runnerTypeDocker
@@ -113,7 +110,7 @@ func (rm *dockerRunnerManager) Start(ctx context.Context, sessionID sdktypes.Ses
 	}
 
 	runnerAddr := "127.0.0.1:" + port
-	client, err := dialRunner(ctx, rm.telemetry, runnerAddr)
+	client, err := dialRunner(ctx, runnerAddr)
 	if err != nil {
 
 		if err := rm.client.StopRunner(ctx, cid); err != nil {

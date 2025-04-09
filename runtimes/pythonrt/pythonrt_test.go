@@ -78,7 +78,7 @@ func isFSFile(fsys fs.FS, path string) bool {
 }
 
 func newSVC(t *testing.T) *pySvc {
-	rt, err := newSvc(Configs.Default, zap.NewNop(), nil)
+	rt, err := newSvc(Configs.Default, zap.NewNop())
 	require.NoError(t, err, "New")
 	svc, ok := rt.(*pySvc)
 	require.Truef(t, ok, "type assertion failed, got %T", rt)
@@ -89,13 +89,13 @@ func newSVC(t *testing.T) *pySvc {
 func TestConfigureLocalRuntime(t *testing.T) {
 	l := kittehs.Must1(zap.NewDevelopment())
 
-	err := configureLocalRunnerManager(l, nil, LocalRunnerManagerConfig{})
+	err := configureLocalRunnerManager(l, LocalRunnerManagerConfig{})
 	require.Error(t, err, "should fail on not set worker address")
 
-	err = configureLocalRunnerManager(l, nil, LocalRunnerManagerConfig{WorkerAddress: "0.0.0.0:123"})
+	err = configureLocalRunnerManager(l, LocalRunnerManagerConfig{WorkerAddress: "0.0.0.0:123"})
 	require.NoError(t, err, "should succeed to configure")
 
-	err = configureLocalRunnerManager(l, nil, LocalRunnerManagerConfig{WorkerAddressProvider: func() string { return "" }})
+	err = configureLocalRunnerManager(l, LocalRunnerManagerConfig{WorkerAddressProvider: func() string { return "" }})
 	require.NoError(t, err, "should succeed to configure")
 }
 
@@ -163,7 +163,7 @@ func setupServer(l *zap.Logger) (net.Listener, error) {
 		return nil, err
 	}
 
-	if err := configureLocalRunnerManager(l, nil, LocalRunnerManagerConfig{
+	if err := configureLocalRunnerManager(l, LocalRunnerManagerConfig{
 		WorkerAddressProvider: func() string {
 			port := listener.Addr().(*net.TCPAddr).Port
 			return fmt.Sprintf("localhost:%d", port)
@@ -270,7 +270,7 @@ func TestNewBadVersion(t *testing.T) {
 	t.Setenv(exeEnvKey, exe)
 
 	l := zap.New(nil)
-	err := configureLocalRunnerManager(l, nil, LocalRunnerManagerConfig{})
+	err := configureLocalRunnerManager(l, LocalRunnerManagerConfig{})
 	require.Error(t, err)
 }
 
@@ -280,14 +280,14 @@ func TestPythonFromEnv(t *testing.T) {
 	t.Setenv(exeEnvKey, pyExe)
 
 	l := zap.New(nil)
-	err := configureLocalRunnerManager(l, nil, LocalRunnerManagerConfig{})
+	err := configureLocalRunnerManager(l, LocalRunnerManagerConfig{})
 	require.Error(t, err)
 
 	genExe(t, pyExe, minPyVersion.Major, minPyVersion.Minor)
-	err = configureLocalRunnerManager(l, nil, LocalRunnerManagerConfig{WorkerAddress: "0.0.0.0:0"})
+	err = configureLocalRunnerManager(l, LocalRunnerManagerConfig{WorkerAddress: "0.0.0.0:0"})
 	require.NoError(t, err)
 
-	_, err = newSvc(Configs.Default, zap.NewNop(), nil)
+	_, err = newSvc(Configs.Default, zap.NewNop())
 	require.NoError(t, err)
 
 	py, ok := runnerManager.(*localRunnerManager)

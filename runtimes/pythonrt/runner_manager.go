@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -69,14 +70,21 @@ func waitForServer(ctx context.Context, name string, h Healthier, timeout time.D
 	return fmt.Errorf("%s not ready after %v", name, timeout)
 }
 
-func dialRunner(ctx context.Context, t *telemetry.Telemetry, addr string) (*RunnerClient, error) {
-	ctx, span := t.Tracer().Start(ctx, "dialRunner")
+func dialRunner(ctx context.Context, addr string) (*RunnerClient, error) {
+	ctx, span := telemetry.T().Start(ctx, "dialRunner")
 	defer span.End()
 
 	span.SetAttributes(attribute.String("addr", addr))
 
 	creds := insecure.NewCredentials()
-	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(creds))
+	conn, err := grpc.NewClient(
+		addr,
+		grpc.WithTransportCredentials(creds),
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler(
+			otelgrpc.WithTracerProvider(telemetry.TP()),
+			otelgrpc.WithMeterProvider(telemetry.MP()),
+		)),
+	)
 	if err != nil {
 		return nil, err
 	}

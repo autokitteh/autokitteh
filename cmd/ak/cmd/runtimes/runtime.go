@@ -48,7 +48,6 @@ func runtimes() sdkservices.Runtimes {
 			kittehs.Must1(pythonrt.New(
 				&pythonrt.Config{LazyLoadLocalVEnv: true},
 				zap.NewNop(),
-				nil,
 				func() string { return "localhost" },
 			)),
 		}))

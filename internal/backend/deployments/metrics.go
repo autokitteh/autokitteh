@@ -15,8 +15,8 @@ var (
 	deploymentsCreatedCounter metric.Int64Counter       = noop.Int64Counter{}
 )
 
-func initMetrics(t *telemetry.Telemetry) {
-	deploymentsActiveGauge, _ = t.NewUpDownCounter("deployments.active", "Active deployments gauge")
-	deploymentsDrainingGauge, _ = t.NewUpDownCounter("deployments.draining", "Draining deployments gauge")
-	deploymentsCreatedCounter, _ = t.NewCounter("deployments.created", "Created deployments counter")
+func initMetrics() {
+	deploymentsActiveGauge, _ = telemetry.NewUpDownCounter("deployments.active", "Active deployments gauge")
+	deploymentsDrainingGauge, _ = telemetry.NewUpDownCounter("deployments.draining", "Draining deployments gauge")
+	deploymentsCreatedCounter, _ = telemetry.NewCounter("deployments.created", "Created deployments counter")
 }

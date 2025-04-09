@@ -21,18 +21,18 @@ var (
 	sessionInvocationDelayHistogram metric.Int64Histogram
 )
 
-func initMetrics(t *telemetry.Telemetry) {
-	sessionsCreatedCounter, _ = t.NewCounter("sessions.created", "Created sessions counter")
-	sessionsCompletedCounter, _ = t.NewCounter("sessions.completed", "Completed sessions counter")
+func initMetrics() {
+	sessionsCreatedCounter, _ = telemetry.NewCounter("sessions.created", "Created sessions counter")
+	sessionsCompletedCounter, _ = telemetry.NewCounter("sessions.completed", "Completed sessions counter")
 
 	// erroredCounted excludes program errors and retry errors (worker health error leading to replay)
-	sessionsErroredCounter, _ = t.NewCounter("sessions.errored", "Errored sessions counter")
-	sessionsProgramErrorsCounter, _ = t.NewCounter("sessions.program_errors", "Program errors sessions counter")
-	sessionsRetryErrorsCounter, _ = t.NewCounter("sessions.retry_errors", "Retry errors sessions counter")
+	sessionsErroredCounter, _ = telemetry.NewCounter("sessions.errored", "Errored sessions counter")
+	sessionsProgramErrorsCounter, _ = telemetry.NewCounter("sessions.program_errors", "Program errors sessions counter")
+	sessionsRetryErrorsCounter, _ = telemetry.NewCounter("sessions.retry_errors", "Retry errors sessions counter")
 
-	sessionsStoppedCounter, _ = t.NewCounter("sessions.stopped", "Stopped sessions counter")
-	sessionStaleReplaysCounter, _ = t.NewCounter("sessions.stale_replays", "Stale replays sessions counter")
+	sessionsStoppedCounter, _ = telemetry.NewCounter("sessions.stopped", "Stopped sessions counter")
+	sessionStaleReplaysCounter, _ = telemetry.NewCounter("sessions.stale_replays", "Stale replays sessions counter")
 
-	sessionDurationHistogram, _ = t.NewHistogram("sessions.duration", "Session duration histogram")
-	sessionInvocationDelayHistogram, _ = t.NewHistogram("sessions.invocation_delay", "Session invocation delay (time from event till session start) histogram")
+	sessionDurationHistogram, _ = telemetry.NewHistogram("sessions.duration", "Session duration histogram")
+	sessionInvocationDelayHistogram, _ = telemetry.NewHistogram("sessions.invocation_delay", "Session invocation delay (time from event till session start) histogram")
 }

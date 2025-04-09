@@ -9,7 +9,6 @@ import (
 	"connectrpc.com/connect"
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	rmv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/runner_manager/v1"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/runner_manager/v1/runner_managerv1connect"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -23,7 +22,6 @@ type RemoteRuntimeConfig struct {
 type remoteRunnerManager struct {
 	logger         *zap.Logger
 	remoteManagers []runner_managerv1connect.RunnerManagerServiceClient
-	telemetry      *telemetry.Telemetry
 }
 
 func (c RemoteRuntimeConfig) validate() error {
@@ -34,7 +32,7 @@ func (c RemoteRuntimeConfig) validate() error {
 	return nil
 }
 
-func configureRemoteRunnerManager(telemetry *telemetry.Telemetry, cfg RemoteRuntimeConfig) error {
+func configureRemoteRunnerManager(cfg RemoteRuntimeConfig) error {
 	if err := cfg.validate(); err != nil {
 		return err
 	}
@@ -43,7 +41,7 @@ func configureRemoteRunnerManager(telemetry *telemetry.Telemetry, cfg RemoteRunt
 		return errors.New("runner type already configured, cannot configure twice")
 	}
 
-	rrm := &remoteRunnerManager{telemetry: telemetry}
+	rrm := &remoteRunnerManager{}
 
 	for _, addr := range cfg.ManagerAddress {
 		runner := runner_managerv1connect.NewRunnerManagerServiceClient(http.DefaultClient, addr, connect.WithGRPC())

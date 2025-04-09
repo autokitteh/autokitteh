@@ -156,14 +156,8 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 
 		LoggerFxOpt(opts.Silent),
 
-		Component(
-			"telemetry",
-			telemetry.Configs,
-			fx.Provide(telemetry.New),
-			fx.Invoke(func(lc fx.Lifecycle, t *telemetry.Telemetry) {
-				HookOnStop(lc, t.Shutdown)
-			}),
-		),
+		// must be right after logger.
+		Component("telemetry", telemetry.Configs, fx.Invoke(telemetry.Init)),
 
 		DBFxOpt(),
 
@@ -192,9 +186,9 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component(
 			"temporalclient",
 			temporalclient.Configs,
-			fx.Provide(func(cfg *temporalclient.Config, t *telemetry.Telemetry, z *zap.Logger) (temporalclient.Client, error) {
+			fx.Provide(func(cfg *temporalclient.Config, z *zap.Logger) (temporalclient.Client, error) {
 				if opts.TemporalClient == nil {
-					return temporalclient.New(cfg, t, z)
+					return temporalclient.New(cfg, z)
 				}
 
 				return temporalclient.NewFromTemporalClient(&cfg.Monitor, z, opts.TemporalClient)
@@ -279,8 +273,8 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component(
 			"dispatcher",
 			dispatcher.Configs,
-			fx.Provide(func(lc fx.Lifecycle, l *zap.Logger, cfg *dispatcher.Config, svcs dispatcher.Svcs, t *telemetry.Telemetry) (sdkservices.Dispatcher, sdkservices.DispatchFunc) {
-				d := dispatcher.New(l, cfg, t, svcs)
+			fx.Provide(func(lc fx.Lifecycle, l *zap.Logger, cfg *dispatcher.Config, svcs dispatcher.Svcs) (sdkservices.Dispatcher, sdkservices.DispatchFunc) {
+				d := dispatcher.New(l, cfg, svcs)
 				HookOnStart(lc, d.Start)
 				return d, d.Dispatch
 			}),
@@ -327,7 +321,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			fx.Provide(func(lc fx.Lifecycle, z *zap.Logger, cfg *httpsvc.Config,
 				authzCheckFunc authz.CheckFunc,
 				wrapAuth authhttpmiddleware.AuthMiddlewareDecorator,
-				authHdrExtractor authhttpmiddleware.AuthHeaderExtractor, telemetry *telemetry.Telemetry,
+				authHdrExtractor authhttpmiddleware.AuthHeaderExtractor,
 			) (svc httpsvc.Svc, all *muxes.Muxes, err error) {
 				svc, err = httpsvc.New(
 					lc, z, cfg,
@@ -344,7 +338,6 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 							return nil
 						},
 					},
-					telemetry,
 				)
 				if err != nil {
 					return

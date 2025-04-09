@@ -14,7 +14,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
-	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -41,16 +40,15 @@ type Svcs struct {
 }
 
 type Dispatcher struct {
-	sl        *zap.SugaredLogger
-	cfg       *Config
-	svcs      Svcs
-	telemetry *telemetry.Telemetry
+	sl   *zap.SugaredLogger
+	cfg  *Config
+	svcs Svcs
 }
 
 var _ sdkservices.Dispatcher = (*Dispatcher)(nil)
 
-func New(l *zap.Logger, cfg *Config, telemetry *telemetry.Telemetry, svcs Svcs) *Dispatcher {
-	return &Dispatcher{sl: l.Sugar(), cfg: cfg, svcs: svcs, telemetry: telemetry}
+func New(l *zap.Logger, cfg *Config, svcs Svcs) *Dispatcher {
+	return &Dispatcher{sl: l.Sugar(), cfg: cfg, svcs: svcs}
 }
 
 func (d *Dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) (sdktypes.EventID, error) {
@@ -135,7 +133,7 @@ func (d *Dispatcher) Redispatch(ctx context.Context, eventID sdktypes.EventID, o
 }
 
 func (d *Dispatcher) Start(context.Context) error {
-	w := temporalclient.NewWorker(d.sl.Desugar(), d.telemetry, d.svcs.Temporal.TemporalClient(), taskQueueName, d.cfg.Worker)
+	w := temporalclient.NewWorker(d.sl.Desugar(), d.svcs.Temporal.TemporalClient(), taskQueueName, d.cfg.Worker)
 	if w == nil {
 		return nil
 	}

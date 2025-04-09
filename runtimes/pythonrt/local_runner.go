@@ -49,7 +49,6 @@ type LocalPython struct {
 	sessionID          sdktypes.SessionID
 	stdoutRunnerLogger *zapio.Writer
 	stderrRunnerLogger *zapio.Writer
-	telemetry          *telemetry.Telemetry
 }
 
 func (r *LocalPython) Close() error {
@@ -103,7 +102,7 @@ func freePort() (int, error) {
 }
 
 func (r *LocalPython) Start(ctx context.Context, pyExe string, tarData []byte, env map[string]string, workerAddr string) error {
-	ctx, span := r.telemetry.Tracer().Start(ctx, "LocalPython.Start")
+	ctx, span := telemetry.T().Start(ctx, "LocalPython.Start")
 	defer span.End()
 
 	runOK := false
@@ -129,7 +128,7 @@ func (r *LocalPython) Start(ctx context.Context, pyExe string, tarData []byte, e
 	r.userDir = userDir
 	r.log.Info("user root dir", zap.String("path", r.userDir))
 
-	_, tarSpan := r.telemetry.Tracer().Start(ctx, "LocalPython.Start.createTar")
+	_, tarSpan := telemetry.T().Start(ctx, "LocalPython.Start.createTar")
 	if err := extractTar(r.userDir, tarData); err != nil {
 		tarSpan.End()
 		return fmt.Errorf("extract user tar - %w", err)
@@ -143,7 +142,7 @@ func (r *LocalPython) Start(ctx context.Context, pyExe string, tarData []byte, e
 	r.runnerDir = runnerDir
 	r.log.Info("python root dir", zap.String("path", r.runnerDir))
 
-	_, cpSpan := r.telemetry.Tracer().Start(ctx, "LocalPython.Start.copyFS")
+	_, cpSpan := telemetry.T().Start(ctx, "LocalPython.Start.copyFS")
 	wr, err := copyFS(runnerPyCode, r.runnerDir)
 	cpSpan.SetAttributes(attribute.Int64("written", wr))
 	if err != nil {
@@ -181,7 +180,7 @@ func (r *LocalPython) Start(ctx context.Context, pyExe string, tarData []byte, e
 	// make sure runner is killed if ak is killed
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 
-	_, execSpan := r.telemetry.Tracer().Start(ctx, "LocalPython.Start.Exec")
+	_, execSpan := telemetry.T().Start(ctx, "LocalPython.Start.Exec")
 	if err := cmd.Start(); err != nil {
 		execSpan.End()
 		return fmt.Errorf("start runner - %w", err)

@@ -8,12 +8,13 @@ import (
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 func (w *sessionWorkflow) startCallbackSpan(ctx context.Context, name string) (context.Context, trace.Span) {
-	return w.ws.telemetry.Tracer().Start(ctx, "sessionWorkflow.callbacks."+name)
+	return telemetry.T().Start(ctx, "sessionWorkflow.callbacks."+name)
 }
 
 func (w *sessionWorkflow) start(wctx workflow.Context) func(context.Context, sdktypes.RunID, sdktypes.CodeLocation, map[string]sdktypes.Value, map[string]string) (sdktypes.SessionID, error) {

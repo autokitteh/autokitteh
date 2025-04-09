@@ -16,7 +16,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionsvcs"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules"
-	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkexecutor"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -35,10 +34,9 @@ type Calls interface {
 }
 
 type calls struct {
-	l         *zap.Logger
-	config    Config
-	svcs      *sessionsvcs.Svcs
-	telemetry *telemetry.Telemetry
+	l      *zap.Logger
+	config Config
+	svcs   *sessionsvcs.Svcs
 
 	// For every instance there are two worker pools created:
 	// - generalWorker: used only for activities that do not need to run on
@@ -66,20 +64,19 @@ func uniqueWorkerCallTaskQueueName() string {
 	return fmt.Sprintf("%s_%s", generalTaskQueueName, fixtures.ProcessID())
 }
 
-func New(l *zap.Logger, config Config, telemetry *telemetry.Telemetry, svcs *sessionsvcs.Svcs) Calls {
+func New(l *zap.Logger, config Config, svcs *sessionsvcs.Svcs) Calls {
 	return &calls{
 		l:                    l,
 		config:               config,
 		svcs:                 svcs,
 		executorsForSessions: make(map[sdktypes.SessionID]*sdkexecutor.Executors, 16),
-		telemetry:            telemetry,
 	}
 }
 
 func (cs *calls) StartWorkers(ctx context.Context) error {
 	tc := cs.svcs.Temporal.TemporalClient()
-	cs.generalWorker = temporalclient.NewWorker(cs.l.Named("sessionscallsworker"), cs.telemetry, tc, generalTaskQueueName, cs.config.GeneralWorker)
-	cs.uniqueWorker = temporalclient.NewWorker(cs.l.Named("sessionscallsworker"), cs.telemetry, tc, uniqueWorkerCallTaskQueueName(), cs.config.UniqueWorker)
+	cs.generalWorker = temporalclient.NewWorker(cs.l.Named("sessionscallsworker"), tc, generalTaskQueueName, cs.config.GeneralWorker)
+	cs.uniqueWorker = temporalclient.NewWorker(cs.l.Named("sessionscallsworker"), tc, uniqueWorkerCallTaskQueueName(), cs.config.UniqueWorker)
 
 	cs.registerActivities()
 

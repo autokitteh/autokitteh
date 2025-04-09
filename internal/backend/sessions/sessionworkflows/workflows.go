@@ -18,7 +18,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncalls"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessiondata"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionsvcs"
-	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -50,13 +49,12 @@ type sessionWorkflowParams struct {
 }
 
 type workflows struct {
-	l         *zap.Logger
-	cfg       Config
-	worker    worker.Worker
-	svcs      *sessionsvcs.Svcs
-	sessions  sdkservices.Sessions
-	calls     sessioncalls.Calls
-	telemetry *telemetry.Telemetry
+	l        *zap.Logger
+	cfg      Config
+	worker   worker.Worker
+	svcs     *sessionsvcs.Svcs
+	sessions sdkservices.Sessions
+	calls    sessioncalls.Calls
 }
 
 func workflowID(sessionID sdktypes.SessionID) string { return sessionID.String() }
@@ -67,14 +65,13 @@ func New(
 	sessions sdkservices.Sessions,
 	svcs *sessionsvcs.Svcs,
 	calls sessioncalls.Calls,
-	telemetry *telemetry.Telemetry,
 ) Workflows {
-	initMetrics(telemetry)
-	return &workflows{l: l, cfg: cfg, sessions: sessions, calls: calls, svcs: svcs, telemetry: telemetry}
+	initMetrics()
+	return &workflows{l: l, cfg: cfg, sessions: sessions, calls: calls, svcs: svcs}
 }
 
 func (ws *workflows) StartWorkers(ctx context.Context) error {
-	ws.worker = temporalclient.NewWorker(ws.l.Named("sessionworkflowsworker"), ws.telemetry, ws.svcs.Temporal.TemporalClient(), taskQueueName, ws.cfg.Worker)
+	ws.worker = temporalclient.NewWorker(ws.l.Named("sessionworkflowsworker"), ws.svcs.Temporal.TemporalClient(), taskQueueName, ws.cfg.Worker)
 	if ws.worker == nil {
 		return nil
 	}

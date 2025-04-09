@@ -37,7 +37,7 @@ func (wc WorkerConfig) With(other WorkerConfig) WorkerConfig {
 }
 
 // NewWorker creates a new Temporal worker. If the worker is disabled, returns nil.
-func NewWorker(l *zap.Logger, t *telemetry.Telemetry, client client.Client, qname string, cfg WorkerConfig) worker.Worker {
+func NewWorker(l *zap.Logger, client client.Client, qname string, cfg WorkerConfig) worker.Worker {
 	if cfg.Disable {
 		l.With(zap.String("queue_name", qname)).Info(fmt.Sprintf("temporal worker for queue %q is disabled", qname))
 		return nil
@@ -46,7 +46,7 @@ func NewWorker(l *zap.Logger, t *telemetry.Telemetry, client client.Client, qnam
 	var interceptors []interceptor.WorkerInterceptor
 	tracingInterceptor, err := opentelemetry.NewTracingInterceptor(
 		opentelemetry.TracerOptions{
-			Tracer:         t.Tracer(),
+			Tracer:         telemetry.T(),
 			SpanContextKey: spanContextKey,
 		},
 	)

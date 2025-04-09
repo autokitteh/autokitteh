@@ -18,6 +18,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncalls"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessiondata"
 	testtoolsmodule "go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/testtools"
+	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/backend/types"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -406,7 +407,7 @@ func (w *sessionWorkflow) removeEventSubscription(wctx workflow.Context, signalI
 func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (_ []sdkservices.SessionPrint, retVal sdktypes.Value, _ error) {
 	ctx := temporalclient.NewWorkflowContextAsGOContext(wctx)
 
-	startTrace := w.ws.telemetry.Tracer().Start
+	startTrace := telemetry.T().Start
 
 	ctx, workflowSpan := startTrace(ctx, "sessionWorkflow.run")
 	defer workflowSpan.End()
