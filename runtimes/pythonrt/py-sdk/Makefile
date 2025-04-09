@@ -23,8 +23,8 @@ build-docs:
 	$(MAKE) -C docs html
 
 test:
-	ruff check .
-	ruff format --check
+	uv run ruff check .
+	uv run ruff format --check
 	python -m pytest tests
 
 venv:

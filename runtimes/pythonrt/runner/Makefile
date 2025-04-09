@@ -2,8 +2,8 @@ default:
 	$(error please pick a target)
 
 test:
-	ruff check .
-	ruff format --check
+	uv run ruff check .
+	uv run ruff format --check
 	python -m pytest
 
 install-deps:
