@@ -19,7 +19,7 @@ func (h handler) handlePAT(w http.ResponseWriter, r *http.Request) {
 	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, desc)
 
 	// Check the "Content-Type" header.
-	if !common.PostWithoutFormContentType(r) {
+	if common.PostWithoutFormContentType(r) {
 		ct := r.Header.Get(common.HeaderContentType)
 		l.Warn("save connection: unexpected POST content type", zap.String("content_type", ct))
 		c.AbortBadRequest("unexpected content type")
