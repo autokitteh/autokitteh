@@ -352,7 +352,7 @@ func overrideEnv(envMap map[string]string, runnerPath string) []string {
 }
 
 func createVEnv(pyExe string, venvPath string) error {
-	cmd := exec.Command(pyExe, "-m", "venv", venvPath)
+	cmd := exec.Command("uv", "venv", "--python", pyExe, venvPath)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
@@ -377,7 +377,7 @@ func createVEnv(pyExe string, venvPath string) error {
 	}
 
 	venvPy := path.Join(venvPath, "bin", "python")
-	if err := install(venvPy, tmpDir, []string{"-m", "pip", "install", ".[all]"}); err != nil {
+	if err := install(venvPy, tmpDir, ".[all]"); err != nil {
 		return fmt.Errorf("install dependencies from %q: %w", file.Name(), err)
 	}
 
@@ -385,14 +385,15 @@ func createVEnv(pyExe string, venvPath string) error {
 		return err
 	}
 
-	if err = install(venvPy, path.Join(tmpDir, "/py-sdk"), []string{"-m", "pip", "install", "."}); err != nil {
+	if err = install(venvPy, path.Join(tmpDir, "/py-sdk"), "."); err != nil {
 		return fmt.Errorf("install autokitteh py sdk %w", err)
 	}
 	return nil
 }
 
-func install(pyPath, cwd string, args []string) error {
-	cmd := exec.Command(pyPath, args...)
+func install(pyPath, cwd string, spec string) error {
+	uvArgs := []string{"pip", "install", "--python", pyPath, spec}
+	cmd := exec.Command("uv", uvArgs...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Dir = cwd
