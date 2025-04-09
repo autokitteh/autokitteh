@@ -25,7 +25,7 @@ build-docs:
 test:
 	uv run ruff check .
 	uv run ruff format --check
-	python -m pytest tests
+	uv run python -m pytest tests
 
 venv:
 	uv venv
