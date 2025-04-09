@@ -64,7 +64,7 @@ func (gdb *gormdb) getSession(ctx context.Context, sessionID uuid.UUID) (*scheme
 func (gdb *gormdb) listSessions(ctx context.Context, f sdkservices.ListSessionsFilter) ([]scheme.Session, int64, error) {
 	q := gdb.reader.WithContext(ctx)
 
-	q = withProjectID(q, "", f.ProjectID)
+	q = withProjectID(q, "sessions", f.ProjectID)
 
 	q = withProjectOrgID(q, f.OrgID, "sessions")
 

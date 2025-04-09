@@ -61,7 +61,7 @@ func getManifest(resources map[string][]byte, manifestFile string) (*manifest.Ma
 		return nil, nil
 	}
 
-	return manifest.Read(data, manifestFile)
+	return manifest.Read(data)
 }
 
 func findProjectNameOrID(projectNameOrID string, projectDir string, m *manifest.Manifest) (string, error) {

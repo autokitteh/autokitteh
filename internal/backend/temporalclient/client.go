@@ -13,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.temporal.io/api/serviceerror"
+	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/contrib/opentelemetry"
 	"go.temporal.io/sdk/converter"
@@ -121,7 +122,9 @@ func (c *impl) startDevServer(ctx context.Context) error {
 	c.cfg.DevServer.Stdout = c.logFile
 
 	for i := 0; i < c.cfg.DevServerStartMaxAttempts && c.srv == nil; i++ {
-		c.l.Info("starting temporal dev server", zap.Int("attempt", i))
+		l := c.l.With(zap.Int("attempt", i))
+
+		l.Info("starting temporal dev server")
 
 		if i > 0 {
 			select {
@@ -142,8 +145,12 @@ func (c *impl) startDevServer(ctx context.Context) error {
 
 		c.srv, err = testsuite.StartDevServer(startCtx, c.cfg.DevServer)
 		if err != nil {
-			c.l.Error("failed to start temporal dev server", zap.Error(err), zap.Int("attempt", i))
+			l.Error("Failed to starting temporal dev server. Check temporal log for further info.", zap.Error(err), zap.String("log_path", logPath))
+			continue
 		}
+
+		// Give additional time to the server to start up, create namespace, etc.
+		time.Sleep(c.cfg.DevServerStartWaitTime)
 	}
 
 	if err != nil {
@@ -269,6 +276,16 @@ func (c *impl) Start(context.Context) error {
 			}
 		}
 	}
+
+	resp, err := c.client.WorkflowService().DescribeNamespace(ctx, &workflowservice.DescribeNamespaceRequest{
+		Namespace: c.cfg.Namespace,
+	})
+	if err != nil {
+		c.l.Error("namespace is not registered", zap.Error(err))
+		return err
+	}
+
+	c.l.Info("namespace is registered", zap.Any("info", resp.NamespaceInfo))
 
 	// Start health check monitor.
 
