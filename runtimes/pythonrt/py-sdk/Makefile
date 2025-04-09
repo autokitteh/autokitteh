@@ -27,4 +27,7 @@ test:
 	ruff format --check
 	python -m pytest tests
 
-ci: install-deps test
+venv:
+	uv venv
+
+ci: install-deps venv test
