@@ -4,9 +4,10 @@ default:
 test:
 	uv run ruff check .
 	uv run ruff format --check
-	python -m pytest
+	uv run python -m pytest
 
 install-deps:
+	uv venv
 	uv pip install .[all]
 	rm -rf build *.egg-info
 
