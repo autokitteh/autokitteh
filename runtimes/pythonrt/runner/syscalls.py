@@ -45,7 +45,13 @@ class SysCalls:
         self.log = log
         self.mark_ak_no_activity()
 
-    def ak_start(self, loc: str, data: dict = None, memo: dict = None) -> str:
+    def ak_start(
+        self,
+        loc: str,
+        data: dict | None = None,
+        memo: dict | None = None,
+        project: str = "",
+    ) -> str:
         self.log.info("ak_start: %r", loc)
         data = {} if data is None else data
         memo = {} if memo is None else memo
@@ -65,6 +71,7 @@ class SysCalls:
             loc=loc,
             data=json_data.encode(),
             memo=json_memo.encode(),
+            project=project,
         )
         resp = call_grpc("start", self.worker.StartSession, req)
         return resp.session_id

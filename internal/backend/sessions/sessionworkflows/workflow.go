@@ -39,7 +39,7 @@ type sessionWorkflow struct {
 	ws *workflows
 
 	opts StartWorkflowOptions
-	data *sessiondata.Data
+	data sessiondata.Data
 
 	// All the members belows must be built deterministically by the workflow.
 	// They are not persisted in the database.
@@ -63,7 +63,7 @@ func runWorkflow(
 	wctx workflow.Context,
 	l *zap.Logger,
 	ws *workflows,
-	params *sessionWorkflowParams,
+	params sessionWorkflowParams,
 ) (prints []sdkservices.SessionPrint, rv sdktypes.Value, err error) {
 	w := &sessionWorkflow{
 		l:                         l,

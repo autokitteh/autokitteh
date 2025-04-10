@@ -53,9 +53,8 @@ func init() {
 	sessionCmd.AddCommand(watchCmd)
 }
 
-func sessions() sdkservices.Sessions {
-	return common.Client().Sessions()
-}
+func sessions() sdkservices.Sessions       { return common.Client().Sessions() }
+func deployments() sdkservices.Deployments { return common.Client().Deployments() }
 
 func acquireSessionID(arg string) (sdktypes.SessionID, error) {
 	sid, err := sdktypes.ParseSessionID(arg)
