@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 	"net/url"
+	"path/filepath"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkbuildfile"
@@ -108,26 +109,50 @@ func Build(
 
 		rtName := rtd.Name()
 
+		var (
+			rt   sdkservices.Runtime
+			data *sdkbuildfile.RuntimeData
+		)
+
 		cached := rtCache[rtName.String()]
 		if cached == nil {
-			rt, err := rts.New(ctx, rtName)
-			if err != nil {
+			if rt, err = rts.New(ctx, rtName); err != nil {
 				return nil, fmt.Errorf("new %q: %w", rtName, err)
 			}
 
-			cached = &rtCacheEntry{
-				runtime: rt,
-				data: &sdkbuildfile.RuntimeData{
-					Info: sdkbuildfile.RuntimeInfo{
-						Name: rt.Get().Name(),
-					},
+			data = &sdkbuildfile.RuntimeData{
+				Info: sdkbuildfile.RuntimeInfo{
+					Name: rt.Get().Name(),
 				},
+			}
+		} else {
+			rt = cached.runtime
+			data = cached.data
+		}
+
+		if cached != nil {
+			// we've already built using this runtime before.
+			if !rtd.IsFilewiseBuild() {
+				// ... we don't need to do it for each file.
+				continue
+			}
+		} else if !rtd.IsFilewiseBuild() {
+			fi, err := fs.Stat(srcFS, path)
+			if err != nil {
+				return nil, fmt.Errorf("stat %q: %w", path, err)
+			}
+
+			if !fi.IsDir() {
+				// Use the dirname, not the filename.
+				path = filepath.Dir(path)
 			}
 		}
 
-		if err := buildWithRuntime(ctx, cached.runtime, cached.data, srcFS, path, symbols); err != nil {
+		if err := buildWithRuntime(ctx, rt, data, srcFS, path, symbols); err != nil {
 			return nil, fmt.Errorf("build error for %q: %w", path, err)
 		}
+
+		cached = &rtCacheEntry{runtime: rt, data: data}
 
 		rtCache[rtName.String()] = cached
 
