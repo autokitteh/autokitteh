@@ -49,14 +49,21 @@ func HTTPInterceptor(next http.Handler) http.HandlerFunc {
 	}
 }
 
-func Init(l *zap.Logger, cfg *Config) {
+func Init(l *zap.Logger, cfg *Config) error {
 	rsc := resource.NewWithAttributes(
 		"https://opentelemetry.io/schemas/1.1.0",
 		semconv.ServiceNameKey.String(cfg.ServiceName),
 	)
 
-	setupMetrics(cfg, rsc)
-	setupTracing(cfg, rsc)
+	if err := setupMetrics(cfg, rsc); err != nil {
+		return fmt.Errorf("metrics: %w", err)
+	}
+
+	if err := setupTracing(cfg, rsc); err != nil {
+		return fmt.Errorf("tracing: %w", err)
+	}
+
+	return nil
 }
 
 func setupMetrics(cfg *Config, ra *resource.Resource) error {

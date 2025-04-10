@@ -51,7 +51,7 @@ func Open(cfg *Config, f func(*gorm.Config)) (*gorm.DB, error) {
 	}
 
 	if err := db.Use(otelgorm.NewPlugin()); err != nil {
-		panic(err)
+		return nil, fmt.Errorf("otelgorm plugin: %w", err)
 	}
 
 	return db, nil

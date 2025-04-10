@@ -21,7 +21,7 @@ func sessionSignalName(sid sdktypes.SessionID) string { return sid.String() }
 
 func (w *sessionWorkflow) signal(wctx workflow.Context) func(context.Context, sdktypes.RunID, sdktypes.SessionID, string, sdktypes.Value) error {
 	return func(ctx context.Context, _ sdktypes.RunID, sid sdktypes.SessionID, name string, v sdktypes.Value) error {
-		ctx, span := w.startCallbackSpan(ctx, "signal")
+		_, span := w.startCallbackSpan(ctx, "signal")
 		defer span.End()
 
 		span.SetAttributes(attribute.String("name", name))
@@ -49,7 +49,7 @@ func (w *sessionWorkflow) signal(wctx workflow.Context) func(context.Context, sd
 
 func (w *sessionWorkflow) nextSignal(wctx workflow.Context) func(context.Context, sdktypes.RunID, []string, time.Duration) (*sdkservices.RunSignal, error) {
 	return func(ctx context.Context, _ sdktypes.RunID, names []string, timeout time.Duration) (*sdkservices.RunSignal, error) {
-		ctx, span := w.startCallbackSpan(ctx, "next_signal")
+		_, span := w.startCallbackSpan(ctx, "next_signal")
 		defer span.End()
 
 		span.SetAttributes(attribute.StringSlice("names", names), attribute.Int64("timeout", int64(timeout)))

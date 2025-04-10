@@ -16,7 +16,7 @@ type namedMeter struct {
 }
 
 func (m *namedMeter) canonizeName(name string) string {
-	if !strings.HasPrefix(name, name) {
+	if !strings.HasPrefix(name, m.svcName) {
 		name = fmt.Sprintf("%s.%s", name, name)
 	}
 	return name

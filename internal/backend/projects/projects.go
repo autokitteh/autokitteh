@@ -31,6 +31,8 @@ type Projects struct {
 }
 
 func New(p Projects) sdkservices.Projects {
+	initMetrics()
+
 	return &p
 }
 

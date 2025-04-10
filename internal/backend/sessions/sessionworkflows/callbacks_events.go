@@ -15,7 +15,7 @@ import (
 
 func (w *sessionWorkflow) subscribe(wctx workflow.Context) func(context.Context, sdktypes.RunID, string, string) (string, error) {
 	return func(ctx context.Context, rid sdktypes.RunID, name, filter string) (string, error) {
-		ctx, span := w.startCallbackSpan(ctx, "subscribe")
+		_, span := w.startCallbackSpan(ctx, "subscribe")
 		defer span.End()
 
 		_, connection := kittehs.FindFirst(w.data.Connections, func(c sdktypes.Connection) bool {
@@ -50,7 +50,7 @@ func (w *sessionWorkflow) subscribe(wctx workflow.Context) func(context.Context,
 
 func (w *sessionWorkflow) unsubscribe(wctx workflow.Context) func(context.Context, sdktypes.RunID, string) error {
 	return func(ctx context.Context, rid sdktypes.RunID, signalID string) error {
-		ctx, span := w.startCallbackSpan(ctx, "unsubscribe")
+		_, span := w.startCallbackSpan(ctx, "unsubscribe")
 		defer span.End()
 
 		uuid, err := uuid.Parse(signalID)
@@ -79,7 +79,7 @@ return this event
 */
 func (w *sessionWorkflow) nextEvent(wctx workflow.Context) func(context.Context, sdktypes.RunID, []string, time.Duration) (sdktypes.Value, error) {
 	return func(ctx context.Context, rid sdktypes.RunID, signals []string, timeout time.Duration) (sdktypes.Value, error) {
-		ctx, span := w.startCallbackSpan(ctx, "next_event")
+		_, span := w.startCallbackSpan(ctx, "next_event")
 		defer span.End()
 
 		if len(signals) == 0 {

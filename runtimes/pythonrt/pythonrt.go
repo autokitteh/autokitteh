@@ -404,7 +404,7 @@ func (py *pySvc) call(ctx context.Context, val sdktypes.Value, args []sdktypes.V
 }
 
 func (py *pySvc) sendDone(ctx context.Context, err error) {
-	ctx, replySpan := telemetry.T().Start(ctx, "pythonrt.sendDone")
+	_, replySpan := telemetry.T().Start(ctx, "pythonrt.sendDone")
 	defer replySpan.End()
 
 	req := pbUserCode.DoneRequest{
@@ -674,7 +674,7 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 			val, err := cb.fn(ctx, py.cbs, py.runID)
 			fnSpan.End()
 
-			ctx, sendSpan := telemetry.T().Start(ctx, "pythonrt.Call.callbackResponse")
+			_, sendSpan := telemetry.T().Start(ctx, "pythonrt.Call.callbackResponse")
 			cb.ch <- callbackResponse{value: val, err: err}
 			sendSpan.End()
 

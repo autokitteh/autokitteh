@@ -19,7 +19,7 @@ func (w *sessionWorkflow) startCallbackSpan(ctx context.Context, name string) (c
 
 func (w *sessionWorkflow) start(wctx workflow.Context) func(context.Context, sdktypes.RunID, sdktypes.CodeLocation, map[string]sdktypes.Value, map[string]string) (sdktypes.SessionID, error) {
 	return func(ctx context.Context, rid sdktypes.RunID, loc sdktypes.CodeLocation, inputs map[string]sdktypes.Value, memo map[string]string) (sdktypes.SessionID, error) {
-		ctx, span := w.startCallbackSpan(ctx, "start")
+		_, span := w.startCallbackSpan(ctx, "start")
 		defer span.End()
 
 		span.SetAttributes(attribute.String("loc", loc.CanonicalString()))
@@ -55,7 +55,7 @@ func (w *sessionWorkflow) start(wctx workflow.Context) func(context.Context, sdk
 
 func (w *sessionWorkflow) isDeploymentActive(wctx workflow.Context) func(context.Context) (bool, error) {
 	return func(ctx context.Context) (bool, error) {
-		ctx, span := w.startCallbackSpan(ctx, "start")
+		_, span := w.startCallbackSpan(ctx, "start")
 		defer span.End()
 
 		if did := w.data.Session.DeploymentID(); did.IsValid() {
