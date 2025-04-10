@@ -34,7 +34,7 @@ def start(
     loc: str,
     data: dict | None = None,
     memo: dict | None = None,
-    project: str | None = None,
+    project: str = "",
 ) -> str:
     """Start a new session."""
     # Dummy implementation for local development.

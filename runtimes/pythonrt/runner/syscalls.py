@@ -50,7 +50,7 @@ class SysCalls:
         loc: str,
         data: dict | None = None,
         memo: dict | None = None,
-        project: str | None = None,
+        project: str = "",
     ) -> str:
         self.log.info("ak_start: %r", loc)
         data = {} if data is None else data
@@ -71,7 +71,7 @@ class SysCalls:
             loc=loc,
             data=json_data.encode(),
             memo=json_memo.encode(),
-            project=project or "",
+            project=project,
         )
         resp = call_grpc("start", self.worker.StartSession, req)
         return resp.session_id

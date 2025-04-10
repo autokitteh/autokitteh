@@ -73,7 +73,7 @@ var startCmd = common.StandardCommand(&cobra.Command{
 
 func init() {
 	// Command-specific flags.
-	startCmd.Flags().StringVarP(&deploymentID, "deployment-id", "d", "", "deployment ID, mutually exclusive with --build-id and --env")
+	startCmd.Flags().StringVarP(&deploymentID, "deployment-id", "d", "", "deployment ID, mutually exclusive with --build-id")
 	startCmd.Flags().StringVarP(&buildID, "build-id", "b", "", "build ID, mutually exclusive with --deployment-id")
 	startCmd.Flags().StringVarP(&project, "project", "o", "", "project name or ID, mutually exclusive with --deployment-id")
 	startCmd.MarkFlagsOneRequired("deployment-id", "project")
