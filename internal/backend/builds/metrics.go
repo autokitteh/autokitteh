@@ -8,6 +8,6 @@ import (
 
 var buildsCreatedCounter metric.Int64Counter
 
-func initMetrics(t *telemetry.Telemetry) {
-	buildsCreatedCounter, _ = t.NewCounter("builds.created", "Created builds counter")
+func initMetrics() {
+	buildsCreatedCounter, _ = telemetry.NewCounter("builds.created", "Created builds counter")
 }

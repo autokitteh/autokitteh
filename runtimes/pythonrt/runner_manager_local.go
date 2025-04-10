@@ -13,6 +13,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -85,6 +86,9 @@ func configureLocalRunnerManager(log *zap.Logger, cfg LocalRunnerManagerConfig) 
 }
 
 func (l *localRunnerManager) Start(ctx context.Context, sessionID sdktypes.SessionID, buildArtifacts []byte, vars map[string]string) (string, *RunnerClient, error) {
+	ctx, span := telemetry.T().Start(ctx, "localRunnerManager.Start")
+	defer span.End()
+
 	log := l.logger.With(zap.String("session_id", sessionID.String()))
 	r := &LocalPython{
 		log:           log,
@@ -93,10 +97,14 @@ func (l *localRunnerManager) Start(ctx context.Context, sessionID sdktypes.Sessi
 	}
 
 	if l.cfg.LazyLoadVEnv {
+		_, venvSpan := telemetry.T().Start(ctx, "localRunnerManager.ehnsureVEnv")
+
 		log.Info("ensuring venv lazy")
 		if err := ensureVEnv(log, l.pyExe); err != nil {
+			venvSpan.End()
 			return "", nil, fmt.Errorf("create venv: %w", err)
 		}
+		venvSpan.End()
 		l.pyExe = venvPy
 	}
 
@@ -110,13 +118,13 @@ func (l *localRunnerManager) Start(ctx context.Context, sessionID sdktypes.Sessi
 		log.Info("worker address inferred", zap.String("workerAddress", l.workerAddress))
 	}
 
-	if err := r.Start(l.pyExe, buildArtifacts, vars, l.workerAddress); err != nil {
+	if err := r.Start(ctx, l.pyExe, buildArtifacts, vars, l.workerAddress); err != nil {
 		return "", nil, err
 	}
 
 	runnerAddr := fmt.Sprintf("0.0.0.0:%d", r.port)
 	log.Debug("dialing runner", zap.String("addr", runnerAddr))
-	client, err := dialRunner(runnerAddr)
+	client, err := dialRunner(ctx, runnerAddr)
 	if err != nil {
 		if err := r.Close(); err != nil {
 			log.Warn("close runner", zap.Error(err))

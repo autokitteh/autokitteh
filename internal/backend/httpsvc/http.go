@@ -34,7 +34,7 @@ type svc struct {
 func (s *svc) Mux() *http.ServeMux { return s.mux }
 func (s *svc) Addr() string        { return s.addr }
 
-func New(lc fx.Lifecycle, z *zap.Logger, cfg *Config, authzCheckFunc authz.CheckFunc, extractors []RequestLogExtractor, telemetry *telemetry.Telemetry) (Svc, error) {
+func New(lc fx.Lifecycle, z *zap.Logger, cfg *Config, authzCheckFunc authz.CheckFunc, extractors []RequestLogExtractor) (Svc, error) {
 	rootMux := http.NewServeMux()
 
 	cors := cors.New(cors.Options{
@@ -46,10 +46,12 @@ func New(lc fx.Lifecycle, z *zap.Logger, cfg *Config, authzCheckFunc authz.Check
 
 	interceptedMux := http.NewServeMux()
 
-	interceptor, err := intercept(z, &cfg.Logger, extractors, interceptedMux, telemetry)
+	interceptor, err := intercept(z, &cfg.Logger, extractors, interceptedMux)
 	if err != nil {
 		return nil, fmt.Errorf("interceptor: %w", err)
 	}
+
+	interceptor = telemetry.HTTPInterceptor(interceptor)
 
 	rootMux.Handle("/", cors.Handler(interceptor))
 

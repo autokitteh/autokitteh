@@ -14,7 +14,10 @@ import (
 )
 
 func (w *sessionWorkflow) subscribe(wctx workflow.Context) func(context.Context, sdktypes.RunID, string, string) (string, error) {
-	return func(_ context.Context, rid sdktypes.RunID, name, filter string) (string, error) {
+	return func(ctx context.Context, rid sdktypes.RunID, name, filter string) (string, error) {
+		_, span := w.startCallbackSpan(ctx, "subscribe")
+		defer span.End()
+
 		_, connection := kittehs.FindFirst(w.data.Connections, func(c sdktypes.Connection) bool {
 			return c.Name().String() == name
 		})
@@ -47,6 +50,9 @@ func (w *sessionWorkflow) subscribe(wctx workflow.Context) func(context.Context,
 
 func (w *sessionWorkflow) unsubscribe(wctx workflow.Context) func(context.Context, sdktypes.RunID, string) error {
 	return func(ctx context.Context, rid sdktypes.RunID, signalID string) error {
+		_, span := w.startCallbackSpan(ctx, "unsubscribe")
+		defer span.End()
+
 		uuid, err := uuid.Parse(signalID)
 		if err != nil {
 			return err
@@ -72,7 +78,10 @@ Get the next event on this signal (has to exists since we got a signal on it)
 return this event
 */
 func (w *sessionWorkflow) nextEvent(wctx workflow.Context) func(context.Context, sdktypes.RunID, []string, time.Duration) (sdktypes.Value, error) {
-	return func(_ context.Context, rid sdktypes.RunID, signals []string, timeout time.Duration) (sdktypes.Value, error) {
+	return func(ctx context.Context, rid sdktypes.RunID, signals []string, timeout time.Duration) (sdktypes.Value, error) {
+		_, span := w.startCallbackSpan(ctx, "next_event")
+		defer span.End()
+
 		if len(signals) == 0 {
 			return sdktypes.Nothing, nil
 		}

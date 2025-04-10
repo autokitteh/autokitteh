@@ -14,7 +14,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
-	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/manifest"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -31,8 +30,9 @@ type Projects struct {
 	Integrations sdkservices.Integrations
 }
 
-func New(p Projects, telemetry *telemetry.Telemetry) sdkservices.Projects {
-	initMetrics(telemetry)
+func New(p Projects) sdkservices.Projects {
+	initMetrics()
+
 	return &p
 }
 

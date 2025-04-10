@@ -14,9 +14,11 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
 	pbModule "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/module/v1"
@@ -91,6 +93,9 @@ type pySvc struct {
 }
 
 func (py *pySvc) cleanup(ctx context.Context) {
+	ctx, span := telemetry.T().Start(ctx, "pythonrt.cleanup")
+	defer span.End()
+
 	if py.didCleanup {
 		return
 	}
@@ -110,7 +115,11 @@ func (py *pySvc) cleanup(ctx context.Context) {
 	}
 }
 
-func New(cfg *Config, l *zap.Logger, getLocalAddr func() string) (*sdkruntimes.Runtime, error) {
+func New(
+	cfg *Config,
+	l *zap.Logger,
+	getLocalAddr func() string,
+) (*sdkruntimes.Runtime, error) {
 	switch cfg.RunnerType {
 	case "docker":
 		if cfg.WorkerAddress == "" {
@@ -243,6 +252,9 @@ func (py *pySvc) Run(
 	values map[string]sdktypes.Value,
 	cbs *sdkservices.RunCallbacks,
 ) (sdkservices.Run, error) {
+	ctx, runSpan := telemetry.T().Start(ctx, "pythonrt.Run")
+	defer runSpan.End()
+
 	runnerOK := false
 	py.ctx = ctx
 	py.runID = runID
@@ -353,9 +365,17 @@ func pyLevelToZap(level string) zapcore.Level {
 }
 
 func (py *pySvc) call(ctx context.Context, val sdktypes.Value, args []sdktypes.Value, kw map[string]sdktypes.Value) {
+	ctx, span := telemetry.T().Start(ctx, "pythonrt.call")
+	defer span.End()
+
 	var req pbUserCode.ActivityReplyRequest
 
-	out, err := py.cbs.Call(py.ctx, py.runID, val, args, kw)
+	ctx, callSpan := telemetry.T().Start(ctx, "pythonrt.call.cbs.call")
+
+	out, err := py.cbs.Call(ctx, py.runID, val, args, kw)
+
+	callSpan.End()
+
 	switch {
 	case err != nil:
 		py.log.Info("activity reply error", zap.Error(err))
@@ -371,13 +391,22 @@ func (py *pySvc) call(ctx context.Context, val sdktypes.Value, args []sdktypes.V
 	ctx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
 
+	ctx, replySpan := telemetry.T().Start(ctx, "pythonrt.call.ActivityReply")
+
 	if _, err = py.runner.ActivityReply(ctx, &req); err != nil {
+		replySpan.End()
+
 		py.log.Error("activity reply error", zap.Error(err))
-		py.sendDone(err)
+		py.sendDone(ctx, err)
+	} else {
+		replySpan.End()
 	}
 }
 
-func (py *pySvc) sendDone(err error) {
+func (py *pySvc) sendDone(ctx context.Context, err error) {
+	_, replySpan := telemetry.T().Start(ctx, "pythonrt.sendDone")
+	defer replySpan.End()
+
 	req := pbUserCode.DoneRequest{
 		RunnerId: py.runnerID,
 		Error:    err.Error(),
@@ -386,6 +415,9 @@ func (py *pySvc) sendDone(err error) {
 }
 
 func (py *pySvc) startRequest(ctx context.Context, funcName string, eventData []byte) error {
+	ctx, span := telemetry.T().Start(ctx, "pythonrt.startRequest")
+	defer span.End()
+
 	req := pbUserCode.StartRequest{
 		EntryPoint: fmt.Sprintf("%s:%s", py.fileName, funcName),
 		Event: &pbUserCode.Event{
@@ -447,8 +479,12 @@ func (py *pySvc) eventData(kwargs map[string]sdktypes.Value) ([]byte, error) {
 
 // drainPrints drains the print channel at the end of a run.
 func (py *pySvc) drainPrints(ctx context.Context) {
-	ctx, cancel := context.WithTimeout(ctx, time.Second)
+	ctx, span := telemetry.T().Start(ctx, "pythonrt.drainPrints")
+	defer span.End()
+
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Millisecond)
 	defer cancel()
+
 	// flush the rest of the prints and logs.
 	for {
 		select {
@@ -489,6 +525,9 @@ func (py *pySvc) tracebackToLocation(traceback []*pbUserCode.Frame) []sdktypes.C
 // Call handles a function call from autokitteh.
 // First used of Call start a workflow, later invocations are activity calls.
 func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+	ctx, span := telemetry.T().Start(ctx, "pythonrt.Call")
+	defer span.End()
+
 	fn := v.GetFunction()
 	if !fn.IsValid() {
 		py.log.Error("call - invalid function", zap.Any("function", v))
@@ -497,6 +536,8 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 
 	fnName := fn.Name().String()
 	py.log.Info("call", zap.String("func", fnName))
+
+	span.SetAttributes(attribute.String("function", fnName), attribute.Bool("first_call", py.firstCall))
 
 	var runnerHealthChan chan error
 	if py.firstCall {
@@ -522,15 +563,20 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 			py.cleanup(context.Background())
 		}()
 	} else {
+		ctx, span := telemetry.T().Start(ctx, "pythonrt.Call.Execute")
+
 		// If we're here, it's an activity call
 		req := pbUserCode.ExecuteRequest{Data: fn.Data()}
 		resp, err := py.runner.Execute(ctx, &req)
 		switch {
 		case err != nil:
+			span.End()
 			return sdktypes.InvalidValue, err
 		case resp.Error != "":
 			py.log.Warn("activity error", zap.String("error", resp.Error))
 		}
+
+		span.End()
 	}
 
 	defer py.drainPrints(ctx)
@@ -538,17 +584,32 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 	// Wait for client Done or ActivityReplyRequest message
 	// This *can't* run in an different goroutine since callbacks to temporal need to be in the same goroutine.
 	for {
+		ctx, selSpan := telemetry.T().Start(ctx, "pythonrt.Call.select")
+
 		select {
 		case r := <-py.channels.log:
+			selSpan.End()
+			span.AddEvent("log")
+
 			py.log.Log(pyLevelToZap(r.level), r.message)
 			close(r.doneChannel)
 		case p := <-py.channels.print:
+			selSpan.End()
+			span.AddEvent("print")
+
+			ctx, span := telemetry.T().Start(ctx, "pythonrt.Call.print")
+
 			py.log.Info("print", zap.String("message", p.message))
 			if err := py.cbs.Print(ctx, py.runID, p.message); err != nil {
 				py.log.Error("print error", zap.Error(err))
 			}
 			close(p.doneChannel)
+
+			span.End()
 		case v := <-py.channels.execute:
+			selSpan.End()
+			span.AddEvent("execute")
+
 			py.log.Info("execute")
 
 			/* TODO: Execute error
@@ -571,6 +632,9 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 			v.Result.Custom.ExecutorId = py.xid.String()
 			return sdktypes.ValueFromProto(v.Result)
 		case r := <-py.channels.request:
+			selSpan.End()
+			span.AddEvent("request")
+
 			var (
 				fnName = "pyFunc"
 				args   []sdktypes.Value
@@ -596,16 +660,35 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 			if err != nil {
 				return sdktypes.InvalidValue, err
 			}
+
 			py.call(ctx, fn, args, kw)
+
 		case cb := <-py.channels.callback:
+			selSpan.End()
+			span.AddEvent("callback")
+
 			py.log.Info("syscall", zap.String("name", cb.name))
+
+			ctx, fnSpan := telemetry.T().Start(ctx, "pythonrt.Call.syscall")
+			span.SetAttributes(attribute.String("name", cb.name))
 			val, err := cb.fn(ctx, py.cbs, py.runID)
+			fnSpan.End()
+
+			_, sendSpan := telemetry.T().Start(ctx, "pythonrt.Call.callbackResponse")
 			cb.ch <- callbackResponse{value: val, err: err}
+			sendSpan.End()
+
 		case healthErr := <-runnerHealthChan:
+			selSpan.End()
+			span.AddEvent("health")
+
 			if healthErr != nil {
 				return sdktypes.InvalidValue, sdkerrors.NewRetryableErrorf("runner health: %w", healthErr)
 			}
 		case done := <-py.channels.done:
+			selSpan.End()
+			span.AddEvent("done")
+
 			py.log.Info("done signal")
 
 			if done.Error != "" {
@@ -626,6 +709,10 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 			done.Result.Custom.ExecutorId = py.xid.String()
 			return sdktypes.ValueFromProto(done.Result)
 		case <-ctx.Done():
+			selSpan.End()
+
+			span.AddEvent("ctx_done")
+
 			return sdktypes.InvalidValue, fmt.Errorf("context expired - %w", ctx.Err())
 		}
 	}
@@ -646,7 +733,7 @@ func (py *pySvc) safelyGo(name string, fn func()) {
 				)
 
 				err := fmt.Errorf("%s: %s\n%s", name, err, cs)
-				py.sendDone(err)
+				py.sendDone(context.Background(), err)
 			}
 		}()
 

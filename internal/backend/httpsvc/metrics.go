@@ -21,7 +21,7 @@ type apiMetrics struct {
 var metrics sync.Map
 
 // obtains service API metrics, creating them if not already present
-func acquireServiceAPIMetrics(serviceAPI string, t *telemetry.Telemetry) (*apiMetrics, error) {
+func acquireServiceAPIMetrics(serviceAPI string) (*apiMetrics, error) {
 	if m, ok := metrics.Load(serviceAPI); ok {
 		return m.(*apiMetrics), nil
 	}
@@ -29,11 +29,11 @@ func acquireServiceAPIMetrics(serviceAPI string, t *telemetry.Telemetry) (*apiMe
 	cntName := "api." + serviceAPI
 	histName := fmt.Sprintf("api.%s.duration", serviceAPI)
 
-	counter, err := t.NewCounter(cntName, fmt.Sprintf("GRPC request counter (%s)", cntName))
+	counter, err := telemetry.NewCounter(cntName, fmt.Sprintf("GRPC request counter (%s)", cntName))
 	if err != nil {
 		return nil, err
 	}
-	histogram, err := t.NewHistogram(histName, fmt.Sprintf("GRPC request duration (%s)", histName))
+	histogram, err := telemetry.NewHistogram(histName, fmt.Sprintf("GRPC request duration (%s)", histName))
 	if err != nil {
 		return nil, err
 	}
@@ -76,13 +76,13 @@ func getMetricNameFromPath(path string) string {
 	return fmt.Sprintf("%s.%s.%s", service, ver, strings.ToLower(method)) // e.g. "projects.v1.create"
 }
 
-func updateMetric(ctx context.Context, t *telemetry.Telemetry, path string, statusCode int, duration time.Duration) {
+func updateMetric(ctx context.Context, path string, statusCode int, duration time.Duration) {
 	name := getMetricNameFromPath(path)
 	if name == "" {
 		return
 	}
 
-	m, err := acquireServiceAPIMetrics(name, t)
+	m, err := acquireServiceAPIMetrics(name)
 	if err != nil {
 		return
 	}

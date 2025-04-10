@@ -17,6 +17,7 @@ import (
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/contrib/opentelemetry"
 	"go.temporal.io/sdk/converter"
+	"go.temporal.io/sdk/interceptor"
 	"go.temporal.io/sdk/testsuite"
 	"go.uber.org/zap"
 	zapadapter "logur.dev/adapter/zap"
@@ -24,6 +25,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/health/healthreporter"
+	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
 )
 
@@ -81,6 +83,19 @@ func New(cfg *Config, l *zap.Logger) (Client, error) {
 		return nil, fmt.Errorf("new data converter: %w", err)
 	}
 
+	var interceptors []interceptor.ClientInterceptor
+	tracingInterceptor, err := opentelemetry.NewTracingInterceptor(
+		opentelemetry.TracerOptions{
+			Tracer:         telemetry.T(),
+			SpanContextKey: spanContextKey,
+		},
+	)
+	if err != nil {
+		l.Warn("Unable to create interceptor", zap.Error(err))
+	} else {
+		interceptors = append(interceptors, tracingInterceptor)
+	}
+
 	impl := &impl{
 		l:    l,
 		cfg:  cfg,
@@ -92,7 +107,8 @@ func New(cfg *Config, l *zap.Logger) (Client, error) {
 			ConnectionOptions: client.ConnectionOptions{
 				TLS: tlsConfig,
 			},
-			Identity: fixtures.ProcessID(),
+			Identity:     fixtures.ProcessID(),
+			Interceptors: interceptors,
 			MetricsHandler: opentelemetry.NewMetricsHandler(
 				opentelemetry.MetricsHandlerOptions{
 					InitialAttributes: attribute.NewSet(

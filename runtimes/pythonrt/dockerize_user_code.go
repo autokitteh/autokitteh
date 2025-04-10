@@ -41,7 +41,7 @@ func prepareUserCode(code []byte, gzipped bool) (string, error) {
 		return "", err
 	}
 
-	if err := copyFS(pycode, runnerDir); err != nil {
+	if _, err := copyFS(pycode, runnerDir); err != nil {
 		return "", err
 	}
 
@@ -87,7 +87,7 @@ func prepareUserCode(code []byte, gzipped bool) (string, error) {
 		return "", err
 	}
 
-	if err := copyFS(pysdk, tmpDir); err != nil {
+	if _, err := copyFS(pysdk, tmpDir); err != nil {
 		return "", err
 	}
 
