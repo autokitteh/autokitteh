@@ -55,8 +55,8 @@ func buildResources() (map[string][]byte, error) {
 	return resources, nil
 }
 
-func getManifest(resources map[string][]byte, manifestFile string) (*manifest.Manifest, error) {
-	data := resources[manifestFile]
+func getManifest(resources map[string][]byte, manifestPath string) (*manifest.Manifest, error) {
+	data := resources[manifestPath]
 	if data == nil {
 		return nil, nil
 	}
@@ -125,7 +125,7 @@ func runLint(cmd *cobra.Command, args []string) error {
 	} else if cmd.Flags().Lookup("nice_json").Changed {
 		printViolation = printViolationJSONPretty
 	}
-	manifestFile := path.Base(lintOpts.manifestPath)
+	manifestPath := path.Base(lintOpts.manifestPath)
 
 	resources, err := buildResources()
 	if err != nil {
@@ -135,7 +135,7 @@ func runLint(cmd *cobra.Command, args []string) error {
 	if len(resources) > maxFiles {
 		v := projectsv1.CheckViolation{
 			Location: &sdktypes.CodeLocationPB{
-				Path: manifestFile,
+				Path: manifestPath,
 			},
 			Level:   projectsv1.CheckViolation_LEVEL_WARNING,
 			Message: "outdated manifest",
@@ -144,7 +144,7 @@ func runLint(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("too many files (%d > %d)", len(resources), maxFiles)
 	}
 
-	m, err := getManifest(resources, manifestFile)
+	m, err := getManifest(resources, manifestPath)
 	if err != nil {
 		return err
 	}
@@ -168,7 +168,7 @@ func runLint(cmd *cobra.Command, args []string) error {
 			if len(actions) > 0 {
 				v := projectsv1.CheckViolation{
 					Location: &sdktypes.CodeLocationPB{
-						Path: manifestFile,
+						Path: manifestPath,
 					},
 					Level:   projectsv1.CheckViolation_LEVEL_WARNING,
 					Message: "outdated manifest",
@@ -178,7 +178,7 @@ func runLint(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	vs, err := projects().Lint(ctx, projectID, resources, manifestFile)
+	vs, err := projects().Lint(ctx, projectID, resources, manifestPath)
 	if err != nil {
 		return err
 	}
