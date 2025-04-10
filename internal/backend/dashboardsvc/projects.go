@@ -108,7 +108,7 @@ func (s *svc) project(w http.ResponseWriter, r *http.Request) {
 		Connections:   cs,
 		Triggers:      ts,
 		ID:            p.ID().String(),
-		ResourcesHash: kittehs.Must1(kittehs.SHA256Hash(rscs)),
+		ResourcesHash: kittehs.Must1(kittehs.SHA256HashMap(rscs)),
 		Resources:     template.HTML(txtar.Format(&a)),
 	}); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

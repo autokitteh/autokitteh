@@ -2,10 +2,12 @@ package kittehs
 
 import (
 	"bytes"
+	"cmp"
 	"crypto/sha256"
 	"encoding/gob"
 	"encoding/hex"
 	"fmt"
+	"slices"
 )
 
 // Hash computes the SHA256 hash of the given input.
@@ -18,4 +20,24 @@ func SHA256Hash(what any) (string, error) {
 
 	sha := sha256.Sum256(b.Bytes())
 	return hex.EncodeToString(sha[:]), nil
+}
+
+// Use this to get a stable hash of a map, as a map is not ordered.
+func SHA256HashMap[K cmp.Ordered, V any](m map[K]V) (string, error) {
+	type I struct {
+		K K
+		V V
+	}
+
+	var l []I
+
+	for k, v := range m {
+		l = append(l, I{K: k, V: v})
+	}
+
+	l = slices.SortedStableFunc(slices.Values(l), func(a, b I) int {
+		return cmp.Compare(a.K, b.K)
+	})
+
+	return SHA256Hash(l)
 }

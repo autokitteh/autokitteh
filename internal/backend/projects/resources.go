@@ -23,7 +23,7 @@ func (p Projects) openProjectResourcesFS(ctx context.Context, projectID sdktypes
 		return nil, "", nil
 	}
 
-	hash := kittehs.Must1(kittehs.SHA256Hash(files))
+	hash := kittehs.Must1(kittehs.SHA256HashMap(files))
 
 	memfs := memfs.New()
 
