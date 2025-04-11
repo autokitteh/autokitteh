@@ -7,8 +7,9 @@ resp code == 202
 ak session watch ses_0000000000000000000000000b --end-state RUNNING --wait-created
 return code == 0
 
-ak session watch ses_0000000000000000000000000b -r "ready"
+ak session prints ses_0000000000000000000000000b -t -r "ready"
 return code == 0
+output contains ready
 
 http post /webhooks/00000000000000000000000005 a
 resp code == 202
@@ -19,8 +20,9 @@ resp code == 202
 http post /webhooks/00000000000000000000000007 c
 resp code == 202
 
-ak session watch ses_0000000000000000000000000b -r "3 None"
+ak session prints ses_0000000000000000000000000b -t -r "3 None"
 return code == 0
+output contains 3 None
 
 http post /webhooks/00000000000000000000000005 d
 resp code == 202
@@ -28,9 +30,8 @@ resp code == 202
 ak session watch ses_0000000000000000000000000b --end-state COMPLETED
 return code == 0
 
-ak session prints --no-timestamps -p myproject
+ak session prints ses_0000000000000000000000000b --no-timestamps
 output equals file prints.txt
-
 
 -- prints.txt --
 ready
