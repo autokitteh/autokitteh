@@ -55,7 +55,3 @@ def on_cron_trigger():
   },
   "schedule": "*/1 * * * * * *"
 }
-
--- test-config.yaml --
-exclusive: true
-

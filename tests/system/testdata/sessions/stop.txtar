@@ -46,7 +46,11 @@ return code == 0
 
 ak session log $sid --no-timestamps -j
 return code == 0
-output equals file test.txt
+output equals file test-log.txt
+
+ak session prints $sid --no-timestamps
+return code == 0
+output equals file test-prints.txt
 
 -- main.star --
 def main():
@@ -79,11 +83,13 @@ def test():
   mytest.freeze(10, True)
   print("finished")
 
--- test.txt --
+-- test-log.txt --
 {"state":{"created":{}}}
 {"state":{"running":{"run_id":"run_0000000000000000000000000a"}}}
 {"state":{"running":{"run_id":"run_0000000000000000000000000a","call":{"function":{"executor_id":"run_0000000000000000000000000a","name":"test","desc":{},"data":"dGVzdCMx"}}}}}
-{"print":{"text":"started","value":{"string":{"v":"started"}}}}
 {"call_spec":{"function":{"function":{"executor_id":"int_3kth00testaf9d33c5697341f0","name":"freeze","desc":{"input":[{"name":"duration","optional":true},{"name":"allow_cancel","optional":true}]},"data":"Y29uXzAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA2"}},"args":[{"integer":{"v":"10"}},{"boolean":{"v":true}}],"seq":1}}
 {"stop_request":{}}
 {"state":{"stopped":{"reason":"test"}}}
+
+-- test-prints.txt --
+started
