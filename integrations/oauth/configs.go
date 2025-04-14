@@ -671,16 +671,20 @@ func setupAuth0(vs sdktypes.Vars, cfg *oauthConfig) {
 
 // TODO(INT-349): Support GHES in private OAuth mode too.
 func privatizeGitHub(vs sdktypes.Vars, cfg *oauthConfig) {
-	defaultAppName := os.Getenv("GITHUB_APP_NAME")
-	if defaultAppName == "" {
-		defaultAppName = defaultGitHubAppName
+	enterpriseURL := vs.GetValueByString("enterprise_url")
+	if enterpriseURL == "" {
+		enterpriseURL = defaultGitHubBaseURL
 	}
-	defaultAppName = fmt.Sprintf("/%s/", defaultAppName)
 
-	authURL := cfg.Config.Endpoint.AuthURL
-	// TODO(INT-353): Make GitHub var symbols non-internal, and reuse here.
-	privateAppName := fmt.Sprintf("/%s/", vs.GetValueByString("app_name"))
-	cfg.Config.Endpoint.AuthURL = strings.Replace(authURL, defaultAppName, privateAppName, 1)
+	appName := os.Getenv("GITHUB_APP_NAME")
+	if appName == "" {
+		appName = defaultGitHubAppName
+	}
+
+	cfg.Config.Endpoint.AuthURL = fmt.Sprintf("%s/apps/%s/installations/new", enterpriseURL, appName)
+	cfg.Config.Endpoint.TokenURL = enterpriseURL + "/login/oauth/access_token"
+	cfg.Config.Endpoint.DeviceAuthURL = enterpriseURL + "/login/device/code"
+	cfg.Config.Endpoint.AuthStyle = oauth2.AuthStyleInHeader
 }
 
 func privatizeMicrosoft(vs sdktypes.Vars, c *oauthConfig) {
