@@ -16,7 +16,7 @@ import (
 	"github.com/google/go-github/v60/github"
 
 	"go.autokitteh.dev/autokitteh/integrations"
-	"go.autokitteh.dev/autokitteh/integrations/github/internal/vars"
+	"go.autokitteh.dev/autokitteh/integrations/github/vars"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -140,13 +140,12 @@ func getPrivateKey(privateKey string) []byte {
 }
 
 func enterpriseURL(vs sdktypes.Vars) (string, error) {
-	at := vs.Get(vars.AuthType)
-	var u string
-	if at.IsValid() && at.Value() == integrations.OAuthPrivate {
-		u = vs.Get(vars.EnterpriseURL).Value()
-	} else {
-		u = os.Getenv(enterpriseURLEnvVar)
+	u := os.Getenv(enterpriseURLEnvVar)
+
+	if at := vs.GetValue(vars.AuthType); at == integrations.OAuthPrivate {
+		u = vs.GetValue(vars.EnterpriseURL)
 	}
+
 	if u == "" {
 		return u, nil
 	}

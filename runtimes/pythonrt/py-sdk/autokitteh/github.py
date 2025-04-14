@@ -26,8 +26,11 @@ def github_client(connection: str, **kwargs) -> Github:
         ConnectionInitError: AutoKitteh connection was not initialized yet.
     """
     check_connection_name(connection)
+
     # Optional: GitHub Enterprise Server
-    base_url = os.getenv(f"{connection}__enterprise_url") or os.getenv("GITHUB_ENTERPRISE_URL")
+    base_url = os.getenv(f"{connection}__enterprise_url") or os.getenv(
+        "GITHUB_ENTERPRISE_URL"
+    )
 
     if base_url:
         kwargs["base_url"] = urljoin(base_url, "api/v3")

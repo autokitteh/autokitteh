@@ -24,6 +24,7 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/auth0"
 	"go.autokitteh.dev/autokitteh/integrations/common"
+	"go.autokitteh.dev/autokitteh/integrations/github/vars"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -669,22 +670,26 @@ func setupAuth0(vs sdktypes.Vars, cfg *oauthConfig) {
 	cfg.Opts["audience"] = fmt.Sprintf("https://%s/api/v2/", domain)
 }
 
-// TODO(INT-349): Support GHES in private OAuth mode too.
 func privatizeGitHub(vs sdktypes.Vars, cfg *oauthConfig) {
-	enterpriseURL := vs.GetValueByString("enterprise_url")
+	enterpriseURL := vs.GetValue(vars.EnterpriseURL)
+	if enterpriseURL == "" {
+		enterpriseURL = os.Getenv("GITHUB_ENTERPRISE_URL")
+	}
 	if enterpriseURL == "" {
 		enterpriseURL = defaultGitHubBaseURL
 	}
-
+	// TODO(INT-399): Add app name field in private OAuth connection.
 	appName := os.Getenv("GITHUB_APP_NAME")
 	if appName == "" {
 		appName = defaultGitHubAppName
 	}
 
 	cfg.Config.Endpoint.AuthURL = fmt.Sprintf("%s/apps/%s/installations/new", enterpriseURL, appName)
-	cfg.Config.Endpoint.TokenURL = enterpriseURL + "/login/oauth/access_token"
-	cfg.Config.Endpoint.DeviceAuthURL = enterpriseURL + "/login/device/code"
-	cfg.Config.Endpoint.AuthStyle = oauth2.AuthStyleInHeader
+	tokenURL, _ := url.JoinPath(enterpriseURL, "/login/oauth/access_token")
+	deviceURL, _ := url.JoinPath(enterpriseURL, "/login/device/code")
+
+	cfg.Config.Endpoint.TokenURL = tokenURL
+	cfg.Config.Endpoint.DeviceAuthURL = deviceURL
 }
 
 func privatizeMicrosoft(vs sdktypes.Vars, c *oauthConfig) {
