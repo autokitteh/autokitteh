@@ -13,4 +13,5 @@ var desc = kittehs.Must1(sdktypes.StrictRuntimeFromProto(&sdktypes.RuntimePB{
 	// TODO: Not sure if kitteh.star or star.kitteh.
 	//       Maybe just kitteh?
 	FileExtensions: runtime.Extensions,
+	FilewiseBuild:  true,
 }))

@@ -1,6 +1,7 @@
 package temporalclient
 
 import (
+	"cmp"
 	"fmt"
 	"time"
 
@@ -9,7 +10,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )
 
 var defaultWorkerConfig = WorkerConfig{
@@ -29,7 +29,7 @@ type WorkerConfig struct {
 // other overrides self.
 func (wc WorkerConfig) With(other WorkerConfig) WorkerConfig {
 	return WorkerConfig{
-		WorkflowDeadlockTimeout: kittehs.FirstNonZero(other.WorkflowDeadlockTimeout, wc.WorkflowDeadlockTimeout),
+		WorkflowDeadlockTimeout: cmp.Or(other.WorkflowDeadlockTimeout, wc.WorkflowDeadlockTimeout),
 	}
 }
 
