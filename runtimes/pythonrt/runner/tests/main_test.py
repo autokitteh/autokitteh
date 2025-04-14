@@ -6,6 +6,7 @@ Need much more:
 - Bad input tests
 """
 
+import builtins
 import json
 import pickle
 import sys
@@ -25,22 +26,28 @@ import pb.autokitteh.values.v1.values_pb2 as pb_values
 import values
 
 
+def new_test_runner(code_dir, worker=None, server=None):
+    runner = main.Runner(
+        id="runner1",
+        worker=worker,
+        code_dir=code_dir,
+        server=server,
+    )
+    runner._inactivty_timer.cancel()
+    return runner
+
+
 def test_help():
     cmd = [sys.executable, "main.py", "-h"]
     out = run(cmd)
     assert out.returncode == 0
 
 
-def test_start():
+def test_start(monkeypatch):
     mod_name = "program"
     clear_module_cache(mod_name)
 
-    runner = main.Runner(
-        id="runner1",
-        worker=MagicMock(),
-        code_dir=workflows.simple,
-        server=None,
-    )
+    runner = new_test_runner(workflows.simple, worker=MagicMock())
 
     event_data = json.dumps(
         {
@@ -52,6 +59,10 @@ def test_start():
     entry_point = f"{mod_name}.py:on_event"
     req = runner_pb.StartRequest(entry_point=entry_point, event=event)
     context = MagicMock()
+
+    # Restore print after this test
+    monkeypatch.setattr(builtins, "print", print)
+
     resp = runner.Start(req, context)
 
     assert resp.error == ""
@@ -60,17 +71,6 @@ def test_start():
 
 def sub(a, b):
     return a - b
-
-
-def new_test_runner(code_dir):
-    runner = main.Runner(
-        id="runner1",
-        worker=None,
-        code_dir=code_dir,
-        server=None,
-    )
-    runner._inactivty_timer.cancel()
-    return runner
 
 
 def test_execute():
@@ -159,7 +159,8 @@ def test_result_error():
     except ZeroDivisionError as e:
         err = e
 
-    text = main.Runner(None, None, None, None).result_error(err)
+    runner = new_test_runner(workflows.simple)
+    text = runner.result_error(err)
 
     assert msg in text
     for name in ("fn_a", "fn_b", "fn_c"):
