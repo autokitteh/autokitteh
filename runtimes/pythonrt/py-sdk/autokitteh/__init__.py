@@ -1,12 +1,11 @@
 """AutoKitteh Python SDK."""
 
-from .attr_dict import AttrDict
-from .decorators import activity, inhibit_activities
-from .event import Event
-from .events import next_event, subscribe, unsubscribe, start
-from .signals import Signal, next_signal, signal
 from . import errors
-
+from .activities import activity, inhibit_activities, register_no_activity
+from .attr_dict import AttrDict
+from .event import Event
+from .events import next_event, start, subscribe, unsubscribe
+from .signals import Signal, next_signal, signal
 
 __all__ = [
     "AttrDict",
@@ -17,6 +16,7 @@ __all__ = [
     "inhibit_activities",
     "next_event",
     "next_signal",
+    "register_no_activity",
     "signal",
     "start",
     "subscribe",
