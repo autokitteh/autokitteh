@@ -33,3 +33,4 @@ func StrictRuntimeFromProto(m *RuntimePB) (Runtime, error) { return Strict(Runti
 
 func (r Runtime) Name() Symbol             { return kittehs.Must1(ParseSymbol(r.read().Name)) }
 func (r Runtime) FileExtensions() []string { return r.read().FileExtensions }
+func (r Runtime) IsFilewiseBuild() bool    { return r.read().FilewiseBuild }

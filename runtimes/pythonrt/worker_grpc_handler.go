@@ -281,8 +281,13 @@ func (s *workerGRPCHandler) StartSession(ctx context.Context, req *userCode.Star
 		return nil, status.Errorf(codes.InvalidArgument, "can't parse code location: %v", err)
 	}
 
+	project, err := sdktypes.ParseSymbol(req.Project)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "can't parse project: %v", err)
+	}
+
 	fn := func(ctx context.Context, cbs *sdkservices.RunCallbacks, rid sdktypes.RunID) (any, error) {
-		return cbs.Start(ctx, rid, loc, vdata, memo)
+		return cbs.Start(ctx, rid, project, loc, vdata, memo)
 	}
 
 	resp, err := s.callback(ctx, req.RunnerId, "start", fn)

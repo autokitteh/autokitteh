@@ -1,11 +1,10 @@
 package temporalclient
 
 import (
+	"cmp"
 	"time"
 
 	"go.temporal.io/sdk/workflow"
-
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )
 
 var defaultActivityConfig = ActivityConfig{
@@ -24,10 +23,10 @@ type ActivityConfig struct {
 // other overrides self.
 func (ac ActivityConfig) With(other ActivityConfig) ActivityConfig {
 	return ActivityConfig{
-		StartToCloseTimeout:    kittehs.FirstNonZero(other.StartToCloseTimeout, ac.StartToCloseTimeout),
-		ScheduleToCloseTimeout: kittehs.FirstNonZero(other.ScheduleToCloseTimeout, ac.ScheduleToCloseTimeout),
-		HeartbeatTimeout:       kittehs.FirstNonZero(other.HeartbeatTimeout, ac.HeartbeatTimeout, defaultActivityConfig.HeartbeatTimeout),
-		ScheduleToStartTimeout: kittehs.FirstNonZero(other.ScheduleToStartTimeout, ac.ScheduleToStartTimeout),
+		StartToCloseTimeout:    cmp.Or(other.StartToCloseTimeout, ac.StartToCloseTimeout),
+		ScheduleToCloseTimeout: cmp.Or(other.ScheduleToCloseTimeout, ac.ScheduleToCloseTimeout),
+		HeartbeatTimeout:       cmp.Or(other.HeartbeatTimeout, ac.HeartbeatTimeout, defaultActivityConfig.HeartbeatTimeout),
+		ScheduleToStartTimeout: cmp.Or(other.ScheduleToStartTimeout, ac.ScheduleToStartTimeout),
 	}
 }
 

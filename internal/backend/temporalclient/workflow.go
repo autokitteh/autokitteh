@@ -1,6 +1,7 @@
 package temporalclient
 
 import (
+	"cmp"
 	"time"
 
 	enumspb "go.temporal.io/api/enums/v1"
@@ -23,7 +24,7 @@ type WorkflowConfig struct {
 // other overrides self.
 func (wc WorkflowConfig) With(other WorkflowConfig) WorkflowConfig {
 	return WorkflowConfig{
-		WorkflowTaskTimeout: kittehs.FirstNonZero(other.WorkflowTaskTimeout, wc.WorkflowTaskTimeout),
+		WorkflowTaskTimeout: cmp.Or(other.WorkflowTaskTimeout, wc.WorkflowTaskTimeout),
 	}
 }
 
