@@ -24,6 +24,7 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/auth0"
 	"go.autokitteh.dev/autokitteh/integrations/common"
+	"go.autokitteh.dev/autokitteh/integrations/github/vars"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -669,18 +670,29 @@ func setupAuth0(vs sdktypes.Vars, cfg *oauthConfig) {
 	cfg.Opts["audience"] = fmt.Sprintf("https://%s/api/v2/", domain)
 }
 
-// TODO(INT-349): Support GHES in private OAuth mode too.
 func privatizeGitHub(vs sdktypes.Vars, cfg *oauthConfig) {
-	defaultAppName := os.Getenv("GITHUB_APP_NAME")
-	if defaultAppName == "" {
-		defaultAppName = defaultGitHubAppName
+	enterpriseURL := vs.GetValue(vars.EnterpriseURL)
+	if enterpriseURL == "" {
+		enterpriseURL = os.Getenv("GITHUB_ENTERPRISE_URL")
 	}
-	defaultAppName = fmt.Sprintf("/%s/", defaultAppName)
+	if enterpriseURL == "" {
+		enterpriseURL = defaultGitHubBaseURL
+	}
 
-	authURL := cfg.Config.Endpoint.AuthURL
-	// TODO(INT-353): Make GitHub var symbols non-internal, and reuse here.
-	privateAppName := fmt.Sprintf("/%s/", vs.GetValueByString("app_name"))
-	cfg.Config.Endpoint.AuthURL = strings.Replace(authURL, defaultAppName, privateAppName, 1)
+	appName := vs.GetValue(vars.AppName)
+	if appName == "" {
+		appName = os.Getenv("GITHUB_APP_NAME")
+	}
+	if appName == "" {
+		appName = defaultGitHubAppName
+	}
+
+	cfg.Config.Endpoint.AuthURL = fmt.Sprintf("%s/apps/%s/installations/new", enterpriseURL, appName)
+	tokenURL, _ := url.JoinPath(enterpriseURL, "/login/oauth/access_token")
+	deviceURL, _ := url.JoinPath(enterpriseURL, "/login/device/code")
+
+	cfg.Config.Endpoint.TokenURL = tokenURL
+	cfg.Config.Endpoint.DeviceAuthURL = deviceURL
 }
 
 func privatizeMicrosoft(vs sdktypes.Vars, c *oauthConfig) {
