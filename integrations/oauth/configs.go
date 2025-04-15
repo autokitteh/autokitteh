@@ -678,8 +678,11 @@ func privatizeGitHub(vs sdktypes.Vars, cfg *oauthConfig) {
 	if enterpriseURL == "" {
 		enterpriseURL = defaultGitHubBaseURL
 	}
-	// TODO(INT-399): Add app name field in private OAuth connection.
-	appName := os.Getenv("GITHUB_APP_NAME")
+
+	appName := vs.GetValue(vars.AppName)
+	if appName == "" {
+		appName = os.Getenv("GITHUB_APP_NAME")
+	}
 	if appName == "" {
 		appName = defaultGitHubAppName
 	}
