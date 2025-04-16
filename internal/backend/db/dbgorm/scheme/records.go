@@ -622,3 +622,40 @@ func ParseOrgMember(r OrgMember) (sdktypes.OrgMember, error) {
 		sdktypes.NewIDFromUUID[sdktypes.UserID](r.UserID),
 	).WithStatus(s).WithRoles(roles...), nil
 }
+
+type JobType string
+
+const (
+	JobTypeRun   = "run"
+	JobTypeBuild = "build"
+)
+
+type JobStatus string
+
+const (
+	// All jobs start as pending
+	JobStatusPending = "pending"
+
+	// Acquired means a worker polled the job but didn't execute workflow yet ( or didn't ack it started processing it)
+	// this is to handle a worker poll the job but fail to start the workflow
+	JobStatusAcquired = "acquired"
+
+	// job processed correctly
+	JobStatusDone = "done"
+	// this means we failed to process the job
+	// it doesn't mean the workflow failed or succeeded
+	JobStatusFailed = "failed"
+)
+
+type Job struct {
+	JobID               uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
+	Type                JobType   `gorm:"index:idx_job_type_status,priority:1"`
+	Status              JobStatus `gorm:"index:idx_job_type_status,priority:2"`
+	Data                datatypes.JSON
+	RetryCount          uint8      `gorm:"default:0"`
+	CreatedAt           time.Time  `gorm:"default:CURRENT_TIMESTAMP;index"`
+	UpdatedAt           time.Time  `gorm:"default:CURRENT_TIMESTAMP"`
+	StartProcessingTime *time.Time // Not sure this is really needed
+	EndProcessingTime   *time.Time // Not sure this is really needed
+	// We can consider adding error reason for failed jobs
+}

@@ -10,13 +10,16 @@ import (
 )
 
 type Config struct {
-	EnableWorker bool                    `koanf:"enable_worker"`
-	Workflows    sessionworkflows.Config `koanf:"workflows"`
-	Calls        sessioncalls.Config     `koanf:"calls"`
+	EnableWorker           bool                    `koanf:"enable_worker"`
+	Workflows              sessionworkflows.Config `koanf:"workflows"`
+	Calls                  sessioncalls.Config     `koanf:"calls"`
+	PollJobsIntervalMS     int64                   `koanf:"poll_jobs_interval_ms"`
+	MaxConcurrentWorkflows int                     `koanf:"max_concurrent_workflows"`
 }
 
 var defaultConfig = Config{
-	EnableWorker: true,
+	EnableWorker:       true,
+	PollJobsIntervalMS: 100,
 	Workflows: sessionworkflows.Config{
 		Worker: temporalclient.WorkerConfig{
 			WorkflowDeadlockTimeout: time.Second * 10, // TODO: bring down to 1s.
