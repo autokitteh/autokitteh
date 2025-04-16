@@ -1,5 +1,7 @@
 {
-  "exclude": ["dist"],
+  "exclude": [
+    "dist"
+  ],
   "compilerOptions": {
     "target": "es2016",
     "module": "commonjs",
@@ -14,7 +16,12 @@
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "skipLibCheck": true,
-    "noImplicitReturns": false
+    "noImplicitReturns": false,
+    "paths": {
+      "autokitteh/*": [
+        "../../nodejs/nodejs-sdk/autokitteh/*"
+      ]
+    }
   },
   "include": [
     "src/**/*.ts"

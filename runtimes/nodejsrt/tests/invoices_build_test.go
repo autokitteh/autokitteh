@@ -40,7 +40,7 @@ func TestInvoicesBuild(t *testing.T) {
 	}
 
 	// Test setup - start with simple-test project first
-	testDir := filepath.Join("..", "test_data", "simple-test")
+	testDir := filepath.Join("..", "examples", "simple-test")
 	buildDir := filepath.Join(t.TempDir(), "build")
 	runnerDir := filepath.Join(t.TempDir(), "runner")
 

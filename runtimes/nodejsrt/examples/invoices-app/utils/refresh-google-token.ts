@@ -4,15 +4,14 @@
  * Usage: `npx ts-node --transpile-only refresh-google-token.ts`
  */
 
-import fs from "fs";
+import * as fs from "fs";
 import {authenticate} from "@google-cloud/local-auth";
-import config from "./src/config";
 
 const SCOPES = ['https://www.googleapis.com/auth/gmail.readonly'];
-const CREDENTIALS_PATH = config.gmail.credentialsPath;
-const TOKEN_PATH = config.gmail.tokenPath;
+const CREDENTIALS_PATH = process.env.GMAIL_CREDENTIALS_PATH || '';
+const TOKEN_PATH = process.env.GMAIL_TOKEN_PATH || '';
 
-(async () => {
+export async function refreshToken() {
     try {
         const authClient = await authenticate({keyfilePath: CREDENTIALS_PATH, scopes: SCOPES});
         const credentials = authClient.credentials;
@@ -23,4 +22,8 @@ const TOKEN_PATH = config.gmail.tokenPath;
     } catch (error) {
         console.error('Error during authentication:', error);
     }
-})();
+}
+
+if (require.main === module) {
+    refreshToken();
+}

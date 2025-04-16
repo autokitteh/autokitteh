@@ -21,7 +21,6 @@ export interface InvoiceItem {
  */
 class InvoiceStorage {
     private invoices: Map<string, InvoiceData>;
-    private processedEmails: Set<string> = new Set();
 
     constructor() {
         this.invoices = new Map<string, InvoiceData>();
@@ -40,22 +39,12 @@ class InvoiceStorage {
         // Handle undefined dates by using nullish coalescing
         const invoiceDate = invoice.date ?? 0;
         const existingDate = existing?.date ?? 0;
-        
+
         if (!existing || invoiceDate > existingDate) {
             this.invoices.set(invoice.invoiceId, invoice);
         }
     }
 
-    markProcessed(emailId: string) {
-        this.processedEmails.add(emailId);
-    }
-    isProcessed(emailId: string) {
-        return this.processedEmails.has(emailId);
-    }
-
-    filterProcessed(emailIds: string[]): string[] {
-        return emailIds.filter(emailId => !this.isProcessed(emailId));
-    }
 
     /**
      * Retrieves the invoice object associated with the given invoice ID.

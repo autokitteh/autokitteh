@@ -4,9 +4,23 @@ project:
   name: invoices-app
   connections:
   triggers:
-    - name: get
+    - name: process-invoices
       event_type: get
       data:
-        path: test
-      call: main.js:total
+        path: process
+      call: main.js:main
+      webhook: {}
+
+    - name: get-total
+      event_type: get
+      data:
+        path: total
+      call: main_ak.js:total
+      webhook: {}
+
+    - name: terminate
+      event_type: post
+      data:
+        path: terminate
+      call: main_ak.js:terminate
       webhook: {}

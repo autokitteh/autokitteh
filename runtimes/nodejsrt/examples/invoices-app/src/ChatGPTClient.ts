@@ -1,5 +1,4 @@
-import config from "./config";
-import { openaiClient } from "./autokitteh/openai";
+import {openaiClient} from "autokitteh/openai";
 import {InvoiceData} from "./InvoiceStorage";
 import fs from 'fs';
 
@@ -15,15 +14,16 @@ class ChatGPTClient {
     private readonly connectionName: string;
     private openai: any;
     private assistant: any;
+    private model: string;
 
-    constructor(promptTemplate: string, connectionName?: string) {
+    constructor(promptTemplate: string, connectionName?: string, model?: string) {
         this.promptTemplate = promptTemplate;
         this.connectionName = connectionName || 'openai';
+        this.model = model || 'gpt-4o';
     }
 
     async init(): Promise<ChatGPTClient> {
         console.log('Initializing OpenAI client');
-        // Initialize the OpenAI client using autokitteh's openaiClient
         this.openai = openaiClient(this.connectionName);
         this.assistant = await this.createAssistant();
         console.log('OpenAI client initialized successfully');
@@ -73,7 +73,7 @@ class ChatGPTClient {
         const assistant = await this.openai.beta.assistants.create({
             name: "Invoice Analyst Assistant",
             instructions: "You are an expert financial analyst. Use you knowledge base to answer questions about audited financial statements.",
-            model: "gpt-4o",
+            model: this.model,
             tools: [{type: "file_search"}],
         });
         console.log("Assistant created:", assistant.id);

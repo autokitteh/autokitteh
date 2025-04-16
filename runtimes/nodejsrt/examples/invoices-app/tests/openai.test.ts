@@ -5,7 +5,7 @@ import path from "path";
 test("ChatGPTClient - analyzeAttachment", async () => {
     const client = await new ChatGPTClient(
         config.chatGPT.promptTemplate,
-        config.chatGPT.apiKey
+        config.chatGPT.connectionName
     ).init();
 
     const filePath = path.join(__dirname, "./invoices/inv-1.pdf");

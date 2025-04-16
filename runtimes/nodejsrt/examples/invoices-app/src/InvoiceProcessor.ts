@@ -1,4 +1,4 @@
-import { promises as fs } from 'fs';
+import {promises as fs} from 'fs';
 import GmailClient from "./GmailClient";
 import {EmailMessage} from "./GmailClient";
 import ChatGPTClient from "./ChatGPTClient";
@@ -41,11 +41,11 @@ export class InvoiceProcessor {
             }
             const invoiceData = await this.chatGPTClient.analyzeAttachment(attachment.filePath);
             if (invoiceData && this.validateInvoice(invoiceData)) {
-                this.storage.addOrUpdateInvoice({ ...invoiceData, date: email.date });
+                this.storage.addOrUpdateInvoice({...invoiceData, date: email.date});
             } else {
                 console.log(`Invalid invoice detected in attachment ${attachment.fileName}. Ignored.`);
             }
-            await fs.rm(attachment.filePath, { force: true });
+            await fs.rm(attachment.filePath, {force: true});
         }
     }
 
@@ -53,20 +53,17 @@ export class InvoiceProcessor {
      * Processes new emails by fetching them from the Gmail client, retrieving their full message data,
      * and passing the data to a processing function.
      */
-    async processNewEmails(): Promise<void> {
-        let emails = (await this.gmailClient.fetchNewEmails())?.map(email => email.id);
-        emails = this.storage.filterProcessed(emails)
-
+    async processNewEmails(startTimestamp:number): Promise<void> {
+        const emails = (await this.gmailClient.fetchNewEmails(startTimestamp))?.map(email => email.id);
         await Promise.all(
             (emails || []).map(async (email) => {
-            if (email) {
+                if (email) {
                     const emailData = await this.gmailClient.fetchMessage(email);
                     if (emailData) {
                         await this.processEmail(emailData);
-            }
-                    this.storage.markProcessed(email)
+                    }
                     console.log(`Processed email: ${email}`);
-        }
+                }
             })
         );
     }

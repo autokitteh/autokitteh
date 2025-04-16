@@ -1,9 +1,8 @@
-import { gmailClient } from './autokitteh/google';
-import config from './config';
 import fs from 'fs';
 import path from 'path';
 import * as os from "node:os";
-import { gmail_v1 } from 'googleapis';
+import {gmail_v1} from 'googleapis';
+import {gmailClient} from 'autokitteh/google';
 
 export interface EmailAttachment {
     id: string;
@@ -23,19 +22,16 @@ export interface EmailMessage {
  * to fetch emails with PDF attachments.
  */
 class GmailClient {
-    private lastProcessedTime: number;
     private connectionName: string;
-    private subjectRegex: RegExp;
+    private subjectRegex?: RegExp;
     private client: any;
 
     constructor(
         connectionName?: string,
-        startTimestamp: number = 0,
-        subjectRegex: string = config.gmail.subjectFilter
+        subjectRegex?: string
     ) {
         this.connectionName = connectionName || 'gmail';
-        this.lastProcessedTime = startTimestamp;
-        this.subjectRegex = new RegExp(subjectRegex, "i");
+        this.subjectRegex = subjectRegex ? new RegExp(subjectRegex, "i") : undefined;
     }
 
     async init(): Promise<GmailClient> {
@@ -60,22 +56,15 @@ class GmailClient {
         const subject = subjectHeader?.value || "";
 
         // Apply regex filtering on the subject if set
-        return this.subjectRegex.test(subject);
+        if (this.subjectRegex)
+            return this.subjectRegex.test(subject);
+        else
+            return true;
     }
 
     getMessageDate(message: gmail_v1.Schema$Message): number {
-        let date = parseInt(message.internalDate || "0", 10);
-        return date;
-        // const dateHeader = message.payload?.headers?.find(
-        //     (header) => header.name === "Date"
-        // );
-        // return new Date(dateHeader?.value || "").getTime();
-    }
-    updateLastProcessedTime(message: gmail_v1.Schema$Message) {
-        const date = this.getMessageDate(message);
-        console.log('Message date:', date);
-        this.lastProcessedTime = Math.max(this.lastProcessedTime, date);
-        console.log(`Last processed time: ${this.lastProcessedTime}`);
+        return parseInt(message.internalDate || "0", 10);
+
     }
 
     /**
@@ -83,16 +72,15 @@ class GmailClient {
      *
      * @return A promise that resolves to an array of email messages with their attachments.
      */
-    async fetchNewEmails(): Promise<EmailMessage[]> {
+    async fetchNewEmails(startTimestamp: number): Promise<EmailMessage[]> {
 
-        // Create query to find emails with attachments after the lastProcessedTime
-        const query = [
-            "in:inbox",
-            "has:attachment",
-            ...(this.lastProcessedTime ? [`after:${5+ Math.floor(this.lastProcessedTime / 1000)}`] : []),
-        ].join(" ");
+        // Create query to find emails with attachments after the startTimestamp
+        let query = ["in:inbox", "has:attachment"]
+        if (startTimestamp){
+            query.push(`after:${Math.floor(Date.now() / 1000)}`)
+        }
 
-        console.log(`Fetching emails with query: ${query}`);
+        console.log(`Fetching emails with query: ${query.join(" ")}`);
 
         // List messages matching the query
         const response = await this.client.users.messages.list({
@@ -105,19 +93,6 @@ class GmailClient {
         return response.data.messages || [];
     }
 
-    /**
-     * Fetches an email message by its ID, retrieves relevant attachments,
-     * and returns the message details and a list of extracted attachments.
-     *
-     * @param msgId - The ID of the email message to be retrieved.
-     * @return Resolves with an object containing:
-     *     - id: The ID of the email message.
-     *     - date: The date of the email message as a Unix timestamp.
-     *     - attachments: A list of objects representing attachments. Each attachment object contains:
-     *         - id: The ID of the attachment.
-     *         - filePath: The temporary file path of the downloaded attachment.
-     *         - fileName: The filename of the attachment.
-     */
     async fetchMessage(msgId: string): Promise<EmailMessage | undefined> {
         const {data: message} = await this.client.users.messages.get({
             userId: "me",
@@ -125,9 +100,7 @@ class GmailClient {
             format: "full",
         });
 
-
         if (!message || !(await this.isRelevant(message))) {
-            this.updateLastProcessedTime(message);
             return undefined;
         }
 
@@ -135,31 +108,28 @@ class GmailClient {
         const attachments: EmailAttachment[] = [];
         const parts = message.payload?.parts || [];
 
-            for (const part of parts) {
+        for (const part of parts) {
             if (part.filename && part.filename.endsWith('.pdf') && part.body?.attachmentId) {
                 const attachId = part.body.attachmentId;
                 const {data: attachmentData} = await this.client.users.messages.attachments.get({
                     userId: "me",
                     messageId: msgId,
                     id: attachId,
-                    });
+                });
 
                 // write to temp file TODO in-memory
                 const filePath = path.join(os.tmpdir(), part.filename);
                 fs.writeFileSync(filePath, attachmentData.data, "base64");
 
-                    attachments.push({
+                attachments.push({
                     id: attachId,
                     filePath,
                     fileName: part.filename,
-                    });
-                }
-                }
-
-        this.updateLastProcessedTime(message);
+                });
+            }
+        }
         const date = this.getMessageDate(message);
-
-        return {id: msgId,  date, attachments};
+        return {id: msgId, date, attachments};
     }
 }
 

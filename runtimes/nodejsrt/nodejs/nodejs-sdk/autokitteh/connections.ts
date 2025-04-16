@@ -2,11 +2,9 @@
  * AutoKitteh connection-related utilities.
  */
 
-import { ConnectionInitError, OAuthRefreshError } from './errors';
-
 /**
  * Validates an AutoKitteh connection name.
- * 
+ *
  * @param connection - The connection name to validate
  * @throws Error if the connection name is invalid
  */
@@ -23,7 +21,7 @@ export const connectionUtils = {
   /**
    * Generates a JWT with the given payload.
    * This is a mock function that will be overridden by the AutoKitteh runner.
-   * 
+   *
    * @param payload - The JWT payload
    * @param connection - The connection name
    * @param algorithm - The signing algorithm
@@ -37,7 +35,7 @@ export const connectionUtils = {
   /**
    * Refreshes an OAuth token for a connection.
    * This is a mock function that will be overridden by the AutoKitteh runner.
-   * 
+   *
    * @param integration - The integration name
    * @param connection - The connection name
    * @returns A tuple containing the new access token and expiry date
@@ -46,4 +44,4 @@ export const connectionUtils = {
     console.warn('!!!!!!!!!! SDK\'s refreshOAuth() not overridden !!!!!!!!!!');
     return ['DUMMY TOKEN', new Date()];
   }
-}; 
+};

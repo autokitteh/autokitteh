@@ -72,9 +72,9 @@ describe('Google Integration Tests', () => {
             });
 
             const client = gmailClient(testConnection);
-            await expect(client.users.messages.list({})).rejects.toThrow('Gmail API not yet implemented');
-            await expect(client.users.messages.get({})).rejects.toThrow('Gmail API not yet implemented');
-            await expect(client.users.messages.send({})).rejects.toThrow('Gmail API not yet implemented');
+            await expect(client.users.messages.list({})).rejects.toThrow('Gmail API - Error listing messages');
+            await expect(client.users.messages.get({})).rejects.toThrow('Gmail API - Error getting message');
+            await expect(client.users.messages.send({})).rejects.toThrow('Gmail API - Error sending message');
         });
 
     });

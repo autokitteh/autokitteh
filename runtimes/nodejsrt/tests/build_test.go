@@ -116,14 +116,14 @@ func TestBuild(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Setup test
-			if err := tt.setupFunc(); err != nil {
-				t.Fatalf("setup failed: %v", err)
-			}
+			//if err := tt.setupFunc(); err != nil {
+			//	t.Fatalf("setup failed: %v", err)
+			//}
 
 			// Run build
 			artifact, err := svc.(interface {
 				Build(context.Context, fs.FS, string, []sdktypes.Symbol) (sdktypes.BuildArtifact, error)
-			}).Build(context.Background(), os.DirFS(buildDir), "", nil)
+			}).Build(context.Background(), os.DirFS(testDir), "", nil)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Build() error = %v, wantErr %v", err, tt.wantErr)

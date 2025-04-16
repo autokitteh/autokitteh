@@ -1,63 +1,90 @@
-import config from './config';
+import * as dotenv from 'dotenv';
+
+dotenv.config();
+import fs from "fs";
+import path from "path";
+import process from "node:process";
+import * as autokitteh from 'autokitteh';
 import GmailClient from './GmailClient';
 import ChatGPTClient from './ChatGPTClient';
 import InvoiceStorage from './InvoiceStorage';
 import InvoiceProcessor from './InvoiceProcessor';
-import startServer from './server';
+
+
+// Execution parameters
+const sleepIntervalSec = Number(process.env.SLEEP_INTERVAL_SEC) || 60;
+
+// Gmail parameters
+const subjectFilter = process.env.SUBJECT_FILTER || '.*invoice.*';
+const gmailConnectionName = process.env.GMAIL_CONNECTION_NAME || 'gmail';
+
+// chatGPT parameters
+const chatConnectionName = process.env.OPENAI_CONNECTION_NAME || 'openai';
+const promptTemplate = fs.readFileSync(path.join(__dirname, 'chatgpt_prompt.txt'), 'utf8');
+const gptModel = process.env.GPTMODEL || 'gpt-4o';
+
+// Global storage
+const storage = new InvoiceStorage();
 
 /**
- * The main entry point for the application. This function initializes necessary components
- * such as storage, email fetcher, and AI processing client, then starts the server.
- * It continuously checks for new emails, processes them, and waits for a configured interval
- * before repeating the process.
- *
- * @return {Promise<void>} A promise that resolves when the main process completes.
- *                         Typically, this does not resolve as the function contains an infinite loop.
+ * Main entry point - processes emails for a specific month and waits for new ones
+ * @param event Event with yearMonth parameter (YYYY-MM format)
+ * @returns Promise that resolves when the month ends
  */
-async function main(): Promise<void> {
-    const storage = new InvoiceStorage();
-    
-    // Initialize clients with connection names from config
-    const gmailClient = await new GmailClient(config.gmail.connectionName).init();
-    const chatGPTClient = await new ChatGPTClient(
-        config.chatGPT.promptTemplate,
-        config.chatGPT.connectionName
-    ).init();
-    
-    const processor = new InvoiceProcessor(gmailClient, chatGPTClient, storage);
+async function on_event(event: any = {}): Promise<any> {
+    const year = parseInt(event.year, 10) || new Date().getFullYear();
+    const month = parseInt(event.month) || new Date().getMonth() + 1;
+    const startTime = new Date(year, month - 1, 1, 0, 0, 0, 0).getTime();
+    const endTime = new Date(year, month, 1, 0, 0, 0, 0).getTime();
 
-    startServer(storage, config.server.port);
+    console.log(`Processing invoices for ${year}-${month}`);
 
-    while (true) {
-        console.log("Checking for new emails...");
-        try {
-            await processor.processNewEmails();
-            console.log("Processing complete");
-        } catch (error) {
-            console.error("Error processing email:", error);
+    // Subscribe to Gmail events
+    const filter = `event_type == 'mailbox_change' && data.subject.matches('${subjectFilter}')`;
+    const subscriptionId = await autokitteh.subscribe(gmailConnectionName, filter);
+    console.log(`Subscribed to Gmail events with ID: ${subscriptionId}`);
+
+    // Wait and process new emails until the end of month
+    while (Date.now() < endTime) {
+        await processAndPrintTotal(startTime);
+        const event = await autokitteh.nextEvent(subscriptionId, {timeout: {seconds: sleepIntervalSec}});
+        if (event) {
+            console.log("New email received:", event.data?.subject);
+            await processAndPrintTotal(startTime);
         }
-        console.log(`Waiting ${config.sleepIntervalSec} seconds...`);
-        await new Promise(resolve => setTimeout(resolve, config.sleepIntervalSec * 1000));
     }
+
+    // Cleanup
+    console.log(`Unsubscribing from Gmail events with ID: ${subscriptionId}...`);
+    await autokitteh.unsubscribe(subscriptionId);
+
+    // Return final state
+    return {
+        status: "completed",
+        total: storage.getTotalAmount(),
+        invoiceCount: storage.getInvoices().length
+    };
 }
 
-async function total(event: any): Promise<number> {
-    const storage = new InvoiceStorage();
-    
-    // Initialize clients with connection names from config
-    const gmailClient = await new GmailClient(config.gmail.connectionName).init();
-    const chatGPTClient = await new ChatGPTClient(
-        config.chatGPT.promptTemplate,
-        config.chatGPT.connectionName
-    ).init();
-    
+/**
+ * Process new emails and print the total
+ */
+async function processAndPrintTotal(startTimestamp: number): Promise<number> {
+
+    // Initialize Gmail client
+    const gmailClient = await new GmailClient(gmailConnectionName).init();
+
+    // Initialize OpenAI client
+    const chatGPTClient = await new ChatGPTClient(promptTemplate, chatConnectionName, gptModel).init();
+
+    // Initialize InvoiceProcessor
     const processor = new InvoiceProcessor(gmailClient, chatGPTClient, storage);
-    await processor.processNewEmails();
-    return storage.getTotalAmount();
+
+    // Process new emails and print total amount
+    await processor.processNewEmails(startTimestamp);
+    const total = storage.getTotalAmount();
+    console.log(`Total invoice amount: ${total}`);
+
+    return total;
 }
 
-main().catch((error: unknown) => {
-    console.error("Fatal error:", error);
-});
-
-// export default main;

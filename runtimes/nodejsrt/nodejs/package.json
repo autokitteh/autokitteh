@@ -25,6 +25,9 @@
     "js-yaml": "^4.1.0",
     "nock": "^13.5.4",
     "ts-jest": "^29.1.2",
-    "typescript-eslint": "^8.28.0"
+    "typescript-eslint": "^8.28.0",
+    "googleapis": "^129.0.0",
+    "google-auth-library": "^9.6.0",
+    "openai": "^4.28.0"
   }
 }
