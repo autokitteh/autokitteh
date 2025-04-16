@@ -13,7 +13,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations"
-	"go.autokitteh.dev/autokitteh/integrations/github/internal/vars"
+	"go.autokitteh.dev/autokitteh/integrations/github/vars"
 	"go.autokitteh.dev/autokitteh/integrations/oauth"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -113,7 +113,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	gh, err := NewClientFromGitHubAppID(aid, vs.GetValue(vars.PrivateKey))
+	gh, err := NewClientFromGitHubAppID(aid, vs)
 	if err != nil {
 		l.Warn("failed to initialize GitHub app client", zap.Error(err))
 		c.AbortBadRequest("failed to initialize GitHub app client")

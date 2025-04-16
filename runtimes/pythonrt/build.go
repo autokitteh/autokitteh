@@ -37,13 +37,6 @@ func isBuildFile(entry fs.DirEntry) bool {
 func (py *pySvc) Build(ctx context.Context, fsys fs.FS, path string, values []sdktypes.Symbol) (sdktypes.BuildArtifact, error) {
 	py.log.Info("build Python module", zap.String("path", path))
 
-	if path != "" {
-		var err error
-		if fsys, err = fs.Sub(fsys, path); err != nil {
-			return sdktypes.InvalidBuildArtifact, fmt.Errorf("sub(%q): %w", path, err)
-		}
-	}
-
 	ffs, err := kittehs.NewFilterFS(fsys, isBuildFile)
 	if err != nil {
 		return sdktypes.InvalidBuildArtifact, err

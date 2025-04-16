@@ -35,12 +35,7 @@ def test_start():
     mod_name = "program"
     clear_module_cache(mod_name)
 
-    runner = main.Runner(
-        id="runner1",
-        worker=MagicMock(),
-        code_dir=workflows.simple,
-        server=None,
-    )
+    runner = new_test_runner(workflows.simple, MagicMock())
 
     event_data = json.dumps(
         {
@@ -62,10 +57,10 @@ def sub(a, b):
     return a - b
 
 
-def new_test_runner(code_dir):
+def new_test_runner(code_dir, worker=None):
     runner = main.Runner(
         id="runner1",
-        worker=None,
+        worker=worker,
         code_dir=code_dir,
         server=None,
     )
@@ -159,7 +154,7 @@ def test_result_error():
     except ZeroDivisionError as e:
         err = e
 
-    text = main.Runner(None, None, None, None).result_error(err)
+    text = new_test_runner(workflows.simple).result_error(err)
 
     assert msg in text
     for name in ("fn_a", "fn_b", "fn_c"):
