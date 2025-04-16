@@ -90,9 +90,9 @@ def fix_http_body(inputs):
             pass
 
 
-def abort_with_exception(context, status, err, pickle_help=False):
+def abort_with_exception(context, status, err, show_pickle_help=False):
     io = StringIO()
-    if pickle_help:
+    if show_pickle_help:
         print(pickle_help, file=io)
     for line in format_exception(err):
         io.write(line)
@@ -373,7 +373,7 @@ class Runner(pb.runner_rpc.RunnerService):
         except Exception as err:
             log.exception(f"can't decode data: pickle: {err}")
             abort_with_exception(
-                context, grpc.StatusCode.INTERNAL, err, pickle_help=True
+                context, grpc.StatusCode.INTERNAL, err, show_pickle_help=True
             )
 
         if not isinstance(result, Result):
