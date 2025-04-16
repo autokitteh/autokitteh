@@ -8,7 +8,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/common"
-	"go.autokitteh.dev/autokitteh/integrations/github/internal/vars"
+	"go.autokitteh.dev/autokitteh/integrations/github/vars"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -58,7 +58,7 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 		}
 
 		switch at.Value() {
-		case integrations.OAuth, integrations.OAuthDefault:
+		case integrations.OAuth, integrations.OAuthDefault, integrations.OAuthPrivate:
 			if vs.Get(vars.InstallID).IsValid() {
 				return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using GitHub app"), nil
 			}

@@ -69,6 +69,6 @@ func TestBuild(t *testing.T) {
 	_, err := Build(context.Background(), rts, mfs, nil, nil)
 	if assert.NoError(t, err) {
 		assert.Equal(t, []string{"a.a", "b.a"}, created["a"].paths)
-		assert.Equal(t, []string{"."}, created["b"].paths)
+		assert.Equal(t, []string{"c.b", "d.b"}, created["b"].paths)
 	}
 }

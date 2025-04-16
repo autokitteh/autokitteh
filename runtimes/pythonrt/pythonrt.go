@@ -447,7 +447,7 @@ func (py *pySvc) eventData(kwargs map[string]sdktypes.Value) ([]byte, error) {
 
 // drainPrints drains the print channel at the end of a run.
 func (py *pySvc) drainPrints(ctx context.Context) {
-	ctx, cancel := context.WithTimeout(ctx, time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Millisecond)
 	defer cancel()
 	// flush the rest of the prints and logs.
 	for {
