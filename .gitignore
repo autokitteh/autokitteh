@@ -92,22 +92,22 @@ __pycache__/
 *.so
 
 # Distribution / packaging
+*.egg
+*.egg-info/
 .Python
+.eggs/
+.installed.cfg
+.venv
 build/
 develop-eggs/
 dist/
 downloads/
 eggs/
-.eggs/
 lib/
 lib64/
 parts/
 sdist/
+share/python-wheels/
+uv.lock
 var/
 wheels/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-# MANIFEST (disabled because it mistakenly affects "manifest*.*" too)
-.venv

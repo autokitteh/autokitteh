@@ -1,0 +1,25 @@
+start
+GET
+end
+
+-- main.py:main --
+import autokitteh
+from random import randint, randrange
+from urllib.request import Request
+
+autokitteh.register_no_activity([randint, Request.get_method])
+
+def main(_):
+	print('start')
+
+	randint(1, 10)
+	randrange(1, 10)
+
+	r = Request('https://autokitteh.com')
+	print(r.get_method())
+
+	print('end')
+
+-- calls.txt --
+randrange
+Request
