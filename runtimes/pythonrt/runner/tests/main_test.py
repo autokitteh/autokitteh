@@ -33,7 +33,7 @@ def new_test_runner(code_dir, worker=None, server=None):
         code_dir=code_dir,
         server=server,
     )
-    runner._inactivty_timer.cancel()
+    runner._inactivity_timer.cancel()
     return runner
 
 

@@ -182,10 +182,10 @@ class Runner(pb.runner_rpc.RunnerService):
         self.activity_call = None
         self._orig_print = print
         self._start_called = False
-        self._inactivty_timer = Timer(
+        self._inactivity_timer = Timer(
             start_timeout, self.stop_if_start_not_called, args=(start_timeout,)
         )
-        self._inactivty_timer.start()
+        self._inactivity_timer.start()
 
     def result_error(self, err):
         io = StringIO()
@@ -258,7 +258,7 @@ class Runner(pb.runner_rpc.RunnerService):
             log.error("already called start before")
             return pb.runner.StartResponse(error="start already called")
 
-        self._inactivty_timer.cancel()
+        self._inactivity_timer.cancel()
 
         self._start_called = True
         log.info("start request: %r", request.entry_point)
