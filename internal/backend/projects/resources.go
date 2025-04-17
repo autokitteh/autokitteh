@@ -23,7 +23,10 @@ func (p Projects) openProjectResourcesFS(ctx context.Context, projectID sdktypes
 		return nil, "", nil
 	}
 
-	hash := kittehs.Must1(kittehs.SHA256HashMap(files))
+	hash, err := kittehs.SHA256HashMap(files)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to hash resources: %w", err)
+	}
 
 	memfs := memfs.New()
 

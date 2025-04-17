@@ -148,7 +148,7 @@ func (ps *Projects) Build(ctx context.Context, projectID sdktypes.ProjectID) (sd
 		nil,
 		map[string]string{
 			"resources_hash": hash,
-			"timestamp":      time.Now().Format(time.RFC3339),
+			"timestamp":      time.Now().UTC().Format(time.RFC3339),
 		},
 	)
 	if err != nil {
