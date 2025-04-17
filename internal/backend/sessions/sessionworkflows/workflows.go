@@ -41,6 +41,7 @@ type Workflows interface {
 	StartChildWorkflow(wctx workflow.Context, data sessiondata.Data) (workflow.ChildWorkflowFuture, error)
 	GetWorkflowLog(ctx context.Context, filter sdkservices.SessionLogRecordsFilter) (*sdkservices.GetLogResults, error)
 	StopWorkflow(ctx context.Context, sessionID sdktypes.SessionID, reason string, force bool, cancelTimeout time.Duration) error
+	NumberOfActiveWorkflows() int
 }
 
 type sessionWorkflowParams struct {
@@ -55,7 +56,11 @@ type workflows struct {
 	svcs     *sessionsvcs.Svcs
 	sessions sdkservices.Sessions
 	calls    sessioncalls.Calls
+
+	activeWorkflowsIds map[string]bool
 }
+
+// NumberOfActiveWorkflows implements Workflows.
 
 func workflowID(sessionID sdktypes.SessionID) string { return sessionID.String() }
 
@@ -67,7 +72,7 @@ func New(
 	calls sessioncalls.Calls,
 ) Workflows {
 	initMetrics()
-	return &workflows{l: l, cfg: cfg, sessions: sessions, calls: calls, svcs: svcs}
+	return &workflows{l: l, cfg: cfg, sessions: sessions, calls: calls, svcs: svcs, activeWorkflowsIds: make(map[string]bool, 200)}
 }
 
 func (ws *workflows) StartWorkers(ctx context.Context) error {
@@ -452,4 +457,8 @@ func (ws *workflows) StopWorkflow(ctx context.Context, sessionID sdktypes.Sessio
 func (ws *workflows) updateSessionState(wctx workflow.Context, sessionID sdktypes.SessionID, state sdktypes.SessionState) error {
 	ws.l.Sugar().With("session_id", sessionID, "state", state.Type()).Infof("updating session state to %v", state.Type())
 	return workflow.ExecuteActivity(wctx, updateSessionStateActivityName, sessionID, state).Get(wctx, nil)
+}
+
+func (ws *workflows) NumberOfActiveWorkflows() int {
+	return len(ws.activeWorkflowsIds)
 }
