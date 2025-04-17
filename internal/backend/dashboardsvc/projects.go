@@ -6,6 +6,8 @@ import (
 	"html/template"
 	"net/http"
 
+	"golang.org/x/tools/txtar"
+
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -77,22 +79,37 @@ func (s *svc) project(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	rscs, err := s.Projects().DownloadResources(r.Context(), pid)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var a txtar.Archive
+	for k, v := range rscs {
+		a.Files = append(a.Files, txtar.File{Name: k, Data: v})
+	}
+
 	if err := webdashboard.Tmpl(r).ExecuteTemplate(w, "project.html", struct {
-		Message     string
-		Title       string
-		Name        string
-		JSON        template.HTML
-		Connections list
-		Triggers    list
-		Sessions    list
-		ID          string
+		Message       string
+		Title         string
+		Name          string
+		JSON          template.HTML
+		Connections   list
+		Triggers      list
+		Sessions      list
+		ID            string
+		ResourcesHash string
+		Resources     template.HTML
 	}{
-		Title:       "Project: " + p.Name().String(),
-		Name:        p.Name().String(),
-		JSON:        marshalObject(sdkP.ToProto()),
-		Connections: cs,
-		Triggers:    ts,
-		ID:          p.ID().String(),
+		Title:         "Project: " + p.Name().String(),
+		Name:          p.Name().String(),
+		JSON:          marshalObject(sdkP.ToProto()),
+		Connections:   cs,
+		Triggers:      ts,
+		ID:            p.ID().String(),
+		ResourcesHash: kittehs.Must1(kittehs.SHA256HashMap(rscs)),
+		Resources:     template.HTML(txtar.Format(&a)),
 	}); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}

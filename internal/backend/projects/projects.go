@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"go.uber.org/fx"
 	"go.uber.org/zap"
@@ -131,7 +132,7 @@ func (ps *Projects) Build(ctx context.Context, projectID sdktypes.ProjectID) (sd
 		return sdktypes.InvalidBuildID, err
 	}
 
-	fs, err := ps.openProjectResourcesFS(ctx, projectID)
+	fs, hash, err := ps.openProjectResourcesFS(ctx, projectID)
 	if err != nil {
 		return sdktypes.InvalidBuildID, err
 	}
@@ -145,7 +146,10 @@ func (ps *Projects) Build(ctx context.Context, projectID sdktypes.ProjectID) (sd
 		ps.Runtimes,
 		fs,
 		nil,
-		nil,
+		map[string]string{
+			"resources_hash": hash,
+			"timestamp":      time.Now().UTC().Format(time.RFC3339),
+		},
 	)
 	if err != nil {
 		return sdktypes.InvalidBuildID, err
