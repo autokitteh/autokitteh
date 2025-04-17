@@ -72,7 +72,6 @@ var (
 					Encrypt: true,
 				},
 			},
-			Namespace: "default",
 		},
 		Dev: &Config{
 			Monitor:               defaultMonitorConfig,
