@@ -1,4 +1,4 @@
-import { DirectHandlerClient } from './direct_client';
+import { DirectHandlerClient } from './client-direct';
 import { TextDecoder } from 'util';
 
 describe('DirectHandlerClient', () => {

@@ -124,7 +124,7 @@ export class DirectHandlerClient {
         return {signalId: signalId, error: ""};
     }
 
-    async nextEvent(request: any):Promise<{
+    async nextEvent(request: any): Promise<{
         error: string;
         event: { data: Uint8Array } | null
     }> {
@@ -156,7 +156,7 @@ export class DirectHandlerClient {
             id: `dummy-event-${Date.now()}`,
             type: "test-event",
             source: "direct-execution",
-            data: { message: "This is a test event" },
+            data: {message: "This is a test event"},
             timestamp: new Date().toISOString()
         };
 

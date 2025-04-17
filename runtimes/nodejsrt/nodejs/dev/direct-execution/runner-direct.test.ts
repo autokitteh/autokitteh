@@ -1,7 +1,7 @@
 import {test} from '@jest/globals';
 
 import Runner from "../../runtime/runner/runner";
-import {DirectHandlerClient} from "./direct_client";
+import {DirectHandlerClient} from "./client-direct";
 import * as helpers from "./helpers";
 
 

@@ -1,4 +1,4 @@
-import {mainDirect} from "./main_direct";
+import {mainDirect} from "./main-direct";
 import {Command} from "commander";
 
 const program = new Command();

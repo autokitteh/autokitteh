@@ -1,5 +1,5 @@
 import Runner from "../../runtime/runner/runner"
-import {DirectHandlerClient} from "./direct_client";
+import {DirectHandlerClient} from "./client-direct";
 import * as helpers from "./helpers";
 /**
  * Directly run a function in a specified directory by extracting the entry point from autokitteh.yaml

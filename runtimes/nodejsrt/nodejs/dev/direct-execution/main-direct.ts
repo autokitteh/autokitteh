@@ -1,5 +1,5 @@
 // import {setupRuntime, setupServer, configureServer, startRuntime} from "../../runtime/main";
-import {DirectHandlerClient} from "./direct_client";
+import {DirectHandlerClient} from "./client-direct";
 import {FastifyInstance} from "fastify";
 import * as helpers from "./helpers";
 

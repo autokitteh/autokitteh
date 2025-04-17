@@ -1,7 +1,7 @@
 import * as path from "path";
 import * as fs from "fs";
 import * as yaml from "js-yaml";
-import { mkdir, symlink } from 'fs/promises';
+import { symlink } from 'fs/promises';
 
 export function validateInputDirectory(inputDir: string): string {
 
