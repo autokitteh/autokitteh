@@ -12,7 +12,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
-	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -40,8 +39,8 @@ type deployments struct {
 	cfg *Config
 }
 
-func New(l *zap.Logger, cfg *Config, db db.DB, telemetry *telemetry.Telemetry) sdkservices.Deployments {
-	initMetrics(telemetry)
+func New(l *zap.Logger, cfg *Config, db db.DB) sdkservices.Deployments {
+	initMetrics()
 
 	ds := &deployments{l: l, db: db, cfg: cfg}
 

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/attribute"
 	"go.temporal.io/sdk/activity"
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
@@ -17,6 +18,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncalls"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessiondata"
 	testtoolsmodule "go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/testtools"
+	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/backend/types"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -403,6 +405,15 @@ func (w *sessionWorkflow) removeEventSubscription(wctx workflow.Context, signalI
 }
 
 func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (_ []sdkservices.SessionPrint, retVal sdktypes.Value, _ error) {
+	ctx := temporalclient.NewWorkflowContextAsGOContext(wctx)
+
+	startTrace := telemetry.T().Start
+
+	ctx, workflowSpan := startTrace(ctx, "sessionWorkflow.run")
+	defer workflowSpan.End()
+
+	workflowSpan.SetAttributes(attribute.String("session_id", w.data.Session.ID().String()))
+
 	session := w.data.Session
 
 	newRunID := func() (runID sdktypes.RunID, err error) {
@@ -422,6 +433,11 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (_ []sdkserv
 		NewRunID: newRunID,
 		Load:     w.load,
 		Call: func(callCtx context.Context, runID sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+			callCtx, span := w.startCallbackSpan(callCtx, "call")
+			defer span.End()
+
+			span.SetAttributes(attribute.String("function_name", v.GetFunction().Name().String()))
+
 			if f := v.GetFunction(); f.HasFlag(sdktypes.ConstFunctionFlag) {
 				l.Debug("const function call")
 				return f.ConstValue()
@@ -452,7 +468,12 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (_ []sdkserv
 			return w.call(wctx, runID, v, args, kwargs)
 		},
 		Print: func(printCtx context.Context, runID sdktypes.RunID, text string) error {
-			isActivity := activity.IsActivity(printCtx)
+			ctx, span := w.startCallbackSpan(printCtx, "print")
+			defer span.End()
+
+			span.SetAttributes(attribute.String("text", text))
+
+			isActivity := activity.IsActivity(ctx)
 
 			l.Debug("print", zap.Any("run_id", runID), zap.Bool("is_activity", isActivity), zap.String("text", text))
 
@@ -471,19 +492,27 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (_ []sdkserv
 			return nil
 		},
 		Now: func(nowCtx context.Context, runID sdktypes.RunID) (time.Time, error) {
-			if activity.IsActivity(nowCtx) {
+			ctx, span := w.startCallbackSpan(nowCtx, "now")
+			defer span.End()
+
+			if activity.IsActivity(ctx) {
 				return kittehs.Now().UTC(), nil
 			}
 
 			return workflow.Now(wctx).UTC(), nil
 		},
 		Sleep: func(sleepCtx context.Context, runID sdktypes.RunID, d time.Duration) error {
-			if activity.IsActivity(sleepCtx) {
+			ctx, span := w.startCallbackSpan(sleepCtx, "sleep")
+			defer span.End()
+
+			span.SetAttributes(attribute.Int64("d", int64(d)))
+
+			if activity.IsActivity(ctx) {
 				select {
 				case <-time.After(d):
 					return nil
-				case <-sleepCtx.Done():
-					return sleepCtx.Err()
+				case <-ctx.Done():
+					return ctx.Err()
 				}
 			}
 
@@ -509,15 +538,15 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (_ []sdkserv
 
 	entryPoint := session.EntryPoint()
 
-	ctx := temporalclient.NewWorkflowContextAsGOContext(wctx)
-
 	printer.Start()
+
+	initialRunCtx, initialRunSpan := startTrace(ctx, "session.initial_run")
 
 	temporalclient.WithoutDeadlockDetection(
 		wctx,
 		func() {
 			run, err = sdkruntimes.Run(
-				ctx,
+				initialRunCtx,
 				sdkruntimes.RunParams{
 					Runtimes:             w.ws.svcs.Runtimes,
 					BuildFile:            w.data.BuildFile,
@@ -530,6 +559,8 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (_ []sdkserv
 			)
 		},
 	)
+
+	initialRunSpan.End()
 
 	if err != nil {
 		return printer.Finalize(), sdktypes.InvalidValue, err
@@ -565,9 +596,14 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (_ []sdkserv
 			"session_id": sdktypes.NewStringValue(session.ID().String()),
 		}
 
-		if retVal, err = run.Call(ctx, callValue, nil, inputs); err != nil {
+		callCtx, callSpan := startTrace(ctx, "session.call")
+		callSpan.SetAttributes(attribute.String("function_name", callValue.GetFunction().Name().String()))
+
+		if retVal, err = run.Call(callCtx, callValue, nil, inputs); err != nil {
 			return printer.Finalize(), sdktypes.InvalidValue, err
 		}
+
+		callSpan.End()
 	}
 
 	prints := printer.Finalize()

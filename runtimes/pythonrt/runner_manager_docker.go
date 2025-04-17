@@ -110,7 +110,7 @@ func (rm *dockerRunnerManager) Start(ctx context.Context, sessionID sdktypes.Ses
 	}
 
 	runnerAddr := "127.0.0.1:" + port
-	client, err := dialRunner(runnerAddr)
+	client, err := dialRunner(ctx, runnerAddr)
 	if err != nil {
 
 		if err := rm.client.StopRunner(ctx, cid); err != nil {
@@ -124,6 +124,7 @@ func (rm *dockerRunnerManager) Start(ctx context.Context, sessionID sdktypes.Ses
 	rm.mu.Unlock()
 	return runnerID, client, nil
 }
+
 func (rm *dockerRunnerManager) RunnerHealth(ctx context.Context, runnerID string) error {
 	rm.mu.Lock()
 	cid, ok := rm.runnerIDToContainerID[runnerID]
