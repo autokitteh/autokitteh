@@ -81,8 +81,8 @@ func dialRunner(ctx context.Context, addr string) (*RunnerClient, error) {
 		addr,
 		grpc.WithTransportCredentials(creds),
 		grpc.WithStatsHandler(otelgrpc.NewClientHandler(
-			otelgrpc.WithTracerProvider(telemetry.TP()),
-			otelgrpc.WithMeterProvider(telemetry.MP()),
+			otelgrpc.WithTracerProvider(telemetry.TraceProvider()),
+			otelgrpc.WithMeterProvider(telemetry.MetricProvider()),
 		)),
 	)
 	if err != nil {

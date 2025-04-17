@@ -34,8 +34,8 @@ func init() {
 	otel.SetTracerProvider(tracerProvider)
 }
 
-func TP() trace.TracerProvider { return tracerProvider }
-func MP() metric.MeterProvider { return meterProvider }
+func TraceProvider() trace.TracerProvider  { return tracerProvider }
+func MetricProvider() metric.MeterProvider { return meterProvider }
 
 func T() trace.Tracer { return tracer }
 func M() metric.Meter { return meter }
@@ -108,7 +108,7 @@ func setupTracing(cfg *Config, ra *resource.Resource) error {
 	bsp := sdktrace.NewBatchSpanProcessor(traceExporter)
 
 	tracerProvider = sdktrace.NewTracerProvider(
-		sdktrace.WithSampler(sdktrace.AlwaysSample()), // TODO: This is going to be costly!
+		sdktrace.WithSampler(sdktrace.TraceIDRatioBased(cfg.TracingFraction)),
 		sdktrace.WithResource(ra),
 		sdktrace.WithSpanProcessor(bsp),
 	)
