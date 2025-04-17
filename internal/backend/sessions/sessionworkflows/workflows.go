@@ -18,7 +18,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncalls"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessiondata"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionsvcs"
-	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -66,9 +65,8 @@ func New(
 	sessions sdkservices.Sessions,
 	svcs *sessionsvcs.Svcs,
 	calls sessioncalls.Calls,
-	telemetry *telemetry.Telemetry,
 ) Workflows {
-	initMetrics(telemetry)
+	initMetrics()
 	return &workflows{l: l, cfg: cfg, sessions: sessions, calls: calls, svcs: svcs}
 }
 
