@@ -49,102 +49,73 @@ func Build(
 		return nil, fmt.Errorf("list runtimes: %w", err)
 	}
 
-	var q []sdktypes.BuildRequirement
+	filesPerRuntime := make(map[sdktypes.Symbol][]string) // rt name -> lexically sorted paths.
 
 	if err := fs.WalkDir(srcFS, ".", func(path string, de fs.DirEntry, err error) error {
 		if err != nil {
-			return err
+			return fmt.Errorf("path %q: %w", path, err)
 		}
 
 		if de.IsDir() {
 			return nil
 		}
 
-		if _, ok := MatchRuntimeByPath(rtdescs, path); !ok {
-			// ignore non-runtime digestable files. if needed later on
-			// during build, they will explicitly be added to the requirements.
-			return nil
-		}
+		rtName := MatchRuntimeByPath(rtdescs, path).Name()
 
-		req := sdktypes.NewBuildRequirement().WithURL(&url.URL{Path: path})
-
-		q = append(q, req)
+		filesPerRuntime[rtName] = append(filesPerRuntime[rtName], path)
 
 		return nil
 	}); err != nil {
 		return nil, fmt.Errorf("walk dir: %w", err)
 	}
 
-	type rtCacheEntry struct {
-		runtime sdkservices.Runtime
-		data    *sdkbuildfile.RuntimeData
-	}
+	var datas []*sdkbuildfile.RuntimeData
 
-	rtCache := make(map[string]*rtCacheEntry)
-	visited := make(map[string]bool)
-
-	for ; len(q) > 0; q = q[1:] {
-		req := q[0]
-
-		reqURL := req.URL()
-
-		if reqURL.Scheme != "file" && reqURL.Scheme != "" {
-			return nil, fmt.Errorf("unsupported scheme: %q", reqURL.Scheme)
-		}
-
-		path := reqURL.Path
-
-		if visited[path] {
-			continue
-		}
-
-		visited[path] = true
-
-		rtd, ok := MatchRuntimeByPath(rtdescs, path)
-		if !ok {
-			externals = append(externals, req)
-			continue
-		}
-
+	for _, rtd := range rtdescs {
 		rtName := rtd.Name()
 
-		cached := rtCache[rtName.String()]
-		if cached == nil {
-			rt, err := rts.New(ctx, rtName)
-			if err != nil {
-				return nil, fmt.Errorf("new %q: %w", rtName, err)
-			}
+		paths, ok := filesPerRuntime[rtd.Name()]
+		if !ok {
+			continue
+		}
 
-			cached = &rtCacheEntry{
-				runtime: rt,
-				data: &sdkbuildfile.RuntimeData{
-					Info: sdkbuildfile.RuntimeInfo{
-						Name: rt.Get().Name(),
-					},
-				},
+		data := &sdkbuildfile.RuntimeData{
+			Info: sdkbuildfile.RuntimeInfo{
+				Name: rtd.Name(),
+			},
+		}
+
+		rt, err := rts.New(ctx, rtName)
+		if err != nil {
+			return nil, fmt.Errorf("new %q: %w", rtName, err)
+		}
+
+		if !rtd.IsFilewiseBuild() {
+			if err := buildWithRuntime(ctx, rt, data, srcFS, ".", symbols); err != nil {
+				return nil, fmt.Errorf("build error for %q: %w", ".", err)
+			}
+		} else {
+			for _, path := range paths {
+				if err := buildWithRuntime(ctx, rt, data, srcFS, path, symbols); err != nil {
+					return nil, fmt.Errorf("build error for %q: %w", path, err)
+				}
 			}
 		}
 
-		if err := buildWithRuntime(ctx, cached.runtime, cached.data, srcFS, path, symbols); err != nil {
-			return nil, fmt.Errorf("build error for %q: %w", path, err)
-		}
-
-		rtCache[rtName.String()] = cached
-
-		q = append(q, cached.data.Artifact.Requirements()...)
+		datas = append(datas, data)
 	}
 
-	rtData := kittehs.TransformMapToList(rtCache, func(_ string, c *rtCacheEntry) *sdkbuildfile.RuntimeData { return c.data })
+	externals = append(externals, kittehs.Transform(filesPerRuntime[sdktypes.InvalidSymbol], func(path string) sdktypes.BuildRequirement {
+		return sdktypes.NewBuildRequirement().WithURL(&url.URL{Path: path})
+	})...)
 
 	if externals == nil {
 		externals = []sdktypes.BuildRequirement{}
 	}
 
 	return &sdkbuildfile.BuildFile{
-		Info: sdkbuildfile.BuildInfo{
-			Memo: memo,
-		},
-		Runtimes:            rtData,
+		Info:                sdkbuildfile.BuildInfo{Memo: memo},
+		Runtimes:            datas,
 		RuntimeRequirements: externals,
 	}, nil
 }
