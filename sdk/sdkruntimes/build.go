@@ -69,7 +69,7 @@ func Build(
 		return nil, fmt.Errorf("walk dir: %w", err)
 	}
 
-	var datas []*sdkbuildfile.RuntimeData
+	var allData []*sdkbuildfile.RuntimeData
 
 	for _, rtd := range rtdescs {
 		rtName := rtd.Name()
@@ -102,7 +102,7 @@ func Build(
 			}
 		}
 
-		datas = append(datas, data)
+		allData = append(allData, data)
 	}
 
 	externals = append(externals, kittehs.Transform(filesPerRuntime[sdktypes.InvalidSymbol], func(path string) sdktypes.BuildRequirement {
@@ -115,7 +115,7 @@ func Build(
 
 	return &sdkbuildfile.BuildFile{
 		Info:                sdkbuildfile.BuildInfo{Memo: memo},
-		Runtimes:            datas,
+		Runtimes:            allData,
 		RuntimeRequirements: externals,
 	}, nil
 }
