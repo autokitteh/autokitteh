@@ -64,11 +64,45 @@ func TestBuild(t *testing.T) {
 		"d.b": []byte("d.b"),
 	}))
 
-	rts, created := NewRuntimes()
+	rts, built := NewRuntimes()
 
 	_, err := Build(context.Background(), rts, mfs, nil, nil)
 	if assert.NoError(t, err) {
-		assert.Equal(t, []string{"a.a", "b.a"}, created["a"].paths)
-		assert.Equal(t, []string{"c.b", "d.b"}, created["b"].paths)
+		assert.Equal(t, []string{"a.a", "b.a"}, built["a"].paths)
+		assert.Equal(t, []string{"."}, built["b"].paths)
+	}
+}
+
+func TestBuildSubdirs(t *testing.T) {
+	mfs := kittehs.Must1(kittehs.MapToMemFS(map[string][]byte{
+		"a.a":     []byte("a.a"),
+		"foo/b.a": []byte("b.a"),
+		"c.b":     []byte("c.b"),
+		"bar/d.b": []byte("d.b"),
+	}))
+
+	rts, built := NewRuntimes()
+
+	_, err := Build(context.Background(), rts, mfs, nil, nil)
+	if assert.NoError(t, err) {
+		assert.Equal(t, []string{"a.a", "foo/b.a"}, built["a"].paths)
+		assert.Equal(t, []string{"."}, built["b"].paths)
+	}
+}
+
+func TestBuildMixed(t *testing.T) {
+	mfs := kittehs.Must1(kittehs.MapToMemFS(map[string][]byte{
+		"a.a":     []byte("a.a"),
+		"foo/b.a": []byte("b.a"),
+		"c.b":     []byte("c.b"),
+		"foo/d.b": []byte("d.b"),
+	}))
+
+	rts, built := NewRuntimes()
+
+	_, err := Build(context.Background(), rts, mfs, nil, nil)
+	if assert.NoError(t, err) {
+		assert.Equal(t, []string{"a.a", "foo/b.a"}, built["a"].paths)
+		assert.Equal(t, []string{"."}, built["b"].paths)
 	}
 }
