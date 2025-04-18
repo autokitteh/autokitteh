@@ -144,7 +144,7 @@ def exports(code_dir, file_name):
 
     tree = ast.parse(code, file_name, "exec")
     for node in tree.body:
-        if not isinstance(node, (ast.FunctionDef, ast.ClassDef)):
+        if not isinstance(node, (ast.AsyncFunctionDef, ast.FunctionDef, ast.ClassDef)):
             continue
 
         args = fn_args(node) if isinstance(node, ast.FunctionDef) else class_args(node)

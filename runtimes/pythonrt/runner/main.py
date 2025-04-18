@@ -1,3 +1,4 @@
+import asyncio
 import builtins
 import inspect
 import json
@@ -445,6 +446,8 @@ class Runner(pb.runner_rpc.RunnerService):
         value = error = tb = None
         try:
             value = fn(*args, **kw)
+            if inspect.iscoroutinefunction(fn):
+                value = asyncio.run(value)
         except BaseException as err:
             log.error("%s raised: %s", func_name, err)
             tb = TracebackException.from_exception(err)
