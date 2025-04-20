@@ -50,11 +50,11 @@ deploy:
 
 # Execute target - directly execute the runtime
 execute:
-	cd nodejs && npx ts-node dev/direct_execution/main.ts --input-dir=../$(TESTDATA_DIR)/$(DEFAULT_EXAMPLE)/runtime
+	cd nodejs && npx ts-node dev/direct-execution/main.ts --input-dir=../$(TESTDATA_DIR)/$(DEFAULT_EXAMPLE)/runtime
 
 # Directly run with debug output
 debug-execute:
-	cd nodejs && DEBUG=1 npx ts-node dev/direct_execution/runner_direct.ts $(TESTDATA_DIR)/$(DEFAULT_EXAMPLE)/runtime
+	cd nodejs && DEBUG=1 npx ts-node dev/direct-execution/runner_direct.ts $(TESTDATA_DIR)/$(DEFAULT_EXAMPLE)/runtime
 
 # Clean target
 clean-nodejs:
@@ -73,7 +73,7 @@ run-webhook:
 
 # Run the Node.js runner directly (useful for debugging)
 direct-run:
-	cd nodejs && npx ts-node dev/direct_execution/direct_runner.test.ts
+	cd nodejs && npx ts-node dev/direct-execution/direct_runner.test.ts
 
 # Show help
 help:

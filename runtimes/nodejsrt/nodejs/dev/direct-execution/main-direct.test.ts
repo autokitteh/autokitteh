@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { mainDirect } from './dev/direct_execution/main-direct';
+import { mainDirect } from './main-direct';
 
 test('test', async () => {
     await mainDirect(
