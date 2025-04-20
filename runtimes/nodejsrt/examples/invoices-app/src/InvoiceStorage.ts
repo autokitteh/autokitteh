@@ -21,6 +21,7 @@ export interface InvoiceItem {
  */
 class InvoiceStorage {
     private invoices: Map<string, InvoiceData>;
+    private processedEmails: Set<string> = new Set();
 
     constructor() {
         this.invoices = new Map<string, InvoiceData>();
@@ -70,6 +71,17 @@ class InvoiceStorage {
 
     getInvoices(): InvoiceData[] {
         return Array.from(this.invoices.values());
+    }
+
+    markProcessed(emailId: string) {
+        this.processedEmails.add(emailId);
+    }
+    isProcessed(emailId: string) {
+        return this.processedEmails.has(emailId);
+    }
+
+    filterProcessed(emailIds: string[]): string[] {
+        return emailIds.filter(emailId => !this.isProcessed(emailId));
     }
 }
 

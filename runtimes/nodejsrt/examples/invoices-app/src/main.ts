@@ -44,9 +44,9 @@ async function on_event(event: any = {}): Promise<any> {
     const subscriptionId = await autokitteh.subscribe(gmailConnectionName, filter);
     console.log(`Subscribed to Gmail events with ID: ${subscriptionId}`);
 
+    await processAndPrintTotal(startTime);
     // Wait and process new emails until the end of month
     while (Date.now() < endTime) {
-        await processAndPrintTotal(startTime);
         const event = await autokitteh.nextEvent(subscriptionId, {timeout: {seconds: sleepIntervalSec}});
         if (event) {
             console.log("New email received:", event.data?.subject);
@@ -57,6 +57,9 @@ async function on_event(event: any = {}): Promise<any> {
     // Cleanup
     console.log(`Unsubscribing from Gmail events with ID: ${subscriptionId}...`);
     await autokitteh.unsubscribe(subscriptionId);
+
+    // Execution summary
+    console.log(`Total invoices: ${storage.getInvoices().length}, Total amount: ${storage.getTotalAmount()}`);
 
     // Return final state
     return {

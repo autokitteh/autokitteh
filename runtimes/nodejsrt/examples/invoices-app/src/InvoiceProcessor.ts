@@ -54,15 +54,17 @@ export class InvoiceProcessor {
      * and passing the data to a processing function.
      */
     async processNewEmails(startTimestamp:number): Promise<void> {
-        const emails = (await this.gmailClient.fetchNewEmails(startTimestamp))?.map(email => email.id);
+        let emailIds = (await this.gmailClient.fetchNewEmails(startTimestamp))?.map(email => email.id);
+        emailIds = this.storage.filterProcessed(emailIds)
         await Promise.all(
-            (emails || []).map(async (email) => {
-                if (email) {
-                    const emailData = await this.gmailClient.fetchMessage(email);
+            (emailIds || []).map(async (emailId) => {
+                if (emailId) {
+                    const emailData = await this.gmailClient.fetchMessage(emailId);
                     if (emailData) {
                         await this.processEmail(emailData);
                     }
-                    console.log(`Processed email: ${email}`);
+                    this.storage.markProcessed(emailId);
+                    console.log(`Processed email: ${emailId}`);
                 }
             })
         );
