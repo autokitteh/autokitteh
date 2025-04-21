@@ -6,8 +6,8 @@
     "target": "es2016",
     "module": "commonjs",
     "moduleResolution": "node",
-    "baseUrl": ".",
-    "rootDir": "src",
+    "baseUrl": "..",
+    "rootDir": ".",
     "resolveJsonModule": true,
     "declaration": true,
     "sourceMap": true,
@@ -16,14 +16,9 @@
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "skipLibCheck": true,
-    "noImplicitReturns": false,
-    "paths": {
-      "autokitteh/*": [
-        "../../nodejs/nodejs-sdk/autokitteh/*"
-      ]
-    }
+    "noImplicitReturns": false
   },
   "include": [
-    "src/**/*.ts"
+    "**/*.ts"
   ]
 }

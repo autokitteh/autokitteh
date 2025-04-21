@@ -1,14 +1,14 @@
 import * as dotenv from 'dotenv';
 
 dotenv.config();
-import GmailClient from "../src/GmailClient";
+import EmailClient from "../src/EmailClient";
 
 describe('GmailClient Tests', () => {
-    let client: GmailClient;
+    let client: EmailClient;
 
     beforeAll(async () => {
         // Initialize the GmailClient before running tests
-        client = await new GmailClient().init();
+        client = await new EmailClient().init();
     });
 
     it('should fetch new emails', async () => {
@@ -33,11 +33,11 @@ describe('GmailClient Tests', () => {
     });
 });
 dotenv.config();
-import GmailClient from "../src/GmailClient";
+import EmailClient from "../src/EmailClient";
 
 test ('gmails',async () => {
 
-    const client = await new GmailClient().init();
+    const client = await new EmailClient().init();
     const emails = await client.fetchNewEmails(0)
     console.log(emails)
     const message = await client.fetchMessage(emails[0].id)

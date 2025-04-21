@@ -1,6 +1,6 @@
 import {openaiClient} from "autokitteh/openai";
 import {InvoiceData} from "./InvoiceStorage";
-import fs from 'fs';
+import * as fs from 'fs';
 
 /**
  * ChatGPTClient is a client for interacting with OpenAI's GPT models, specifically tailored

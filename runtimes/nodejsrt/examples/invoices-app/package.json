@@ -18,7 +18,8 @@
     "express": "^4.21.2",
     "googleapis": "^144.0.0",
     "openai": "^4.85.4",
-    "pdfkit": "^0.16.0"
+    "pdfkit": "^0.16.0",
+    "autokitteh": "file:/Users/alon/work/projects/autokitteh_projs/autokitteh/runtimes/nodejsrt/nodejs/nodejs-sdk/autokitteh"
   },
   "devDependencies": {
     "@types/express": "^5.0.0",

@@ -1,10 +1,10 @@
 import InvoiceProcessor from "../src/InvoiceProcessor";
 import InvoiceStorage, {InvoiceData} from "../src/InvoiceStorage";
-import GmailClient from "../src/GmailClient";
+import EmailClient from "../src/EmailClient";
 import ChatGPTClient from "../src/ChatGPTClient";
 
 
-class FakeGmailClient implements Partial<GmailClient> {
+class FakeGmailClient implements Partial<EmailClient> {
 
     constructor(private readonly msgs: any) {
         this.msgs = msgs;

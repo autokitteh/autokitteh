@@ -1,26 +1,10 @@
 version: v1
 
 project:
-  name: invoices-app
-  connections:
+  name: invoice_app
+  # Define the functions we want to expose
   triggers:
-    - name: process-invoices
-      event_type: get
-      data:
-        path: process
-      call: main.js:main
-      webhook: {}
-
-    - name: get-total
-      event_type: get
-      data:
-        path: total
-      call: main_ak.js:total
-      webhook: {}
-
-    - name: terminate
+    - name: invoice_message_processor
       event_type: post
-      data:
-        path: terminate
-      call: main_ak.js:terminate
-      webhook: {}
+      call: main.ts:on_event
+      webhook: { }

@@ -1,16 +1,16 @@
 import {promises as fs} from 'fs';
-import GmailClient from "./GmailClient";
-import {EmailMessage} from "./GmailClient";
+import EmailClient from "./EmailClient";
+import {EmailMessage} from "./EmailClient";
 import ChatGPTClient from "./ChatGPTClient";
 import InvoiceStorage from "./InvoiceStorage";
 import {InvoiceData} from "./InvoiceStorage";
 
 export class InvoiceProcessor {
-    private gmailClient: GmailClient;
+    private gmailClient: EmailClient;
     private chatGPTClient: ChatGPTClient;
     private storage: InvoiceStorage;
 
-    constructor(gmailClient: GmailClient, chatGPTClient: ChatGPTClient, storage: InvoiceStorage) {
+    constructor(gmailClient: EmailClient, chatGPTClient: ChatGPTClient, storage: InvoiceStorage) {
         this.gmailClient = gmailClient;
         this.chatGPTClient = chatGPTClient;
         this.storage = storage;

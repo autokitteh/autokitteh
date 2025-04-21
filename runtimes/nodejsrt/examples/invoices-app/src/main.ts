@@ -1,11 +1,10 @@
+import * as fs from "fs";
+import * as path from "path";
 import * as dotenv from 'dotenv';
-
-dotenv.config();
-import fs from "fs";
-import path from "path";
-import process from "node:process";
+dotenv.config({ path: path.resolve(__dirname, '.env') });
+import * as process from "node:process";
 import * as autokitteh from 'autokitteh';
-import GmailClient from './GmailClient';
+import EmailClient from './EmailClient';
 import ChatGPTClient from './ChatGPTClient';
 import InvoiceStorage from './InvoiceStorage';
 import InvoiceProcessor from './InvoiceProcessor';
@@ -31,7 +30,7 @@ const storage = new InvoiceStorage();
  * @param event Event with yearMonth parameter (YYYY-MM format)
  * @returns Promise that resolves when the month ends
  */
-async function on_event(event: any = {}): Promise<any> {
+export async function on_event(event: any = {}): Promise<any> {
     const year = parseInt(event.year, 10) || new Date().getFullYear();
     const month = parseInt(event.month) || new Date().getMonth() + 1;
     const startTime = new Date(year, month - 1, 1, 0, 0, 0, 0).getTime();
@@ -75,7 +74,7 @@ async function on_event(event: any = {}): Promise<any> {
 async function processAndPrintTotal(startTimestamp: number): Promise<number> {
 
     // Initialize Gmail client
-    const gmailClient = await new GmailClient(gmailConnectionName).init();
+    const gmailClient = await new EmailClient(gmailConnectionName).init();
 
     // Initialize OpenAI client
     const chatGPTClient = await new ChatGPTClient(promptTemplate, chatConnectionName, gptModel).init();

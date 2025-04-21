@@ -1,5 +1,5 @@
-import fs from 'fs';
-import path from 'path';
+import * as fs from 'fs';
+import * as path from 'path';
 import * as os from "node:os";
 import {gmail_v1} from 'googleapis';
 import {gmailClient} from 'autokitteh/google';
@@ -21,7 +21,7 @@ export interface EmailMessage {
  * GmailClient is a client for interacting with the Gmail API, specifically tailored
  * to fetch emails with PDF attachments.
  */
-class GmailClient {
+class EmailClient {
     private connectionName: string;
     private subjectRegex?: RegExp;
     private client: any;
@@ -34,7 +34,7 @@ class GmailClient {
         this.subjectRegex = subjectRegex ? new RegExp(subjectRegex, "i") : undefined;
     }
 
-    async init(): Promise<GmailClient> {
+    async init(): Promise<EmailClient> {
 
         // Initialize the Gmail client using autokitteh's gmailClient
         this.client = gmailClient(this.connectionName);
@@ -133,4 +133,4 @@ class GmailClient {
     }
 }
 
-export default GmailClient;
+export default EmailClient;
