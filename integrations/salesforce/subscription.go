@@ -221,6 +221,7 @@ func (h handler) initStream(ctx context.Context, l *zap.Logger, cid sdktypes.Con
 
 		stream, err := client.Subscribe(ctx)
 		if err != nil {
+			l.Error("failed to subscribe to Salesforce topic", zap.Error(err))
 			time.Sleep(time.Second)
 			cleanupClient(l, clientID)
 			ctx, _, err = h.initPubSubClient(l, cid, clientID)

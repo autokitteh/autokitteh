@@ -104,7 +104,7 @@ func (gdb *gormdb) getConnections(ctx context.Context, ids ...uuid.UUID) ([]sche
 func (gdb *gormdb) listConnections(ctx context.Context, filter sdkservices.ListConnectionsFilter, idsOnly bool) ([]scheme.Connection, error) {
 	q := gdb.reader.WithContext(ctx)
 
-	q = withProjectID(q, "", filter.ProjectID)
+	q = withProjectID(q, "connections", filter.ProjectID)
 
 	q = withProjectOrgID(q, filter.OrgID, "connections")
 

@@ -1,0 +1,18 @@
+start
+GET
+end
+-- main.py:main --
+import autokitteh
+from urllib.request import Request
+
+autokitteh.register_no_activity([Request])
+
+def main(_):
+	print('start')
+
+	req = Request('https://autokitteh.com')
+	print(req.get_method())
+
+	print('end')
+
+-- calls.txt --

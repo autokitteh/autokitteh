@@ -14,7 +14,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncalls"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionsvcs"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows"
-	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -33,23 +32,21 @@ type sessions struct {
 
 	workflows sessionworkflows.Workflows
 	calls     sessioncalls.Calls
-	telemetry *telemetry.Telemetry
 }
 
 var _ Sessions = (*sessions)(nil)
 
-func New(l *zap.Logger, config *Config, db db.DB, svcs sessionsvcs.Svcs, telemetry *telemetry.Telemetry) (Sessions, error) {
+func New(l *zap.Logger, config *Config, db db.DB, svcs sessionsvcs.Svcs) (Sessions, error) {
 	return &sessions{
-		config:    config,
-		svcs:      &svcs,
-		l:         l,
-		telemetry: telemetry,
+		config: config,
+		svcs:   &svcs,
+		l:      l,
 	}, nil
 }
 
 func (s *sessions) StartWorkers(ctx context.Context) error {
 	s.calls = sessioncalls.New(s.l.Named("sessionworkflows"), s.config.Calls, s.svcs)
-	s.workflows = sessionworkflows.New(s.l.Named("sessionworkflows"), s.config.Workflows, s, s.svcs, s.calls, s.telemetry)
+	s.workflows = sessionworkflows.New(s.l.Named("sessionworkflows"), s.config.Workflows, s, s.svcs, s.calls)
 
 	if !s.config.EnableWorker {
 		s.l.Info("Session worker: disabled")

@@ -10,6 +10,11 @@
 <h2>{{ .Triggers.N }} Triggers</h2>
 {{ template "list_table_" .Triggers}}
 
+<h2>Resources</h2>
+Hash: <pre>{{ .ResourcesHash }}</pre>
+Content:
+<pre>{{ .Resources }}</pre>
+
 <script>
     function deleteProject() {
         if (confirm("Delete this project?")) {

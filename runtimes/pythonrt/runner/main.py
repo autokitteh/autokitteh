@@ -90,8 +90,10 @@ def fix_http_body(inputs):
             pass
 
 
-def abort_with_exception(context, status, err):
+def abort_with_exception(context, status, err, show_pickle_help=False):
     io = StringIO()
+    if show_pickle_help:
+        print(pickle_help, file=io)
     for line in format_exception(err):
         io.write(line)
     text = io.getvalue()
@@ -182,10 +184,10 @@ class Runner(pb.runner_rpc.RunnerService):
         self.activity_call = None
         self._orig_print = print
         self._start_called = False
-        self._inactivty_timer = Timer(
+        self._inactivity_timer = Timer(
             start_timeout, self.stop_if_start_not_called, args=(start_timeout,)
         )
-        self._inactivty_timer.start()
+        self._inactivity_timer.start()
 
     def result_error(self, err):
         io = StringIO()
@@ -258,7 +260,7 @@ class Runner(pb.runner_rpc.RunnerService):
             log.error("already called start before")
             return pb.runner.StartResponse(error="start already called")
 
-        self._inactivty_timer.cancel()
+        self._inactivity_timer.cancel()
 
         self._start_called = True
         log.info("start request: %r", request.entry_point)
@@ -370,7 +372,9 @@ class Runner(pb.runner_rpc.RunnerService):
             result = pickle.loads(request.result.custom.data)
         except Exception as err:
             log.exception(f"can't decode data: pickle: {err}")
-            abort_with_exception(context, grpc.StatusCode.INTERNAL, err)
+            abort_with_exception(
+                context, grpc.StatusCode.INTERNAL, err, show_pickle_help=True
+            )
 
         if not isinstance(result, Result):
             context.abort(
