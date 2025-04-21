@@ -189,27 +189,27 @@ export async function patchCode(code: string): Promise<string> {
     const ast = parse(code, {sourceType: "module", plugins: ["typescript"]});
 
     traverse(ast, {
-        ImportDeclaration(path) {
-            const source = path.node.source.value;
-            if (source === 'autokitteh' || source.startsWith('autokitteh/')) {
-                // Get the original import code for the comment
-                const importCode = generate(path.node).code;
-                // Add a comment indicating this was removed by the build process
-                const comment = ` ${importCode} - commented out by autokitteh build process`;
-
-                // Instead of replacing with a dummy import, we're going to completely remove it
-                // Add the comment as a standalone comment node
-                const parentPath = path.parentPath;
-
-                // Remove the import node completely
-                path.remove();
-
-                // Add a standalone comment where the import was
-                if (parentPath && parentPath.node) {
-                    parentPath.addComment('leading', comment);
-                }
-            }
-        },
+        // ImportDeclaration(path) {
+        //     const source = path.node.source.value;
+        //     if ( source === 'autokitteh' || source.startsWith('autokitteh/')) {
+        //         // Get the original import code for the comment
+        //         const importCode = generate(path.node).code;
+        //         // Add a comment indicating this was removed by the build process
+        //         const comment = ` ${importCode} - commented out by autokitteh build process`;
+        //
+        //         // Instead of replacing with a dummy import, we're going to completely remove it
+        //         // Add the comment as a standalone comment node
+        //         const parentPath = path.parentPath;
+        //
+        //         // Remove the import node completely
+        //         path.remove();
+        //
+        //         // Add a standalone comment where the import was
+        //         if (parentPath && parentPath.node) {
+        //             parentPath.addComment('leading', comment);
+        //         }
+        //     }
+        // },
         CallExpression(path) {
             // Check for autokitteh method calls first
             const { isAutokitteh, methodName } = isAutokittehMethod(path);
