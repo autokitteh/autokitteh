@@ -12,6 +12,7 @@ import (
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/integration_registry/v1/integration_registryv1connect"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/integrations/v1/integrationsv1connect"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/orgs/v1/orgsv1connect"
+	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/policy/v1/policyv1connect"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/projects/v1/projectsv1connect"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/runtimes/v1/runtimesv1connect"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1/sessionsv1connect"
@@ -32,6 +33,8 @@ var ServiceNames = []string{
 	integration_providerv1connect.IntegrationProviderServiceName,
 	integration_registryv1connect.IntegrationRegistryServiceName,
 	integrationsv1connect.IntegrationsServiceName,
+	orgsv1connect.OrgsServiceName,
+	policyv1connect.PolicyServiceName,
 	projectsv1connect.ProjectsServiceName,
 	runtimesv1connect.RuntimesServiceName,
 	sessionsv1connect.SessionsServiceName,
@@ -39,5 +42,4 @@ var ServiceNames = []string{
 	triggersv1connect.TriggersServiceName,
 	usersv1connect.UsersServiceName,
 	varsv1connect.VarsServiceName,
-	orgsv1connect.OrgsServiceName,
 }

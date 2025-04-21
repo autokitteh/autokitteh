@@ -52,6 +52,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/orgs"
 	"go.autokitteh.dev/autokitteh/internal/backend/orgsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/policy/opapolicy"
+	"go.autokitteh.dev/autokitteh/internal/backend/policygrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/projects"
 	"go.autokitteh.dev/autokitteh/internal/backend/projectsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/scheduler"
@@ -305,6 +306,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		fx.Invoke(deploymentsgrpcsvc.Init),
 		fx.Invoke(dispatchergrpcsvc.Init),
 		fx.Invoke(eventsgrpcsvc.Init),
+		fx.Invoke(policygrpcsvc.Init),
 		fx.Invoke(usersgrpcsvc.Init),
 		fx.Invoke(orgsgrpcsvc.Init),
 		fx.Invoke(integrationsgrpcsvc.Init),

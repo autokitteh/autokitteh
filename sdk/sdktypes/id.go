@@ -137,6 +137,37 @@ func NewIDFromUUIDString[ID id[T], T idTraits](str string) (ID, error) {
 	return NewIDFromUUID[ID](uuidUUID), nil
 }
 
+func ParseAnyID(s string) (ID, error) {
+	if s == "" {
+		return nil, nil
+	}
+
+	switch {
+	case IsIDOf[orgIDTraits](s):
+		return ParseOrgID(s)
+	case IsIDOf[projectIDTraits](s):
+		return ParseProjectID(s)
+	case IsIDOf[userIDTraits](s):
+		return ParseUserID(s)
+	case IsIDOf[eventIDTraits](s):
+		return ParseEventID(s)
+	case IsIDOf[connectionIDTraits](s):
+		return ParseConnectionID(s)
+	case IsIDOf[triggerIDTraits](s):
+		return ParseTriggerID(s)
+	case IsIDOf[buildIDTraits](s):
+		return ParseBuildID(s)
+	case IsIDOf[deploymentIDTraits](s):
+		return ParseDeploymentID(s)
+	case IsIDOf[sessionIDTraits](s):
+		return ParseSessionID(s)
+	case IsIDOf[integrationIDTraits](s):
+		return ParseIntegrationID(s)
+	default:
+		return nil, sdkerrors.NewInvalidArgumentError("unknown ID kind")
+	}
+}
+
 func ParseID[ID id[T], T idTraits](s string) (ID, error) {
 	var zero ID
 

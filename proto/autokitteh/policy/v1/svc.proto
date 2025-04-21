@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package autokitteh.policy.v1;
+
+import "buf/validate/validate.proto";
+import "google/protobuf/struct.proto";
+
+message DecideRequest {
+  string path = 1 [(buf.validate.field).string.min_len = 1];
+  string user_id = 2 [(buf.validate.field).string.min_len = 1];
+  string subject_id = 3 [(buf.validate.field).string.min_len = 1];
+  map<string, string> data = 4;
+}
+
+message DecideResponse {
+  google.protobuf.Value result = 1 [(buf.validate.field).required = true];
+}
+
+service PolicyService {
+  rpc Decide(DecideRequest) returns (DecideResponse);
+}

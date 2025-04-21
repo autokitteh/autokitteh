@@ -13,7 +13,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func hydrate(ctx context.Context, db db.DB, id sdktypes.ID, obj sdktypes.Object) (map[string]any, error) {
+func Hydrate(ctx context.Context, db db.DB, id sdktypes.ID, obj sdktypes.Object) (map[string]any, error) {
 	if id == nil {
 		return nil, errors.New("hydrate: id is nil")
 	}
@@ -90,12 +90,12 @@ func buildInput(ctx context.Context, db db.DB, id sdktypes.ID, action string, cf
 		return nil, sdkerrors.ErrUnauthenticated
 	}
 
-	m, err := hydrate(ctx, db, authnUser.ID(), authnUser)
+	m, err := Hydrate(ctx, db, authnUser.ID(), authnUser)
 	if err != nil {
 		return nil, err
 	}
 
-	rsc, err := hydrate(ctx, db, id, nil)
+	rsc, err := Hydrate(ctx, db, id, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +113,7 @@ func buildInput(ctx context.Context, db db.DB, id sdktypes.ID, action string, cf
 			continue
 		}
 
-		if associations[name], err = hydrate(ctx, db, id, nil); err != nil {
+		if associations[name], err = Hydrate(ctx, db, id, nil); err != nil {
 			return nil, err
 		}
 	}
