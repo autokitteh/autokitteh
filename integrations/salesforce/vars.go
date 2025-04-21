@@ -4,8 +4,8 @@ import "go.autokitteh.dev/autokitteh/sdk/sdktypes"
 
 var (
 	instanceURLVar = sdktypes.NewSymbol("instance_url")
-	replayIDVar    = sdktypes.NewSymbol("replay_id")
 	orgIDVar       = sdktypes.NewSymbol("organization_id")
+	replayIDVar    = sdktypes.NewSymbol("replay_id")
 	userIDVar      = sdktypes.NewSymbol("user_id")
 )
 

@@ -137,12 +137,12 @@ func (h handler) eventLoop(ctx context.Context, l *zap.Logger, clientID string, 
 				}
 
 				// Save the latest replay ID.
-				replayID := msg.LatestReplayId
-				encodedReplayID := base64.StdEncoding.EncodeToString(replayID)
+				replayID := base64.StdEncoding.EncodeToString(msg.LatestReplayId)
 				l.Debug("saving Salesforce replay ID", zap.String("replay_id", encodedReplayID))
 
 				vsid := sdktypes.NewVarScopeID(cid)
-				if err := h.vars.Set(ctx, sdktypes.NewVar(replayIDVar).SetValue(encodedReplayID).WithScopeID(vsid)); err != nil {
+				v := sdktypes.NewVar(replayIDVar).SetValue(replayID)
+				if err := h.vars.Set(ctx, v.WithScopeID(vsid)); err != nil {
 					l.Error("failed to save Salesforce replay ID", zap.Error(err))
 				}
 
@@ -258,8 +258,7 @@ func (h handler) renewSubscription(ctx context.Context, l *zap.Logger, stream pb
 		fetchReq.ReplayId = decodedReplayID
 	}
 
-	err = stream.Send(fetchReq)
-	if err != nil {
+	if err := stream.Send(fetchReq); err != nil {
 		return fmt.Errorf("failed to request more Salesforce events: %w", err)
 	}
 
