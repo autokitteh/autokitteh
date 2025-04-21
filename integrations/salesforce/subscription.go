@@ -138,7 +138,7 @@ func (h handler) eventLoop(ctx context.Context, l *zap.Logger, clientID string, 
 
 				// Save the latest replay ID.
 				replayID := base64.StdEncoding.EncodeToString(msg.LatestReplayId)
-				l.Debug("saving Salesforce replay ID", zap.String("replay_id", encodedReplayID))
+				l.Debug("saving Salesforce replay ID", zap.String("replay_id", replayID))
 
 				vsid := sdktypes.NewVarScopeID(cid)
 				v := sdktypes.NewVar(replayIDVar).SetValue(replayID)
