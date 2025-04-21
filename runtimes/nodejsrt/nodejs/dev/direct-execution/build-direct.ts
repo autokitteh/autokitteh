@@ -13,7 +13,7 @@ import { build } from "../../runtime/builder/build";
 export async function buildDirect(inputDir: string, outputDir: string): Promise<void> {
     inputDir = path.resolve(inputDir);
     outputDir = path.resolve(outputDir);
-    
+
     // Check if input directory exists
     try {
         const stats = await fs.promises.stat(inputDir);
@@ -24,7 +24,7 @@ export async function buildDirect(inputDir: string, outputDir: string): Promise<
         // Any error means the directory doesn't exist or can't be accessed
         throw new Error(`Input directory ${inputDir} does not exist or is not accessible`);
     }
-    
+
     await fs.promises.mkdir(outputDir, { recursive: true });
     await build(inputDir, outputDir);
 }

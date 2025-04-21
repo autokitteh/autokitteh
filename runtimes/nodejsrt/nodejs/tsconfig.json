@@ -2,5 +2,11 @@
   "compilerOptions": {
     "composite": false
   },
-  "include": ["."]
+  "include": ["."],
+  "exclude": [
+    "node_modules",
+    "build",
+    "dist",
+    "**/node_modules"
+  ]
 }

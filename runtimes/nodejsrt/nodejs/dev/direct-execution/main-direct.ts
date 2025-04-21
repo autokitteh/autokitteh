@@ -2,6 +2,7 @@
 import {DirectHandlerClient} from "./client-direct";
 import {FastifyInstance} from "fastify";
 import * as helpers from "./helpers";
+import {Command} from "commander";
 
 /**
  * Directly run the main function with a specified directory by extracting configuration from autokitteh.yaml
@@ -59,7 +60,6 @@ export async function mainDirect(inputDir: string = "", eventArgs: any = {}, mai
 
 // Execute if run directly
 if (require.main === module) {
-    import {Command} from "commander";
     const program = new Command();
     program.requiredOption('--input-dir <TYPE>', 'inputDir')
     program.option('--args <TYPE>', 'eventArgs')
@@ -67,7 +67,5 @@ if (require.main === module) {
     program.parse(process.argv);
     const options = program.opts();
 
-    const inputDir = process.argv[2];
-    const eventArgs = process.argv[3] ? JSON.parse(process.argv[3]) : {};
     void mainDirect(options.inputDir, options.eventArgs);
 }

@@ -7,7 +7,7 @@ endif
 # Set default directories
 EXAMPLES_DIR=examples
 TESTDATA_DIR=nodejs/testdata
-DEFAULT_EXAMPLE=simple-test
+DEFAULT_EXAMPLE=invoices-app
 
 # Detect OS for correct open command
 UNAME_S := $(shell uname -s)

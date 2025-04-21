@@ -10,4 +10,10 @@ module.exports = {
             }
         ]
     },
+    testPathIgnorePatterns: ["/node_modules/", "/build/",
+        "/dist/",
+        "/examples-build/",
+        "/testdata/",
+        "/dev/"],
+    watchPathIgnorePatterns: ["/node_modules/"]
 };

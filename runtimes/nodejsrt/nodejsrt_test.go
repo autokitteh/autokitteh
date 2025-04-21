@@ -115,7 +115,7 @@ func Test_nodeSvc_Get(t *testing.T) {
 func Test_nodeSvc_Build(t *testing.T) {
 	svc := newSVC(t)
 
-	rootPath := "testdata/simple_test/"
+	rootPath := "examples/invoices-app/"
 	fsys := os.DirFS(rootPath)
 
 	ctx, cancel := testCtx(t)
