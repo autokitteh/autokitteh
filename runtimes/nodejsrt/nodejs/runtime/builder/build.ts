@@ -5,7 +5,7 @@ import * as fs from "fs";
 
 export async function build(inputDir: string, outputDir: string): Promise<void> {
     const files = await listFiles(inputDir);
-    const ignorePatterns = [/node_modules/, /dist/, /\.git/];
+    const ignorePatterns = [/node_modules/, /dist/, /\.git/,/tests/];
 
     const filteredFiles = files.filter(file => {
         const relativePath = path.relative(inputDir, file);
