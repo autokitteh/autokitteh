@@ -84,7 +84,7 @@ func (s runtimes) New(ctx context.Context, n sdktypes.Symbol) (sdkservices.Runti
 	return nil, nil
 }
 
-func MatchRuntimeByPath(rts []sdktypes.Runtime, path string) (sdktypes.Runtime, bool) {
+func MatchRuntimeByPath(rts []sdktypes.Runtime, path string) sdktypes.Runtime {
 	// find longest match (the most specific) between all registered extensions.
 
 	var (
@@ -102,5 +102,5 @@ func MatchRuntimeByPath(rts []sdktypes.Runtime, path string) (sdktypes.Runtime, 
 		}
 	}
 
-	return lastRT, lastRT.IsValid()
+	return lastRT
 }
