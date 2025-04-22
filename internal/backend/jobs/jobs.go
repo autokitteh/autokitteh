@@ -22,7 +22,7 @@ func New(l *zap.Logger, db db.DB) *JobManager {
 	}
 }
 
-func (jm *JobManager) StartSession(ctx context.Context, sessoin sdktypes.Session) error {
+func (jm *JobManager) ScheduleSession(ctx context.Context, sessoin sdktypes.Session) error {
 	data := map[string]any{
 		"session_id": sessoin.ID(),
 	}
@@ -30,7 +30,7 @@ func (jm *JobManager) StartSession(ctx context.Context, sessoin sdktypes.Session
 	return err
 }
 
-func (jm *JobManager) GetPendingSessionJob(ctx context.Context) (*scheme.Job, error) {
+func (jm *JobManager) GetScheduledSessions(ctx context.Context) (*scheme.Job, error) {
 	jobs, err := jm.db.GetPendingJobs(ctx, 1)
 	if err != nil {
 		return nil, err

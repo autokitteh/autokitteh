@@ -73,7 +73,8 @@ func (s *sessions) StartWorkers(ctx context.Context) error {
 }
 
 func (s *sessions) PollForJobsLoop(ctx context.Context) {
-	ticker := time.NewTicker(time.Duration(s.config.PollJobsIntervalMS))
+	ctx = authcontext.SetAuthnSystemUser(ctx)
+	ticker := time.NewTicker(time.Duration(s.config.PollJobsIntervalMS) * time.Millisecond)
 	defer ticker.Stop()
 
 	running := make(chan struct{}, 1)
@@ -84,7 +85,8 @@ func (s *sessions) PollForJobsLoop(ctx context.Context) {
 			return
 
 		case running <- struct{}{}:
-			pollCtx, cancel := context.WithTimeout(ctx, 200*time.Millisecond)
+			fmt.Println("Polling once")
+			pollCtx, cancel := context.WithTimeout(ctx, 2000*time.Second)
 			defer cancel()
 			go func() {
 				s.l.Debug("Start poll once for jobs")
@@ -98,6 +100,7 @@ func (s *sessions) PollForJobsLoop(ctx context.Context) {
 		// Do nothing in case we got another tick
 		// Let the other tick option to finish
 		default:
+			fmt.Println("Do nothing")
 
 		}
 	}
@@ -105,12 +108,15 @@ func (s *sessions) PollForJobsLoop(ctx context.Context) {
 
 func (s *sessions) pollOnce(ctx context.Context) error {
 	if s.workflows.NumberOfActiveWorkflows() >= s.config.MaxConcurrentWorkflows {
+		s.l.Info("Max concurrent workflows reached, skipping poll", zap.Int("max_concurrent_workflows", s.config.MaxConcurrentWorkflows))
 		return nil
 	}
 
+	s.l.Info("active / max workflows", zap.Int("max_concurrent_workflows", s.config.MaxConcurrentWorkflows), zap.Int("active_workflows", s.workflows.NumberOfActiveWorkflows()))
+
 	jobSlots := s.config.MaxConcurrentWorkflows - s.workflows.NumberOfActiveWorkflows()
 	for range jobSlots {
-		job, err := s.jobManager.GetPendingSessionJob(ctx)
+		job, err := s.jobManager.GetScheduledSessions(ctx)
 		if err != nil {
 			return err
 		}
@@ -311,7 +317,7 @@ func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktype
 		return sdktypes.InvalidSessionID, fmt.Errorf("start session: %w", err)
 	}
 
-	if err := s.jobManager.StartSession(ctx, session); err != nil {
+	if err := s.jobManager.ScheduleSession(ctx, session); err != nil {
 		return sdktypes.InvalidSessionID, fmt.Errorf("start session: %w", err)
 	}
 
@@ -327,10 +333,12 @@ func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktype
 }
 
 func (s *sessions) startSession(ctx context.Context, sessionID sdktypes.SessionID) error {
+
 	session, err := s.svcs.DB.GetSession(ctx, sessionID)
 	if err != nil {
 		return err
 	}
+
 	if err := s.workflows.StartWorkflow(ctx, session, sessionworkflows.StartWorkflowOptions{}); err != nil {
 		err = fmt.Errorf("start workflow: %w", err)
 		if uerr := s.svcs.DB.UpdateSessionState(ctx, session.ID(), sdktypes.NewSessionStateError(err, nil)); uerr != nil {

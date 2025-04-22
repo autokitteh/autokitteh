@@ -31,7 +31,6 @@ func (gdb *gormdb) AddJob(ctx context.Context, jobType scheme.JobType, data map[
 }
 
 func (gdb *gormdb) GetPendingJobs(ctx context.Context, count int) ([]scheme.Job, error) {
-	jobs := make([]scheme.Job, count)
 
 	// Need to think if here is the right place to set the default value
 	// for count. It should be set in the caller, but we need to make sure values
@@ -49,10 +48,12 @@ func (gdb *gormdb) GetPendingJobs(ctx context.Context, count int) ([]scheme.Job,
 	// For future non temporal workflow, it means it didn't finish executing the workflow yet
 	// In this cases, we need to retry the job on another worker after some grace period
 	// This is to prevent the job from being stuck in acquired state forever
-	if err := gdb.writer.WithContext(ctx).Raw(`
+
+	var jobs []scheme.Job
+	if err := gdb.writer.WithContext(ctx).Model(&scheme.Job{}).Raw(`
 	UPDATE jobs
-	SET status = '$1', retry_count = retry_count + 1, updated_at = NOW(), start_processing_time = NOW()
-	WHERE id IN (SELECT id FROM jobs WHERE status = 'pending' LIMIT $2 FOR UPDATE SKIP LOCKED)
+	SET status = $1, retry_count = retry_count + 1, updated_at = NOW(), start_processing_time = NOW()
+	WHERE job_id IN (SELECT job_id FROM jobs WHERE status = 'pending' LIMIT $2 FOR UPDATE SKIP LOCKED)
 	RETURNING *;
 	`, scheme.JobStatusAcquired, count).Scan(&jobs).Error; err != nil {
 		return nil, err
@@ -62,7 +63,7 @@ func (gdb *gormdb) GetPendingJobs(ctx context.Context, count int) ([]scheme.Job,
 }
 
 func (gdb *gormdb) UpdateJobStatus(ctx context.Context, jobID uuid.UUID, status scheme.JobStatus) error {
-	q := gdb.writer.WithContext(ctx).Model(&scheme.Job{}).Where("id = ?", jobID).UpdateColumn("status", status).UpdateColumn("updated_at", time.Now())
+	q := gdb.writer.WithContext(ctx).Model(&scheme.Job{}).Where("job_id = ?", jobID).UpdateColumn("status", status).UpdateColumn("updated_at", time.Now())
 
 	if status == scheme.JobStatusDone || status == scheme.JobStatusFailed {
 		q = q.UpdateColumn("end_processing_time", gorm.Expr("NOW()"))
