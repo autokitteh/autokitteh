@@ -52,7 +52,7 @@ type BoolOrInt bool
 // UnmarshalJSON replaces [json.Unmarshal] to support 0 and 1 as false and true.
 func (b *BoolOrInt) UnmarshalJSON(data []byte) error {
 	v, err := strconv.ParseBool(string(data))
-	if err == nil {
+	if err != nil {
 		return err
 	}
 	*b = (BoolOrInt)(v)
