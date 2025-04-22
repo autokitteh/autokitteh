@@ -34,6 +34,7 @@ type workerGRPCHandler struct {
 	runnerIDsToRuntime map[string]*pySvc
 	mu                 *sync.Mutex
 	log                *zap.Logger
+	vars               sdkservices.Vars
 }
 
 var w = workerGRPCHandler{
@@ -41,8 +42,9 @@ var w = workerGRPCHandler{
 	mu:                 new(sync.Mutex),
 }
 
-func ConfigureWorkerGRPCHandler(l *zap.Logger, mux *http.ServeMux) {
+func ConfigureWorkerGRPCHandler(l *zap.Logger, mux *http.ServeMux, vars sdkservices.Vars) {
 	w.log = l
+	w.vars = vars
 	srv := grpc.NewServer()
 	userCode.RegisterHandlerServiceServer(srv, &w)
 	path := fmt.Sprintf("/%s/", userCode.HandlerService_ServiceDesc.ServiceName)
@@ -431,10 +433,23 @@ func (s *workerGRPCHandler) RefreshOAuthToken(ctx context.Context, req *userCode
 	}
 
 	// Get the integration's OAuth configuration.
+	var cid sdktypes.ConnectionID = sdktypes.InvalidConnectionID
+	cid_str, ok := runner.envVars[req.Connection+"__connection_id"]
+	if ok && cid_str != "" {
+		var err error
+		cid, err = sdktypes.ParseConnectionID(cid_str)
+		if err != nil {
+			runner.log.Warn("invalid connection ID",
+				zap.String("connection", req.Connection),
+				zap.String("connection_id", cid_str),
+				zap.Error(err))
+		}
+	}
+
 	// TODO(INT-46): pass new OAuth service instead of constructing with nil params.
-	o := oauth.New(nil, runner.log, nil)
+	o := oauth.New(nil, runner.log, s.vars)
 	// TODO(INT-320): pass an actual connection ID, to support private OAuth.
-	cfg, _, err := o.GetConfig(ctx, req.Integration, sdktypes.InvalidConnectionID)
+	cfg, _, err := o.GetConfig(ctx, req.Integration, cid)
 	if err != nil {
 		return &userCode.RefreshResponse{Error: err.Error()}, nil
 	}

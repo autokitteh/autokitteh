@@ -172,6 +172,8 @@ func (w *sessionWorkflow) initEnvModule(cinfos map[string]connInfo) error {
 		maps.Copy(vs, kittehs.TransformMap(cinfos[name].Config, func(k, v string) (string, sdktypes.Value) {
 			return fmt.Sprintf("%s__%s", name, k), sdktypes.NewStringValue(v)
 		}))
+		vs[name+"__connection_id"] = sdktypes.NewStringValue(conn.ID().String())
+
 	}
 
 	mod := sdkexecutor.NewExecutor(
