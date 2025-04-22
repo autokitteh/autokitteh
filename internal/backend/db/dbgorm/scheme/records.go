@@ -209,7 +209,7 @@ func ParseEvent(e Event) (sdktypes.Event, error) {
 		return sdktypes.InvalidEvent, sdkerrors.NewInvalidArgumentError("event must have a connection or trigger")
 	}
 
-	// extract the actual deduped part.
+	// extract the actual deduped part. If "/" not in the string, no dedup key was actually set, so it's empty.
 	_, dedupKey, _ := strings.Cut(e.DeduplicationKey, "/")
 
 	return sdktypes.StrictEventFromProto(&sdktypes.EventPB{
