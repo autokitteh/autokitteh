@@ -160,8 +160,10 @@ func (ws *workflows) StartChildWorkflow(wctx workflow.Context, data sessiondata.
 }
 
 func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session, opts StartWorkflowOptions) error {
+
 	sessionID := session.ID()
 
+	ws.activeWorkflowsIds[sessionID.String()] = true
 	l := ws.l.Sugar().With("session_id", sessionID)
 
 	data, err := sessiondata.Get(ctx, ws.svcs, session)
@@ -193,6 +195,8 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 
 func (ws *workflows) sessionWorkflow(wctx workflow.Context, params sessionWorkflowParams) error {
 	wi := workflow.GetInfo(wctx)
+	ws.activeWorkflowsIds[wi.WorkflowExecution.ID] = true
+
 	session := params.Data.Session
 	parentSessionID := session.ParentSessionID()
 	sid := session.ID()
