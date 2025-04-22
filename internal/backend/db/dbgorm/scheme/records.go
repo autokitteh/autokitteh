@@ -3,6 +3,7 @@ package scheme
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -165,6 +166,8 @@ type Event struct {
 	ConnectionID  *uuid.UUID `gorm:"index;type:uuid"`
 	TriggerID     *uuid.UUID `gorm:"index;type:uuid"`
 
+	DeduplicationKey string `gorm:"uniqueIndex"`
+
 	EventType string `gorm:"index:idx_event_type_seq,priority:1;index:idx_event_type"`
 	Data      datatypes.JSON
 	Memo      datatypes.JSON
@@ -206,14 +209,18 @@ func ParseEvent(e Event) (sdktypes.Event, error) {
 		return sdktypes.InvalidEvent, sdkerrors.NewInvalidArgumentError("event must have a connection or trigger")
 	}
 
+	// extract the actual deduped part.
+	_, dedupKey, _ := strings.Cut(e.DeduplicationKey, "/")
+
 	return sdktypes.StrictEventFromProto(&sdktypes.EventPB{
-		EventId:       sdktypes.NewIDFromUUID[sdktypes.EventID](e.EventID).String(),
-		EventType:     e.EventType,
-		Data:          kittehs.TransformMapValues(data, sdktypes.ToProto),
-		Memo:          memo,
-		CreatedAt:     timestamppb.New(e.CreatedAt),
-		Seq:           e.Seq,
-		DestinationId: did.String(),
+		EventId:          sdktypes.NewIDFromUUID[sdktypes.EventID](e.EventID).String(),
+		EventType:        e.EventType,
+		Data:             kittehs.TransformMapValues(data, sdktypes.ToProto),
+		Memo:             memo,
+		CreatedAt:        timestamppb.New(e.CreatedAt),
+		Seq:              e.Seq,
+		DestinationId:    did.String(),
+		DeduplicationKey: dedupKey,
 	})
 }
 

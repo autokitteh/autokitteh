@@ -85,17 +85,25 @@ func (db *gormdb) SaveEvent(ctx context.Context, event sdktypes.Event) error {
 		return fmt.Errorf("get org id: %w", err)
 	}
 
+	dedupKey := event.DeduplicationKey()
+	if dedupKey == "" {
+		dedupKey = sdktypes.NewUUID().String()
+	} else {
+		dedupKey = fmt.Sprintf("%v.%v/%s", event.DestinationID().UUIDValue(), event.Type(), dedupKey)
+	}
+
 	e := scheme.Event{
-		Base:          based(ctx),
-		ProjectID:     pid.UUIDValue(),
-		OrgID:         oid.UUIDValuePtr(),
-		EventID:       event.ID().UUIDValue(),
-		DestinationID: event.DestinationID().UUIDValue(),
-		ConnectionID:  uuidPtrOrNil(connectionID),
-		TriggerID:     uuidPtrOrNil(event.DestinationID().ToTriggerID()),
-		EventType:     event.Type(),
-		Data:          kittehs.Must1(json.Marshal(event.Data())),
-		Memo:          kittehs.Must1(json.Marshal(event.Memo())),
+		Base:             based(ctx),
+		ProjectID:        pid.UUIDValue(),
+		OrgID:            oid.UUIDValuePtr(),
+		EventID:          event.ID().UUIDValue(),
+		DestinationID:    event.DestinationID().UUIDValue(),
+		ConnectionID:     uuidPtrOrNil(connectionID),
+		TriggerID:        uuidPtrOrNil(event.DestinationID().ToTriggerID()),
+		EventType:        event.Type(),
+		Data:             kittehs.Must1(json.Marshal(event.Data())),
+		Memo:             kittehs.Must1(json.Marshal(event.Memo())),
+		DeduplicationKey: dedupKey,
 	}
 
 	if connectionID.IsValid() { // only if exists

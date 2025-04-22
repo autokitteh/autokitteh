@@ -48,6 +48,16 @@ export class Event extends Message<Event> {
    */
   seq = protoInt64.zero;
 
+  /**
+   * A unique string for deduplication purposes.
+   * If provided, the event will be considered a duplicate
+   * if another event with the same deduplication_key, destination_id and event_type
+   * is received.
+   *
+   * @generated from field: string deduplication_key = 8;
+   */
+  deduplicationKey = "";
+
   constructor(data?: PartialMessage<Event>) {
     super();
     proto3.util.initPartial(data, this);
@@ -63,6 +73,7 @@ export class Event extends Message<Event> {
     { no: 5, name: "memo", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 6, name: "created_at", kind: "message", T: Timestamp },
     { no: 7, name: "seq", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
+    { no: 8, name: "deduplication_key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Event {
