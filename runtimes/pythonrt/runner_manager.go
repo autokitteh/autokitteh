@@ -2,8 +2,6 @@ package pythonrt
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"time"
 
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
@@ -51,25 +49,6 @@ type Healthier interface {
 	Health(ctx context.Context, in *userCode.RunnerHealthRequest, opts ...grpc.CallOption) (*userCode.RunnerHealthResponse, error)
 }
 
-func waitForServer(ctx context.Context, name string, h Healthier, timeout time.Duration) error {
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-	start := time.Now()
-	var req userCode.RunnerHealthRequest
-
-	for time.Since(start) <= timeout {
-		resp, err := h.Health(ctx, &req)
-		if err != nil || resp.Error != "" {
-			time.Sleep(10 * time.Millisecond)
-			continue
-		}
-
-		return nil
-	}
-
-	return fmt.Errorf("%s not ready after %v", name, timeout)
-}
-
 func dialRunner(ctx context.Context, addr string) (*RunnerClient, error) {
 	ctx, span := telemetry.T().Start(ctx, "dialRunner")
 	defer span.End()
@@ -77,9 +56,15 @@ func dialRunner(ctx context.Context, addr string) (*RunnerClient, error) {
 	span.SetAttributes(attribute.String("addr", addr))
 
 	creds := insecure.NewCredentials()
+	// Python takes it's time going up, this with grpc.WaitForReady(true) below
+	// makes the connection wait until Python is ready.
+	params := grpc.ConnectParams{
+		MinConnectTimeout: 10 * time.Second,
+	}
 	conn, err := grpc.NewClient(
 		addr,
 		grpc.WithTransportCredentials(creds),
+		grpc.WithConnectParams(params),
 		grpc.WithStatsHandler(otelgrpc.NewClientHandler(
 			otelgrpc.WithTracerProvider(telemetry.TraceProvider()),
 			otelgrpc.WithMeterProvider(telemetry.MetricProvider()),
@@ -90,10 +75,8 @@ func dialRunner(ctx context.Context, addr string) (*RunnerClient, error) {
 	}
 
 	c := RunnerClient{userCode.NewRunnerServiceClient(conn), conn}
-
-	if err := waitForServer(ctx, "runner", &c, 10*time.Second); err != nil {
-		connCloseErr := conn.Close()
-		return nil, errors.Join(err, connCloseErr)
+	if _, err := c.Health(ctx, &userCode.RunnerHealthRequest{}, grpc.WaitForReady(true)); err != nil {
+		return nil, err
 	}
 
 	return &c, nil
