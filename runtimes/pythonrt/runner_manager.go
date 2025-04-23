@@ -56,6 +56,8 @@ func dialRunner(ctx context.Context, addr string) (*RunnerClient, error) {
 	span.SetAttributes(attribute.String("addr", addr))
 
 	creds := insecure.NewCredentials()
+	// Python takes it's time going up, this with grpc.WaitForReady(true) below
+	// makes the connection wait until Python is ready.
 	params := grpc.ConnectParams{
 		MinConnectTimeout: 10 * time.Second,
 	}
