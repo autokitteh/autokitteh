@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/backend/health/healthreporter"
 	"go.autokitteh.dev/autokitteh/internal/backend/types"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -149,4 +150,8 @@ type DB interface {
 
 	// Get project ID of an object.
 	GetProjectIDOf(ctx context.Context, id sdktypes.ID) (sdktypes.ProjectID, error)
+
+	AddJob(ctx context.Context, jobType scheme.JobType, data map[string]any) (uuid.UUID, error)
+	UpdateJobStatus(ctx context.Context, jobID uuid.UUID, status scheme.JobStatus) error
+	GetPendingJobs(ctx context.Context, count int) ([]scheme.Job, error)
 }
