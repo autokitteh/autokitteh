@@ -136,16 +136,6 @@ func (h handler) eventLoop(ctx context.Context, l *zap.Logger, clientID string, 
 					continue
 				}
 
-				// Save the latest replay ID.
-				replayID := base64.StdEncoding.EncodeToString(msg.LatestReplayId)
-				l.Debug("saving Salesforce replay ID", zap.String("replay_id", replayID))
-
-				vsid := sdktypes.NewVarScopeID(cid)
-				v := sdktypes.NewVar(replayIDVar).SetValue(replayID)
-				if err := h.vars.Set(ctx, v.WithScopeID(vsid)); err != nil {
-					l.Error("failed to save Salesforce replay ID", zap.Error(err))
-				}
-
 				// Ignore self-triggered events.
 				if s == userID {
 					l.Debug("ignoring Salesforce event", zap.String("commitUser", s))
@@ -165,6 +155,16 @@ func (h handler) eventLoop(ctx context.Context, l *zap.Logger, clientID string, 
 				}
 
 				h.dispatchEvent(data, strings.ToLower(s))
+
+				// Save the latest replay ID.
+				replayID := base64.StdEncoding.EncodeToString(msg.LatestReplayId)
+				l.Debug("saving Salesforce replay ID", zap.String("replay_id", replayID))
+
+				vsid := sdktypes.NewVarScopeID(cid)
+				v := sdktypes.NewVar(replayIDVar).SetValue(replayID)
+				if err := h.vars.Set(ctx, v.WithScopeID(vsid)); err != nil {
+					l.Error("failed to save Salesforce replay ID", zap.Error(err))
+				}
 			}
 		}
 	}
