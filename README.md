@@ -20,6 +20,8 @@ backend business processes, and more.
 
 **Try our [Cloud](https://autokitteh.cloud)!**
 
+Explore example automations at [kittehub](https://github.com/autokitteh/kittehub).
+
 <br/>
 
 ![GitHub License](https://img.shields.io/github/license/autokitteh/autokitteh)
