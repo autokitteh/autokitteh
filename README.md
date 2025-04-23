@@ -27,7 +27,7 @@ backend business processes, and more.
 [![Go Report Card](https://goreportcard.com/badge/go.autokitteh.dev/autokitteh)](https://goreportcard.com/report/go.autokitteh.dev/autokitteh)
 
 [![GitHub Commit Activity](https://img.shields.io/github/commit-activity/m/autokitteh/autokitteh)](https://github.com/autokitteh/autokitteh/commits/main)
-[![CI Status](https://github.com/autokitteh/autokitteh/actions/workflows/ci-go.yml/badge.svg)](https://github.com/autokitteh/autokitteh/actions)
+[![CI Status](https://github.com/autokitteh/autokitteh/actions/workflows/go.yml/badge.svg)](https://github.com/autokitteh/autokitteh/actions)
 
 [![YouTube Channel](https://img.shields.io/badge/autokitteh-ff0000?logo=youtube)](https://www.youtube.com/@autokitteh-mo5sb)
 [![LinkedIn](https://img.shields.io/badge/autokitteh-0e76a8?logo=linkedin)](https://www.linkedin.com/company/autokitteh/posts/?feedView=all)
