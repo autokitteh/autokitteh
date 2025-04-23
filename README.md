@@ -18,6 +18,8 @@ Once installed, AutoKitteh is a scalable "serverless" platform (with batteries
 included) for DevOps, FinOps, MLOps, SOAR, productivity tasks, critical
 backend business processes, and more.
 
+**Try our [Cloud](https://autokitteh.cloud)!**
+
 <br/>
 
 ![GitHub License](https://img.shields.io/github/license/autokitteh/autokitteh)
@@ -62,7 +64,7 @@ and JavaScript (coming soon).
 
 - Web UI
 
-  ![Web UI screenshot](/docs/images/web_ui.jpg)
+  ![Web UI screenshot](/docs/images/web_ui.png)
 
 ## Why You Should Give AutoKitteh a Test Drive
 
