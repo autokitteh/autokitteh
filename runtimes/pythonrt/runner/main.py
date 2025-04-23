@@ -23,7 +23,7 @@ import values
 # from audit import make_audit_hook  # TODO(ENG-1893): uncomment this.
 from autokitteh import AttrDict, Event, connections
 from autokitteh.errors import AutoKittehError
-from call import AKCall, full_func_name, activity_marker
+from call import AKCall, activity_marker, full_func_name
 from syscalls import SysCalls, mark_no_activity
 
 # Timeouts are in seconds
@@ -407,6 +407,9 @@ class Runner(pb.runner_rpc.RunnerService):
         request: pb.runner.RunnerHealthRequest,
         context: grpc.ServicerContext,
     ):
+        duration = monotonic() - start_time
+        log.info("health check (duration = %.2fsec)", duration)
+
         return pb.runner.RunnerHealthResponse()
 
     def call_in_activity(self, fn, args, kw):
@@ -560,6 +563,10 @@ def dir_type(value):
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
+    from time import monotonic
+
+    # TODO(ENG-2089): Remove when we add telemetry.
+    start_time = monotonic()
 
     parser = ArgumentParser(description="Python runner")
     parser.add_argument(
@@ -603,19 +610,22 @@ if __name__ == "__main__":
         except grpc.RpcError as err:
             raise SystemExit(f"error: worker not available - {err}")
 
-    log.info("connected to worker at %r", args.worker_address)
+    duration = monotonic() - start_time
+    log.info(
+        "connected to worker at %r (duration = %.2fsec)", args.worker_address, duration
+    )
 
     server = grpc.server(
         thread_pool=ThreadPoolExecutor(max_workers=cpu_count() * 8),
         interceptors=[LoggingInterceptor(args.runner_id)],
     )
     runner = Runner(args.runner_id, worker, args.code_dir, server, args.start_timeout)
-    # rpc.add_RunnerServicer_to_server(runner, server)
     pb.runner_rpc.add_RunnerServiceServicer_to_server(runner, server)
 
     server.add_insecure_port(f"[::]:{args.port}")
     server.start()
-    log.info("server running on port %d", args.port)
+
+    log.info("server running on port %d (duration = %.2fsec)", args.port, duration)
 
     if not args.skip_check_worker:
         Thread(target=runner.should_keep_running, daemon=True).start()
