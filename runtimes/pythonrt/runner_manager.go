@@ -75,6 +75,9 @@ func dialRunner(ctx context.Context, addr string) (*RunnerClient, error) {
 	}
 
 	c := RunnerClient{userCode.NewRunnerServiceClient(conn), conn}
+
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
 	if _, err := c.Health(ctx, &userCode.RunnerHealthRequest{}, grpc.WaitForReady(true)); err != nil {
 		return nil, err
 	}
