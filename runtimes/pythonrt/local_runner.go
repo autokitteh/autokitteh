@@ -373,8 +373,21 @@ func overrideEnv(envMap map[string]string, runnerPath string) []string {
 	return adjustPythonPath(env, runnerPath)
 }
 
-func createVEnv(pyExe string, venvPath string) error {
-	cmd := exec.Command("uv", "venv", "--python", pyExe, venvPath)
+func hasUV() bool {
+	_, err := exec.LookPath("uv")
+	return err == nil
+}
+
+func createVEnv(log *zap.Logger, pyExe string, venvPath string) error {
+	var args []string
+	if hasUV() {
+		args = []string{"uv", "venv", "--python", pyExe, venvPath}
+	} else {
+		log.Warn("uv not found, using python venv")
+		args = []string{"python", "-m", "venv", venvPath}
+	}
+
+	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
@@ -414,8 +427,14 @@ func createVEnv(pyExe string, venvPath string) error {
 }
 
 func install(pyPath, cwd string, spec string) error {
-	uvArgs := []string{"pip", "install", "--python", pyPath, spec}
-	cmd := exec.Command("uv", uvArgs...)
+	var args []string
+	if hasUV() {
+		args = []string{"uv", "pip", "install", "--python", pyPath, spec}
+	} else {
+		args = []string{pyPath, "-m", "pip", "install", spec}
+	}
+
+	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Dir = cwd
