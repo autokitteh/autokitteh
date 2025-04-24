@@ -51,6 +51,13 @@ def parse_entry_point(entry_point):
     return file_name[:-3], func_name
 
 
+runner_dir = Path(__file__).absolute().parent
+
+
+def is_runner_file(file_name):
+    return Path(file_name).absolute().is_relative_to(runner_dir)
+
+
 def pb_traceback(tb):
     """Convert traceback to a list of pb.user_code.Frame for serialization."""
     return [
@@ -61,6 +68,7 @@ def pb_traceback(tb):
             name=frame.name,
         )
         for frame in tb.stack
+        if not is_runner_file(frame.filename)
     ]
 
 

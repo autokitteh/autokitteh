@@ -209,3 +209,36 @@ def test_activity():
     worker = MockWorker(runner)
     event = json.dumps({"data": {"cat": "mitzi"}})
     worker.start("program.py:on_event", event.encode())
+
+
+code = """
+import json
+
+def main():
+    a()
+
+def a():
+    b()
+
+def b():
+    json.loads("{")  # Will raise
+"""
+
+
+def test_pb_traceback(monkeypatch, tmp_path):
+    py_file = tmp_path / "program.py"
+    with open(py_file, "w") as out:
+        out.write(code)
+
+    monkeypatch.setattr(sys, "path", sys.path + [str(tmp_path)])
+    monkeypatch.setattr(main, "runner_dir", tmp_path)
+
+    mod = __import__("program")
+    try:
+        mod.main()
+    except ValueError as err:
+        tb = main.TracebackException.from_exception(err)
+
+    pb_tb = main.pb_traceback(tb)
+    for frame in pb_tb:
+        assert str(tmp_path) not in frame.filename
