@@ -2,8 +2,7 @@ FROM python:3.11-slim AS build
 
 RUN apt-get update && apt-get install --yes curl && rm -rf /var/lib/apt/lists/*
 
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="~/.local/bin:$PATH"
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/
 
 WORKDIR /runner
 COPY pyproject.toml .
@@ -21,7 +20,7 @@ FROM gcr.io/distroless/python3-debian12
 USER 65532:65532
 
 COPY --from=build /usr/local/lib/python3.11/site-packages /usr/lib/python3.11/site-packages
-COPY --from=build /root/.local/bin/uv /usr/local/bin
+COPY --from=build /usr/local/bin/uv /usr/local/bin
 
 COPY --chown=65532:65532  runner /runner
 COPY --chown=65532:65532 workflow /workflow
