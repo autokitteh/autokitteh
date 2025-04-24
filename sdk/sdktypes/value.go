@@ -195,6 +195,15 @@ var valueStringUnwrapper = ValueWrapper{
 			return NewStringValuef("|function: %v|", v.GetFunction().Name()), nil
 		}
 
+		if v.IsStruct() {
+			ctor := v.GetStruct().Ctor()
+			str, err := ctor.ToString()
+			if err != nil {
+				str = ctor.String()
+			}
+			return NewStringValuef("|struct: %v|", str), nil
+		}
+
 		return v, nil
 	},
 }
