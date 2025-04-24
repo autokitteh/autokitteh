@@ -62,6 +62,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/backend/triggers"
 	"go.autokitteh.dev/autokitteh/internal/backend/triggersgrpcsvc"
+	"go.autokitteh.dev/autokitteh/internal/backend/usagereporter"
 	"go.autokitteh.dev/autokitteh/internal/backend/users"
 	"go.autokitteh.dev/autokitteh/internal/backend/usersgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/vars"
@@ -156,6 +157,13 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 
 		LoggerFxOpt(opts.Silent),
 
+		Component("usagereporter",
+			usagereporter.Configs,
+			fx.Provide(usagereporter.New),
+			fx.Invoke(func(lc fx.Lifecycle, r usagereporter.UsageReporter) {
+				HookOnStart(lc, r.StartReportLoop)
+				HookOnStop(lc, r.StopReportLoop)
+			})),
 		// must be right after logger.
 		Component("telemetry", telemetry.Configs, fx.Invoke(telemetry.Init)),
 

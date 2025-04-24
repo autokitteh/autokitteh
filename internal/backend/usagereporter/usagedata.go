@@ -1,6 +1,7 @@
 package usagereporter
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -15,16 +16,18 @@ import (
 )
 
 type reportRequest struct {
-	InstallationID string `json:"installation_id"`
-	Version        string `json:"version"`
-	Commit         string `json:"commit"`
-	OS             string `json:"os"`
-	Arch           string `json:"arch"`
+	InstallationID string            `json:"installation_id"`
+	Version        string            `json:"version"`
+	Commit         string            `json:"commit"`
+	OS             string            `json:"os"`
+	Arch           string            `json:"arch"`
+	Payload        map[string]string `json:"payload"`
 }
 
 type UsageReporter interface {
-	Start()
-	Stop()
+	StartReportLoop(context.Context) error
+	StopReportLoop(context.Context) error
+	Report(payload map[string]string)
 }
 
 type usageReporter struct {
@@ -102,13 +105,14 @@ func New(z *zap.Logger, cfg *Config) (UsageReporter, error) {
 
 // https://github.com/search?q=repo%3Aautokitteh%2Fautokitteh%20ldflags&type=code
 // https://github.com/autokitteh/homebrew-tap/blob/main/Formula/autokitteh.rb#L14
-func (d *usageReporter) report() {
+func (d *usageReporter) Report(payload map[string]string) {
 	r := reportRequest{
 		InstallationID: d.installationID.String(),
 		Version:        version.Version,
 		Commit:         version.Commit,
 		OS:             runtime.GOOS,
 		Arch:           runtime.GOARCH,
+		Payload:        payload,
 	}
 
 	data, err := json.Marshal(r)
@@ -124,22 +128,30 @@ func (d *usageReporter) report() {
 	d.logger.Debug("report usage data succeed")
 }
 
-func (d *usageReporter) Start() {
+func (d *usageReporter) StartReportLoop(ctx context.Context) error {
 	go func() {
+		payload := map[string]string{"server_running": time.Now().Format(time.RFC3339)}
 		d.logger.Debug("start usage updating loop")
-		d.report()
+		d.Report(payload)
 		for {
 			select {
+			case <-ctx.Done():
+				d.logger.Debug("stopped usage updating loop")
+				return
 			case <-d.shutdownChan:
 				d.logger.Debug("stopped usage updating loop")
 				return
 			case <-time.After(d.updateInterval):
-				d.report()
+				payload := map[string]string{"server_running": time.Now().Format(time.RFC3339)}
+				d.Report(payload)
 			}
 		}
 	}()
+	return nil
 }
 
-func (d *usageReporter) Stop() {
+func (d *usageReporter) StopReportLoop(ctx context.Context) error {
+	d.logger.Debug("stop usage updating loop")
 	close(d.shutdownChan)
+	return nil
 }

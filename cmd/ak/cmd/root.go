@@ -9,6 +9,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/auth"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/builds"
@@ -30,6 +31,7 @@ import (
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/users"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/vars"
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
+	"go.autokitteh.dev/autokitteh/internal/backend/usagereporter"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
 )
 
@@ -42,7 +44,6 @@ var (
 var RootCmd = common.StandardCommand(&cobra.Command{
 	Use:   "ak",
 	Short: "autokitteh command-line interface and local server",
-
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		// Set the output renderer based on global flags.
 		if json {
@@ -72,6 +73,13 @@ var RootCmd = common.StandardCommand(&cobra.Command{
 
 		if err := common.InitConfig(confmap); err != nil {
 			return fmt.Errorf("init root config: %w", err)
+		}
+
+		r, _ := usagereporter.New(zap.NewNop(), usagereporter.Configs.Default)
+		if r != nil {
+			data := map[string]string{}
+			data["command"] = cmd.CommandPath()
+			r.Report(data)
 		}
 
 		return common.InitRPCClient(token)
