@@ -118,7 +118,11 @@ func (rm *dockerRunnerManager) Start(ctx context.Context, sessionID sdktypes.Ses
 			}
 		}()
 		exitCode, exitCodeErr := rm.client.getContainerExitCode(ctx, cid)
+		// We try to get an exitCode to better understand on dial error
+		// we return to the user, but if we can't we return what we have (the dialRunner error)
+		// To be clear, exitCodeErr is error getting the exit code, not exitCode itself
 		if exitCodeErr != nil {
+			rm.logger.Warn("getContainerExitCode", zap.Error(exitCodeErr))
 			return "", nil, err
 		}
 
