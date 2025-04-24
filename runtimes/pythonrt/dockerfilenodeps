@@ -18,4 +18,4 @@ COPY  --from=build /usr/local/lib/python3.11/site-packages /usr/lib/python3.11/s
 COPY  --chown=65532:65532  runner /runner
 COPY  --chown=65532:65532 workflow /workflow
 
-ENV PYTHONPATH=/usr/lib/python3.11/site-packages
+COPY sitecustomize.py /usr/lib/python3.11/sitecustomize.py

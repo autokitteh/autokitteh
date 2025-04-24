@@ -16,6 +16,9 @@ var dockerfileNoDeps string
 //go:embed dockerfilewithdeps
 var dockerfileWithDeps string
 
+//go:embed sitecustomize.py
+var siteCustomize []byte
+
 func prepareUserCode(code []byte, gzipped bool) (string, error) {
 	tf, err := tar.FromBytes(code, gzipped)
 	if err != nil {
@@ -73,6 +76,10 @@ func prepareUserCode(code []byte, gzipped bool) (string, error) {
 			}
 		}
 
+	}
+
+	if err := os.WriteFile(path.Join(tmpDir, "sitecustomize.py"), siteCustomize, 0o777); err != nil {
+		return "", err
 	}
 
 	dockerfile := []byte(dockerfileNoDeps)
