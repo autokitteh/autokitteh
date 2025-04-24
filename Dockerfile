@@ -61,12 +61,13 @@ RUN adduser \
     appuser
 USER appuser
 
-COPY --chown=appuser:appuser --from=pydeps /usr/local/lib/python3.11/site-packages /usr/lib/python3.11/site-packages
+# Copy packages to user site-packages which is enabled in this image.
+RUN mkdir -p /home/appuser/.local/lib/python3.11/
+COPY --chown=appuser:appuser --from=pydeps /usr/local/lib/python3.11/site-packages /home/appuser/.local/lib/python3.11/site-packages
 
 # Copy the executable from the "build" stage.
 COPY --chown=appuser:appuser --from=build /bin/ak /bin/
 
-ENV PYTHONPATH=/usr/lib/python3.11/site-packages
 ENV AK_WORKER_PYTHON=/usr/local/bin/python
 # Expose the port that the application listens on.
 EXPOSE 9980
