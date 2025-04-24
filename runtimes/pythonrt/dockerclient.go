@@ -166,7 +166,7 @@ func (d *dockerClient) getContainerPort(ctx context.Context, cid string) (string
 	if inspect.State.ExitCode != 0 {
 		logs, readErr := d.getContainerLogs(ctx, cid)
 		if readErr != nil {
-			logs = "container exit with statue code != 0, but we could not read logs"
+			logs = "container exit with status code != 0, but we could not read logs"
 		}
 		return "", errors.New(logs)
 	}

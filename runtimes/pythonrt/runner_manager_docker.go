@@ -112,7 +112,11 @@ func (rm *dockerRunnerManager) Start(ctx context.Context, sessionID sdktypes.Ses
 	runnerAddr := "127.0.0.1:" + port
 	client, err := dialRunner(ctx, runnerAddr)
 	if err != nil {
-		defer rm.client.StopRunner(ctx, cid)
+		defer func() {
+			if err := rm.client.StopRunner(ctx, cid); err != nil {
+				rm.logger.Warn("StopRunner", zap.Error(err))
+			}
+		}()
 		exitCode, exitCodeErr := rm.client.getContainerExitCode(ctx, cid)
 		if exitCodeErr != nil {
 			return "", nil, err
