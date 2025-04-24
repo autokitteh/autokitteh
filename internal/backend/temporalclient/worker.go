@@ -6,10 +6,13 @@ import (
 	"time"
 
 	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/contrib/opentelemetry"
+	"go.temporal.io/sdk/interceptor"
 	"go.temporal.io/sdk/worker"
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
+	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 )
 
 var defaultWorkerConfig = WorkerConfig{
@@ -40,6 +43,19 @@ func NewWorker(l *zap.Logger, client client.Client, qname string, cfg WorkerConf
 		return nil
 	}
 
+	var interceptors []interceptor.WorkerInterceptor
+	tracingInterceptor, err := opentelemetry.NewTracingInterceptor(
+		opentelemetry.TracerOptions{
+			Tracer:         telemetry.T(),
+			SpanContextKey: spanContextKey,
+		},
+	)
+	if err != nil {
+		l.Warn("Unable to create interceptor", zap.Error(err))
+	} else {
+		interceptors = append(interceptors, tracingInterceptor)
+	}
+
 	cfg = defaultWorkerConfig.With(cfg)
 	opts := worker.Options{
 		DisableRegistrationAliasing:            true,
@@ -48,6 +64,7 @@ func NewWorker(l *zap.Logger, client client.Client, qname string, cfg WorkerConf
 		Identity:                               fmt.Sprintf("%s__%s", qname, fixtures.ProcessID()),
 		MaxConcurrentWorkflowTaskExecutionSize: cfg.MaxConcurrentWorkflowTaskExecutionSize,
 		MaxConcurrentActivityExecutionSize:     cfg.MaxConcurrentActivityExecutionSize,
+		Interceptors:                           interceptors,
 	}
 
 	return worker.New(client, qname, opts)

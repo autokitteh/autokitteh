@@ -93,8 +93,8 @@ func run(ctx context.Context, params RunParams, path string) (sdkservices.Run, e
 		return nil, fmt.Errorf("list runtimes: %w", err)
 	}
 
-	rtd, ok := MatchRuntimeByPath(ls, path)
-	if !ok {
+	rtd := MatchRuntimeByPath(ls, path)
+	if !rtd.IsValid() {
 		return nil, sdkerrors.ErrNotFound
 	}
 

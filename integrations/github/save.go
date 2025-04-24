@@ -61,6 +61,7 @@ func (h handler) saveClientIDAndSecret(ctx context.Context, c sdkintegrations.Co
 		sdktypes.NewVar(vars.ClientID).SetValue(form.Get("client_id")).WithScopeID(scopeID),
 		sdktypes.NewVar(vars.ClientSecret).SetValue(form.Get("client_secret")).WithScopeID(scopeID).SetSecret(true),
 		sdktypes.NewVar(vars.AppID).SetValue(form.Get("app_id")).WithScopeID(scopeID),
+		sdktypes.NewVar(vars.AppName).SetValue(form.Get("app_name")).WithScopeID(scopeID),
 		sdktypes.NewVar(vars.WebhookSecret).SetValue(form.Get("webhook_secret")).WithScopeID(scopeID).SetSecret(true),
 		sdktypes.NewVar(vars.EnterpriseURL).SetValue(form.Get("enterprise_url")).WithScopeID(scopeID),
 		sdktypes.NewVar(vars.PrivateKey).SetValue(form.Get("private_key")).WithScopeID(scopeID).SetSecret(true),

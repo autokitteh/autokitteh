@@ -12,7 +12,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
-	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/sdk/sdkbuildfile"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -25,8 +24,8 @@ type Builds struct {
 	DB db.DB
 }
 
-func New(b Builds, telemetry *telemetry.Telemetry) sdkservices.Builds {
-	initMetrics(telemetry)
+func New(b Builds) sdkservices.Builds {
+	initMetrics()
 	return &b
 }
 

@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"go.uber.org/fx"
 	"go.uber.org/zap"
@@ -14,7 +15,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
-	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/manifest"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -31,8 +31,9 @@ type Projects struct {
 	Integrations sdkservices.Integrations
 }
 
-func New(p Projects, telemetry *telemetry.Telemetry) sdkservices.Projects {
-	initMetrics(telemetry)
+func New(p Projects) sdkservices.Projects {
+	initMetrics()
+
 	return &p
 }
 
@@ -131,7 +132,7 @@ func (ps *Projects) Build(ctx context.Context, projectID sdktypes.ProjectID) (sd
 		return sdktypes.InvalidBuildID, err
 	}
 
-	fs, err := ps.openProjectResourcesFS(ctx, projectID)
+	fs, hash, err := ps.openProjectResourcesFS(ctx, projectID)
 	if err != nil {
 		return sdktypes.InvalidBuildID, err
 	}
@@ -145,7 +146,10 @@ func (ps *Projects) Build(ctx context.Context, projectID sdktypes.ProjectID) (sd
 		ps.Runtimes,
 		fs,
 		nil,
-		nil,
+		map[string]string{
+			"resources_hash": hash,
+			"timestamp":      time.Now().UTC().Format(time.RFC3339),
+		},
 	)
 	if err != nil {
 		return sdktypes.InvalidBuildID, err

@@ -42,8 +42,3 @@ func (d *RuntimeData) MergeFrom(other *RuntimeData) error {
 type RuntimeInfo struct {
 	Name sdktypes.Symbol `json:"name"`
 }
-
-type ResourceInfo struct {
-	Path   string `json:"path"`
-	Status string `json:"status"`
-}

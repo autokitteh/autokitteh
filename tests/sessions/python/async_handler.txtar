@@ -1,0 +1,16 @@
+START
+ACT
+END
+-- main.py:main --
+import autokitteh
+
+
+async def main(event):
+    print('START')
+    await act()
+    print('END')
+
+
+@autokitteh.activity
+async def act():
+    print('ACT')
