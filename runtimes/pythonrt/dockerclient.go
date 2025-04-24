@@ -1,6 +1,7 @@
 package pythonrt
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"io"
@@ -120,15 +121,12 @@ func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, sess
 		return "", "", err
 	}
 
-	d.mu.Lock()
-	d.allRunnerIDs[resp.ID] = struct{}{}
-	d.mu.Unlock()
-
-	d.setupContainerLogging(ctx, resp.ID, sessionID)
-	port, err := d.nextFreePort(ctx, resp.ID)
+	port, err := d.getContainerPort(ctx, resp.ID)
 	if err != nil {
 		return "", "", err
 	}
+
+	d.setupContainerLogging(ctx, resp.ID, sessionID)
 
 	d.mu.Lock()
 	d.activeRunnerIDs[resp.ID] = struct{}{}
@@ -137,12 +135,19 @@ func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, sess
 	return resp.ID, port, nil
 }
 
-func (d *dockerClient) nextFreePort(ctx context.Context, cid string) (string, error) {
+func (d *dockerClient) getContainerPort(ctx context.Context, cid string) (string, error) {
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
 
-	for range 10 {
+	retries := 10
+	for range ticker.C {
+		retries--
+		if retries <= 0 {
+			break
+		}
 		inspect, err := d.client.ContainerInspect(ctx, cid)
 		if err != nil {
-			return "", err
+			continue
 		}
 
 		ports, ok := inspect.NetworkSettings.Ports[nat.Port(internalRunnerPort)]
@@ -151,10 +156,54 @@ func (d *dockerClient) nextFreePort(ctx context.Context, cid string) (string, er
 			return port, nil
 		}
 
-		time.Sleep(time.Second)
+	}
+
+	inspect, err := d.client.ContainerInspect(ctx, cid)
+	if err != nil {
+		return "", err
+	}
+
+	if inspect.State.ExitCode != 0 {
+		logs, readErr := d.getContainerLogs(ctx, cid)
+		if readErr != nil {
+			logs = "container exit with statue code != 0, but we could not read logs"
+		}
+		return "", errors.New(logs)
 	}
 
 	return "", errors.New("couldn't find port")
+}
+
+func (d *dockerClient) getContainerExitCode(ctx context.Context, cid string) (int, error) {
+	inspect, err := d.client.ContainerInspect(ctx, cid)
+	if err != nil {
+		return 0, err
+	}
+
+	if inspect.State.Error != "" {
+		return 0, errors.New(inspect.State.Error)
+	}
+
+	return inspect.State.ExitCode, nil
+}
+
+func (d *dockerClient) getContainerLogs(ctx context.Context, cid string) (string, error) {
+	reader, err := d.client.ContainerLogs(ctx, cid, container.LogsOptions{
+		ShowStdout: true,
+		ShowStderr: true,
+		Follow:     false,
+	})
+	if err != nil {
+		return "", err
+	}
+	defer reader.Close()
+	var buf bytes.Buffer
+	_, err = stdcopy.StdCopy(&buf, &buf, reader)
+	if err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
 }
 
 func (d *dockerClient) setupContainerLogging(ctx context.Context, cid string, sessionID sdktypes.SessionID) {

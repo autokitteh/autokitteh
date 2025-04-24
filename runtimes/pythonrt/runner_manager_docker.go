@@ -112,10 +112,21 @@ func (rm *dockerRunnerManager) Start(ctx context.Context, sessionID sdktypes.Ses
 	runnerAddr := "127.0.0.1:" + port
 	client, err := dialRunner(ctx, runnerAddr)
 	if err != nil {
-
-		if err := rm.client.StopRunner(ctx, cid); err != nil {
-			rm.logger.Warn("close runner", zap.Error(err))
+		defer rm.client.StopRunner(ctx, cid)
+		exitCode, exitCodeErr := rm.client.getContainerExitCode(ctx, cid)
+		if exitCodeErr != nil {
+			return "", nil, err
 		}
+
+		if exitCode != 0 {
+			rm.logger.Warn("runner exited with non-zero code", zap.Int("exit_code", exitCode))
+			logs, err := rm.client.getContainerLogs(ctx, cid)
+			if err != nil {
+				return "", nil, errors.New("container exit code != 0, but we could not read logs")
+			}
+			return "", nil, errors.New(logs)
+		}
+
 		return "", nil, err
 	}
 
