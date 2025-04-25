@@ -33,6 +33,8 @@ Explore example automations at [kittehub](https://github.com/autokitteh/kittehub
 
 [![YouTube Channel](https://img.shields.io/badge/autokitteh-ff0000?logo=youtube)](https://www.youtube.com/@autokitteh-mo5sb)
 [![LinkedIn](https://img.shields.io/badge/autokitteh-0e76a8?logo=linkedin)](https://www.linkedin.com/company/autokitteh/posts/?feedView=all)
+[![](https://dcbadge.limes.pink/api/server/VMYFq7Trcq)](https://discord.gg/VMYFq7Trcq)
+
 
 </div>
 
