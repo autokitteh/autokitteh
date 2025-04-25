@@ -99,7 +99,7 @@ func Download(ctx context.Context, desired CachedDownload, l *zap.Logger) (strin
 	} else if resp.StatusCode != 200 {
 		return "", fmt.Errorf("failed fetching info, status: %v, body: %s", resp.Status, b)
 	} else if err = json.Unmarshal(b, &info); err != nil {
-		return "", fmt.Errorf("failed unmarshaling info: %w", err)
+		return "", fmt.Errorf("failed unmarshalling info: %w", err)
 	}
 
 	// Download and extract

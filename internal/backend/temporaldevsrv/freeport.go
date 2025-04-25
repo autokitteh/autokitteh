@@ -32,7 +32,7 @@ func getFreePort(host string) (string, int, error) {
 	port := l.Addr().(*net.TCPAddr).Port
 
 	// On Linux and some BSD variants, ephemeral ports are randomized, and may
-	// consequently repeat within a short time frame after the listenning end
+	// consequently repeat within a short time frame after the listening end
 	// has been closed. To avoid this, we make a connection to the port, then
 	// close that connection from the server's side (this is very important),
 	// which puts the connection in TIME_WAIT state for some time (by default,
