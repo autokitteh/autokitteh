@@ -20,7 +20,8 @@ backend business processes, and more.
 
 **Try our [Cloud](https://autokitteh.cloud)!**
 
-Join our community: [![](https://dcbadge.limes.pink/api/server/VMYFq7Trcq?style=flat)](https://discord.gg/VMYFq7Trcq)
+Join our community: 
+[![](https://dcbadge.limes.pink/api/server/VMYFq7Trcq?style=flat)](https://discord.gg/VMYFq7Trcq)
 
 Explore example automations at [kittehub](https://github.com/autokitteh/kittehub).
 
@@ -35,8 +36,6 @@ Explore example automations at [kittehub](https://github.com/autokitteh/kittehub
 
 [![YouTube Channel](https://img.shields.io/badge/autokitteh-ff0000?logo=youtube)](https://www.youtube.com/@autokitteh-mo5sb)
 [![LinkedIn](https://img.shields.io/badge/autokitteh-0e76a8?logo=linkedin)](https://www.linkedin.com/company/autokitteh/posts/?feedView=all)
-
-
 
 </div>
 
