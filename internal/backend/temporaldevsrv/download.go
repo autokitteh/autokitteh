@@ -7,6 +7,7 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -82,7 +83,7 @@ func Download(ctx context.Context, desired CachedDownload, l *zap.Logger) (strin
 		ArchiveURL    string `json:"archiveUrl"`
 		FileToExtract string `json:"fileToExtract"`
 	}{}
-	req, err := http.NewRequestWithContext(ctx, "GET", infoURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, infoURL, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed preparing request: %w", err)
 	}
@@ -96,7 +97,7 @@ func Download(ctx context.Context, desired CachedDownload, l *zap.Logger) (strin
 	}
 	if err != nil {
 		return "", fmt.Errorf("failed fetching info body: %w", err)
-	} else if resp.StatusCode != 200 {
+	} else if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("failed fetching info, status: %v, body: %s", resp.Status, b)
 	} else if err = json.Unmarshal(b, &info); err != nil {
 		return "", fmt.Errorf("failed unmarshalling info: %w", err)
@@ -105,7 +106,7 @@ func Download(ctx context.Context, desired CachedDownload, l *zap.Logger) (strin
 	// Download and extract
 	l.Info("downloading", zap.String("url", info.ArchiveURL))
 
-	req, err = http.NewRequestWithContext(ctx, "GET", info.ArchiveURL, nil)
+	req, err = http.NewRequestWithContext(ctx, http.MethodGet, info.ArchiveURL, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed preparing request: %w", err)
 	}
@@ -118,7 +119,7 @@ func Download(ctx context.Context, desired CachedDownload, l *zap.Logger) (strin
 			l.Warn("Failed to close response body", zap.Error(closeErr))
 		}
 	}()
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("failed downloading, status: %v", resp.Status)
 	}
 	// We want to download to a temporary file then rename. A better system-wide
@@ -131,13 +132,16 @@ func Download(ctx context.Context, desired CachedDownload, l *zap.Logger) (strin
 	if err != nil {
 		return "", fmt.Errorf("failed creating temp file: %w", err)
 	}
-	if strings.HasSuffix(info.ArchiveURL, ".tar.gz") {
+
+	switch {
+	case strings.HasSuffix(info.ArchiveURL, ".tar.gz"):
 		err = extractTarball(resp.Body, info.FileToExtract, f)
-	} else if strings.HasSuffix(info.ArchiveURL, ".zip") {
+	case strings.HasSuffix(info.ArchiveURL, ".zip"):
 		err = extractZip(resp.Body, info.FileToExtract, f)
-	} else {
+	default:
 		err = fmt.Errorf("unrecognized file extension on %v", info.ArchiveURL)
 	}
+
 	closeErr := f.Close()
 	if err != nil {
 		return "", err
@@ -198,5 +202,5 @@ func extractZip(r io.Reader, toExtract string, w io.Writer) error {
 			return err
 		}
 	}
-	return fmt.Errorf("could not find file in zip archive")
+	return errors.New("could not find file in zip archive")
 }
