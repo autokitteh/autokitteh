@@ -169,7 +169,7 @@ func extractTarball(r io.Reader, toExtract string, w io.Writer) error {
 		h, err := tarRead.Next()
 		if err != nil {
 			// This can be EOF which means we never found our file
-			return err
+			return fmt.Errorf("read %q: %w", toExtract, err)
 		} else if h.Name == toExtract {
 			_, err = io.Copy(w, tarRead)
 			return err

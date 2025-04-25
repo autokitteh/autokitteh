@@ -46,14 +46,15 @@ func (c *impl) startDevServer(ctx context.Context) error {
 		}
 
 		startCtx := ctx
+		done := func() {}
 
 		if c.cfg.DevServerStartTimeout != 0 {
-			var done func()
 			startCtx, done = context.WithTimeout(ctx, c.cfg.DevServerStartTimeout)
-			defer done()
 		}
 
 		c.srv, err = temporaldevsrv.StartDevServer(startCtx, devSrvCfg)
+		done()
+
 		if err != nil {
 			l.Error("Failed to starting temporal dev server. Check temporal log for further info.", zap.Error(err), zap.String("log_path", logPath))
 			continue
