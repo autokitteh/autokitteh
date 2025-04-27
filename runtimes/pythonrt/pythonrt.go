@@ -90,8 +90,6 @@ type pySvc struct {
 	channels comChannels
 
 	didCleanup bool
-
-	printCtx CtxStack
 }
 
 func (py *pySvc) cleanup(ctx context.Context) {
@@ -238,14 +236,8 @@ func entryPointFileName(entryPoint string) string {
 	return entryPoint
 }
 
-func (py *pySvc) printConsumer() {
+func (py *pySvc) printConsumer(ctx context.Context) {
 	for p := range py.channels.print {
-		ctx := py.printCtx.Pop()
-		if ctx == nil {
-			py.log.Error("print consumer - no context")
-			continue
-		}
-
 		py.log.Info("print", zap.String("message", p.message))
 		if err := py.cbs.Print(ctx, py.runID, p.message); err != nil {
 			py.log.Error("print error", zap.Error(err))
@@ -345,8 +337,8 @@ func (py *pySvc) Run(
 
 	runnerOK = true // All is good, don't kill Python subprocess.
 
-	py.printCtx.Push(ctx)
-	go py.printConsumer()
+	// py.printCtx.Push(ctx)
+	go py.printConsumer(ctx)
 
 	py.log.Info("run created")
 	return py, nil
@@ -546,9 +538,6 @@ func (py *pySvc) tracebackToLocation(traceback []*pbUserCode.Frame) []sdktypes.C
 // Call handles a function call from autokitteh.
 // First used of Call start a workflow, later invocations are activity calls.
 func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
-	py.printCtx.Push(ctx)
-	defer py.printCtx.Pop()
-
 	ctx, span := telemetry.T().Start(ctx, "pythonrt.Call")
 	defer span.End()
 
