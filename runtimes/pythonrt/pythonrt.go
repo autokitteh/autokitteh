@@ -498,6 +498,11 @@ func (py *pySvc) drainPrints(ctx context.Context) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Millisecond)
 	defer cancel()
 
+	// Notify printConsumer to stop.
+	defer func() {
+		close(py.channels.print)
+	}()
+
 	// flush the rest of the prints and logs.
 	for {
 		select {
