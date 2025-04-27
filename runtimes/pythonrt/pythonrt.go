@@ -238,7 +238,7 @@ func entryPointFileName(entryPoint string) string {
 
 func (py *pySvc) printConsumer(ctx context.Context) {
 	for p := range py.channels.print {
-		py.log.Info("print", zap.String("message", p.message))
+		py.log.Debug("print", zap.String("message", p.message))
 		if err := py.cbs.Print(ctx, py.runID, p.message); err != nil {
 			py.log.Error("print error", zap.Error(err))
 		}
