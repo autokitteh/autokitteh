@@ -235,7 +235,6 @@ func entryPointFileName(entryPoint string) string {
 }
 
 func (py *pySvc) handlePrint(ctx context.Context, msg *logMessage) {
-	py.log.Debug("print", zap.String("message", msg.message))
 	if err := py.cbs.Print(ctx, py.runID, msg.message); err != nil {
 		py.log.Error("print error", zap.Error(err))
 	}
