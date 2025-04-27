@@ -460,6 +460,13 @@ class Runner(pb.runner_rpc.RunnerService):
         if isinstance(value, Exception):
             set_exception_args(value)
 
+        if not is_pickleable(value):
+            log.error("non pickleable return value: %r of %s", value, type(value))
+            error = pickle.PickleError(
+                f"non-pickleable return value: {value!r} of {type(value)}"
+            )
+            value = None
+
         if not is_pickleable(error):
             log.warning("non pickleable: %r", error)
             error = error.__reduce__()
