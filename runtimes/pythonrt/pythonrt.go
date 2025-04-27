@@ -90,6 +90,8 @@ type pySvc struct {
 	channels comChannels
 
 	didCleanup bool
+
+	printCtx CtxStack
 }
 
 func (py *pySvc) cleanup(ctx context.Context) {
@@ -236,6 +238,22 @@ func entryPointFileName(entryPoint string) string {
 	return entryPoint
 }
 
+func (py *pySvc) printConsumer() {
+	for p := range py.channels.print {
+		ctx := py.printCtx.Pop()
+		if ctx == nil {
+			py.log.Error("print consumer - no context")
+			continue
+		}
+
+		py.log.Info("print", zap.String("message", p.message))
+		if err := py.cbs.Print(ctx, py.runID, p.message); err != nil {
+			py.log.Error("print error", zap.Error(err))
+		}
+		close(p.doneChannel)
+	}
+}
+
 /*
 Run starts a Python workflow.
 
@@ -326,6 +344,9 @@ func (py *pySvc) Run(
 	py.exports = exports
 
 	runnerOK = true // All is good, don't kill Python subprocess.
+
+	py.printCtx.Push(ctx)
+	go py.printConsumer()
 
 	py.log.Info("run created")
 	return py, nil
@@ -525,6 +546,9 @@ func (py *pySvc) tracebackToLocation(traceback []*pbUserCode.Frame) []sdktypes.C
 // Call handles a function call from autokitteh.
 // First used of Call start a workflow, later invocations are activity calls.
 func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+	py.printCtx.Push(ctx)
+	defer py.printCtx.Pop()
+
 	ctx, span := telemetry.T().Start(ctx, "pythonrt.Call")
 	defer span.End()
 
@@ -593,36 +617,11 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 
 			py.log.Log(pyLevelToZap(r.level), r.message)
 			close(r.doneChannel)
-		case p := <-py.channels.print:
-			selSpan.End()
-			span.AddEvent("print")
-
-			ctx, span := telemetry.T().Start(ctx, "pythonrt.Call.print")
-
-			py.log.Info("print", zap.String("message", p.message))
-			if err := py.cbs.Print(ctx, py.runID, p.message); err != nil {
-				py.log.Error("print error", zap.Error(err))
-			}
-			close(p.doneChannel)
-
-			span.End()
 		case v := <-py.channels.execute:
 			selSpan.End()
 			span.AddEvent("execute")
 
 			py.log.Info("execute")
-
-			/* TODO: Execute error
-			if v.Error != "" {
-				py.log.Info("execute error", zap.String("error", v.Error))
-				perr := sdktypes.NewProgramError(
-					sdktypes.NewStringValue(v.Error),
-					py.tracebackToLocation(v.Traceback),
-					map[string]string{"raw": v.Error},
-				)
-				return sdktypes.InvalidValue, perr.ToError()
-			}
-			*/
 
 			if v.Result == nil {
 				py.log.Error("execute: nil result")
