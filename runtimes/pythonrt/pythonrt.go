@@ -78,11 +78,8 @@ type pySvc struct {
 	exports   map[string]sdktypes.Value
 	fileName  string // main user code file name (entry point)
 	envVars   map[string]string
-	// remote       *workerGRPCHandler
 
-	// runner       Runner
-	runner *RunnerClient
-	// runnerManager pb.RunnerManagerClient
+	runner   *RunnerClient
 	runnerID string
 
 	firstCall bool // first call is the trigger, other calls are activities
@@ -90,6 +87,7 @@ type pySvc struct {
 	channels comChannels
 
 	didCleanup bool
+	printDone  chan struct{}
 }
 
 func (py *pySvc) cleanup(ctx context.Context) {
@@ -236,13 +234,29 @@ func entryPointFileName(entryPoint string) string {
 	return entryPoint
 }
 
+func (py *pySvc) handlePrint(ctx context.Context, msg *logMessage) {
+	py.log.Debug("print", zap.String("message", msg.message))
+	if err := py.cbs.Print(ctx, py.runID, msg.message); err != nil {
+		py.log.Error("print error", zap.Error(err))
+	}
+
+	close(msg.doneChannel)
+}
+
 func (py *pySvc) printConsumer(ctx context.Context) {
-	for p := range py.channels.print {
-		py.log.Debug("print", zap.String("message", p.message))
-		if err := py.cbs.Print(ctx, py.runID, p.message); err != nil {
-			py.log.Error("print error", zap.Error(err))
+	for {
+		select {
+		case p, ok := <-py.channels.print:
+			if !ok {
+				py.log.Error("print consumer stopped by closing print channel")
+				return
+			}
+
+			py.handlePrint(ctx, p)
+		case <-py.printDone:
+			py.log.Info("print consumer stopped by closing printDone channel")
+			return
 		}
-		close(p.doneChannel)
 	}
 }
 
@@ -337,7 +351,7 @@ func (py *pySvc) Run(
 
 	runnerOK = true // All is good, don't kill Python subprocess.
 
-	// py.printCtx.Push(ctx)
+	py.printDone = make(chan struct{})
 	go py.printConsumer(ctx)
 
 	py.log.Info("run created")
@@ -490,35 +504,6 @@ func (py *pySvc) eventData(kwargs map[string]sdktypes.Value) ([]byte, error) {
 	return json.Marshal(event)
 }
 
-// drainPrints drains the print channel at the end of a run.
-func (py *pySvc) drainPrints(ctx context.Context) {
-	ctx, span := telemetry.T().Start(ctx, "pythonrt.drainPrints")
-	defer span.End()
-
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Millisecond)
-	defer cancel()
-
-	// Notify printConsumer to stop.
-	defer func() {
-		close(py.channels.print)
-	}()
-
-	// flush the rest of the prints and logs.
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case r := <-py.channels.log:
-			py.log.Log(pyLevelToZap(r.level), r.message)
-		case r := <-py.channels.print:
-			if err := py.cbs.Print(ctx, py.runID, r.message); err != nil {
-				py.log.Error("print error", zap.Error(err))
-			}
-			close(r.doneChannel)
-		}
-	}
-}
-
 func (py *pySvc) tracebackToLocation(traceback []*pbUserCode.Frame) []sdktypes.CallFrame {
 	frames := make([]sdktypes.CallFrame, len(traceback))
 	for i, f := range traceback {
@@ -597,7 +582,11 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 		span.End()
 	}
 
-	defer py.drainPrints(ctx)
+	defer func() {
+		ctx, _ = context.WithTimeout(ctx, 10*time.Millisecond)
+		<-ctx.Done()
+		close(py.printDone)
+	}()
 
 	// Wait for client Done or ActivityReplyRequest message
 	// This *can't* run in an different goroutine since callbacks to temporal need to be in the same goroutine.
