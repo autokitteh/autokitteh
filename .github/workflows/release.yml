@@ -76,7 +76,6 @@ jobs:
                   tags: |
                       type=semver,pattern=v{{version}}
                       type=semver,pattern=v{{major}}.{{minor}}
-                      type=semver,pattern=v{{major}}
                       type=sha
                       type=raw,value=stable
             - name: Build and push
