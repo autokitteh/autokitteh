@@ -74,15 +74,15 @@ jobs:
               with:
                   images: ${{ steps.login-ecr.outputs.registry }}/autokitteh
                   tags: |
-                      type=semver,pattern={{version}}
-                      type=semver,pattern={{major}}.{{minor}}
+                      type=semver,pattern=v{{version}}
+                      type=semver,pattern=v{{major}}.{{minor}}
                       type=sha
                       type=raw,value=stable
             - name: Build and push
               uses: docker/build-push-action@v6
               with:
                   context: .
-                  platforms: linux/amd64
+                  platforms: linux/amd64,linux/arm64
                   labels: ${{steps.meta.outputs.labels}}
                   tags: ${{steps.meta.outputs.tags}}
                   push: true
