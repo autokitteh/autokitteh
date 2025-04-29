@@ -101,7 +101,7 @@ func freePort() (int, error) {
 	return conn.Addr().(*net.TCPAddr).Port, nil
 }
 
-func (r *LocalPython) Start(ctx context.Context, pyExe string, tarData []byte, env map[string]string, workerAddr string) error {
+func (r *LocalPython) Start(ctx context.Context, pyExe string, tarData []byte, env map[string]string, workerAddr string /*, printFn func(string) error*/) error {
 	ctx, span := telemetry.T().Start(ctx, "LocalPython.Start")
 	defer span.End()
 

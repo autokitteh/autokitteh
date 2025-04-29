@@ -252,9 +252,6 @@ class Runner(pb.runner_rpc.RunnerService):
         autokitteh.subscribe = self.syscalls.ak_subscribe
         autokitteh.unsubscribe = self.syscalls.ak_unsubscribe
 
-        # Not ak, but patching print as well
-        builtins.print = self.ak_print
-
     def Start(self, request: pb.runner.StartRequest, context: grpc.ServicerContext):
         # NOTE: Don't do any prints here, ak is not ready for them yet.
         if self._start_called:
@@ -276,7 +273,6 @@ class Runner(pb.runner_rpc.RunnerService):
         try:
             mod = loader.load_code(self.code_dir, ak_call, mod_name)
         except Exception as err:
-            # Can't use ak_print here - ak not ready yet.
             err_text = self.result_error(err)
             context.abort(
                 grpc.StatusCode.INVALID_ARGUMENT,
@@ -497,26 +493,6 @@ class Runner(pb.runner_rpc.RunnerService):
             self.worker.Done(req)
         except Exception as err:
             log.error("on_event: done send error: %r", err)
-
-    @mark_no_activity
-    def ak_print(self, *objects, sep=" ", end="\n", file=None, flush=False):
-        io = StringIO()
-        self._orig_print(*objects, sep=sep, end=end, flush=flush, file=io)
-        text = io.getvalue()
-        self._orig_print(text, file=file)  # Print also to original destination
-
-        req = pb.handler.PrintRequest(
-            runner_id=self.id,
-            message=text,
-        )
-
-        try:
-            self.worker.Print(req)
-        except grpc.RpcError as err:
-            if err.code() == grpc.StatusCode.UNAVAILABLE or grpc.StatusCode.CANCELLED:
-                log.error("grpc cancelled or unavailable, killing self")
-                self.server.stop(SERVER_GRACE_TIMEOUT)
-            log.error("print: %s", err)
 
 
 def is_valid_port(port):
