@@ -1,4 +1,3 @@
-error: error processing result - AttributeError('This class cannot be pickled')
 =======================================================================================================
 The below error means you need to use the @autokitteh.activity decorator.
 See https://docs.autokitteh.com/develop/python/#function-arguments-and-return-values-must-be-pickleable
@@ -7,16 +6,21 @@ for more details.
 -- main.py main --
 import autokitteh
 
+# Will cause recursion error when unpickled
+class Infi:
+    def __init__(self):
+        self._lookup = {}
 
-class Unpickleable:
-    def __reduce__(self):
-        raise AttributeError("This class cannot be pickled")
+    def __getattr__(self, attr):
+        if attr in self._lookup:
+            return self._lookup[attr]
+        raise AttributeError(attr)
 
 
 def main(event):
-	boom()
+	get_infi()
 
 
 @autokitteh.activity
-def boom():
-	return Unpickleable()
+def get_infi():
+	return Infi()
