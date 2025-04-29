@@ -561,9 +561,14 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 			}
 			return sdktypes.InvalidValue, fmt.Errorf("start request: %w", err)
 		}
+
 		defer func() {
 			py.cleanup(context.Background())
+
+			time.Sleep(10 * time.Millisecond) // Give time to print consumer to finish
+			close(py.printDone)
 		}()
+
 	} else {
 		ctx, span := telemetry.T().Start(ctx, "pythonrt.Call.Execute")
 
@@ -580,11 +585,6 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 
 		span.End()
 	}
-
-	defer func() {
-		time.Sleep(10 * time.Millisecond) // Give time to print consumer to finish
-		close(py.printDone)
-	}()
 
 	// Wait for client Done or ActivityReplyRequest message
 	// This *can't* run in an different goroutine since callbacks to temporal need to be in the same goroutine.
