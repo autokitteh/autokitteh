@@ -1,6 +1,5 @@
 GO=go
 
-# go install gotest.tools/gotestsum@latest
 ifeq ($(shell which gotestsum),)
 GOTEST=$(GO) test
 else
@@ -73,20 +72,9 @@ gofmt-check:
 
 golangci_lint=$(shell which golangci-lint)
 
-# Based on: https://golangci-lint.run/welcome/install/#other-ci
-# Keep the same version in "/.github/workflows/go.yml"!
-# See: https://github.com/golangci/golangci-lint/releases
-$(OUTDIR)/tools/golangci-lint:
-	mkdir -p $(OUTDIR)/tools
-ifeq ($(golangci_lint),)
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "$(OUTDIR)/tools" v1.64.5
-else
-	ln -fs $(golangci_lint) $(OUTDIR)/tools/golangci-lint
-endif
-
 .PHONY: lint
-lint: $(OUTDIR)/tools/golangci-lint
-	$(OUTDIR)/tools/golangci-lint run
+lint:
+	golangci-lint run
 
 scripts=$(shell find . -name \*.sh -not -path "*/.venv/*")
 

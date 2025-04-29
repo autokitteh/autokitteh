@@ -33,7 +33,7 @@ import (
 	varsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/vars/v1"
 )
 
-func parse(fds []protoreflect.FileDescriptor) func(proto.Message) error {
+func parse(fds []protoreflect.FileDescriptor) func(proto.Message, ...protovalidate.ValidationOption) error {
 	var descs []protoreflect.MessageDescriptor
 
 	for _, fd := range fds {
