@@ -582,8 +582,7 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 	}
 
 	defer func() {
-		ctx, _ = context.WithTimeout(ctx, 10*time.Millisecond)
-		<-ctx.Done()
+		time.Sleep(10 * time.Millisecond) // Give time to print consumer to finish
 		close(py.printDone)
 	}()
 
