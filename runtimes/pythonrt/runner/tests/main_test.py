@@ -227,7 +227,7 @@ def b():
 
 
 def test_pb_traceback(monkeypatch, tmp_path):
-    mod_name = f"progam_{uuid4().hex}"
+    mod_name = f"program_{uuid4().hex}"
     py_file = tmp_path / f"{mod_name}.py"
     with open(py_file, "w") as out:
         out.write(code)
