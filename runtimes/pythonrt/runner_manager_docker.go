@@ -79,7 +79,7 @@ func createStartCommand(entrypoint, workerAddress, runnerID string) []string {
 	}
 }
 
-func (rm *dockerRunnerManager) Start(ctx context.Context, sessionID sdktypes.SessionID, buildArtifacts []byte, vars map[string]string) (string, *RunnerClient, error) {
+func (rm *dockerRunnerManager) Start(ctx context.Context, sessionID sdktypes.SessionID, buildArtifacts []byte, vars map[string]string, printFn func(string) error) (string, *RunnerClient, error) {
 	if len(buildArtifacts) == 0 {
 		return "", nil, errors.New("no build artifacts")
 	}

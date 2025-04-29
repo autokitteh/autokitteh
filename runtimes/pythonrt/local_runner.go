@@ -101,7 +101,7 @@ func freePort() (int, error) {
 	return conn.Addr().(*net.TCPAddr).Port, nil
 }
 
-func (r *LocalPython) Start(ctx context.Context, pyExe string, tarData []byte, env map[string]string, workerAddr string /*, printFn func(string) error*/) error {
+func (r *LocalPython) Start(ctx context.Context, pyExe string, tarData []byte, env map[string]string, workerAddr string, printFn func(string) error) error {
 	ctx, span := telemetry.T().Start(ctx, "LocalPython.Start")
 	defer span.End()
 
@@ -168,14 +168,21 @@ func (r *LocalPython) Start(ctx context.Context, pyExe string, tarData []byte, e
 	cmd.Env = overrideEnv(env, r.runnerDir)
 	cmd.Dir = r.userDir
 
-	if r.logRunnerCode {
-		r.stdoutRunnerLogger = &zapio.Writer{Log: r.log.With(zap.String("stream", "stdout")), Level: zap.InfoLevel}
-		cmd.Stdout = r.stdoutRunnerLogger
-		// Why warn instead of error? (1) We're using stdout too much, (2) Python errors are not
-		// necessarily AK errors, and (3) errors include a stack trace, which is irrelevant here.
-		r.stderrRunnerLogger = &zapio.Writer{Log: r.log.With(zap.String("stream", "stderr")), Level: zap.WarnLevel}
-		cmd.Stderr = r.stderrRunnerLogger
-	}
+	stdoutWriter := zapio.Writer{Log: r.log.With(zap.String("stream", "stdout"))}
+	stderrWriter := zapio.Writer{Log: r.log.With(zap.String("stream", "stderr"))}
+	cmd.Stdout = io.MultiWriter(&stdoutWriter, &Printer{printFn: printFn})
+	cmd.Stderr = io.MultiWriter(&stderrWriter, &Printer{printFn: printFn})
+
+	/*
+		if r.logRunnerCode {
+			r.stdoutRunnerLogger = &zapio.Writer{Log: r.log.With(zap.String("stream", "stdout")), Level: zap.InfoLevel}
+			cmd.Stdout = r.stdoutRunnerLogger
+			// Why warn instead of error? (1) We're using stdout too much, (2) Python errors are not
+			// necessarily AK errors, and (3) errors include a stack trace, which is irrelevant here.
+			r.stderrRunnerLogger = &zapio.Writer{Log: r.log.With(zap.String("stream", "stderr")), Level: zap.WarnLevel}
+			cmd.Stderr = r.stderrRunnerLogger
+		}
+	*/
 
 	// make sure runner is killed if ak is killed
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}

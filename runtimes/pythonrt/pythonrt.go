@@ -317,7 +317,11 @@ func (py *pySvc) Run(
 		}
 	}()
 
-	runnerID, runner, err := runnerManager.Start(ctx, sessionID, tarData, py.envVars)
+	printFn := func(msg string) error {
+		return cbs.Print(ctx, runID, msg)
+	}
+
+	runnerID, runner, err := runnerManager.Start(ctx, sessionID, tarData, py.envVars, printFn)
 	close(startDone)
 	if err != nil {
 		return nil, fmt.Errorf("starting runner: %w", err)

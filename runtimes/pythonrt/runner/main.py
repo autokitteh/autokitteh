@@ -1,5 +1,4 @@
 import asyncio
-import builtins
 import inspect
 import json
 import pickle
@@ -25,7 +24,7 @@ import values
 from autokitteh import AttrDict, Event, connections
 from autokitteh.errors import AutoKittehError
 from call import AKCall, activity_marker, full_func_name
-from syscalls import SysCalls, mark_no_activity
+from syscalls import SysCalls
 
 # Timeouts are in seconds
 SERVER_GRACE_TIMEOUT = 3
@@ -183,7 +182,6 @@ class Runner(pb.runner_rpc.RunnerService):
 
         self.lock = Lock()
         self.activity_call = None
-        self._orig_print = print
         self._start_called = False
         self._inactivity_timer = Timer(
             start_timeout, self.stop_if_start_not_called, args=(start_timeout,)
@@ -194,10 +192,10 @@ class Runner(pb.runner_rpc.RunnerService):
         io = StringIO()
 
         if "pickle" in str(err):
-            self._orig_print(pickle_help, file=io)
+            print(pickle_help, file=io)
 
         exc = "".join(format_exception(err))
-        self._orig_print(f"error: {err!r}\n\n{exc}", file=io)
+        print(f"error: {err!r}\n\n{exc}", file=io)
 
         return io.getvalue()
 

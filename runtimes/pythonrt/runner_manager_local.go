@@ -85,7 +85,7 @@ func configureLocalRunnerManager(log *zap.Logger, cfg LocalRunnerManagerConfig) 
 	return nil
 }
 
-func (l *localRunnerManager) Start(ctx context.Context, sessionID sdktypes.SessionID, buildArtifacts []byte, vars map[string]string) (string, *RunnerClient, error) {
+func (l *localRunnerManager) Start(ctx context.Context, sessionID sdktypes.SessionID, buildArtifacts []byte, vars map[string]string, printFn func(string) error) (string, *RunnerClient, error) {
 	ctx, span := telemetry.T().Start(ctx, "localRunnerManager.Start")
 	defer span.End()
 
@@ -118,7 +118,7 @@ func (l *localRunnerManager) Start(ctx context.Context, sessionID sdktypes.Sessi
 		log.Info("worker address inferred", zap.String("workerAddress", l.workerAddress))
 	}
 
-	if err := r.Start(ctx, l.pyExe, buildArtifacts, vars, l.workerAddress); err != nil {
+	if err := r.Start(ctx, l.pyExe, buildArtifacts, vars, l.workerAddress, printFn); err != nil {
 		return "", nil, err
 	}
 

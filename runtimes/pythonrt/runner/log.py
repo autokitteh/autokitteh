@@ -21,7 +21,7 @@ class JsonFormatter(logging.Formatter):
 
 formatter = JsonFormatter()
 
-_log = logging.getLogger()
+_log = logging.getLogger("ak")
 _log.setLevel(environ.get("AK_WORKER_PYTHON_LOG_LEVEL") or logging.INFO)
 _stream_handler = logging.StreamHandler()
 _stream_handler.setFormatter(formatter)
