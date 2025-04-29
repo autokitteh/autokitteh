@@ -1,6 +1,10 @@
 package pythonrt
 
-import "go.autokitteh.dev/autokitteh/internal/backend/configset"
+import (
+	"time"
+
+	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+)
 
 type Config struct {
 	RemoteRunnerEndpoints []string `koanf:"remote_runner_endpoints"`
@@ -13,17 +17,21 @@ type Config struct {
 	LogBuildCode      bool `koanf:"log_build_code"`
 
 	RunnerType string `koanf:"runner_type"`
+
+	DelayedStartPrintTimeout time.Duration `koanf:"delayed_start_print_timeout"`
 }
 
 var Configs = configset.Set[Config]{
 	Default: &Config{
-		RunnerType: "local",
+		RunnerType:               "local",
+		DelayedStartPrintTimeout: 10 * time.Second,
 	},
 	Test: &Config{
 		LazyLoadLocalVEnv: true,
 	},
 	Dev: &Config{
-		LogRunnerCode: true,
-		LogBuildCode:  true,
+		LogRunnerCode:            true,
+		LogBuildCode:             true,
+		DelayedStartPrintTimeout: 10 * time.Second,
 	},
 }

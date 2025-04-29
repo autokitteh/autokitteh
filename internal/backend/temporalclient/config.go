@@ -4,11 +4,11 @@ import (
 	"path/filepath"
 	"time"
 
-	"go.temporal.io/sdk/testsuite"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+	"go.autokitteh.dev/autokitteh/internal/backend/temporaldevsrv"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
 )
 
@@ -35,7 +35,7 @@ type Config struct {
 	Namespace             string `koanf:"namespace"`
 
 	// DevServer.ClientOptions is not used.
-	DevServer testsuite.DevServerOptions `koanf:"dev_server"`
+	DevServer temporaldevsrv.DevServerOptions `koanf:"dev_server"`
 
 	// Max number of attempts to start the dev server.
 	DevServerStartMaxAttempts int `koanf:"dev_server_start_max_attempts"`
@@ -76,7 +76,10 @@ var (
 		Dev: &Config{
 			Monitor:               defaultMonitorConfig,
 			StartDevServerIfNotUp: true,
-			DevServer: testsuite.DevServerOptions{
+			DevServer: temporaldevsrv.DevServerOptions{
+				CachedDownload: temporaldevsrv.CachedDownload{
+					DestDir: xdg.CacheHomeDir(),
+				},
 				LogLevel:   zapcore.WarnLevel.String(),
 				EnableUI:   true,
 				DBFilename: filepath.Join(xdg.DataHomeDir(), "temporal_dev.sqlite"),
@@ -90,7 +93,10 @@ var (
 		Test: &Config{
 			Monitor:              defaultMonitorConfig,
 			AlwaysStartDevServer: true,
-			DevServer: testsuite.DevServerOptions{
+			DevServer: temporaldevsrv.DevServerOptions{
+				CachedDownload: temporaldevsrv.CachedDownload{
+					DestDir: xdg.CacheHomeDir(),
+				},
 				LogLevel: zapcore.WarnLevel.String(),
 				EnableUI: true,
 			},

@@ -25,6 +25,7 @@ import (
 const (
 	ConfigEnvVar = "XDG_CONFIG_HOME"
 	DataEnvVar   = "XDG_DATA_HOME"
+	CacheEnvVar  = "XDG_CACHE_HOME"
 
 	appName = "autokitteh"
 	perm    = 0o700 // drxw------
@@ -37,6 +38,8 @@ func ConfigHomeDir() string { return homeDir(xdg.ConfigHome) }
 // DataHomeDir returns the XDG config-home directory for autokitteh,
 // and guarantees that it exists, so callers can use it safely.
 func DataHomeDir() string { return homeDir(xdg.DataHome) }
+
+func CacheHomeDir() string { return homeDir(xdg.CacheHome) }
 
 func homeDir(baseDir string) string {
 	xdg.Reload() // Account for changes in environment variables.
@@ -51,6 +54,7 @@ func homeDir(baseDir string) string {
 }
 
 func Reload() {
+	CacheHomeDir()
 	ConfigHomeDir()
 	DataHomeDir()
 }

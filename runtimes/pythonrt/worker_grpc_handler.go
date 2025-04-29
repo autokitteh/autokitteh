@@ -129,13 +129,13 @@ func (s *workerGRPCHandler) Log(ctx context.Context, req *userCode.LogRequest) (
 }
 
 func (s *workerGRPCHandler) Print(ctx context.Context, req *userCode.PrintRequest) (*userCode.PrintResponse, error) {
-	s.log.Info("Print request", zap.String("message", req.Message))
 	runner := s.runnerByID(req.RunnerId)
 	if runner == nil {
 		w.log.Error("unknown runner ID", zap.String("id", req.RunnerId))
 		return &userCode.PrintResponse{Error: "unknown runner ID"}, nil
 	}
 
+	s.log.Debug("Print request", zap.String("message", req.Message), zap.String("runner_id", req.RunnerId))
 	m := &logMessage{level: "info", message: req.Message, doneChannel: make(chan struct{})}
 
 	runner.channels.print <- m
