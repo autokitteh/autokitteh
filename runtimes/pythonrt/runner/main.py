@@ -51,14 +51,7 @@ def parse_entry_point(entry_point):
     return file_name[:-3], func_name
 
 
-runner_dir = Path(__file__).absolute().parent
-
-
-def is_runner_file(file_name):
-    return Path(file_name).absolute().is_relative_to(runner_dir)
-
-
-def pb_traceback(tb):
+def pb_traceback(stack):
     """Convert traceback to a list of pb.user_code.Frame for serialization."""
     return [
         pb.user_code.Frame(
@@ -67,9 +60,17 @@ def pb_traceback(tb):
             code=frame.line,
             name=frame.name,
         )
-        for frame in tb.stack
-        if not is_runner_file(frame.filename)
+        for frame in stack
     ]
+
+
+def filter_traceback(stack, user_code):
+    """Filter out first part of traceback until first user code frame."""
+    for i, frame in enumerate(stack):
+        if Path(frame.filename).is_relative_to(user_code):
+            return stack[i:]
+
+    return stack
 
 
 pickle_help = """
@@ -490,7 +491,8 @@ class Runner(pb.runner_rpc.RunnerService):
             if result.error:
                 error = restore_error(result.error)
                 req.error = self.result_error(error)
-                tb = pb_traceback(result.traceback)
+                stack = filter_traceback(result.traceback.stack, self.code_dir)
+                tb = pb_traceback(stack)
                 req.traceback.extend(tb)
             else:
                 data = pickle.dumps(result)
