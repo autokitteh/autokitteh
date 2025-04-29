@@ -74,8 +74,8 @@ jobs:
               with:
                   images: ${{ steps.login-ecr.outputs.registry }}/autokitteh
                   tags: |
-                      type=semver,pattern={{version}}
-                      type=semver,pattern={{major}}.{{minor}}
+                      type=semver,pattern=v{{version}}
+                      type=semver,pattern=v{{major}}.{{minor}}
                       type=sha
                       type=raw,value=stable
             - name: Build and push

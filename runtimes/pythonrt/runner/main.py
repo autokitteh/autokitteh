@@ -325,10 +325,11 @@ class Runner(pb.runner_rpc.RunnerService):
             data = pickle.dumps(result)
             req.result.custom.data = data
             req.result.custom.value.CopyFrom(values.safe_wrap(result.value))
-        except (TypeError, pickle.PickleError) as err:
+        except Exception as err:
             # Print so it'll get to session log
-            msg = f"cannot pickle result - {err!r}"
+            msg = f"error processing result - {err!r}"
             print(f"error: {msg}")
+            # It's probably pickle, print help to user
             print(pickle_help)
             req.error = msg
 
