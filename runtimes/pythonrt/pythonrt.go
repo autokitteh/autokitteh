@@ -306,7 +306,19 @@ func (py *pySvc) Run(
 		return nil, fmt.Errorf("%q note found in compiled data", archiveKey)
 	}
 
+	startDone := make(chan struct{})
+
+	go func() {
+		select {
+		case <-startDone:
+			// nop
+		case <-time.After(py.cfg.DelayedStartPrintTimeout):
+			cbs.Print(ctx, runID, "ᓚᘏᗢ Python runs might take a while to start when running for the first time on a new runner, hang on!")
+		}
+	}()
+
 	runnerID, runner, err := runnerManager.Start(ctx, sessionID, tarData, py.envVars)
+	close(startDone)
 	if err != nil {
 		return nil, fmt.Errorf("starting runner: %w", err)
 	}
