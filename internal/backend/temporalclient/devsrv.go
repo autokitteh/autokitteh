@@ -31,7 +31,11 @@ func (c *impl) startDevServer(ctx context.Context) error {
 	devSrvCfg.Stderr = c.logFile
 	devSrvCfg.Stdout = c.logFile
 
-	for i := 0; i < c.cfg.DevServerStartMaxAttempts && c.srv == nil; i++ {
+	for i := range c.cfg.DevServerStartMaxAttempts {
+		if c.srv != nil {
+			break
+		}
+
 		l := c.l.With(zap.Int("attempt", i))
 
 		l.Info("starting temporal dev server")

@@ -54,6 +54,7 @@ func homeDir(baseDir string) string {
 }
 
 func Reload() {
+	CacheHomeDir()
 	ConfigHomeDir()
 	DataHomeDir()
 }
