@@ -75,7 +75,7 @@ var RootCmd = common.StandardCommand(&cobra.Command{
 			return fmt.Errorf("init root config: %w", err)
 		}
 
-		// server is reporeted using a report look, so this prevent double reporting
+		// server is reported using a report look, so this prevent double reporting
 		if cmd.Use != upCmd.Use {
 			r, _ := usagereporter.New(zap.NewNop(), usagereporter.Configs.Default, "client")
 			if r != nil {
