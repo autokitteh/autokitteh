@@ -313,7 +313,7 @@ func (py *pySvc) Run(
 		case <-startDone:
 			// nop
 		case <-time.After(py.cfg.DelayedStartPrintTimeout):
-			cbs.Print(ctx, runID, "ᓚᘏᗢ Python runs might take a while to start when running for the first time on a new runner, hang on!")
+			_ = cbs.Print(ctx, runID, "ᓚᘏᗢ Python runs might take a while to start when running for the first time on a new runner, hang on!")
 		}
 	}()
 
