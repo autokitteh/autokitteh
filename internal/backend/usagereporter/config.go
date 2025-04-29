@@ -19,10 +19,5 @@ var (
 			Endpoint: "https://api.autokitteh.cloud/usage-report",
 			Interval: time.Hour * 24,
 		},
-		Dev: &Config{
-			Enabled:  true,
-			Endpoint: "http://localhost:9980",
-			Interval: time.Hour * 24,
-		},
 	}
 )

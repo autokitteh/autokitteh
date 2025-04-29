@@ -159,7 +159,9 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 
 		Component("usagereporter",
 			usagereporter.Configs,
-			fx.Provide(usagereporter.New),
+			fx.Provide(func(z *zap.Logger, cfg *usagereporter.Config) (usagereporter.UsageReporter, error) {
+				return usagereporter.New(z, cfg, string(opts.Mode))
+			}),
 			fx.Invoke(func(lc fx.Lifecycle, r usagereporter.UsageReporter) {
 				HookOnStart(lc, r.StartReportLoop)
 				HookOnStop(lc, r.StopReportLoop)

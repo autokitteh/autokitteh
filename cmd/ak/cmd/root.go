@@ -75,11 +75,14 @@ var RootCmd = common.StandardCommand(&cobra.Command{
 			return fmt.Errorf("init root config: %w", err)
 		}
 
-		r, _ := usagereporter.New(zap.NewNop(), usagereporter.Configs.Default)
-		if r != nil {
-			data := map[string]string{}
-			data["command"] = cmd.CommandPath()
-			r.Report(data)
+		// server is reporeted using a report look, so this prevent double reporting
+		if cmd.Use != upCmd.Use {
+			r, _ := usagereporter.New(zap.NewNop(), usagereporter.Configs.Default, "client")
+			if r != nil {
+				data := map[string]string{}
+				data["command"] = cmd.CommandPath()
+				r.Report(data)
+			}
 		}
 
 		return common.InitRPCClient(token)

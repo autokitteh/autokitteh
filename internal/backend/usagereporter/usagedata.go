@@ -22,6 +22,7 @@ type reportRequest struct {
 	OS             string            `json:"os"`
 	Arch           string            `json:"arch"`
 	Payload        map[string]string `json:"payload"`
+	Mode           string            `json:"mode"`
 }
 
 type UsageReporter interface {
@@ -36,6 +37,7 @@ type usageReporter struct {
 	shutdownChan   chan struct{}
 	endpoint       string
 	logger         *zap.Logger
+	mode           string
 }
 
 func generateInstallIDFile(path string) error {
@@ -71,7 +73,7 @@ func ensureAndReadInstallationIDFile(installationIDFile string) (string, error) 
 	return string(data), nil
 }
 
-func New(z *zap.Logger, cfg *Config) (UsageReporter, error) {
+func New(z *zap.Logger, cfg *Config, mode string) (UsageReporter, error) {
 	if !cfg.Enabled {
 		return &nopUpdater{}, nil
 	}
@@ -100,6 +102,7 @@ func New(z *zap.Logger, cfg *Config) (UsageReporter, error) {
 		shutdownChan:   make(chan struct{}),
 		endpoint:       cfg.Endpoint,
 		logger:         z,
+		mode:           mode,
 	}, nil
 }
 
@@ -112,6 +115,7 @@ func (d *usageReporter) Report(payload map[string]string) {
 		Commit:         version.Commit,
 		OS:             runtime.GOOS,
 		Arch:           runtime.GOARCH,
+		Mode:           d.mode,
 		Payload:        payload,
 	}
 
