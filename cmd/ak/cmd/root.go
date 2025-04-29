@@ -25,6 +25,7 @@ import (
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/runtimes"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/server"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/sessions"
+	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/temporal"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/triggers"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/users"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/vars"
@@ -103,7 +104,6 @@ func init() {
 	RootCmd.AddCommand(versionCmd)
 
 	// Top-level parent commands.
-	mcp.AddSubcommands(RootCmd)
 	auth.AddSubcommands(RootCmd)
 	builds.AddSubcommands(RootCmd)
 	configuration.AddSubcommands(RootCmd)
@@ -113,11 +113,13 @@ func init() {
 	experimental.AddSubcommands(RootCmd)
 	integrations.AddSubcommands(RootCmd)
 	manifest.AddSubcommands(RootCmd)
+	mcp.AddSubcommands(RootCmd)
 	orgs.AddSubcommands(RootCmd)
 	projects.AddSubcommands(RootCmd)
 	runtimes.AddSubcommands(RootCmd)
 	server.AddSubcommands(RootCmd)
 	sessions.AddSubcommands(RootCmd)
+	temporal.AddSubcommands(RootCmd)
 	triggers.AddSubcommands(RootCmd)
 	users.AddSubcommands(RootCmd)
 	vars.AddSubcommands(RootCmd)
