@@ -333,7 +333,7 @@ class Runner(pb.runner_rpc.RunnerService):
             # Print so it'll get to session log
             msg = f"cannot pickle result - {err!r}"
             print(f"error: {msg}")
-            print(pickle_help)
+            print(self.result_error(err))
             req.error = msg
 
         log.info("execute reply")
