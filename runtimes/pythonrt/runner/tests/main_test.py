@@ -10,20 +10,21 @@ import builtins
 import json
 import pickle
 import sys
+import traceback
 from concurrent.futures import Future
 from subprocess import Popen, TimeoutExpired, run
 from threading import Event
 from unittest.mock import MagicMock
-
-import pytest
-from conftest import clear_module_cache, workflows
-from mock_worker import MockWorker
+from uuid import uuid4
 
 import main
 import pb.autokitteh.user_code.v1.runner_svc_pb2 as runner_pb
 import pb.autokitteh.user_code.v1.user_code_pb2 as user_code
 import pb.autokitteh.values.v1.values_pb2 as pb_values
+import pytest
 import values
+from conftest import clear_module_cache, workflows
+from mock_worker import MockWorker
 
 
 def new_test_runner(code_dir, worker=None, server=None):
@@ -209,3 +210,76 @@ def test_activity():
     worker = MockWorker(runner)
     event = json.dumps({"data": {"cat": "mitzi"}})
     worker.start("program.py:on_event", event.encode())
+
+
+code = """
+import json
+
+def main():
+    a()
+
+def a():
+    b()
+
+def b():
+    json.loads("{")  # Will raise
+"""
+
+
+def test_pb_traceback(monkeypatch, tmp_path):
+    mod_name = f"program_{uuid4().hex}"
+    py_file = tmp_path / f"{mod_name}.py"
+    with open(py_file, "w") as out:
+        out.write(code)
+
+    monkeypatch.setattr(sys, "path", sys.path + [str(tmp_path)])
+
+    mod = __import__(mod_name)
+    try:
+        mod.main()
+    except ValueError as err:
+        tb = main.TracebackException.from_exception(err)
+
+    pb_tb = main.pb_traceback(tb.stack)
+    assert [f.filename for f in pb_tb] == [f.filename for f in tb.stack]
+
+
+ftb_user_dir = "/tmp/user"
+Frame = traceback.FrameSummary
+
+ftb_cases = [
+    # stack, index
+    # runner then user
+    (
+        [
+            Frame("/tmp/runner/main.py", 0, "user"),
+            Frame(f"{ftb_user_dir}/program.py", 0, "user"),
+        ]
+        + sys.path,
+        1,
+    ),
+    # user first
+    (
+        [
+            Frame(f"{ftb_user_dir}/program.py", 0, "user"),
+            Frame("/tmp/runner/main.py", 0, "user"),
+        ],
+        0,
+    ),
+    # no user
+    (
+        [
+            Frame("/tmp/runner/main.py", 0, "user"),
+            Frame("/tmp/runner/main.py", 0, "user"),
+        ],
+        0,
+    ),
+    # empty
+    ([], 0),
+]
+
+
+@pytest.mark.parametrize("stack, index", ftb_cases)
+def test_filter_tb(stack, index):
+    out = main.filter_traceback(stack, ftb_user_dir)
+    assert stack[index:] == out
