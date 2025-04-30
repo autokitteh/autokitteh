@@ -6,7 +6,6 @@ Need much more:
 - Bad input tests
 """
 
-import builtins
 import json
 import pickle
 import sys
@@ -17,6 +16,7 @@ from threading import Event
 from unittest.mock import MagicMock
 from uuid import uuid4
 
+import log
 import main
 import pb.autokitteh.user_code.v1.runner_svc_pb2 as runner_pb
 import pb.autokitteh.user_code.v1.user_code_pb2 as user_code
@@ -61,8 +61,10 @@ def test_start(monkeypatch):
     req = runner_pb.StartRequest(entry_point=entry_point, event=event)
     context = MagicMock()
 
-    # Restore print after this test
-    monkeypatch.setattr(builtins, "print", print)
+    # Setup logging
+    runner.worker.Log.return_value = MagicMock(error="")
+    monkeypatch.setattr(log._handler, "worker", runner.worker)
+    monkeypatch.setattr(log._handler, "runner_id", runner.id)
 
     resp = runner.Start(req, context)
 

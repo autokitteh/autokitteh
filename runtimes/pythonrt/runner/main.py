@@ -597,6 +597,8 @@ if __name__ == "__main__":
         except grpc.RpcError as err:
             raise SystemExit(f"error: worker not available - {err}")
 
+    log.setup(args.runner_id, worker)
+
     duration = monotonic() - start_time
     log.info(
         "connected to worker at %r (duration = %.2fsec)", args.worker_address, duration
