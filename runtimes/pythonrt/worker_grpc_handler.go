@@ -433,12 +433,10 @@ func (s *workerGRPCHandler) RefreshOAuthToken(ctx context.Context, req *userCode
 	}
 
 	// Get the integration's OAuth configuration.
-	var cid sdktypes.ConnectionID = sdktypes.InvalidConnectionID
-	cid_str, ok := runner.envVars[req.Connection+"__connection_id"]
-	if ok && cid_str != "" {
+	var cid sdktypes.ConnectionID
+	if cid_str := runner.envVars[req.Connection+"__connection_id"]; cid_str != "" {
 		var err error
-		cid, err = sdktypes.ParseConnectionID(cid_str)
-		if err != nil {
+		if cid, err = sdktypes.ParseConnectionID(cid_str); err != nil {
 			runner.log.Warn("invalid connection ID",
 				zap.String("connection", req.Connection),
 				zap.String("connection_id", cid_str),
