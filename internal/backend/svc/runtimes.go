@@ -4,6 +4,7 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/oauth"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/backend/httpsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
@@ -47,8 +48,8 @@ func runtimesFXOption() fx.Option {
 			func(cfg *pythonrt.Config, l *zap.Logger, httpsvc httpsvc.Svc) (*sdkruntimes.Runtime, error) {
 				return pythonrt.New(cfg, l, httpsvc.Addr)
 			},
-			fx.Invoke(func(l *zap.Logger, muxes *muxes.Muxes) {
-				pythonrt.ConfigureWorkerGRPCHandler(l, muxes.NoAuth)
+			fx.Invoke(func(l *zap.Logger, muxes *muxes.Muxes, oauth *oauth.OAuth) {
+				pythonrt.ConfigureWorkerGRPCHandler(l, muxes.NoAuth, oauth)
 			}),
 		),
 
