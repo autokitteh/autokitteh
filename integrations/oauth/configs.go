@@ -472,6 +472,8 @@ func microsoftConfig(scopes []string) *oauth2.Config {
 func offlineOpts() map[string]string {
 	return map[string]string{
 		"access_type": "offline", // oauth2.AccessTypeOffline
+		// The "prompt: consent" parameter ensures that Google consistently returns a refresh token,
+		// even if the user has previously granted consent. This is critical for long-term access.
 		"prompt":      "consent",
 	}
 }
