@@ -472,6 +472,7 @@ func microsoftConfig(scopes []string) *oauth2.Config {
 func offlineOpts() map[string]string {
 	return map[string]string{
 		"access_type": "offline", // oauth2.AccessTypeOffline
+		"prompt":      "consent",
 	}
 }
 
