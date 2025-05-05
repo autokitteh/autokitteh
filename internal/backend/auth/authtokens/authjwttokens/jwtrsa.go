@@ -7,6 +7,8 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"os"
+	"strings"
 	"time"
 
 	j "github.com/golang-jwt/jwt/v5"
@@ -23,8 +25,8 @@ const issuer = "autokitteh.cloud"
 var rsaMethod = j.SigningMethodRS256
 
 type RSAConfig struct {
-	PrivateKey string `koanf:"private_key"` // PEM encoded RSA private key
-	PublicKey  string `koanf:"public_key"`  // PEM encoded RSA public key
+	PrivateKey string `koanf:"private_key"` // PEM encoded RSA private key or file path
+	PublicKey  string `koanf:"public_key"`  // PEM encoded RSA public key or file path
 }
 
 type rsaTokens struct {
@@ -40,6 +42,29 @@ var (
 type RSATokens interface {
 	authtokens.Tokens
 	GetJWKS() (*JWKS, error)
+}
+
+// isFilePath checks if the input string looks like a file path
+func isFilePath(s string) bool {
+	return !strings.Contains(s, "-----BEGIN") &&
+		(strings.Contains(s, "/") || strings.Contains(s, "\\"))
+}
+
+// readFile reads the entire file and returns its contents as a string
+func readFile(path string) (string, error) {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return "", fmt.Errorf("could not read file %s: %w", path, err)
+	}
+	return string(content), nil
+}
+
+// getKeyContent returns the key content, reading from a file if necessary
+func getKeyContent(key string) (string, error) {
+	if isFilePath(key) {
+		return readFile(key)
+	}
+	return key, nil
 }
 
 func parsePrivateKey(pemStr string) (*rsa.PrivateKey, error) {
@@ -103,12 +128,26 @@ func newRSA(cfg *RSAConfig) (RSATokens, error) {
 		return nil, errors.New("both private and public keys must be provided")
 	}
 
-	privateKey, err := parsePrivateKey(cfg.PrivateKey)
+	// Get the private key content (from string or file)
+	privateKeyContent, err := getKeyContent(cfg.PrivateKey)
+	if err != nil {
+		return nil, fmt.Errorf("error reading private key: %w", err)
+	}
+
+	// Get the public key content (from string or file)
+	publicKeyContent, err := getKeyContent(cfg.PublicKey)
+	if err != nil {
+		return nil, fmt.Errorf("error reading public key: %w", err)
+	}
+
+	// Parse the private key
+	privateKey, err := parsePrivateKey(privateKeyContent)
 	if err != nil {
 		return nil, fmt.Errorf("invalid private key: %w", err)
 	}
 
-	publicKey, err := parsePublicKey(cfg.PublicKey)
+	// Parse the public key
+	publicKey, err := parsePublicKey(publicKeyContent)
 	if err != nil {
 		return nil, fmt.Errorf("invalid public key: %w", err)
 	}
