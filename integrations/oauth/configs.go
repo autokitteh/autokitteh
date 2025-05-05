@@ -323,7 +323,7 @@ func (o *OAuth) initConfigs() {
 				// TODO: TeamsAppInstallation.ReadForXXX? TeamsTab?
 				// "Teamwork.Migrate.All", // Application-only.
 			}),
-			Opts: offlineOpts(),
+			Opts: offlineOptsMicrosoft(),
 		},
 
 		// https://learn.microsoft.com/en-us/entra/identity-platform/v2-app-types
@@ -348,7 +348,7 @@ func (o *OAuth) initConfigs() {
 				// TODO: TeamsAppInstallation.ReadForXXX? TeamsTab?
 				// "Teamwork.Migrate.All", // Application-only.
 			}),
-			Opts: offlineOpts(),
+			Opts: offlineOptsMicrosoft(),
 		},
 
 		// https://help.salesforce.com/s/articleView?id=xcloud.remoteaccess_oauth_web_server_flow.htm
@@ -468,13 +468,21 @@ func microsoftConfig(scopes []string) *oauth2.Config {
 }
 
 // offlineOpts sets some common hard-coded OAuth 2.0 configuration details
-// in all Google and Microsoft integrations, instead of copy-pasting them.
+// in all of Google integrations, instead of copy-pasting them.
 func offlineOpts() map[string]string {
 	return map[string]string{
 		"access_type": "offline", // oauth2.AccessTypeOffline
 		// The "prompt: consent" parameter ensures that Google consistently returns a refresh token,
 		// even if the user has previously granted consent. This is critical for long-term access.
 		"prompt": "consent",
+	}
+}
+
+// offlineOptsMicrosoft sets some common hard-coded OAuth 2.0 configuration details
+// in all of Microsoft integrations, instead of copy-pasting them.
+func offlineOptsMicrosoft() map[string]string {
+	return map[string]string{
+		"access_type": "offline", // oauth2.AccessTypeOffline
 	}
 }
 
