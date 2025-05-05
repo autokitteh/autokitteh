@@ -37,6 +37,7 @@ type workerGRPCHandler struct {
 
 	// Runner can start logging before it's registered
 	unknownLogs map[string][]*userCode.LogRequest
+	oauth       *oauth.OAuth
 }
 
 var w = workerGRPCHandler{
@@ -44,8 +45,9 @@ var w = workerGRPCHandler{
 	unknownLogs:        make(map[string][]*userCode.LogRequest),
 }
 
-func ConfigureWorkerGRPCHandler(l *zap.Logger, mux *http.ServeMux) {
+func ConfigureWorkerGRPCHandler(l *zap.Logger, mux *http.ServeMux, oauth *oauth.OAuth) {
 	w.log = l
+	w.oauth = oauth
 	srv := grpc.NewServer()
 	userCode.RegisterHandlerServiceServer(srv, &w)
 	path := fmt.Sprintf("/%s/", userCode.HandlerService_ServiceDesc.ServiceName)
@@ -458,10 +460,18 @@ func (s *workerGRPCHandler) RefreshOAuthToken(ctx context.Context, req *userCode
 	}
 
 	// Get the integration's OAuth configuration.
-	// TODO(INT-46): pass new OAuth service instead of constructing with nil params.
-	o := oauth.New(nil, runner.log, nil)
-	// TODO(INT-320): pass an actual connection ID, to support private OAuth.
-	cfg, _, err := o.GetConfig(ctx, req.Integration, sdktypes.InvalidConnectionID)
+	var cid sdktypes.ConnectionID
+	if cid_str := runner.envVars[req.Connection+"__connection_id"]; cid_str != "" {
+		var err error
+		if cid, err = sdktypes.ParseConnectionID(cid_str); err != nil {
+			runner.log.Warn("invalid connection ID",
+				zap.String("connection", req.Connection),
+				zap.String("connection_id", cid_str),
+				zap.Error(err))
+		}
+	}
+
+	cfg, _, err := s.oauth.GetConfig(ctx, req.Integration, cid)
 	if err != nil {
 		return &userCode.RefreshResponse{Error: err.Error()}, nil
 	}
