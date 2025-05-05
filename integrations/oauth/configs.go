@@ -45,6 +45,11 @@ type oauthConfig struct {
 	flags  internalFlags
 }
 
+const (
+	RequireConsent = true
+	NoConsent      = false
+)
+
 // initConfigs initializes the AutoKitteh server's default OAuth 2.0 configurations
 // for all AutoKitteh integrations. This map must not be modified during runtime.
 func (o *OAuth) initConfigs() {
@@ -131,7 +136,7 @@ func (o *OAuth) initConfigs() {
 				gmail.GmailModifyScope,
 				gmail.GmailSettingsBasicScope,
 			}),
-			Opts: offlineOpts(),
+			Opts: offlineOpts(RequireConsent),
 		},
 
 		"google": {
@@ -155,7 +160,7 @@ func (o *OAuth) initConfigs() {
 				gmail.GmailModifyScope,
 				gmail.GmailSettingsBasicScope,
 			}),
-			Opts: offlineOpts(),
+			Opts: offlineOpts(RequireConsent),
 		},
 
 		// https://developers.google.com/calendar/api/auth
@@ -169,7 +174,7 @@ func (o *OAuth) initConfigs() {
 				calendar.CalendarScope,
 				calendar.CalendarEventsScope,
 			}),
-			Opts: offlineOpts(),
+			Opts: offlineOpts(RequireConsent),
 		},
 
 		// https://developers.google.com/chat/api/guides/auth#chat-api-scopes
@@ -184,7 +189,7 @@ func (o *OAuth) initConfigs() {
 				chat.ChatMessagesScope,
 				chat.ChatSpacesScope,
 			}),
-			Opts: offlineOpts(),
+			Opts: offlineOpts(RequireConsent),
 		},
 
 		// https://developers.google.com/drive/api/guides/api-specific-auth
@@ -198,7 +203,7 @@ func (o *OAuth) initConfigs() {
 				// Restricted.
 				// drive.DriveScope, // See ENG-1701
 			}),
-			Opts: offlineOpts(),
+			Opts: offlineOpts(RequireConsent),
 		},
 
 		// https://developers.google.com/identity/protocols/oauth2/scopes#script
@@ -212,7 +217,7 @@ func (o *OAuth) initConfigs() {
 				forms.FormsBodyScope,
 				forms.FormsResponsesReadonlyScope,
 			}),
-			Opts: offlineOpts(),
+			Opts: offlineOpts(RequireConsent),
 		},
 
 		// https://developers.google.com/sheets/api/scopes
@@ -225,7 +230,7 @@ func (o *OAuth) initConfigs() {
 				// Sensitive.
 				sheets.SpreadsheetsScope,
 			}),
-			Opts: offlineOpts(),
+			Opts: offlineOpts(RequireConsent),
 		},
 
 		// https://height.notion.site/OAuth-Apps-on-Height-a8ebeab3f3f047e3857bd8ce60c2f640
@@ -323,7 +328,7 @@ func (o *OAuth) initConfigs() {
 				// TODO: TeamsAppInstallation.ReadForXXX? TeamsTab?
 				// "Teamwork.Migrate.All", // Application-only.
 			}),
-			Opts: offlineOptsMicrosoft(),
+			Opts: offlineOpts(NoConsent),
 		},
 
 		// https://learn.microsoft.com/en-us/entra/identity-platform/v2-app-types
@@ -348,7 +353,7 @@ func (o *OAuth) initConfigs() {
 				// TODO: TeamsAppInstallation.ReadForXXX? TeamsTab?
 				// "Teamwork.Migrate.All", // Application-only.
 			}),
-			Opts: offlineOptsMicrosoft(),
+			Opts: offlineOpts(NoConsent),
 		},
 
 		// https://help.salesforce.com/s/articleView?id=xcloud.remoteaccess_oauth_web_server_flow.htm
@@ -468,22 +473,20 @@ func microsoftConfig(scopes []string) *oauth2.Config {
 }
 
 // offlineOpts sets some common hard-coded OAuth 2.0 configuration details
-// in all of Google integrations, instead of copy-pasting them.
-func offlineOpts() map[string]string {
-	return map[string]string{
+// in all Google and microsoft integrations, instead of copy-pasting them.
+func offlineOpts(requireConsent bool) map[string]string {
+	opts := map[string]string{
 		"access_type": "offline", // oauth2.AccessTypeOffline
+	}
+
+	// TODO: INT-408 - Check if this is needed only for Google.
+	if requireConsent {
 		// The "prompt: consent" parameter ensures that Google consistently returns a refresh token,
 		// even if the user has previously granted consent. This is critical for long-term access.
-		"prompt": "consent",
+		opts["prompt"] = "consent"
 	}
-}
 
-// offlineOptsMicrosoft sets some common hard-coded OAuth 2.0 configuration details
-// in all of Microsoft integrations, instead of copy-pasting them.
-func offlineOptsMicrosoft() map[string]string {
-	return map[string]string{
-		"access_type": "offline", // oauth2.AccessTypeOffline
-	}
+	return opts
 }
 
 func (o *OAuth) initRedirectURLs() {
