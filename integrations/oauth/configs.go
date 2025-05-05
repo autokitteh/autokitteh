@@ -475,7 +475,6 @@ func offlineOpts(options ...func(map[string]string)) map[string]string {
 		"access_type": "offline", // oauth2.AccessTypeOffline
 	}
 
-	// Apply any custom options
 	for _, option := range options {
 		option(opts)
 	}
@@ -483,7 +482,7 @@ func offlineOpts(options ...func(map[string]string)) map[string]string {
 	return opts
 }
 
-// Option function for offline access type
+// Option function for offlineOpts.
 func withConsent() func(map[string]string) {
 	return func(opts map[string]string) {
 		opts["prompt"] = "consent"
