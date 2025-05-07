@@ -237,7 +237,7 @@ def test_pb_traceback(monkeypatch, tmp_path):
     except ValueError as err:
         tb = main.TracebackException.from_exception(err)
 
-    pb_tb = main.pb_traceback(tb.stack)
+    pb_tb = main.pb_traceback(main.tb_stack(tb))
     assert [f.filename for f in pb_tb] == [f.filename for f in tb.stack]
 
 
@@ -280,3 +280,28 @@ ftb_cases = [
 def test_filter_tb(stack, index):
     out = main.filter_traceback(stack, ftb_user_dir)
     assert stack[index:] == out
+
+
+def test_tb_stack():
+    def a():
+        b()
+
+    def b():
+        c()
+
+    def c():
+        raise ValueError("oops")
+
+    try:
+        a()
+    except ValueError as e:
+        err = e
+
+    tb = main.TracebackException.from_exception(err)
+    tb.stack[0].colno = lambda: 1  # unpickleable, not in Frame
+    stack = main.tb_stack(tb)
+    assert len(stack) == 4
+    pickle.dumps(stack)
+
+    pbt = main.pb_traceback(stack)
+    assert len(pbt) == 4
