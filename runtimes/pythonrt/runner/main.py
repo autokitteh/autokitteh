@@ -51,6 +51,18 @@ def parse_entry_point(entry_point):
     return file_name[:-3], func_name
 
 
+def tb_stack(tb):
+    return [
+        Frame(
+            filename=frame.filename,
+            lineno=frame.lineno,
+            code=frame.line,
+            name=frame.name,
+        )
+        for frame in tb.stack
+    ]
+
+
 def pb_traceback(stack):
     """Convert traceback to a list of pb.user_code.Frame for serialization."""
     return [
@@ -138,6 +150,9 @@ def set_exception_args(err):
 
 
 Call = namedtuple("Call", "fn args kw fut")
+# This is the same as pb.user_code.Frame, but we want to decouple internal code from API
+# proto definition.
+Frame = namedtuple("Frame", "filename lineno code name")
 Result = namedtuple("Result", "value error traceback")
 
 
@@ -455,7 +470,7 @@ class Runner(pb.runner_rpc.RunnerService):
     def _call(self, fn, args, kw):
         func_name = full_func_name(fn)
         log.info("calling %s", func_name)
-        value = error = tb = None
+        value = error = stack = None
         try:
             value = fn(*args, **kw)
             if asyncio.iscoroutine(value):
@@ -463,6 +478,8 @@ class Runner(pb.runner_rpc.RunnerService):
         except BaseException as err:
             log.error("%s raised: %s", func_name, err)
             tb = TracebackException.from_exception(err)
+            # In some cases, tb can contains code objects that are not pickleable
+            stack = tb_stack(tb)
             error = err
             set_exception_args(error)
 
@@ -473,7 +490,7 @@ class Runner(pb.runner_rpc.RunnerService):
             log.warning("non pickleable: %r", error)
             error = error.__reduce__()
 
-        return Result(value, error, tb)
+        return Result(value, error, stack)
 
     def on_event(self, fn, event):
         func_name = full_func_name(fn)
@@ -490,7 +507,7 @@ class Runner(pb.runner_rpc.RunnerService):
             if result.error:
                 error = restore_error(result.error)
                 req.error = self.result_error(error)
-                stack = filter_traceback(result.traceback.stack, self.code_dir)
+                stack = filter_traceback(result.traceback, self.code_dir)
                 tb = pb_traceback(stack)
                 req.traceback.extend(tb)
             else:
