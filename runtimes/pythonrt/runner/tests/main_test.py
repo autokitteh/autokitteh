@@ -61,11 +61,6 @@ def test_start(monkeypatch):
     req = runner_pb.StartRequest(entry_point=entry_point, event=event)
     context = MagicMock()
 
-    # Setup logging
-    runner.worker.Log.return_value = MagicMock(error="")
-    monkeypatch.setattr(log._handler, "worker", runner.worker)
-    monkeypatch.setattr(log._handler, "runner_id", runner.id)
-
     resp = runner.Start(req, context)
 
     assert resp.error == ""
