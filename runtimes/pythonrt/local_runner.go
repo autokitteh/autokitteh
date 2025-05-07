@@ -383,7 +383,7 @@ func createVEnv(log *zap.Logger, pyExe string, venvPath string) error {
 	if hasUV() {
 		args = []string{"uv", "venv", "--python", pyExe, venvPath}
 	} else {
-		log.Warn("uv not found, using python venv")
+		log.Warn("uv not found, using python venv with might be slower")
 		args = []string{"python", "-m", "venv", venvPath}
 	}
 
