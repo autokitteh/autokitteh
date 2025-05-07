@@ -6,9 +6,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.temporal.io/sdk/client"
-	"go.temporal.io/sdk/testsuite"
 	"go.uber.org/zap/zaptest"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/temporaldevsrv"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
 )
 
@@ -18,7 +18,7 @@ func TestStartDevServer(t *testing.T) {
 
 	c := &impl{
 		cfg: &Config{
-			DevServer:                   testsuite.DevServerOptions{},
+			DevServer:                   temporaldevsrv.DevServerOptions{},
 			DevServerStartMaxAttempts:   3,
 			DevServerStartRetryInterval: time.Second,
 			DevServerStartTimeout:       time.Second * 5,

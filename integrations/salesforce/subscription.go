@@ -2,6 +2,8 @@ package salesforce
 
 import (
 	"context"
+	"encoding/base64"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -69,7 +71,7 @@ func (h handler) eventLoop(ctx context.Context, l *zap.Logger, clientID string, 
 	// Start receiving messages.
 	for {
 		eventsLeftToReceive := defaultBatchSize
-		if err := renewSubscription(l, stream); err != nil {
+		if err := h.renewSubscription(ctx, l, stream, cid); err != nil {
 			l.Error("failed to renew Salesforce events subscription", zap.Error(err))
 			time.Sleep(time.Second)
 			continue
@@ -153,6 +155,16 @@ func (h handler) eventLoop(ctx context.Context, l *zap.Logger, clientID string, 
 				}
 
 				h.dispatchEvent(data, strings.ToLower(s))
+
+				// Save the latest replay ID.
+				replayID := base64.StdEncoding.EncodeToString(msg.LatestReplayId)
+				l.Debug("saving Salesforce replay ID", zap.String("replay_id", replayID))
+
+				vsid := sdktypes.NewVarScopeID(cid)
+				v := sdktypes.NewVar(replayIDVar).SetValue(replayID)
+				if err := h.vars.Set(ctx, v.WithScopeID(vsid)); err != nil {
+					l.Error("failed to save Salesforce replay ID", zap.Error(err))
+				}
 			}
 		}
 	}
@@ -224,19 +236,33 @@ func (h handler) initStream(ctx context.Context, l *zap.Logger, cid sdktypes.Con
 }
 
 // https://developer.salesforce.com/docs/atlas.en-us.platform_events.meta/platform_events/platform_events_objects_change_data_capture.htm
-func renewSubscription(l *zap.Logger, stream pb.PubSub_SubscribeClient) error {
+func (h handler) renewSubscription(ctx context.Context, l *zap.Logger, stream pb.PubSub_SubscribeClient, cid sdktypes.ConnectionID) error {
+	vs, err := h.vars.Get(ctx, sdktypes.NewVarScopeID(cid), replayIDVar)
+	if err != nil {
+		return fmt.Errorf("failed to get connection vars: %w", err)
+	}
+	replayID := vs.GetValue(replayIDVar)
+
 	fetchReq := &pb.FetchRequest{
+		ReplayPreset: pb.ReplayPreset_LATEST,
 		TopicName:    "/data/ChangeEvents",
 		NumRequested: defaultBatchSize,
 	}
 
-	// TODO(INT-314): Use the latest replay ID if available for resumption.
-
-	err := stream.Send(fetchReq)
-	if err != nil {
-		l.Error("failed to request more Salesforce events", zap.Error(err))
-		return err
+	// https://developer.salesforce.com/docs/platform/pub-sub-api/references/methods/subscribe-rpc.html?q=replay#replaying-an-event-stream
+	if replayID != "" {
+		fetchReq.ReplayPreset = pb.ReplayPreset_CUSTOM
+		decodedReplayID, err := base64.StdEncoding.DecodeString(replayID)
+		if err != nil {
+			return fmt.Errorf("failed to decode replay ID: %w", err)
+		}
+		fetchReq.ReplayId = decodedReplayID
 	}
+
+	if err := stream.Send(fetchReq); err != nil {
+		return fmt.Errorf("failed to request more Salesforce events: %w", err)
+	}
+
 	return nil
 }
 

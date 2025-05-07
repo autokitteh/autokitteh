@@ -157,7 +157,7 @@ func newCallbacks(svc *pySvc) *sdkservices.RunCallbacks {
 
 func setupServer(l *zap.Logger) (net.Listener, error) {
 	mux := &http.ServeMux{}
-	ConfigureWorkerGRPCHandler(l, mux)
+	ConfigureWorkerGRPCHandler(l, mux, nil)
 	listener, err := net.Listen("tcp", ":0")
 	if err != nil {
 		return nil, err

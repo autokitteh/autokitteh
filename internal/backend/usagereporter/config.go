@@ -15,11 +15,8 @@ type Config struct {
 var (
 	Configs = configset.Set[Config]{
 		Default: &Config{
-			Enabled: false,
-		},
-		Dev: &Config{
 			Enabled:  true,
-			Endpoint: "http://localhost:9980",
+			Endpoint: "https://api.autokitteh.cloud/usage-report",
 			Interval: time.Hour * 24,
 		},
 	}

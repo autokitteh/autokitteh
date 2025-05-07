@@ -51,10 +51,14 @@ def parse_entry_point(entry_point):
     return file_name[:-3], func_name
 
 
-def pb_traceback(tb):
-    """Convert traceback to a list of pb.user_code.Frame for serialization."""
+# This is the same as pb.user_code.Frame, but we want to decouple internal code from API
+# proto definition.
+Frame = namedtuple("Frame", "filename lineno code name")
+
+
+def tb_stack(tb):
     return [
-        pb.user_code.Frame(
+        Frame(
             filename=frame.filename,
             lineno=frame.lineno,
             code=frame.line,
@@ -62,6 +66,28 @@ def pb_traceback(tb):
         )
         for frame in tb.stack
     ]
+
+
+def pb_traceback(stack):
+    """Convert traceback to a list of pb.user_code.Frame for serialization."""
+    return [
+        pb.user_code.Frame(
+            filename=frame.filename,
+            lineno=frame.lineno,
+            code=frame.code,
+            name=frame.name,
+        )
+        for frame in stack
+    ]
+
+
+def filter_traceback(stack, user_code):
+    """Filter out first part of traceback until first user code frame."""
+    for i, frame in enumerate(stack):
+        if Path(frame.filename).is_relative_to(user_code):
+            return stack[i:]
+
+    return stack
 
 
 pickle_help = """
@@ -329,11 +355,11 @@ class Runner(pb.runner_rpc.RunnerService):
             data = pickle.dumps(result)
             req.result.custom.data = data
             req.result.custom.value.CopyFrom(values.safe_wrap(result.value))
-        except (TypeError, pickle.PickleError) as err:
+        except Exception as err:
             # Print so it'll get to session log
-            msg = f"cannot pickle result - {err!r}"
+            msg = f"error processing result - {err!r}"
             print(f"error: {msg}")
-            print(pickle_help)
+            print(self.result_error(err))
             req.error = msg
 
         log.info("execute reply")
@@ -446,7 +472,7 @@ class Runner(pb.runner_rpc.RunnerService):
     def _call(self, fn, args, kw):
         func_name = full_func_name(fn)
         log.info("calling %s", func_name)
-        value = error = tb = None
+        value = error = stack = None
         try:
             value = fn(*args, **kw)
             if asyncio.iscoroutine(value):
@@ -454,6 +480,8 @@ class Runner(pb.runner_rpc.RunnerService):
         except BaseException as err:
             log.error("%s raised: %s", func_name, err)
             tb = TracebackException.from_exception(err)
+            # In some cases, tb can contains code objects that are not pickleable
+            stack = tb_stack(tb)
             error = err
             set_exception_args(error)
 
@@ -464,7 +492,7 @@ class Runner(pb.runner_rpc.RunnerService):
             log.warning("non pickleable: %r", error)
             error = error.__reduce__()
 
-        return Result(value, error, tb)
+        return Result(value, error, stack)
 
     def on_event(self, fn, event):
         func_name = full_func_name(fn)
@@ -481,7 +509,8 @@ class Runner(pb.runner_rpc.RunnerService):
             if result.error:
                 error = restore_error(result.error)
                 req.error = self.result_error(error)
-                tb = pb_traceback(result.traceback)
+                stack = filter_traceback(result.traceback, self.code_dir)
+                tb = pb_traceback(stack)
                 req.traceback.extend(tb)
             else:
                 data = pickle.dumps(result)

@@ -131,7 +131,7 @@ func (o *OAuth) initConfigs() {
 				gmail.GmailModifyScope,
 				gmail.GmailSettingsBasicScope,
 			}),
-			Opts: offlineOpts(),
+			Opts: offlineOpts(withConsent()),
 		},
 
 		"google": {
@@ -155,7 +155,7 @@ func (o *OAuth) initConfigs() {
 				gmail.GmailModifyScope,
 				gmail.GmailSettingsBasicScope,
 			}),
-			Opts: offlineOpts(),
+			Opts: offlineOpts(withConsent()),
 		},
 
 		// https://developers.google.com/calendar/api/auth
@@ -169,7 +169,7 @@ func (o *OAuth) initConfigs() {
 				calendar.CalendarScope,
 				calendar.CalendarEventsScope,
 			}),
-			Opts: offlineOpts(),
+			Opts: offlineOpts(withConsent()),
 		},
 
 		// https://developers.google.com/chat/api/guides/auth#chat-api-scopes
@@ -184,7 +184,7 @@ func (o *OAuth) initConfigs() {
 				chat.ChatMessagesScope,
 				chat.ChatSpacesScope,
 			}),
-			Opts: offlineOpts(),
+			Opts: offlineOpts(withConsent()),
 		},
 
 		// https://developers.google.com/drive/api/guides/api-specific-auth
@@ -198,7 +198,7 @@ func (o *OAuth) initConfigs() {
 				// Restricted.
 				// drive.DriveScope, // See ENG-1701
 			}),
-			Opts: offlineOpts(),
+			Opts: offlineOpts(withConsent()),
 		},
 
 		// https://developers.google.com/identity/protocols/oauth2/scopes#script
@@ -212,7 +212,7 @@ func (o *OAuth) initConfigs() {
 				forms.FormsBodyScope,
 				forms.FormsResponsesReadonlyScope,
 			}),
-			Opts: offlineOpts(),
+			Opts: offlineOpts(withConsent()),
 		},
 
 		// https://developers.google.com/sheets/api/scopes
@@ -225,7 +225,7 @@ func (o *OAuth) initConfigs() {
 				// Sensitive.
 				sheets.SpreadsheetsScope,
 			}),
-			Opts: offlineOpts(),
+			Opts: offlineOpts(withConsent()),
 		},
 
 		// https://height.notion.site/OAuth-Apps-on-Height-a8ebeab3f3f047e3857bd8ce60c2f640
@@ -468,10 +468,24 @@ func microsoftConfig(scopes []string) *oauth2.Config {
 }
 
 // offlineOpts sets some common hard-coded OAuth 2.0 configuration details
-// in all Google and Microsoft integrations, instead of copy-pasting them.
-func offlineOpts() map[string]string {
-	return map[string]string{
+// in all Google and microsoft integrations, instead of copy-pasting them.
+func offlineOpts(options ...func(map[string]string)) map[string]string {
+	// Default options
+	opts := map[string]string{
 		"access_type": "offline", // oauth2.AccessTypeOffline
+	}
+
+	for _, option := range options {
+		option(opts)
+	}
+
+	return opts
+}
+
+// Option function for offlineOpts.
+func withConsent() func(map[string]string) {
+	return func(opts map[string]string) {
+		opts["prompt"] = "consent"
 	}
 }
 
