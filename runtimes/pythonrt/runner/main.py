@@ -51,6 +51,11 @@ def parse_entry_point(entry_point):
     return file_name[:-3], func_name
 
 
+# This is the same as pb.user_code.Frame, but we want to decouple internal code from API
+# proto definition.
+Frame = namedtuple("Frame", "filename lineno code name")
+
+
 def tb_stack(tb):
     return [
         Frame(
@@ -69,7 +74,7 @@ def pb_traceback(stack):
         pb.user_code.Frame(
             filename=frame.filename,
             lineno=frame.lineno,
-            code=frame.line,
+            code=frame.code,
             name=frame.name,
         )
         for frame in stack
@@ -150,9 +155,6 @@ def set_exception_args(err):
 
 
 Call = namedtuple("Call", "fn args kw fut")
-# This is the same as pb.user_code.Frame, but we want to decouple internal code from API
-# proto definition.
-Frame = namedtuple("Frame", "filename lineno code name")
 Result = namedtuple("Result", "value error traceback")
 
 
