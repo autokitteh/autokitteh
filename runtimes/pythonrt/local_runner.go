@@ -18,7 +18,6 @@ import (
 	"strings"
 	"syscall"
 
-	"go.jetify.com/typeid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapio"
@@ -101,7 +100,7 @@ func freePort() (int, error) {
 	return conn.Addr().(*net.TCPAddr).Port, nil
 }
 
-func (r *LocalPython) Start(ctx context.Context, pyExe string, tarData []byte, env map[string]string, workerAddr string, printFn func(string) error) error {
+func (r *LocalPython) Start(ctx context.Context, pyExe string, tarData []byte, env map[string]string, workerAddr string, printFn func(string) error, runnerID string) error {
 	ctx, span := telemetry.T().Start(ctx, "LocalPython.Start")
 	defer span.End()
 
@@ -125,6 +124,7 @@ func (r *LocalPython) Start(ctx context.Context, pyExe string, tarData []byte, e
 	if err != nil {
 		return fmt.Errorf("create user directory - %w", err)
 	}
+	r.id = runnerID
 	r.userDir = userDir
 	r.log.Info("user root dir", zap.String("path", r.userDir))
 
@@ -150,12 +150,6 @@ func (r *LocalPython) Start(ctx context.Context, pyExe string, tarData []byte, e
 		return fmt.Errorf("copy runner code - %w", err)
 	}
 	cpSpan.End()
-
-	id, err := typeid.WithPrefix("runner")
-	if err != nil {
-		return err
-	}
-	r.id = id.String()
 
 	mainPy := path.Join(r.runnerDir, "runner", "main.py")
 	cmd := exec.Command(

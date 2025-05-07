@@ -35,14 +35,11 @@ type workerGRPCHandler struct {
 	mu                 sync.Mutex
 	log                *zap.Logger
 
-	// Runner can start logging before it's registered
-	unknownLogs map[string][]*userCode.LogRequest
-	oauth       *oauth.OAuth
+	oauth *oauth.OAuth
 }
 
 var w = workerGRPCHandler{
 	runnerIDsToRuntime: map[string]*pySvc{},
-	unknownLogs:        make(map[string][]*userCode.LogRequest),
 }
 
 func ConfigureWorkerGRPCHandler(l *zap.Logger, mux *http.ServeMux, oauth *oauth.OAuth) {
@@ -105,56 +102,6 @@ func (s *workerGRPCHandler) runnerByID(rid string) *pySvc {
 	defer w.mu.Unlock()
 
 	return w.runnerIDsToRuntime[rid]
-}
-
-func sendLog(runner *pySvc, req *userCode.LogRequest) (*userCode.LogResponse, error) {
-	m := &logMessage{level: req.Level, message: req.Message, doneChannel: make(chan struct{})}
-
-	runner.channels.log <- m
-
-	select {
-	case <-m.doneChannel:
-		return &userCode.LogResponse{}, nil
-	case <-time.After(runnerChResponseTimeout):
-		return &userCode.LogResponse{
-			Error: "timeout",
-		}, nil
-	}
-}
-
-func (s *workerGRPCHandler) Log(ctx context.Context, req *userCode.LogRequest) (*userCode.LogResponse, error) {
-	if req.Level == "" {
-		w.log.Error("empty log level")
-		return nil, status.Error(codes.InvalidArgument, "empty level")
-	}
-
-	runner := s.runnerByID(req.RunnerId)
-	if runner == nil {
-		// Runner might send logs before it's registered
-		w.mu.Lock()
-		w.unknownLogs[req.RunnerId] = append(w.unknownLogs[req.RunnerId], req)
-		w.mu.Unlock()
-
-		w.log.Warn("unknown runner ID", zap.String("id", req.RunnerId))
-		return &userCode.LogResponse{Error: "unknown runner ID"}, nil
-	}
-
-	w.mu.Lock()
-	logs := w.unknownLogs[req.RunnerId]
-	delete(w.unknownLogs, req.RunnerId)
-	w.mu.Unlock()
-
-	if logs != nil {
-		go func() {
-			for _, req := range logs {
-				if _, err := sendLog(runner, req); err != nil {
-					w.log.Warn("send log", zap.String("runner_id", req.RunnerId), zap.Error(err))
-				}
-			}
-		}()
-	}
-
-	return sendLog(runner, req)
 }
 
 func (s *workerGRPCHandler) Print(ctx context.Context, req *userCode.PrintRequest) (*userCode.PrintResponse, error) {

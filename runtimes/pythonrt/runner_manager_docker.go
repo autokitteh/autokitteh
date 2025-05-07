@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"sync"
 
-	"go.jetify.com/typeid"
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -79,14 +78,14 @@ func createStartCommand(entrypoint, workerAddress, runnerID string) []string {
 	}
 }
 
-func (rm *dockerRunnerManager) Start(ctx context.Context, sessionID sdktypes.SessionID, buildArtifacts []byte, vars map[string]string, printFn func(string) error) (string, *RunnerClient, error) {
+func (rm *dockerRunnerManager) Start(ctx context.Context, sessionID sdktypes.SessionID, buildArtifacts []byte, vars map[string]string, printFn func(string) error, runnerID string) (*RunnerClient, error) {
 	if len(buildArtifacts) == 0 {
-		return "", nil, errors.New("no build artifacts")
+		return nil, errors.New("no build artifacts")
 	}
 
 	codePath, err := prepareUserCode(buildArtifacts, false)
 	if err != nil {
-		return "", nil, fmt.Errorf("prepare user code: %w", err)
+		return nil, fmt.Errorf("prepare user code: %w", err)
 	}
 
 	hash := md5.Sum(buildArtifacts)
@@ -94,19 +93,14 @@ func (rm *dockerRunnerManager) Start(ctx context.Context, sessionID sdktypes.Ses
 	containerName := "usercode:" + version
 
 	if err := rm.client.BuildImage(ctx, containerName, codePath); err != nil {
-		return "", nil, fmt.Errorf("build image: %w", err)
+		return nil, fmt.Errorf("build image: %w", err)
 	}
 
-	rid, err := typeid.WithPrefix("runner")
-	if err != nil {
-		return "", nil, err
-	}
-	runnerID := rid.String()
 	cmd := createStartCommand("/runner/main.py", rm.workerAddressProvider(), runnerID)
 
 	cid, port, err := rm.client.StartRunner(ctx, containerName, sessionID, cmd, vars)
 	if err != nil {
-		return "", nil, fmt.Errorf("start runner: %w", err)
+		return nil, fmt.Errorf("start runner: %w", err)
 	}
 
 	runnerAddr := "127.0.0.1:" + port
@@ -123,25 +117,25 @@ func (rm *dockerRunnerManager) Start(ctx context.Context, sessionID sdktypes.Ses
 		// To be clear, exitCodeErr is error getting the exit code, not exitCode itself
 		if exitCodeErr != nil {
 			rm.logger.Warn("getContainerExitCode", zap.Error(exitCodeErr))
-			return "", nil, err
+			return nil, err
 		}
 
 		if exitCode != 0 {
 			rm.logger.Warn("runner exited with non-zero code", zap.Int("exit_code", exitCode))
 			logs, err := rm.client.getContainerLogs(ctx, cid)
 			if err != nil {
-				return "", nil, errors.New("container exit code != 0, but we could not read logs")
+				return nil, errors.New("container exit code != 0, but we could not read logs")
 			}
-			return "", nil, errors.New(logs)
+			return nil, errors.New(logs)
 		}
 
-		return "", nil, err
+		return nil, err
 	}
 
 	rm.mu.Lock()
 	rm.runnerIDToContainerID[runnerID] = cid
 	rm.mu.Unlock()
-	return runnerID, client, nil
+	return client, nil
 }
 
 func (rm *dockerRunnerManager) RunnerHealth(ctx context.Context, runnerID string) error {

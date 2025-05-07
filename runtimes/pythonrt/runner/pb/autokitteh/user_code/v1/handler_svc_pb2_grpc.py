@@ -29,11 +29,6 @@ class HandlerServiceStub(object):
                 request_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.DoneRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.DoneResponse.FromString,
                 _registered_method=True)
-        self.Log = channel.unary_unary(
-                '/autokitteh.user_code.v1.HandlerService/Log',
-                request_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.LogRequest.SerializeToString,
-                response_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.LogResponse.FromString,
-                _registered_method=True)
         self.Print = channel.unary_unary(
                 '/autokitteh.user_code.v1.HandlerService/Print',
                 request_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.PrintRequest.SerializeToString,
@@ -115,13 +110,6 @@ class HandlerServiceServicer(object):
 
     def Done(self, request, context):
         """Runner done with activity
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def Log(self, request, context):
-        """Session logs
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -219,11 +207,6 @@ def add_HandlerServiceServicer_to_server(servicer, server):
                     servicer.Done,
                     request_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.DoneRequest.FromString,
                     response_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.DoneResponse.SerializeToString,
-            ),
-            'Log': grpc.unary_unary_rpc_method_handler(
-                    servicer.Log,
-                    request_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.LogRequest.FromString,
-                    response_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.LogResponse.SerializeToString,
             ),
             'Print': grpc.unary_unary_rpc_method_handler(
                     servicer.Print,
@@ -367,33 +350,6 @@ class HandlerService(object):
             '/autokitteh.user_code.v1.HandlerService/Done',
             autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.DoneRequest.SerializeToString,
             autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.DoneResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def Log(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/autokitteh.user_code.v1.HandlerService/Log',
-            autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.LogRequest.SerializeToString,
-            autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.LogResponse.FromString,
             options,
             channel_credentials,
             insecure,

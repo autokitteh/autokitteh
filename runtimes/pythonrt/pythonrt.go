@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"go.jetify.com/typeid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -278,6 +279,12 @@ func (py *pySvc) Run(
 	ctx, runSpan := telemetry.T().Start(ctx, "pythonrt.Run")
 	defer runSpan.End()
 
+	rid, err := typeid.WithPrefix("runner")
+	if err != nil {
+		return nil, err
+	}
+	runnerID := rid.String()
+
 	runnerOK := false
 	py.ctx = ctx
 	py.runID = runID
@@ -317,11 +324,15 @@ func (py *pySvc) Run(
 		}
 	}()
 
-	printFn := func(msg string) error {
-		return cbs.Print(ctx, runID, msg)
+	disp := LogDispatcher{
+		ctx:      ctx,
+		runID:    runID,
+		runnerID: runnerID,
+		log:      py.log,
+		print:    cbs.Print,
 	}
 
-	runnerID, runner, err := runnerManager.Start(ctx, sessionID, tarData, py.envVars, printFn)
+	runner, err := runnerManager.Start(ctx, sessionID, tarData, py.envVars, disp.Print, runnerID)
 	close(startDone)
 	if err != nil {
 		return nil, fmt.Errorf("starting runner: %w", err)

@@ -98,16 +98,6 @@ message NextSignalResponse {
   string error = 2;
 }
 
-message LogRequest {
-  string runner_id = 1;
-  string level = 2;
-  string message = 3;
-}
-
-message LogResponse {
-  string error = 1;
-}
-
 message PrintRequest {
   string runner_id = 1;
   string message = 2;
@@ -188,8 +178,6 @@ service HandlerService {
 
   // Runner done with activity
   rpc Done(DoneRequest) returns (DoneResponse) {}
-  // Session logs
-  rpc Log(LogRequest) returns (LogResponse) {}
   // Print to session log
   rpc Print(PrintRequest) returns (PrintResponse) {}
 

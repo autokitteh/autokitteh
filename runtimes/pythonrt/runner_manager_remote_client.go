@@ -63,9 +63,9 @@ func configureRemoteRunnerManager(cfg RemoteRuntimeConfig) error {
 	return nil
 }
 
-func (rrm *remoteRunnerManager) Start(ctx context.Context, sessionID sdktypes.SessionID, buildArtifacts []byte, vars map[string]string, printFn func(string) error) (string, *RunnerClient, error) {
+func (rrm *remoteRunnerManager) Start(ctx context.Context, sessionID sdktypes.SessionID, buildArtifacts []byte, vars map[string]string, printFn func(string) error, runnerID string) (*RunnerClient, error) {
 	// rrm.remoteManagers[0].StartRunner(ctx, &pb.StartRunnerRequest{})
-	return "", nil, nil
+	return nil, nil
 }
 func (*remoteRunnerManager) RunnerHealth(ctx context.Context, runnerID string) error { return nil }
 func (*remoteRunnerManager) Stop(ctx context.Context, runnerID string) error         { return nil }
