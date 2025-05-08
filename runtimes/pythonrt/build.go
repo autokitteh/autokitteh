@@ -74,7 +74,13 @@ func (py *pySvc) Build(ctx context.Context, fsys fs.FS, path string, values []sd
 	var art sdktypes.BuildArtifact
 	art = art.WithCompiledData(compiledData)
 
-	exports, err := findExports(py.log, fsys)
+	hash, err := getRequirementsHash(data)
+	if err != nil {
+		py.log.Error("get requirements hash", zap.Error(err))
+		return sdktypes.InvalidBuildArtifact, err
+	}
+
+	exports, err := findExports(py.log, fsys, hash)
 	if err != nil {
 		py.log.Error("get exports", zap.Error(err))
 		return sdktypes.InvalidBuildArtifact, err
@@ -84,7 +90,7 @@ func (py *pySvc) Build(ctx context.Context, fsys fs.FS, path string, values []sd
 	return art, nil
 }
 
-func findExports(log *zap.Logger, fsys fs.FS) ([]sdktypes.BuildExport, error) {
+func findExports(log *zap.Logger, fsys fs.FS, envName string) ([]sdktypes.BuildExport, error) {
 	// TODO(ENG-1784): This has common code with configureLocalRunnerManager, find a way to unite
 	sysPyExe, isUserPy, err := pythonToRun(log)
 	if err != nil {
@@ -93,10 +99,9 @@ func findExports(log *zap.Logger, fsys fs.FS) ([]sdktypes.BuildExport, error) {
 
 	var pyExe string
 	if !isUserPy {
-		if err := ensureVEnv(log, sysPyExe); err != nil {
+		if pyExe, err = ensureVEnv(log, envName, sysPyExe); err != nil {
 			return nil, err
 		}
-		pyExe = venvPy
 	} else {
 		pyExe = sysPyExe
 	}

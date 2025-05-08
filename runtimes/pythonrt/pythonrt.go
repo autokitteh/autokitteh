@@ -36,9 +36,16 @@ var (
 		FileExtensions: []string{"py"},
 	}))
 
-	venvPath = path.Join(xdg.DataHomeDir(), "venv")
-	venvPy   = path.Join(venvPath, "bin", "python")
+	venvBasePath = path.Join(xdg.DataHomeDir(), "venvs")
 )
+
+func venvPath(name string) string {
+	if name == "" {
+		name = "default"
+	}
+
+	return path.Join(venvBasePath, name)
+}
 
 type callbackResponse struct {
 	value any
