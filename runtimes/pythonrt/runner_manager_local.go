@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
 	"strings"
 	"sync"
 	"time"
@@ -71,10 +72,9 @@ func configureLocalRunnerManager(log *zap.Logger, cfg LocalRunnerManagerConfig) 
 	if !isUserPy {
 		if !cfg.LazyLoadVEnv {
 			log.Info("ensuring venv on start")
-			if err := ensureVEnv(log, pyExe); err != nil {
+			if lm.pyExe, err = ensureVEnv(log, "", pyExe); err != nil {
 				return fmt.Errorf("create venv: %w", err)
 			}
-			lm.pyExe = venvPy
 		}
 	}
 
@@ -99,13 +99,18 @@ func (l *localRunnerManager) Start(ctx context.Context, sessionID sdktypes.Sessi
 	if l.cfg.LazyLoadVEnv {
 		_, venvSpan := telemetry.T().Start(ctx, "localRunnerManager.ehnsureVEnv")
 
-		log.Info("ensuring venv lazy")
-		if err := ensureVEnv(log, l.pyExe); err != nil {
+		hash, err := getRequirementsHash(buildArtifacts)
+		if err != nil {
+			venvSpan.End()
+			return "", nil, fmt.Errorf("get requirements hash: %w", err)
+		}
+
+		log.Info("ensuring venv lazy", zap.String("hash", hash))
+		if l.pyExe, err = ensureVEnv(log, hash, l.pyExe); err != nil {
 			venvSpan.End()
 			return "", nil, fmt.Errorf("create venv: %w", err)
 		}
 		venvSpan.End()
-		l.pyExe = venvPy
 	}
 
 	if l.workerAddress == "" {
@@ -262,11 +267,18 @@ func dirExists(path string) bool {
 	return info.IsDir()
 }
 
-func ensureVEnv(log *zap.Logger, pyExe string) error {
-	if dirExists(venvPath) {
-		return nil
+func ensureVEnv(log *zap.Logger, name, pyExe string) (pyExePath string, err error) {
+	venv := venvPath(name)
+	pyExePath = path.Join(venv, "bin", "python")
+
+	if dirExists(venv) {
+		return
 	}
 
-	log.Info("creating venv", zap.String("path", venvPath))
-	return createVEnv(pyExe, venvPath)
+	log.Info("creating venv", zap.String("path", venv))
+	if err := createVEnv(pyExe, venv); err != nil {
+		return "", fmt.Errorf("create venv: %w", err)
+	}
+
+	return
 }
