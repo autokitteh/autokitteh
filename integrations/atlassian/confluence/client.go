@@ -3,7 +3,6 @@ package confluence
 import (
 	"context"
 	"fmt"
-	"net/http"
 
 	"go.uber.org/zap"
 
@@ -137,27 +136,13 @@ func apiTokenConnTest(ctx context.Context, l *zap.Logger, vs sdktypes.Vars) erro
 	baseURL := vs.Get(baseURL).Value()
 	email := vs.Get(email).Value()
 	token := vs.Get(token).Value()
-
+	cred := common.Credentials{Username: email, Password: token}
 	u := baseURL + "/wiki/rest/api/user/current"
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
+
+	_, err := common.HTTPGetWithAuth(ctx, u, cred)
 	if err != nil {
-		logWarnIfNotNil(l, "Failed to construct HTTP request for Confluence API token test", zap.Error(err))
-		return err
-	}
-
-	req.SetBasicAuth(email, token)
-	req.Header.Set("Accept", "application/json")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		logWarnIfNotNil(l, "Failed to request current user info for Confluence API token", zap.Error(err))
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		logWarnIfNotNil(l, "Unexpected response on current user info", zap.Int("status", resp.StatusCode))
-		return fmt.Errorf("current user info: unexpected status code %d", resp.StatusCode)
+		logWarnIfNotNil(l, "Unexpected response on current user info", zap.Error(err))
+		return fmt.Errorf("current user info: unexpected status code %d", err)
 	}
 
 	return nil
