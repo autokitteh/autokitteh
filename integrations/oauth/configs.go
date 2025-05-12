@@ -632,7 +632,10 @@ func (o *OAuth) GetConfig(ctx context.Context, integration string, cid sdktypes.
 		// Linear requires the actor variable to be set in the connection's variables
 		// regardless of whether the connection uses a private OAuth app or not.
 		setupLinear(vs, &cfg)
-		return cfg.Config, cfg.Opts, nil
+
+		if common.ReadAuthType(vs) != integrations.OAuthPrivate {
+			return cfg.Config, cfg.Opts, nil
+		}
 	}
 
 	privatizeClient(vs, &cfg)
