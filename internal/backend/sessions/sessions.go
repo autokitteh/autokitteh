@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
@@ -29,9 +30,10 @@ type Sessions interface {
 	StartWorkers(context.Context) error
 }
 type sessions struct {
-	config *Config
-	l      *zap.Logger
-	svcs   *sessionsvcs.Svcs
+	config        *Config
+	l             *zap.Logger
+	sampledLogger *zap.Logger
+	svcs          *sessionsvcs.Svcs
 
 	workflows  sessionworkflows.Workflows
 	calls      sessioncalls.Calls
@@ -43,11 +45,16 @@ type sessions struct {
 var _ Sessions = (*sessions)(nil)
 
 func New(l *zap.Logger, config *Config, db db.DB, svcs sessionsvcs.Svcs, jobManager *jobs.JobManager) (Sessions, error) {
+	sampledLogger := l.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+		return zapcore.NewSamplerWithOptions(core, time.Second, 1, 0)
+	}))
+
 	return &sessions{
-		config:     config,
-		svcs:       &svcs,
-		l:          l,
-		jobManager: jobManager,
+		config:        config,
+		svcs:          &svcs,
+		l:             l,
+		jobManager:    jobManager,
+		sampledLogger: sampledLogger,
 	}, nil
 }
 
@@ -99,22 +106,20 @@ func (s *sessions) PollForJobsLoop(ctx context.Context) {
 			return
 
 		case running <- struct{}{}:
-			fmt.Println("Polling once")
 			pollCtx, cancel := context.WithTimeout(ctx, 2000*time.Second)
 			defer cancel()
 			go func() {
-				s.l.Debug("Start poll once for jobs")
+				s.sampledLogger.Debug("Start poll once for jobs")
 				if err := s.pollOnce(pollCtx); err != nil {
-					fmt.Printf("pollOnce: %v\n", err)
+					s.l.Error("pollOnce", zap.Error(err))
 				}
-				s.l.Debug("Done poll once for jobs")
+				s.sampledLogger.Debug("Done poll once for jobs")
 				<-running
 			}()
 
 		// Do nothing in case we got another tick
 		// Let the other tick option to finish
 		default:
-			fmt.Println("Do nothing")
 
 		}
 	}
@@ -123,11 +128,11 @@ func (s *sessions) PollForJobsLoop(ctx context.Context) {
 func (s *sessions) pollOnce(ctx context.Context) error {
 
 	if s.workerInfo.ActiveWorkflows >= s.config.MaxConcurrentWorkflows {
-		s.l.Info("Max concurrent workflows reached, skipping poll", zap.Int("max_concurrent_workflows", s.config.MaxConcurrentWorkflows))
+		s.sampledLogger.Info("Max concurrent workflows reached, skipping poll", zap.Int("max_concurrent_workflows", s.config.MaxConcurrentWorkflows))
 		return nil
 	}
 
-	s.l.Info("active / max workflows", zap.Int("max_concurrent_workflows", s.config.MaxConcurrentWorkflows), zap.Int("active_workflows", s.workerInfo.ActiveWorkflows))
+	s.sampledLogger.Info("active / max workflows", zap.Int("max_concurrent_workflows", s.config.MaxConcurrentWorkflows), zap.Int("active_workflows", s.workerInfo.ActiveWorkflows))
 
 	jobSlots := s.config.MaxConcurrentWorkflows - s.workerInfo.ActiveWorkflows
 	for range jobSlots {
