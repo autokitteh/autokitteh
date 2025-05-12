@@ -24,7 +24,7 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/auth0"
 	"go.autokitteh.dev/autokitteh/integrations/common"
-	"go.autokitteh.dev/autokitteh/integrations/github/vars"
+	githubVars "go.autokitteh.dev/autokitteh/integrations/github/vars"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -297,6 +297,9 @@ func (o *OAuth) initConfigs() {
 					TokenURL: "https://api.linear.app/oauth/token",
 				},
 				Scopes: []string{"read", "write"},
+			},
+			flags: internalFlags{
+				customizeDefaultEndpoint: true,
 			},
 		},
 
@@ -625,6 +628,13 @@ func (o *OAuth) GetConfig(ctx context.Context, integration string, cid sdktypes.
 	// variables, so ensure we no longer reference the server's default.
 	cfg = deepCopy(cfg)
 
+	if integration == "linear" {
+		// Linear requires the actor variable to be set in the connection's variables
+		// regardless of whether the connection uses a private OAuth app or not.
+		setupLinear(vs, &cfg)
+		return cfg.Config, cfg.Opts, nil
+	}
+
 	privatizeClient(vs, &cfg)
 
 	switch {
@@ -673,6 +683,10 @@ func privatizeClient(vs sdktypes.Vars, cfg *oauthConfig) {
 	}
 }
 
+func setupLinear(vs sdktypes.Vars, cfg *oauthConfig) {
+	cfg.Opts["actor"] = vs.GetValue(sdktypes.NewSymbol("actor"))
+}
+
 // setupAuth0 needs to run even when the connection is using the AutoKitteh server's
 // default OAuth app, not just a private one like the [privatize] function.
 func setupAuth0(vs sdktypes.Vars, cfg *oauthConfig) {
@@ -685,7 +699,7 @@ func setupAuth0(vs sdktypes.Vars, cfg *oauthConfig) {
 }
 
 func privatizeGitHub(vs sdktypes.Vars, cfg *oauthConfig) {
-	enterpriseURL := vs.GetValue(vars.EnterpriseURL)
+	enterpriseURL := vs.GetValue(githubVars.EnterpriseURL)
 	if enterpriseURL == "" {
 		enterpriseURL = os.Getenv("GITHUB_ENTERPRISE_URL")
 	}
@@ -693,7 +707,7 @@ func privatizeGitHub(vs sdktypes.Vars, cfg *oauthConfig) {
 		enterpriseURL = defaultGitHubBaseURL
 	}
 
-	appName := vs.GetValue(vars.AppName)
+	appName := vs.GetValue(githubVars.AppName)
 	if appName == "" {
 		appName = os.Getenv("GITHUB_APP_NAME")
 	}
