@@ -154,4 +154,8 @@ type DB interface {
 	AddJob(ctx context.Context, jobType scheme.JobType, data map[string]any) (uuid.UUID, error)
 	UpdateJobStatus(ctx context.Context, jobID uuid.UUID, status scheme.JobStatus) error
 	GetPendingJobs(ctx context.Context, count int) ([]scheme.Job, error)
+
+	GetWorkerInfo(ctx context.Context, workerID string) (scheme.WorkerInfo, error)
+	IncActiveWorkflows(ctx context.Context, workerID string) (int, error)
+	DecActiveWorkflows(ctx context.Context, workerID string) (int, error)
 }

@@ -19,12 +19,13 @@ type Config struct {
 
 var defaultConfig = Config{
 	EnableWorker:           true,
-	PollJobsIntervalMS:     5000,
-	MaxConcurrentWorkflows: 1,
+	PollJobsIntervalMS:     100,
+	MaxConcurrentWorkflows: 5,
 	Workflows: sessionworkflows.Config{
 		Worker: temporalclient.WorkerConfig{
 			WorkflowDeadlockTimeout: time.Second * 10, // TODO: bring down to 1s.
 		},
+		SessionWorkflowQueueName: "sessions",
 	},
 	Calls: sessioncalls.Config{
 		ActivityHeartbeatInterval: time.Second * 5,

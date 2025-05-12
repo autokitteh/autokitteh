@@ -16,8 +16,17 @@ CREATE TABLE `jobs` (
 CREATE INDEX `idx_jobs_created_at` ON `jobs` (`created_at`);
 -- create index "idx_job_type_status" to table: "jobs"
 CREATE INDEX `idx_job_type_status` ON `jobs` (`type`, `status`);
+-- create "worker_infos" table
+CREATE TABLE `worker_infos` (
+  `worker_id` text NOT NULL,
+  `active_workflows` integer NULL,
+  `updated_at` datetime NULL,
+  PRIMARY KEY (`worker_id`)
+);
 
 -- +goose Down
+-- reverse: create "worker_infos" table
+DROP TABLE `worker_infos`;
 -- reverse: create index "idx_job_type_status" to table: "jobs"
 DROP INDEX `idx_job_type_status`;
 -- reverse: create index "idx_jobs_created_at" to table: "jobs"

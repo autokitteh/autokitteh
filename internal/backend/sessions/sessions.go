@@ -12,6 +12,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
+	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/backend/jobs"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncalls"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionsvcs"
@@ -35,6 +36,8 @@ type sessions struct {
 	workflows  sessionworkflows.Workflows
 	calls      sessioncalls.Calls
 	jobManager *jobs.JobManager
+
+	workerInfo scheme.WorkerInfo
 }
 
 var _ Sessions = (*sessions)(nil)
@@ -50,7 +53,12 @@ func New(l *zap.Logger, config *Config, db db.DB, svcs sessionsvcs.Svcs, jobMana
 
 func (s *sessions) StartWorkers(ctx context.Context) error {
 	s.calls = sessioncalls.New(s.l.Named("sessionworkflows"), s.config.Calls, s.svcs)
-	s.workflows = sessionworkflows.New(s.l.Named("sessionworkflows"), s.config.Workflows, s, s.svcs, s.calls)
+	s.workflows = sessionworkflows.New(s.l.Named("sessionworkflows"), s.config.Workflows, s, s.svcs, s.calls, func(ctx context.Context) error {
+		s.DecActiveWorkflows(ctx)
+		// we don't want this to retry forever and keep the workflow running
+		// so we just log the error and return nil
+		return nil
+	})
 
 	if !s.config.EnableWorker {
 		s.l.Info("Session worker: disabled")
@@ -78,6 +86,12 @@ func (s *sessions) PollForJobsLoop(ctx context.Context) {
 	defer ticker.Stop()
 
 	running := make(chan struct{}, 1)
+	var err error
+	s.workerInfo, err = s.svcs.DB.GetWorkerInfo(ctx, s.config.Workflows.SessionWorkflowQueueName)
+	if err != nil {
+		s.l.Error("get worker info", zap.Error(err))
+		return
+	}
 
 	for range ticker.C {
 		select {
@@ -107,14 +121,15 @@ func (s *sessions) PollForJobsLoop(ctx context.Context) {
 }
 
 func (s *sessions) pollOnce(ctx context.Context) error {
-	if s.workflows.NumberOfActiveWorkflows() >= s.config.MaxConcurrentWorkflows {
+
+	if s.workerInfo.ActiveWorkflows >= s.config.MaxConcurrentWorkflows {
 		s.l.Info("Max concurrent workflows reached, skipping poll", zap.Int("max_concurrent_workflows", s.config.MaxConcurrentWorkflows))
 		return nil
 	}
 
-	s.l.Info("active / max workflows", zap.Int("max_concurrent_workflows", s.config.MaxConcurrentWorkflows), zap.Int("active_workflows", s.workflows.NumberOfActiveWorkflows()))
+	s.l.Info("active / max workflows", zap.Int("max_concurrent_workflows", s.config.MaxConcurrentWorkflows), zap.Int("active_workflows", s.workerInfo.ActiveWorkflows))
 
-	jobSlots := s.config.MaxConcurrentWorkflows - s.workflows.NumberOfActiveWorkflows()
+	jobSlots := s.config.MaxConcurrentWorkflows - s.workerInfo.ActiveWorkflows
 	for range jobSlots {
 		job, err := s.jobManager.GetScheduledSessions(ctx)
 		if err != nil {
@@ -160,6 +175,27 @@ func (s *sessions) pollOnce(ctx context.Context) error {
 			s.l.Error("mark job done", zap.Error(err), zap.String("job_id", job.JobID.String()))
 			continue
 		}
+		// current we don't have anything to do with, and we prefer
+		// to let workflows keep working, let's see later on how to handle errors
+		// since this might overflow the runner usage
+		_ = s.IncActiveWorkflows(ctx)
+	}
+	return nil
+}
+
+func (s *sessions) IncActiveWorkflows(ctx context.Context) error {
+	var err error
+	if s.workerInfo.ActiveWorkflows, err = s.svcs.DB.IncActiveWorkflows(ctx, s.workerInfo.WorkerID); err != nil {
+		s.l.Error("inc active workflows", zap.Error(err))
+		return err
+	}
+	return nil
+}
+func (s *sessions) DecActiveWorkflows(ctx context.Context) error {
+	var err error
+	if s.workerInfo.ActiveWorkflows, err = s.svcs.DB.DecActiveWorkflows(ctx, s.workerInfo.WorkerID); err != nil {
+		s.l.Error("dec active workflows", zap.Error(err))
+		return err
 	}
 	return nil
 }
@@ -237,7 +273,11 @@ func (s *sessions) Stop(ctx context.Context, sessionID sdktypes.SessionID, reaso
 		return err
 	}
 
-	return s.workflows.StopWorkflow(ctx, sessionID, reason, force, cancelTimeout)
+	err := s.workflows.StopWorkflow(ctx, sessionID, reason, force, cancelTimeout)
+	if err == nil {
+		s.DecActiveWorkflows(ctx)
+	}
+	return err
 }
 
 func (s *sessions) List(ctx context.Context, filter sdkservices.ListSessionsFilter) (*sdkservices.ListSessionResult, error) {

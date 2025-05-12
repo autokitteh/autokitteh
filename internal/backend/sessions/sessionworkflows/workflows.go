@@ -26,7 +26,6 @@ import (
 )
 
 const (
-	taskQueueName       = "sessions"
 	sessionWorkflowName = "session"
 
 	terminateSessionWorkflowName        = "terminate_session"
@@ -41,7 +40,6 @@ type Workflows interface {
 	StartChildWorkflow(wctx workflow.Context, data sessiondata.Data) (workflow.ChildWorkflowFuture, error)
 	GetWorkflowLog(ctx context.Context, filter sdkservices.SessionLogRecordsFilter) (*sdkservices.GetLogResults, error)
 	StopWorkflow(ctx context.Context, sessionID sdktypes.SessionID, reason string, force bool, cancelTimeout time.Duration) error
-	NumberOfActiveWorkflows() int
 }
 
 type sessionWorkflowParams struct {
@@ -57,10 +55,8 @@ type workflows struct {
 	sessions sdkservices.Sessions
 	calls    sessioncalls.Calls
 
-	activeWorkflowsIds map[string]bool
+	onSessionWorkflowDone func(ctx context.Context) error
 }
-
-// NumberOfActiveWorkflows implements Workflows.
 
 func workflowID(sessionID sdktypes.SessionID) string { return sessionID.String() }
 
@@ -70,13 +66,15 @@ func New(
 	sessions sdkservices.Sessions,
 	svcs *sessionsvcs.Svcs,
 	calls sessioncalls.Calls,
+	onSessionWorkflowDone func(ctx context.Context) error,
 ) Workflows {
 	initMetrics()
-	return &workflows{l: l, cfg: cfg, sessions: sessions, calls: calls, svcs: svcs, activeWorkflowsIds: make(map[string]bool, 200)}
+	return &workflows{l: l, cfg: cfg, sessions: sessions, calls: calls, svcs: svcs, onSessionWorkflowDone: onSessionWorkflowDone}
 }
 
 func (ws *workflows) StartWorkers(ctx context.Context) error {
-	ws.worker = temporalclient.NewWorker(ws.l.Named("sessionworkflowsworker"), ws.svcs.Temporal.TemporalClient(), taskQueueName, ws.cfg.Worker)
+	ws.worker = temporalclient.NewWorker(ws.l.Named("sessionworkflowsworker"), ws.svcs.Temporal.TemporalClient(), ws.cfg.SessionWorkflowQueueName, ws.cfg.Worker)
+
 	if ws.worker == nil {
 		return nil
 	}
@@ -127,6 +125,7 @@ func memo(session sdktypes.Session, oid sdktypes.OrgID) map[string]string {
 	return memo
 }
 
+// TODO: how to handle this with throtelling ?
 func (ws *workflows) StartChildWorkflow(wctx workflow.Context, data sessiondata.Data) (workflow.ChildWorkflowFuture, error) {
 	childSessionID := data.Session.ID()
 
@@ -138,7 +137,7 @@ func (ws *workflows) StartChildWorkflow(wctx workflow.Context, data sessiondata.
 		workflow.WithChildOptions(
 			wctx,
 			ws.cfg.SessionWorkflow.ToChildWorkflowOptions(
-				taskQueueName,
+				ws.cfg.SessionWorkflowQueueName,
 				workflowID(childSessionID),
 				fmt.Sprintf("session %v", childSessionID),
 				enums.PARENT_CLOSE_POLICY_ABANDON,
@@ -163,7 +162,6 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 
 	sessionID := session.ID()
 
-	ws.activeWorkflowsIds[sessionID.String()] = true
 	l := ws.l.Sugar().With("session_id", sessionID)
 
 	data, err := sessiondata.Get(ctx, ws.svcs, session)
@@ -176,7 +174,7 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 	r, err := ws.svcs.Temporal.TemporalClient().ExecuteWorkflow(
 		ctx,
 		ws.cfg.SessionWorkflow.ToStartWorkflowOptions(
-			taskQueueName,
+			ws.cfg.SessionWorkflowQueueName,
 			workflowID(sessionID),
 			fmt.Sprintf("session %v", sessionID),
 			memo,
@@ -195,7 +193,6 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 
 func (ws *workflows) sessionWorkflow(wctx workflow.Context, params sessionWorkflowParams) error {
 	wi := workflow.GetInfo(wctx)
-	ws.activeWorkflowsIds[wi.WorkflowExecution.ID] = true
 
 	session := params.Data.Session
 	parentSessionID := session.ParentSessionID()
@@ -230,7 +227,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params sessionWorkfl
 		}
 	}
 
-	wctx = temporalclient.WithActivityOptions(wctx, taskQueueName, ws.cfg.Activity)
+	wctx = temporalclient.WithActivityOptions(wctx, ws.cfg.SessionWorkflowQueueName, ws.cfg.Activity)
 
 	// metrics is using context for the data contained, not for cancellations, as it stores in memory.
 	// if it will be stuck anyway for some reason, the workflow deadlock timeout would kick in.
@@ -341,7 +338,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params sessionWorkfl
 	}
 
 	_ = workflow.ExecuteActivity(wctx, deactivateDrainedDeploymentActivityName, session.DeploymentID()).Get(wctx, nil)
-
+	_ = workflow.ExecuteActivity(wctx, releaseResourceActivityName).Get(wctx, nil)
 	return workflowErr
 }
 
@@ -429,7 +426,7 @@ func (ws *workflows) StopWorkflow(ctx context.Context, sessionID sdktypes.Sessio
 	r, err := ws.svcs.Temporal.TemporalClient().ExecuteWorkflow(
 		ctx,
 		ws.cfg.TerminationWorkflow.ToStartWorkflowOptions(
-			taskQueueName,
+			ws.cfg.SessionWorkflowQueueName,
 			"terminate_"+wid,
 			fmt.Sprintf("stop %v", sessionID),
 			map[string]string{
@@ -461,8 +458,4 @@ func (ws *workflows) StopWorkflow(ctx context.Context, sessionID sdktypes.Sessio
 func (ws *workflows) updateSessionState(wctx workflow.Context, sessionID sdktypes.SessionID, state sdktypes.SessionState) error {
 	ws.l.Sugar().With("session_id", sessionID, "state", state.Type()).Infof("updating session state to %v", state.Type())
 	return workflow.ExecuteActivity(wctx, updateSessionStateActivityName, sessionID, state).Get(wctx, nil)
-}
-
-func (ws *workflows) NumberOfActiveWorkflows() int {
-	return len(ws.activeWorkflowsIds)
 }

@@ -659,3 +659,9 @@ type Job struct {
 	EndProcessingTime   *time.Time // Not sure this is really needed
 	// We can consider adding error reason for failed jobs
 }
+
+type WorkerInfo struct {
+	WorkerID        string `gorm:"primaryKey;not null"`
+	ActiveWorkflows int
+	UpdatedAt       time.Time
+}

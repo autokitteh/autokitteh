@@ -17,4 +17,6 @@ type Config struct {
 
 	// Enable test tools.
 	Test bool `koanf:"test"`
+
+	SessionWorkflowQueueName string `koanf:"session_workflow_queue_name"`
 }

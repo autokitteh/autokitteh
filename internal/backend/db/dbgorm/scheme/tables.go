@@ -8,6 +8,8 @@ var Tables = []any{
 	&Org{},
 	&OrgMember{},
 	&Project{},
+	&Job{},
+	&WorkerInfo{},
 	&Secret{},
 	&Session{},
 	&SessionCallAttempt{},
