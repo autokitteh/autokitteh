@@ -274,7 +274,7 @@ func (w *sessionWorkflow) initGlobalModules(wctx workflow.Context) (map[string]s
 }
 
 func (w *sessionWorkflow) createEventSubscription(wctx workflow.Context, filter string, did sdktypes.EventDestinationID) (uuid.UUID, error) {
-	wctx = temporalclient.WithActivityOptions(wctx, taskQueueName, w.ws.cfg.Activity)
+	wctx = temporalclient.WithActivityOptions(wctx, w.ws.cfg.SessionWorkflowQueueName, w.ws.cfg.Activity)
 
 	l := w.l.With(zap.Any("destination_id", did))
 
@@ -357,7 +357,7 @@ func (w *sessionWorkflow) waitOnFirstSignal(wctx workflow.Context, signals []uui
 func (w *sessionWorkflow) getNextEvent(wctx workflow.Context, signalID uuid.UUID) (map[string]sdktypes.Value, error) {
 	l := w.l.With(zap.Any("signal_id", signalID))
 
-	wctx = temporalclient.WithActivityOptions(wctx, taskQueueName, w.ws.cfg.Activity)
+	wctx = temporalclient.WithActivityOptions(wctx, w.ws.cfg.SessionWorkflowQueueName, w.ws.cfg.Activity)
 
 	minSequenceNumber, ok := w.lastReadEventSeqForSignal[signalID]
 	if !ok {
@@ -396,7 +396,7 @@ func (w *sessionWorkflow) getNextEvent(wctx workflow.Context, signalID uuid.UUID
 func (w *sessionWorkflow) removeEventSubscription(wctx workflow.Context, signalID uuid.UUID) {
 	l := w.l.With(zap.Any("signal_id", signalID))
 
-	wctx = temporalclient.WithActivityOptions(wctx, taskQueueName, w.ws.cfg.Activity)
+	wctx = temporalclient.WithActivityOptions(wctx, w.ws.cfg.SessionWorkflowQueueName, w.ws.cfg.Activity)
 
 	if err := workflow.ExecuteActivity(wctx, removeSignalActivityName, signalID).Get(wctx, nil); err != nil {
 		// it is not a critical error, we can just log it. no need to panic.

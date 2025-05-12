@@ -26,7 +26,6 @@ import (
 )
 
 const (
-	taskQueueName       = "sessions"
 	sessionWorkflowName = "session"
 
 	terminateSessionWorkflowName        = "terminate_session"
@@ -55,6 +54,8 @@ type workflows struct {
 	svcs     *sessionsvcs.Svcs
 	sessions sdkservices.Sessions
 	calls    sessioncalls.Calls
+
+	onSessionWorkflowDone func(ctx context.Context) error
 }
 
 func workflowID(sessionID sdktypes.SessionID) string { return sessionID.String() }
@@ -65,13 +66,15 @@ func New(
 	sessions sdkservices.Sessions,
 	svcs *sessionsvcs.Svcs,
 	calls sessioncalls.Calls,
+	onSessionWorkflowDone func(ctx context.Context) error,
 ) Workflows {
 	initMetrics()
-	return &workflows{l: l, cfg: cfg, sessions: sessions, calls: calls, svcs: svcs}
+	return &workflows{l: l, cfg: cfg, sessions: sessions, calls: calls, svcs: svcs, onSessionWorkflowDone: onSessionWorkflowDone}
 }
 
 func (ws *workflows) StartWorkers(ctx context.Context) error {
-	ws.worker = temporalclient.NewWorker(ws.l.Named("sessionworkflowsworker"), ws.svcs.Temporal.TemporalClient(), taskQueueName, ws.cfg.Worker)
+	ws.worker = temporalclient.NewWorker(ws.l.Named("sessionworkflowsworker"), ws.svcs.Temporal.TemporalClient(), ws.cfg.SessionWorkflowQueueName, ws.cfg.Worker)
+
 	if ws.worker == nil {
 		return nil
 	}
@@ -122,6 +125,7 @@ func memo(session sdktypes.Session, oid sdktypes.OrgID) map[string]string {
 	return memo
 }
 
+// TODO: how to handle this with throtelling ?
 func (ws *workflows) StartChildWorkflow(wctx workflow.Context, data sessiondata.Data) (workflow.ChildWorkflowFuture, error) {
 	childSessionID := data.Session.ID()
 
@@ -133,7 +137,7 @@ func (ws *workflows) StartChildWorkflow(wctx workflow.Context, data sessiondata.
 		workflow.WithChildOptions(
 			wctx,
 			ws.cfg.SessionWorkflow.ToChildWorkflowOptions(
-				taskQueueName,
+				ws.cfg.SessionWorkflowQueueName,
 				workflowID(childSessionID),
 				fmt.Sprintf("session %v", childSessionID),
 				enums.PARENT_CLOSE_POLICY_ABANDON,
@@ -155,6 +159,7 @@ func (ws *workflows) StartChildWorkflow(wctx workflow.Context, data sessiondata.
 }
 
 func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session, opts StartWorkflowOptions) error {
+
 	sessionID := session.ID()
 
 	l := ws.l.Sugar().With("session_id", sessionID)
@@ -169,7 +174,7 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 	r, err := ws.svcs.Temporal.TemporalClient().ExecuteWorkflow(
 		ctx,
 		ws.cfg.SessionWorkflow.ToStartWorkflowOptions(
-			taskQueueName,
+			ws.cfg.SessionWorkflowQueueName,
 			workflowID(sessionID),
 			fmt.Sprintf("session %v", sessionID),
 			memo,
@@ -188,6 +193,7 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 
 func (ws *workflows) sessionWorkflow(wctx workflow.Context, params sessionWorkflowParams) error {
 	wi := workflow.GetInfo(wctx)
+
 	session := params.Data.Session
 	parentSessionID := session.ParentSessionID()
 	sid := session.ID()
@@ -221,7 +227,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params sessionWorkfl
 		}
 	}
 
-	wctx = temporalclient.WithActivityOptions(wctx, taskQueueName, ws.cfg.Activity)
+	wctx = temporalclient.WithActivityOptions(wctx, ws.cfg.SessionWorkflowQueueName, ws.cfg.Activity)
 
 	// metrics is using context for the data contained, not for cancellations, as it stores in memory.
 	// if it will be stuck anyway for some reason, the workflow deadlock timeout would kick in.
@@ -332,7 +338,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params sessionWorkfl
 	}
 
 	_ = workflow.ExecuteActivity(wctx, deactivateDrainedDeploymentActivityName, session.DeploymentID()).Get(wctx, nil)
-
+	_ = workflow.ExecuteActivity(wctx, releaseResourceActivityName).Get(wctx, nil)
 	return workflowErr
 }
 
@@ -420,7 +426,7 @@ func (ws *workflows) StopWorkflow(ctx context.Context, sessionID sdktypes.Sessio
 	r, err := ws.svcs.Temporal.TemporalClient().ExecuteWorkflow(
 		ctx,
 		ws.cfg.TerminationWorkflow.ToStartWorkflowOptions(
-			taskQueueName,
+			ws.cfg.SessionWorkflowQueueName,
 			"terminate_"+wid,
 			fmt.Sprintf("stop %v", sessionID),
 			map[string]string{
