@@ -32,7 +32,7 @@ const (
 	getDeploymentStateActivityName          = "get_deployment_state"
 	createSessionActivityName               = "create_session"
 	createSessionInProjectActivityName      = "create_session_in_project"
-	releaseResourceActivityName             = "realease_resource"
+	releaseResourceActivityName             = "release_resource"
 )
 
 func (ws *workflows) registerActivities() {

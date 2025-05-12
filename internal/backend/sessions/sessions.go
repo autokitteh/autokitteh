@@ -61,7 +61,7 @@ func New(l *zap.Logger, config *Config, db db.DB, svcs sessionsvcs.Svcs, jobMana
 func (s *sessions) StartWorkers(ctx context.Context) error {
 	s.calls = sessioncalls.New(s.l.Named("sessionworkflows"), s.config.Calls, s.svcs)
 	s.workflows = sessionworkflows.New(s.l.Named("sessionworkflows"), s.config.Workflows, s, s.svcs, s.calls, func(ctx context.Context) error {
-		s.DecActiveWorkflows(ctx)
+		_ = s.DecActiveWorkflows(ctx)
 		// we don't want this to retry forever and keep the workflow running
 		// so we just log the error and return nil
 		return nil
@@ -167,7 +167,13 @@ func (s *sessions) pollOnce(ctx context.Context) error {
 		}
 
 		sessionID, err := sdktypes.ParseSessionID(sessionIDStr)
-
+		if err != nil {
+			s.l.Error("parse session_id failed", zap.Error(err), zap.String("job_id", job.JobID.String()))
+			if err := s.jobManager.MarkJobFailed(ctx, job.JobID); err != nil {
+				s.l.Error("mark job failed", zap.Error(err), zap.String("job_id", job.JobID.String()))
+			}
+			continue
+		}
 		if err := s.startSession(ctx, sessionID); err != nil {
 			s.l.Error("start session failed", zap.Error(err), zap.String("session_id", sessionID.String()))
 			if err := s.jobManager.MarkJobFailed(ctx, job.JobID); err != nil {
@@ -280,7 +286,7 @@ func (s *sessions) Stop(ctx context.Context, sessionID sdktypes.SessionID, reaso
 
 	err := s.workflows.StopWorkflow(ctx, sessionID, reason, force, cancelTimeout)
 	if err == nil {
-		s.DecActiveWorkflows(ctx)
+		_ = s.DecActiveWorkflows(ctx)
 	}
 	return err
 }
