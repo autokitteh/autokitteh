@@ -8,10 +8,11 @@ ak project build my_project --file meow.star -j
 return code == 0
 capture_jq bid .build_id
 
-ak build describe $bid -j
+ak build describe $bid -j | jq 'del(.build.info.memo)' > actual.json
 return code == 0
-
-output jq 'del(.build.info.memo)' equals_json file build.json
+jq 'del(.build.info.memo)' build.json > expected.json
+diff actual.json expected.json
+return code == 0
 
 -- meow.star --
 print("meow")
