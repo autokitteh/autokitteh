@@ -32,5 +32,3 @@ def main(_):
 def foo(event):
   return event.data.get("x") + 1
 
--- test-config.yaml --
-exclusive: true
