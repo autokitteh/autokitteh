@@ -19,7 +19,7 @@ return code == 0
 
 ak session prints $sid --no-timestamps
 return code == 0
-output contains "{'completed': True, 'value': 2}"
+output contains '{'completed': True, 'value': 2}'
 
 -- p1.py --
 from autokitteh import start, next_signal
