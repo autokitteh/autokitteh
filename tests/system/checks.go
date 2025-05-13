@@ -9,8 +9,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/hexops/gotextdiff"
 	"github.com/hexops/gotextdiff/myers"
 	"github.com/hexops/gotextdiff/span"
@@ -91,15 +89,6 @@ func checkAKOutput(t *testing.T, step string, ak *tests.AKResult) error {
 		if want != got {
 			return stringCheckFailed(want, got)
 		}
-	case "contains_json":
-		// Using a library like go-cmp
-		opts := cmpopts.IgnoreFields(struct {
-			Build struct{ Info struct{ Memo string } }
-		}{}, "Build.Info.Memo")
-		if diff := cmp.Diff(want, got, opts); diff != "" {
-			return fmt.Errorf("expected JSON not found in actual output:\n%s", diff)
-		}
-		return nil
 	case "contains":
 		if len(want) == 0 && got != want { // Empty string is always contained.
 			return stringCheckFailed(want, got)
