@@ -79,16 +79,12 @@ func TestSystem(t *testing.T) {
 				t.Skip("skipping")
 			}
 
-			t.Logf("=== STARTING TEST: %s ===", path)
-
 			tests.SwitchToTempDir(t, venvPath) // For test isolation.
 			akAddr := setUpTest(t, akPath, test.config.Server)
 
 			writeEmbeddedFiles(t, test.a.Files)
 
 			runTestSteps(t, test.steps, akPath, akAddr, &test.config)
-
-			t.Logf("=== COMPLETED TEST: %s ===", path)
 		})
 	}
 }
