@@ -32,7 +32,7 @@ type workerGRPCHandler struct {
 	userCode.HandlerServiceServer
 
 	runnerIDsToRuntime map[string]*pySvc
-	mu                 sync.Mutex
+	mu                 sync.RWMutex
 	log                *zap.Logger
 
 	oauth *oauth.OAuth
@@ -85,11 +85,7 @@ func (s *workerGRPCHandler) Health(ctx context.Context, req *userCode.HandlerHea
 }
 
 func (s *workerGRPCHandler) IsActiveRunner(ctx context.Context, req *userCode.IsActiveRunnerRequest) (*userCode.IsActiveRunnerResponse, error) {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-
-	_, ok := w.runnerIDsToRuntime[req.RunnerId]
-	if !ok {
+	if s.runnerByID(req.RunnerId) == nil {
 		w.log.Error("unknown runner ID", zap.String("id", req.RunnerId))
 		return &userCode.IsActiveRunnerResponse{Error: "unknown runner ID"}, nil
 	}
@@ -98,8 +94,8 @@ func (s *workerGRPCHandler) IsActiveRunner(ctx context.Context, req *userCode.Is
 }
 
 func (s *workerGRPCHandler) runnerByID(rid string) *pySvc {
-	w.mu.Lock()
-	defer w.mu.Unlock()
+	w.mu.RLock()
+	defer w.mu.RUnlock()
 
 	return w.runnerIDsToRuntime[rid]
 }
@@ -398,10 +394,8 @@ func (s *workerGRPCHandler) EncodeJWT(ctx context.Context, req *userCode.EncodeJ
 }
 
 func (s *workerGRPCHandler) RefreshOAuthToken(ctx context.Context, req *userCode.RefreshRequest) (*userCode.RefreshResponse, error) {
-	w.mu.Lock()
-	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
-	w.mu.Unlock()
-	if !ok {
+	runner := s.runnerByID(req.RunnerId)
+	if runner == nil {
 		w.log.Error("unknown runner ID", zap.String("id", req.RunnerId))
 		return &userCode.RefreshResponse{Error: "unknown runner ID"}, nil
 	}

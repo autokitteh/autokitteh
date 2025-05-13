@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"strings"
 
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	"go.uber.org/zap"
@@ -56,12 +57,18 @@ type LogDispatcher struct {
 }
 
 func getRunnerLog(runnerID, msg string) map[string]any {
+	// Start from first { if it's not too far the start.
+	i := strings.IndexByte(msg, '{')
+	if i < 0 || i > 20 {
+		i = 0
+	}
+
 	var record map[string]any
-	if err := json.Unmarshal([]byte(msg), &record); err != nil {
+	if err := json.Unmarshal([]byte(msg[i:]), &record); err != nil {
 		return nil
 	}
 
-	// Must be in sync with runner/log.py
+	// Key (runner_id) be in sync with runner/log.py
 	if record["runner_id"] != runnerID {
 		return nil
 	}
@@ -69,9 +76,28 @@ func getRunnerLog(runnerID, msg string) map[string]any {
 	return record
 }
 
+func cleanString(text string) string {
+	text = strings.ToValidUTF8(text, "")
+
+	for i, c := range text {
+		// Assume chars from newline are OK
+		if c >= '\n' {
+			return text[i:]
+		}
+
+		if i > 20 {
+			break
+		}
+	}
+
+	return text
+}
+
 func (d LogDispatcher) Print(text string) error {
+	// Docker logs may contain garbage characters at the start
+	text = cleanString(text)
 	record := getRunnerLog(d.runnerID, text)
-	if record != nil {
+	if record == nil {
 		return d.print(d.ctx, d.runID, text)
 	}
 

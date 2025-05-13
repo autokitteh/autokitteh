@@ -27,7 +27,7 @@ type dockerRunnerManager struct {
 }
 
 func configureDockerRunnerManager(log *zap.Logger, cfg DockerRuntimeConfig) error {
-	dc, err := NewDockerClient(log, cfg.LogRunnerCode, cfg.LogBuildCode)
+	dc, err := NewDockerClient(log, cfg.LogBuildCode)
 	if err != nil {
 		return err
 	}
@@ -98,7 +98,7 @@ func (rm *dockerRunnerManager) Start(ctx context.Context, sessionID sdktypes.Ses
 
 	cmd := createStartCommand("/runner/main.py", rm.workerAddressProvider(), runnerID)
 
-	cid, port, err := rm.client.StartRunner(ctx, containerName, sessionID, cmd, vars)
+	cid, port, err := rm.client.StartRunner(ctx, containerName, sessionID, cmd, vars, printFn)
 	if err != nil {
 		return nil, fmt.Errorf("start runner: %w", err)
 	}
