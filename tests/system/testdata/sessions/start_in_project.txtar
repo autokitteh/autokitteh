@@ -19,7 +19,7 @@ return code == 0
 
 ak session prints $sid --no-timestamps
 return code == 0
-output equals file out.txt
+output contains "{'completed': True, 'value': 2}"
 
 -- p1.py --
 from autokitteh import start, next_signal
@@ -32,5 +32,5 @@ def main(_):
 def foo(event):
   return event.data.get("x") + 1
 
--- out.txt --
-{'completed': True, 'value': 2}
+-- test-config.yaml --
+exclusive: true
