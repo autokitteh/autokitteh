@@ -15,7 +15,7 @@ output equals_jq .build.runtime_requirements []
 
 output equals_jq .build.runtimes[0].info.name starlark
 
-output equals_jq .build.runtimes[0].artifact.compiled_data."meow.star" ""
+output equals_jq .build.runtimes[0].artifact.compiled_data meow.star
 
 output equals_jq .build.runtimes[0].artifact.exports[0].symbol on_meow
 output equals_jq .build.runtimes[0].artifact.exports[0].location.path meow.star
