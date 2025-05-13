@@ -57,3 +57,6 @@ this_is_exported = True
         ]
     }
 }
+
+-- test-config.yaml --
+exclusive: true
