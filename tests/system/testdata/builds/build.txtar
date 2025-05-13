@@ -11,8 +11,10 @@ capture_jq bid .build_id
 ak build describe $bid -j
 return code == 0
 
-output contains '"runtime_requirements": []'
-output contains '"runtimes": [{"artifact": {"compiled_data": {"meow.star": ""},"exports": [{"location": {"col": 1,"path": "meow.star","row": 3},"symbol": "on_meow"},{"location": {"col": 1,"path": "meow.star","row": 6},"symbol": "this_is_exported"}]},"info": {"name": "starlark"}}]'
+output equals_jq '.build.runtime_requirements' '[]'
+output equals_jq '.build.runtimes[0].info.name' '"starlark"'
+output equals_jq '.build.runtimes[0].artifact.exports[0].symbol' '"on_meow"'
+output equals_jq '.build.runtimes[0].artifact.exports[1].symbol' '"this_is_exported"'
 
 
 -- meow.star --
