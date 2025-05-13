@@ -29,8 +29,8 @@ var (
 	// capture_re <name> <regexp>
 	reCheck = regexp.MustCompile(`^capture_re\s+(\w+)\s+(.+)`)
 
-	// output <equals|equals_json|contains|regex> [file] *
-	akCheckOutput = regexp.MustCompile(`^output\s+(equals|equals_json|contains|regex|equals_jq)\s+(file\s+)?(.+|'.*')`)
+	// output <equals|equals_json|contains_json|contains|regex> [file] *
+	akCheckOutput = regexp.MustCompile(`^output\s+(equals|equals_json|contains_json|contains|regex|equals_jq)\s+(file\s+)?(.+|'.*')`)
 	// return code == <int>
 	akCheckReturn = regexp.MustCompile(`^return\s+code\s*==\s*(\d+)$`)
 
