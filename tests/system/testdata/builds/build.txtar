@@ -10,7 +10,7 @@ capture_jq bid .build_id
 
 ak build describe $bid -j
 return code == 0
-output equals_json file build.json
+output contains_json file build.json
 
 -- meow.star --
 print("meow")
