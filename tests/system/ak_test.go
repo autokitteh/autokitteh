@@ -131,6 +131,7 @@ func runTestSteps(t *testing.T, steps []string, akPath, akAddr string, cfg *test
 		pendingReq  *httpRequest
 		httpResp    *httpResponse
 	)
+
 	for i, step := range steps {
 		// Skip empty lines and comments.
 		if step == "" {

@@ -32,6 +32,7 @@ def on_http(event):
     "state": {
         "completed": {
             "prints": [
+                "ᓚᘏᗢ Python runs might take a while to start when running for the first time on a new runner, hang on!",
                 "GET",
                 "ses_00000000000000000000000007"
             ],
