@@ -63,8 +63,6 @@ type comChannels struct {
 	err      chan string
 	request  chan *pbUserCode.ActivityRequest
 	execute  chan *pbUserCode.ExecuteReplyRequest
-	print    chan *logMessage
-	log      chan *logMessage
 	callback chan *callbackMessage
 }
 
@@ -179,8 +177,6 @@ func newSvc(cfg *Config, l *zap.Logger) (sdkservices.Runtime, error) {
 			err:      make(chan string, 1),
 			request:  make(chan *pbUserCode.ActivityRequest, 1),
 			execute:  make(chan *pbUserCode.ExecuteReplyRequest, 1),
-			print:    make(chan *logMessage, 1024),
-			log:      make(chan *logMessage, 1024),
 			callback: make(chan *callbackMessage, 1),
 		},
 	}
@@ -241,23 +237,6 @@ func (py *pySvc) handlePrint(ctx context.Context, msg *logMessage) {
 	}
 
 	close(msg.doneChannel)
-}
-
-func (py *pySvc) printConsumer(ctx context.Context) {
-	for {
-		select {
-		case p, ok := <-py.channels.print:
-			if !ok {
-				py.log.Error("print consumer stopped by closing print channel")
-				return
-			}
-
-			py.handlePrint(ctx, p)
-		case <-py.printDone:
-			py.log.Info("print consumer stopped by closing printDone channel")
-			return
-		}
-	}
 }
 
 /*
@@ -378,7 +357,6 @@ func (py *pySvc) Run(
 	runnerOK = true // All is good, don't kill Python subprocess.
 
 	py.printDone = make(chan struct{})
-	go py.printConsumer(ctx)
 
 	py.log.Info("run created")
 	return py, nil
@@ -619,12 +597,6 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 		ctx, selSpan := telemetry.T().Start(ctx, "pythonrt.Call.select")
 
 		select {
-		case r := <-py.channels.log:
-			selSpan.End()
-			span.AddEvent("log")
-
-			py.log.Log(pyLevelToZap(r.level), r.message)
-			close(r.doneChannel)
 		case v := <-py.channels.execute:
 			selSpan.End()
 			span.AddEvent("execute")

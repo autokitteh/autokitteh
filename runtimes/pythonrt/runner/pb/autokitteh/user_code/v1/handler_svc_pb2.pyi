@@ -163,20 +163,6 @@ class NextSignalResponse(_message.Message):
     error: str
     def __init__(self, signal: _Optional[_Union[Signal, _Mapping]] = ..., error: _Optional[str] = ...) -> None: ...
 
-class PrintRequest(_message.Message):
-    __slots__ = ["runner_id", "message"]
-    RUNNER_ID_FIELD_NUMBER: _ClassVar[int]
-    MESSAGE_FIELD_NUMBER: _ClassVar[int]
-    runner_id: str
-    message: str
-    def __init__(self, runner_id: _Optional[str] = ..., message: _Optional[str] = ...) -> None: ...
-
-class PrintResponse(_message.Message):
-    __slots__ = ["error"]
-    ERROR_FIELD_NUMBER: _ClassVar[int]
-    error: str
-    def __init__(self, error: _Optional[str] = ...) -> None: ...
-
 class StartSessionRequest(_message.Message):
     __slots__ = ["runner_id", "loc", "data", "memo", "project"]
     RUNNER_ID_FIELD_NUMBER: _ClassVar[int]

@@ -100,29 +100,6 @@ func (s *workerGRPCHandler) runnerByID(rid string) *pySvc {
 	return w.runnerIDsToRuntime[rid]
 }
 
-func (s *workerGRPCHandler) Print(ctx context.Context, req *userCode.PrintRequest) (*userCode.PrintResponse, error) {
-	runner := s.runnerByID(req.RunnerId)
-	if runner == nil {
-		w.log.Error("unknown runner ID", zap.String("id", req.RunnerId))
-		return &userCode.PrintResponse{Error: "unknown runner ID"}, nil
-	}
-
-	s.log.Debug("Print request", zap.String("message", req.Message), zap.String("runner_id", req.RunnerId))
-	m := &logMessage{level: "info", message: req.Message, doneChannel: make(chan struct{})}
-
-	runner.channels.print <- m
-
-	select {
-	case <-m.doneChannel:
-		return &userCode.PrintResponse{}, nil
-	case <-time.After(runnerChResponseTimeout):
-		s.log.Warn("print timeout")
-		return &userCode.PrintResponse{
-			Error: "timeout",
-		}, nil
-	}
-}
-
 func (s *workerGRPCHandler) ExecuteReply(ctx context.Context, req *userCode.ExecuteReplyRequest) (*userCode.ExecuteReplyResponse, error) {
 	s.log.Info("ExecuteReply request", zap.String("error", req.Error))
 	runner := s.runnerByID(req.RunnerId)

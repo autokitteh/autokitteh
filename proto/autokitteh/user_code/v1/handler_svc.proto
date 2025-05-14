@@ -98,15 +98,6 @@ message NextSignalResponse {
   string error = 2;
 }
 
-message PrintRequest {
-  string runner_id = 1;
-  string message = 2;
-}
-
-message PrintResponse {
-  string error = 1;
-}
-
 message StartSessionRequest {
   string runner_id = 1;
   string loc = 2;
@@ -178,8 +169,6 @@ service HandlerService {
 
   // Runner done with activity
   rpc Done(DoneRequest) returns (DoneResponse) {}
-  // Print to session log
-  rpc Print(PrintRequest) returns (PrintResponse) {}
 
   // ak functions
   rpc Sleep(SleepRequest) returns (SleepResponse) {}
