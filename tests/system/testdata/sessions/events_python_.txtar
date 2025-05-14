@@ -32,7 +32,7 @@ ak session prints ses_0000000000000000000000000b --no-timestamps
 output contains '1 a'
 output contains '2 b'
 output contains '3 None'
-output contains '4 c'
+output contains '4 cfdf'
 output contains '5 d'
 output contains 'done'
 
