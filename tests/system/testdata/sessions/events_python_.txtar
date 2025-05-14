@@ -7,7 +7,7 @@ resp code == 202
 ak session watch ses_0000000000000000000000000b --end-state RUNNING --wait-created
 return code == 0
 
-wait 2s
+ak session watch ses_0000000000000000000000000b -r "ready"
 return code == 0
 
 http post /webhooks/00000000000000000000000005 a
@@ -19,7 +19,7 @@ resp code == 202
 http post /webhooks/00000000000000000000000007 c
 resp code == 202
 
-wait 2s
+ak session watch ses_0000000000000000000000000b -r "3 None"
 return code == 0
 
 http post /webhooks/00000000000000000000000005 d
