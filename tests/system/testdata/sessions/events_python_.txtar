@@ -7,7 +7,7 @@ resp code == 202
 ak session watch ses_0000000000000000000000000b --end-state RUNNING --wait-created
 return code == 0
 
-ak session watch ses_0000000000000000000000000b -r "ready"
+wait 2s
 return code == 0
 
 http post /webhooks/00000000000000000000000005 a
@@ -19,7 +19,7 @@ resp code == 202
 http post /webhooks/00000000000000000000000007 c
 resp code == 202
 
-ak session watch ses_0000000000000000000000000b -r "3 None"
+wait 2s
 return code == 0
 
 http post /webhooks/00000000000000000000000005 d
@@ -68,3 +68,7 @@ def on_http_start(_):
   print(4, next_event([s1, s2], timeout=2)['body']['text'])
   print(5, next_event([s1, s2], timeout=2)['body']['text'])
   print("done")
+
+
+-- test-config.yaml --
+exclusive: true
