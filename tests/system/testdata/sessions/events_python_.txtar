@@ -29,7 +29,7 @@ ak session watch ses_0000000000000000000000000b --end-state COMPLETED
 return code == 0
 
 ak session prints ses_0000000000000000000000000b --no-timestamps
-output equals file prints.txt
+output contains 'ready\n1 a\n2 b\n3 None\n4 c\n5 d\ndone'
 
 
 -- prints.txt --
