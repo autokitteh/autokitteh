@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -102,6 +103,37 @@ func (d LogDispatcher) Print(text string) error {
 		return d.print(d.ctx, d.runID, text)
 	}
 
-	d.log.Info("runner log", zap.Any("record", record))
+	d.logRecord(record)
 	return nil
+}
+
+func (d LogDispatcher) logRecord(record map[string]any) {
+	// Should be in sync with runner/log.py
+	pyLevel, _ := record["level"].(string)
+	level := pyLevelToZap(pyLevel)
+
+	const msgKey = "message"
+	msg, ok := record[msgKey].(string)
+	if !ok {
+		msg = "runner log"
+	} else {
+		delete(record, msgKey)
+	}
+
+	d.log.Log(level, msg, zap.Any("record", record))
+}
+
+func pyLevelToZap(level string) zapcore.Level {
+	switch level {
+	case "DEBUG":
+		return zap.DebugLevel
+	case "INFO":
+		return zap.InfoLevel
+	case "WARNING":
+		return zap.WarnLevel
+	case "ERROR":
+		return zap.ErrorLevel
+	}
+
+	return zap.InfoLevel
 }

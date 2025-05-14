@@ -26,8 +26,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-const runnerChResponseTimeout = 5 * time.Second
-
 type workerGRPCHandler struct {
 	userCode.HandlerServiceServer
 

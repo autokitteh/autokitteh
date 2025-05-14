@@ -17,7 +17,6 @@ import (
 	"go.jetify.com/typeid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -50,12 +49,6 @@ type callbackMessage struct {
 	name string
 	fn   func(context.Context, *sdkservices.RunCallbacks, sdktypes.RunID) (any, error)
 	ch   chan callbackResponse
-}
-
-type logMessage struct {
-	message     string
-	level       string
-	doneChannel chan struct{}
 }
 
 type comChannels struct {
@@ -231,14 +224,6 @@ func entryPointFileName(entryPoint string) string {
 	return entryPoint
 }
 
-func (py *pySvc) handlePrint(ctx context.Context, msg *logMessage) {
-	if err := py.cbs.Print(ctx, py.runID, msg.message); err != nil {
-		py.log.Error("print error", zap.Error(err))
-	}
-
-	close(msg.doneChannel)
-}
-
 /*
 Run starts a Python workflow.
 
@@ -378,21 +363,6 @@ func (py *pySvc) Close() {
 func (py *pySvc) kwToEvent(kwargs map[string]sdktypes.Value) (map[string]any, error) {
 	unw := sdktypes.ValueWrapper{IgnoreFunctions: true, SafeForJSON: true}.Unwrap
 	return kittehs.TransformMapValuesError(kwargs, unw)
-}
-
-func pyLevelToZap(level string) zapcore.Level {
-	switch level {
-	case "DEBUG":
-		return zap.DebugLevel
-	case "INFO":
-		return zap.InfoLevel
-	case "WARNING":
-		return zap.WarnLevel
-	case "ERROR":
-		return zap.ErrorLevel
-	}
-
-	return zap.InfoLevel
 }
 
 func (py *pySvc) call(ctx context.Context, val sdktypes.Value, args []sdktypes.Value, kw map[string]sdktypes.Value) {
