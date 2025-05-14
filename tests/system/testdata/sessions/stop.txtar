@@ -94,6 +94,3 @@ def test():
 -- test-prints.txt --
 started
 
-
--- test-config.yaml --
- exclusive: true
