@@ -217,10 +217,10 @@ class Runner(pb.runner_rpc.RunnerService):
     def result_error(self, err):
         io = StringIO()
 
-        if "pickle" in str(err):
+        exc = "".join(format_exception(err))
+        if "pickle" in str(err) or "pickle" in exc:
             print(pickle_help, file=io)
 
-        exc = "".join(format_exception(err))
         print(f"error: {err!r}\n\n{exc}", file=io)
 
         return io.getvalue()
@@ -298,6 +298,7 @@ class Runner(pb.runner_rpc.RunnerService):
             mod = loader.load_code(self.code_dir, ak_call, mod_name)
         except Exception as err:
             err_text = self.result_error(err)
+            print(err_text, file=sys.stderr)  # So it'll be in the session logs
             context.abort(
                 grpc.StatusCode.INVALID_ARGUMENT,
                 f"can't load {mod_name} from {self.code_dir} - {err_text}",
@@ -503,6 +504,7 @@ class Runner(pb.runner_rpc.RunnerService):
             if result.error:
                 error = restore_error(result.error)
                 req.error = self.result_error(error)
+                print(req.error, file=sys.stderr)  # So it'll be in the session logs
                 stack = filter_traceback(result.traceback, self.code_dir)
                 tb = pb_traceback(stack)
                 req.traceback.extend(tb)
