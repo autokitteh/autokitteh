@@ -9,11 +9,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
+
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 func ExamplePrinter() {
@@ -27,7 +28,10 @@ func ExamplePrinter() {
 	}
 
 	data := []byte("a\nb\nc\nd")
-	printer.Write(data)
+	if _, err := printer.Write(data); err != nil {
+		fmt.Println("ERROR:", err)
+		return
+	}
 	printer.Flush()
 
 	// Output:
@@ -58,7 +62,7 @@ func TestDispatcher(t *testing.T) {
 	}
 
 	// session
-	d.Print("Garfield")
+	d.Print("Garfield\n")
 
 	// operational
 	msg := map[string]any{
@@ -73,9 +77,11 @@ func TestDispatcher(t *testing.T) {
 	msg["runner_id"] = d.runnerID + "z"
 	data, err = json.Marshal(msg)
 	require.NoError(t, err)
-	d.Print(string(data))
+	err = d.Print(string(data))
+	require.NoError(t, err)
 
-	log.Sync()
+	err = log.Sync()
+	require.NoError(t, err)
 
 	lines := strings.Split(buf.String(), "\n")
 	require.Equal(t, 2, len(lines))

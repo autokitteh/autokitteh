@@ -6,8 +6,9 @@ import (
 	"encoding/json"
 	"strings"
 
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	"go.uber.org/zap"
+
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 // Printer implements io.Writer and calls printFn for each line.

@@ -16,7 +16,6 @@ from threading import Event
 from unittest.mock import MagicMock
 from uuid import uuid4
 
-import log
 import main
 import pb.autokitteh.user_code.v1.runner_svc_pb2 as runner_pb
 import pb.autokitteh.user_code.v1.user_code_pb2 as user_code
