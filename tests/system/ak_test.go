@@ -18,11 +18,13 @@ profiling, and load/stress testing.
 package systest
 
 import (
+	"context"
 	"embed"
 	"fmt"
 	"io/fs"
 	"strings"
 	"testing"
+	"time"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/tests"
@@ -125,13 +127,22 @@ func setUpTest(t *testing.T, akPath string, cfg map[string]any) string {
 }
 
 func runTestSteps(t *testing.T, steps []string, akPath, akAddr string, cfg *testConfig) {
+	ctx, cancel := context.WithTimeout(t.Context(), 3*time.Minute)
+	defer cancel()
+
 	var (
 		actionIndex int
 		ak          *tests.AKResult
 		pendingReq  *httpRequest
 		httpResp    *httpResponse
 	)
+
 	for i, step := range steps {
+		if err := ctx.Err(); err != nil {
+			t.Fatalf("Test timed out after 2 minutes")
+			return
+		}
+
 		// Skip empty lines and comments.
 		if step == "" {
 			continue
