@@ -70,6 +70,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/webhookssvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/webplatform"
 	"go.autokitteh.dev/autokitteh/internal/backend/webtools"
+	"go.autokitteh.dev/autokitteh/internal/backend/workflowresourcemanager"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/version"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimessvc"
@@ -156,7 +157,12 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		SupplyConfig("svc", svcConfigs),
 
 		LoggerFxOpt(opts.Silent),
-
+		Component("workflowresourcemanager", workflowresourcemanager.Configs,
+			fx.Provide(workflowresourcemanager.New),
+			fx.Invoke(func(lc fx.Lifecycle, w workflowresourcemanager.WorkflowResourcesManager) {
+				HookOnStart(lc, w.Start)
+				HookOnStop(lc, w.Stop)
+			})),
 		Component("usagereporter",
 			usagereporter.Configs,
 			fx.Provide(func(z *zap.Logger, cfg *usagereporter.Config) (usagereporter.UsageReporter, error) {
