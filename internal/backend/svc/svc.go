@@ -157,7 +157,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		SupplyConfig("svc", svcConfigs),
 
 		LoggerFxOpt(opts.Silent),
-		Component("workflowresourcemanager", configset.Empty,
+		Component("workflowresourcemanager", workflowresourcemanager.Configs,
 			fx.Provide(workflowresourcemanager.New),
 			fx.Invoke(func(lc fx.Lifecycle, w workflowresourcemanager.WorkflowResourcesManager) {
 				HookOnStart(lc, w.Start)
