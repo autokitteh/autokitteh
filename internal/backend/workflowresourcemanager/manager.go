@@ -6,8 +6,16 @@ package workflowresourcemanager
 import (
 	"context"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.temporal.io/sdk/client"
 	"go.uber.org/zap"
+)
+
+type Config struct {
+}
+
+var (
+	Configs = configset.Set[Config]{}
 )
 
 type manager struct {
