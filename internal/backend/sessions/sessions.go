@@ -1,9 +1,11 @@
 package sessions
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"time"
 
 	"go.uber.org/zap"
@@ -118,6 +120,19 @@ func (s *sessions) GetLog(ctx context.Context, filter sdkservices.SessionLogReco
 	}
 
 	return rs, nil
+}
+
+func (s *sessions) DownloadLogs(ctx context.Context, sid sdktypes.SessionID) (io.ReadCloser, error) {
+	if err := authz.CheckContext(ctx, sid, "read:download-log"); err != nil {
+		return nil, err
+	}
+
+	data, err := s.svcs.DB.GetSessionData(ctx, sid)
+	if err != nil {
+		return nil, err
+	}
+
+	return io.NopCloser(bytes.NewReader(data)), nil
 }
 
 func (s *sessions) Get(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.Session, error) {
