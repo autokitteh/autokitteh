@@ -43,9 +43,9 @@ const (
 	SessionsServiceGetProcedure = "/autokitteh.sessions.v1.SessionsService/Get"
 	// SessionsServiceGetLogProcedure is the fully-qualified name of the SessionsService's GetLog RPC.
 	SessionsServiceGetLogProcedure = "/autokitteh.sessions.v1.SessionsService/GetLog"
-	// SessionsServiceDownloadLogProcedure is the fully-qualified name of the SessionsService's
-	// DownloadLog RPC.
-	SessionsServiceDownloadLogProcedure = "/autokitteh.sessions.v1.SessionsService/DownloadLog"
+	// SessionsServiceDownloadLogsProcedure is the fully-qualified name of the SessionsService's
+	// DownloadLogs RPC.
+	SessionsServiceDownloadLogsProcedure = "/autokitteh.sessions.v1.SessionsService/DownloadLogs"
 	// SessionsServiceGetPrintsProcedure is the fully-qualified name of the SessionsService's GetPrints
 	// RPC.
 	SessionsServiceGetPrintsProcedure = "/autokitteh.sessions.v1.SessionsService/GetPrints"
@@ -63,7 +63,7 @@ type SessionsServiceClient interface {
 	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
 	GetLog(context.Context, *connect.Request[v1.GetLogRequest]) (*connect.Response[v1.GetLogResponse], error)
-	DownloadLog(context.Context, *connect.Request[v1.DownloadLogRequest]) (*connect.Response[v1.DownloadLogResponse], error)
+	DownloadLogs(context.Context, *connect.Request[v1.DownloadLogsRequest]) (*connect.Response[v1.DownloadLogsResponse], error)
 	GetPrints(context.Context, *connect.Request[v1.GetPrintsRequest]) (*connect.Response[v1.GetPrintsResponse], error)
 	Delete(context.Context, *connect.Request[v1.DeleteRequest]) (*connect.Response[v1.DeleteResponse], error)
 }
@@ -103,9 +103,9 @@ func NewSessionsServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			baseURL+SessionsServiceGetLogProcedure,
 			opts...,
 		),
-		downloadLog: connect.NewClient[v1.DownloadLogRequest, v1.DownloadLogResponse](
+		downloadLogs: connect.NewClient[v1.DownloadLogsRequest, v1.DownloadLogsResponse](
 			httpClient,
-			baseURL+SessionsServiceDownloadLogProcedure,
+			baseURL+SessionsServiceDownloadLogsProcedure,
 			opts...,
 		),
 		getPrints: connect.NewClient[v1.GetPrintsRequest, v1.GetPrintsResponse](
@@ -123,14 +123,14 @@ func NewSessionsServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 
 // sessionsServiceClient implements SessionsServiceClient.
 type sessionsServiceClient struct {
-	start       *connect.Client[v1.StartRequest, v1.StartResponse]
-	stop        *connect.Client[v1.StopRequest, v1.StopResponse]
-	list        *connect.Client[v1.ListRequest, v1.ListResponse]
-	get         *connect.Client[v1.GetRequest, v1.GetResponse]
-	getLog      *connect.Client[v1.GetLogRequest, v1.GetLogResponse]
-	downloadLog *connect.Client[v1.DownloadLogRequest, v1.DownloadLogResponse]
-	getPrints   *connect.Client[v1.GetPrintsRequest, v1.GetPrintsResponse]
-	delete      *connect.Client[v1.DeleteRequest, v1.DeleteResponse]
+	start        *connect.Client[v1.StartRequest, v1.StartResponse]
+	stop         *connect.Client[v1.StopRequest, v1.StopResponse]
+	list         *connect.Client[v1.ListRequest, v1.ListResponse]
+	get          *connect.Client[v1.GetRequest, v1.GetResponse]
+	getLog       *connect.Client[v1.GetLogRequest, v1.GetLogResponse]
+	downloadLogs *connect.Client[v1.DownloadLogsRequest, v1.DownloadLogsResponse]
+	getPrints    *connect.Client[v1.GetPrintsRequest, v1.GetPrintsResponse]
+	delete       *connect.Client[v1.DeleteRequest, v1.DeleteResponse]
 }
 
 // Start calls autokitteh.sessions.v1.SessionsService.Start.
@@ -158,9 +158,9 @@ func (c *sessionsServiceClient) GetLog(ctx context.Context, req *connect.Request
 	return c.getLog.CallUnary(ctx, req)
 }
 
-// DownloadLog calls autokitteh.sessions.v1.SessionsService.DownloadLog.
-func (c *sessionsServiceClient) DownloadLog(ctx context.Context, req *connect.Request[v1.DownloadLogRequest]) (*connect.Response[v1.DownloadLogResponse], error) {
-	return c.downloadLog.CallUnary(ctx, req)
+// DownloadLogs calls autokitteh.sessions.v1.SessionsService.DownloadLogs.
+func (c *sessionsServiceClient) DownloadLogs(ctx context.Context, req *connect.Request[v1.DownloadLogsRequest]) (*connect.Response[v1.DownloadLogsResponse], error) {
+	return c.downloadLogs.CallUnary(ctx, req)
 }
 
 // GetPrints calls autokitteh.sessions.v1.SessionsService.GetPrints.
@@ -184,7 +184,7 @@ type SessionsServiceHandler interface {
 	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
 	GetLog(context.Context, *connect.Request[v1.GetLogRequest]) (*connect.Response[v1.GetLogResponse], error)
-	DownloadLog(context.Context, *connect.Request[v1.DownloadLogRequest]) (*connect.Response[v1.DownloadLogResponse], error)
+	DownloadLogs(context.Context, *connect.Request[v1.DownloadLogsRequest]) (*connect.Response[v1.DownloadLogsResponse], error)
 	GetPrints(context.Context, *connect.Request[v1.GetPrintsRequest]) (*connect.Response[v1.GetPrintsResponse], error)
 	Delete(context.Context, *connect.Request[v1.DeleteRequest]) (*connect.Response[v1.DeleteResponse], error)
 }
@@ -220,9 +220,9 @@ func NewSessionsServiceHandler(svc SessionsServiceHandler, opts ...connect.Handl
 		svc.GetLog,
 		opts...,
 	)
-	sessionsServiceDownloadLogHandler := connect.NewUnaryHandler(
-		SessionsServiceDownloadLogProcedure,
-		svc.DownloadLog,
+	sessionsServiceDownloadLogsHandler := connect.NewUnaryHandler(
+		SessionsServiceDownloadLogsProcedure,
+		svc.DownloadLogs,
 		opts...,
 	)
 	sessionsServiceGetPrintsHandler := connect.NewUnaryHandler(
@@ -247,8 +247,8 @@ func NewSessionsServiceHandler(svc SessionsServiceHandler, opts ...connect.Handl
 			sessionsServiceGetHandler.ServeHTTP(w, r)
 		case SessionsServiceGetLogProcedure:
 			sessionsServiceGetLogHandler.ServeHTTP(w, r)
-		case SessionsServiceDownloadLogProcedure:
-			sessionsServiceDownloadLogHandler.ServeHTTP(w, r)
+		case SessionsServiceDownloadLogsProcedure:
+			sessionsServiceDownloadLogsHandler.ServeHTTP(w, r)
 		case SessionsServiceGetPrintsProcedure:
 			sessionsServiceGetPrintsHandler.ServeHTTP(w, r)
 		case SessionsServiceDeleteProcedure:
@@ -282,8 +282,8 @@ func (UnimplementedSessionsServiceHandler) GetLog(context.Context, *connect.Requ
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.sessions.v1.SessionsService.GetLog is not implemented"))
 }
 
-func (UnimplementedSessionsServiceHandler) DownloadLog(context.Context, *connect.Request[v1.DownloadLogRequest]) (*connect.Response[v1.DownloadLogResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.sessions.v1.SessionsService.DownloadLog is not implemented"))
+func (UnimplementedSessionsServiceHandler) DownloadLogs(context.Context, *connect.Request[v1.DownloadLogsRequest]) (*connect.Response[v1.DownloadLogsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.sessions.v1.SessionsService.DownloadLogs is not implemented"))
 }
 
 func (UnimplementedSessionsServiceHandler) GetPrints(context.Context, *connect.Request[v1.GetPrintsRequest]) (*connect.Response[v1.GetPrintsResponse], error) {

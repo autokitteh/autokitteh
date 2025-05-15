@@ -549,76 +549,76 @@ export class GetLogResponse extends Message<GetLogResponse> {
 }
 
 /**
- * @generated from message autokitteh.sessions.v1.DownloadLogRequest
+ * @generated from message autokitteh.sessions.v1.DownloadLogsRequest
  */
-export class DownloadLogRequest extends Message<DownloadLogRequest> {
+export class DownloadLogsRequest extends Message<DownloadLogsRequest> {
   /**
    * @generated from field: string session_id = 1;
    */
   sessionId = "";
 
-  constructor(data?: PartialMessage<DownloadLogRequest>) {
+  constructor(data?: PartialMessage<DownloadLogsRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "autokitteh.sessions.v1.DownloadLogRequest";
+  static readonly typeName = "autokitteh.sessions.v1.DownloadLogsRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "session_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DownloadLogRequest {
-    return new DownloadLogRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DownloadLogsRequest {
+    return new DownloadLogsRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DownloadLogRequest {
-    return new DownloadLogRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DownloadLogsRequest {
+    return new DownloadLogsRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DownloadLogRequest {
-    return new DownloadLogRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DownloadLogsRequest {
+    return new DownloadLogsRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: DownloadLogRequest | PlainMessage<DownloadLogRequest> | undefined, b: DownloadLogRequest | PlainMessage<DownloadLogRequest> | undefined): boolean {
-    return proto3.util.equals(DownloadLogRequest, a, b);
+  static equals(a: DownloadLogsRequest | PlainMessage<DownloadLogsRequest> | undefined, b: DownloadLogsRequest | PlainMessage<DownloadLogsRequest> | undefined): boolean {
+    return proto3.util.equals(DownloadLogsRequest, a, b);
   }
 }
 
 /**
- * @generated from message autokitteh.sessions.v1.DownloadLogResponse
+ * @generated from message autokitteh.sessions.v1.DownloadLogsResponse
  */
-export class DownloadLogResponse extends Message<DownloadLogResponse> {
+export class DownloadLogsResponse extends Message<DownloadLogsResponse> {
   /**
    * @generated from field: bytes data = 1;
    */
   data = new Uint8Array(0);
 
-  constructor(data?: PartialMessage<DownloadLogResponse>) {
+  constructor(data?: PartialMessage<DownloadLogsResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "autokitteh.sessions.v1.DownloadLogResponse";
+  static readonly typeName = "autokitteh.sessions.v1.DownloadLogsResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "data", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DownloadLogResponse {
-    return new DownloadLogResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DownloadLogsResponse {
+    return new DownloadLogsResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DownloadLogResponse {
-    return new DownloadLogResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DownloadLogsResponse {
+    return new DownloadLogsResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DownloadLogResponse {
-    return new DownloadLogResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DownloadLogsResponse {
+    return new DownloadLogsResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: DownloadLogResponse | PlainMessage<DownloadLogResponse> | undefined, b: DownloadLogResponse | PlainMessage<DownloadLogResponse> | undefined): boolean {
-    return proto3.util.equals(DownloadLogResponse, a, b);
+  static equals(a: DownloadLogsResponse | PlainMessage<DownloadLogsResponse> | undefined, b: DownloadLogsResponse | PlainMessage<DownloadLogsResponse> | undefined): boolean {
+    return proto3.util.equals(DownloadLogsResponse, a, b);
   }
 }
 
