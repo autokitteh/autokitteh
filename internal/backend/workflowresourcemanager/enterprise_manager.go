@@ -8,9 +8,22 @@ import (
 	"fmt"
 	"time"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.temporal.io/sdk/client"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+)
+
+type Config struct {
+	MaxConcurrentWorkflows int `koanf:"max_concurrent_workflows"`
+}
+
+var (
+	Configs = configset.Set[Config]{
+		Default: &Config{
+			MaxConcurrentWorkflows: 150,
+		},
+	}
 )
 
 type job struct {
@@ -42,14 +55,15 @@ func (e *manager) Stop(ctx context.Context) error {
 	return nil
 }
 
-func New(svcs Svcs, l *zap.Logger) WorkflowResourcesManager {
+func New(svcs Svcs, l *zap.Logger, cfg *Config) WorkflowResourcesManager {
 	sampledLogger := l.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
 		return zapcore.NewSamplerWithOptions(core, time.Second, 1, 0)
 	}))
 
 	e := &manager{svcs: svcs,
 		queue:         newQueue(svcs.DB),
-		maxConcurrent: 1, active: 0,
+		maxConcurrent: cfg.MaxConcurrentWorkflows,
+		active:        0,
 		l:             l,
 		sampledLogger: sampledLogger,
 		stopChannel:   make(chan struct{}, 1),
