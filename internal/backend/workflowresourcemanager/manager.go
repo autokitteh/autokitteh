@@ -10,16 +10,16 @@ import (
 	"go.uber.org/zap"
 )
 
-type executer struct {
+type manager struct {
 	svcs Svcs
 	l    *zap.Logger
 }
 
 func New(svcs Svcs, l *zap.Logger) WorkflowResourcesManager {
-	return &executer{svcs: svcs, l: l}
+	return &manager{svcs: svcs, l: l}
 }
 
-func (e *executer) Execute(ctx context.Context, options client.StartWorkflowOptions, name string, args any) error {
+func (e *manager) Execute(ctx context.Context, options client.StartWorkflowOptions, name string, args any) error {
 	r, err := e.svcs.Temporal.TemporalClient().ExecuteWorkflow(
 		ctx,
 		options,
@@ -33,16 +33,16 @@ func (e *executer) Execute(ctx context.Context, options client.StartWorkflowOpti
 	return nil
 }
 
-func (e *executer) NotifyDone(ctx context.Context, id string) error {
+func (e *manager) NotifyDone(ctx context.Context, id string) error {
 	return nil
 }
 
-func (e *executer) Start(ctx context.Context) error {
+func (e *manager) Start(ctx context.Context) error {
 
 	return nil
 }
 
-func (e *executer) Stop(ctx context.Context) error {
+func (e *manager) Stop(ctx context.Context) error {
 
 	return nil
 }
