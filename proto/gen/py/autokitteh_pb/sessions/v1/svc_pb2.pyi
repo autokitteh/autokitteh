@@ -125,13 +125,13 @@ class GetLogResponse(_message.Message):
     next_page_token: str
     def __init__(self, count: _Optional[int] = ..., records: _Optional[_Iterable[_Union[_session_pb2.SessionLogRecord, _Mapping]]] = ..., next_page_token: _Optional[str] = ...) -> None: ...
 
-class DownloadLogRequest(_message.Message):
+class DownloadLogsRequest(_message.Message):
     __slots__ = ["session_id"]
     SESSION_ID_FIELD_NUMBER: _ClassVar[int]
     session_id: str
     def __init__(self, session_id: _Optional[str] = ...) -> None: ...
 
-class DownloadLogResponse(_message.Message):
+class DownloadLogsResponse(_message.Message):
     __slots__ = ["data"]
     DATA_FIELD_NUMBER: _ClassVar[int]
     data: bytes

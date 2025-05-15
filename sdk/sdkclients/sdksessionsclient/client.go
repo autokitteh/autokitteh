@@ -1,8 +1,10 @@
 package sdksessionsclient
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"time"
 
 	"connectrpc.com/connect"
@@ -147,6 +149,20 @@ func (c *client) GetLog(ctx context.Context, filter sdkservices.SessionLogRecord
 			NextPageToken: resp.Msg.NextPageToken,
 		},
 	}, nil
+}
+
+func (c *client) DownloadLogs(ctx context.Context, sessionID sdktypes.SessionID) (io.ReadCloser, error) {
+	resp, err := c.client.DownloadLogs(ctx, connect.NewRequest(&sessionsv1.DownloadLogsRequest{SessionId: sessionID.String()}))
+	if err != nil {
+		return nil, rpcerrors.ToSDKError(err)
+	}
+
+	if err := internal.Validate(resp.Msg); err != nil {
+		return nil, err
+	}
+
+	reader := io.NopCloser(bytes.NewReader(resp.Msg.Data))
+	return reader, nil
 }
 
 func (c *client) List(ctx context.Context, filter sdkservices.ListSessionsFilter) (*sdkservices.ListSessionResult, error) {

@@ -2,6 +2,7 @@ package sdkservices
 
 import (
 	"context"
+	"io"
 	"time"
 
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -58,6 +59,7 @@ type Sessions interface {
 	List(ctx context.Context, filter ListSessionsFilter) (*ListSessionResult, error)
 	Get(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.Session, error)
 	GetLog(ctx context.Context, filter SessionLogRecordsFilter) (*GetLogResults, error)
+	DownloadLogs(ctx context.Context, sessionID sdktypes.SessionID) (io.ReadCloser, error)
 	GetPrints(ctx context.Context, sid sdktypes.SessionID, pagination sdktypes.PaginationRequest) (*GetPrintsResults, error)
 	Delete(ctx context.Context, sessionID sdktypes.SessionID) error
 }

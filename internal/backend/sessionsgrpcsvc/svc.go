@@ -1,6 +1,7 @@
 package sessionsgrpcsvc
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -263,6 +264,32 @@ func (s *server) GetPrints(ctx context.Context, req *connect.Request[sessionsv1.
 		}),
 		NextPageToken: prints.NextPageToken,
 	}), nil
+}
+
+func (s *server) DownloadLogs(ctx context.Context, req *connect.Request[sessionsv1.DownloadLogsRequest]) (*connect.Response[sessionsv1.DownloadLogsResponse], error) {
+	msg := req.Msg
+
+	if err := proto.Validate(msg); err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	sid, err := sdktypes.StrictParseSessionID(msg.SessionId)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	logReader, err := s.sessions.DownloadLogs(ctx, sid)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+	defer logReader.Close()
+
+	buf := new(bytes.Buffer)
+	if _, err := buf.ReadFrom(logReader); err != nil {
+		return nil, sdkerrors.AsConnectError(fmt.Errorf("reading log: %w", err))
+	}
+
+	return connect.NewResponse(&sessionsv1.DownloadLogsResponse{Data: buf.Bytes()}), nil
 }
 
 func (s *server) List(ctx context.Context, req *connect.Request[sessionsv1.ListRequest]) (*connect.Response[sessionsv1.ListResponse], error) {

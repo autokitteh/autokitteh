@@ -39,10 +39,10 @@ class SessionsServiceStub(object):
                 request_serializer=autokitteh_dot_sessions_dot_v1_dot_svc__pb2.GetLogRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_sessions_dot_v1_dot_svc__pb2.GetLogResponse.FromString,
                 )
-        self.DownloadLog = channel.unary_unary(
-                '/autokitteh.sessions.v1.SessionsService/DownloadLog',
-                request_serializer=autokitteh_dot_sessions_dot_v1_dot_svc__pb2.DownloadLogRequest.SerializeToString,
-                response_deserializer=autokitteh_dot_sessions_dot_v1_dot_svc__pb2.DownloadLogResponse.FromString,
+        self.DownloadLogs = channel.unary_unary(
+                '/autokitteh.sessions.v1.SessionsService/DownloadLogs',
+                request_serializer=autokitteh_dot_sessions_dot_v1_dot_svc__pb2.DownloadLogsRequest.SerializeToString,
+                response_deserializer=autokitteh_dot_sessions_dot_v1_dot_svc__pb2.DownloadLogsResponse.FromString,
                 )
         self.GetPrints = channel.unary_unary(
                 '/autokitteh.sessions.v1.SessionsService/GetPrints',
@@ -92,7 +92,7 @@ class SessionsServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def DownloadLog(self, request, context):
+    def DownloadLogs(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -138,10 +138,10 @@ def add_SessionsServiceServicer_to_server(servicer, server):
                     request_deserializer=autokitteh_dot_sessions_dot_v1_dot_svc__pb2.GetLogRequest.FromString,
                     response_serializer=autokitteh_dot_sessions_dot_v1_dot_svc__pb2.GetLogResponse.SerializeToString,
             ),
-            'DownloadLog': grpc.unary_unary_rpc_method_handler(
-                    servicer.DownloadLog,
-                    request_deserializer=autokitteh_dot_sessions_dot_v1_dot_svc__pb2.DownloadLogRequest.FromString,
-                    response_serializer=autokitteh_dot_sessions_dot_v1_dot_svc__pb2.DownloadLogResponse.SerializeToString,
+            'DownloadLogs': grpc.unary_unary_rpc_method_handler(
+                    servicer.DownloadLogs,
+                    request_deserializer=autokitteh_dot_sessions_dot_v1_dot_svc__pb2.DownloadLogsRequest.FromString,
+                    response_serializer=autokitteh_dot_sessions_dot_v1_dot_svc__pb2.DownloadLogsResponse.SerializeToString,
             ),
             'GetPrints': grpc.unary_unary_rpc_method_handler(
                     servicer.GetPrints,
@@ -249,7 +249,7 @@ class SessionsService(object):
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def DownloadLog(request,
+    def DownloadLogs(request,
             target,
             options=(),
             channel_credentials=None,
@@ -259,9 +259,9 @@ class SessionsService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/autokitteh.sessions.v1.SessionsService/DownloadLog',
-            autokitteh_dot_sessions_dot_v1_dot_svc__pb2.DownloadLogRequest.SerializeToString,
-            autokitteh_dot_sessions_dot_v1_dot_svc__pb2.DownloadLogResponse.FromString,
+        return grpc.experimental.unary_unary(request, target, '/autokitteh.sessions.v1.SessionsService/DownloadLogs',
+            autokitteh_dot_sessions_dot_v1_dot_svc__pb2.DownloadLogsRequest.SerializeToString,
+            autokitteh_dot_sessions_dot_v1_dot_svc__pb2.DownloadLogsResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
