@@ -155,9 +155,10 @@ func (ws *workflows) StartChildWorkflow(wctx workflow.Context, data sessiondata.
 }
 
 func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session, opts StartWorkflowOptions) error {
+
 	sessionID := session.ID()
 
-	l := ws.l.Sugar().With("session_id", sessionID)
+	// l := ws.l.Sugar().With("session_id", sessionID)
 
 	data, err := sessiondata.Get(ctx, ws.svcs, session)
 	if err != nil {
@@ -166,7 +167,7 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 
 	memo := memo(session, data.OrgID)
 
-	r, err := ws.svcs.Temporal.TemporalClient().ExecuteWorkflow(
+	err = ws.svcs.WorkflowResourceManager.Execute(
 		ctx,
 		ws.cfg.SessionWorkflow.ToStartWorkflowOptions(
 			taskQueueName,
@@ -180,8 +181,6 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 	if err != nil {
 		return fmt.Errorf("execute session workflow: %w", err)
 	}
-
-	l.With("workflow_id", r.GetID(), "run_id", r.GetRunID(), "memo", memo).Infof("initiated session workflow %v", r.GetID())
 
 	return nil
 }
@@ -332,6 +331,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params sessionWorkfl
 	}
 
 	_ = workflow.ExecuteActivity(wctx, deactivateDrainedDeploymentActivityName, session.DeploymentID()).Get(wctx, nil)
+	_ = workflow.ExecuteActivity(wctx, notifyWorkflowEndedActivity, session.ID()).Get(wctx, nil)
 
 	return workflowErr
 }
