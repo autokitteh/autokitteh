@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -131,13 +132,20 @@ func (s *sessions) DownloadLogs(ctx context.Context, sid sdktypes.SessionID) ([]
 	var buf bytes.Buffer
 	gz := gzip.NewWriter(&buf)
 
-	if _, err := gz.Write([]byte("[")); err != nil {
-		return nil, fmt.Errorf("failed to write opening bracket: %w", err)
+	if err := s.writeLogFile(ctx, sid, gz); err != nil {
+		return nil, err
 	}
 
+	if err := gz.Close(); err != nil {
+		return nil, fmt.Errorf("failed to close gzip writer: %w", err)
+	}
+
+	return buf.Bytes(), nil
+}
+
+func (s *sessions) writeLogFile(ctx context.Context, sid sdktypes.SessionID, w io.Writer) error {
 	pageSize := int32(200)
 	skip := int32(0)
-	firstRecord := true
 
 	for {
 		filter := sdkservices.SessionLogRecordsFilter{
@@ -150,44 +158,37 @@ func (s *sessions) DownloadLogs(ctx context.Context, sid sdktypes.SessionID) ([]
 
 		logs, err := s.svcs.DB.GetSessionLog(ctx, filter)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		for _, record := range logs.Records {
-			if !firstRecord {
-				// Write comma between records.
-				if _, err := gz.Write([]byte(",")); err != nil {
-					return nil, fmt.Errorf("failed to write comma: %w", err)
-				}
-			} else {
-				firstRecord = false
+			value, ok := record.GetPrint()
+			if !ok {
+				continue
 			}
 
-			recordBytes, err := json.Marshal(record)
-			if err != nil {
-				return nil, fmt.Errorf("failed to marshal record: %w", err)
+			printStr := value.String()
+			if strings.HasPrefix(printStr, "string:{v:\"") && strings.HasSuffix(printStr, "\"}") {
+				printStr = printStr[11 : len(printStr)-2] // extract the print.
 			}
 
-			if _, err := gz.Write(recordBytes); err != nil {
-				return nil, fmt.Errorf("failed to write record: %w", err)
+			line := fmt.Sprintf("[%s]:  %s\n",
+				record.Timestamp().Format("2006-01-02 15:04:05"),
+				printStr,
+			)
+
+			if _, err := w.Write([]byte(line)); err != nil {
+				return fmt.Errorf("failed to write log line: %w", err)
 			}
 		}
 
-		if int32(len(logs.Records)) < pageSize { // if no more records.
+		if int32(len(logs.Records)) < pageSize {
 			break
 		}
 		skip += pageSize
 	}
 
-	if _, err := gz.Write([]byte("]")); err != nil {
-		return nil, fmt.Errorf("failed to write closing bracket: %w", err)
-	}
-
-	if err := gz.Close(); err != nil {
-		return nil, fmt.Errorf("failed to close gzip writer: %w", err)
-	}
-
-	return buf.Bytes(), nil
+	return nil
 }
 
 func (s *sessions) Get(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.Session, error) {
