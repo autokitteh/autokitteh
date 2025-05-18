@@ -1,7 +1,6 @@
 package sessionsgrpcsvc
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -278,18 +277,12 @@ func (s *server) DownloadLogs(ctx context.Context, req *connect.Request[sessions
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	logReader, err := s.sessions.DownloadLogs(ctx, sid)
+	data, err := s.sessions.DownloadLogs(ctx, sid)
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
-	defer logReader.Close()
 
-	buf := new(bytes.Buffer)
-	if _, err := buf.ReadFrom(logReader); err != nil {
-		return nil, sdkerrors.AsConnectError(fmt.Errorf("reading log: %w", err))
-	}
-
-	return connect.NewResponse(&sessionsv1.DownloadLogsResponse{Data: buf.Bytes()}), nil
+	return connect.NewResponse(&sessionsv1.DownloadLogsResponse{Data: data}), nil
 }
 
 func (s *server) List(ctx context.Context, req *connect.Request[sessionsv1.ListRequest]) (*connect.Response[sessionsv1.ListResponse], error) {
