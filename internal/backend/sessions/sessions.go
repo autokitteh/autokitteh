@@ -128,9 +128,16 @@ func (s *sessions) DownloadLogs(ctx context.Context, sid sdktypes.SessionID) ([]
 		return nil, err
 	}
 
-	var allRecords []sdktypes.SessionLogRecord
+	var buf bytes.Buffer
+	gz := gzip.NewWriter(&buf)
+
+	if _, err := gz.Write([]byte("[")); err != nil {
+		return nil, fmt.Errorf("failed to write opening bracket: %w", err)
+	}
+
 	pageSize := int32(200)
 	skip := int32(0)
+	firstRecord := true
 
 	for {
 		filter := sdkservices.SessionLogRecordsFilter{
@@ -146,25 +153,36 @@ func (s *sessions) DownloadLogs(ctx context.Context, sid sdktypes.SessionID) ([]
 			return nil, err
 		}
 
-		allRecords = append(allRecords, logs.Records...)
+		for _, record := range logs.Records {
+			if !firstRecord {
+				// Write comma between records.
+				if _, err := gz.Write([]byte(",")); err != nil {
+					return nil, fmt.Errorf("failed to write comma: %w", err)
+				}
+			} else {
+				firstRecord = false
+			}
+
+			recordBytes, err := json.Marshal(record)
+			if err != nil {
+				return nil, fmt.Errorf("failed to marshal record: %w", err)
+			}
+
+			if _, err := gz.Write(recordBytes); err != nil {
+				return nil, fmt.Errorf("failed to write record: %w", err)
+			}
+		}
 
 		if int32(len(logs.Records)) < pageSize { // if no more records.
 			break
 		}
-
 		skip += pageSize
 	}
 
-	data, err := json.Marshal(allRecords)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal logs: %w", err)
+	if _, err := gz.Write([]byte("]")); err != nil {
+		return nil, fmt.Errorf("failed to write closing bracket: %w", err)
 	}
 
-	var buf bytes.Buffer
-	gz := gzip.NewWriter(&buf)
-	if _, err := gz.Write(data); err != nil {
-		return nil, fmt.Errorf("failed to write gzip data: %w", err)
-	}
 	if err := gz.Close(); err != nil {
 		return nil, fmt.Errorf("failed to close gzip writer: %w", err)
 	}
