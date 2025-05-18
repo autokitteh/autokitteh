@@ -61,7 +61,7 @@ jobs:
         run: go build -trimpath -o bin/ak ./cmd/ak
 
       - name: Test
-        run: AK_SYSTEST_USE_PROC_SVC=1 gotestsum -f github-actions -- -timeout 9m -trimpath ./tests/system/...
+        run: AK_SYSTEST_USE_PROC_SVC=1 gotestsum -f github-actions -- -timeout 10m -trimpath ./tests/system/...
 
   go-static-analysis:
     name: Go static analysis

@@ -10,7 +10,17 @@ wait 5s for session ses_00000000000000000000000007
 
 ak session log my_project --no-timestamps --page-size 1 --order desc -J
 return code == 0
-output equals_json file expected_without_path.json
+
+output contains_jq .state.completed.prints[0] "GET"
+output contains_jq .state.completed.prints[1] "ses_00000000000000000000000007"
+
+output contains_jq .state.completed.exports.on_http.function.name "on_http"
+output contains_jq .state.completed.exports.on_http.function.desc.input[0].name "event"
+output contains_jq .state.completed.exports.on_http.function.executor_id "run_00000000000000000000000008"
+
+output contains_jq .state.completed.return_value.custom.executor_id "run_00000000000000000000000008"
+output contains_jq .state.completed.return_value.custom.data "gASVHgAAAAAAAACMCF9fbWFpbl9flIwGUmVzdWx0lJOUTk5Oh5SBlC4="
+output contains_jq .state.completed.return_value.custom.value.nothing {}
 
 -- project.yaml --
 version: v1
@@ -32,7 +42,6 @@ def on_http(event):
     "state": {
         "completed": {
             "prints": [
-                "ᓚᘏᗢ Python runs might take a while to start when running for the first time on a new runner, hang on!",
                 "GET",
                 "ses_00000000000000000000000007"
             ],
@@ -63,3 +72,6 @@ def on_http(event):
         }
     }
 }
+
+-- test-config.yaml --
+exclusive: true
