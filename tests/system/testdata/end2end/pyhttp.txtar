@@ -72,6 +72,3 @@ def on_http(event):
         }
     }
 }
-
--- test-config.yaml --
-exclusive: true
