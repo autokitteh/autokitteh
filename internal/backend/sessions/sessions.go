@@ -1,6 +1,8 @@
 package sessions
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"errors"
@@ -126,17 +128,48 @@ func (s *sessions) DownloadLogs(ctx context.Context, sid sdktypes.SessionID) ([]
 		return nil, err
 	}
 
-	logs, err := s.svcs.DB.GetSessionLog(ctx, sdkservices.SessionLogRecordsFilter{SessionID: sid})
-	if err != nil {
-		return nil, err
+	var allRecords []sdktypes.SessionLogRecord
+	pageSize := int32(200)
+	skip := int32(0)
+
+	for {
+		filter := sdkservices.SessionLogRecordsFilter{
+			SessionID: sid,
+			PaginationRequest: sdktypes.PaginationRequest{
+				PageSize: pageSize,
+				Skip:     skip,
+			},
+		}
+
+		logs, err := s.svcs.DB.GetSessionLog(ctx, filter)
+		if err != nil {
+			return nil, err
+		}
+
+		allRecords = append(allRecords, logs.Records...)
+
+		if int32(len(logs.Records)) < pageSize { // if no more records.
+			break
+		}
+
+		skip += pageSize
 	}
 
-	data, err := json.Marshal(logs.Records)
+	data, err := json.Marshal(allRecords)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal logs: %w", err)
 	}
 
-	return data, nil
+	var buf bytes.Buffer
+	gz := gzip.NewWriter(&buf)
+	if _, err := gz.Write(data); err != nil {
+		return nil, fmt.Errorf("failed to write gzip data: %w", err)
+	}
+	if err := gz.Close(); err != nil {
+		return nil, fmt.Errorf("failed to close gzip writer: %w", err)
+	}
+
+	return buf.Bytes(), nil
 }
 
 func (s *sessions) Get(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.Session, error) {
