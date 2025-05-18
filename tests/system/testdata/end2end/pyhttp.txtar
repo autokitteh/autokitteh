@@ -11,15 +11,15 @@ wait 5s for session ses_00000000000000000000000007
 ak session log my_project --no-timestamps --page-size 1 --order desc -J
 return code == 0
 
-output contains_jq .state.completed.prints[0] "GET"
-output contains_jq .state.completed.prints[1] "ses_00000000000000000000000007"
+output contains_jq .state.completed.prints[0] GET
+output contains_jq .state.completed.prints[1] ses_00000000000000000000000007
 
-output contains_jq .state.completed.exports.on_http.function.name "on_http"
-output contains_jq .state.completed.exports.on_http.function.desc.input[0].name "event"
-output contains_jq .state.completed.exports.on_http.function.executor_id "run_00000000000000000000000008"
+output contains_jq .state.completed.exports.on_http.function.name on_http
+output contains_jq .state.completed.exports.on_http.function.desc.input[0].name event
+output contains_jq .state.completed.exports.on_http.function.executor_id run_00000000000000000000000008
 
-output contains_jq .state.completed.return_value.custom.executor_id "run_00000000000000000000000008"
-output contains_jq .state.completed.return_value.custom.data "gASVHgAAAAAAAACMCF9fbWFpbl9flIwGUmVzdWx0lJOUTk5Oh5SBlC4="
+output contains_jq .state.completed.return_value.custom.executor_id run_00000000000000000000000008
+output contains_jq .state.completed.return_value.custom.data gASVHgAAAAAAAACMCF9fbWFpbl9flIwGUmVzdWx0lJOUTk5Oh5SBlC4=
 output contains_jq .state.completed.return_value.custom.value.nothing {}
 
 -- project.yaml --
