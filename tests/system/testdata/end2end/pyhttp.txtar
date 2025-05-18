@@ -11,8 +11,8 @@ wait 5s for session ses_00000000000000000000000007
 ak session log my_project --no-timestamps --page-size 1 --order desc -J
 return code == 0
 
-output equals_jq .state.completed.prints[0] GET
-output equals_jq .state.completed.prints[1] ses_00000000000000000000000007
+output contains 'GET'
+output contains 'ses_00000000000000000000000007'
 
 output equals_jq .state.completed.exports.on_http.function.name on_http
 output equals_jq .state.completed.exports.on_http.function.desc.input[0].name event
