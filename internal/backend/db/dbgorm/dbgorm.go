@@ -25,8 +25,6 @@ type gormdb struct {
 	cfg *Config
 
 	writer, reader *gorm.DB
-
-	migrator *migrator.Migrator
 }
 
 // Migrate implements db.DB.
