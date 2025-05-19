@@ -15,7 +15,9 @@ type Config struct {
 }
 
 var (
-	Configs = configset.Set[Config]{}
+	Configs = configset.Set[Config]{
+		Default: &Config{},
+	}
 )
 
 type manager struct {

@@ -7,6 +7,12 @@ tool (
 	gotest.tools/gotestsum
 )
 
+// replace ariga.io/atlas-provider-gorm v0.5.1 => github.com/efiShtain/atlas-provider-gorm v0.0.0-20250316141524-0518f0d42270
+
+replace github.com/efiShtain/atlas-provider-gorm => github.com/efiShtain/atlas-provider-gorm v0.0.0-20250519081715-9c49487e9d03
+
+replace ariga.io/atlas-provider-gorm => github.com/efiShtain/atlas-provider-gorm v0.0.0-20250519081715-9c49487e9d03
+
 require (
 	ariga.io/atlas-provider-gorm v0.5.1
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.6-20250425153114-8976f5be98c1.1
