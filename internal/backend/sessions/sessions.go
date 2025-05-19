@@ -2,15 +2,19 @@ package sessions
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
+	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
+	"go.autokitteh.dev/autokitteh/internal/backend/jobs"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncalls"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionsvcs"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows"
@@ -26,27 +30,42 @@ type Sessions interface {
 	StartWorkers(context.Context) error
 }
 type sessions struct {
-	config *Config
-	l      *zap.Logger
-	svcs   *sessionsvcs.Svcs
+	config        *Config
+	l             *zap.Logger
+	sampledLogger *zap.Logger
+	svcs          *sessionsvcs.Svcs
 
-	workflows sessionworkflows.Workflows
-	calls     sessioncalls.Calls
+	workflows  sessionworkflows.Workflows
+	calls      sessioncalls.Calls
+	jobManager *jobs.JobManager
+
+	workerInfo scheme.WorkerInfo
 }
 
 var _ Sessions = (*sessions)(nil)
 
-func New(l *zap.Logger, config *Config, db db.DB, svcs sessionsvcs.Svcs) (Sessions, error) {
+func New(l *zap.Logger, config *Config, db db.DB, svcs sessionsvcs.Svcs, jobManager *jobs.JobManager) (Sessions, error) {
+	sampledLogger := l.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+		return zapcore.NewSamplerWithOptions(core, time.Second, 1, 0)
+	}))
+
 	return &sessions{
-		config: config,
-		svcs:   &svcs,
-		l:      l,
+		config:        config,
+		svcs:          &svcs,
+		l:             l,
+		jobManager:    jobManager,
+		sampledLogger: sampledLogger,
 	}, nil
 }
 
 func (s *sessions) StartWorkers(ctx context.Context) error {
 	s.calls = sessioncalls.New(s.l.Named("sessionworkflows"), s.config.Calls, s.svcs)
-	s.workflows = sessionworkflows.New(s.l.Named("sessionworkflows"), s.config.Workflows, s, s.svcs, s.calls)
+	s.workflows = sessionworkflows.New(s.l.Named("sessionworkflows"), s.config.Workflows, s, s.svcs, s.calls, func(ctx context.Context) error {
+		_ = s.DecActiveWorkflows(ctx)
+		// we don't want this to retry forever and keep the workflow running
+		// so we just log the error and return nil
+		return nil
+	})
 
 	if !s.config.EnableWorker {
 		s.l.Info("Session worker: disabled")
@@ -63,6 +82,132 @@ func (s *sessions) StartWorkers(ctx context.Context) error {
 		return fmt.Errorf("activity workflows: %w", err)
 	}
 
+	go s.PollForJobsLoop(ctx)
+
+	return nil
+}
+
+func (s *sessions) PollForJobsLoop(ctx context.Context) {
+	ctx = authcontext.SetAuthnSystemUser(ctx)
+	ticker := time.NewTicker(time.Duration(s.config.PollJobsIntervalMS) * time.Millisecond)
+	defer ticker.Stop()
+
+	running := make(chan struct{}, 1)
+	var err error
+	s.workerInfo, err = s.svcs.DB.GetWorkerInfo(ctx, s.config.Workflows.SessionWorkflowQueueName)
+	if err != nil {
+		s.l.Error("get worker info", zap.Error(err))
+		return
+	}
+
+	for range ticker.C {
+		select {
+		case <-ctx.Done():
+			return
+
+		case running <- struct{}{}:
+			pollCtx, cancel := context.WithTimeout(ctx, 2000*time.Second)
+			defer cancel()
+			go func() {
+				s.sampledLogger.Debug("Start poll once for jobs")
+				if err := s.pollOnce(pollCtx); err != nil {
+					s.l.Error("pollOnce", zap.Error(err))
+				}
+				s.sampledLogger.Debug("Done poll once for jobs")
+				<-running
+			}()
+
+		// Do nothing in case we got another tick
+		// Let the other tick option to finish
+		default:
+
+		}
+	}
+}
+
+func (s *sessions) pollOnce(ctx context.Context) error {
+
+	if s.workerInfo.ActiveWorkflows >= s.config.MaxConcurrentWorkflows {
+		s.sampledLogger.Info("Max concurrent workflows reached, skipping poll", zap.Int("max_concurrent_workflows", s.config.MaxConcurrentWorkflows))
+		return nil
+	}
+
+	s.sampledLogger.Info("active / max workflows", zap.Int("max_concurrent_workflows", s.config.MaxConcurrentWorkflows), zap.Int("active_workflows", s.workerInfo.ActiveWorkflows))
+
+	jobSlots := s.config.MaxConcurrentWorkflows - s.workerInfo.ActiveWorkflows
+	for range jobSlots {
+		job, err := s.jobManager.GetScheduledSessions(ctx)
+		if err != nil {
+			return err
+		}
+
+		// No jobs, exit the job slots loop, continue later
+		if job == nil {
+			break
+		}
+
+		s.l.Debug("got job", zap.String("job_id", job.JobID.String()))
+
+		var jobData map[string]any
+		if err := json.Unmarshal(job.Data, &jobData); err != nil {
+			s.l.Error("unmarshal job data failed", zap.Error(err), zap.String("job_id", job.JobID.String()))
+			if err := s.jobManager.MarkJobFailed(ctx, job.JobID); err != nil {
+				s.l.Error("mark job failed", zap.Error(err), zap.String("job_id", job.JobID.String()))
+			}
+			continue
+		}
+
+		sessionIDStr, ok := jobData["session_id"].(string)
+		if !ok {
+			s.l.Error("job data does not contain session_id", zap.String("job_id", job.JobID.String()))
+			if err := s.jobManager.MarkJobFailed(ctx, job.JobID); err != nil {
+				s.l.Error("mark job failed", zap.Error(err), zap.String("job_id", job.JobID.String()))
+			}
+			continue
+		}
+
+		sessionID, err := sdktypes.ParseSessionID(sessionIDStr)
+		if err != nil {
+			s.l.Error("parse session_id failed", zap.Error(err), zap.String("job_id", job.JobID.String()))
+			if err := s.jobManager.MarkJobFailed(ctx, job.JobID); err != nil {
+				s.l.Error("mark job failed", zap.Error(err), zap.String("job_id", job.JobID.String()))
+			}
+			continue
+		}
+		if err := s.startSession(ctx, sessionID); err != nil {
+			s.l.Error("start session failed", zap.Error(err), zap.String("session_id", sessionID.String()))
+			if err := s.jobManager.MarkJobFailed(ctx, job.JobID); err != nil {
+				s.l.Error("mark job failed", zap.Error(err), zap.String("job_id", job.JobID.String()))
+			}
+			continue
+		}
+
+		if err := s.jobManager.MarkJobDone(ctx, job.JobID); err != nil {
+			s.l.Error("mark job done", zap.Error(err), zap.String("job_id", job.JobID.String()))
+			continue
+		}
+		// current we don't have anything to do with, and we prefer
+		// to let workflows keep working, let's see later on how to handle errors
+		// since this might overflow the runner usage
+		_ = s.IncActiveWorkflows(ctx)
+	}
+	return nil
+}
+
+func (s *sessions) IncActiveWorkflows(ctx context.Context) error {
+	var err error
+	if s.workerInfo.ActiveWorkflows, err = s.svcs.DB.IncActiveWorkflows(ctx, s.workerInfo.WorkerID); err != nil {
+		s.l.Error("inc active workflows", zap.Error(err))
+		return err
+	}
+	return nil
+}
+func (s *sessions) DecActiveWorkflows(ctx context.Context) error {
+	var err error
+	if s.workerInfo.ActiveWorkflows, err = s.svcs.DB.DecActiveWorkflows(ctx, s.workerInfo.WorkerID); err != nil {
+		s.l.Error("dec active workflows", zap.Error(err))
+		return err
+	}
 	return nil
 }
 
@@ -139,7 +284,11 @@ func (s *sessions) Stop(ctx context.Context, sessionID sdktypes.SessionID, reaso
 		return err
 	}
 
-	return s.workflows.StopWorkflow(ctx, sessionID, reason, force, cancelTimeout)
+	err := s.workflows.StopWorkflow(ctx, sessionID, reason, force, cancelTimeout)
+	if err == nil {
+		_ = s.DecActiveWorkflows(ctx)
+	}
+	return err
 }
 
 func (s *sessions) List(ctx context.Context, filter sdkservices.ListSessionsFilter) (*sdkservices.ListSessionResult, error) {
@@ -212,20 +361,41 @@ func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktype
 	}
 
 	session = session.WithNewID()
-	sid := session.ID()
-	l := s.l.With(zap.Any("session_id", sid))
+	// sid := session.ID()
+	// l := s.l.With(zap.Any("session_id", sid))
 
 	if err := s.svcs.DB.CreateSession(ctx, session); err != nil {
 		return sdktypes.InvalidSessionID, fmt.Errorf("start session: %w", err)
 	}
 
+	if err := s.jobManager.ScheduleSession(ctx, session); err != nil {
+		return sdktypes.InvalidSessionID, fmt.Errorf("start session: %w", err)
+	}
+
+	// if err := s.workflows.StartWorkflow(ctx, session, sessionworkflows.StartWorkflowOptions{}); err != nil {
+	// 	err = fmt.Errorf("start workflow: %w", err)
+	// 	if uerr := s.svcs.DB.UpdateSessionState(ctx, session.ID(), sdktypes.NewSessionStateError(err, nil)); uerr != nil {
+	// 		l.Sugar().With("err", err).Error("update session state: %v")
+	// 	}
+	// 	return sdktypes.InvalidSessionID, fmt.Errorf("start workflow: %w", err)
+	// }
+
+	return session.ID(), nil
+}
+
+func (s *sessions) startSession(ctx context.Context, sessionID sdktypes.SessionID) error {
+
+	session, err := s.svcs.DB.GetSession(ctx, sessionID)
+	if err != nil {
+		return err
+	}
+
 	if err := s.workflows.StartWorkflow(ctx, session, sessionworkflows.StartWorkflowOptions{}); err != nil {
 		err = fmt.Errorf("start workflow: %w", err)
 		if uerr := s.svcs.DB.UpdateSessionState(ctx, session.ID(), sdktypes.NewSessionStateError(err, nil)); uerr != nil {
-			l.Sugar().With("err", err).Error("update session state: %v")
+			s.l.Sugar().With("err", err).Error("update session state: %v")
 		}
-		return sdktypes.InvalidSessionID, fmt.Errorf("start workflow: %w", err)
+		return fmt.Errorf("start workflow: %w", err)
 	}
-
-	return session.ID(), nil
+	return nil
 }

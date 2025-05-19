@@ -47,6 +47,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/health/healthreporter"
 	"go.autokitteh.dev/autokitteh/internal/backend/httpsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/integrationsgrpcsvc"
+	"go.autokitteh.dev/autokitteh/internal/backend/jobs"
 	"go.autokitteh.dev/autokitteh/internal/backend/logger"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/internal/backend/orgs"
@@ -256,6 +257,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component("triggers", configset.Empty, fx.Provide(triggers.New)),
 		runtimesFXOption(),
 		Component("healthcheck", configset.Empty, fx.Provide(healthchecker.New)),
+		Component("jobs", configset.Empty, fx.Provide(jobs.New)),
 		Component(
 			"scheduler",
 			scheduler.Configs,
