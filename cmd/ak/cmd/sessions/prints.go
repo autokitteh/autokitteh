@@ -2,6 +2,8 @@ package sessions
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"regexp"
 	"time"
 
@@ -11,7 +13,10 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var tail bool
+var (
+	tail       bool
+	outputPath string
+)
 
 var printsCmd = common.StandardCommand(&cobra.Command{
 	Use:   "prints [sessions ID | project] [--fail] [--no-timestamps] [--poll-interval <duration>] [--tail] [--end-print-re <re>]",
@@ -97,6 +102,42 @@ var printsCmd = common.StandardCommand(&cobra.Command{
 	},
 })
 
+var downloadLogsCmd = common.StandardCommand(&cobra.Command{
+	Use:   "download-logs [session ID]",
+	Short: "Download logs for a session",
+	Args:  cobra.ExactArgs(1),
+
+	RunE: func(cmd *cobra.Command, args []string) error {
+		sid, err := acquireSessionID(args[0])
+		if err = common.AddNotFoundErrIfCond(err, sid.IsValid()); err != nil {
+			return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "session")
+		}
+
+		ctx, done := common.LimitedContext()
+		defer done()
+
+		data, err := sessions().DownloadLogs(ctx, sid)
+		if err != nil {
+			return fmt.Errorf("failed to download logs: %w", err)
+		}
+
+		// Use default output filename if none provided.
+		out := outputPath
+		if out == "" {
+			timestamp := time.Now().Format("20060102_150405")
+			filename := fmt.Sprintf("%s_%s.txt", sid.String(), timestamp)
+			out = filepath.Join(".", filename)
+		}
+
+		if err := os.WriteFile(out, data, 0o644); err != nil {
+			return fmt.Errorf("failed to write to file %q: %w", out, err)
+		}
+
+		fmt.Fprintf(cmd.OutOrStdout(), "Logs written to %s\n", out)
+		return nil
+	},
+})
+
 func init() {
 	// Command-specific flags.
 	printsCmd.Flags().BoolVarP(&noTimestamps, "no-timestamps", "n", false, "omit timestamps from watch output")
@@ -105,4 +146,7 @@ func init() {
 	printsCmd.Flags().DurationVarP(&pollInterval, "poll-interval", "i", defaultPollInterval, "poll interval")
 
 	common.AddFailIfNotFoundFlag(printsCmd)
+
+	downloadLogsCmd.Flags().StringVarP(&outputPath, "output", "o", "", "path to output file (default is ./<session_id>_<timestamp>.txt)")
+	common.AddFailIfNotFoundFlag(downloadLogsCmd)
 }

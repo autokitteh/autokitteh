@@ -147,7 +147,7 @@ func (s *sessions) DownloadLogs(ctx context.Context, sid sdktypes.SessionID) ([]
 		}
 
 		for _, record := range logs.Records {
-			if err := formatSessionLog(&buf, record); err != nil {
+			if err := writeFormattedSessionLog(&buf, record); err != nil {
 				return nil, err
 			}
 		}
@@ -161,15 +161,15 @@ func (s *sessions) DownloadLogs(ctx context.Context, sid sdktypes.SessionID) ([]
 	return buf.Bytes(), nil
 }
 
-func formatSessionLog(buf *bytes.Buffer, record sdktypes.SessionLogRecord) error {
+func writeFormattedSessionLog(buf *bytes.Buffer, record sdktypes.SessionLogRecord) error {
 	value, ok := record.GetPrint()
 	if !ok {
 		return nil
 	}
 
-	printStr := value.String()
-	if strings.HasPrefix(printStr, "string:{v:\"") && strings.HasSuffix(printStr, "\"}") {
-		printStr = printStr[11 : len(printStr)-2]
+	printStr, err := value.ToString()
+	if err != nil {
+		return fmt.Errorf("failed to convert value to string: %w", err)
 	}
 
 	// Decode escaped characters like \n and \".
