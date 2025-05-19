@@ -4,8 +4,6 @@
 4d63.com/gochecknoglobals v0.2.2/go.mod h1:lLxwTQjL5eIesRbvnzIP3jZtG140FnTdz+AlMa+ogt0=
 ariga.io/atlas-go-sdk v0.6.8 h1:wonvcyOiXdrQnMrSNigLbMSaFV8yIxgA4Tb8EY2UGGE=
 ariga.io/atlas-go-sdk v0.6.8/go.mod h1:9Q+/04PVyJHUse1lEE9Kp6E18xj/6mIzaUTcWYSjSnQ=
-ariga.io/atlas-provider-gorm v0.5.1 h1:J0FM4XtQmk+51Iu/zRx+pQq0/FR1D035VOkZfTGtrQk=
-ariga.io/atlas-provider-gorm v0.5.1/go.mod h1:3a7Y0ZrenuGgoVXmGfn8q8U9qB7fJ5CprrXHMriMb0s=
 buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.6-20250425153114-8976f5be98c1.1 h1:YhMSc48s25kr7kv31Z8vf7sPUIq5YJva9z1mn/hAt0M=
 buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.6-20250425153114-8976f5be98c1.1/go.mod h1:avRlCjnFzl98VPaeCtJ24RrV/wwHFzB8sWXhj26+n/U=
 cel.dev/expr v0.23.1 h1:K4KOtPCJQjVggkARsjG9RWXP6O4R73aHeJMa/dmCQQg=
@@ -102,6 +100,8 @@ github.com/alecthomas/chroma/v2 v2.16.0 h1:QC5ZMizk67+HzxFDjQ4ASjni5kWBTGiigRG1u
 github.com/alecthomas/chroma/v2 v2.16.0/go.mod h1:RVX6AvYm4VfYe/zsk7mjHueLDZor3aWCNE14TFlepBk=
 github.com/alecthomas/go-check-sumtype v0.3.1 h1:u9aUvbGINJxLVXiFvHUlPEaD7VDULsrxJb4Aq31NLkU=
 github.com/alecthomas/go-check-sumtype v0.3.1/go.mod h1:A8TSiN3UPRw3laIgWEUOHHLPa6/r9MtoigdlP5h3K/E=
+github.com/alecthomas/kong v1.9.0 h1:Wgg0ll5Ys7xDnpgYBuBn/wPeLGAuK0NvYmEcisJgrIs=
+github.com/alecthomas/kong v1.9.0/go.mod h1:p2vqieVMeTAnaC83txKtXe8FLke2X07aruPWXyMPQrU=
 github.com/alecthomas/repr v0.4.0 h1:GhI2A8MACjfegCPVq9f1FLvIBS+DrQ2KQBFZP1iFzXc=
 github.com/alecthomas/repr v0.4.0/go.mod h1:Fr0507jx4eOXV7AlPV6AVZLYrLIuIeSOWtW57eE/O/4=
 github.com/alexkohler/nakedret/v2 v2.0.6 h1:ME3Qef1/KIKr3kWX3nti3hhgNxw6aqN5pZmQiFSsuzQ=
@@ -291,6 +291,8 @@ github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkp
 github.com/dustin/go-humanize v1.0.1/go.mod h1:Mu1zIs6XwVuF/gI1OepvI0qD18qycQx+mFykh5fBlto=
 github.com/dustmop/soup v1.1.2-0.20190516214245-38228baa104e h1:44fmjqDtdCiUNlSjJVp+w1AOs6na3Y6Ai0aIeseFjkI=
 github.com/dustmop/soup v1.1.2-0.20190516214245-38228baa104e/go.mod h1:CgNC6SGbT+Xb8wGGvzilttZL1mc5sQ/5KkcxsZttMIk=
+github.com/efiShtain/atlas-provider-gorm v0.0.0-20250519081715-9c49487e9d03 h1:up9gI07ElnRNC+nnQn8WUHj/VQC1AgNCYeEoYmka5MA=
+github.com/efiShtain/atlas-provider-gorm v0.0.0-20250519081715-9c49487e9d03/go.mod h1:3a7Y0ZrenuGgoVXmGfn8q8U9qB7fJ5CprrXHMriMb0s=
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.4/go.mod h1:6rpuAdCZL397s3pYoYcLgu1mIlRU8Am5FuJP05cCM98=
