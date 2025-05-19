@@ -12,5 +12,6 @@ import (
 type DB interface {
 	Shared
 	GetWorkerInfo(ctx context.Context, id string) (scheme.WorkerInfo, error)
-	UpdateWorkerInfo(ctx context.Context, id string, info scheme.WorkerInfo) error
+	IncActiveWorkflows(ctx context.Context, workerID string) (int, error)
+	DecActiveWorkflows(ctx context.Context, workerID string) (int, error)
 }

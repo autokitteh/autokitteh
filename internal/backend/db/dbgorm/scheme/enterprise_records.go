@@ -13,8 +13,9 @@ type WorkerInfo struct {
 	UpdatedAt       time.Time
 }
 
-// type Job struct {
-// 	JobID  string `gorm:"primaryKey"`
-// 	Data   datatypes.JSON
-// 	Status string // Index is created in the migration file manually since gorm doesn't support conditional indexes
+// type WorkflowExecutionRequest struct {
+// 	RequestID  string `gorm:"primaryKey"`
+// 	SessionID  string
+// 	AqcuiredAt *time.Time
+// 	AqcuiredBy string
 // }

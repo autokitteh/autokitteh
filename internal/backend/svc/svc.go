@@ -158,11 +158,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 
 		LoggerFxOpt(opts.Silent),
 		Component("workflowexecutor", workflowexecutor.Configs,
-			fx.Provide(fx.Annotate(workflowexecutor.New, fx.As(new(workflowexecutor.WorkflowExecutor)))),
-			fx.Invoke(func(lc fx.Lifecycle, w workflowexecutor.WorkflowExecutor) {
-				HookOnStart(lc, w.Start)
-				HookOnStop(lc, w.Stop)
-			})),
+			fx.Provide(fx.Annotate(workflowexecutor.New, fx.As(new(workflowexecutor.WorkflowExecutor))))),
 		Component("usagereporter",
 			usagereporter.Configs,
 			fx.Provide(func(z *zap.Logger, cfg *usagereporter.Config) (usagereporter.UsageReporter, error) {
@@ -459,6 +455,10 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				})
 			}),
 		),
+		fx.Invoke(func(lc fx.Lifecycle, w workflowexecutor.WorkflowExecutor) {
+			HookOnStart(lc, w.Start)
+			HookOnStop(lc, w.Stop)
+		}),
 		fx.Invoke(func(z *zap.Logger, lc fx.Lifecycle, muxes *muxes.Muxes, h healthreporter.HealthReporter) {
 			var ready atomic.Bool
 

@@ -26,8 +26,8 @@ type executor struct {
 	l    *zap.Logger
 }
 
-func New(svcs Svcs, l *zap.Logger) *executor {
-	return &executor{svcs: svcs, l: l}
+func New(svcs Svcs, l *zap.Logger) (*executor, error) {
+	return &executor{svcs: svcs, l: l}, nil
 }
 
 func (e *executor) Execute(ctx context.Context, options client.StartWorkflowOptions, name string, args any) error {
