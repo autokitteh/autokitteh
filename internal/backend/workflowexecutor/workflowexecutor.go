@@ -1,4 +1,4 @@
-package workflowresourcemanager
+package workflowexecutor
 
 import (
 	"context"
@@ -16,7 +16,7 @@ type Svcs struct {
 	DB       db.DB
 }
 
-type WorkflowResourcesManager interface {
+type WorkflowExecutor interface {
 	Execute(ctx context.Context, options client.StartWorkflowOptions, name string, args any) error
 	NotifyDone(ctx context.Context, id string) error
 	Start(ctx context.Context) error
