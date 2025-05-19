@@ -336,5 +336,5 @@ func (ws *workflows) terminateWorkflowActivity(ctx context.Context, sid sdktypes
 }
 
 func (ws *workflows) notifyWorkflowEndedActivity(ctx context.Context, sid sdktypes.SessionID) error {
-	return ws.svcs.WorkflowResourceManager.NotifyDone(ctx, workflowID(sid))
+	return ws.svcs.WorkflowExecutor.NotifyDone(ctx, workflowID(sid))
 }

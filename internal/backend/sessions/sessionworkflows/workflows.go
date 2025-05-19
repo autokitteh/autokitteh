@@ -167,7 +167,7 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 
 	memo := memo(session, data.OrgID)
 
-	err = ws.svcs.WorkflowResourceManager.Execute(
+	err = ws.svcs.WorkflowExecutor.Execute(
 		ctx,
 		ws.cfg.SessionWorkflow.ToStartWorkflowOptions(
 			taskQueueName,

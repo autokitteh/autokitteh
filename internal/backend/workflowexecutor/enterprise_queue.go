@@ -1,7 +1,7 @@
 //go:build enterprise
 // +build enterprise
 
-package workflowresourcemanager
+package workflowexecutor
 
 import (
 	"sync"

@@ -1,7 +1,7 @@
 //go:build enterprise
 // +build enterprise
 
-package workflowresourcemanager
+package workflowexecutor
 
 import (
 	"context"
@@ -32,7 +32,7 @@ type job struct {
 	args    any
 }
 
-type manager struct {
+type executor struct {
 	svcs  Svcs
 	queue *q
 
@@ -45,22 +45,22 @@ type manager struct {
 }
 
 // Start implements WorkflowResourcesManager.
-func (e *manager) Start(ctx context.Context) error {
+func (e *executor) Start(ctx context.Context) error {
 	e.startPoller(ctx)
 	return nil
 }
 
-func (e *manager) Stop(ctx context.Context) error {
+func (e *executor) Stop(ctx context.Context) error {
 	e.stopChannel <- struct{}{}
 	return nil
 }
 
-func New(svcs Svcs, l *zap.Logger, cfg *Config) WorkflowResourcesManager {
+func New(svcs Svcs, l *zap.Logger, cfg *Config) *executor {
 	sampledLogger := l.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
 		return zapcore.NewSamplerWithOptions(core, time.Second, 1, 0)
 	}))
 
-	e := &manager{svcs: svcs,
+	e := &executor{svcs: svcs,
 		queue:         newQueue(svcs.DB),
 		maxConcurrent: cfg.MaxConcurrentWorkflows,
 		active:        0,
@@ -72,7 +72,7 @@ func New(svcs Svcs, l *zap.Logger, cfg *Config) WorkflowResourcesManager {
 	return e
 }
 
-func (e *manager) Execute(ctx context.Context, options client.StartWorkflowOptions, name string, args any) error {
+func (e *executor) Execute(ctx context.Context, options client.StartWorkflowOptions, name string, args any) error {
 	e.queue.push(job{
 		options: options,
 		name:    name,
@@ -81,7 +81,7 @@ func (e *manager) Execute(ctx context.Context, options client.StartWorkflowOptio
 	return nil
 }
 
-func (e *manager) startPoller(ctx context.Context) {
+func (e *executor) startPoller(ctx context.Context) {
 	ticker := time.NewTicker(100 * time.Millisecond)
 	go func() {
 		for {
@@ -118,13 +118,13 @@ func (e *manager) startPoller(ctx context.Context) {
 	}()
 }
 
-func (e *manager) NotifyDone(ctx context.Context, id string) error {
+func (e *executor) NotifyDone(ctx context.Context, id string) error {
 	e.active--
 	e.l.Info(fmt.Sprintf("Active workflows: %d out of %d", e.active, e.maxConcurrent))
 	return nil
 }
 
-func (e *manager) execute(ctx context.Context, options client.StartWorkflowOptions, name string, args any) (string, error) {
+func (e *executor) execute(ctx context.Context, options client.StartWorkflowOptions, name string, args any) (string, error) {
 	r, err := e.svcs.Temporal.TemporalClient().ExecuteWorkflow(
 		ctx,
 		options,
