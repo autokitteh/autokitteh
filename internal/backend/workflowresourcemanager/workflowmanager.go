@@ -3,10 +3,11 @@ package workflowresourcemanager
 import (
 	"context"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/db"
-	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.temporal.io/sdk/client"
 	"go.uber.org/fx"
+
+	"go.autokitteh.dev/autokitteh/internal/backend/db"
+	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 )
 
 type Svcs struct {
