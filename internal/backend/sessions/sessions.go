@@ -2,11 +2,10 @@ package sessions
 
 import (
 	"bytes"
-	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
-	"io"
+	"strconv"
 	"strings"
 	"time"
 
@@ -130,20 +129,6 @@ func (s *sessions) DownloadLogs(ctx context.Context, sid sdktypes.SessionID) ([]
 	}
 
 	var buf bytes.Buffer
-	gz := gzip.NewWriter(&buf)
-
-	if err := s.writeLogFile(ctx, sid, gz); err != nil {
-		return nil, err
-	}
-
-	if err := gz.Close(); err != nil {
-		return nil, fmt.Errorf("failed to close gzip writer: %w", err)
-	}
-
-	return buf.Bytes(), nil
-}
-
-func (s *sessions) writeLogFile(ctx context.Context, sid sdktypes.SessionID, w io.Writer) error {
 	pageSize := int32(200)
 	skip := int32(0)
 
@@ -158,27 +143,12 @@ func (s *sessions) writeLogFile(ctx context.Context, sid sdktypes.SessionID, w i
 
 		logs, err := s.svcs.DB.GetSessionLog(ctx, filter)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		for _, record := range logs.Records {
-			value, ok := record.GetPrint()
-			if !ok {
-				continue
-			}
-
-			printStr := value.String()
-			if strings.HasPrefix(printStr, "string:{v:\"") && strings.HasSuffix(printStr, "\"}") {
-				printStr = printStr[11 : len(printStr)-2] // extract the print.
-			}
-
-			line := fmt.Sprintf("[%s]:  %s\n",
-				record.Timestamp().Format("2006-01-02 15:04:05"),
-				printStr,
-			)
-
-			if _, err := w.Write([]byte(line)); err != nil {
-				return fmt.Errorf("failed to write log line: %w", err)
+			if err := formatSessionLog(&buf, record); err != nil {
+				return nil, err
 			}
 		}
 
@@ -186,6 +156,43 @@ func (s *sessions) writeLogFile(ctx context.Context, sid sdktypes.SessionID, w i
 			break
 		}
 		skip += pageSize
+	}
+
+	return buf.Bytes(), nil
+}
+
+func formatSessionLog(buf *bytes.Buffer, record sdktypes.SessionLogRecord) error {
+	value, ok := record.GetPrint()
+	if !ok {
+		return nil
+	}
+
+	printStr := value.String()
+	if strings.HasPrefix(printStr, "string:{v:\"") && strings.HasSuffix(printStr, "\"}") {
+		printStr = printStr[11 : len(printStr)-2]
+	}
+
+	// Decode escaped characters like \n and \".
+	if unquoted, err := strconv.Unquote(`"` + printStr + `"`); err == nil {
+		printStr = unquoted
+	}
+
+	lines := strings.Split(printStr, "\n")
+	if len(lines) == 0 {
+		return nil
+	}
+
+	// First line with timestamp.
+	firstLine := fmt.Sprintf("[%s]:  %s\n", record.Timestamp().Format("2006-01-02 15:04:05"), lines[0])
+	if _, err := buf.WriteString(firstLine); err != nil {
+		return fmt.Errorf("failed to write log line: %w", err)
+	}
+
+	// Indent subsequent lines.
+	for _, l := range lines[1:] {
+		if _, err := buf.WriteString("                        " + l + "\n"); err != nil {
+			return fmt.Errorf("failed to write indented line: %w", err)
+		}
 	}
 
 	return nil
