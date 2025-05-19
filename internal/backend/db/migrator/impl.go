@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/pressly/goose/v3"
+
 	"go.autokitteh.dev/autokitteh/migrations"
 )
 
