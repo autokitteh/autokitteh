@@ -14,7 +14,6 @@ type Migrator struct {
 	db            *sql.DB
 	dialect       string
 	DbVersion     int64
-	metadata      map[string]string
 	migrationsDir string
 }
 
