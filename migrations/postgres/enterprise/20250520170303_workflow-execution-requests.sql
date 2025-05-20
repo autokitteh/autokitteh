@@ -4,8 +4,8 @@ CREATE TABLE "workflow_execution_requests" (
   "session_id" text NOT NULL,
   "args" bytea NULL,
   "memo" bytea NULL,
-  "aqcuired_at" timestamptz NULL,
-  "aqcuired_by" text NULL,
+  "acquired_at" timestamptz NULL,
+  "acquired_by" text NULL,
   "created_at" timestamptz NULL DEFAULT now(),
   PRIMARY KEY ("session_id")
 );
