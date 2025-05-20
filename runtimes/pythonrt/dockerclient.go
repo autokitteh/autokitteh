@@ -1,6 +1,7 @@
 package pythonrt
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"errors"
@@ -18,7 +19,6 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/moby/go-archive"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapio"
 
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -36,11 +36,10 @@ type dockerClient struct {
 	mu              *sync.Mutex
 	runnerLabels    map[string]string
 	logBuildProcess bool
-	logRunner       bool
 	logger          *zap.Logger
 }
 
-func NewDockerClient(logger *zap.Logger, logRunner, logBuildProcess bool) (*dockerClient, error) {
+func NewDockerClient(logger *zap.Logger, logBuildProcess bool) (*dockerClient, error) {
 	apiClient, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		return nil, err
@@ -54,7 +53,6 @@ func NewDockerClient(logger *zap.Logger, logRunner, logBuildProcess bool) (*dock
 		allRunnerIDs:    map[string]struct{}{},
 		logger:          logger,
 		logBuildProcess: logBuildProcess,
-		logRunner:       logRunner,
 	}
 
 	if err := dc.SyncCurrentState(); err != nil {
@@ -90,7 +88,7 @@ func (d *dockerClient) ensureNetwork() (string, error) {
 	return inspectResult.ID, nil
 }
 
-func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, sessionID sdktypes.SessionID, cmd []string, vars map[string]string) (string, string, error) {
+func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, sessionID sdktypes.SessionID, cmd []string, vars map[string]string, printFn func(string) error) (string, string, error) {
 	envVars := make([]string, 0, len(vars))
 	for k, v := range vars {
 		envVars = append(envVars, k+"="+v)
@@ -126,7 +124,7 @@ func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, sess
 		return "", "", err
 	}
 
-	d.setupContainerLogging(ctx, resp.ID, sessionID)
+	go d.monitorContainerLogging(ctx, resp.ID, sessionID, printFn)
 
 	d.mu.Lock()
 	d.activeRunnerIDs[resp.ID] = struct{}{}
@@ -206,31 +204,27 @@ func (d *dockerClient) getContainerLogs(ctx context.Context, cid string) (string
 	return buf.String(), nil
 }
 
-func (d *dockerClient) setupContainerLogging(ctx context.Context, cid string, sessionID sdktypes.SessionID) {
-	go func() {
-		reader, _ := d.client.ContainerLogs(ctx, cid, container.LogsOptions{
-			ShowStdout: true,
-			ShowStderr: true,
-			Follow:     true,
-		})
-		defer reader.Close()
-		var err error
-		l := d.logger.With(zap.String("container_id", cid), zap.String("session_id", sessionID.String()))
+func (d *dockerClient) monitorContainerLogging(ctx context.Context, cid string, sessionID sdktypes.SessionID, printFn func(string) error) {
+	reader, _ := d.client.ContainerLogs(ctx, cid, container.LogsOptions{
+		ShowStdout: true,
+		ShowStderr: true,
+		Follow:     true,
+	})
+	defer reader.Close()
 
-		if d.logRunner {
-			stdourWriter := zapio.Writer{Log: l.With(zap.String("stream", "stdout"))}
-			stderrWriter := zapio.Writer{Log: l.With(zap.String("stream", "stderr"))}
-			_, err = stdcopy.StdCopy(&stdourWriter, &stderrWriter, reader)
-			defer stdourWriter.Close()
-			defer stderrWriter.Close()
-		} else {
-			_, _ = io.Copy(io.Discard, reader)
-		}
+	log := d.logger.With(zap.String("container_id", cid), zap.String("session_id", sessionID.String()))
 
-		if err != nil {
-			l.Warn("error reading container logs", zap.Error(err))
+	s := bufio.NewScanner(reader)
+	for s.Scan() {
+		if err := printFn(s.Text()); err != nil {
+			log.Warn("print container logs", zap.Error(err))
 		}
-	}()
+	}
+
+	if err := s.Err(); err != nil {
+		log.Error("container logs", zap.Error(err))
+		return
+	}
 }
 
 func (d *dockerClient) SyncCurrentState() error {
