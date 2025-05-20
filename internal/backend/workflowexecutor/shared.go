@@ -14,7 +14,7 @@ func (e *executor) WorkflowSessionName() string {
 	return "session"
 }
 
-func (e *executor) execute(ctx context.Context, sessionID sdktypes.SessionID, args any, memo map[string]string) (string, error) {
+func (e *executor) execute(ctx context.Context, sessionID sdktypes.SessionID, args any, memo map[string]string) error {
 	opts := e.cfg.SessionWorkflow.ToStartWorkflowOptions(e.WorkflowQueue(), workflowID(sessionID), fmt.Sprintf("session %v", sessionID), memo)
 	r, err := e.svcs.Temporal.TemporalClient().ExecuteWorkflow(
 		ctx,
@@ -23,9 +23,9 @@ func (e *executor) execute(ctx context.Context, sessionID sdktypes.SessionID, ar
 		args,
 	)
 	if err != nil {
-		return "", err
+		return err
 	}
 	e.l.Info("Started workflow", zap.String("workflow_id", r.GetID()), zap.String("workflow_name", e.WorkflowSessionName()))
 
-	return r.GetID(), nil
+	return nil
 }
