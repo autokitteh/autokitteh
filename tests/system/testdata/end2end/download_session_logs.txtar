@@ -29,7 +29,3 @@ project:
 def on_http(event):
     print("these are session logs")
     print("1\n2\n3\n")
-
-
--- test-config.yaml --
-exclusive: true

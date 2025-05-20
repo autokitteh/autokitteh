@@ -131,8 +131,7 @@ func checkFileContent(t *testing.T, step string) error {
 	}
 
 	filename := match[1]
-	checkType := match[2]
-	want := strings.TrimSpace(match[3])
+	want := strings.TrimSpace(match[2])
 
 	want = strings.TrimPrefix(want, "'")
 	want = strings.TrimSuffix(want, "'")
@@ -156,25 +155,9 @@ func checkFileContent(t *testing.T, step string) error {
 
 	t.Logf("step: %q\nfile: %q\nwant: %q\ngot length: %d", step, filename, want, len(got))
 
-	switch checkType {
-	case "contains":
-		if !strings.Contains(got, want) {
-			return fmt.Errorf("file %q does not contain %q", filename, want)
-		}
-	case "equals":
-		if want != got {
-			return stringCheckFailed(want, got)
-		}
-	case "regex":
-		matched, err := regexp.MatchString(want, got)
-		if err != nil {
-			return fmt.Errorf("failed to match regex: %w", err)
-		}
-		if !matched {
-			return fmt.Errorf("file %q content does not match regex %q", filename, want)
-		}
-	default:
-		return fmt.Errorf("unsupported file check type: %s", checkType)
+	// Check if the file contains the text
+	if !strings.Contains(got, want) {
+		return fmt.Errorf("file %q does not contain %q", filename, want)
 	}
 
 	return nil

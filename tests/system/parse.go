@@ -32,8 +32,8 @@ var (
 	// output <equals|equals_json|contains|regex> [file] *
 	akCheckOutput = regexp.MustCompile(`^output\s+(equals|equals_json|contains|regex|equals_jq)\s+(file\s+)?(.+|'.*')`)
 
-	// ak file [file] <contains|equals|regex> [file] *
-	fileChecks = regexp.MustCompile(`^file\s+(.+)\s+(contains|equals|regex)\s+(.+)`)
+	// file <filename> contains <text>
+	fileChecks = regexp.MustCompile(`^file\s+(.+)\s+contains\s+(.+)`)
 
 	// return code == <int>
 	akCheckReturn = regexp.MustCompile(`^return\s+code\s*==\s*(\d+)$`)
