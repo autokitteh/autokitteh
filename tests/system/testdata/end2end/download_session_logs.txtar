@@ -10,7 +10,7 @@ wait 5s for session ses_00000000000000000000000007
 
 ak session download-logs ses_00000000000000000000000007 --output downloaded_logs.txt
 
-file downloaded_logs.txt contains 'these are session logs
+file downloaded_logs.txt contains 'these are session logs'
 file downloaded_logs.txt contains '1'
 file downloaded_logs.txt contains '2'
 file downloaded_logs.txt contains '3'
