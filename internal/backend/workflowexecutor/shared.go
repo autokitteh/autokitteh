@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	"go.uber.org/zap"
+
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 func workflowID(sessionID sdktypes.SessionID) string { return sessionID.String() }
