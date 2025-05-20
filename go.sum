@@ -293,6 +293,8 @@ github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkp
 github.com/dustin/go-humanize v1.0.1/go.mod h1:Mu1zIs6XwVuF/gI1OepvI0qD18qycQx+mFykh5fBlto=
 github.com/dustmop/soup v1.1.2-0.20190516214245-38228baa104e h1:44fmjqDtdCiUNlSjJVp+w1AOs6na3Y6Ai0aIeseFjkI=
 github.com/dustmop/soup v1.1.2-0.20190516214245-38228baa104e/go.mod h1:CgNC6SGbT+Xb8wGGvzilttZL1mc5sQ/5KkcxsZttMIk=
+github.com/efiShtain/atlas-provider-gorm v0.0.0-20250519081715-9c49487e9d03 h1:up9gI07ElnRNC+nnQn8WUHj/VQC1AgNCYeEoYmka5MA=
+github.com/efiShtain/atlas-provider-gorm v0.0.0-20250519081715-9c49487e9d03/go.mod h1:3a7Y0ZrenuGgoVXmGfn8q8U9qB7fJ5CprrXHMriMb0s=
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
 github.com/envoyproxy/go-control-plane v0.9.4/go.mod h1:6rpuAdCZL397s3pYoYcLgu1mIlRU8Am5FuJP05cCM98=

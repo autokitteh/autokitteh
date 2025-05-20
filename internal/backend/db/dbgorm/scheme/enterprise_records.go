@@ -20,7 +20,7 @@ type WorkflowExecutionRequest struct {
 	Args       []byte
 	Memo       []byte
 	AqcuiredAt *time.Time
-	AqcuiredBy string
+	AqcuiredBy *string
 
 	CreatedAt time.Time `gorm:"default:NOW()"`
 }

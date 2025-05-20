@@ -25,7 +25,7 @@ func (gdb *gormdb) CreateWorkflowExecutionRequest(ctx context.Context, r db.Work
 		return fmt.Errorf("failed to marshal memo: %w", err)
 	}
 
-	request := scheme.WorkflowExecutionRequest{
+	request := &scheme.WorkflowExecutionRequest{
 		SessionID: r.SessionID.UUIDValue(),
 		Args:      argsBytes,
 		Memo:      memoData,
@@ -40,7 +40,7 @@ func (gdb *gormdb) GetWorkflowExecutionRequests(ctx context.Context, workerID st
 	if err := gdb.writer.WithContext(ctx).Model(&scheme.WorkflowExecutionRequest{}).Raw(`
 	UPDATE workflow_execution_requests
 	SET aqcuired_at = NOW(), aqcuired_by = $1
-	WHERE session_id IN (SELECT session_id FROM workflow_execution_requests WHERE aqcuired_by = NULL OR aqcuired_at < NOW() - INTERVAL '1 day' LIMIT $2 FOR UPDATE SKIP LOCKED)
+	WHERE session_id IN (SELECT session_id FROM workflow_execution_requests WHERE aqcuired_by IS NULL OR aqcuired_at < NOW() - INTERVAL '1 day' LIMIT $2 FOR UPDATE SKIP LOCKED)
 	RETURNING *;
 	`, workerID, maxRequests).Scan(&requests).Error; err != nil {
 		return nil, err

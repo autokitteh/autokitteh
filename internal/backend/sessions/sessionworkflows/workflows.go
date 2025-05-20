@@ -164,7 +164,11 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 
 	memo := memo(session, data.OrgID)
 
-	if err = ws.svcs.WorkflowExecutor.Execute(ctx, sessionID, data, memo); err != nil {
+	params := sessionWorkflowParams{
+		Data: *data,
+		Opts: opts,
+	}
+	if err = ws.svcs.WorkflowExecutor.Execute(ctx, sessionID, params, memo); err != nil {
 		return fmt.Errorf("execute session workflow: %w", err)
 	}
 
