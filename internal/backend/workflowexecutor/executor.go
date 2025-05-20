@@ -6,10 +6,10 @@ package workflowexecutor
 import (
 	"context"
 
-	"go.temporal.io/sdk/client"
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 type Config struct {
@@ -30,18 +30,12 @@ func New(svcs Svcs, l *zap.Logger) (*executor, error) {
 	return &executor{svcs: svcs, l: l}, nil
 }
 
-func (e *executor) Execute(ctx context.Context, options client.StartWorkflowOptions, name string, args any) error {
-	r, err := e.svcs.Temporal.TemporalClient().ExecuteWorkflow(
-		ctx,
-		options,
-		name,
-		args,
-	)
-	if err != nil {
-		return err
-	}
-	e.l.Info("Started workflow", zap.String("workflow_id", r.GetID()), zap.String("workflow_name", name))
-	return nil
+func (e *executor) WorkflowQueue() string {
+	return "sessions"
+}
+
+func (e *executor) Execute(ctx context.Context, sessionID sdktypes.SessionID, data any, memo map[string]string) error {
+	return e.execute(ctx, sessionID, data, memo)
 }
 
 func (e *executor) NotifyDone(ctx context.Context, id string) error {
