@@ -34,8 +34,7 @@ var (
 )
 
 type executor struct {
-	svcs  Svcs
-	queue *q
+	svcs Svcs
 
 	maxConcurrent int
 	l             *zap.Logger
@@ -79,7 +78,6 @@ func New(svcs Svcs, l *zap.Logger, cfg *Config) (*executor, error) {
 	}))
 
 	e := &executor{svcs: svcs,
-		queue:         newQueue(svcs.DB),
 		maxConcurrent: cfg.MaxConcurrentWorkflows,
 		l:             l,
 		sampledLogger: sampledLogger,
@@ -157,14 +155,9 @@ func (e *executor) runOnce(ctx context.Context) {
 	e.executeLock.Lock()
 	defer e.executeLock.Unlock()
 
-	if e.queue.len() == 0 {
-		e.sampledLogger.Debug("Queue is empty, waiting for jobs")
-		return
-	}
-
 	availableSlots := e.availableSlots()
 	if availableSlots <= 0 {
-		e.sampledLogger.Info("Max concurrent workflows reached, waiting for free slots", zap.Int("MaxConcurrent", e.maxConcurrent), zap.Int("QueueLength", e.queue.len()))
+		e.sampledLogger.Info("Max concurrent workflows reached, waiting for free slots", zap.Int("MaxConcurrent", e.maxConcurrent))
 		return
 	}
 
