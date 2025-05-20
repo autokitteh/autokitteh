@@ -11,15 +11,18 @@ import (
 	"time"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
-	"go.temporal.io/sdk/client"
+	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
 type Config struct {
-	MaxConcurrentWorkflows int    `koanf:"max_concurrent_workflows"`
-	WorkerID               string `koanf:"worker_id"`
+	MaxConcurrentWorkflows int                           `koanf:"max_concurrent_workflows"`
+	WorkerID               string                        `koanf:"worker_id"`
+	SessionWorkflow        temporalclient.WorkflowConfig `koanf:"session_workflow"`
 }
 
 var (
@@ -29,12 +32,6 @@ var (
 		},
 	}
 )
-
-type job struct {
-	options client.StartWorkflowOptions
-	name    string
-	args    any
-}
 
 type executor struct {
 	svcs  Svcs
@@ -50,6 +47,10 @@ type executor struct {
 	cfg        *Config
 
 	executeLock *sync.Mutex
+}
+
+func (e *executor) WorkflowQueue() string {
+	return e.cfg.WorkerID + "-sessions-queue"
 }
 
 // Start implements WorkflowResourcesManager.
@@ -94,24 +95,33 @@ func (e *executor) availableSlots() int {
 	return e.maxConcurrent - e.workerInfo.ActiveWorkflows
 }
 
-func (e *executor) Execute(ctx context.Context, options client.StartWorkflowOptions, name string, args any) error {
-	// by pass queue if we have free slots
-	if ok := e.executeLock.TryLock(); ok {
+// err = ws.svcs.WorkflowExecutor.Execute(
+// 	ctx,
+// 	ws.cfg.SessionWorkflow.ToStartWorkflowOptions(
+// 		taskQueueName,
+// 		workflowID(sessionID),
+// 		fmt.Sprintf("session %v", sessionID),
+// 		memo,
+// 	),
+// 	sessionWorkflowName,
+// 	sessionWorkflowParams{Data: *data, Opts: opts},
+// )
 
+func (e *executor) Execute(ctx context.Context, sessionID sdktypes.SessionID, args any, memo map[string]string) error {
+	// bypass queue if we have free slots
+	if ok := e.executeLock.TryLock(); ok {
 		defer e.executeLock.Unlock()
 		if e.availableSlots() > 0 {
-			_, err := e.execute(ctx, options, name, args)
+			_, err := e.executeAndIncrement(ctx, sessionID, args, memo)
 			return err
 		}
 	}
 
-	e.queue.push(job{
-		options: options,
-		name:    name,
-		args:    args,
+	return e.svcs.DB.CreateWorkflowExecutionRequest(ctx, db.WorkflowExecutionRequest{
+		SessionID: sessionID,
+		Args:      args,
+		Memo:      memo,
 	})
-
-	return nil
 }
 
 func (e *executor) startPoller(ctx context.Context) {
@@ -158,25 +168,29 @@ func (e *executor) runOnce(ctx context.Context) {
 		return
 	}
 
-	for _, job := range e.queue.popX(availableSlots) {
-		id, err := e.execute(ctx, job.options, job.name, job.args)
+	requests, err := e.svcs.DB.GetWorkflowExecutionRequests(ctx, e.cfg.WorkerID, availableSlots)
+	if err != nil {
+		e.l.Error("Failed to get workflow execution requests", zap.Error(err))
+		return
+	}
+
+	for _, job := range requests {
+		id, err := e.executeAndIncrement(ctx, job.SessionID, job.Args, job.Memo)
 		if err != nil {
-			e.l.Error("Failed to execute workflow", zap.Error(err), zap.String("workflow_name", job.name), zap.Any("args", job.args))
+			e.l.Error("Failed to execute workflow", zap.Error(err), zap.String("workflow_name", e.WorkflowSessionName()))
 			continue
 		}
+		if err := e.svcs.DB.DeleteWorkflowExecutionRequest(ctx, job.SessionID); err != nil {
+			e.l.Error("Failed to delete workflow execution request", zap.Error(err), zap.String("session_id", job.SessionID.String()))
+		}
 
-		e.l.Debug("Started workflow", zap.String("workflow_id", id), zap.String("workflow_name", job.name))
-		e.l.Info(fmt.Sprintf("Active workflows: %d out of %d", e.workerInfo.ActiveWorkflows, e.maxConcurrent))
+		e.l.Debug(fmt.Sprintf("Started workflow %s for session %s", id, job.SessionID), zap.String("session_id", id))
+		e.sampledLogger.Info(fmt.Sprintf("Active workflows: %d out of %d", e.workerInfo.ActiveWorkflows, e.maxConcurrent))
 	}
 }
 
-func (e *executor) execute(ctx context.Context, options client.StartWorkflowOptions, name string, args any) (string, error) {
-	r, err := e.svcs.Temporal.TemporalClient().ExecuteWorkflow(
-		ctx,
-		options,
-		name,
-		args,
-	)
+func (e *executor) executeAndIncrement(ctx context.Context, sessionID sdktypes.SessionID, args any, memo map[string]string) (string, error) {
+	id, err := e.execute(ctx, sessionID, args, memo)
 	if err != nil {
 		return "", err
 	}
@@ -188,5 +202,6 @@ func (e *executor) execute(ctx context.Context, options client.StartWorkflowOpti
 		// we might succeed updating later
 		e.workerInfo.ActiveWorkflows++
 	}
-	return r.GetID(), nil
+
+	return id, nil
 }

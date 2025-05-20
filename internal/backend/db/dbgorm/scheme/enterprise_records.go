@@ -5,6 +5,8 @@ package scheme
 
 import (
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type WorkerInfo struct {
@@ -13,9 +15,12 @@ type WorkerInfo struct {
 	UpdatedAt       time.Time
 }
 
-// type WorkflowExecutionRequest struct {
-// 	RequestID  string `gorm:"primaryKey"`
-// 	SessionID  string
-// 	AqcuiredAt *time.Time
-// 	AqcuiredBy string
-// }
+type WorkflowExecutionRequest struct {
+	SessionID  uuid.UUID `gorm:"primaryKey"`
+	Args       []byte
+	Memo       []byte
+	AqcuiredAt *time.Time
+	AqcuiredBy string
+
+	CreatedAt time.Time `gorm:"default:NOW()"`
+}

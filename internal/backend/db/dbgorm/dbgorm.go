@@ -8,7 +8,6 @@ import (
 	"runtime"
 	"strings"
 
-	_ "ariga.io/atlas-provider-gorm/gormschema"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 

@@ -302,7 +302,7 @@ func (ws *workflows) terminateSessionWorkflow(wctx workflow.Context, params term
 
 	sl.Infof("terminating session workflow %s", sid)
 
-	wctx = workflow.WithActivityOptions(wctx, ws.cfg.Activity.ToOptions(taskQueueName))
+	wctx = workflow.WithActivityOptions(wctx, ws.cfg.Activity.ToOptions(ws.svcs.WorkflowExecutor.WorkflowQueue()))
 
 	// this is fine if it runs multiple times and should be short.
 	if err := workflow.ExecuteActivity(wctx, terminateWorkflowActivityName, sid, reason).Get(wctx, nil); err != nil {

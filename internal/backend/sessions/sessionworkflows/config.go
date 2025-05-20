@@ -7,7 +7,7 @@ import (
 )
 
 type Config struct {
-	SessionWorkflow     temporalclient.WorkflowConfig `koanf:"session_workflow"`
+	// SessionWorkflow     temporalclient.WorkflowConfig `koanf:"session_workflow"`
 	TerminationWorkflow temporalclient.WorkflowConfig `koanf:"termination_workflow"`
 
 	Activity temporalclient.ActivityConfig `koanf:"activity"`
@@ -16,5 +16,6 @@ type Config struct {
 	SlowOperationTimeout time.Duration               `koanf:"slow_operation_timeout"`
 
 	// Enable test tools.
-	Test bool `koanf:"test"`
+	Test            bool                          `koanf:"test"`
+	SessionWorkflow temporalclient.WorkflowConfig `koanf:"session_workflow"`
 }

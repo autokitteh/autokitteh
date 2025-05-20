@@ -67,9 +67,9 @@ var (
 		Default: &Config{
 			Monitor: defaultMonitorConfig,
 			DataConverter: DataConverterConfig{
-				Compress: true,
+				Compress: false,
 				Encryption: DataConverterEncryptionConfig{
-					Encrypt: true,
+					Encrypt: false,
 				},
 			},
 		},

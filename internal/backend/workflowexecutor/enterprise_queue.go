@@ -7,45 +7,46 @@ import (
 	"sync"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
+	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 )
 
 type q struct {
-	jobs []job
-	lock *sync.Mutex
-	db   db.DB
+	requests []scheme.WorkflowExecutionRequest
+	lock     *sync.Mutex
+	db       db.DB
 }
 
 // Need to implement db access
 func newQueue(db db.DB) *q {
 	return &q{
-		jobs: make([]job, 0),
-		lock: &sync.Mutex{},
-		db:   db,
+		requests: make([]scheme.WorkflowExecutionRequest, 0),
+		lock:     &sync.Mutex{},
+		db:       db,
 	}
 }
 
-func (q *q) push(job job) {
+func (q *q) push(request scheme.WorkflowExecutionRequest) {
 	q.lock.Lock()
 	defer q.lock.Unlock()
-	q.jobs = append(q.jobs, job)
+	q.requests = append(q.requests, request)
 }
 
-func (q *q) popX(n int) []job {
+func (q *q) popX(n int) []scheme.WorkflowExecutionRequest {
 	q.lock.Lock()
 	defer q.lock.Unlock()
-	if len(q.jobs) == 0 {
+	if len(q.requests) == 0 {
 		return nil
 	}
-	if len(q.jobs) < n {
-		n = len(q.jobs)
+	if len(q.requests) < n {
+		n = len(q.requests)
 	}
-	jobs := q.jobs[:n]
-	q.jobs = q.jobs[n:]
-	return jobs
+	requests := q.requests[:n]
+	q.requests = q.requests[n:]
+	return requests
 }
 
 func (q *q) len() int {
 	q.lock.Lock()
 	defer q.lock.Unlock()
-	return len(q.jobs)
+	return len(q.requests)
 }
