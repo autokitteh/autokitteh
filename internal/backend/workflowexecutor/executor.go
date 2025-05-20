@@ -9,10 +9,12 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 type Config struct {
+	SessionWorkflow temporalclient.WorkflowConfig `koanf:"session_workflow"`
 }
 
 var (
@@ -21,13 +23,16 @@ var (
 	}
 )
 
+var _ WorkflowExecutor = (*executor)(nil)
+
 type executor struct {
 	svcs Svcs
 	l    *zap.Logger
+	cfg  *Config
 }
 
-func New(svcs Svcs, l *zap.Logger) (*executor, error) {
-	return &executor{svcs: svcs, l: l}, nil
+func New(svcs Svcs, l *zap.Logger, cfg *Config) (*executor, error) {
+	return &executor{svcs: svcs, l: l, cfg: cfg}, nil
 }
 
 func (e *executor) WorkflowQueue() string {

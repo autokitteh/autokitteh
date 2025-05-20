@@ -33,6 +33,8 @@ var (
 	}
 )
 
+var _ WorkflowExecutor = (*executor)(nil)
+
 type executor struct {
 	svcs Svcs
 
@@ -93,25 +95,12 @@ func (e *executor) availableSlots() int {
 	return e.maxConcurrent - e.workerInfo.ActiveWorkflows
 }
 
-// err = ws.svcs.WorkflowExecutor.Execute(
-// 	ctx,
-// 	ws.cfg.SessionWorkflow.ToStartWorkflowOptions(
-// 		taskQueueName,
-// 		workflowID(sessionID),
-// 		fmt.Sprintf("session %v", sessionID),
-// 		memo,
-// 	),
-// 	sessionWorkflowName,
-// 	sessionWorkflowParams{Data: *data, Opts: opts},
-// )
-
 func (e *executor) Execute(ctx context.Context, sessionID sdktypes.SessionID, args any, memo map[string]string) error {
 	// bypass queue if we have free slots
 	if ok := e.executeLock.TryLock(); ok {
 		defer e.executeLock.Unlock()
 		if e.availableSlots() > 0 {
-			_, err := e.executeAndIncrement(ctx, sessionID, args, memo)
-			return err
+			return e.executeAndIncrement(ctx, sessionID, args, memo)
 		}
 	}
 
@@ -168,7 +157,7 @@ func (e *executor) runOnce(ctx context.Context) {
 	}
 
 	for _, job := range requests {
-		id, err := e.executeAndIncrement(ctx, job.SessionID, job.Args, job.Memo)
+		err := e.executeAndIncrement(ctx, job.SessionID, job.Args, job.Memo)
 		if err != nil {
 			e.l.Error("Failed to execute workflow", zap.Error(err), zap.String("workflow_name", e.WorkflowSessionName()))
 			continue
@@ -177,15 +166,14 @@ func (e *executor) runOnce(ctx context.Context) {
 			e.l.Error("Failed to delete workflow execution request", zap.Error(err), zap.String("session_id", job.SessionID.String()))
 		}
 
-		e.l.Debug(fmt.Sprintf("Started workflow %s for session %s", id, job.SessionID), zap.String("session_id", id))
 		e.sampledLogger.Info(fmt.Sprintf("Active workflows: %d out of %d", e.workerInfo.ActiveWorkflows, e.maxConcurrent))
 	}
 }
 
-func (e *executor) executeAndIncrement(ctx context.Context, sessionID sdktypes.SessionID, args any, memo map[string]string) (string, error) {
-	id, err := e.execute(ctx, sessionID, args, memo)
+func (e *executor) executeAndIncrement(ctx context.Context, sessionID sdktypes.SessionID, args any, memo map[string]string) error {
+	err := e.execute(ctx, sessionID, args, memo)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	e.workerInfo.ActiveWorkflows, err = e.svcs.DB.IncActiveWorkflows(ctx, e.cfg.WorkerID)
@@ -196,5 +184,5 @@ func (e *executor) executeAndIncrement(ctx context.Context, sessionID sdktypes.S
 		e.workerInfo.ActiveWorkflows++
 	}
 
-	return id, nil
+	return nil
 }
