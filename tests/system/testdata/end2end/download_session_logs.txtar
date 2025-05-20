@@ -8,7 +8,8 @@ resp code == 202
 
 wait 5s for session ses_00000000000000000000000007
 
-ak download-logs ses_00000000000000000000000007 --output downloaded_logs.txt
+ak session download-logs ses_00000000000000000000000007 --output downloaded_logs.txt
+code == 0 
 
 ak session prints ses_00000000000000000000000007
 output equals file downloaded_logs.txt
