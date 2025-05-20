@@ -19,8 +19,8 @@ type WorkflowExecutionRequest struct {
 	SessionID  uuid.UUID `gorm:"primaryKey"`
 	Args       []byte
 	Memo       []byte
-	AqcuiredAt *time.Time
-	AqcuiredBy *string
+	AcquiredAt *time.Time
+	AcquiredBy *string
 
 	CreatedAt time.Time `gorm:"default:NOW()"`
 }
