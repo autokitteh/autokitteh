@@ -11,7 +11,7 @@ wait 5s for session ses_00000000000000000000000007
 ak download-logs ses_00000000000000000000000007 --output downloaded_logs.txt
 return code == 0
 
-file exists downloaded_logs.txt
+downloaded_logs.txt contains 'these are session logs'
 
 -- project.yaml --
 version: v1
