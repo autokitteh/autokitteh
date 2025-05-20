@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
 	"time"
@@ -161,7 +162,7 @@ func (s *sessions) DownloadLogs(ctx context.Context, sid sdktypes.SessionID) ([]
 	return buf.Bytes(), nil
 }
 
-func writeFormattedSessionLog(buf *bytes.Buffer, record sdktypes.SessionLogRecord) error {
+func writeFormattedSessionLog(buf io.StringWriter, record sdktypes.SessionLogRecord) error {
 	value, ok := record.GetPrint()
 	if !ok {
 		return nil
