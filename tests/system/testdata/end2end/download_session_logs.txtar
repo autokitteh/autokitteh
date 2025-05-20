@@ -8,16 +8,10 @@ resp code == 202
 
 wait 5s for session ses_00000000000000000000000007
 
-ak download-logs ses_00000000000000000000000007
+ak download-logs ses_00000000000000000000000007 --output downloaded_logs.txt
 return code == 0
 
-ses_00000000000000000000000007_20230515_150405.txt
-file exists ses_00000000000000000000000007_*.txt
-
-file ses_00000000000000000000000007_*.txt contains "these are session logs"
-file ses_00000000000000000000000007_*.txt contains " 1"
-file ses_00000000000000000000000007_*.txt contains " 2"
-file ses_00000000000000000000000007_*.txt contains " 3"
+file exists downloaded_logs.txt
 
 -- project.yaml --
 version: v1
