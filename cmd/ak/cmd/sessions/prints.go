@@ -11,10 +11,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var (
-	tail       bool
-	outputPath string
-)
+var tail bool
 
 var printsCmd = common.StandardCommand(&cobra.Command{
 	Use:   "prints [sessions ID | project] [--fail] [--no-timestamps] [--poll-interval <duration>] [--tail] [--end-print-re <re>]",

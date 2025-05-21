@@ -11,6 +11,8 @@ import (
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 )
 
+var outputPath string
+
 var downloadLogsCmd = common.StandardCommand(&cobra.Command{
 	Use:   "download-logs [session ID]",
 	Short: "Download logs for a session",
