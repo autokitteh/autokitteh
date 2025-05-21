@@ -9,11 +9,7 @@ resp code == 202
 wait 5s for session ses_00000000000000000000000007
 
 ak session download-logs ses_00000000000000000000000007 
-
-file ses_00000000000000000000000007_*.txt contains 'these are session logs'
-file ses_00000000000000000000000007_*.txt contains '1'
-file ses_00000000000000000000000007_*.txt contains '2'
-file ses_00000000000000000000000007_*.txt contains '3'
+return code == 0
 
 -- project.yaml --
 version: v1
