@@ -13,7 +13,7 @@ import (
 // Common test time to use across all tests.
 var fixedTime = time.Date(2025, 5, 15, 10, 30, 0, 0, time.UTC)
 
-func TestWriteFormattedSessionLog_NormalPrint(t *testing.T) {
+func TestWriteFormattedSessionLog_PrintRecord(t *testing.T) {
 	buf := &bytes.Buffer{}
 
 	// Create a print record with a string value.
@@ -91,7 +91,7 @@ func TestWriteFormattedSessionLog_NonStringValue(t *testing.T) {
 	assert.Equal(t, "[2025-05-15 10:30:00]:  42\n", buf.String())
 }
 
-func TestWriteFormattedSessionLog_InvalidRecord(t *testing.T) {
+func TestWriteFormattedSessionLog_SkipInvalidRecord(t *testing.T) {
 	buf := &bytes.Buffer{}
 
 	// Use the invalid record
