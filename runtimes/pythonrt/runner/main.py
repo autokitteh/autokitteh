@@ -99,6 +99,15 @@ for more details.
 """
 
 
+suggest_add_package = """
+=======================================================================================================
+The below error means you need to add a package to the environment.
+It's done by adding it to the requirements.txt file.
+See https://docs.autokitteh.com/develop/python#installing-python-packages for more details.
+=======================================================================================================
+"""
+
+
 # Go passes HTTP event.data.body.bytes as base64 encode string
 def fix_http_body(inputs):
     data = inputs.get("data")
@@ -218,6 +227,9 @@ class Runner(pb.runner_rpc.RunnerService):
 
     def result_error(self, err):
         io = StringIO()
+
+        if "No module named" in str(err):
+            self._orig_print(suggest_add_package, file=io)
 
         if "pickle" in str(err):
             self._orig_print(pickle_help, file=io)
