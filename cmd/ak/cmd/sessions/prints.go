@@ -122,11 +122,11 @@ var downloadLogsCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		// Use default output filename if none provided.
-		out := outputPath
-		if out == "" {
+		
+		if outputPath == "" {
 			timestamp := time.Now().Format("20060102_150405")
 			filename := fmt.Sprintf("%s_%s.txt", sid.String(), timestamp)
-			out = filepath.Join(".", filename)
+			outputPath = filepath.Join(".", filename)
 		}
 
 		if err := os.WriteFile(out, data, 0o644); err != nil {
