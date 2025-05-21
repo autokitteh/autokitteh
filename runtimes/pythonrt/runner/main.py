@@ -101,8 +101,9 @@ for more details.
 
 suggest_add_package = """
 =======================================================================================================
-The below error means you need to add a package to the environment.
-It's done by adding it to the requirements.txt file.
+The below error means you need to add a package to the Python environment.
+Web platform: Create a requirements.txt file and add module to the requirements.txt file.
+Self hosted: add module to AutoKitteh virtual environment. 
 See https://docs.autokitteh.com/develop/python#installing-python-packages for more details.
 =======================================================================================================
 """
