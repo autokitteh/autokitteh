@@ -30,6 +30,8 @@ func runCheck(t *testing.T, step string, ak *tests.AKResult, resp *httpResponse)
 		return captureJQ(t, step, ak, resp)
 	case "capture_re":
 		return captureRE(t, step, ak, resp)
+	case "file":
+		return checkFileContent(t, step)
 	default:
 		return errors.New("unhandled check")
 	}
@@ -119,6 +121,45 @@ func checkAKOutput(t *testing.T, step string, ak *tests.AKResult) error {
 	default:
 		return errors.New("unhandled AK check type")
 	}
+	return nil
+}
+
+func checkFileContent(t *testing.T, step string) error {
+	match := fileChecks.FindStringSubmatch(step)
+	if match == nil {
+		return fmt.Errorf("invalid file check format: %s", step)
+	}
+
+	filename := match[1]
+	want := strings.TrimSpace(match[2])
+
+	want = strings.TrimPrefix(want, "'")
+	want = strings.TrimSuffix(want, "'")
+	want = strings.TrimPrefix(want, "\"")
+	want = strings.TrimSuffix(want, "\"")
+
+	if strings.HasPrefix(want, "file ") {
+		wantFilename := strings.TrimSpace(strings.TrimPrefix(want, "file "))
+		b, err := os.ReadFile(wantFilename)
+		if err != nil {
+			return fmt.Errorf("failed to read reference file %q: %w", wantFilename, err)
+		}
+		want = strings.TrimSpace(string(b))
+	}
+
+	fileContent, err := os.ReadFile(filename)
+	if err != nil {
+		return fmt.Errorf("failed to read file %q: %w", filename, err)
+	}
+	got := string(fileContent)
+
+	t.Logf("step: %q\nfile: %q\nwant: %q\ngot length: %d", step, filename, want, len(got))
+
+	// Check if the file contains the text
+	if !strings.Contains(got, want) {
+		return fmt.Errorf("file %q does not contain %q", filename, want)
+	}
+
 	return nil
 }
 

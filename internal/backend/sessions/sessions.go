@@ -1,9 +1,13 @@
 package sessions
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"strconv"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -118,6 +122,81 @@ func (s *sessions) GetLog(ctx context.Context, filter sdkservices.SessionLogReco
 	}
 
 	return rs, nil
+}
+
+func (s *sessions) DownloadLogs(ctx context.Context, sid sdktypes.SessionID) ([]byte, error) {
+	if err := authz.CheckContext(ctx, sid, "read:download-log"); err != nil {
+		return nil, err
+	}
+
+	var buf bytes.Buffer
+	pageSize := int32(200)
+	skip := int32(0)
+
+	for {
+		filter := sdkservices.SessionLogRecordsFilter{
+			SessionID: sid,
+			PaginationRequest: sdktypes.PaginationRequest{
+				PageSize: pageSize,
+				Skip:     skip,
+			},
+		}
+
+		logs, err := s.svcs.DB.GetSessionLog(ctx, filter)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, record := range logs.Records {
+			if err := writeFormattedSessionLog(&buf, record); err != nil {
+				return nil, err
+			}
+		}
+
+		if int32(len(logs.Records)) < pageSize {
+			break
+		}
+		skip += pageSize
+	}
+
+	return buf.Bytes(), nil
+}
+
+func writeFormattedSessionLog(buf io.StringWriter, record sdktypes.SessionLogRecord) error {
+	value, ok := record.GetPrint()
+	if !ok {
+		return nil
+	}
+
+	printStr, err := value.ToString()
+	if err != nil {
+		return fmt.Errorf("failed to convert value to string: %w", err)
+	}
+
+	// Decode escaped characters like \n and \".
+	if unquoted, err := strconv.Unquote(`"` + printStr + `"`); err == nil {
+		printStr = unquoted
+	}
+
+	lines := strings.Split(printStr, "\n")
+	if len(lines) == 0 {
+		return nil
+	}
+
+	// First line with timestamp.
+	firstLine := fmt.Sprintf("[%s]:  %s\n", record.Timestamp().Format("2006-01-02 15:04:05"), lines[0])
+	if _, err := buf.WriteString(firstLine); err != nil {
+		return fmt.Errorf("failed to write log line: %w", err)
+	}
+
+	// Indent subsequent lines.
+	for _, l := range lines[1:] {
+		if _, err := buf.WriteString("                        " + l + "\n"); err != nil {
+			return fmt.Errorf("failed to write indented line: %w", err)
+		}
+	}
+
+	return nil
 }
 
 func (s *sessions) Get(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.Session, error) {

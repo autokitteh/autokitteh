@@ -265,6 +265,26 @@ func (s *server) GetPrints(ctx context.Context, req *connect.Request[sessionsv1.
 	}), nil
 }
 
+func (s *server) DownloadLogs(ctx context.Context, req *connect.Request[sessionsv1.DownloadLogsRequest]) (*connect.Response[sessionsv1.DownloadLogsResponse], error) {
+	msg := req.Msg
+
+	if err := proto.Validate(msg); err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	sid, err := sdktypes.StrictParseSessionID(msg.SessionId)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	data, err := s.sessions.DownloadLogs(ctx, sid)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	return connect.NewResponse(&sessionsv1.DownloadLogsResponse{Data: data}), nil
+}
+
 func (s *server) List(ctx context.Context, req *connect.Request[sessionsv1.ListRequest]) (*connect.Response[sessionsv1.ListResponse], error) {
 	msg := req.Msg
 
