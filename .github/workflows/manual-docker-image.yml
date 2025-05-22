@@ -3,7 +3,7 @@
 # https://github.com/marketplace/actions/amazon-ecr-login-action-for-github-actions
 # https://github.com/marketplace/actions/build-and-push-docker-images
 
-name: manual_docker_image
+name: Manual Docker Image
 
 run-name: Publish image ${{inputs.enterprise && 'ee/server' || 'server'}}:${{inputs.version}} to ECR
 
