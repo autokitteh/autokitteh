@@ -1,7 +1,7 @@
 name: Build Image for Main Branch or PR
 concurrency:
     group: ${{ github.ref }}
-    cancel-in-progress: false
+    cancel-in-progress: true
 
 on:
     push:

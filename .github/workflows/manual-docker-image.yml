@@ -5,6 +5,10 @@
 
 name: Manual Docker Image
 
+concurrency:
+    group: ${{ github.ref }}
+    cancel-in-progress: true
+
 run-name: Publish image ${{inputs.enterprise && 'ee/server' || 'server'}}:${{inputs.version}} to ECR
 
 on:
