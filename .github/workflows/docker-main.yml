@@ -1,9 +1,4 @@
-# See also "docker-pr.yml", "manual-docker-image.yml", and "release.yml".
-# https://github.com/marketplace/actions/configure-aws-credentials-action-for-github-actions
-# https://github.com/marketplace/actions/amazon-ecr-login-action-for-github-actions
-# https://github.com/marketplace/actions/build-and-push-docker-images
-
-name: CI - Docker (main)
+name: Build Image
 concurrency:
     group: ${{ github.ref }}
     cancel-in-progress: false
