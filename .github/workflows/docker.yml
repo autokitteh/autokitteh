@@ -9,16 +9,17 @@ on:
     workflow_call:
         inputs:
             push:
-                required: true
                 type: boolean
+                default: false
             image:
                 required: true
                 type: string
             buildTags:
-                required: true
                 type: string
-            tags:
+                default: ""
+            version:
                 type: string
+                default: ""
 
 jobs:
     image:
@@ -67,7 +68,7 @@ jobs:
                   context: .
                   platforms: linux/amd64
                   labels: ${{ steps.meta.outputs.labels }}
-                  tags: ${{ inputs.tags != '' && inputs.tags || steps.meta.outputs.tags }}
+                  tags: ${{ inputs.version != '' && inputs.version || steps.meta.outputs.tags }}
                   push: ${{ inputs.push }}
                   provenance: false
-                  build-args: ${{ inputs.buildTags }}
+                  build-args: BUILD_TAGS="-tags=${{ inputs.buildTags }}"

@@ -52,5 +52,5 @@ jobs:
         with:
             push: true
             image: ee/server
-            buildTags: "-tags=enterprise"
+            buildTags: "enterprise"
         secrets: inherit

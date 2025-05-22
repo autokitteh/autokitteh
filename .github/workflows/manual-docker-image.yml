@@ -5,7 +5,7 @@
 
 name: manual_docker_image
 
-run-name: Publish image autokitteh:${{inputs.version}} to ECR
+run-name: Publish image ${{inputs.enterprise && 'ee/server' || 'server'}}:${{inputs.version}} to ECR
 
 on:
     workflow_dispatch:
@@ -27,8 +27,7 @@ jobs:
         with:
             push: true
             image: server
-            buildTags: ""
-            tags: ${{ inputs.version }}
+            version: ${{ inputs.version }}
         secrets: inherit
     build-ee:
         if: ${{ inputs.enterprise }}
@@ -36,6 +35,6 @@ jobs:
         with:
             push: true
             image: ee/server
-            buildTags: "-tags=enterprise"
-            tags: ${{ inputs.version }}
+            buildTags: "enterprise"
+            version: ${{ inputs.version }}
         secrets: inherit

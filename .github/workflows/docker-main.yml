@@ -19,12 +19,11 @@ jobs:
         with:
             push: ${{ github.event_name == 'push' }}
             image: server
-            buildTags: ""
         secrets: inherit
     build-ee:
         uses: ./.github/workflows/docker.yml
         with:
             push: ${{ github.event_name == 'push' }}
             image: ee/server
-            buildTags: "-tags=enterprise"
+            buildTags: "enterprise"
         secrets: inherit
