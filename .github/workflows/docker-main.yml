@@ -42,7 +42,7 @@ jobs:
               id: meta
               uses: docker/metadata-action@v5
               with:
-                  images: ${{ steps.login-ecr.outputs.registry }}/autokitteh/autokitteh/server
+                  images: ${{ steps.login-ecr.outputs.registry }}/autokitteh/server
                   tags: |
                       type=ref,event=branch
                       type=semver,pattern={{version}}

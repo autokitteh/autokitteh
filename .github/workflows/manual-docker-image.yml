@@ -45,6 +45,6 @@ jobs:
               with:
                   context: .
                   platforms: linux/amd64
-                  tags: ${{steps.login-ecr.outputs.registry}}/autokitteh/autokitteh/server:${{inputs.version}}
+                  tags: ${{steps.login-ecr.outputs.registry}}/autokitteh/server:${{inputs.version}}
                   push: true
                   provenance: false
