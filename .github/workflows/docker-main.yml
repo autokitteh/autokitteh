@@ -36,11 +36,13 @@ jobs:
             - name: Login to Amazon ECR
               id: login-ecr
               uses: aws-actions/amazon-ecr-login@v2
+              with:
+                  registry-type: public
             - name: Metadata
               id: meta
               uses: docker/metadata-action@v5
               with:
-                  images: ${{ steps.login-ecr.outputs.registry }}/autokitteh
+                  images: ${{ steps.login-ecr.outputs.registry }}/autokitteh/server
                   tags: |
                       type=ref,event=branch
                       type=semver,pattern={{version}}
