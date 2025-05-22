@@ -46,9 +46,11 @@ jobs:
             push: true
             image: server
             buildTags: ""
+        secrets: inherit
     build-ee:
         uses: ./.github/workflows/docker.yml
         with:
             push: true
             image: ee/server
             buildTags: "-tags=enterprise"
+        secrets: inherit

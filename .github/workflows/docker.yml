@@ -17,6 +17,8 @@ on:
             buildTags:
                 required: true
                 type: string
+            tags:
+                type: string
 
 jobs:
     image:
@@ -65,7 +67,7 @@ jobs:
                   context: .
                   platforms: linux/amd64
                   labels: ${{ steps.meta.outputs.labels }}
-                  tags: ${{ steps.meta.outputs.tags }}
+                  tags: ${{ inputs.tags != '' && inputs.tags || steps.meta.outputs.tags }}
                   push: ${{ inputs.push }}
                   provenance: false
                   build-args: ${{ inputs.buildTags }}
