@@ -277,7 +277,7 @@ class Runner(pb.runner_rpc.RunnerService):
             except grpc.RpcError:
                 break
             sleep(period)
-        
+
         if self._stopped:
             log.info("Runner %s stopped, exiting", self.id)
             return
@@ -561,7 +561,7 @@ class Runner(pb.runner_rpc.RunnerService):
         try:
             self.worker.Print(req)
         except grpc.RpcError as err:
-            if err.code() ==s grpc.StatusCode.UNAVAILABLE or grpc.StatusCode.CANCELLED:
+            if err.code() == grpc.StatusCode.UNAVAILABLE or grpc.StatusCode.CANCELLED:
                 log.error("grpc cancelled or unavailable, killing self")
                 self.server.stop(SERVER_GRACE_TIMEOUT)
             log.error("print: %s", err)
