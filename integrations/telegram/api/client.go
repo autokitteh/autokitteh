@@ -17,20 +17,25 @@ const (
 
 // Client is a Telegram Bot API client
 type Client struct {
-	token      string
-	baseURL    string 
-	httpClient *http.Client
+    token      string
+    baseURL    string  // ADD THIS LINE
+    httpClient *http.Client
 }
 
 // NewClient creates a new Telegram API client
 func NewClient(token string) *Client {
-	return &Client{
-		baseURL: telegramAPIURL + token,
-		token: token,
-		httpClient: &http.Client{
-			Timeout: defaultTimeout,
-		},
-	}
+    return &Client{
+        token:   token,
+        baseURL: telegramAPIURL + token,  // ADD THIS LINE
+        httpClient: &http.Client{
+            Timeout: defaultTimeout,
+        },
+    }
+}
+
+// Add test helper method
+func (c *Client) setBaseURLForTesting(url string) {
+    c.baseURL = url
 }
 
 // APIResponse represents a response from the Telegram Bot API
@@ -116,6 +121,116 @@ type SetWebhookParams struct {
 	AllowedUpdates []string `json:"allowed_updates,omitempty"`
 	DropPendingUpdates bool `json:"drop_pending_updates,omitempty"`
 	SecretToken    string   `json:"secret_token,omitempty"`
+}
+
+// InlineKeyboardMarkup represents an inline keyboard
+type InlineKeyboardMarkup struct {
+    InlineKeyboard [][]InlineKeyboardButton `json:"inline_keyboard"`
+}
+
+// InlineKeyboardButton represents one button of an inline keyboard
+type InlineKeyboardButton struct {
+    Text                         string `json:"text"`
+    URL                          string `json:"url,omitempty"`
+    CallbackData                 string `json:"callback_data,omitempty"`
+    WebApp                       *WebApp `json:"web_app,omitempty"`
+    SwitchInlineQuery            string `json:"switch_inline_query,omitempty"`
+    SwitchInlineQueryCurrentChat string `json:"switch_inline_query_current_chat,omitempty"`
+}
+
+// ReplyKeyboardMarkup represents a custom keyboard with reply options
+type ReplyKeyboardMarkup struct {
+    Keyboard              [][]KeyboardButton `json:"keyboard"`
+    ResizeKeyboard        bool               `json:"resize_keyboard,omitempty"`
+    OneTimeKeyboard       bool               `json:"one_time_keyboard,omitempty"`
+    InputFieldPlaceholder string             `json:"input_field_placeholder,omitempty"`
+    Selective             bool               `json:"selective,omitempty"`
+}
+
+// KeyboardButton represents one button of the reply keyboard
+type KeyboardButton struct {
+    Text            string                  `json:"text"`
+    RequestContact  bool                    `json:"request_contact,omitempty"`
+    RequestLocation bool                    `json:"request_location,omitempty"`
+    RequestPoll     *KeyboardButtonPollType `json:"request_poll,omitempty"`
+    WebApp          *WebApp                 `json:"web_app,omitempty"`
+}
+
+// KeyboardButtonPollType represents type of poll which is allowed to be created and sent when the corresponding button is pressed
+type KeyboardButtonPollType struct {
+    Type string `json:"type,omitempty"`
+}
+
+// WebApp represents a parameter of the inline keyboard button used to launch a Web App
+type WebApp struct {
+    URL string `json:"url"`
+}
+
+// ReplyKeyboardRemove represents a parameter to hide the current custom keyboard and display the default letter-keyboard
+type ReplyKeyboardRemove struct {
+    RemoveKeyboard bool `json:"remove_keyboard"`
+    Selective      bool `json:"selective,omitempty"`
+}
+
+// ForceReply represents a parameter to display a reply interface to the user
+type ForceReply struct {
+    ForceReply            bool   `json:"force_reply"`
+    InputFieldPlaceholder string `json:"input_field_placeholder,omitempty"`
+    Selective             bool   `json:"selective,omitempty"`
+}
+
+// CallbackQuery represents an incoming callback query from a callback button in an inline keyboard
+type CallbackQuery struct {
+    ID              string   `json:"id"`
+    From            User     `json:"from"`
+    Message         *Message `json:"message,omitempty"`
+    InlineMessageID string   `json:"inline_message_id,omitempty"`
+    ChatInstance    string   `json:"chat_instance"`
+    Data            string   `json:"data,omitempty"`
+    GameShortName   string   `json:"game_short_name,omitempty"`
+}
+
+// Update represents an incoming update
+type Update struct {
+    UpdateID           int             `json:"update_id"`
+    Message            *Message        `json:"message,omitempty"`
+    EditedMessage      *Message        `json:"edited_message,omitempty"`
+    ChannelPost        *Message        `json:"channel_post,omitempty"`
+    EditedChannelPost  *Message        `json:"edited_channel_post,omitempty"`
+    CallbackQuery      *CallbackQuery  `json:"callback_query,omitempty"`
+    // Add other update types as needed
+}
+
+// Helper functions for creating keyboards
+func NewInlineKeyboard(buttons [][]InlineKeyboardButton) *InlineKeyboardMarkup {
+    return &InlineKeyboardMarkup{InlineKeyboard: buttons}
+}
+
+func NewInlineButton(text, callbackData string) InlineKeyboardButton {
+    return InlineKeyboardButton{Text: text, CallbackData: callbackData}
+}
+
+func NewInlineURLButton(text, url string) InlineKeyboardButton {
+    return InlineKeyboardButton{Text: text, URL: url}
+}
+
+func NewReplyKeyboard(buttons [][]KeyboardButton) *ReplyKeyboardMarkup {
+    return &ReplyKeyboardMarkup{Keyboard: buttons}
+}
+
+func NewKeyboardButton(text string) KeyboardButton {
+    return KeyboardButton{Text: text}
+}
+
+// AnswerCallbackQuery answers a callback query
+func (c *Client) AnswerCallbackQuery(ctx context.Context, callbackQueryID, text string, showAlert bool) error {
+    params := map[string]interface{}{
+        "callback_query_id": callbackQueryID,
+        "text":              text,
+        "show_alert":        showAlert,
+    }
+    _, err := c.makeRequest(ctx, "answerCallbackQuery", params)
+    return err
 }
 
 // makeRequest makes a request to the Telegram Bot API

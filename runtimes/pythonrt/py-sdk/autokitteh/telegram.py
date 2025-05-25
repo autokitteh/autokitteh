@@ -244,41 +244,45 @@ def format_message(text: str, parse_mode: str = "Markdown") -> dict:
     
     return {"text": text, "parse_mode": parse_mode}
 
-
-def create_inline_keyboard(buttons: list) -> dict:
-    """Create an inline keyboard markup.
+def create_inline_keyboard(buttons):
+    """Create an inline keyboard from button definitions.
     
     Args:
-        buttons: List of button rows, where each row is a list of buttons.
-                Each button is a dict with 'text' and either 'callback_data' or 'url'.
-                
-    Example:
-        buttons = [
-            [{"text": "Button 1", "callback_data": "data1"}],
-            [{"text": "Button 2", "url": "https://example.com"}]
-        ]
-    
-    Returns:
-        Inline keyboard markup ready for use in send_message.
+        buttons: List of lists of button definitions
+                [
+                    [{"text": "Button 1", "callback_data": "btn1"}],
+                    [{"text": "Button 2", "url": "https://example.com"}]
+                ]
     """
-    return {"inline_keyboard": buttons}
+    return {
+        "inline_keyboard": [
+            [{"text": btn["text"], **{k: v for k, v in btn.items() if k != "text"}}
+             for btn in row]
+            for row in buttons
+        ]
+    }
 
-
-def create_reply_keyboard(buttons: list, **kwargs) -> dict:
-    """Create a custom reply keyboard markup.
+def create_reply_keyboard(buttons, resize_keyboard=True, one_time_keyboard=False):
+    """Create a reply keyboard from button definitions.
     
     Args:
-        buttons: List of button rows, where each row is a list of button texts.
-        **kwargs: Additional parameters like resize_keyboard, one_time_keyboard, etc.
-                
-    Example:
-        buttons = [
-            ["Yes", "No"],
-            ["Maybe", "Cancel"]
-        ]
-    
-    Returns:
-        Reply keyboard markup ready for use in send_message.
+        buttons: List of lists of button text strings
+                [["Button 1", "Button 2"], ["Button 3"]]
     """
-    keyboard = [[{"text": text} for text in row] for row in buttons]
-    return {"keyboard": keyboard, **kwargs}
+    return {
+        "keyboard": [[{"text": btn} for btn in row] for row in buttons],
+        "resize_keyboard": resize_keyboard,
+        "one_time_keyboard": one_time_keyboard
+    }
+
+def send_message_with_keyboard(chat_id, text, keyboard=None):
+    """Send a message with an optional keyboard."""
+    client = telegram_client()
+    params = {
+        "chat_id": chat_id,
+        "text": text
+    }
+    if keyboard:
+        params["reply_markup"] = keyboard
+    
+    return client.send_message(params)

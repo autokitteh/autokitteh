@@ -10,8 +10,10 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations/common"
+	"go.autokitteh.dev/autokitteh/integrations/telegram/api"
 	"go.autokitteh.dev/autokitteh/integrations/telegram/events"
 	"go.autokitteh.dev/autokitteh/integrations/telegram/vars"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -35,6 +37,15 @@ type handler struct {
 
 func NewHandler(l *zap.Logger, v sdkservices.Vars, d sdkservices.DispatchFunc, i sdktypes.IntegrationID) handler {
 	return handler{logger: l, vars: v, dispatch: d, integrationID: i}
+}
+
+func (h *handler) dispatchAsyncEventsToConnections(ctx context.Context, cids []sdktypes.ConnectionID, e sdktypes.Event) {
+	for _, cid := range cids {
+		_, err := h.dispatch(ctx, e.WithConnectionDestinationID(cid), nil)
+		if err != nil {
+			h.logger.Warn("event dispatch failed", zap.Error(err), zap.String("connection_id", cid.String()))
+		}
+	}
 }
 
 // checkRequest checks that the given HTTP request has a valid content type and
@@ -90,54 +101,152 @@ func (h handler) findConnectionID(ctx context.Context, update events.Update, l *
 	return cids[0], nil
 }
 
-// HandleUpdate handles incoming Telegram updates (webhooks).
-func (h handler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
-	l := h.logger.With(zap.String("handler", "update"))
-
-	// Check and read the request.
-	body := h.checkRequest(w, r, l)
-	if body == nil {
-		return // checkRequest already sent an HTTP error response.
+// Helper to wrap a Telegram message as an event (since events.WrapMessage does not exist)
+func wrapMessage(msg *api.Message, cid sdktypes.ConnectionID) (sdktypes.Event, error) {
+	// Convert api.Message to events.Message via JSON marshal/unmarshal
+	b, err := json.Marshal(msg)
+	if err != nil {
+		return sdktypes.InvalidEvent, err
 	}
+	var em events.Message
+	if err := json.Unmarshal(b, &em); err != nil {
+		return sdktypes.InvalidEvent, err
+	}
+	wrapped, err := sdktypes.WrapValue(em)
+	if err != nil {
+		return sdktypes.InvalidEvent, err
+	}
+	data, err := wrapped.ToStringValuesMap()
+	if err != nil {
+		return sdktypes.InvalidEvent, err
+	}
+	return sdktypes.EventFromProto(&sdktypes.EventPB{
+		EventType: "telegram_message",
+		Data:      kittehs.TransformMapValues(data, sdktypes.ToProto),
+	})
+}
 
-	// Parse the Telegram update.
-	var update events.Update
-	if err := json.Unmarshal(body, &update); err != nil {
-		l.Warn("incoming event: invalid JSON", zap.Error(err))
+// func (h *Handler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
+func (h *handler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
+	l := h.logger.With(zap.String("url_path", UpdatePath))
+
+	// Read the request body
+	defer r.Body.Close()
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		l.Error("Failed to read request body", zap.Error(err))
 		common.HTTPError(w, http.StatusBadRequest)
 		return
 	}
 
-	l = l.With(zap.Int64("update_id", update.UpdateID))
-
-	// Find the relevant AutoKitteh connection.
-	ctx := r.Context()
-	cid, err := h.findConnectionID(ctx, update, l)
-	if err != nil {
-		l.Warn("incoming event: connection not found", zap.Error(err))
-		common.HTTPError(w, http.StatusNotFound)
+	var update api.Update
+	if err := json.Unmarshal(body, &update); err != nil {
+		l.Error("Failed to parse webhook payload", zap.Error(err))
+		common.HTTPError(w, http.StatusBadRequest)
 		return
 	}
 
-	l = l.With(zap.String("connection_id", cid.String()))
+	var akEvent sdktypes.Event
+	var eventType string
 
-	// Dispatch the event to AutoKitteh.
-	wrapped, err := events.WrapUpdate(update, cid, h.integrationID)
+	// Determine event type and transform accordingly
+	switch {
+	case update.Message != nil:
+		eventType = "message"
+		akEvent, err = h.transformMessage(update.Message)
+	case update.CallbackQuery != nil:
+		eventType = "callback_query"
+		akEvent, err = h.transformCallbackQuery(update.CallbackQuery)
+	case update.EditedMessage != nil:
+		eventType = "edited_message"
+		akEvent, err = h.transformMessage(update.EditedMessage)
+	default:
+		l.Debug("Ignoring unsupported update type")
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
 	if err != nil {
-		l.Error("incoming event: failed to wrap", zap.Error(err))
+		l.Error("Failed to transform update", zap.String("type", eventType), zap.Error(err))
 		common.HTTPError(w, http.StatusInternalServerError)
 		return
 	}
 
-	eid, err := h.dispatch(ctx, wrapped, nil)
+	// Find connections and dispatch event
+	cids, err := h.findConnectionsForBot(r.Context())
 	if err != nil {
-		l.Error("incoming event: dispatch failed", zap.Error(err))
+		l.Error("Failed to find connections", zap.Error(err))
 		common.HTTPError(w, http.StatusInternalServerError)
 		return
 	}
 
-	l.Info("incoming event dispatched", zap.String("event_id", eid.String()))
+	h.dispatchAsyncEventsToConnections(r.Context(), cids, akEvent)
 
-	// Telegram expects a 200 OK response to acknowledge receipt.
+	// Handle callback query acknowledgment
+	if update.CallbackQuery != nil {
+		h.answerCallbackQuery(r.Context(), update.CallbackQuery)
+	}
+
 	w.WriteHeader(http.StatusOK)
+}
+
+// transformMessage transforms a Telegram message into an AutoKitteh event.
+func (h *handler) transformMessage(msg *api.Message) (sdktypes.Event, error) {
+	cids, err := h.findConnectionsForBot(context.Background())
+	if err != nil || len(cids) == 0 {
+		return sdktypes.InvalidEvent, fmt.Errorf("no Telegram connections found: %w", err)
+	}
+	return wrapMessage(msg, cids[0])
+}
+
+// transformCallbackQuery transforms a Telegram callback query into an AutoKitteh event.
+func (h *handler) transformCallbackQuery(callback *api.CallbackQuery) (sdktypes.Event, error) {
+	wrapped, err := sdktypes.WrapValue(callback)
+	if err != nil {
+		return sdktypes.InvalidEvent, err
+	}
+	data, err := wrapped.ToStringValuesMap()
+	if err != nil {
+		return sdktypes.InvalidEvent, err
+	}
+	return sdktypes.EventFromProto(&sdktypes.EventPB{
+		EventType: "callback_query",
+		Data:      kittehs.TransformMapValues(data, sdktypes.ToProto),
+	})
+}
+
+// findConnectionsForBot finds all connection IDs for the current integration.
+func (h *handler) findConnectionsForBot(ctx context.Context) ([]sdktypes.ConnectionID, error) {
+	cids, err := h.vars.FindConnectionIDs(ctx, h.integrationID, vars.BotTokenVar, "")
+	if err != nil {
+		return nil, fmt.Errorf("failed to find connection IDs: %w", err)
+	}
+	if len(cids) == 0 {
+		return nil, fmt.Errorf("no Telegram connections found")
+	}
+	return cids, nil
+}
+
+// answerCallbackQuery acknowledges a callback query using the bot token from the first connection.
+func (h *handler) answerCallbackQuery(ctx context.Context, callback *api.CallbackQuery) {
+	cids, err := h.findConnectionsForBot(ctx)
+	if err != nil || len(cids) == 0 {
+		h.logger.Warn("No Telegram connections found for answering callback query", zap.Error(err))
+		return
+	}
+	vs, err := h.vars.Get(ctx, sdktypes.NewVarScopeID(cids[0]))
+	if err != nil {
+		h.logger.Warn("Failed to get vars for connection", zap.Error(err))
+		return
+	}
+	token := vs.GetValue(vars.BotTokenVar)
+	if token == "" {
+		h.logger.Warn("Bot token not found in connection vars")
+		return
+	}
+	client := api.NewClient(token)
+	err = client.AnswerCallbackQuery(ctx, callback.ID, "Button pressed!", false)
+	if err != nil {
+		h.logger.Warn("Failed to answer callback query", zap.Error(err))
+	}
 }

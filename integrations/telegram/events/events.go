@@ -10,37 +10,37 @@ import (
 // Update represents a Telegram update object
 // https://core.telegram.org/bots/api#update
 type Update struct {
-	UpdateID          int64              `json:"update_id"`
-	Message           *Message           `json:"message,omitempty"`
-	EditedMessage     *Message           `json:"edited_message,omitempty"`
-	ChannelPost       *Message           `json:"channel_post,omitempty"`
-	EditedChannelPost *Message           `json:"edited_channel_post,omitempty"`
-	CallbackQuery     *CallbackQuery     `json:"callback_query,omitempty"`
-	InlineQuery       *InlineQuery       `json:"inline_query,omitempty"`
+	UpdateID           int64               `json:"update_id"`
+	Message            *Message            `json:"message,omitempty"`
+	EditedMessage      *Message            `json:"edited_message,omitempty"`
+	ChannelPost        *Message            `json:"channel_post,omitempty"`
+	EditedChannelPost  *Message            `json:"edited_channel_post,omitempty"`
+	CallbackQuery      *CallbackQuery      `json:"callback_query,omitempty"`
+	InlineQuery        *InlineQuery        `json:"inline_query,omitempty"`
 	ChosenInlineResult *ChosenInlineResult `json:"chosen_inline_result,omitempty"`
 }
 
 // Message represents a Telegram message
 // https://core.telegram.org/bots/api#message
 type Message struct {
-	MessageID         int64     `json:"message_id"`
-	From              *User     `json:"from,omitempty"`
-	Date              int64     `json:"date"`
-	Chat              Chat      `json:"chat"`
-	ForwardFrom       *User     `json:"forward_from,omitempty"`
-	ForwardFromChat   *Chat     `json:"forward_from_chat,omitempty"`
-	ForwardDate       int64     `json:"forward_date,omitempty"`
-	ReplyToMessage    *Message  `json:"reply_to_message,omitempty"`
-	EditDate          int64     `json:"edit_date,omitempty"`
-	Text              string    `json:"text,omitempty"`
-	Entities          []MessageEntity `json:"entities,omitempty"`
-	Photo             []PhotoSize `json:"photo,omitempty"`
-	Document          *Document `json:"document,omitempty"`
-	Video             *Video    `json:"video,omitempty"`
-	Voice             *Voice    `json:"voice,omitempty"`
-	Caption           string    `json:"caption,omitempty"`
-	Contact           *Contact  `json:"contact,omitempty"`
-	Location          *Location `json:"location,omitempty"`
+	MessageID       int64           `json:"message_id"`
+	From            *User           `json:"from,omitempty"`
+	Date            int64           `json:"date"`
+	Chat            Chat            `json:"chat"`
+	ForwardFrom     *User           `json:"forward_from,omitempty"`
+	ForwardFromChat *Chat           `json:"forward_from_chat,omitempty"`
+	ForwardDate     int64           `json:"forward_date,omitempty"`
+	ReplyToMessage  *Message        `json:"reply_to_message,omitempty"`
+	EditDate        int64           `json:"edit_date,omitempty"`
+	Text            string          `json:"text,omitempty"`
+	Entities        []MessageEntity `json:"entities,omitempty"`
+	Photo           []PhotoSize     `json:"photo,omitempty"`
+	Document        *Document       `json:"document,omitempty"`
+	Video           *Video          `json:"video,omitempty"`
+	Voice           *Voice          `json:"voice,omitempty"`
+	Caption         string          `json:"caption,omitempty"`
+	Contact         *Contact        `json:"contact,omitempty"`
+	Location        *Location       `json:"location,omitempty"`
 }
 
 // User represents a Telegram user
@@ -165,7 +165,7 @@ type ChosenInlineResult struct {
 // WrapUpdate wraps a Telegram update in an AutoKitteh event
 func WrapUpdate(update Update, cid sdktypes.ConnectionID, iid sdktypes.IntegrationID) (sdktypes.Event, error) {
 	eventType := determineEventType(update)
-	
+
 	// Convert the update using AutoKitteh's value wrapper
 	wrapped, err := sdktypes.WrapValue(update)
 	if err != nil {
