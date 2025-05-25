@@ -1,0 +1,125 @@
+body {
+  background-color: white;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  margin-left: 50px;
+}
+
+img.banner {
+  margin: 50px 0px 32px;
+  width: 250px;
+  height: auto;
+}
+
+img.logo {
+  height: 32px;
+  width: auto;
+}
+
+table.title {
+  border: none;
+  border-collapse: collapse;
+  margin-bottom: 32px;
+}
+
+td {
+  vertical-align: middle;
+  padding-right: 16px;
+}
+
+h1 {
+  margin: 0px;
+}
+
+h2 {
+  margin-bottom: 32px;
+}
+
+.form-group {
+  margin-bottom: 32px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.form-group input {
+  width: 320px;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 14px;
+  transition: border-color 0.3s;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.form-group input[type="password"] {
+  font-family: monospace;
+}
+
+.help-text {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #666;
+  line-height: 1.4;
+}
+
+.help-text a {
+  color: #3498db;
+  text-decoration: none;
+}
+
+.help-text a:hover {
+  text-decoration: underline;
+}
+
+.hidden {
+  display: none;
+}
+
+.submit-btn {
+  display: inline-block;
+  margin-top: 32px;
+  padding: 12px 24px;
+  background-color: #0088cc;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.submit-btn:hover:not(:disabled) {
+  background-color: #006fa3;
+}
+
+.submit-btn:disabled {
+  background-color: #bdc3c7;
+  cursor: not-allowed;
+}
+
+/* Telegram brand colors */
+.telegram-accent {
+  color: #0088cc;
+}
+
+/* Error states */
+.error {
+  border-color: #e74c3c !important;
+  background-color: #fdf2f2 !important;
+}
+
+.error-message {
+  color: #e74c3c;
+  font-size: 12px;
+  margin-top: 4px;
+}

@@ -30,6 +30,7 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/oauth"
 	"go.autokitteh.dev/autokitteh/integrations/salesforce"
 	"go.autokitteh.dev/autokitteh/integrations/slack"
+	"go.autokitteh.dev/autokitteh/integrations/telegram"
 	"go.autokitteh.dev/autokitteh/integrations/twilio"
 	"go.autokitteh.dev/autokitteh/integrations/zoom"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
@@ -111,6 +112,7 @@ func integrationsFXOption() fx.Option {
 		integration("salesforce", configset.Empty, salesforce.New),
 		integration("sheets", configset.Empty, sheets.New),
 		integration("slack", configset.Empty, slack.New),
+		integration("telegram", configset.Empty, telegram.New),
 		integration("twilio", configset.Empty, twilio.New),
 		integration("zoom", configset.Empty, zoom.New),
 		fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, muxes *muxes.Muxes, vars sdkservices.Vars, oauth *oauth.OAuth, dispatch sdkservices.DispatchFunc) {
@@ -131,6 +133,7 @@ func integrationsFXOption() fx.Option {
 				microsoft.Start(l, muxes, vars, oauth, dispatch)
 				salesforce.Start(l, muxes, vars, oauth, dispatch)
 				slack.Start(l, muxes, vars, dispatch)
+				telegram.Start(l, muxes, vars, dispatch)
 				twilio.Start(l, muxes, vars, dispatch)
 				zoom.Start(l, muxes, vars, oauth, dispatch)
 				return nil

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>AutoKitteh - Telegram</title>
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/static/apple-touch-icon.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/static/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/static/favicon-16x16.png"
+    />
+    <link rel="manifest" href="/static/site.webmanifest" />
+    <link rel="stylesheet" type="text/css" href="styles.css" />
+    <meta name="robots" content="noindex, nofollow" />
+    <script src="form.js" defer></script>
+  </head>
+
+  <body>
+    <a href="/" target="_self">
+      <img class="banner" src="/static/banner.svg" alt="AutoKitteh" />
+    </a>
+
+    <table class="title">
+      <td><img class="logo" src="/static/images/telegram.svg" alt="Logo" /></td>
+      <td><h1>Telegram - Initialize Connection</h1></td>
+    </table>
+
+    <form method="post" action="/telegram/save">
+      <h2>Query Params From the URL</h2>
+
+      <div class="form-group">
+        <label for="cid">Connection ID</label>
+        <input type="text" name="cid" id="cid" readonly />
+      </div>
+
+      <div class="form-group">
+        <label for="origin">Request Origin</label>
+        <input type="text" name="origin" id="origin" readonly />
+      </div>
+
+      <h2>Bot Configuration</h2>
+
+      <div class="form-group">
+        <label for="bot_token">Bot Token <i>(required)</i></label>
+        <input
+          type="password"
+          id="botToken"
+          name="bot_token"
+          placeholder="Enter your Telegram bot token (e.g., 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11)"
+          autocomplete="off"
+          spellcheck="false"
+          required
+        />
+        <small class="help-text">
+          Get your bot token by creating a new bot with <a href="https://t.me/botfather" target="_blank">@BotFather</a> on Telegram.
+        </small>
+      </div>
+
+      <div class="form-group">
+        <label for="webhook_secret">Webhook Secret <i>(optional)</i></label>
+        <input
+          type="password"
+          id="webhookSecret"
+          name="webhook_secret"
+          placeholder="Enter a secret for webhook verification (recommended for security)"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <small class="help-text">
+          Optional secret token for webhook verification. Use a random string to enhance security.
+        </small>
+      </div>
+
+      <button type="submit" class="submit-btn" id="submit">
+        Save Connection
+      </button>
+    </form>
+  </body>
+</html>

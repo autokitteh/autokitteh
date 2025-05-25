@@ -73,6 +73,9 @@ var SalesforceWebContent embed.FS
 //go:embed slack
 var SlackWebContent embed.FS
 
+//go:embed telegram
+var TelegramWebContent embed.FS
+
 //go:embed twilio
 var TwilioWebContent embed.FS
 
