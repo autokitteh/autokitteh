@@ -149,7 +149,6 @@ func (h *handler) HandleUpdate(w http.ResponseWriter, r *http.Request) {
 	var akEvent sdktypes.Event
 	var eventType string
 
-	// Determine event type and transform accordingly
 	switch {
 	case update.Message != nil:
 		eventType = "message"
