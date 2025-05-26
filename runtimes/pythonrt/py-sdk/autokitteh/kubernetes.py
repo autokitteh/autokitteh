@@ -1,13 +1,13 @@
-import json
 import os
 import tempfile
+from types import ModuleType
 
 from kubernetes import client, config
 from .connections import check_connection_name
 from .errors import ConnectionInitError
 
 
-def kubernetes_client(connection: str):  # TODO: add type hints
+def kubernetes_client(connection: str) -> ModuleType:
     """Initialize a Kubernetes client, based on an AutoKitteh connection.
 
     Args:
@@ -28,14 +28,13 @@ def kubernetes_client(connection: str):  # TODO: add type hints
     if not config_file:
         raise ConnectionInitError(connection)
 
-    parsed = json.loads(config_file)
-    with tempfile.NamedTemporaryFile(delete=False, mode="w") as temp_file:
-        json.dump(parsed, temp_file, indent=2)
-        temp_path = temp_file.name
-
     try:
+        with tempfile.NamedTemporaryFile(delete=False, mode="w") as temp_file:
+            temp_file.write(config_file)
+            temp_path = temp_file.name
+
         config.load_kube_config(config_file=temp_path)
-    except config.ConfigException as e:
+    except Exception as e:
         raise ConnectionInitError(connection) from e
     finally:
         os.unlink(temp_path)
