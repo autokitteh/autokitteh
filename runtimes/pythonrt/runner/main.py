@@ -545,7 +545,7 @@ class Runner(pb.runner_rpc.RunnerService):
             self.worker.Done(req)
         except Exception as err:
             log.error("on_event: done send error: %r", err)
-        
+
         self.server.stop(SERVER_GRACE_TIMEOUT)
 
     @mark_no_activity
