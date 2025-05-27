@@ -18,7 +18,8 @@ def kubernetes_client(connection: str) -> ModuleType:
 
     Raises:
         ValueError: AutoKitteh connection name is invalid.
-        ConnectionInitError: AutoKitteh connection was not initialized yet.
+        ConnectionInitError: If the connection config is missing or invalid,
+            or if an unexpected error occurs during client initialization.
 
     """
     check_connection_name(connection)
@@ -34,8 +35,11 @@ def kubernetes_client(connection: str) -> ModuleType:
             temp_path = temp_file.name
 
         config.load_kube_config(config_file=temp_path)
+    except config.ConfigException as e:
+        raise ConnectionInitError(connection) from e
     except Exception as e:
         raise ConnectionInitError(connection) from e
+
     finally:
         os.unlink(temp_path)
 
