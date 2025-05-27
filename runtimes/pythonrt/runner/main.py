@@ -279,7 +279,7 @@ class Runner(pb.runner_rpc.RunnerService):
             sleep(period)
 
         if self._stopped:
-            log.info("Runner %s stopped, exiting", self.id)
+            log.info("Runner %s stopped, stopping should_keep_running loop", self.id)
             return
 
         log.error("could not verify if should keep running, killing self")
@@ -545,6 +545,8 @@ class Runner(pb.runner_rpc.RunnerService):
             self.worker.Done(req)
         except Exception as err:
             log.error("on_event: done send error: %r", err)
+
+        self.server.stop(SERVER_GRACE_TIMEOUT)
 
     @mark_no_activity
     def ak_print(self, *objects, sep=" ", end="\n", file=None, flush=False):
