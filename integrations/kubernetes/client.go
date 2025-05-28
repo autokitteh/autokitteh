@@ -3,11 +3,13 @@ package kubernetes
 import (
 	"context"
 
+	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
+	"go.uber.org/zap"
 )
 
 var (
@@ -29,10 +31,27 @@ func New(vars sdkservices.Vars) sdkservices.Integration {
 	)
 }
 
-// TODO: Implement the connection status functions for Kubernetes integration.
-func connStatus(_ *integration) sdkintegrations.OptFn {
+func connStatus(i *integration) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
-		return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+		if !cid.IsValid() {
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+		}
+
+		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+		if err != nil {
+			zap.L().Error("failed to read connection vars", zap.String("connection_id", cid.String()), zap.Error(err))
+			return sdktypes.InvalidStatus, err
+		}
+
+		at := vs.Get(authTypeVar)
+		if !at.IsValid() || at.Value() == "" {
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+		}
+
+		if at.Value() == integrations.Init {
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Initialized"), nil
+		}
+		return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil
 	})
 }
 

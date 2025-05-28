@@ -1,5 +1,5 @@
+import json
 import os
-import tempfile
 from types import ModuleType
 
 from kubernetes import client, config
@@ -30,17 +30,13 @@ def kubernetes_client(connection: str) -> ModuleType:
         raise ConnectionInitError(connection)
 
     try:
-        with tempfile.NamedTemporaryFile(delete=False, mode="w") as temp_file:
-            temp_file.write(config_file)
-            temp_path = temp_file.name
-
-        config.load_kube_config(config_file=temp_path)
+        config_dict = json.loads(config_file)
+        config.load_kube_config_from_dict(config_dict)
     except config.ConfigException as e:
         raise ConnectionInitError(connection) from e
     except Exception as e:
-        raise ConnectionInitError(connection) from e
-
-    finally:
-        os.unlink(temp_path)
+        raise RuntimeError(
+            f"Internal error while initializing Kubernetes client for connection '{connection}''"
+        ) from e
 
     return client
