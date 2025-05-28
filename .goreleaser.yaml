@@ -72,7 +72,7 @@ release:
 
 archives:
   - id: ak
-    builds: 
+    ids: 
       - ak
     files:
       - none*
@@ -85,7 +85,7 @@ archives:
       {{- if .Arm }}v{{ .Arm }}{{ end }}
 
   - id: ak-ee
-    builds: 
+    ids: 
       - ak-ee
     files:
       - none*
