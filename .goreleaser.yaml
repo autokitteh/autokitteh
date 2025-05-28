@@ -42,6 +42,8 @@ builds:
 
 brews:
   - name: autokitteh
+    ids:
+      - ak
     description: "Durable workflow automation in just a few lines of code"
     homepage: "https://autokitteh.com/"
     license: "Apache-2.0"
