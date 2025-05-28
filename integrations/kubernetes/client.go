@@ -56,7 +56,7 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 	})
 }
 
-// TODO: Implement the connection test function for Kubernetes integration.
+// TODO: INT-431 Implement the connection test function for k8s integration.
 func connTest(_ *integration) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
 		return sdktypes.NewStatus(sdktypes.StatusCodeUnspecified, "Not implemented"), nil
