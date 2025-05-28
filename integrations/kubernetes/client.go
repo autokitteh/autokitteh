@@ -3,19 +3,20 @@ package kubernetes
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.uber.org/zap"
 )
 
 var (
 	desc          = common.Descriptor("kubernetes", "Kubernetes", "/static/images/k8s.svg")
-	configFileVar = sdktypes.NewSymbol("configFile")
-	authTypeVar   = sdktypes.NewSymbol("authType")
+	configFileVar = sdktypes.NewSymbol("config_file")
+	authTypeVar   = sdktypes.NewSymbol("auth_type")
 )
 
 type integration struct{ vars sdkservices.Vars }

@@ -40,7 +40,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	configFile := r.Form.Get("configFile")
+	configFile := r.Form.Get("config_file")
 
 	c.Finalize(sdktypes.NewVars().
 		Set(configFileVar, configFile, true).
