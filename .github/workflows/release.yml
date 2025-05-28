@@ -17,6 +17,8 @@ on:
 
 permissions:
     contents: read
+    id-token: write
+
 jobs:
     goreleaser:
         name: GoReleaser
