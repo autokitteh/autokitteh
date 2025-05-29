@@ -76,14 +76,6 @@ class MockWorker(pb.handler_rpc.HandlerService):
         log("DONE", request)
         self.event.set()
 
-    def Log(self, request: pb.handler.LogRequest):
-        log("LOG", request)
-        return pb.handler.LogResponse()
-
-    def Print(self, request: pb.handler.PrintRequest):
-        log("PRINT", request.message)
-        return pb.handler.PrintResponse()
-
     def Sleep(self, request: pb.handler.SleepRequest):
         log("SLEEP", request.duration)
         sleep(request.duration_ms * 1000)
