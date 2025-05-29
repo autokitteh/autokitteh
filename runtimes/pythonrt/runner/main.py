@@ -544,26 +544,6 @@ class Runner(pb.runner_rpc.RunnerService):
 
         self.server.stop(SERVER_GRACE_TIMEOUT)
 
-    @mark_no_activity
-    def ak_print(self, *objects, sep=" ", end="\n", file=None, flush=False):
-        io = StringIO()
-        self._orig_print(*objects, sep=sep, end=end, flush=flush, file=io)
-        text = io.getvalue()
-        self._orig_print(text, file=file)  # Print also to original destination
-
-        req = pb.handler.PrintRequest(
-            runner_id=self.id,
-            message=text,
-        )
-
-        try:
-            self.worker.Print(req)
-        except grpc.RpcError as err:
-            if err.code() == grpc.StatusCode.UNAVAILABLE or grpc.StatusCode.CANCELLED:
-                log.error("grpc cancelled or unavailable, killing self")
-                self.server.stop(SERVER_GRACE_TIMEOUT)
-            log.error("print: %s", err)
-
 
 def is_valid_port(port):
     return port >= 0 and port <= 65535
