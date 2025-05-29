@@ -308,3 +308,18 @@ def test_tb_stack():
 
     pbt = main.pb_traceback(stack)
     assert len(pbt) == 4
+
+
+def test_obj_callable():
+    worker = MagicMock()
+    worker.Activity.return_value = worker
+    worker.error = None
+
+    runner = new_test_runner(workflows.simple, worker=worker)
+
+    class Adder:
+        def __call__(self, a, b):
+            return a + b
+
+    fn = Adder()
+    runner.start_activity(fn, (), {})

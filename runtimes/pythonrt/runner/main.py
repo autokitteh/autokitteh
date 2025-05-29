@@ -16,15 +16,16 @@ from traceback import TracebackException, format_exception
 
 import autokitteh
 import grpc
-import loader
-import log
-import pb
-import values
 
 # from audit import make_audit_hook  # TODO(ENG-1893): uncomment this.
 from autokitteh import AttrDict, Event, connections
 from autokitteh.errors import AutoKittehError
-from call import AKCall, activity_marker, full_func_name
+
+import loader
+import log
+import pb
+import values
+from call import AKCall, activity_marker, callable_name, full_func_name
 from syscalls import SysCalls, mark_no_activity
 
 # Timeouts are in seconds
@@ -475,7 +476,9 @@ class Runner(pb.runner_rpc.RunnerService):
         req = pb.handler.ActivityRequest(
             runner_id=self.id,
             call_info=pb.handler.CallInfo(
-                function=fn.__name__,  # AK rejects __qualname__ such as "json.loads"
+                function=callable_name(
+                    fn
+                ),  # AK rejects __qualname__ such as "json.loads"
                 args=[values.safe_wrap(a) for a in args],
                 kwargs={k: values.safe_wrap(v) for k, v in kw.items()},
             ),
