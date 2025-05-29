@@ -42,6 +42,7 @@ func AddSubcommands(parentCmd *cobra.Command) {
 func init() {
 	// Subcommands.
 	sessionCmd.AddCommand(deleteCmd)
+	sessionCmd.AddCommand(downloadLogsCmd)
 	sessionCmd.AddCommand(getCmd)
 	sessionCmd.AddCommand(listCmd)
 	sessionCmd.AddCommand(logCmd)

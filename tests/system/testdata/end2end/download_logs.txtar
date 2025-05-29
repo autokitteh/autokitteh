@@ -1,0 +1,27 @@
+# Deploy project with HTTP triggers that check session data.
+ak deploy --manifest project.yaml
+return code == 0
+
+# Send HTTP GET request to trigger deployment to start new session.
+http get /webhooks/00000000000000000000000003/
+resp code == 202
+
+wait 5s for session ses_00000000000000000000000007
+
+ak session download-logs ses_00000000000000000000000007 
+return code == 0
+
+-- project.yaml --
+version: v1
+
+project:
+  name: my_project
+  triggers:
+    - name: http
+      type: webhook
+      call: program.py:on_http
+
+-- program.py --
+def on_http(event):
+    print("these are session logs")
+    print("1\n2\n3\n")

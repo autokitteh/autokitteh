@@ -98,6 +98,16 @@ for more details.
 """
 
 
+suggest_add_package = """
+=======================================================================================================
+The below error means you need to add a package to the Python environment.
+Web platform: Create a requirements.txt file and add module to the requirements.txt file.
+Self hosted: add module to AutoKitteh virtual environment. 
+See https://docs.autokitteh.com/develop/python#installing-python-packages for more details.
+=======================================================================================================
+"""
+
+
 # Go passes HTTP event.data.body.bytes as base64 encode string
 def fix_http_body(inputs):
     data = inputs.get("data")
@@ -213,11 +223,15 @@ class Runner(pb.runner_rpc.RunnerService):
             start_timeout, self.stop_if_start_not_called, args=(start_timeout,)
         )
         self._inactivity_timer.start()
+        self._stopped = False
 
     def result_error(self, err):
         io = StringIO()
 
         exc = "".join(format_exception(err))
+        if "No module named" in str(err):
+            print(suggest_add_package, file=io)
+
         if "pickle" in str(err) or "pickle" in exc:
             print(pickle_help, file=io)
 
@@ -252,7 +266,7 @@ class Runner(pb.runner_rpc.RunnerService):
             return
 
         # Check that we are still active
-        while True:
+        while not self._stopped:
             try:
                 req = pb.handler.IsActiveRunnerRequest(runner_id=self.id)
                 res = self.worker.IsActiveRunner(req)
@@ -261,6 +275,10 @@ class Runner(pb.runner_rpc.RunnerService):
             except grpc.RpcError:
                 break
             sleep(period)
+
+        if self._stopped:
+            log.info("Runner %s stopped, stopping should_keep_running loop", self.id)
+            return
 
         log.error("could not verify if should keep running, killing self")
         self.server.stop(SERVER_GRACE_TIMEOUT)
@@ -496,6 +514,7 @@ class Runner(pb.runner_rpc.RunnerService):
         result = self._call(fn, [event], {})
 
         log.info("event end: error=%r", result.error)
+        self._stopped = True
         req = pb.handler.DoneRequest(
             runner_id=self.id,
         )
@@ -522,6 +541,28 @@ class Runner(pb.runner_rpc.RunnerService):
             self.worker.Done(req)
         except Exception as err:
             log.error("on_event: done send error: %r", err)
+
+        self.server.stop(SERVER_GRACE_TIMEOUT)
+
+    @mark_no_activity
+    def ak_print(self, *objects, sep=" ", end="\n", file=None, flush=False):
+        io = StringIO()
+        self._orig_print(*objects, sep=sep, end=end, flush=flush, file=io)
+        text = io.getvalue()
+        self._orig_print(text, file=file)  # Print also to original destination
+
+        req = pb.handler.PrintRequest(
+            runner_id=self.id,
+            message=text,
+        )
+
+        try:
+            self.worker.Print(req)
+        except grpc.RpcError as err:
+            if err.code() == grpc.StatusCode.UNAVAILABLE or grpc.StatusCode.CANCELLED:
+                log.error("grpc cancelled or unavailable, killing self")
+                self.server.stop(SERVER_GRACE_TIMEOUT)
+            log.error("print: %s", err)
 
 
 def is_valid_port(port):

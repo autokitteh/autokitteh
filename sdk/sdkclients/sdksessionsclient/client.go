@@ -149,6 +149,16 @@ func (c *client) GetLog(ctx context.Context, filter sdkservices.SessionLogRecord
 	}, nil
 }
 
+func (c *client) DownloadLogs(ctx context.Context, sessionID sdktypes.SessionID) ([]byte, error) {
+	res, err := c.client.DownloadLogs(ctx, connect.NewRequest(&sessionsv1.DownloadLogsRequest{
+		SessionId: sessionID.String(),
+	}))
+	if err != nil {
+		return nil, err
+	}
+	return res.Msg.Data, nil
+}
+
 func (c *client) List(ctx context.Context, filter sdkservices.ListSessionsFilter) (*sdkservices.ListSessionResult, error) {
 	resp, err := c.client.List(ctx, connect.NewRequest(&sessionsv1.ListRequest{
 		DeploymentId: filter.DeploymentID.String(),
