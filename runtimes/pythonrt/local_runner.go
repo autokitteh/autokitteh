@@ -162,21 +162,9 @@ func (r *LocalPython) Start(ctx context.Context, pyExe string, tarData []byte, e
 	cmd.Env = overrideEnv(env, r.runnerDir)
 	cmd.Dir = r.userDir
 
-	stdoutWriter := zapio.Writer{Log: r.log.With(zap.String("stream", "stdout"))}
-	stderrWriter := zapio.Writer{Log: r.log.With(zap.String("stream", "stderr"))}
-	cmd.Stdout = io.MultiWriter(&stdoutWriter, &Printer{printFn: printFn})
-	cmd.Stderr = io.MultiWriter(&stderrWriter, &Printer{printFn: printFn})
-
-	/*
-		if r.logRunnerCode {
-			r.stdoutRunnerLogger = &zapio.Writer{Log: r.log.With(zap.String("stream", "stdout")), Level: zap.InfoLevel}
-			cmd.Stdout = r.stdoutRunnerLogger
-			// Why warn instead of error? (1) We're using stdout too much, (2) Python errors are not
-			// necessarily AK errors, and (3) errors include a stack trace, which is irrelevant here.
-			r.stderrRunnerLogger = &zapio.Writer{Log: r.log.With(zap.String("stream", "stderr")), Level: zap.WarnLevel}
-			cmd.Stderr = r.stderrRunnerLogger
-		}
-	*/
+	printer := Printer{printFn: printFn}
+	cmd.Stdout = io.MultiWriter(os.Stdout, &printer)
+	cmd.Stderr = io.MultiWriter(os.Stderr, &printer)
 
 	// make sure runner is killed if ak is killed
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
