@@ -15,6 +15,7 @@ from time import sleep
 from traceback import TracebackException, format_exception
 
 import autokitteh
+from autokitteh.activities import ACTIVITY_ATTR
 import grpc
 
 # from audit import make_audit_hook  # TODO(ENG-1893): uncomment this.
@@ -510,6 +511,7 @@ class Runner(pb.runner_rpc.RunnerService):
         try:
             value = fn(*args, **kw)
             if asyncio.iscoroutine(value):
+                setattr(value, ACTIVITY_ATTR, getattr(fn, ACTIVITY_ATTR, None))
                 value = asyncio.run(value)
         except BaseException as err:
             log.error("%s raised: %s", func_name, err)
