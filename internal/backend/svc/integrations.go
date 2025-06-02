@@ -24,6 +24,7 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/google/sheets"
 	"go.autokitteh.dev/autokitteh/integrations/height"
 	"go.autokitteh.dev/autokitteh/integrations/hubspot"
+	"go.autokitteh.dev/autokitteh/integrations/kubernetes"
 	"go.autokitteh.dev/autokitteh/integrations/linear"
 	"go.autokitteh.dev/autokitteh/integrations/microsoft"
 	"go.autokitteh.dev/autokitteh/integrations/microsoft/teams"
@@ -105,6 +106,7 @@ func integrationsFXOption() fx.Option {
 		integration("height", configset.Empty, height.New),
 		integration("hubspot", configset.Empty, hubspot.New),
 		integration("jira", configset.Empty, jira.New),
+		integration("kubernetes", configset.Empty, kubernetes.New),
 		integration("linear", configset.Empty, linear.New),
 		integration("microsoft", configset.Empty, microsoft.New),
 		integration("microsoft_teams", configset.Empty, teams.New),
@@ -127,6 +129,7 @@ func integrationsFXOption() fx.Option {
 				height.Start(l, muxes, vars, oauth, dispatch)
 				hubspot.Start(l, muxes, oauth)
 				jira.Start(l, muxes, vars, oauth, dispatch)
+				kubernetes.Start(l, muxes)
 				linear.Start(l, muxes, vars, oauth, dispatch)
 				microsoft.Start(l, muxes, vars, oauth, dispatch)
 				salesforce.Start(l, muxes, vars, oauth, dispatch)
