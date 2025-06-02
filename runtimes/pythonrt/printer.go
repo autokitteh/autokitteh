@@ -108,7 +108,7 @@ func (d LogDispatcher) Print(text string) error {
 }
 
 func (d LogDispatcher) logRecord(record map[string]any) {
-	// Should be in sync with runner/log.py
+	// If the type assertion fails, pyLevel will be "" which translates to Info level
 	pyLevel, _ := record["level"].(string)
 	level := pyLevelToZap(pyLevel)
 
@@ -124,6 +124,7 @@ func (d LogDispatcher) logRecord(record map[string]any) {
 }
 
 func pyLevelToZap(level string) zapcore.Level {
+	// Should be in sync with runner/log.py
 	switch level {
 	case "DEBUG":
 		return zap.DebugLevel
