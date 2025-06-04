@@ -32,6 +32,7 @@ const (
 	getDeploymentStateActivityName          = "get_deployment_state"
 	createSessionActivityName               = "create_session"
 	createSessionInProjectActivityName      = "create_session_in_project"
+	notifyWorkflowEndedActivity             = "notify_workflow_ended"
 )
 
 func (ws *workflows) registerActivities() {
@@ -88,6 +89,11 @@ func (ws *workflows) registerActivities() {
 	ws.worker.RegisterActivityWithOptions(
 		ws.createSessionInProjectActivity,
 		activity.RegisterOptions{Name: createSessionInProjectActivityName},
+	)
+
+	ws.worker.RegisterActivityWithOptions(
+		ws.notifyWorkflowEndedActivity,
+		activity.RegisterOptions{Name: notifyWorkflowEndedActivity},
 	)
 }
 
@@ -296,7 +302,7 @@ func (ws *workflows) terminateSessionWorkflow(wctx workflow.Context, params term
 
 	sl.Infof("terminating session workflow %s", sid)
 
-	wctx = workflow.WithActivityOptions(wctx, ws.cfg.Activity.ToOptions(taskQueueName))
+	wctx = workflow.WithActivityOptions(wctx, ws.cfg.Activity.ToOptions(ws.svcs.WorkflowExecutor.WorkflowQueue()))
 
 	// this is fine if it runs multiple times and should be short.
 	if err := workflow.ExecuteActivity(wctx, terminateWorkflowActivityName, sid, reason).Get(wctx, nil); err != nil {
@@ -327,4 +333,8 @@ func (ws *workflows) terminateWorkflowActivity(ctx context.Context, sid sdktypes
 	}
 
 	return err
+}
+
+func (ws *workflows) notifyWorkflowEndedActivity(ctx context.Context, sid sdktypes.SessionID) error {
+	return ws.svcs.WorkflowExecutor.NotifyDone(ctx, workflowID(sid))
 }
