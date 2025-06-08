@@ -70,6 +70,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/webhookssvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/webplatform"
 	"go.autokitteh.dev/autokitteh/internal/backend/webtools"
+	"go.autokitteh.dev/autokitteh/internal/backend/workflowexecutor"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/version"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimessvc"
@@ -156,7 +157,8 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		SupplyConfig("svc", svcConfigs),
 
 		LoggerFxOpt(opts.Silent),
-
+		Component("workflowexecutor", workflowexecutor.Configs,
+			fx.Provide(fx.Annotate(workflowexecutor.New, fx.As(new(workflowexecutor.WorkflowExecutor))))),
 		Component("usagereporter",
 			usagereporter.Configs,
 			fx.Provide(func(z *zap.Logger, cfg *usagereporter.Config) (usagereporter.UsageReporter, error) {
@@ -453,6 +455,10 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				})
 			}),
 		),
+		fx.Invoke(func(lc fx.Lifecycle, w workflowexecutor.WorkflowExecutor) {
+			HookOnStart(lc, w.Start)
+			HookOnStop(lc, w.Stop)
+		}),
 		fx.Invoke(func(z *zap.Logger, lc fx.Lifecycle, muxes *muxes.Muxes, h healthreporter.HealthReporter) {
 			var ready atomic.Bool
 
