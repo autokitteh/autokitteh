@@ -16,6 +16,9 @@ def name_of(node, code_lines):
 AK_CALL_NAME = "_ak_call"
 BUILTIN = {v for v in dir(builtins) if callable(getattr(builtins, v))}
 
+_funcs = (ast.AsyncFunctionDef, ast.FunctionDef)
+_callabls = _funcs + (ast.ClassDef,)
+
 
 class Transformer(ast.NodeTransformer):
     """Replace 'fn(a, b)' with '_ak_call(fn, a, b)'."""
@@ -29,7 +32,7 @@ class Transformer(ast.NodeTransformer):
     def visit(self, node):
         # Visit AST nodes. We keep track of functions and indent, in order not to patch
         # module level calls.
-        if isinstance(node, (ast.FunctionDef, ast.ClassDef)) and not self.patch:
+        if isinstance(node, _callabls) and not self.patch:
             self.patch = True
             self.generic_visit(node)
             self.patch = False
@@ -47,8 +50,12 @@ class Transformer(ast.NodeTransformer):
 
         log.info("%s:%d: patching %s with ak_call", self.file_name, node.lineno, name)
         # urlopen("https://autokitteh.h") -> _call(urlopen, "https://autokitteh.com")
+        call_id = AK_CALL_NAME
+        if isinstance(node, ast.AsyncFunctionDef):
+            # This should be in sync with call.py
+            call_id += ".async_call"
         call = ast.Call(
-            func=ast.Name(id=AK_CALL_NAME, ctx=ast.Load()),
+            func=ast.Name(id=call_id, ctx=ast.Load()),
             args=[node.func] + node.args,
             keywords=node.keywords,
         )
@@ -144,10 +151,10 @@ def exports(code_dir, file_name):
 
     tree = ast.parse(code, file_name, "exec")
     for node in tree.body:
-        if not isinstance(node, (ast.AsyncFunctionDef, ast.FunctionDef, ast.ClassDef)):
+        if not isinstance(node, _callabls):
             continue
 
-        args = fn_args(node) if isinstance(node, ast.FunctionDef) else class_args(node)
+        args = fn_args(node) if isinstance(node, _funcs) else class_args(node)
         yield {
             "file": str(file_name),
             "line": node.lineno,
