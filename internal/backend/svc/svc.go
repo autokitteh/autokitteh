@@ -156,7 +156,6 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		SupplyConfig("svc", svcConfigs),
 
 		LoggerFxOpt(opts.Silent),
-
 		Component("usagereporter",
 			usagereporter.Configs,
 			fx.Provide(func(z *zap.Logger, cfg *usagereporter.Config) (usagereporter.UsageReporter, error) {

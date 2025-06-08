@@ -4,6 +4,8 @@
 We don't want to run a Python/NodeJS process on every call to lint, so we're using regular expression.
 This means we won't be right every time but close enough for now.
 Later we can think of running a lint/lsp server for these calls.
+
+WARNING: manifest.Manifest contains pointers (such as Project), check for nils.
 */
 package projects
 
@@ -68,7 +70,7 @@ var Rules = map[string]string{ // ID -> Description
 }
 
 func checkNoTriggers(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string][]byte) []*sdktypes.CheckViolation {
-	if len(m.Project.Triggers) == 0 {
+	if m.Project == nil || len(m.Project.Triggers) == 0 {
 		return []*sdktypes.CheckViolation{
 			{
 				Location: &sdktypes.CodeLocationPB{
@@ -85,6 +87,10 @@ func checkNoTriggers(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string][]
 }
 
 func checkEmptyVars(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string][]byte) []*sdktypes.CheckViolation {
+	if m.Project == nil || len(m.Project.Vars) == 0 {
+		return nil
+	}
+
 	var vs []*sdktypes.CheckViolation
 	for _, v := range m.Project.Vars {
 		if v.Value == "" {
@@ -137,7 +143,7 @@ func checkSize(_ sdktypes.ProjectID, _ *manifest.Manifest, resources map[string]
 					Path: manifestFilePath,
 				},
 				Level:   sdktypes.ViolationError,
-				Message: fmt.Sprintf("project size (%.2fMB) exceeds limt of %dMB", sizeMB, maxProjectSize/mb),
+				Message: fmt.Sprintf("project size (%.2fMB) exceeds limit of %dMB", sizeMB, maxProjectSize/mb),
 				RuleId:  "E2",
 			},
 		}
@@ -147,6 +153,10 @@ func checkSize(_ sdktypes.ProjectID, _ *manifest.Manifest, resources map[string]
 }
 
 func checkConnectionNames(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string][]byte) []*sdktypes.CheckViolation {
+	if m.Project == nil || len(m.Project.Connections) == 0 {
+		return nil
+	}
+
 	names := make(map[string]int) // name -> count
 	for _, c := range m.Project.Connections {
 		names[c.Name]++
@@ -181,6 +191,10 @@ func checkConnectionNames(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[stri
 }
 
 func checkTriggerNames(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string][]byte) []*sdktypes.CheckViolation {
+	if m.Project == nil || len(m.Project.Triggers) == 0 {
+		return nil
+	}
+
 	names := make(map[string]int) // name -> count
 	for _, c := range m.Project.Triggers {
 		names[c.Name]++
@@ -217,6 +231,10 @@ func checkTriggerNames(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string]
 // parseCall parses a call string like "handler.py:on_event" and return file name and function name.
 
 func checkHandlers(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[string][]byte) []*sdktypes.CheckViolation {
+	if m.Project == nil || len(m.Project.Triggers) == 0 {
+		return nil
+	}
+
 	var vs []*sdktypes.CheckViolation
 
 	for _, t := range m.Project.Triggers {
@@ -284,9 +302,11 @@ func checkHandlers(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[str
 
 func checkCodeConnections(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[string][]byte) []*sdktypes.CheckViolation {
 	defConns := make(map[string]bool)
-	for _, conn := range m.Project.Connections {
-		defConns[conn.Name] = true
-		// TODO: Should we use GetKey as well?
+	if m.Project != nil {
+		for _, conn := range m.Project.Connections {
+			defConns[conn.Name] = true
+			// TODO: Should we use GetKey as well?
+		}
 	}
 
 	var vs []*sdktypes.CheckViolation
@@ -316,6 +336,19 @@ func checkCodeConnections(_ sdktypes.ProjectID, m *manifest.Manifest, resources 
 }
 
 func checkProjectName(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[string][]byte) []*sdktypes.CheckViolation {
+	if m.Project == nil || m.Project.Name == "" {
+		return []*sdktypes.CheckViolation{
+			{
+				Location: &sdktypes.CodeLocationPB{
+					Path: manifestFilePath,
+				},
+				Message: "bad project names",
+				Level:   sdktypes.ViolationError,
+				RuleId:  "E10",
+			},
+		}
+	}
+
 	if _, err := sdktypes.ParseSymbol(m.Project.Name); err != nil {
 		return []*sdktypes.CheckViolation{
 			{

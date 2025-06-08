@@ -148,7 +148,9 @@ pythonrt:
 generate-migrations:
 	@read -p "Enter migration name: " migration_name; \
 	atlas migrate diff $$migration_name --env sqlite; \
-	atlas migrate diff $$migration_name --env postgres
+	atlas migrate diff $$migration_name --env postgres; \
+	atlas migrate diff $$migration_name --env postgres_enterprise;
+
 
 # Requires nodejs installed
 .PHONY: tailwindcss
