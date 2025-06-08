@@ -153,3 +153,9 @@ class AKCall:
             return self.runner.call_in_activity(func, args, kw)
         finally:
             self.in_activity = False
+
+    async def call_async(self, func, *args, **kw):
+        # Support async. Don not change the method name without changing loader.py as
+        # well
+
+        return self(func, *args, **kw)
