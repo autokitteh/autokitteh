@@ -115,11 +115,11 @@ func (db *gormdb) listDeploymentsWithStats(ctx context.Context, filter sdkservic
 	// explicitly set model, since DeploymentWithStats is Deployment
 	q = q.Model(scheme.Deployment{}).Select(`
  	deployments.*, 
- 	COUNT(case when sessions.current_state_type = ? then 1 end) AS created,
- 	COUNT(case when sessions.current_state_type = ? then 1 end) AS running,
- 	COUNT(case when sessions.current_state_type = ? then 1 end) AS error,
- 	COUNT(case when sessions.current_state_type = ? then 1 end) AS completed,
- 	COUNT(case when sessions.current_state_type = ? then 1 end) AS stopped
+	COUNT(case when sessions.current_state_type = ? then 1 end) AS created,
+	COUNT(case when sessions.current_state_type = ? then 1 end) AS running,
+	COUNT(case when sessions.current_state_type = ? then 1 end) AS error,
+	COUNT(case when sessions.current_state_type = ? then 1 end) AS completed,
+	COUNT(case when sessions.current_state_type = ? then 1 end) AS stopped
  	`, int32(sdktypes.SessionStateTypeCreated.ToProto()), // Note:
 		int32(sdktypes.SessionStateTypeRunning.ToProto()),   // sdktypes.SessionStateTypeCreated.ToProto() is a sessionsv1.SessionStateType
 		int32(sdktypes.SessionStateTypeError.ToProto()),     // which is an type alias to int32. But since it's a different type then int32
