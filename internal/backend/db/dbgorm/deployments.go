@@ -112,21 +112,26 @@ func (gdb *gormdb) listDeploymentsCommonQuery(ctx context.Context, filter sdkser
 func (db *gormdb) listDeploymentsWithStats(ctx context.Context, filter sdkservices.ListDeploymentsFilter) ([]scheme.DeploymentWithStats, error) {
 	q := db.listDeploymentsCommonQuery(ctx, filter)
 
+	// explicitly set model, since DeploymentWithStats is Deployment
 	q = q.Model(scheme.Deployment{}).Select(`
-        deployments.*, 
-        COALESCE(stats.created_count, 0) AS created,
-        COALESCE(stats.running_count, 0) AS running,
-        COALESCE(stats.error_count, 0) AS error,
-        COALESCE(stats.completed_count, 0) AS completed,
-        COALESCE(stats.stopped_count, 0) AS stopped
-    `).
-		Joins(`LEFT JOIN deployment_session_stats stats ON deployments.deployment_id = stats.deployment_id`)
+ 	deployments.*, 
+ 	COUNT(case when sessions.current_state_type = ? then 1 end) AS created,
+ 	COUNT(case when sessions.current_state_type = ? then 1 end) AS running,
+ 	COUNT(case when sessions.current_state_type = ? then 1 end) AS error,
+ 	COUNT(case when sessions.current_state_type = ? then 1 end) AS completed,
+ 	COUNT(case when sessions.current_state_type = ? then 1 end) AS stopped
+ 	`, int32(sdktypes.SessionStateTypeCreated.ToProto()), // Note:
+		int32(sdktypes.SessionStateTypeRunning.ToProto()),   // sdktypes.SessionStateTypeCreated.ToProto() is a sessionsv1.SessionStateType
+		int32(sdktypes.SessionStateTypeError.ToProto()),     // which is an type alias to int32. But since it's a different type then int32
+		int32(sdktypes.SessionStateTypeCompleted.ToProto()), // PostgreSQL won't allow it to be inserted to bigint column,
+		int32(sdktypes.SessionStateTypeStopped.ToProto())).  // therefore we need to cust it to int32
+		Joins(`LEFT JOIN sessions on deployments.deployment_id = sessions.deployment_id`).
+		Group("deployments.deployment_id")
 
 	var ds []scheme.DeploymentWithStats
 	if err := q.Find(&ds).Error; err != nil {
 		return nil, err
 	}
-
 	return ds, nil
 }
 
