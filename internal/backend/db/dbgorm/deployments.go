@@ -113,18 +113,20 @@ func (db *gormdb) listDeploymentsWithStats(ctx context.Context, filter sdkservic
 	q := db.listDeploymentsCommonQuery(ctx, filter)
 
 	q = q.Model(scheme.Deployment{}).Select(`
-		deployments.*,
-		ds.created_count as created,
-		ds.running_count as running,
-		ds.error_count as error,
-		ds.completed_count as completed,
-		ds.stopped_count as stopped
-	`).Joins("LEFT JOIN deployment_stats ds ON deployments.deployment_id = ds.deployment_id")
+        deployments.*, 
+        COALESCE(stats.created_count, 0) AS created,
+        COALESCE(stats.running_count, 0) AS running,
+        COALESCE(stats.error_count, 0) AS error,
+        COALESCE(stats.completed_count, 0) AS completed,
+        COALESCE(stats.stopped_count, 0) AS stopped
+    `).
+		Joins(`LEFT JOIN deployment_session_stats stats ON deployments.deployment_id = stats.deployment_id`)
 
 	var ds []scheme.DeploymentWithStats
 	if err := q.Find(&ds).Error; err != nil {
 		return nil, err
 	}
+
 	return ds, nil
 }
 
