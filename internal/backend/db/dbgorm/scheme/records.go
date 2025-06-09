@@ -419,6 +419,13 @@ type Deployment struct {
 
 func (Deployment) IDFieldName() string { return "deployment_id" }
 
+type DeploymentSessionStats struct {
+	Base
+	DeploymentID          uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
+	StateType             int       `gorm:"primaryKey;index"`
+	FinishedSessionsCount int       `gorm:"not null;default:0"`
+}
+
 func (d *Deployment) BeforeUpdate(tx *gorm.DB) (err error) {
 	if tx.Statement.Changed() { // if any fields changed
 		tx.Statement.SetColumn("UpdatedAt", kittehs.Now())
