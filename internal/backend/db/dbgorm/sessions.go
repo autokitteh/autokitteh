@@ -46,13 +46,9 @@ func (tx *gormdb) deleteSession(ctx context.Context, sessionID uuid.UUID) error 
 	}
 
 	// If finished session, increment deleted_count in deployment_session_stats.
-	if session.CurrentStateType > 2 && session.DeploymentID != nil {
-		err = tx.writer.Model(&scheme.DeploymentSessionStats{}).
-			Where("deployment_id = ? AND session_state = ?", *session.DeploymentID, session.CurrentStateType).
-			Update("count", gorm.Expr("deployment_session_stats.count - 1")).Error
-		if err != nil {
-			return err
-		}
+	err = tx.decDeploymentStats(ctx, session)
+	if err != nil {
+		return err
 	}
 
 	return tx.writer.Delete(&session).Error
@@ -79,29 +75,14 @@ func (gdb *gormdb) updateSessionState(ctx context.Context, sessionID uuid.UUID, 
 		newStateType := int(state.Type().ToProto())
 		runningState := int(sdktypes.SessionStateTypeRunning.ToProto())
 
-		if oldStateType < 3 && newStateType != runningState && session.DeploymentID != nil {
-			if err := gdb.incrementSessionCount(tx, *session.DeploymentID, newStateType); err != nil {
+		if oldStateType <= runningState && newStateType != runningState && session.DeploymentID != nil {
+			if err := gdb.incDeploymentStats(tx, *session.DeploymentID, newStateType); err != nil {
 				return err
 			}
 		}
 
 		return createLogRecord(tx.writer, ctx, logr, stateSessionLogRecordType)
 	})
-}
-
-func (gdb *gormdb) incrementSessionCount(tx *gormdb, deploymentID uuid.UUID, stateType int) error {
-	stats := scheme.DeploymentSessionStats{
-		DeploymentID: deploymentID,
-		SessionState: stateType,
-		Count:        1,
-	}
-
-	return tx.writer.Clauses(clause.OnConflict{
-		Columns: []clause.Column{{Name: "deployment_id"}, {Name: "session_state"}},
-		DoUpdates: clause.Assignments(map[string]any{
-			"count": gorm.Expr("deployment_session_stats.count + ?", 1),
-		}),
-	}).Create(&stats).Error
 }
 
 func (gdb *gormdb) getSession(ctx context.Context, sessionID uuid.UUID) (*scheme.Session, error) {

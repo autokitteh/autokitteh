@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -133,6 +134,34 @@ func (db *gormdb) listDeploymentsWithStats(ctx context.Context, filter sdkservic
 		return nil, err
 	}
 	return ds, nil
+}
+
+func (gdb *gormdb) incDeploymentStats(tx *gormdb, deploymentID uuid.UUID, stateType int) error {
+	stats := scheme.DeploymentSessionStats{
+		DeploymentID: deploymentID,
+		SessionState: stateType,
+		Count:        1,
+	}
+
+	return tx.writer.Clauses(clause.OnConflict{
+		Columns: []clause.Column{{Name: "deployment_id"}, {Name: "session_state"}},
+		DoUpdates: clause.Assignments(map[string]any{
+			"count": gorm.Expr("deployment_session_stats.count + ?", 1),
+		}),
+	}).Create(&stats).Error
+}
+
+func (tx *gormdb) decDeploymentStats(ctx context.Context, session scheme.Session) error {
+	runningState := int(sdktypes.SessionStateTypeRunning.ToProto())
+
+	// Only decrement count for finished sessions with deployment
+	if session.CurrentStateType > runningState && session.DeploymentID != nil {
+		return tx.writer.WithContext(ctx).Model(&scheme.DeploymentSessionStats{}).
+			Where("deployment_id = ? AND session_state = ?", *session.DeploymentID, session.CurrentStateType).
+			Update("count", gorm.Expr("deployment_session_stats.count - 1")).Error
+	}
+
+	return nil
 }
 
 func (db *gormdb) listDeployments(ctx context.Context, filter sdkservices.ListDeploymentsFilter) ([]scheme.Deployment, error) {
