@@ -50,11 +50,42 @@ func (gdb *gormdb) updateSessionState(ctx context.Context, sessionID uuid.UUID, 
 	}
 
 	return gdb.writeTransaction(ctx, func(tx *gormdb) error {
+		var session scheme.Session
+		if err := tx.writer.First(&session, "session_id = ?", sessionID).Error; err != nil {
+			return err
+		}
+
 		if err := tx.writer.Model(&scheme.Session{SessionID: sessionID}).Updates(sessionStateUpdate).Error; err != nil {
 			return err
 		}
+
+		oldStateType := session.CurrentStateType
+		newStateType := int(state.Type().ToProto())
+		runningState := int(sdktypes.SessionStateTypeRunning.ToProto())
+
+		if oldStateType < 3 && newStateType != runningState && session.DeploymentID != nil {
+			if err := gdb.incrementSessionCount(tx, *session.DeploymentID, newStateType); err != nil {
+				return err
+			}
+		}
+
 		return createLogRecord(tx.writer, ctx, logr, stateSessionLogRecordType)
 	})
+}
+
+func (gdb *gormdb) incrementSessionCount(tx *gormdb, deploymentID uuid.UUID, stateType int) error {
+	stats := scheme.DeploymentSessionStats{
+		DeploymentID: deploymentID,
+		SessionState: stateType,
+		Count:        1,
+	}
+
+	return tx.writer.Clauses(clause.OnConflict{
+		Columns: []clause.Column{{Name: "deployment_id"}, {Name: "session_state"}},
+		DoUpdates: clause.Assignments(map[string]any{
+			"count": gorm.Expr("deployment_session_stats.count + ?", 1),
+		}),
+	}).Create(&stats).Error
 }
 
 func (gdb *gormdb) getSession(ctx context.Context, sessionID uuid.UUID) (*scheme.Session, error) {
