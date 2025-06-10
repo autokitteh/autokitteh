@@ -15,7 +15,7 @@ const (
 )
 
 var (
-	steps = regexp.MustCompile(`^(?:(ak|http|output|req|resp|return|wait|setenv|capture_jq|capture_re|user|exec)\s)|(exit)$`)
+	steps = regexp.MustCompile(`^(?:(ak|http|output|req|resp|return|wait|setenv|capture_jq|capture_re|user|file|exec)\s)|(exit)$`)
 
 	// ak *
 	// http <get|post> *
