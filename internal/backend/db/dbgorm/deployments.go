@@ -126,7 +126,7 @@ func (db *gormdb) listDeploymentsWithStats(ctx context.Context, filter sdkservic
 		int32(sdktypes.SessionStateTypeRunning.ToProto()),   // sdktypes.SessionStateTypeCreated.ToProto() is a sessionsv1.SessionStateType
 		int32(sdktypes.SessionStateTypeCompleted.ToProto()), // which is an type alias to int32. But since it's a different type then int32
 		int32(sdktypes.SessionStateTypeError.ToProto()),     // PostgreSQL won't allow it to be inserted to bigint column,
-		int32(sdktypes.SessionStateTypeStopped.ToProto()))   // therefore we need to cast it to int32
+		int32(sdktypes.SessionStateTypeStopped.ToProto()))   // therefore we need to cast it to int32.
 
 	var ds []scheme.DeploymentWithStats
 	if err := q.Find(&ds).Error; err != nil {
