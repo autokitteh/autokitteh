@@ -420,11 +420,9 @@ type Deployment struct {
 func (Deployment) IDFieldName() string { return "deployment_id" }
 
 type DeploymentSessionStats struct {
-	DeploymentID uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
+	DeploymentID uuid.UUID `gorm:"primaryKey;type:uuid;not null;"`
 	SessionState int       `gorm:"primaryKey"`
 	Count        int       `gorm:"not null;default:0"`
-
-	Deployment Deployment `gorm:"foreignKey:DeploymentID;references:DeploymentID;constraint:OnDelete:CASCADE"`
 }
 
 func (d *Deployment) BeforeUpdate(tx *gorm.DB) (err error) {

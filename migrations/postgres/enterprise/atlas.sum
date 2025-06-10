@@ -1,4 +1,4 @@
-h1:3TUaSBOKQVpWrtoKKXTYrjJY7YXX0W+xeCI9Gx846BI=
+h1:8ZQEev1xO0oF5eN2AEqo1Ke0DDmUgC+dkXPO6E5H8WA=
 20240704121932_baseline.sql h1:1JS9FYe08Ef0wTpJIeeL4wIqHc8E/RXhuqmTI/FwkzY=
 20240714051207_no-db-user.sql h1:tx0AwepNeeL/XWD74sLRGwisrkNs4lyH/H4BG/663FQ=
 20240727114921_project-not-nil-name.sql h1:ZG3tDLzQSxd81S4BDe/IOMktltkurwyuFwu5gkqQvrA=
@@ -26,4 +26,4 @@ h1:3TUaSBOKQVpWrtoKKXTYrjJY7YXX0W+xeCI9Gx846BI=
 20250212092300_add-created-at-index-for-sessions-and-events.sql h1:4pFid3Qyv+kRivExZ32rTAqyYOKXT68wfv2MrqjmRvg=
 20250213105018_soft_delete_org.sql h1:xWoVZoONbo48NoIsTmzv4yJlpuz6hVNmJp6I1ChTbg4=
 20250227020008_event_oids.sql h1:Na9uCEmanbXM3SJDSzv+N1xeAZiqZ5LIoPvM4zZVSfs=
-20250610113431_add_deployment_session_stats_table.sql h1:ZptNgO/U1otU70bvFF+4MVZnfm7FEd16J2GN0rOUyIw=
+20250610115546_add_deployment_stats_table.sql h1:SE1iDOM4j1yPvKXq6BYhjd9iGSmNZmS0DkIgucKFWJo=
