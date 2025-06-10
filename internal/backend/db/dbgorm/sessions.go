@@ -38,34 +38,24 @@ func (gdb *gormdb) createSession(ctx context.Context, session *scheme.Session) e
 	}))
 }
 
-func (gdb *gormdb) deleteSession(ctx context.Context, sessionID uuid.UUID) error {
-	tx := gdb.writer.WithContext(ctx).Begin()
-
+func (tx *gormdb) deleteSession(ctx context.Context, sessionID uuid.UUID) error {
 	var session scheme.Session
-	err := tx.Where("session_id = ?", sessionID).First(&session).Error
+	err := tx.writer.WithContext(ctx).Where("session_id = ?", sessionID).First(&session).Error
 	if err != nil {
-		tx.Rollback()
 		return err
 	}
 
 	// If finished session, increment deleted_count in deployment_session_stats.
-	if session.CurrentStateType > 2 {
-		err = tx.Model(&scheme.DeploymentSessionStats{}).
+	if session.CurrentStateType > 2 && session.DeploymentID != nil {
+		err = tx.writer.Model(&scheme.DeploymentSessionStats{}).
 			Where("deployment_id = ? AND session_state = ?", *session.DeploymentID, session.CurrentStateType).
-			Update("deleted_count", gorm.Expr("deployment_session_stats.deleted_count + 1")).Error
+			Update("count", gorm.Expr("deployment_session_stats.count - 1")).Error
 		if err != nil {
-			tx.Rollback()
 			return err
 		}
 	}
 
-	err = tx.Delete(&session).Error
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	return tx.Commit().Error
+	return tx.writer.Delete(&session).Error
 }
 
 func (gdb *gormdb) updateSessionState(ctx context.Context, sessionID uuid.UUID, state sdktypes.SessionState) error {
@@ -104,7 +94,6 @@ func (gdb *gormdb) incrementSessionCount(tx *gormdb, deploymentID uuid.UUID, sta
 		DeploymentID: deploymentID,
 		SessionState: stateType,
 		Count:        1,
-		DeletedCount: 0,
 	}
 
 	return tx.writer.Clauses(clause.OnConflict{
@@ -258,7 +247,9 @@ func (db *gormdb) CreateSession(ctx context.Context, session sdktypes.Session) e
 }
 
 func (db *gormdb) DeleteSession(ctx context.Context, sessionID sdktypes.SessionID) error {
-	return translateError(db.deleteSession(ctx, sessionID.UUIDValue()))
+	return db.writeTransaction(ctx, func(tx *gormdb) error {
+		return translateError(tx.deleteSession(ctx, sessionID.UUIDValue()))
+	})
 }
 
 func (db *gormdb) UpdateSessionState(ctx context.Context, sessionID sdktypes.SessionID, state sdktypes.SessionState) error {
