@@ -423,6 +423,7 @@ type DeploymentSessionStats struct {
 	DeploymentID uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
 	SessionState int       `gorm:"primaryKey"`
 	Count        int       `gorm:"not null;default:0"`
+	DeletedCount int       `gorm:"not null;default:0"`
 }
 
 func (d *Deployment) BeforeUpdate(tx *gorm.DB) (err error) {

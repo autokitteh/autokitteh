@@ -19,6 +19,15 @@ func (f *dbFixture) createSessionsAndAssert(t *testing.T, sessions ...scheme.Ses
 	for _, session := range sessions {
 		assert.NoError(t, f.gormdb.createSession(f.ctx, &session))
 		findAndAssertOne(t, f, session, "session_id = ?", session.SessionID)
+
+		if session.CurrentStateType > 2 {
+			err := f.gormdb.incrementSessionCount(
+				&gormdb{writer: f.gormdb.writer},
+				*session.DeploymentID,
+				session.CurrentStateType,
+			)
+			assert.NoError(t, err)
+		}
 	}
 }
 

@@ -39,7 +39,33 @@ func (gdb *gormdb) createSession(ctx context.Context, session *scheme.Session) e
 }
 
 func (gdb *gormdb) deleteSession(ctx context.Context, sessionID uuid.UUID) error {
-	return gdb.writer.WithContext(ctx).Delete(&scheme.Session{SessionID: sessionID}).Error
+	tx := gdb.writer.WithContext(ctx).Begin()
+
+	var session scheme.Session
+	err := tx.Where("session_id = ?", sessionID).First(&session).Error
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// If finished session, increment deleted_count in deployment_session_stats.
+	if session.CurrentStateType > 2 {
+		err = tx.Model(&scheme.DeploymentSessionStats{}).
+			Where("deployment_id = ? AND session_state = ?", *session.DeploymentID, session.CurrentStateType).
+			Update("deleted_count", gorm.Expr("deployment_session_stats.deleted_count + 1")).Error
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	err = tx.Delete(&session).Error
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit().Error
 }
 
 func (gdb *gormdb) updateSessionState(ctx context.Context, sessionID uuid.UUID, state sdktypes.SessionState) error {
@@ -78,6 +104,7 @@ func (gdb *gormdb) incrementSessionCount(tx *gormdb, deploymentID uuid.UUID, sta
 		DeploymentID: deploymentID,
 		SessionState: stateType,
 		Count:        1,
+		DeletedCount: 0,
 	}
 
 	return tx.writer.Clauses(clause.OnConflict{
