@@ -66,7 +66,7 @@ require (
 	github.com/slack-go/slack v0.16.0
 	github.com/spf13/cobra v1.9.1
 	github.com/stretchr/testify v1.10.0
-	github.com/twilio/twilio-go v1.25.1
+	github.com/twilio/twilio-go v1.26.2
 	github.com/uptrace/opentelemetry-go-extra/otelgorm v0.3.2
 	github.com/xeipuuv/gojsonschema v1.2.0
 	go.jetify.com/typeid v1.3.0
@@ -227,7 +227,6 @@ require (
 	github.com/gofrs/flock v0.12.1 // indirect
 	github.com/gofrs/uuid/v5 v5.2.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.2 // indirect
 	github.com/golang-sql/civil v0.0.0-20220223132316-b832511892a9 // indirect
 	github.com/golang-sql/sqlexp v0.1.0 // indirect
