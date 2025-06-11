@@ -127,10 +127,12 @@ func (db *gormdb) listDeploymentsWithStats(ctx context.Context, filter sdkservic
                 COUNT(CASE WHEN current_state_type = ? THEN 1 END) AS created,
                 COUNT(CASE WHEN current_state_type = ? THEN 1 END) AS running
             FROM sessions
-			WHERE current_state_type IN (1, 2)
+			WHERE current_state_type IN (?, ?)
             GROUP BY deployment_id
         ) AS session_stats ON session_stats.deployment_id = deployments.deployment_id
     `, int32(sdktypes.SessionStateTypeCreated.ToProto()),
+		int32(sdktypes.SessionStateTypeRunning.ToProto()),
+		int32(sdktypes.SessionStateTypeCreated.ToProto()),
 		int32(sdktypes.SessionStateTypeRunning.ToProto())).
 		Joins(`
         LEFT JOIN (
