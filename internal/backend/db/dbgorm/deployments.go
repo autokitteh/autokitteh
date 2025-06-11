@@ -110,18 +110,19 @@ func (gdb *gormdb) listDeploymentsCommonQuery(ctx context.Context, filter sdkser
 	return q.Order("deployments.deployment_id desc")
 }
 
-func (db gormdb) listDeploymentsWithStats(ctx context.Context, filter sdkservices.ListDeploymentsFilter) ([]scheme.DeploymentWithStats, error) {
+func (db *gormdb) listDeploymentsWithStats(ctx context.Context, filter sdkservices.ListDeploymentsFilter) ([]scheme.DeploymentWithStats, error) {
 	q := db.listDeploymentsCommonQuery(ctx, filter)
+
 	q = q.Model(scheme.Deployment{}).Select(`
-	deployments.,
-	-- Active sessions from sessions table (subqueries)
-	(SELECT COUNT() FROM sessions WHERE deployment_id = deployments.deployment_id AND current_state_type = ?) AS created,
-	(SELECT COUNT() FROM sessions WHERE deployment_id = deployments.deployment_id AND current_state_type = ?) AS running,
-	-- Finished sessions from stats table (subqueries)
-	(SELECT COALESCE(count, 0) FROM deployment_session_stats WHERE deployment_id = deployments.deployment_id AND session_state = ?) AS completed,
-	(SELECT COALESCE(count, 0) FROM deployment_session_stats WHERE deployment_id = deployments.deployment_id AND session_state = ?) AS error,
-	(SELECT COALESCE(count, 0) FROM deployment_session_stats WHERE deployment_id = deployments.deployment_id AND session_state = ?) AS stopped
-	`,
+         deployments.*,
+         -- Active sessions from sessions table (subqueries)
+         (SELECT COUNT(*) FROM sessions WHERE deployment_id = deployments.deployment_id AND current_state_type = ?) AS created,
+         (SELECT COUNT(*) FROM sessions WHERE deployment_id = deployments.deployment_id AND current_state_type = ?) AS running,
+         -- Finished sessions from stats table (subqueries) 
+         (SELECT COALESCE(count, 0) FROM deployment_session_stats WHERE deployment_id = deployments.deployment_id AND session_state = ?) AS completed,
+         (SELECT COALESCE(count, 0) FROM deployment_session_stats WHERE deployment_id = deployments.deployment_id AND session_state = ?) AS error,
+         (SELECT COALESCE(count, 0) FROM deployment_session_stats WHERE deployment_id = deployments.deployment_id AND session_state = ?) AS stopped
+     `,
 		int32(sdktypes.SessionStateTypeCreated.ToProto()),   // Note:
 		int32(sdktypes.SessionStateTypeRunning.ToProto()),   // sdktypes.SessionStateTypeCreated.ToProto() is a sessionsv1.SessionStateType
 		int32(sdktypes.SessionStateTypeCompleted.ToProto()), // which is an type alias to int32. But since it's a different type then int32
