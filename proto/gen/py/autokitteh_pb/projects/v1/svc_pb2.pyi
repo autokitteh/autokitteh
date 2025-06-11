@@ -122,10 +122,12 @@ class DownloadResourcesResponse(_message.Message):
     def __init__(self, resources: _Optional[_Mapping[str, bytes]] = ...) -> None: ...
 
 class ExportRequest(_message.Message):
-    __slots__ = ["project_id"]
+    __slots__ = ["project_id", "include_vars_contents"]
     PROJECT_ID_FIELD_NUMBER: _ClassVar[int]
+    INCLUDE_VARS_CONTENTS_FIELD_NUMBER: _ClassVar[int]
     project_id: str
-    def __init__(self, project_id: _Optional[str] = ...) -> None: ...
+    include_vars_contents: bool
+    def __init__(self, project_id: _Optional[str] = ..., include_vars_contents: bool = ...) -> None: ...
 
 class ExportResponse(_message.Message):
     __slots__ = ["zip_archive"]

@@ -622,6 +622,11 @@ export class ExportRequest extends Message<ExportRequest> {
    */
   projectId = "";
 
+  /**
+   * @generated from field: bool include_vars_contents = 2;
+   */
+  includeVarsContents = false;
+
   constructor(data?: PartialMessage<ExportRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -631,6 +636,7 @@ export class ExportRequest extends Message<ExportRequest> {
   static readonly typeName = "autokitteh.projects.v1.ExportRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "include_vars_contents", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExportRequest {
