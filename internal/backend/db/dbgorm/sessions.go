@@ -39,7 +39,20 @@ func (gdb *gormdb) createSession(ctx context.Context, session *scheme.Session) e
 }
 
 func (gdb *gormdb) deleteSession(ctx context.Context, sessionID uuid.UUID) error {
-	return gdb.writer.WithContext(ctx).Delete(&scheme.Session{SessionID: sessionID}).Error
+	return gdb.writeTransaction(ctx, func(tx *gormdb) error {
+		var session scheme.Session
+		err := tx.writer.WithContext(ctx).Where("session_id = ?", sessionID).First(&session).Error
+		if err != nil {
+			return err
+		}
+
+		err = tx.decDeploymentStats(ctx, session)
+		if err != nil {
+			return err
+		}
+
+		return tx.writer.Delete(&session).Error
+	})
 }
 
 func (gdb *gormdb) updateSessionState(ctx context.Context, sessionID uuid.UUID, state sdktypes.SessionState) error {
@@ -216,20 +229,7 @@ func (db *gormdb) CreateSession(ctx context.Context, session sdktypes.Session) e
 }
 
 func (db *gormdb) DeleteSession(ctx context.Context, sessionID sdktypes.SessionID) error {
-	return db.writeTransaction(ctx, func(tx *gormdb) error {
-		var session scheme.Session
-		err := tx.writer.WithContext(ctx).Where("session_id = ?", sessionID).First(&session).Error
-		if err != nil {
-			return err
-		}
-
-		err = tx.decDeploymentStats(ctx, session)
-		if err != nil {
-			return err
-		}
-
-		return translateError(tx.deleteSession(ctx, sessionID.UUIDValue()))
-	})
+	return translateError(db.deleteSession(ctx, sessionID.UUIDValue()))
 }
 
 func (db *gormdb) UpdateSessionState(ctx context.Context, sessionID sdktypes.SessionID, state sdktypes.SessionState) error {

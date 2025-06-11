@@ -114,20 +114,37 @@ func (db *gormdb) listDeploymentsWithStats(ctx context.Context, filter sdkservic
 	q := db.listDeploymentsCommonQuery(ctx, filter)
 
 	q = q.Model(scheme.Deployment{}).Select(`
-         deployments.*,
-         -- Active sessions from sessions table (subqueries)
-         (SELECT COUNT(*) FROM sessions WHERE deployment_id = deployments.deployment_id AND current_state_type = ?) AS created,
-         (SELECT COUNT(*) FROM sessions WHERE deployment_id = deployments.deployment_id AND current_state_type = ?) AS running,
-         -- Finished sessions from stats table (subqueries) 
-         (SELECT COALESCE(count, 0) FROM deployment_session_stats WHERE deployment_id = deployments.deployment_id AND session_state = ?) AS completed,
-         (SELECT COALESCE(count, 0) FROM deployment_session_stats WHERE deployment_id = deployments.deployment_id AND session_state = ?) AS error,
-         (SELECT COALESCE(count, 0) FROM deployment_session_stats WHERE deployment_id = deployments.deployment_id AND session_state = ?) AS stopped
-     `,
-		int32(sdktypes.SessionStateTypeCreated.ToProto()),   // Note:
-		int32(sdktypes.SessionStateTypeRunning.ToProto()),   // sdktypes.SessionStateTypeCreated.ToProto() is a sessionsv1.SessionStateType
-		int32(sdktypes.SessionStateTypeCompleted.ToProto()), // which is an type alias to int32. But since it's a different type then int32
-		int32(sdktypes.SessionStateTypeError.ToProto()),     // PostgreSQL won't allow it to be inserted to bigint column,
-		int32(sdktypes.SessionStateTypeStopped.ToProto()))   // therefore we need to cast it to int32.
+        deployments.*,
+        session_stats.created,
+        session_stats.running,
+        deployment_stats.completed,
+        deployment_stats.error,
+        deployment_stats.stopped
+    `).Joins(`
+        LEFT JOIN (
+            SELECT 
+                deployment_id,
+                COUNT(CASE WHEN current_state_type = ? THEN 1 END) AS created,
+                COUNT(CASE WHEN current_state_type = ? THEN 1 END) AS running
+            FROM sessions
+            GROUP BY deployment_id
+        ) AS session_stats ON session_stats.deployment_id = deployments.deployment_id
+    `, int32(sdktypes.SessionStateTypeCreated.ToProto()),
+		int32(sdktypes.SessionStateTypeRunning.ToProto())).
+		Joins(`
+        LEFT JOIN (
+            SELECT 
+                deployment_id,
+                SUM(CASE WHEN session_state = ? THEN count ELSE 0 END) AS completed,
+                SUM(CASE WHEN session_state = ? THEN count ELSE 0 END) AS error,
+                SUM(CASE WHEN session_state = ? THEN count ELSE 0 END) AS stopped
+            FROM deployment_session_stats
+            GROUP BY deployment_id
+        ) AS deployment_stats ON deployment_stats.deployment_id = deployments.deployment_id
+    `, int32(sdktypes.SessionStateTypeCompleted.ToProto()),
+			int32(sdktypes.SessionStateTypeError.ToProto()),
+			int32(sdktypes.SessionStateTypeStopped.ToProto()))
+
 	var ds []scheme.DeploymentWithStats
 	if err := q.Find(&ds).Error; err != nil {
 		return nil, err
