@@ -120,31 +120,30 @@ func (db *gormdb) listDeploymentsWithStats(ctx context.Context, filter sdkservic
 		deployment_stats.completed,
 		deployment_stats.error,
 		deployment_stats.stopped
-	`).Joins(fmt.Sprintf(`
-		LEFT JOIN LATERAL (
-			SELECT
-				COUNT(CASE WHEN current_state_type = %d THEN 1 END) AS created,
-				COUNT(CASE WHEN current_state_type = %d THEN 1 END) AS running
+	`).Joins(`
+		LEFT JOIN (
+			SELECT 
+				deployment_id,
+				COUNT(CASE WHEN current_state_type = ? THEN 1 END) AS created,
+				COUNT(CASE WHEN current_state_type = ? THEN 1 END) AS running
 			FROM sessions
-			WHERE deployment_id = deployments.deployment_id
-		) AS session_stats ON true
-	`,
-		int32(sdktypes.SessionStateTypeCreated.ToProto()),
-		int32(sdktypes.SessionStateTypeRunning.ToProto()),
-	)).Joins(fmt.Sprintf(`
-		LEFT JOIN LATERAL (
-			SELECT
-				SUM(CASE WHEN session_state = %d THEN count ELSE 0 END) AS completed,
-				SUM(CASE WHEN session_state = %d THEN count ELSE 0 END) AS error,
-				SUM(CASE WHEN session_state = %d THEN count ELSE 0 END) AS stopped
+			GROUP BY deployment_id
+		) AS session_stats ON session_stats.deployment_id = deployments.deployment_id
+	`, int32(sdktypes.SessionStateTypeCreated.ToProto()),
+		int32(sdktypes.SessionStateTypeRunning.ToProto())).
+		Joins(`
+		LEFT JOIN (
+			SELECT 
+				deployment_id,
+				SUM(CASE WHEN session_state = ? THEN count ELSE 0 END) AS completed,
+				SUM(CASE WHEN session_state = ? THEN count ELSE 0 END) AS error,
+				SUM(CASE WHEN session_state = ? THEN count ELSE 0 END) AS stopped
 			FROM deployment_session_stats
-			WHERE deployment_id = deployments.deployment_id
-		) AS deployment_stats ON true
-	`,
-		int32(sdktypes.SessionStateTypeCompleted.ToProto()),
-		int32(sdktypes.SessionStateTypeError.ToProto()),
-		int32(sdktypes.SessionStateTypeStopped.ToProto()),
-	))
+			GROUP BY deployment_id
+		) AS deployment_stats ON deployment_stats.deployment_id = deployments.deployment_id
+	`, int32(sdktypes.SessionStateTypeCompleted.ToProto()),
+			int32(sdktypes.SessionStateTypeError.ToProto()),
+			int32(sdktypes.SessionStateTypeStopped.ToProto()))
 
 	var ds []scheme.DeploymentWithStats
 	if err := q.Find(&ds).Error; err != nil {

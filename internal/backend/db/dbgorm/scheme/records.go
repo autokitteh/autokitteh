@@ -337,9 +337,9 @@ type Session struct {
 	ProjectID        uuid.UUID  `gorm:"index;type:uuid;not null"`
 	SessionID        uuid.UUID  `gorm:"primaryKey;type:uuid;not null"`
 	BuildID          uuid.UUID  `gorm:"index;type:uuid;not null"`
-	DeploymentID     *uuid.UUID `gorm:"index:idx_active_sessions;type:uuid"`
+	DeploymentID     *uuid.UUID `gorm:"index;index:idx_active_sessions;type:uuid"`
 	EventID          *uuid.UUID `gorm:"index;type:uuid"`
-	CurrentStateType int        `gorm:"index:idx_active_sessions,where:current_state_type = 1 OR current_state_type = 2"`
+	CurrentStateType int        `gorm:"index;index:idx_active_sessions,where:current_state_type = 1 OR current_state_type = 2"`
 	Entrypoint       string
 	Inputs           datatypes.JSON
 	Memo             datatypes.JSON
