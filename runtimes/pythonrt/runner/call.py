@@ -153,3 +153,6 @@ class AKCall:
             return self.runner.call_in_activity(func, args, kw)
         finally:
             self.in_activity = False
+
+    async def async_call(self, func, *args, **kw):
+        return await self(func, *args, **kw)

@@ -323,3 +323,26 @@ def test_obj_callable():
 
     fn = Adder()
     runner.start_activity(fn, (), {})
+
+
+@pytest.mark.parametrize(
+    "workflow",
+    [
+        pytest.param(workflows.async_activity, id="async_activity"),
+        pytest.param(workflows.async_handler, id="async_handler"),
+    ],
+)
+def test_async(workflow, capsys):
+    clear_module_cache("program")
+    runner = new_test_runner(workflow)
+    worker = MockWorker(runner)
+    runner.worker = worker
+
+    event = json.dumps({"data": {"cat": "mitzi"}})
+    worker.start("program.py:on_event", event.encode())
+    worker.event.wait(1)
+
+    assert worker.calls.get("ACTIVITY")
+
+    captured = capsys.readouterr()
+    assert "on_event: end (out=8)" in captured.out
