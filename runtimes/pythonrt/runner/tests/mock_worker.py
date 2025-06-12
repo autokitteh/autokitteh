@@ -17,11 +17,12 @@ def next_signal_id():
 
 
 class MockWorker(pb.handler_rpc.HandlerService):
-    def __init__(self, runner: pb.runner_rpc.RunnerService):
+    def __init__(self, runner: pb.runner_rpc.RunnerService, verbose=False):
         self.runner = runner
         self.runner.worker = self
         self.event = Event()
         self.calls = Counter()
+        self.verbose = verbose
 
     def start(self, entry_point, data):
         req = pb.runner.StartRequest(
@@ -134,7 +135,8 @@ class MockWorker(pb.handler_rpc.HandlerService):
         self.log("IS_ACTIVE_RUNNER", request)
         return pb.handler.IsActiveRunnerResponse(is_active=True)
 
-    # We can't use 'print' since main replaces it with a call to the worker Print
     def log(self, func, msg):
-        sys.stdout.write(f"<<{func}>> {msg}\n")
+        if self.verbose:
+            # We can't use 'print' since main replaces it with a call to the worker Print
+            sys.stdout.write(f"<<{func}>> {msg}\n")
         self.calls[func] += 1

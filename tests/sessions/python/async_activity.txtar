@@ -1,3 +1,7 @@
+on_event: start
+work
+on_event: end (out=8)
+-- main.py:main --
 import autokitteh
 
 
@@ -16,9 +20,3 @@ async def work():
 
 async def value():
     return 8
-
-
-if __name__ == "__main__":
-    import asyncio
-
-    asyncio.run(on_event(None))
