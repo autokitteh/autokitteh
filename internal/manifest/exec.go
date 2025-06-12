@@ -38,6 +38,9 @@ func Execute(ctx context.Context, actions actions.Actions, client sdkservices.Se
 
 func executeAction(ctx context.Context, action actions.Action, execContext *execContext) (*Effect, error) {
 	switch action := action.(type) {
+	case actions.TouchedProjectAction:
+		return &Effect{SubjectID: action.ProjectID, Type: Touched}, nil
+
 	case actions.CreateProjectAction:
 		pid, err := execContext.client.Projects().Create(ctx, action.Project)
 		if err != nil {
@@ -185,6 +188,7 @@ func executeAction(ctx context.Context, action actions.Action, execContext *exec
 		}
 
 		return &Effect{SubjectID: trigger.ID(), Type: Updated}, nil
+
 	case actions.DeleteTriggerAction:
 		if err := execContext.client.Triggers().Delete(ctx, action.TriggerID); err != nil {
 			return nil, err
