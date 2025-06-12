@@ -20,7 +20,7 @@ var Configs = configset.Set[Config]{
 	},
 	Dev: &Config{
 		Enabled:         false,
-		Tracing:         true,
+		Tracing:         false,
 		ServiceName:     "ak",
 		Endpoint:        "localhost:4318",
 		TracingFraction: 1,
