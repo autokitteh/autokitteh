@@ -219,6 +219,11 @@ var tools = []server.ServerTool{
 			orgNameArg,
 			projectNameArg,
 			projectIDArg,
+			mcp.WithString(
+				"include_vars_contents",
+				mcp.Title("Include variables contents"),
+				mcp.Description("If true, export include variable contents"),
+			),
 			mcp.WithDescription("Get all project data, including resources and manifest file describing the current state of the project"),
 		),
 		Handler: func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -227,7 +232,12 @@ var tools = []server.ServerTool{
 				return mcp.NewToolResultError(err.Error()), nil
 			}
 
-			data, err := common.Client().Projects().Export(ctx, p.ID())
+			includeVarsContents, err := getOptionalParam[bool](request.Params.Arguments, "include_vars_contents")
+			if err != nil {
+				return toolResultErrorf("include_vars_contents: %v", err)
+			}
+
+			data, err := common.Client().Projects().Export(ctx, p.ID(), includeVarsContents)
 			if err != nil {
 				return toolResultErrorf("%v", err)
 			}

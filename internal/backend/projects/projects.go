@@ -185,8 +185,8 @@ var origHeader = []byte(`# This is the original autokitteh.yaml specific by the 
 
 `)
 
-func (ps *Projects) Export(ctx context.Context, projectID sdktypes.ProjectID) ([]byte, error) {
-	if err := authz.CheckContext(ctx, projectID, "read:export"); err != nil {
+func (ps *Projects) Export(ctx context.Context, projectID sdktypes.ProjectID, includeVarsContents bool) ([]byte, error) {
+	if err := authz.CheckContext(ctx, projectID, "read:export", authz.WithData("include_vars_contents", includeVarsContents)); err != nil {
 		return nil, err
 	}
 
@@ -222,7 +222,7 @@ func (ps *Projects) Export(ctx context.Context, projectID sdktypes.ProjectID) ([
 		}
 	}
 
-	manifest, err := ps.exportManifest(ctx, projectID)
+	manifest, err := ps.exportManifest(ctx, projectID, includeVarsContents)
 	if err != nil {
 		return nil, err
 	}
@@ -242,7 +242,7 @@ func (ps *Projects) Export(ctx context.Context, projectID sdktypes.ProjectID) ([
 	return buf.Bytes(), nil
 }
 
-func (ps *Projects) exportManifest(ctx context.Context, projectID sdktypes.ProjectID) ([]byte, error) {
+func (ps *Projects) exportManifest(ctx context.Context, projectID sdktypes.ProjectID, includeVarsContents bool) ([]byte, error) {
 	prj, err := ps.DB.GetProjectByID(ctx, projectID)
 	if err != nil {
 		return nil, err
@@ -317,6 +317,10 @@ func (ps *Projects) exportManifest(ctx context.Context, projectID sdktypes.Proje
 			Secret: v.IsSecret(),
 		}
 
+		if includeVarsContents {
+			mv.Value = v.Value()
+		}
+
 		p.Vars = append(p.Vars, &mv)
 	}
 
@@ -355,7 +359,7 @@ func (ps *Projects) Lint(ctx context.Context, projectID sdktypes.ProjectID, reso
 	data, ok := resources[manifestPath]
 	if !ok {
 		var err error
-		data, err = ps.exportManifest(ctx, projectID)
+		data, err = ps.exportManifest(ctx, projectID, true)
 		if err != nil {
 			return nil, err
 		}
