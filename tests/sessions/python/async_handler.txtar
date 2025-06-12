@@ -6,7 +6,7 @@ import autokitteh
 
 
 @autokitteh.activity
-async def on_event(event):
+async def main(event):
     print("on_event: start")
     out = await work()
     print(f"on_event: end ({out=})")
