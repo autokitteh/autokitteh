@@ -537,3 +537,15 @@ func (s *workerGRPCHandler) NextSignal(ctx context.Context, req *userCode.NextSi
 		},
 	}, nil
 }
+
+func (s *workerGRPCHandler) StoreList(context.Context, *userCode.StoreListRequest) (*userCode.StoreListResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "store list")
+}
+
+func (s *workerGRPCHandler) StoreGet(context.Context, *userCode.StoreGetRequest) (*userCode.StoreGetResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "store get")
+}
+
+func (s *workerGRPCHandler) StoreMutate(context.Context, *userCode.StoreMutateRequest) (*userCode.StoreMutateResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "store mutate")
+}

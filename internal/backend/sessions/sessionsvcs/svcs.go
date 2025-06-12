@@ -21,6 +21,7 @@ type Svcs struct {
 	Triggers     sdkservices.Triggers
 	Vars         sdkservices.Vars
 	Projects     sdkservices.Projects
+	Store        sdkservices.Store
 
 	Temporal temporalclient.Client
 }
