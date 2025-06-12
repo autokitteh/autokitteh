@@ -14,7 +14,6 @@ import traceback
 from concurrent.futures import Future
 from subprocess import Popen, TimeoutExpired, run
 from threading import Event
-from time import monotonic, sleep
 from unittest.mock import MagicMock
 from uuid import uuid4
 
@@ -333,7 +332,7 @@ def test_obj_callable():
         pytest.param(workflows.async_handler, id="async_handler"),
     ],
 )
-def test_async_activity(workflow):
+def test_async(workflow, capsys):
     clear_module_cache("program")
     runner = new_test_runner(workflow)
     worker = MockWorker(runner)
@@ -341,10 +340,9 @@ def test_async_activity(workflow):
 
     event = json.dumps({"data": {"cat": "mitzi"}})
     worker.start("program.py:on_event", event.encode())
-    start = monotonic()
+    worker.event.wait(1)
 
-    while monotonic() - start < 1:
-        if worker.calls["ACTIVITY"]:
-            break
-    else:
-        assert False, "no activity"
+    assert worker.calls.get("ACTIVITY")
+
+    captured = capsys.readouterr()
+    assert "on_event: end (out=8)" in captured.out
