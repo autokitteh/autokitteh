@@ -258,7 +258,7 @@ func (s *Server) Export(ctx context.Context, req *connect.Request[projectsv1.Exp
 		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("project_id: %w", err))
 	}
 
-	zipData, err := s.projects.Export(ctx, pid)
+	zipData, err := s.projects.Export(ctx, pid, req.Msg.IncludeVarsContents)
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}

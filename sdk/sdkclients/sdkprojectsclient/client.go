@@ -196,9 +196,10 @@ func (c *client) DownloadResources(ctx context.Context, pid sdktypes.ProjectID) 
 	return resp.Msg.Resources, nil
 }
 
-func (c *client) Export(ctx context.Context, pid sdktypes.ProjectID) ([]byte, error) {
+func (c *client) Export(ctx context.Context, pid sdktypes.ProjectID, includeVarsContents bool) ([]byte, error) {
 	req := projectsv1.ExportRequest{
-		ProjectId: pid.String(),
+		ProjectId:           pid.String(),
+		IncludeVarsContents: includeVarsContents,
 	}
 
 	resp, err := c.client.Export(ctx, connect.NewRequest(&req))

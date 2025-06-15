@@ -39,7 +39,20 @@ func (gdb *gormdb) createSession(ctx context.Context, session *scheme.Session) e
 }
 
 func (gdb *gormdb) deleteSession(ctx context.Context, sessionID uuid.UUID) error {
-	return gdb.writer.WithContext(ctx).Delete(&scheme.Session{SessionID: sessionID}).Error
+	return gdb.writeTransaction(ctx, func(tx *gormdb) error {
+		var session scheme.Session
+		err := tx.writer.WithContext(ctx).Where("session_id = ?", sessionID).First(&session).Error
+		if err != nil {
+			return err
+		}
+
+		err = tx.decDeploymentStats(ctx, session)
+		if err != nil {
+			return err
+		}
+
+		return tx.writer.Delete(&session).Error
+	})
 }
 
 func (gdb *gormdb) updateSessionState(ctx context.Context, sessionID uuid.UUID, state sdktypes.SessionState) error {
@@ -50,9 +63,25 @@ func (gdb *gormdb) updateSessionState(ctx context.Context, sessionID uuid.UUID, 
 	}
 
 	return gdb.writeTransaction(ctx, func(tx *gormdb) error {
+		var session scheme.Session
+		if err := tx.writer.First(&session, "session_id = ?", sessionID).Error; err != nil {
+			return err
+		}
+
 		if err := tx.writer.Model(&scheme.Session{SessionID: sessionID}).Updates(sessionStateUpdate).Error; err != nil {
 			return err
 		}
+
+		oldStateType := session.CurrentStateType
+		newStateType := int(state.Type().ToProto())
+		runningState := int(sdktypes.SessionStateTypeRunning.ToProto())
+
+		if oldStateType <= runningState && newStateType > runningState && session.DeploymentID != nil {
+			if err := gdb.incDeploymentStats(tx, *session.DeploymentID, newStateType); err != nil {
+				return err
+			}
+		}
+
 		return createLogRecord(tx.writer, ctx, logr, stateSessionLogRecordType)
 	})
 }
