@@ -28,15 +28,15 @@ const (
 type Svcs struct {
 	fx.In
 
-	db.DB
+	DB       db.DB
 	Temporal temporalclient.Client
 
-	sdkservices.Connections
-	sdkservices.Deployments
-	sdkservices.Events
-	sdkservices.Projects
-	sdkservices.Sessions
-	sdkservices.Triggers
+	Connections sdkservices.Connections
+	Deployments sdkservices.Deployments
+	Events      sdkservices.Events
+	Projects    sdkservices.Projects
+	Sessions    sdkservices.Sessions
+	Triggers    sdkservices.Triggers
 }
 
 type Dispatcher struct {

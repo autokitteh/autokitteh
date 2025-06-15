@@ -48,11 +48,11 @@ type V struct{ sdktypes.Var }
 func (v V) ToString() string {
 	vv := "<secret>"
 
-	if !v.Var.IsSecret() || reveal {
-		vv = strconv.Quote(v.Var.Value())
+	if !v.IsSecret() || reveal {
+		vv = strconv.Quote(v.Value())
 	}
 
-	return fmt.Sprintf("%v=%s", v.Var.Name(), vv)
+	return fmt.Sprintf("%v=%s", v.Name(), vv)
 }
 
 var _ common.ToStringer = V{}

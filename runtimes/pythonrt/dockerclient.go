@@ -112,7 +112,6 @@ func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, sess
 			PortBindings: nat.PortMap{internalRunnerPort: []nat.PortBinding{{HostIP: "127.0.0.1"}}},
 			Tmpfs:        map[string]string{"/tmp": "size=64m"},
 		}, nil, nil, "")
-
 	if err != nil {
 		return "", "", err
 	}
@@ -299,7 +298,7 @@ func (d *dockerClient) BuildImage(ctx context.Context, name, directory string) e
 	}
 	defer resp.Body.Close()
 
-	var dest io.Writer = io.Discard
+	dest := io.Discard
 	if d.logBuildProcess {
 		dest = os.Stdout
 	}
@@ -340,7 +339,6 @@ func (d *dockerClient) IsRunning(runnerID string) (bool, error) {
 
 	_, ok := d.activeRunnerIDs[runnerID]
 	return ok, nil
-
 }
 
 func (d *dockerClient) StopRunner(ctx context.Context, id string) error {
