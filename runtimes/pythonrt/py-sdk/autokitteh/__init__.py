@@ -6,18 +6,22 @@ from .attr_dict import AttrDict
 from .event import Event
 from .events import next_event, start, subscribe, unsubscribe
 from .signals import Signal, next_signal, signal
+from .store import get_value, mutate_value, set_value
 
 __all__ = [
-    "AttrDict",
-    "Event",
-    "Signal",
     "activity",
+    "AttrDict",
     "errors",
+    "Event",
+    "get_value",
     "inhibit_activities",
+    "mutate_value",
     "next_event",
     "next_signal",
     "register_no_activity",
+    "set_value",
     "signal",
+    "Signal",
     "start",
     "subscribe",
     "unsubscribe",

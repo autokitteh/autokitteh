@@ -24,6 +24,7 @@ func LoadModule() starlark.StringDict {
 		"start":                starlark.NewBuiltin("start", start),
 		"subscribe":            starlark.NewBuiltin("subscribe", subscribe),
 		"unsubscribe":          starlark.NewBuiltin("unsubscribe", unsubscribe),
+		"store":                store,
 	}
 }
 
@@ -82,7 +83,13 @@ func start(th *starlark.Thread, bi *starlark.Builtin, args starlark.Tuple, kwarg
 	}
 
 	tls := tls.Get(th)
-	sid, err := tls.Callbacks.Start(tls.GoCtx, tls.RunID, sdkProject, sdkLoc, sdkInputs, sdkMemo)
+
+	start := tls.Callbacks.Start
+	if start == nil {
+		return nil, errors.New("not supported")
+	}
+
+	sid, err := start(tls.GoCtx, tls.RunID, sdkProject, sdkLoc, sdkInputs, sdkMemo)
 	if err != nil {
 		return nil, err
 	}
@@ -98,7 +105,13 @@ func subscribe(th *starlark.Thread, bi *starlark.Builtin, args starlark.Tuple, k
 	}
 
 	tls := tls.Get(th)
-	sid, err := tls.Callbacks.Subscribe(tls.GoCtx, tls.RunID, name, filter)
+
+	subscribe := tls.Callbacks.Subscribe
+	if subscribe == nil {
+		return nil, errors.New("not supported")
+	}
+
+	sid, err := subscribe(tls.GoCtx, tls.RunID, name, filter)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +127,13 @@ func unsubscribe(th *starlark.Thread, bi *starlark.Builtin, args starlark.Tuple,
 	}
 
 	tls := tls.Get(th)
-	err := tls.Callbacks.Unsubscribe(tls.GoCtx, tls.RunID, id)
+
+	unsubscribe := tls.Callbacks.Unsubscribe
+	if unsubscribe == nil {
+		return nil, errors.New("not supported")
+	}
+
+	err := unsubscribe(tls.GoCtx, tls.RunID, id)
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +180,13 @@ func nextEvent(th *starlark.Thread, bi *starlark.Builtin, args starlark.Tuple, k
 	}
 
 	tls := tls.Get(th)
-	v, err := tls.Callbacks.NextEvent(tls.GoCtx, tls.RunID, sids, duration)
+
+	nextEvent := tls.Callbacks.NextEvent
+	if nextEvent == nil {
+		return nil, errors.New("not supported")
+	}
+
+	v, err := nextEvent(tls.GoCtx, tls.RunID, sids, duration)
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +201,12 @@ func IsDeploymentActive(th *starlark.Thread, bi *starlark.Builtin, args starlark
 
 	tls := tls.Get(th)
 
-	active, err := tls.Callbacks.IsDeploymentActive(tls.GoCtx)
+	isDeploymentActive := tls.Callbacks.IsDeploymentActive
+	if isDeploymentActive == nil {
+		return nil, errors.New("not supported")
+	}
+
+	active, err := isDeploymentActive(tls.GoCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -206,7 +236,12 @@ func signal(th *starlark.Thread, bi *starlark.Builtin, args starlark.Tuple, kwar
 
 	tls := tls.Get(th)
 
-	if err := tls.Callbacks.Signal(tls.GoCtx, tls.RunID, sdkSessionID, name, v); err != nil {
+	signal := tls.Callbacks.Signal
+	if signal == nil {
+		return nil, errors.New("not supported")
+	}
+
+	if err := signal(tls.GoCtx, tls.RunID, sdkSessionID, name, v); err != nil {
 		return nil, err
 	}
 
@@ -252,7 +287,13 @@ func nextSignal(th *starlark.Thread, bi *starlark.Builtin, args starlark.Tuple, 
 	}
 
 	tls := tls.Get(th)
-	sig, err := tls.Callbacks.NextSignal(tls.GoCtx, tls.RunID, names, duration)
+
+	nextSignal := tls.Callbacks.NextSignal
+	if nextSignal == nil {
+		return nil, errors.New("not supported")
+	}
+
+	sig, err := nextSignal(tls.GoCtx, tls.RunID, names, duration)
 	if err != nil {
 		return nil, err
 	}

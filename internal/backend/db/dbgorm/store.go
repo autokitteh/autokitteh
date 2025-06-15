@@ -13,22 +13,30 @@ import (
 
 const maxValueSize = 64 * 1024
 
-func (db *gormdb) SetValue(ctx context.Context, pid sdktypes.ProjectID, key string, v sdktypes.Value) error {
+func (db *gormdb) SetStoreValue(ctx context.Context, pid sdktypes.ProjectID, key string, v sdktypes.Value) error {
 	if !pid.IsValid() {
 		return sdkerrors.NewInvalidArgumentError("invalid project id")
+	}
+
+	q := db.writer.WithContext(ctx)
+
+	if !v.IsValid() || v.IsNothing() {
+		return translateError(
+			q.Where("project_id = ? AND key = ?", pid.UUIDValue(), key).Delete(&scheme.Value{}).Error,
+		)
 	}
 
 	if v.ProtoSize() > maxValueSize {
 		return sdkerrors.NewInvalidArgumentError("value too large > %d bytes", maxValueSize)
 	}
 
-	return translateError(db.writeTransaction(ctx, func(tx *gormdb) error {
-		bs, err := proto.Marshal(v.ToProto())
-		if err != nil {
-			return err
-		}
+	bs, err := proto.Marshal(v.ToProto())
+	if err != nil {
+		return err
+	}
 
-		return tx.writer.Save(&scheme.Value{
+	return translateError(
+		q.Save(&scheme.Value{
 			// This does not take into account if value was also previously set,
 			// so `created_by` and `updated_by` would always point to the last user
 			// that updated the user.
@@ -38,11 +46,11 @@ func (db *gormdb) SetValue(ctx context.Context, pid sdktypes.ProjectID, key stri
 			ProjectID: pid.UUIDValue(),
 			Key:       key,
 			Value:     bs,
-		}).Error
-	}))
+		}).Error,
+	)
 }
 
-func (db *gormdb) GetValue(ctx context.Context, pid sdktypes.ProjectID, key string) (sdktypes.Value, error) {
+func (db *gormdb) GetStoreValue(ctx context.Context, pid sdktypes.ProjectID, key string) (sdktypes.Value, error) {
 	r, err := getOne[scheme.Value](db.reader.WithContext(ctx), "project_id = ? AND key = ?", pid.UUIDValue(), key)
 	if err != nil {
 		return sdktypes.InvalidValue, translateError(err)
@@ -57,13 +65,27 @@ func (db *gormdb) GetValue(ctx context.Context, pid sdktypes.ProjectID, key stri
 	return sdktypes.ValueFromProto(&pb)
 }
 
-func (db *gormdb) ListValues(ctx context.Context, pid sdktypes.ProjectID) (map[string]sdktypes.Value, error) {
+func (db *gormdb) ListStoreValues(ctx context.Context, pid sdktypes.ProjectID, keys []string, getValues bool) (map[string]sdktypes.Value, error) {
 	var rs []*scheme.Value
-	if err := db.reader.WithContext(ctx).Where("project_id = ?", pid.UUIDValue()).Find(&rs).Error; err != nil {
+	q := db.reader.WithContext(ctx).Where("project_id = ?", pid.UUIDValue())
+
+	if len(keys) > 0 {
+		q = q.Where("key IN (?)", keys)
+	}
+
+	if !getValues {
+		q = q.Select("key")
+	}
+
+	if err := q.Find(&rs).Error; err != nil {
 		return nil, translateError(err)
 	}
 
 	return kittehs.ListToMapError(rs, func(r *scheme.Value) (string, sdktypes.Value, error) {
+		if !getValues {
+			return r.Key, sdktypes.InvalidValue, nil
+		}
+
 		var pb sdktypes.ValuePB
 
 		if err := proto.Unmarshal(r.Value, &pb); err != nil {
