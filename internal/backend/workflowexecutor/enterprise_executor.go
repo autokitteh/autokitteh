@@ -105,15 +105,17 @@ func (e *executor) Execute(ctx context.Context, sessionID sdktypes.SessionID, ar
 }
 
 func (e *executor) startPoller(ctx context.Context) {
-	ticker := time.NewTicker(100 * time.Millisecond)
+	timer := time.NewTimer(100 * time.Millisecond)
+
 	go func() {
 		for {
 			select {
-			case <-ticker.C:
+			case <-timer.C:
 				e.runOnce(ctx)
+				timer = time.NewTimer(100 * time.Millisecond) // Reset the timer for the next iteration
 			case <-e.stopChannel:
 				e.l.Info("Stopping workflow manager")
-				ticker.Stop()
+				timer.Stop()
 				return
 			case <-ctx.Done():
 				return
