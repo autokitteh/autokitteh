@@ -311,6 +311,8 @@ class Runner(pb.runner_rpc.RunnerService):
         autokitteh.start = self.syscalls.ak_start
         autokitteh.subscribe = self.syscalls.ak_subscribe
         autokitteh.unsubscribe = self.syscalls.ak_unsubscribe
+        autokitteh.get_value = self.syscalls.ak_get_value
+        autokitteh.mutate_value = self.syscalls.ak_mutate_value
 
         # Not ak, but patching print as well
         builtins.print = self.ak_print

@@ -193,6 +193,40 @@ class PrintResponse(_message.Message):
     error: str
     def __init__(self, error: _Optional[str] = ...) -> None: ...
 
+class StoreListRequest(_message.Message):
+    __slots__ = ["runner_id"]
+    RUNNER_ID_FIELD_NUMBER: _ClassVar[int]
+    runner_id: str
+    def __init__(self, runner_id: _Optional[str] = ...) -> None: ...
+
+class StoreListResponse(_message.Message):
+    __slots__ = ["error", "keys"]
+    ERROR_FIELD_NUMBER: _ClassVar[int]
+    KEYS_FIELD_NUMBER: _ClassVar[int]
+    error: str
+    keys: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, error: _Optional[str] = ..., keys: _Optional[_Iterable[str]] = ...) -> None: ...
+
+class StoreMutateRequest(_message.Message):
+    __slots__ = ["runner_id", "key", "operation", "operands"]
+    RUNNER_ID_FIELD_NUMBER: _ClassVar[int]
+    KEY_FIELD_NUMBER: _ClassVar[int]
+    OPERATION_FIELD_NUMBER: _ClassVar[int]
+    OPERANDS_FIELD_NUMBER: _ClassVar[int]
+    runner_id: str
+    key: str
+    operation: str
+    operands: _containers.RepeatedCompositeFieldContainer[_values_pb2.Value]
+    def __init__(self, runner_id: _Optional[str] = ..., key: _Optional[str] = ..., operation: _Optional[str] = ..., operands: _Optional[_Iterable[_Union[_values_pb2.Value, _Mapping]]] = ...) -> None: ...
+
+class StoreMutateResponse(_message.Message):
+    __slots__ = ["error", "result"]
+    ERROR_FIELD_NUMBER: _ClassVar[int]
+    RESULT_FIELD_NUMBER: _ClassVar[int]
+    error: str
+    result: _values_pb2.Value
+    def __init__(self, error: _Optional[str] = ..., result: _Optional[_Union[_values_pb2.Value, _Mapping]] = ...) -> None: ...
+
 class StartSessionRequest(_message.Message):
     __slots__ = ["runner_id", "loc", "data", "memo", "project"]
     RUNNER_ID_FIELD_NUMBER: _ClassVar[int]
