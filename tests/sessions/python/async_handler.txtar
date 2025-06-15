@@ -8,7 +8,8 @@ import autokitteh
 @autokitteh.activity
 async def main(event):
     print("on_event: start")
-    out = await work()
+    w = work()
+    out = await w
     print(f"on_event: end ({out=})")
 
 
