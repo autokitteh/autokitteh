@@ -15,10 +15,39 @@ on:
                 default: ""
 
 jobs:
-    image:
-        name: Build Docker image
+    build_only:
+        name: Build Only
         runs-on: ubuntu-latest
         timeout-minutes: 10
+        if: ${{ inputs.push == false }}
+        permissions:
+            id-token: write
+            contents: read
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup version info
+              run: |
+                  # These are consumed in the Dockerfile.
+                  echo "${GITHUB_REF_NAME}" > .version
+                  echo "${GITHUB_SHA}" > .commit
+
+            - name: Build
+              uses: docker/build-push-action@v6
+              with:
+                  context: .
+                  platforms: linux/amd64
+                  tags: "test"
+                  push: false
+                  provenance: false
+                  build-args: "BUILD_TAGS=${{inputs.buildTags}}"
+
+    build_and_push:
+        name: Build And Push
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        if: ${{ inputs.push == true }}
         permissions:
             id-token: write
             contents: read
@@ -62,6 +91,6 @@ jobs:
                   platforms: linux/amd64
                   labels: ${{ steps.meta.outputs.labels }}
                   tags: ${{ inputs.version != '' && inputs.version || steps.meta.outputs.tags }}
-                  push: ${{ inputs.push }}
+                  push: true
                   provenance: false
                   build-args: "BUILD_TAGS=${{inputs.buildTags}}"
