@@ -3,13 +3,10 @@ version: "2"
 linters:
   default: none
   enable:
-    # Enabled by Default.
-    - errcheck
     - govet
     - ineffassign
     - staticcheck
     - unused
-    # Disabled by Default, but useful for us.
     - errname
     - gocritic
     - intrange

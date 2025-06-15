@@ -44,11 +44,12 @@ func parseTestFile(t *testing.T, a *txtar.Archive) *testFile {
 	var cfg testConfig
 
 	for _, f := range a.Files {
-		if f.Name == "test-config.json" {
+		switch f.Name {
+		case "test-config.json":
 			if err := json.Unmarshal(f.Data, &cfg); err != nil {
 				t.Fatalf("failed to parse server config: %v", err)
 			}
-		} else if f.Name == "test-config.yaml" {
+		case "test-config.yaml":
 			if err := yaml.Unmarshal(f.Data, &cfg); err != nil {
 				t.Fatalf("failed to parse server config: %v", err)
 			}

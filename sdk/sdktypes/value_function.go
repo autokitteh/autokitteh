@@ -170,13 +170,14 @@ func (f FunctionValue) ConstValue() (Value, error) {
 	}
 
 	k, bs := bs[0], bs[1:]
-	if k == dataHeader {
+	switch k {
+	case dataHeader:
 		var pb ValuePB
 		if err := proto.Unmarshal(bs, &pb); err != nil {
 			return InvalidValue, err
 		}
 		return ValueFromProto(&pb)
-	} else if k == errorHeader {
+	case errorHeader:
 		var pb ProgramErrorPB
 		if err := proto.Unmarshal(bs, &pb); err != nil {
 			return InvalidValue, err

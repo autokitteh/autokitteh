@@ -96,7 +96,7 @@ func (w *IndentedStringWriter) Write(p []byte) (n int, err error) {
 	for _, b := range p {
 		var (
 			k   int
-			buf []byte = []byte{b}
+			buf = []byte{b}
 		)
 
 		if w.pending {
