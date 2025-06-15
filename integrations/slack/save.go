@@ -126,19 +126,19 @@ func (h handler) saveSocketModeApp(r *http.Request, vsid sdktypes.VarScopeID) er
 	auth, err := api.AuthTest(ctx, app.BotToken)
 	if err != nil {
 		h.logger.Warn("Slack token auth test failed", zap.Error(err))
-		return errors.New("Slack token auth test failed")
+		return errors.New("slack token auth test failed")
 	}
 
 	bot, err := api.BotsInfo(ctx, app.BotToken, auth)
 	if err != nil {
 		h.logger.Warn("Slack bot info request failed", zap.Error(err))
-		return errors.New("Slack bot info request failed")
+		return errors.New("slack bot info request failed")
 	}
 
 	_, err = api.AppsConnectionsOpen(ctx, app.AppToken)
 	if err != nil {
 		h.logger.Warn("Slack WebSocket connection opening failed", zap.Error(err))
-		return errors.New("Slack WebSocket connection opening failed")
+		return errors.New("slack WebSocket connection opening failed")
 	}
 
 	// Open a new Socket Mode connection.

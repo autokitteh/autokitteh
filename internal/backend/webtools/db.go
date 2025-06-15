@@ -28,7 +28,7 @@ func (db *terminalDB) Setup(ctx context.Context) error {
 }
 
 func (db *terminalDB) db(ctx context.Context) *gorm.DB {
-	_, w := db.DB.GormDB()
+	_, w := db.GormDB()
 	return w.WithContext(ctx)
 }
 

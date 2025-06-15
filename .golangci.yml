@@ -1,16 +1,13 @@
+version: "2"
+
 linters:
-  disable-all: true
+  default: none
   enable:
-    # Enabled by Default.
-    - errcheck
-    - gosimple
     - govet
     - ineffassign
     - staticcheck
     - unused
-    # Disabled by Default, but useful for us.
     - errname
-    - gci
     - gocritic
     - intrange
     - loggercheck
@@ -19,15 +16,19 @@ linters:
     - perfsprint
     - unconvert
     - usestdlibvars
+  settings:
+    loggercheck:
+      zap: true
 
-linters-settings:
-  gci:
-    sections:
-      - standard
-      - default
-      - prefix(go.autokitteh.dev/autokitteh)
-  loggercheck:
-    zap: true
+formatters:
+  enable:
+    - gci
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(go.autokitteh.dev/autokitteh)
 
 issues:
   new: false

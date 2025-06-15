@@ -159,7 +159,7 @@ func (h handler) signingSecret() (string, error) {
 func checkSignature(signature, timestamp, secret string, body []byte) bool {
 	// Create HMAC SHA-256 hash using the webhook secret token.
 	mac := hmac.New(sha256.New, []byte(secret))
-	mac.Write([]byte(fmt.Sprintf("v0:%s:%s", timestamp, string(body))))
+	fmt.Fprintf(mac, "v0:%s:%s", timestamp, string(body))
 	expectedSignature := "v0=" + hex.EncodeToString(mac.Sum(nil))
 
 	return hmac.Equal([]byte(signature), []byte(expectedSignature))

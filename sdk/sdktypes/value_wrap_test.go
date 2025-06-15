@@ -199,7 +199,7 @@ func TestUnwrapIntoScalars(t *testing.T) {
 
 func TestUnwrapIntoPtrs(t *testing.T) {
 	one := 1
-	var pint *int = &one
+	pint := &one
 	if assert.NoError(t, w.UnwrapInto(&pint, nothing)) {
 		assert.Nil(t, pint)
 	}

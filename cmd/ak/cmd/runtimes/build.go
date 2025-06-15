@@ -42,7 +42,7 @@ var buildCmd = common.StandardCommand(&cobra.Command{
 			dir = "."
 		}
 
-		var srcFS fs.FS = os.DirFS(dir)
+		srcFS := os.DirFS(dir)
 
 		if txtarFile {
 			if len(args) > 1 {
