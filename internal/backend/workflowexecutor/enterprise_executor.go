@@ -96,14 +96,6 @@ func (e *executor) availableSlots() int {
 }
 
 func (e *executor) Execute(ctx context.Context, sessionID sdktypes.SessionID, args any, memo map[string]string) error {
-	// bypass queue if we have free slots
-	if ok := e.executeLock.TryLock(); ok {
-		defer e.executeLock.Unlock()
-		if e.availableSlots() > 0 {
-			return e.executeAndIncrement(ctx, sessionID, args, memo)
-		}
-	}
-
 	return e.svcs.DB.CreateWorkflowExecutionRequest(ctx, db.WorkflowExecutionRequest{
 		SessionID:  sessionID,
 		WorkflowID: workflowID(sessionID),
@@ -126,6 +118,7 @@ func (e *executor) startPoller(ctx context.Context) {
 			case <-ctx.Done():
 				return
 			}
+
 		}
 	}()
 }
@@ -156,7 +149,7 @@ func (e *executor) runOnce(ctx context.Context) {
 	}
 
 	for _, job := range requests {
-		err := e.executeAndIncrement(ctx, job.SessionID, job.Args, job.Memo)
+		err := e.executeAndIncrement(ctx, job.SessionID, job.WorkflowID, job.Args, job.Memo)
 		if err != nil {
 			e.l.Error("Failed to execute workflow", zap.Error(err), zap.String("workflow_name", e.WorkflowSessionName()))
 			continue
@@ -170,8 +163,8 @@ func (e *executor) runOnce(ctx context.Context) {
 	}
 }
 
-func (e *executor) executeAndIncrement(ctx context.Context, sessionID sdktypes.SessionID, args any, memo map[string]string) error {
-	err := e.execute(ctx, sessionID, args, memo)
+func (e *executor) executeAndIncrement(ctx context.Context, sessionID sdktypes.SessionID, workflowID string, args any, memo map[string]string) error {
+	err := e.execute(ctx, sessionID, workflowID, args, memo)
 	if err != nil {
 		return err
 	}
