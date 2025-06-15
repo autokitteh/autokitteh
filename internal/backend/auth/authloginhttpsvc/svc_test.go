@@ -75,7 +75,7 @@ func TestNewSuccessLoginHandlerImmediate(t *testing.T) {
 			users.Users[testUser.ID()],
 		)
 	}
-	assertCounts(1, 0, 1)
+	assertCounts(1, 0, 2)
 
 	// user already exists and is active.
 	users.Reset(testUser)
