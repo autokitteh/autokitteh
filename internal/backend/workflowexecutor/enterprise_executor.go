@@ -12,7 +12,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
-	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 	"go.uber.org/zap"
@@ -44,8 +43,8 @@ type executor struct {
 
 	stopChannel chan struct{}
 
-	workerInfo scheme.WorkerInfo
-	cfg        *Config
+	inProgressWorkflowsCount int64
+	cfg                      *Config
 
 	executeLock sync.Mutex
 }
@@ -56,11 +55,12 @@ func (e *executor) WorkflowQueue() string {
 
 // Start implements WorkflowResourcesManager.
 func (e *executor) Start(ctx context.Context) error {
-	workerInfo, err := e.svcs.DB.GetWorkerInfo(ctx, e.cfg.WorkerID)
+	inProgress, err := e.svcs.DB.CountInProgressWorkflowExecutionRequests(ctx, e.cfg.WorkerID)
 	if err != nil {
 		return err
 	}
-	e.workerInfo = workerInfo
+	e.inProgressWorkflowsCount = inProgress
+	e.l.Info("Starting workflow executor", zap.Int64("in_progress_workflows", e.inProgressWorkflowsCount))
 	e.startPoller(ctx)
 	return nil
 }
@@ -92,7 +92,7 @@ func New(svcs Svcs, l *zap.Logger, cfg *Config) (*executor, error) {
 }
 
 func (e *executor) availableSlots() int {
-	return e.maxConcurrent - e.workerInfo.ActiveWorkflows
+	return e.maxConcurrent - int(e.inProgressWorkflowsCount)
 }
 
 func (e *executor) Execute(ctx context.Context, sessionID sdktypes.SessionID, args any, memo map[string]string) error {
@@ -105,9 +105,10 @@ func (e *executor) Execute(ctx context.Context, sessionID sdktypes.SessionID, ar
 	}
 
 	return e.svcs.DB.CreateWorkflowExecutionRequest(ctx, db.WorkflowExecutionRequest{
-		SessionID: sessionID,
-		Args:      args,
-		Memo:      memo,
+		SessionID:  sessionID,
+		WorkflowID: workflowID(sessionID),
+		Args:       args,
+		Memo:       memo,
 	})
 }
 
@@ -130,13 +131,11 @@ func (e *executor) startPoller(ctx context.Context) {
 }
 
 func (e *executor) NotifyDone(ctx context.Context, id string) error {
-	var err error
-	e.workerInfo.ActiveWorkflows, err = e.svcs.DB.DecActiveWorkflows(ctx, e.cfg.WorkerID)
-	if err != nil {
-		e.l.Error("Failed to update active workflows", zap.Error(err), zap.String("workflow_id", id))
-		e.workerInfo.ActiveWorkflows--
+	e.inProgressWorkflowsCount--
+	if err := e.svcs.DB.UpdateRequestStatus(ctx, id, "done"); err != nil {
+		e.l.Error("Failed to update workflow execution request status", zap.Error(err), zap.String("workflow_id", id))
 	}
-	e.l.Info(fmt.Sprintf("Active workflows: %d out of %d", e.workerInfo.ActiveWorkflows, e.maxConcurrent))
+	e.l.Info(fmt.Sprintf("Active workflows: %d out of %d", e.inProgressWorkflowsCount, e.maxConcurrent))
 	return nil
 }
 
@@ -162,11 +161,12 @@ func (e *executor) runOnce(ctx context.Context) {
 			e.l.Error("Failed to execute workflow", zap.Error(err), zap.String("workflow_name", e.WorkflowSessionName()))
 			continue
 		}
-		if err := e.svcs.DB.DeleteWorkflowExecutionRequest(ctx, job.SessionID); err != nil {
+
+		if err := e.svcs.DB.UpdateRequestStatus(ctx, job.WorkflowID, "in_progress"); err != nil {
 			e.l.Error("Failed to delete workflow execution request", zap.Error(err), zap.String("session_id", job.SessionID.String()))
 		}
 
-		e.sampledLogger.Info(fmt.Sprintf("Active workflows: %d out of %d", e.workerInfo.ActiveWorkflows, e.maxConcurrent))
+		e.sampledLogger.Info(fmt.Sprintf("Active workflows: %d out of %d", e.inProgressWorkflowsCount, e.maxConcurrent))
 	}
 }
 
@@ -175,14 +175,7 @@ func (e *executor) executeAndIncrement(ctx context.Context, sessionID sdktypes.S
 	if err != nil {
 		return err
 	}
-
-	e.workerInfo.ActiveWorkflows, err = e.svcs.DB.IncActiveWorkflows(ctx, e.cfg.WorkerID)
-	if err != nil {
-		e.l.Error("Failed to update active workflows", zap.Error(err))
-		// This is so at least the in memory represination would be ok
-		// we might succeed updating later
-		e.workerInfo.ActiveWorkflows++
-	}
+	e.inProgressWorkflowsCount++
 
 	return nil
 }

@@ -9,18 +9,14 @@ import (
 	"github.com/google/uuid"
 )
 
-type WorkerInfo struct {
-	WorkerID        string `gorm:"primaryKey"`
-	ActiveWorkflows int
-	UpdatedAt       time.Time
-}
-
 type WorkflowExecutionRequest struct {
-	SessionID  uuid.UUID `gorm:"primaryKey"`
+	SessionID  uuid.UUID
+	WorkflowID string `gorm:"primaryKey"`
 	Args       []byte
 	Memo       []byte
 	AcquiredAt *time.Time
-	AcquiredBy *string
+	AcquiredBy *string `gorm:"index:idx_acquired_by_status"` // worker ID that acquired the request
 
+	Status    string    `gorm:"default:'pending';index:idx_acquired_by_status,where:status='in_progress'"`
 	CreatedAt time.Time `gorm:"default:NOW()"`
 }

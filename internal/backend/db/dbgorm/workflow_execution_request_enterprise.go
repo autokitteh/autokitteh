@@ -26,9 +26,10 @@ func (gdb *gormdb) CreateWorkflowExecutionRequest(ctx context.Context, r db.Work
 	}
 
 	request := &scheme.WorkflowExecutionRequest{
-		SessionID: r.SessionID.UUIDValue(),
-		Args:      argsBytes,
-		Memo:      memoData,
+		WorkflowID: r.WorkflowID,
+		SessionID:  r.SessionID.UUIDValue(),
+		Args:       argsBytes,
+		Memo:       memoData,
 	}
 
 	return gdb.writer.WithContext(ctx).Create(request).Error
@@ -40,7 +41,7 @@ func (gdb *gormdb) GetWorkflowExecutionRequests(ctx context.Context, workerID st
 	if err := gdb.writer.WithContext(ctx).Model(&scheme.WorkflowExecutionRequest{}).Raw(`
 	UPDATE workflow_execution_requests
 	SET acquired_at = NOW(), acquired_by = $1
-	WHERE session_id IN (SELECT session_id FROM workflow_execution_requests WHERE acquired_by IS NULL OR acquired_at < NOW() - INTERVAL '1 day' LIMIT $2 FOR UPDATE SKIP LOCKED)
+	WHERE session_id IN (SELECT session_id FROM workflow_execution_requests WHERE status = 'pending' OR acquired_at < NOW() - INTERVAL '1 day' LIMIT $2 FOR UPDATE SKIP LOCKED)
 	RETURNING *;
 	`, workerID, maxRequests).Scan(&requests).Error; err != nil {
 		return nil, err
@@ -66,6 +67,18 @@ func (gdb *gormdb) GetWorkflowExecutionRequests(ctx context.Context, workerID st
 	return results, nil
 }
 
-func (gdb *gormdb) DeleteWorkflowExecutionRequest(ctx context.Context, sessionID sdktypes.SessionID) error {
-	return gdb.writer.WithContext(ctx).Where("session_id = ?", sessionID.UUIDValue()).Delete(&scheme.WorkflowExecutionRequest{}).Error
+func (gdb *gormdb) CountInProgressWorkflowExecutionRequests(ctx context.Context, workerID string) (int64, error) {
+	var count int64
+	if err := gdb.writer.WithContext(ctx).Model(&scheme.WorkflowExecutionRequest{}).
+		Where("acquired_by = ? AND status = 'in_progress'", workerID).
+		Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+func (gdb *gormdb) UpdateRequestStatus(ctx context.Context, workflowID string, status string) error {
+	return gdb.writer.WithContext(ctx).Model(&scheme.WorkflowExecutionRequest{}).
+		Where("workflow_id = ?", workflowID).
+		Update("status", status).Error
 }
