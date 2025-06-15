@@ -5,6 +5,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
+	"go.autokitteh.dev/autokitteh/internal/backend/workflowexecutor"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
 
@@ -24,4 +25,6 @@ type Svcs struct {
 	Store        sdkservices.Store
 
 	Temporal temporalclient.Client
+
+	WorkflowExecutor workflowexecutor.WorkflowExecutor
 }
