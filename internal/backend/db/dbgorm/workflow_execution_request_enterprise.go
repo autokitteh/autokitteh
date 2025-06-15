@@ -14,7 +14,6 @@ import (
 )
 
 func (gdb *gormdb) CreateWorkflowExecutionRequest(ctx context.Context, r db.WorkflowExecutionRequest) error {
-
 	argsBytes, err := json.Marshal(r.Args)
 	if err != nil {
 		return fmt.Errorf("failed to marshal args: %w", err)
@@ -30,6 +29,7 @@ func (gdb *gormdb) CreateWorkflowExecutionRequest(ctx context.Context, r db.Work
 		SessionID:  r.SessionID.UUIDValue(),
 		Args:       argsBytes,
 		Memo:       memoData,
+		Status:     "pending",
 	}
 
 	return gdb.writer.WithContext(ctx).Create(request).Error
@@ -58,9 +58,10 @@ func (gdb *gormdb) GetWorkflowExecutionRequests(ctx context.Context, workerID st
 			return nil, fmt.Errorf("failed to unmarshal memo: %w", err)
 		}
 		results[i] = db.WorkflowExecutionRequest{
-			SessionID: sdktypes.NewIDFromUUID[sdktypes.SessionID](request.SessionID),
-			Args:      args,
-			Memo:      memo,
+			WorkflowID: request.WorkflowID,
+			SessionID:  sdktypes.NewIDFromUUID[sdktypes.SessionID](request.SessionID),
+			Args:       args,
+			Memo:       memo,
 		}
 	}
 
