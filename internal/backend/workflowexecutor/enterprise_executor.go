@@ -47,7 +47,7 @@ type executor struct {
 	workerInfo scheme.WorkerInfo
 	cfg        *Config
 
-	executeLock *sync.Mutex
+	executeLock sync.Mutex
 }
 
 func (e *executor) WorkflowQueue() string {
@@ -85,7 +85,7 @@ func New(svcs Svcs, l *zap.Logger, cfg *Config) (*executor, error) {
 		sampledLogger: sampledLogger,
 		stopChannel:   make(chan struct{}, 1),
 		cfg:           cfg,
-		executeLock:   &sync.Mutex{},
+		executeLock:   sync.Mutex{},
 	}
 
 	return e, nil
