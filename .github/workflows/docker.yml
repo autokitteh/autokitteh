@@ -16,7 +16,7 @@ on:
 
 jobs:
     build_only:
-        name: Build Docker image
+        name: Build Only
         runs-on: ubuntu-latest
         timeout-minutes: 10
         if: ${{ inputs.push == false }}
@@ -33,7 +33,7 @@ jobs:
                   echo "${GITHUB_REF_NAME}" > .version
                   echo "${GITHUB_SHA}" > .commit
 
-            - name: Build and push
+            - name: Build
               uses: docker/build-push-action@v6
               with:
                   context: .
@@ -44,7 +44,7 @@ jobs:
                   build-args: "BUILD_TAGS=${{inputs.buildTags}}"
 
     build_and_push:
-        name: Build Docker image
+        name: Build And Push
         runs-on: ubuntu-latest
         timeout-minutes: 10
         if: ${{ inputs.push == true }}
