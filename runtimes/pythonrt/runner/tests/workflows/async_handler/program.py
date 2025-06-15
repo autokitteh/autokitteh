@@ -1,18 +1,19 @@
-on_event: start
-work
-on_event: end (out=8)
--- main.py:main --
 import autokitteh
 
 
 @autokitteh.activity
-async def main(event):
+async def on_event(event):
     print("on_event: start")
-    w = work()
-    out = await w
+    out = await work()
     print(f"on_event: end ({out=})")
 
 
 async def work():
     print("work")
     return 8
+
+
+if __name__ == "__main__":
+    import asyncio
+
+    asyncio.run(on_event(None))
