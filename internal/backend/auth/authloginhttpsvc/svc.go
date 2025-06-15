@@ -274,7 +274,7 @@ func (a *svc) newSuccessLoginHandler(ctx context.Context, ld *loginData) http.Ha
 		}
 
 		u, err = a.Users.Get(authcontext.SetAuthnSystemUser(ctx), uid, "")
-		if err != nil && !errors.Is(err, sdkerrors.ErrNotFound) {
+		if err != nil {
 			sl.With("err", err).Errorf("failed getting user after create: %v", err)
 			return newErrHandler("internal server error", http.StatusInternalServerError)
 		}
