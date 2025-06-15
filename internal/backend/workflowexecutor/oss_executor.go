@@ -40,7 +40,7 @@ func (e *executor) WorkflowQueue() string {
 }
 
 func (e *executor) Execute(ctx context.Context, sessionID sdktypes.SessionID, data any, memo map[string]string) error {
-	return e.execute(ctx, sessionID, data, memo)
+	return e.execute(ctx, sessionID, workflowID(sessionID), data, memo)
 }
 
 func (e *executor) NotifyDone(ctx context.Context, id string) error {
