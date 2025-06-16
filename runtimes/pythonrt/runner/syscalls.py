@@ -193,6 +193,32 @@ class SysCalls:
 
         return None
 
+    def ak_mutate_value(self, key: str, op: str, *args: list[str]) -> any:
+        self.log.info("ak_mutate_value: %r %r %r", key, op, args)
+        req = pb.StoreMutateRequest(
+            runner_id=self.runner_id,
+            key=key,
+            operation=op,
+            operands=[values.wrap(arg) for arg in args],
+        )
+        resp = call_grpc("store_mutate", self.worker.StoreMutate, req)
+        return values.unwrap(resp.result)
+
+    def ak_set_value(self, key: str, value: any) -> None:
+        self.ak_mutate_value(key, "set", value)
+
+    def ak_get_value(self, key: str) -> any:
+        return self.ak_mutate_value(key, "get")
+
+    def ak_del_value(self, key: str) -> any:
+        return self.ak_mutate_value(key, "del")
+
+    def ak_list_values(self) -> list[str]:
+        self.log.info("ak_list_values")
+        req = pb.StoreListRequest(runner_id=self.runner_id)
+        resp = call_grpc("store_list", self.worker.StoreList, req)
+        return resp.keys
+
     @classmethod
     def mark_ak_no_activity(cls):
         """Mark ak_* methods as not activity."""

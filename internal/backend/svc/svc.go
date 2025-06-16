@@ -19,7 +19,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/integrations/oauth"
 	"go.autokitteh.dev/autokitteh/internal/backend/applygrpcsvc"
-	"go.autokitteh.dev/autokitteh/internal/backend/auth/authgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authhttpmiddleware"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authloginhttpsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authsessions"
@@ -50,7 +49,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/logger"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/internal/backend/orgs"
-	"go.autokitteh.dev/autokitteh/internal/backend/orgsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/policy/opapolicy"
 	"go.autokitteh.dev/autokitteh/internal/backend/projects"
 	"go.autokitteh.dev/autokitteh/internal/backend/projectsgrpcsvc"
@@ -58,13 +56,14 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/secrets"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessionsgrpcsvc"
+	"go.autokitteh.dev/autokitteh/internal/backend/store"
+	"go.autokitteh.dev/autokitteh/internal/backend/storegrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/backend/triggers"
 	"go.autokitteh.dev/autokitteh/internal/backend/triggersgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/usagereporter"
 	"go.autokitteh.dev/autokitteh/internal/backend/users"
-	"go.autokitteh.dev/autokitteh/internal/backend/usersgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/vars"
 	"go.autokitteh.dev/autokitteh/internal/backend/varsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/webhookssvc"
@@ -241,6 +240,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				})
 			}),
 		),
+		Component("store", configset.Empty, fx.Provide(store.New)),
 		Component("projects", configset.Empty, fx.Provide(projects.New)),
 		Component("projectsgrpcsvc", projectsgrpcsvc.Configs, fx.Provide(projectsgrpcsvc.New)),
 		Component(
@@ -307,17 +307,15 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			}),
 		),
 		fx.Provide(func(s sdkservices.ServicesStruct) sdkservices.Services { return &s }),
-		fx.Invoke(authgrpcsvc.Init),
 		fx.Invoke(applygrpcsvc.Init),
 		fx.Invoke(buildsgrpcsvc.Init),
 		fx.Invoke(connectionsgrpcsvc.Init),
 		fx.Invoke(deploymentsgrpcsvc.Init),
 		fx.Invoke(dispatchergrpcsvc.Init),
 		fx.Invoke(eventsgrpcsvc.Init),
-		fx.Invoke(usersgrpcsvc.Init),
-		fx.Invoke(orgsgrpcsvc.Init),
 		fx.Invoke(integrationsgrpcsvc.Init),
 		fx.Invoke(projectsgrpcsvc.Init),
+		fx.Invoke(storegrpcsvc.Init),
 		fx.Invoke(func(z *zap.Logger, runtimes sdkservices.Runtimes, muxes *muxes.Muxes) {
 			sdkruntimessvc.Init(z, runtimes, muxes.Auth)
 		}),

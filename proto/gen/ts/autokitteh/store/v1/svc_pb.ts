@@ -8,6 +8,98 @@ import { Message, proto3 } from "@bufbuild/protobuf";
 import { Value } from "../../values/v1/values_pb.js";
 
 /**
+ * @generated from message autokitteh.store.v1.DoRequest
+ */
+export class DoRequest extends Message<DoRequest> {
+  /**
+   * @generated from field: string project_id = 1;
+   */
+  projectId = "";
+
+  /**
+   * @generated from field: string key = 2;
+   */
+  key = "";
+
+  /**
+   * @generated from field: string operation = 3;
+   */
+  operation = "";
+
+  /**
+   * @generated from field: repeated autokitteh.values.v1.Value operands = 4;
+   */
+  operands: Value[] = [];
+
+  constructor(data?: PartialMessage<DoRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.store.v1.DoRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "operation", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "operands", kind: "message", T: Value, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DoRequest {
+    return new DoRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DoRequest {
+    return new DoRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DoRequest {
+    return new DoRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DoRequest | PlainMessage<DoRequest> | undefined, b: DoRequest | PlainMessage<DoRequest> | undefined): boolean {
+    return proto3.util.equals(DoRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.store.v1.DoResponse
+ */
+export class DoResponse extends Message<DoResponse> {
+  /**
+   * @generated from field: autokitteh.values.v1.Value value = 1;
+   */
+  value?: Value;
+
+  constructor(data?: PartialMessage<DoResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.store.v1.DoResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "value", kind: "message", T: Value },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DoResponse {
+    return new DoResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DoResponse {
+    return new DoResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DoResponse {
+    return new DoResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DoResponse | PlainMessage<DoResponse> | undefined, b: DoResponse | PlainMessage<DoResponse> | undefined): boolean {
+    return proto3.util.equals(DoResponse, a, b);
+  }
+}
+
+/**
  * @generated from message autokitteh.store.v1.GetRequest
  */
 export class GetRequest extends Message<GetRequest> {
