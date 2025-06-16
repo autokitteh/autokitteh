@@ -334,13 +334,12 @@ func ParseSessionCallAttemptComplete(c SessionCallAttempt) (d sdktypes.SessionCa
 
 type Session struct {
 	Base
-
 	ProjectID        uuid.UUID  `gorm:"index;type:uuid;not null"`
 	SessionID        uuid.UUID  `gorm:"primaryKey;type:uuid;not null"`
 	BuildID          uuid.UUID  `gorm:"index;type:uuid;not null"`
-	DeploymentID     *uuid.UUID `gorm:"index;type:uuid"`
+	DeploymentID     *uuid.UUID `gorm:"index;index:idx_active_sessions;type:uuid"`
 	EventID          *uuid.UUID `gorm:"index;type:uuid"`
-	CurrentStateType int        `gorm:"index"`
+	CurrentStateType int        `gorm:"index:idx_active_sessions,where:current_state_type = 1 OR current_state_type = 2"`
 	Entrypoint       string
 	Inputs           datatypes.JSON
 	Memo             datatypes.JSON
@@ -418,6 +417,12 @@ type Deployment struct {
 }
 
 func (Deployment) IDFieldName() string { return "deployment_id" }
+
+type DeploymentSessionStats struct {
+	DeploymentID uuid.UUID `gorm:"primaryKey;type:uuid;not null;"`
+	SessionState int       `gorm:"primaryKey"`
+	Count        int       `gorm:"not null;default:0"`
+}
 
 func (d *Deployment) BeforeUpdate(tx *gorm.DB) (err error) {
 	if tx.Statement.Changed() { // if any fields changed

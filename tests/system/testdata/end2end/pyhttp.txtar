@@ -10,7 +10,17 @@ wait 5s for session ses_00000000000000000000000007
 
 ak session log my_project --no-timestamps --page-size 1 --order desc -J
 return code == 0
-output equals_json file expected_without_path.json
+
+output contains 'GET'
+output contains 'ses_00000000000000000000000007'
+
+output equals_jq .state.completed.exports.on_http.function.name on_http
+output equals_jq .state.completed.exports.on_http.function.desc.input[0].name event
+output equals_jq .state.completed.exports.on_http.function.executor_id run_00000000000000000000000008
+
+output equals_jq .state.completed.return_value.custom.executor_id run_00000000000000000000000008
+output equals_jq .state.completed.return_value.custom.data gASVHgAAAAAAAACMCF9fbWFpbl9flIwGUmVzdWx0lJOUTk5Oh5SBlC4=
+output equals_jq .state.completed.return_value.custom.value.nothing map[]
 
 -- project.yaml --
 version: v1

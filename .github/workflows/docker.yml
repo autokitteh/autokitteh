@@ -1,0 +1,96 @@
+on:
+    workflow_call:
+        inputs:
+            push:
+                type: boolean
+                default: false
+            image:
+                required: true
+                type: string
+            buildTags:
+                type: string
+                default: ""
+            version:
+                type: string
+                default: ""
+
+jobs:
+    build_only:
+        name: Build Only
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        if: ${{ inputs.push == false }}
+        permissions:
+            id-token: write
+            contents: read
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup version info
+              run: |
+                  # These are consumed in the Dockerfile.
+                  echo "${GITHUB_REF_NAME}" > .version
+                  echo "${GITHUB_SHA}" > .commit
+
+            - name: Build
+              uses: docker/build-push-action@v6
+              with:
+                  context: .
+                  platforms: linux/amd64
+                  tags: "test"
+                  push: false
+                  provenance: false
+                  build-args: "BUILD_TAGS=${{inputs.buildTags}}"
+
+    build_and_push:
+        name: Build And Push
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        if: ${{ inputs.push == true }}
+        permissions:
+            id-token: write
+            contents: read
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Setup version info
+              run: |
+                  # These are consumed in the Dockerfile.
+                  echo "${GITHUB_REF_NAME}" > .version
+                  echo "${GITHUB_SHA}" > .commit
+
+            - name: Configure AWS credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  role-to-assume: ${{secrets.AWS_GITHUB_ROLE}}
+                  role-session-name: Github_Action_Release_Autokitteh
+                  aws-region: us-east-1
+            - name: Login to Amazon ECR
+              id: login-ecr
+              uses: aws-actions/amazon-ecr-login@v2
+              with:
+                  registry-type: public
+            - name: Metadata
+              id: meta
+              uses: docker/metadata-action@v5
+              with:
+                  images: ${{ steps.login-ecr.outputs.registry }}/autokitteh/${{ inputs.image }}
+                  tags: |
+                      type=ref,event=branch
+                      type=semver,pattern={{version}}
+                      type=semver,pattern={{major}}.{{minor}}
+                      type=sha
+                      type=edge
+                      type=raw,value=latest,enable={{is_default_branch}}
+            - name: Build and push
+              uses: docker/build-push-action@v6
+              with:
+                  context: .
+                  platforms: linux/amd64
+                  labels: ${{ steps.meta.outputs.labels }}
+                  tags: ${{ inputs.version != '' && inputs.version || steps.meta.outputs.tags }}
+                  push: true
+                  provenance: false
+                  build-args: "BUILD_TAGS=${{inputs.buildTags}}"

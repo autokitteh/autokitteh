@@ -15,6 +15,7 @@ RUN --mount=type=cache,target=/go/pkg/mod/ \
     --mount=type=bind,source=go.mod,target=go.mod \
     go mod download -x
 
+ARG BUILD_TAGS=""
 # Build the application.
 # Leverage a cache mount to /go/pkg/mod/ to speed up subsequent builds.
 # Leverage a bind mount to the current directory to avoid having to copy the
@@ -26,7 +27,7 @@ RUN --mount=type=cache,target=/go/pkg/mod/ \
     export TIMESTAMP="$(date -u "+%Y-%m-%dT%H:%MZ")"
     export LDFLAGS="-X "${VERSION_PKG_PATH}.Version=$(cat .version || echo)" -X "${VERSION_PKG_PATH}.Time=${TIMESTAMP}" -X "${VERSION_PKG_PATH}.Commit=$(cat .commit || echo)""
     make webplatform
-    CGO_ENABLED=0 go build -o /bin/ak -ldflags="${LDFLAGS}" ./cmd/ak
+    CGO_ENABLED=0 go build -o /bin/ak -ldflags="${LDFLAGS}" -tags=${BUILD_TAGS} ./cmd/ak
 EOF
 
 

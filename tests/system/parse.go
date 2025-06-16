@@ -15,11 +15,11 @@ const (
 )
 
 var (
-	steps = regexp.MustCompile(`^(?:(ak|http|output|req|resp|return|wait|setenv|capture_jq|capture_re|user)\s)|(exit)$`)
+	steps = regexp.MustCompile(`^(?:(ak|http|output|req|resp|return|wait|setenv|capture_jq|capture_re|user|file|exec)\s)|(exit)$`)
 
 	// ak *
 	// http <get|post> *
-	actions = regexp.MustCompile(`^(ak|http\s+(get|post)|wait|setenv|user)\s+(.+)`)
+	actions = regexp.MustCompile(`^(ak|http\s+(get|post)|wait|setenv|user|exec)\s+(.+)`)
 	// wait <duration> for session <session ID>
 	waitAction = regexp.MustCompile(`^wait\s+(.+)\s+(for|unless)\s+session\s+(.+)`)
 
@@ -31,6 +31,10 @@ var (
 
 	// output <equals|equals_json|contains|regex> [file] *
 	akCheckOutput = regexp.MustCompile(`^output\s+(equals|equals_json|contains|regex|equals_jq)\s+(file\s+)?(.+|'.*')`)
+
+	// file <filename> contains <text>
+	fileChecks = regexp.MustCompile(`^file\s+(.+)\s+contains\s+(.+)`)
+
 	// return code == <int>
 	akCheckReturn = regexp.MustCompile(`^return\s+code\s*==\s*(\d+)$`)
 

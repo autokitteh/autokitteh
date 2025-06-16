@@ -19,6 +19,19 @@ func (f *dbFixture) createSessionsAndAssert(t *testing.T, sessions ...scheme.Ses
 	for _, session := range sessions {
 		assert.NoError(t, f.gormdb.createSession(f.ctx, &session))
 		findAndAssertOne(t, f, session, "session_id = ?", session.SessionID)
+
+		// Manually increment count for sessions created directly in completed state.
+		// Normal sessions go through running->completed transition and auto-increment count.
+		// Test sessions skip the running state, so we need to increment count here.
+		runningState := int(sdktypes.SessionStateTypeRunning.ToProto())
+		if session.CurrentStateType > runningState && session.DeploymentID != nil {
+			err := f.gormdb.incDeploymentStats(
+				&gormdb{writer: f.gormdb.writer},
+				*session.DeploymentID,
+				session.CurrentStateType,
+			)
+			assert.NoError(t, err)
+		}
 	}
 }
 

@@ -8,14 +8,12 @@ import (
 	"runtime"
 	"strings"
 
-	_ "ariga.io/atlas-provider-gorm/gormschema"
-	"github.com/pressly/goose/v3"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
+	"go.autokitteh.dev/autokitteh/internal/backend/db/migrator"
 	"go.autokitteh.dev/autokitteh/internal/backend/gormkitteh"
-	"go.autokitteh.dev/autokitteh/migrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
 
@@ -26,6 +24,21 @@ type gormdb struct {
 	cfg *Config
 
 	writer, reader *gorm.DB
+}
+
+// Migrate implements db.DB.
+func (db *gormdb) Migrate(ctx context.Context) error {
+	_, c, err := db.client(false)
+	if err != nil {
+		return err
+	}
+	m, err := migrator.NewMigrator(c, db.cfg.Type)
+	if err != nil {
+		return err
+	}
+
+	return m.Migrate(ctx)
+
 }
 
 var _ db.DB = (*gormdb)(nil)
@@ -152,80 +165,6 @@ func foreignKeys(gormdb *gormdb, enable bool) error {
 	return nil
 }
 
-func initGoose(client *sql.DB, dialect string) (ver int64, err error) {
-	goose.SetBaseFS(migrations.Migrations)
-
-	if err = goose.SetDialect(dialect); err != nil {
-		return
-	}
-
-	if ver, err = goose.EnsureDBVersion(client); err != nil {
-		err = fmt.Errorf("failed to ensure DB version: %w", err)
-	}
-
-	return
-}
-
-func (db *gormdb) Migrate(ctx context.Context) error {
-	db.z.Info("migrating")
-
-	_, client, err := db.client(true)
-	if err != nil {
-		return err
-	}
-
-	if _, err = initGoose(client, db.cfg.Type); err != nil {
-		return err
-	}
-
-	migrationsDir := db.cfg.Type
-	if err := goose.UpContext(ctx, client, migrationsDir); err != nil {
-		return fmt.Errorf("goose up: %w", err)
-	}
-
-	return nil
-}
-
-func (db *gormdb) MigrationRequired(ctx context.Context) (bool, int64, error) {
-	_, client, err := db.client(false)
-	if err != nil {
-		return false, 0, err
-	}
-
-	dbversion, err := initGoose(client, db.cfg.Type)
-	if err != nil {
-		return false, 0, err
-	}
-
-	migrationsDir := db.cfg.Type
-	requiredMigrations, err := goose.CollectMigrations(migrationsDir, dbversion, int64((1<<63)-1))
-	if err != nil && !errors.Is(err, goose.ErrNoMigrationFiles) {
-		return false, 0, err
-	}
-
-	return len(requiredMigrations) > 0, dbversion, nil
-}
-
-func (db *gormdb) migrate(ctx context.Context) error {
-	required, dbVersion, err := db.MigrationRequired(ctx)
-	if err != nil {
-		return err
-	}
-	if !required {
-		return nil
-	}
-
-	z := db.z.With(zap.Int64("db_version", dbVersion))
-
-	z.Info("migration required")
-
-	if db.cfg.AutoMigrate || dbVersion == 0 {
-		return db.Migrate(ctx)
-	}
-
-	return errors.New("db migrations required") // TODO: maybe more details
-}
-
 func (db *gormdb) seed(ctx context.Context) error {
 	if db.cfg.SeedCommands == "" {
 		return nil
@@ -253,9 +192,25 @@ func (db *gormdb) Setup(ctx context.Context) error {
 			}
 		}()
 	}
-
-	if err := db.migrate(ctx); err != nil {
+	_, c, err := db.client(true)
+	if err != nil {
 		return err
+	}
+
+	m, err := migrator.NewMigrator(c, db.cfg.Type)
+	if err != nil {
+		return err
+	}
+
+	requireMigration, err := m.MigrationRequired(ctx)
+	if err != nil {
+		return err
+	}
+
+	if requireMigration || m.DbVersion == 0 {
+		if err := m.Migrate(ctx); err != nil {
+			return err
+		}
 	}
 
 	if err := db.seed(ctx); err != nil {

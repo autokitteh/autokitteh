@@ -7,6 +7,7 @@ import sys
 from base64 import b64decode
 from collections import namedtuple
 from concurrent.futures import Future, ThreadPoolExecutor
+from functools import update_wrapper
 from io import StringIO
 from multiprocessing import cpu_count
 from pathlib import Path
@@ -16,14 +17,15 @@ from traceback import TracebackException, format_exception
 
 import autokitteh
 import grpc
-import loader
-import log
-import pb
-import values
 
 # from audit import make_audit_hook  # TODO(ENG-1893): uncomment this.
 from autokitteh import AttrDict, Event, connections
 from autokitteh.errors import AutoKittehError
+
+import loader
+import log
+import pb
+import values
 from call import AKCall, activity_marker, full_func_name
 from syscalls import SysCalls, mark_no_activity
 
@@ -95,6 +97,16 @@ pickle_help = """
 The below error means you need to use the @autokitteh.activity decorator.
 See https://docs.autokitteh.com/develop/python/#function-arguments-and-return-values-must-be-pickleable
 for more details.
+=======================================================================================================
+"""
+
+
+suggest_add_package = """
+=======================================================================================================
+The below error means you need to add a package to the Python environment.
+Web platform: Create a requirements.txt file and add module to the requirements.txt file.
+Self hosted: add module to AutoKitteh virtual environment. 
+See https://docs.autokitteh.com/develop/python#installing-python-packages for more details.
 =======================================================================================================
 """
 
@@ -196,6 +208,20 @@ def restore_error(err):
     return obj
 
 
+def short_name(func_name: str):
+    """
+    >>> short_name('pickle.dumps')
+    'dumps'
+    >>> short_name('urlopen')
+    'urlopen'
+    """
+    i = func_name.rfind(".")
+    if i == -1:
+        return func_name
+
+    return func_name[i + 1 :]
+
+
 class Runner(pb.runner_rpc.RunnerService):
     def __init__(
         self, id, worker, code_dir, server, start_timeout=DEFAULT_START_TIMEOUT
@@ -208,16 +234,20 @@ class Runner(pb.runner_rpc.RunnerService):
         self.executor = ThreadPoolExecutor()
 
         self.lock = Lock()
-        self.activity_call = None
+        self.activity_call: Call = None
         self._orig_print = print
         self._start_called = False
         self._inactivity_timer = Timer(
             start_timeout, self.stop_if_start_not_called, args=(start_timeout,)
         )
         self._inactivity_timer.start()
+        self._stopped = False
 
     def result_error(self, err):
         io = StringIO()
+
+        if "No module named" in str(err):
+            self._orig_print(suggest_add_package, file=io)
 
         if "pickle" in str(err):
             self._orig_print(pickle_help, file=io)
@@ -254,7 +284,7 @@ class Runner(pb.runner_rpc.RunnerService):
             return
 
         # Check that we are still active
-        while True:
+        while not self._stopped:
             try:
                 req = pb.handler.IsActiveRunnerRequest(runner_id=self.id)
                 res = self.worker.IsActiveRunner(req)
@@ -263,6 +293,10 @@ class Runner(pb.runner_rpc.RunnerService):
             except grpc.RpcError:
                 break
             sleep(period)
+
+        if self._stopped:
+            log.info("Runner %s stopped, stopping should_keep_running loop", self.id)
+            return
 
         log.error("could not verify if should keep running, killing self")
         self.server.stop(SERVER_GRACE_TIMEOUT)
@@ -333,12 +367,14 @@ class Runner(pb.runner_rpc.RunnerService):
         # hook = make_audit_hook(ak_call, self.code_dir)
         # sys.addaudithook(hook)
 
+        # Top-level handler marked as activity.
         if activity_marker(fn):
             orig_fn = fn
 
             def handler(event):
                 return ak_call(orig_fn, event)
 
+            update_wrapper(handler, orig_fn)
             fn = handler
 
         self.executor.submit(self.on_event, fn, event)
@@ -425,7 +461,16 @@ class Runner(pb.runner_rpc.RunnerService):
                 error = AutoKittehError(repr(result.error))
             call.fut.set_exception(error)
         else:
-            call.fut.set_result(result.value)
+            if inspect.iscoroutinefunction(call.fn):
+                # Wrap async result from activity so it can be awaited
+                async def future():
+                    return result.value
+
+                value = future()
+            else:
+                value = result.value
+
+            call.fut.set_result(value)
 
         return pb.runner.ActivityReplyResponse()
 
@@ -457,7 +502,8 @@ class Runner(pb.runner_rpc.RunnerService):
         req = pb.handler.ActivityRequest(
             runner_id=self.id,
             call_info=pb.handler.CallInfo(
-                function=fn.__name__,  # AK rejects __qualname__ such as "json.loads"
+                # AK rejects __qualname__ such as "json.loads"
+                function=short_name(fn_name),
                 args=[values.safe_wrap(a) for a in args],
                 kwargs={k: values.safe_wrap(v) for k, v in kw.items()},
             ),
@@ -501,6 +547,7 @@ class Runner(pb.runner_rpc.RunnerService):
         result = self._call(fn, [event], {})
 
         log.info("event end: error=%r", result.error)
+        self._stopped = True
         req = pb.handler.DoneRequest(
             runner_id=self.id,
         )
@@ -526,6 +573,8 @@ class Runner(pb.runner_rpc.RunnerService):
             self.worker.Done(req)
         except Exception as err:
             log.error("on_event: done send error: %r", err)
+
+        self.server.stop(SERVER_GRACE_TIMEOUT)
 
     @mark_no_activity
     def ak_print(self, *objects, sep=" ", end="\n", file=None, flush=False):

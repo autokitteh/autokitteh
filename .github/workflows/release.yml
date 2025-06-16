@@ -6,10 +6,18 @@
 
 name: Release
 
+concurrency:
+    group: ${{ github.ref_name }}
+    cancel-in-progress: false
+
 # https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#release
 on:
     release:
         types: [published]
+
+permissions:
+    contents: read
+    id-token: write
 
 jobs:
     goreleaser:
@@ -40,50 +48,16 @@ jobs:
               env:
                   GITHUB_TOKEN: ${{secrets.HOMEBREW_TAP_TOKEN}}
 
-    publish-stable-docker-image:
-        name: Publish Docker image
-        runs-on: ubuntu-latest
-        timeout-minutes: 10
-        permissions:
-            id-token: write
-            contents: read
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
-
-            - name: Setup version info
-              run: |
-                  # These are consumed in the Dockerfile.
-                  echo "${GITHUB_REF_NAME}" > .version
-                  echo "${GITHUB_SHA}" > .commit
-
-            - name: Configure AWS credentials
-              uses: aws-actions/configure-aws-credentials@v4
-              with:
-                  role-to-assume: ${{secrets.AWS_GITHUB_ROLE}}
-                  role-session-name: Github_Action_Release_Autokitteh
-                  aws-region: us-east-1
-
-            - name: Login to Amazon ECR
-              id: login-ecr
-              uses: aws-actions/amazon-ecr-login@v2
-
-            - name: Metadata
-              id: meta
-              uses: docker/metadata-action@v5
-              with:
-                  images: ${{ steps.login-ecr.outputs.registry }}/autokitteh
-                  tags: |
-                      type=semver,pattern=v{{version}}
-                      type=semver,pattern=v{{major}}.{{minor}}
-                      type=sha
-                      type=raw,value=stable
-            - name: Build and push
-              uses: docker/build-push-action@v6
-              with:
-                  context: .
-                  platforms: linux/amd64
-                  labels: ${{steps.meta.outputs.labels}}
-                  tags: ${{steps.meta.outputs.tags}}
-                  push: true
-                  provenance: false
+    build-standard:
+        uses: ./.github/workflows/docker.yml
+        with:
+            push: true
+            image: server
+        secrets: inherit
+    build-ee:
+        uses: ./.github/workflows/docker.yml
+        with:
+            push: true
+            image: ee/server
+            buildTags: "enterprise"
+        secrets: inherit
