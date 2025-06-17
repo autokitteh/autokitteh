@@ -79,7 +79,7 @@ jobs:
         run: make gofmt-check
 
       - name: Run Go linters
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v8
         with:
           # Keep the same version in "/Makefile"!
           # See: https://github.com/golangci/golangci-lint/releases
