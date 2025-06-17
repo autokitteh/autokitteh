@@ -7,19 +7,19 @@ import (
 
 	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
+	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
-
-var apiKeyVar = sdktypes.NewSymbol("api_key")
 
 // handler is an autokitteh webhook which implements [http.Handler]
 // to save data from web form submissions as connections.
 type handler struct {
 	logger *zap.Logger
+	vars   sdkservices.Vars
 }
 
-func NewHTTPHandler(l *zap.Logger) http.Handler {
-	return handler{logger: l}
+func NewHTTPHandler(l *zap.Logger, v sdkservices.Vars) http.Handler {
+	return handler{logger: l, vars: v}
 }
 
 // ServeHTTP saves a new autokitteh connection with user-submitted data.
@@ -41,5 +41,27 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c.Finalize(sdktypes.NewVars().Set(apiKeyVar, r.Form.Get("key"), true))
+	// Sanity check: the connection ID is valid.
+	cid, err := sdktypes.StrictParseConnectionID(c.ConnectionID)
+	if err != nil {
+		l.Warn("save connection: invalid connection ID", zap.Error(err))
+		c.AbortBadRequest("invalid connection ID")
+		return
+	}
+
+	vsid := sdktypes.NewVarScopeID(cid)
+	common.SaveAuthType(r, h.vars, vsid)
+
+	apiKey := r.FormValue("api_key")
+	if apiKey == "" {
+		l.Warn("save connection: missing API key")
+		c.AbortBadRequest("missing API key")
+		return
+	}
+
+	vs := sdktypes.NewVars(sdktypes.NewVar(common.ApiKeyVar).SetValue(apiKey).SetSecret(true))
+	if err := h.vars.Set(r.Context(), vs.WithScopeID(vsid)...); err != nil {
+		l.Warn("failed to save vars", zap.Error(err))
+		c.AbortServerError("failed to save connection variables")
+	}
 }

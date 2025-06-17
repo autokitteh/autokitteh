@@ -119,7 +119,7 @@ func integrationsFXOption() fx.Option {
 		integration("zoom", configset.Empty, zoom.New),
 		fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, muxes *muxes.Muxes, vars sdkservices.Vars, oauth *oauth.OAuth, dispatch sdkservices.DispatchFunc) {
 			HookOnStart(lc, func(ctx context.Context) error {
-				anthropic.Start(l, muxes)
+				anthropic.Start(l, muxes, vars)
 				asana.Start(l, muxes)
 				auth0.Start(l, muxes, vars)
 				aws.Start(l, muxes)

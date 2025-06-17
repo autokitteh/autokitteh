@@ -28,7 +28,7 @@ def anthropic_client(connection: str) -> Anthropic:
     """
     check_connection_name(connection)
 
-    api_key = os.getenv(connection + "__apiKey")
+    api_key = os.getenv(connection + "__api_key")
 
     if not api_key:
         raise ConnectionInitError(connection)
