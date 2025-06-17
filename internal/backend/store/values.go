@@ -35,7 +35,6 @@ var ops = map[string]op{
 			}
 			return vs[0], sdktypes.Nothing, nil
 		},
-		read:  true,
 		write: true,
 	},
 	"del": {

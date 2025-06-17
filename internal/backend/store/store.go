@@ -34,7 +34,7 @@ func (s *store) Mutate(ctx context.Context, pid sdktypes.ProjectID, key, op stri
 		return sdktypes.InvalidValue, err
 	}
 
-	var ret sdktypes.Value
+	var ret sdktypes.Value = sdktypes.Nothing
 
 	if err := s.db.Transaction(ctx, func(tx db.DB) error {
 		r, ok := ops[op]
