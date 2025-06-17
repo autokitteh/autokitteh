@@ -33,8 +33,8 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
-	// StoreServiceDoProcedure is the fully-qualified name of the StoreService's Do RPC.
-	StoreServiceDoProcedure = "/autokitteh.store.v1.StoreService/Do"
+	// StoreServiceMutateProcedure is the fully-qualified name of the StoreService's Mutate RPC.
+	StoreServiceMutateProcedure = "/autokitteh.store.v1.StoreService/Mutate"
 	// StoreServiceGetProcedure is the fully-qualified name of the StoreService's Get RPC.
 	StoreServiceGetProcedure = "/autokitteh.store.v1.StoreService/Get"
 	// StoreServiceListProcedure is the fully-qualified name of the StoreService's List RPC.
@@ -43,7 +43,7 @@ const (
 
 // StoreServiceClient is a client for the autokitteh.store.v1.StoreService service.
 type StoreServiceClient interface {
-	Do(context.Context, *connect.Request[v1.DoRequest]) (*connect.Response[v1.DoResponse], error)
+	Mutate(context.Context, *connect.Request[v1.MutateRequest]) (*connect.Response[v1.MutateResponse], error)
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
 	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
 }
@@ -58,9 +58,9 @@ type StoreServiceClient interface {
 func NewStoreServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) StoreServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
 	return &storeServiceClient{
-		do: connect.NewClient[v1.DoRequest, v1.DoResponse](
+		mutate: connect.NewClient[v1.MutateRequest, v1.MutateResponse](
 			httpClient,
-			baseURL+StoreServiceDoProcedure,
+			baseURL+StoreServiceMutateProcedure,
 			opts...,
 		),
 		get: connect.NewClient[v1.GetRequest, v1.GetResponse](
@@ -78,14 +78,14 @@ func NewStoreServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 
 // storeServiceClient implements StoreServiceClient.
 type storeServiceClient struct {
-	do   *connect.Client[v1.DoRequest, v1.DoResponse]
-	get  *connect.Client[v1.GetRequest, v1.GetResponse]
-	list *connect.Client[v1.ListRequest, v1.ListResponse]
+	mutate *connect.Client[v1.MutateRequest, v1.MutateResponse]
+	get    *connect.Client[v1.GetRequest, v1.GetResponse]
+	list   *connect.Client[v1.ListRequest, v1.ListResponse]
 }
 
-// Do calls autokitteh.store.v1.StoreService.Do.
-func (c *storeServiceClient) Do(ctx context.Context, req *connect.Request[v1.DoRequest]) (*connect.Response[v1.DoResponse], error) {
-	return c.do.CallUnary(ctx, req)
+// Mutate calls autokitteh.store.v1.StoreService.Mutate.
+func (c *storeServiceClient) Mutate(ctx context.Context, req *connect.Request[v1.MutateRequest]) (*connect.Response[v1.MutateResponse], error) {
+	return c.mutate.CallUnary(ctx, req)
 }
 
 // Get calls autokitteh.store.v1.StoreService.Get.
@@ -100,7 +100,7 @@ func (c *storeServiceClient) List(ctx context.Context, req *connect.Request[v1.L
 
 // StoreServiceHandler is an implementation of the autokitteh.store.v1.StoreService service.
 type StoreServiceHandler interface {
-	Do(context.Context, *connect.Request[v1.DoRequest]) (*connect.Response[v1.DoResponse], error)
+	Mutate(context.Context, *connect.Request[v1.MutateRequest]) (*connect.Response[v1.MutateResponse], error)
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
 	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
 }
@@ -111,9 +111,9 @@ type StoreServiceHandler interface {
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
 func NewStoreServiceHandler(svc StoreServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
-	storeServiceDoHandler := connect.NewUnaryHandler(
-		StoreServiceDoProcedure,
-		svc.Do,
+	storeServiceMutateHandler := connect.NewUnaryHandler(
+		StoreServiceMutateProcedure,
+		svc.Mutate,
 		opts...,
 	)
 	storeServiceGetHandler := connect.NewUnaryHandler(
@@ -128,8 +128,8 @@ func NewStoreServiceHandler(svc StoreServiceHandler, opts ...connect.HandlerOpti
 	)
 	return "/autokitteh.store.v1.StoreService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case StoreServiceDoProcedure:
-			storeServiceDoHandler.ServeHTTP(w, r)
+		case StoreServiceMutateProcedure:
+			storeServiceMutateHandler.ServeHTTP(w, r)
 		case StoreServiceGetProcedure:
 			storeServiceGetHandler.ServeHTTP(w, r)
 		case StoreServiceListProcedure:
@@ -143,8 +143,8 @@ func NewStoreServiceHandler(svc StoreServiceHandler, opts ...connect.HandlerOpti
 // UnimplementedStoreServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedStoreServiceHandler struct{}
 
-func (UnimplementedStoreServiceHandler) Do(context.Context, *connect.Request[v1.DoRequest]) (*connect.Response[v1.DoResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.store.v1.StoreService.Do is not implemented"))
+func (UnimplementedStoreServiceHandler) Mutate(context.Context, *connect.Request[v1.MutateRequest]) (*connect.Response[v1.MutateResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.store.v1.StoreService.Mutate is not implemented"))
 }
 
 func (UnimplementedStoreServiceHandler) Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error) {

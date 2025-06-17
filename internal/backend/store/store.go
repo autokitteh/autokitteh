@@ -24,7 +24,7 @@ func New(db db.DB, l *zap.Logger) sdkservices.Store {
 	return &store{db: db, l: l}
 }
 
-func (s *store) Do(ctx context.Context, pid sdktypes.ProjectID, key, op string, operands ...sdktypes.Value) (sdktypes.Value, error) {
+func (s *store) Mutate(ctx context.Context, pid sdktypes.ProjectID, key, op string, operands ...sdktypes.Value) (sdktypes.Value, error) {
 	if err := authz.CheckContext(
 		ctx,
 		pid,

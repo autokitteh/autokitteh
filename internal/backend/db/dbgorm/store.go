@@ -37,19 +37,19 @@ func (db *gormdb) SetStoreValue(ctx context.Context, pid sdktypes.ProjectID, key
 		return err
 	}
 
-	return translateError(
-		q.Save(&scheme.StoreValue{
-			// This does not take into account if value was also previously set,
-			// so `created_by` and `updated_by` would always point to the last user
-			// that updated the user.
-			// Getting `created_by` correctly would neccessitate another query, not
-			// worth it currently.
-			Base:      based(ctx),
-			ProjectID: pid.UUIDValue(),
-			Key:       key,
-			Value:     bs,
-		}).Error,
-	)
+	err = q.Save(&scheme.StoreValue{
+		// This does not take into account if value was also previously set,
+		// so `created_by` and `updated_by` would always point to the last user
+		// that updated the user.
+		// Getting `created_by` correctly would neccessitate another query, not
+		// worth it currently.
+		Base:      based(ctx),
+		ProjectID: pid.UUIDValue(),
+		Key:       key,
+		Value:     bs,
+	}).Error
+
+	return translateError(err)
 }
 
 func (db *gormdb) GetStoreValue(ctx context.Context, pid sdktypes.ProjectID, key string) (sdktypes.Value, error) {

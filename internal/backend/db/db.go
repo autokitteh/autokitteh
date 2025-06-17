@@ -138,6 +138,8 @@ type Shared interface {
 
 	SetStoreValue(ctx context.Context, pid sdktypes.ProjectID, key string, v sdktypes.Value) error
 	GetStoreValue(ctx context.Context, pid sdktypes.ProjectID, key string) (sdktypes.Value, error)
+
+	// If len(keys) == 0, it returns all keys.
 	ListStoreValues(ctx context.Context, pid sdktypes.ProjectID, keys []string, getValues bool) (map[string]sdktypes.Value, error)
 
 	// -----------------------------------------------------------------------

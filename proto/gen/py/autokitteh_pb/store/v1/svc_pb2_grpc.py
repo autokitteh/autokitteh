@@ -14,10 +14,10 @@ class StoreServiceStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.Do = channel.unary_unary(
-                '/autokitteh.store.v1.StoreService/Do',
-                request_serializer=autokitteh_dot_store_dot_v1_dot_svc__pb2.DoRequest.SerializeToString,
-                response_deserializer=autokitteh_dot_store_dot_v1_dot_svc__pb2.DoResponse.FromString,
+        self.Mutate = channel.unary_unary(
+                '/autokitteh.store.v1.StoreService/Mutate',
+                request_serializer=autokitteh_dot_store_dot_v1_dot_svc__pb2.MutateRequest.SerializeToString,
+                response_deserializer=autokitteh_dot_store_dot_v1_dot_svc__pb2.MutateResponse.FromString,
                 )
         self.Get = channel.unary_unary(
                 '/autokitteh.store.v1.StoreService/Get',
@@ -34,7 +34,7 @@ class StoreServiceStub(object):
 class StoreServiceServicer(object):
     """Missing associated documentation comment in .proto file."""
 
-    def Do(self, request, context):
+    def Mutate(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -55,10 +55,10 @@ class StoreServiceServicer(object):
 
 def add_StoreServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'Do': grpc.unary_unary_rpc_method_handler(
-                    servicer.Do,
-                    request_deserializer=autokitteh_dot_store_dot_v1_dot_svc__pb2.DoRequest.FromString,
-                    response_serializer=autokitteh_dot_store_dot_v1_dot_svc__pb2.DoResponse.SerializeToString,
+            'Mutate': grpc.unary_unary_rpc_method_handler(
+                    servicer.Mutate,
+                    request_deserializer=autokitteh_dot_store_dot_v1_dot_svc__pb2.MutateRequest.FromString,
+                    response_serializer=autokitteh_dot_store_dot_v1_dot_svc__pb2.MutateResponse.SerializeToString,
             ),
             'Get': grpc.unary_unary_rpc_method_handler(
                     servicer.Get,
@@ -81,7 +81,7 @@ class StoreService(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
-    def Do(request,
+    def Mutate(request,
             target,
             options=(),
             channel_credentials=None,
@@ -91,9 +91,9 @@ class StoreService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/autokitteh.store.v1.StoreService/Do',
-            autokitteh_dot_store_dot_v1_dot_svc__pb2.DoRequest.SerializeToString,
-            autokitteh_dot_store_dot_v1_dot_svc__pb2.DoResponse.FromString,
+        return grpc.experimental.unary_unary(request, target, '/autokitteh.store.v1.StoreService/Mutate',
+            autokitteh_dot_store_dot_v1_dot_svc__pb2.MutateRequest.SerializeToString,
+            autokitteh_dot_store_dot_v1_dot_svc__pb2.MutateResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 

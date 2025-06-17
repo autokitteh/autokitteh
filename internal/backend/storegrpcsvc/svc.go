@@ -67,7 +67,7 @@ func (s *server) List(ctx context.Context, req *connect.Request[storev1.ListRequ
 	return connect.NewResponse(&storev1.ListResponse{Keys: keys}), nil
 }
 
-func (s *server) Do(ctx context.Context, req *connect.Request[storev1.DoRequest]) (*connect.Response[storev1.DoResponse], error) {
+func (s *server) Mutate(ctx context.Context, req *connect.Request[storev1.MutateRequest]) (*connect.Response[storev1.MutateResponse], error) {
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
@@ -84,10 +84,10 @@ func (s *server) Do(ctx context.Context, req *connect.Request[storev1.DoRequest]
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	v, err := s.store.Do(ctx, pid, msg.Key, msg.Operation, operands...)
+	v, err := s.store.Mutate(ctx, pid, msg.Key, msg.Operation, operands...)
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	return connect.NewResponse(&storev1.DoResponse{Value: v.ToProto()}), nil
+	return connect.NewResponse(&storev1.MutateResponse{Value: v.ToProto()}), nil
 }

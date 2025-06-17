@@ -161,7 +161,7 @@ func (ws *workflows) listStoreValuesActivity(ctx context.Context, pid sdktypes.P
 }
 
 func (ws *workflows) mutateStoreValueActivity(ctx context.Context, pid sdktypes.ProjectID, key, op string, operands []sdktypes.Value) (sdktypes.Value, error) {
-	return ws.svcs.Store.Do(authcontext.SetAuthnSystemUser(ctx), pid, key, op, operands...)
+	return ws.svcs.Store.Mutate(authcontext.SetAuthnSystemUser(ctx), pid, key, op, operands...)
 }
 
 func (ws *workflows) createSessionActivity(ctx context.Context, session sdktypes.Session) error {
