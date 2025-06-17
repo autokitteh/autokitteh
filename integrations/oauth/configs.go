@@ -49,6 +49,28 @@ type oauthConfig struct {
 // for all AutoKitteh integrations. This map must not be modified during runtime.
 func (o *OAuth) initConfigs() {
 	o.oauthConfigs = map[string]oauthConfig{
+		"airtable": {
+			Config: &oauth2.Config{
+				ClientID:     os.Getenv("AIRTABLE_CLIENT_ID"),
+				ClientSecret: os.Getenv("AIRTABLE_CLIENT_SECRET"),
+				Endpoint: oauth2.Endpoint{
+					AuthURL:  "https://airtable.com/oauth2/v1/authorize",
+					TokenURL: "https://airtable.com/oauth2/v1/token",
+				},
+				Scopes: []string{
+					"data.records:read",
+					"data.records:write",
+					"data.recordComments:read",
+					"data.recordComments:write",
+					"schema.bases:read",
+					"schema.bases:write",
+					"user.email:read",
+					"webhook:manage",
+					"offline_access", // To get refresh tokens
+				},
+			},
+		},
+
 		// https://auth0.com/docs/api/authentication
 		// https://auth0.com/docs/get-started/authentication-and-authorization-flow/authorization-code-flow
 		"auth0": {
