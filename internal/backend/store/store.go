@@ -37,23 +37,37 @@ func (s *store) Mutate(ctx context.Context, pid sdktypes.ProjectID, key, op stri
 	var ret sdktypes.Value
 
 	if err := s.db.Transaction(ctx, func(tx db.DB) error {
-		curr, err := tx.GetStoreValue(ctx, pid, key)
-		if err != nil && !errors.Is(err, sdkerrors.ErrNotFound) {
-			return err
+		r, ok := ops[op]
+		if !ok {
+			return sdkerrors.NewInvalidArgumentError("unknown operation")
 		}
 
-		var next sdktypes.Value
+		var (
+			curr, next sdktypes.Value
+			err        error
+		)
 
-		if next, ret, err = mutateValue(curr, op, operands...); err != nil {
-			return err
+		if r.read {
+			curr, err = tx.GetStoreValue(ctx, pid, key)
+			if err != nil && !errors.Is(err, sdkerrors.ErrNotFound) {
+				return err
+			}
 		}
 
-		if curr.Equal(next) {
+		if r.fn != nil {
+			if next, ret, err = r.fn(curr, operands); err != nil {
+				return err
+			}
+		}
+
+		if r.read && curr.Equal(next) {
 			return nil
 		}
 
-		if err := tx.SetStoreValue(ctx, pid, key, next); err != nil {
-			return err
+		if r.write {
+			if err := tx.SetStoreValue(ctx, pid, key, next); err != nil {
+				return err
+			}
 		}
 
 		return nil

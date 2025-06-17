@@ -7,38 +7,39 @@ import (
 
 var errTooManyOperands = sdkerrors.NewInvalidArgumentError("too many operands")
 
-func mutateValue(v sdktypes.Value, op string, operands ...sdktypes.Value) (set sdktypes.Value, ret sdktypes.Value, _ error) {
-	f, ok := ops[op]
-	if !ok {
-		return sdktypes.InvalidValue, sdktypes.InvalidValue, sdkerrors.NewInvalidArgumentError("unknown operation")
+type (
+	opFn func(curr sdktypes.Value, operands []sdktypes.Value) (set sdktypes.Value, ret sdktypes.Value, _ error)
+	op   struct {
+		fn    opFn
+		read  bool // needs current value from db.
+		write bool // should write next value to db.
 	}
+)
 
-	if !v.IsValid() {
-		v = sdktypes.Nothing
-	}
-
-	return f(v, operands)
-}
-
-var ops = map[string]func(sdktypes.Value, []sdktypes.Value) (set sdktypes.Value, ret sdktypes.Value, _ error){
-	"get": func(v sdktypes.Value, vs []sdktypes.Value) (sdktypes.Value, sdktypes.Value, error) {
-		if len(vs) > 0 {
-			return sdktypes.InvalidValue, sdktypes.InvalidValue, errTooManyOperands
-		}
-		return v, v, nil
+var ops = map[string]op{
+	"get": {
+		fn: func(v sdktypes.Value, vs []sdktypes.Value) (sdktypes.Value, sdktypes.Value, error) {
+			if len(vs) > 0 {
+				return sdktypes.InvalidValue, sdktypes.InvalidValue, errTooManyOperands
+			}
+			return sdktypes.InvalidValue, v, nil
+		},
+		read: true,
 	},
-	"set": func(_ sdktypes.Value, vs []sdktypes.Value) (sdktypes.Value, sdktypes.Value, error) {
-		if len(vs) == 0 {
-			return sdktypes.InvalidValue, sdktypes.InvalidValue, sdkerrors.NewInvalidArgumentError("missing value to set")
-		} else if len(vs) > 1 {
-			return sdktypes.InvalidValue, sdktypes.InvalidValue, errTooManyOperands
-		}
-		return vs[0], sdktypes.Nothing, nil
+	"set": {
+		fn: func(_ sdktypes.Value, vs []sdktypes.Value) (sdktypes.Value, sdktypes.Value, error) {
+			if len(vs) == 0 {
+				return sdktypes.InvalidValue, sdktypes.InvalidValue, sdkerrors.NewInvalidArgumentError("missing value to set")
+			} else if len(vs) > 1 {
+				return sdktypes.InvalidValue, sdktypes.InvalidValue, errTooManyOperands
+			}
+			return vs[0], sdktypes.Nothing, nil
+		},
+		read:  true,
+		write: true,
 	},
-	"del": func(_ sdktypes.Value, vs []sdktypes.Value) (sdktypes.Value, sdktypes.Value, error) {
-		if len(vs) > 0 {
-			return sdktypes.InvalidValue, sdktypes.InvalidValue, errTooManyOperands
-		}
-		return sdktypes.InvalidValue, sdktypes.Nothing, nil
+	"del": {
+		// no fn -> next is invalid -> delete on write.
+		write: true,
 	},
 }
