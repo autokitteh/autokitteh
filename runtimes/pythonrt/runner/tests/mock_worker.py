@@ -1,6 +1,5 @@
 """A mock worker so we can debug the runner without ak."""
 
-import sys
 from itertools import count
 from threading import Event, Thread
 from time import sleep

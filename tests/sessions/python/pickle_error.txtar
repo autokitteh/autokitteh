@@ -1,4 +1,5 @@
 error: error processing result - AttributeError('This class cannot be pickled')
+
 =======================================================================================================
 The below error means you need to use the @autokitteh.activity decorator.
 See https://docs.autokitteh.com/develop/python/#function-arguments-and-return-values-must-be-pickleable
@@ -6,13 +7,6 @@ for more details.
 =======================================================================================================
 
 error: AttributeError('This class cannot be pickled')
-
-Traceback (most recent call last):
-   ak-runner
-    data = pickle.dumps(result)
-  File "main.py", line 6, in __reduce__
-    raise AttributeError("This class cannot be pickled")
-AttributeError: This class cannot be pickled
 -- main.py main --
 import autokitteh
 

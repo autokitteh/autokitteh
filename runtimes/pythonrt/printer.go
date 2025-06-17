@@ -128,8 +128,6 @@ func pyLevelToZap(level string) zapcore.Level {
 	switch level {
 	case "DEBUG":
 		return zap.DebugLevel
-	case "INFO":
-		return zap.InfoLevel
 	case "WARNING":
 		return zap.WarnLevel
 	case "ERROR":
