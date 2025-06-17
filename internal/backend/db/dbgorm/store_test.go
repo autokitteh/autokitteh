@@ -8,7 +8,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm"
-	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -93,6 +92,6 @@ func TestValues(t *testing.T) {
 	}
 
 	v, err = db.GetStoreValue(ctx, pids[2], "key")
-	assert.ErrorIs(t, err, sdkerrors.ErrNotFound)
-	assert.False(t, v.IsValid())
+	assert.NoError(t, err)
+	assert.Equal(t, sdktypes.Nothing, v)
 }

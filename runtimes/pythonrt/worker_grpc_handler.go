@@ -560,6 +560,9 @@ func (s *workerGRPCHandler) StoreList(ctx context.Context, req *userCode.StoreLi
 
 func (s *workerGRPCHandler) StoreMutate(ctx context.Context, req *userCode.StoreMutateRequest) (*userCode.StoreMutateResponse, error) {
 	operands, err := kittehs.TransformError(req.Operands, sdktypes.ValueFromProto)
+	if err != nil {
+		return &userCode.StoreMutateResponse{Error: err.Error()}, nil
+	}
 
 	fn := func(ctx context.Context, cbs *sdkservices.RunCallbacks, rid sdktypes.RunID) (any, error) {
 		return cbs.MutateStoreValue(ctx, rid, req.Key, req.Operation, operands...)
@@ -571,7 +574,7 @@ func (s *workerGRPCHandler) StoreMutate(ctx context.Context, req *userCode.Store
 	}
 
 	if resp.err != nil {
-		err = status.Errorf(codes.Internal, "mutate_value(%v, %d) -> %s", req.Key, req.Operation, err)
+		err = status.Errorf(codes.Internal, "mutate_value(%v, %v) -> %v", req.Key, req.Operation, err)
 		return &userCode.StoreMutateResponse{Error: err.Error()}, nil
 	}
 
