@@ -418,7 +418,7 @@ func TestSessionLogRecordNextPageTokenEmpty(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, len(res.Records), 2)
 	assert.Equal(t, res.TotalCount, int64(2))
-	assert.Equal(t, res.PaginationResult.NextPageToken, "")
+	assert.Equal(t, res.NextPageToken, "")
 }
 
 func TestSessionLogRecordNextPageTokenNotEmpty(t *testing.T) {
@@ -449,11 +449,11 @@ func TestSessionLogRecordNextPageTokenNotEmpty(t *testing.T) {
 	res, err = f.gormdb.GetSessionLog(t.Context(),
 		sdkservices.SessionLogRecordsFilter{
 			SessionID:         sid,
-			PaginationRequest: sdktypes.PaginationRequest{PageToken: res.PaginationResult.NextPageToken},
+			PaginationRequest: sdktypes.PaginationRequest{PageToken: res.NextPageToken},
 		})
 
 	assert.NoError(t, err)
 	assert.Equal(t, len(res.Records), 1)
 	assert.Equal(t, res.TotalCount, int64(3))
-	assert.Equal(t, res.PaginationResult.NextPageToken, "")
+	assert.Equal(t, res.NextPageToken, "")
 }

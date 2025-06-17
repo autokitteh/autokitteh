@@ -303,7 +303,7 @@ func checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Logger) bool {
 
 		key, exists := rsaPublicKeys[kid]
 		if !exists {
-			return nil, fmt.Errorf("Google public key not found for kid: %s", kid)
+			return nil, fmt.Errorf("google public key not found for kid: %s", kid)
 		}
 		return key, nil
 	})

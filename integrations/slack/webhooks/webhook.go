@@ -141,7 +141,7 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Log
 func verifySignature(signingSecret, ts, want string, body []byte) bool {
 	mac := hmac.New(sha256.New, []byte(signingSecret))
 
-	n, err := mac.Write([]byte(fmt.Sprintf("%s:%s:", slackSigVersion, ts)))
+	n, err := fmt.Fprintf(mac, "%s:%s:", slackSigVersion, ts)
 	if err != nil || n != len(ts)+4 {
 		return false
 	}
