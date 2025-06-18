@@ -14,9 +14,9 @@ import (
 var store = &starlarkstruct.Module{
 	Name: "store",
 	Members: starlark.StringDict{
-		"get":    starlark.NewBuiltin("get", get),
-		"list":   starlark.NewBuiltin("list", list),
-		"mutate": starlark.NewBuiltin("mutate", mutate),
+		"get":       starlark.NewBuiltin("get", get),
+		"list_keys": starlark.NewBuiltin("list_keys", listKeys),
+		"mutate":    starlark.NewBuiltin("mutate", mutate),
 	},
 }
 
@@ -30,7 +30,7 @@ func get(th *starlark.Thread, bi *starlark.Builtin, args starlark.Tuple, kwargs 
 	return mutate(th, bi, starlark.Tuple{starlark.String(key), starlark.String("get")}, nil)
 }
 
-func list(th *starlark.Thread, bi *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
+func listKeys(th *starlark.Thread, bi *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 	if err := starlark.UnpackArgs(bi.Name(), args, kwargs); err != nil {
 		return nil, err
 	}

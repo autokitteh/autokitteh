@@ -1,7 +1,9 @@
+from typing import Any
+
 _local_dev_store = {}
 
 
-def mutate_value(key: str, op: str, *args: list[any]) -> any:
+def mutate_value(key: str, op: str, *args: list[Any]) -> Any:
     """Mutate a stored value."""
     # Dummy implementation for local development.
     return {
@@ -11,13 +13,13 @@ def mutate_value(key: str, op: str, *args: list[any]) -> any:
     }[op](key, *args)
 
 
-def get_value(key: str) -> any:
+def get_value(key: str) -> Any:
     """Get a stored value."""
     # Dummy implementation for local development.
     return _local_dev_store.get(key)
 
 
-def set_value(key: str, value: any) -> None:
+def set_value(key: str, value: Any) -> None:
     """Set a stored value."""
     # Dummy implementation for local development.
     _local_dev_store[key] = value
@@ -32,7 +34,7 @@ def del_value(key: str) -> None:
         pass
 
 
-def list_values() -> list[str]:
+def list_values_keys() -> list[str]:
     """List all stored keys."""
     # Dummy implementation for local development.
     return sorted(list(_local_dev_store.keys()))

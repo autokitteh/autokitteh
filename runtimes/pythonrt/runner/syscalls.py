@@ -213,7 +213,7 @@ class SysCalls:
     def ak_del_value(self, key: str) -> any:
         return self.ak_mutate_value(key, "del")
 
-    def ak_list_values(self) -> list[str]:
+    def ak_list_values_keys(self) -> list[str]:
         self.log.info("ak_list_values")
         req = pb.StoreListRequest(runner_id=self.runner_id)
         resp = call_grpc("store_list", self.worker.StoreList, req)

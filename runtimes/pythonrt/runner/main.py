@@ -307,7 +307,7 @@ class Runner(pb.runner_rpc.RunnerService):
 
         autokitteh.del_value = self.syscalls.ak_del_value
         autokitteh.get_value = self.syscalls.ak_get_value
-        autokitteh.list_values = self.syscalls.ak_list_values
+        autokitteh.list_values_keys = self.syscalls.ak_list_values_keys
         autokitteh.mutate_value = self.syscalls.ak_mutate_value
         autokitteh.next_event = self.syscalls.ak_next_event
         autokitteh.next_signal = self.syscalls.ak_next_signal

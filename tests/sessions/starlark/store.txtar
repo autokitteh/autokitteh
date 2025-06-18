@@ -15,8 +15,8 @@ def main():
     print(ak.store.get("cat"))
     print(ak.store.mutate("cat", "set", ["meow"]))
     print(ak.store.get("cat"))
-    print(ak.store.list())
+    print(ak.store.list_keys())
 
     print(ak.store.mutate("dog", "set", ["woof"]))
     print(ak.store.get("dog"))
-    print(ak.store.list())
+    print(ak.store.list_keys())

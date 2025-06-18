@@ -1,6 +1,7 @@
 package store
 
 import (
+	"os"
 	"strconv"
 	"testing"
 
@@ -32,7 +33,7 @@ var (
 
 func TestMain(m *testing.M) {
 	authz.DisableCheckForTesting()
-	m.Run()
+	os.Exit(m.Run())
 }
 
 func TestMutate(t *testing.T) {
