@@ -1052,7 +1052,7 @@ var tools = []server.ServerTool{
 			// remove autokitteh.yaml from resources, it is not needed in the project.
 			delete(rscs, "autokitteh.yaml")
 
-			m, err := manifest.Read([]byte(manifestContent))
+			m, err := manifest.Read(manifestContent)
 			if err != nil {
 				return toolResultErrorf("read manifest: %v", err)
 			}
