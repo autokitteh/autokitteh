@@ -194,7 +194,7 @@ class SysCalls:
         return None
 
     def ak_mutate_value(self, key: str, op: str, *args: list[str]) -> any:
-        self.log.info("ak_mutate_value: %r %r %r", key, op, args)
+        self.log.debug("ak_mutate_value: %r %r %r", key, op, args)
         req = pb.StoreMutateRequest(
             runner_id=self.runner_id,
             key=key,

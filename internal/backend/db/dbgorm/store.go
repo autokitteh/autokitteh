@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"google.golang.org/protobuf/proto"
-	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -53,22 +52,20 @@ func (db *gormdb) SetStoreValue(ctx context.Context, pid sdktypes.ProjectID, key
 }
 
 func (db *gormdb) GetStoreValue(ctx context.Context, pid sdktypes.ProjectID, key string) (sdktypes.Value, error) {
-	r, err := getOne[scheme.StoreValue](db.reader.WithContext(ctx), "project_id = ? AND key = ?", pid.UUIDValue(), key)
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return sdktypes.Nothing, nil
-	}
-
+	kvs, err := db.ListStoreValues((ctx), pid, []string{key}, true)
 	if err != nil {
 		return sdktypes.InvalidValue, translateError(err)
 	}
-
-	var pb sdktypes.ValuePB
-
-	if err := proto.Unmarshal(r.Value, &pb); err != nil {
-		return sdktypes.InvalidValue, err
+	if len(kvs) == 0 {
+		return sdktypes.Nothing, nil
 	}
 
-	return sdktypes.ValueFromProto(&pb)
+	v, ok := kvs[key]
+	if !ok {
+		return sdktypes.InvalidValue, errors.New("internal error: key not found in kvs")
+	}
+
+	return v, nil
 }
 
 func (db *gormdb) ListStoreValues(ctx context.Context, pid sdktypes.ProjectID, keys []string, getValues bool) (map[string]sdktypes.Value, error) {
