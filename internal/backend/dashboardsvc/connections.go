@@ -28,7 +28,7 @@ func (p connection) HideFields() []string { return nil }
 func (p connection) ExtraFields() map[string]any {
 	var status string
 
-	if s := p.Connection.Status(); s.IsValid() {
+	if s := p.Status(); s.IsValid() {
 		text := s.Code().String()
 		if s.Message() != "" {
 			text += ": " + s.Message()

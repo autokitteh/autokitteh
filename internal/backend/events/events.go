@@ -62,7 +62,7 @@ func (e *events) Save(ctx context.Context, event sdktypes.Event) (sdktypes.Event
 	}
 
 	event = event.WithNewID()
-	if event.CreatedAt() == time.Unix(0, 0).UTC() {
+	if event.CreatedAt().Equal(time.Unix(0, 0).UTC()) {
 		event = event.WithCreatedAt(time.Now())
 	}
 
