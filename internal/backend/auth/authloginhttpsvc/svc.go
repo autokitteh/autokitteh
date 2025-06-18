@@ -53,7 +53,7 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 	var loginPaths []string
 
 	if a.Cfg.GoogleOAuth.Enabled {
-		if err := registerGoogleOAuthRoutes(muxes.NoAuth, a.Deps.Cfg.GoogleOAuth, a.newSuccessLoginHandler); err != nil {
+		if err := registerGoogleOAuthRoutes(muxes.NoAuth, a.Cfg.GoogleOAuth, a.newSuccessLoginHandler); err != nil {
 			return err
 		}
 
@@ -81,7 +81,7 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 	}
 
 	muxes.Auth.HandleFunc("/logout", func(w http.ResponseWriter, r *http.Request) {
-		a.Deps.Sessions.Delete(w)
+		a.Sessions.Delete(w)
 		http.Redirect(w, r, "/", http.StatusFound)
 	})
 
@@ -163,14 +163,14 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 		if !u.IsValid() {
 			w.WriteHeader(http.StatusUnauthorized)
 			// enforce logout
-			a.Deps.Sessions.Delete(w)
+			a.Sessions.Delete(w)
 
 			fmt.Fprint(w, "You are not logged in")
 			return
 		}
 
 		// renew cookie expiration time
-		if err := a.Deps.Sessions.Set(w, u); err != nil {
+		if err := a.Sessions.Set(w, u); err != nil {
 			a.L.Warn("failed renewing session for user: "+u.ID().UUIDValue().String(), zap.Error(err), zap.String("user_id", u.ID().String()))
 		}
 
@@ -182,7 +182,7 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 	})
 
 	muxes.NoAuth.HandleFunc("/.well-known/jwks.json", func(w http.ResponseWriter, r *http.Request) {
-		rsaTokens, ok := a.Deps.Tokens.(authjwttokens.RSATokens)
+		rsaTokens, ok := a.Tokens.(authjwttokens.RSATokens)
 		if !ok {
 			http.Error(w, "RSA tokens not configured", http.StatusBadRequest)
 			return
@@ -286,7 +286,7 @@ func (a *svc) newSuccessLoginHandler(ctx context.Context, ld *loginData) http.Ha
 	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if err := a.Deps.Sessions.Set(w, u); err != nil {
+		if err := a.Sessions.Set(w, u); err != nil {
 			sl.With("err", err).Errorf("failed storing session: %v", err)
 			http.Error(w, "internal server error", http.StatusInternalServerError)
 			return

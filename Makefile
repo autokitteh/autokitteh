@@ -70,11 +70,9 @@ debug:
 gofmt-check:
 	test -z $(shell gofmt -l .) || exit 1
 
-golangci_lint=$(shell which golangci-lint)
-
 .PHONY: lint
 lint:
-	golangci-lint run
+	go tool golangci-lint run
 
 scripts=$(shell find . -name \*.sh -not -path "*/.venv/*")
 
