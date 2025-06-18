@@ -1,5 +1,4 @@
 import asyncio
-import builtins
 import inspect
 import json
 import pickle
@@ -27,7 +26,7 @@ import log
 import pb
 import values
 from call import AKCall, activity_marker, full_func_name
-from syscalls import SysCalls, mark_no_activity
+from syscalls import SysCalls
 
 # Timeouts are in seconds
 SERVER_GRACE_TIMEOUT = 3
@@ -246,14 +245,14 @@ class Runner(pb.runner_rpc.RunnerService):
     def result_error(self, err):
         io = StringIO()
 
-        if "No module named" in str(err):
-            self._orig_print(suggest_add_package, file=io)
-
-        if "pickle" in str(err):
-            self._orig_print(pickle_help, file=io)
-
         exc = "".join(format_exception(err))
-        self._orig_print(f"error: {err!r}\n\n{exc}", file=io)
+        if "No module named" in str(err):
+            print(suggest_add_package, file=io)
+
+        if "pickle" in str(err) or "pickle" in exc:
+            print(pickle_help, file=io)
+
+        print(f"error: {err!r}\n\n{exc}", file=io)
 
         return io.getvalue()
 
@@ -312,9 +311,6 @@ class Runner(pb.runner_rpc.RunnerService):
         autokitteh.subscribe = self.syscalls.ak_subscribe
         autokitteh.unsubscribe = self.syscalls.ak_unsubscribe
 
-        # Not ak, but patching print as well
-        builtins.print = self.ak_print
-
     def Start(self, request: pb.runner.StartRequest, context: grpc.ServicerContext):
         # NOTE: Don't do any prints here, ak is not ready for them yet.
         if self._start_called:
@@ -336,8 +332,8 @@ class Runner(pb.runner_rpc.RunnerService):
         try:
             mod = loader.load_code(self.code_dir, ak_call, mod_name)
         except Exception as err:
-            # Can't use ak_print here - ak not ready yet.
             err_text = self.result_error(err)
+            print(err_text, file=sys.stderr)  # So it'll be in the session logs
             context.abort(
                 grpc.StatusCode.INVALID_ARGUMENT,
                 f"can't load {mod_name} from {self.code_dir} - {err_text}",
@@ -556,6 +552,7 @@ class Runner(pb.runner_rpc.RunnerService):
             if result.error:
                 error = restore_error(result.error)
                 req.error = self.result_error(error)
+                print(req.error, file=sys.stderr)  # So it'll be in the session logs
                 stack = filter_traceback(result.traceback, self.code_dir)
                 tb = pb_traceback(stack)
                 req.traceback.extend(tb)
@@ -575,26 +572,6 @@ class Runner(pb.runner_rpc.RunnerService):
             log.error("on_event: done send error: %r", err)
 
         self.server.stop(SERVER_GRACE_TIMEOUT)
-
-    @mark_no_activity
-    def ak_print(self, *objects, sep=" ", end="\n", file=None, flush=False):
-        io = StringIO()
-        self._orig_print(*objects, sep=sep, end=end, flush=flush, file=io)
-        text = io.getvalue()
-        self._orig_print(text, file=file)  # Print also to original destination
-
-        req = pb.handler.PrintRequest(
-            runner_id=self.id,
-            message=text,
-        )
-
-        try:
-            self.worker.Print(req)
-        except grpc.RpcError as err:
-            if err.code() == grpc.StatusCode.UNAVAILABLE or grpc.StatusCode.CANCELLED:
-                log.error("grpc cancelled or unavailable, killing self")
-                self.server.stop(SERVER_GRACE_TIMEOUT)
-            log.error("print: %s", err)
 
 
 def is_valid_port(port):
@@ -690,6 +667,8 @@ if __name__ == "__main__":
             resp = worker.Health(req)
         except grpc.RpcError as err:
             raise SystemExit(f"error: worker not available - {err}")
+
+    log.setup(args.runner_id)
 
     duration = monotonic() - start_time
     log.info(
