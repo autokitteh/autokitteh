@@ -32,6 +32,8 @@ const (
 	getDeploymentStateActivityName          = "get_deployment_state"
 	createSessionActivityName               = "create_session"
 	createSessionInProjectActivityName      = "create_session_in_project"
+	listStoreValuesActivityName             = "list_store_values"
+	mutateStoreValueActivityName            = "mutate_store_value"
 )
 
 func (ws *workflows) registerActivities() {
@@ -86,6 +88,17 @@ func (ws *workflows) registerActivities() {
 	)
 
 	ws.worker.RegisterActivityWithOptions(
+		ws.listStoreValuesActivity,
+		activity.RegisterOptions{Name: listStoreValuesActivityName},
+	)
+
+	ws.worker.RegisterActivityWithOptions(
+		ws.mutateStoreValueActivity,
+		activity.RegisterOptions{Name: mutateStoreValueActivityName},
+	)
+
+	ws.worker.RegisterActivityWithOptions(
+
 		ws.createSessionInProjectActivity,
 		activity.RegisterOptions{Name: createSessionInProjectActivityName},
 	)
@@ -141,6 +154,14 @@ func (ws *workflows) createSessionInProjectActivity(ctx context.Context, params 
 	}
 
 	return data, nil
+}
+
+func (ws *workflows) listStoreValuesActivity(ctx context.Context, pid sdktypes.ProjectID) ([]string, error) {
+	return ws.svcs.Store.List(authcontext.SetAuthnSystemUser(ctx), pid)
+}
+
+func (ws *workflows) mutateStoreValueActivity(ctx context.Context, pid sdktypes.ProjectID, key, op string, operands []sdktypes.Value) (sdktypes.Value, error) {
+	return ws.svcs.Store.Mutate(authcontext.SetAuthnSystemUser(ctx), pid, key, op, operands...)
 }
 
 func (ws *workflows) createSessionActivity(ctx context.Context, session sdktypes.Session) error {

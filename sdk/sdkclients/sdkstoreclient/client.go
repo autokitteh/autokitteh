@@ -53,3 +53,21 @@ func (c *client) Get(ctx context.Context, pid sdktypes.ProjectID, keys []string)
 
 	return kittehs.TransformMapValuesError(resp.Msg.Values, sdktypes.StrictValueFromProto)
 }
+
+func (c *client) Mutate(ctx context.Context, pid sdktypes.ProjectID, key, op string, operands ...sdktypes.Value) (sdktypes.Value, error) {
+	resp, err := c.client.Mutate(ctx, connect.NewRequest(&storev1.MutateRequest{
+		ProjectId: pid.String(),
+		Key:       key,
+		Operation: op,
+		Operands:  kittehs.Transform(operands, sdktypes.ToProto),
+	}))
+	if err != nil {
+		return sdktypes.InvalidValue, rpcerrors.ToSDKError(err)
+	}
+
+	if err := internal.Validate(resp.Msg); err != nil {
+		return sdktypes.InvalidValue, err
+	}
+
+	return sdktypes.StrictValueFromProto(resp.Msg.Value)
+}

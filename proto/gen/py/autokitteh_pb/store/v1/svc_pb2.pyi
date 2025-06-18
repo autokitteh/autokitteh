@@ -7,6 +7,24 @@ from typing import ClassVar as _ClassVar, Iterable as _Iterable, Mapping as _Map
 
 DESCRIPTOR: _descriptor.FileDescriptor
 
+class MutateRequest(_message.Message):
+    __slots__ = ["project_id", "key", "operation", "operands"]
+    PROJECT_ID_FIELD_NUMBER: _ClassVar[int]
+    KEY_FIELD_NUMBER: _ClassVar[int]
+    OPERATION_FIELD_NUMBER: _ClassVar[int]
+    OPERANDS_FIELD_NUMBER: _ClassVar[int]
+    project_id: str
+    key: str
+    operation: str
+    operands: _containers.RepeatedCompositeFieldContainer[_values_pb2.Value]
+    def __init__(self, project_id: _Optional[str] = ..., key: _Optional[str] = ..., operation: _Optional[str] = ..., operands: _Optional[_Iterable[_Union[_values_pb2.Value, _Mapping]]] = ...) -> None: ...
+
+class MutateResponse(_message.Message):
+    __slots__ = ["value"]
+    VALUE_FIELD_NUMBER: _ClassVar[int]
+    value: _values_pb2.Value
+    def __init__(self, value: _Optional[_Union[_values_pb2.Value, _Mapping]] = ...) -> None: ...
+
 class GetRequest(_message.Message):
     __slots__ = ["project_id", "keys"]
     PROJECT_ID_FIELD_NUMBER: _ClassVar[int]
