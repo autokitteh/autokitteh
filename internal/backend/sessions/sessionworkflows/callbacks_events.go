@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"go.temporal.io/sdk/activity"
 	"go.temporal.io/sdk/workflow"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -15,6 +16,10 @@ import (
 
 func (w *sessionWorkflow) subscribe(wctx workflow.Context) func(context.Context, sdktypes.RunID, string, string) (string, error) {
 	return func(ctx context.Context, rid sdktypes.RunID, name, filter string) (string, error) {
+		if activity.IsActivity(ctx) {
+			return "", errForbiddenInActivity
+		}
+
 		_, span := w.startCallbackSpan(ctx, "subscribe")
 		defer span.End()
 
@@ -50,6 +55,10 @@ func (w *sessionWorkflow) subscribe(wctx workflow.Context) func(context.Context,
 
 func (w *sessionWorkflow) unsubscribe(wctx workflow.Context) func(context.Context, sdktypes.RunID, string) error {
 	return func(ctx context.Context, rid sdktypes.RunID, signalID string) error {
+		if activity.IsActivity(ctx) {
+			return errForbiddenInActivity
+		}
+
 		_, span := w.startCallbackSpan(ctx, "unsubscribe")
 		defer span.End()
 
@@ -79,6 +88,10 @@ return this event
 */
 func (w *sessionWorkflow) nextEvent(wctx workflow.Context) func(context.Context, sdktypes.RunID, []string, time.Duration) (sdktypes.Value, error) {
 	return func(ctx context.Context, rid sdktypes.RunID, signals []string, timeout time.Duration) (sdktypes.Value, error) {
+		if activity.IsActivity(ctx) {
+			return sdktypes.InvalidValue, errForbiddenInActivity
+		}
+
 		_, span := w.startCallbackSpan(ctx, "next_event")
 		defer span.End()
 

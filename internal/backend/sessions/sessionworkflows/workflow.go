@@ -34,6 +34,8 @@ const (
 	integrationPathPrefix = "@"
 )
 
+var errForbiddenInActivity = errors.New("this operation is not allowed in activities")
+
 var envVarsExecutorID = sdktypes.NewExecutorID(fixtures.NewBuiltinIntegrationID(envVarsModuleName))
 
 type sessionWorkflow struct {

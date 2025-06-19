@@ -7,21 +7,11 @@ meow
 None
 woof
 ['cat', 'dog']
--
-None
-None
-None
-None
-meow
-['cat']
-None
-woof
-['cat', 'dog']
 
 -- main.py main --
 from autokitteh import activity, mutate_value, get_value, set_value, list_values_keys, del_value
 
-def test():
+def main(_):
     print(mutate_value('cat', 'del'))
     print(mutate_value('dog', 'del'))
     print(mutate_value('dog', 'get'))
@@ -32,12 +22,3 @@ def test():
     print(set_value('dog', 'woof'))
     print(get_value('dog'))
     print(list_values_keys())
-
-def main(_):
-    test()
-    print("-")
-    act()
-
-@activity
-def act(_):
-    test()
