@@ -66,6 +66,8 @@ require (
 	github.com/slack-go/slack v0.16.0
 	github.com/spf13/cobra v1.9.1
 	github.com/stretchr/testify v1.10.0
+	github.com/testcontainers/testcontainers-go v0.37.0
+	github.com/testcontainers/testcontainers-go/modules/postgres v0.37.0
 	github.com/twilio/twilio-go v1.26.2
 	github.com/uptrace/opentelemetry-go-extra/otelgorm v0.3.2
 	github.com/xeipuuv/gojsonschema v1.2.0
@@ -400,8 +402,6 @@ require (
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/tchap/go-patricia/v2 v2.3.2 // indirect
 	github.com/tdakkota/asciicheck v0.4.1 // indirect
-	github.com/testcontainers/testcontainers-go v0.37.0 // indirect
-	github.com/testcontainers/testcontainers-go/modules/postgres v0.37.0 // indirect
 	github.com/tetafro/godot v1.5.0 // indirect
 	github.com/timakin/bodyclose v0.0.0-20241222091800-1db5c5ca4d67 // indirect
 	github.com/timonwong/loggercheck v0.11.0 // indirect
