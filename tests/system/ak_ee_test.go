@@ -21,11 +21,16 @@ profiling, and load/stress testing.
 package systest
 
 import (
+	"context"
 	"embed"
 	"io/fs"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/modules/postgres"
+	"github.com/testcontainers/testcontainers-go/wait"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/tests"
 )
@@ -81,8 +86,34 @@ func TestSystem(t *testing.T) {
 				t.Skip("skipping")
 			}
 
+			pgContainer, err := postgres.Run(t.Context(),
+				"postgres:15.3-alpine",
+				postgres.WithDatabase("test-db"),
+				postgres.WithUsername("postgres"),
+				postgres.WithPassword("postgres"),
+				testcontainers.WithWaitStrategy(
+					wait.ForLog("database system is ready to accept connections").
+						WithOccurrence(2).WithStartupTimeout(5*time.Second)),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			t.Cleanup(func() {
+				if err := pgContainer.Terminate(context.Background()); err != nil {
+					t.Fatalf("failed to terminate pgContainer: %s", err)
+				}
+			})
+			connStr, err := pgContainer.ConnectionString(t.Context(), "sslmode=disable")
+
 			tests.SwitchToTempDir(t, venvPath) // For test isolation.
-			akAddr := setUpTest(t, akPath, test.config.Server)
+			cfg := map[string]any{}
+			// cfg = maps.Clone(test.config.Server)
+
+			cfg["db.type"] = "postgres"
+			cfg["db.dsn"] = connStr
+
+			akAddr := setUpTest(t, akPath, cfg)
 
 			writeEmbeddedFiles(t, test.a.Files)
 
