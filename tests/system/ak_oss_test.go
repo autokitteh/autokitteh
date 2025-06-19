@@ -31,6 +31,6 @@ func testFilter(name string) bool {
 	return strings.HasSuffix(name, testFilesFilter) && !strings.HasSuffix(name, ".ee.txtar")
 }
 
-func setupTestAndGetConfig(t *testing.T) map[string]any {
-	return test.config.Server
+func setupExternalResources(t *testing.T) map[string]any {
+	return map[string]any{}
 }

@@ -37,7 +37,7 @@ func testFilter(name string) bool {
 	return strings.HasSuffix(name, testFilesFilter)
 }
 
-func setupTestAndGetConfig(t *testing.T) map[string]any {
+func setupExternalResources(t *testing.T) map[string]any {
 	pgContainer, err := postgres.Run(t.Context(),
 		"postgres:15.3-alpine",
 		postgres.WithDatabase("test-db"),

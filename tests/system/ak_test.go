@@ -21,6 +21,7 @@ import (
 	"embed"
 	"fmt"
 	"io/fs"
+	"maps"
 	"strings"
 	"testing"
 
@@ -80,7 +81,8 @@ func TestSystem(t *testing.T) {
 			}
 
 			tests.SwitchToTempDir(t, venvPath) // For test isolation.
-			cfg := setupTestAndGetConfig(t)
+			cfg := setupExternalResources(t)
+			maps.Copy(cfg, test.config.Server)
 			akAddr := setUpTest(t, akPath, cfg)
 
 			writeEmbeddedFiles(t, test.a.Files)
