@@ -21,6 +21,7 @@ import (
 	"embed"
 	"fmt"
 	"io/fs"
+	"maps"
 	"strings"
 	"testing"
 
@@ -44,7 +45,7 @@ func TestSystem(t *testing.T) {
 			return err
 		}
 
-		if d.IsDir() || !strings.HasSuffix(d.Name(), ".txtar") {
+		if d.IsDir() || !testFilter(d.Name()) {
 			return nil // Skip directories and non-test files.
 		}
 
@@ -80,7 +81,9 @@ func TestSystem(t *testing.T) {
 			}
 
 			tests.SwitchToTempDir(t, venvPath) // For test isolation.
-			akAddr := setUpTest(t, akPath, test.config.Server)
+			cfg := setupExternalResources(t)
+			maps.Copy(cfg, test.config.Server)
+			akAddr := setUpTest(t, akPath, cfg)
 
 			writeEmbeddedFiles(t, test.a.Files)
 
