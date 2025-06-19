@@ -69,7 +69,7 @@ jobs:
               run: go build -trimpath ${{ matrix.tags }} -o bin/ak ./cmd/ak
 
             - name: Test
-              run: AK_SYSTEST_USE_PROC_SVC=1 gotestsum -f github-actions -- ${{ matrix.tags }} timeout 10m -trimpath ./tests/system/...
+              run: AK_SYSTEST_USE_PROC_SVC=1 gotestsum -f github-actions -- ${{ matrix.tags }} -timeout 10m -trimpath ./tests/system/...
 
     go-static-analysis:
         name: Go static analysis
