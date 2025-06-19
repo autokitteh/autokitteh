@@ -21,72 +21,16 @@ profiling, and load/stress testing.
 package systest
 
 import (
-	"embed"
-	"io/fs"
 	"strings"
 	"testing"
-
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	"go.autokitteh.dev/autokitteh/tests"
 )
 
-//go:embed *
-var testFiles embed.FS
+const testFilesFilter = ".txtar"
 
-func TestSystem(t *testing.T) {
-	akPath, venvPath := setUpSuite(t)
+func testFilter(name string) bool {
+	return strings.HasSuffix(name, testFilesFilter) && !strings.HasSuffix(name, ".ee.txtar")
+}
 
-	testCases := make(map[string]*testFile)
-	var exclusives []string
-
-	// Each .txtar file is a test-case, with potentially
-	// multiple actions, checks, and embedded files.
-	err := fs.WalkDir(testFiles, ".", func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if d.IsDir() || !strings.HasSuffix(d.Name(), ".txtar") {
-			return nil // Skip directories and non-test files.
-		}
-
-		f, err := readTestFile(t, testFiles, path)
-		if err != nil {
-			return err
-		}
-
-		path = strings.TrimPrefix(path, "testdata/")
-		testCases[path] = f
-
-		// Same as the "-run" flag in "go test", but easier to use.
-		if f.config.Exclusive {
-			exclusives = append(exclusives, path)
-		}
-
-		return nil
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Same as the "-run" flag in "go test", but easier to use.
-	filter := func(string) bool { return true }
-	if len(exclusives) > 0 {
-		filter = kittehs.ContainedIn(exclusives...)
-	}
-
-	for path, test := range testCases {
-		t.Run(path, func(t *testing.T) {
-			if !filter(path) {
-				t.Skip("skipping")
-			}
-
-			tests.SwitchToTempDir(t, venvPath) // For test isolation.
-			akAddr := setUpTest(t, akPath, test.config.Server)
-
-			writeEmbeddedFiles(t, test.a.Files)
-
-			runTestSteps(t, test.steps, akPath, akAddr, &test.config)
-		})
-	}
+func setupTestAndGetConfig(t *testing.T) map[string]any {
+	return test.config.Server
 }
