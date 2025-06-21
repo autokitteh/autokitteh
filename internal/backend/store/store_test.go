@@ -186,6 +186,15 @@ func TestLimits(t *testing.T) {
 	assert.EqualError(t, err, "maximum number of store keys (64) reached for project")
 	assert.False(t, v.IsValid())
 
+	// make sure get on a "new" non-existing key works.
+	v, err = store.Mutate(t.Context(), pids[0], "k"+strconv.Itoa(n+1), "get")
+	assert.NoError(t, err)
+	assert.True(t, v.IsNothing())
+
+	v, err = store.Mutate(t.Context(), pids[0], "k0", "get")
+	assert.NoError(t, err)
+	assert.True(t, v.Equal(sdktypes.NewStringValue("meow")))
+
 	v, err = store.Mutate(t.Context(), pids[0], "k0", "del")
 	assert.NoError(t, err)
 	assert.True(t, v.IsNothing())
