@@ -8,6 +8,98 @@ import { Message, proto3 } from "@bufbuild/protobuf";
 import { Value } from "../../values/v1/values_pb.js";
 
 /**
+ * @generated from message autokitteh.store.v1.MutateRequest
+ */
+export class MutateRequest extends Message<MutateRequest> {
+  /**
+   * @generated from field: string project_id = 1;
+   */
+  projectId = "";
+
+  /**
+   * @generated from field: string key = 2;
+   */
+  key = "";
+
+  /**
+   * @generated from field: string operation = 3;
+   */
+  operation = "";
+
+  /**
+   * @generated from field: repeated autokitteh.values.v1.Value operands = 4;
+   */
+  operands: Value[] = [];
+
+  constructor(data?: PartialMessage<MutateRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.store.v1.MutateRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "operation", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "operands", kind: "message", T: Value, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MutateRequest {
+    return new MutateRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MutateRequest {
+    return new MutateRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MutateRequest {
+    return new MutateRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MutateRequest | PlainMessage<MutateRequest> | undefined, b: MutateRequest | PlainMessage<MutateRequest> | undefined): boolean {
+    return proto3.util.equals(MutateRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.store.v1.MutateResponse
+ */
+export class MutateResponse extends Message<MutateResponse> {
+  /**
+   * @generated from field: autokitteh.values.v1.Value value = 1;
+   */
+  value?: Value;
+
+  constructor(data?: PartialMessage<MutateResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.store.v1.MutateResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "value", kind: "message", T: Value },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MutateResponse {
+    return new MutateResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MutateResponse {
+    return new MutateResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MutateResponse {
+    return new MutateResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MutateResponse | PlainMessage<MutateResponse> | undefined, b: MutateResponse | PlainMessage<MutateResponse> | undefined): boolean {
+    return proto3.util.equals(MutateResponse, a, b);
+  }
+}
+
+/**
  * @generated from message autokitteh.store.v1.GetRequest
  */
 export class GetRequest extends Message<GetRequest> {

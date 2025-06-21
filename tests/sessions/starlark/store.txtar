@@ -1,0 +1,22 @@
+None
+None
+None
+None
+meow
+["cat"]
+None
+woof
+["cat", "dog"]
+
+-- main.star main --
+def main():
+    print(ak.store.mutate("cat", "del"))
+    print(ak.store.mutate("dog", "del"))
+    print(ak.store.get("cat"))
+    print(ak.store.mutate("cat", "set", ["meow"]))
+    print(ak.store.get("cat"))
+    print(ak.store.list_keys())
+
+    print(ak.store.mutate("dog", "set", ["woof"]))
+    print(ak.store.get("dog"))
+    print(ak.store.list_keys())

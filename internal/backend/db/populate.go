@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"fmt"
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -35,7 +36,7 @@ func Populate(ctx context.Context, db DB, objs ...sdktypes.Object) (err error) {
 		}
 
 		if err != nil {
-			return
+			return fmt.Errorf("%v: %w", obj, err)
 		}
 	}
 

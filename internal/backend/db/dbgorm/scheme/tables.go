@@ -16,6 +16,6 @@ var Tables = []any{
 	&Signal{},
 	&Trigger{},
 	&User{},
-	&Value{},
+	&StoreValue{},
 	&Var{},
 }
