@@ -76,14 +76,13 @@ func (db *gormdb) HasStoreKey(ctx context.Context, pid sdktypes.ProjectID, key s
 	return count > 0, nil
 }
 
-func (db *gormdb) CountStoreKeys(ctx context.Context, pid sdktypes.ProjectID) (int, error) {
+func (db *gormdb) CountStoreKeys(ctx context.Context, pid sdktypes.ProjectID) (int64, error) {
 	q := db.reader.WithContext(ctx).
 		Model(&scheme.StoreValue{}).
-		Where("project_id = ?", pid.UUIDValue()).
-		Select("count(*)")
+		Where("project_id = ?", pid.UUIDValue())
 
-	var count int
-	if err := q.Find(&count).Error; err != nil {
+	var count int64
+	if err := q.Count(&count).Error; err != nil {
 		return 0, translateError(err)
 	}
 

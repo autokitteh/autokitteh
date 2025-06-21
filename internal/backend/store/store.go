@@ -84,7 +84,7 @@ func (s *store) Mutate(ctx context.Context, pid sdktypes.ProjectID, key, op stri
 				return sdkerrors.NewInvalidArgumentError("value size %d exceeds maximum allowed size %d for a single value", next.ProtoSize(), s.cfg.MaxValueSize)
 			}
 
-			if maxCount := s.cfg.MaxStoreKeysPerProject; maxCount > 0 {
+			if maxCount := int64(s.cfg.MaxStoreKeysPerProject); maxCount > 0 {
 				isNewKey := false
 				if r.read {
 					isNewKey = curr.IsNothing()
