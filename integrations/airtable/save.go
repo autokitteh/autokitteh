@@ -1,11 +1,7 @@
 package airtable
 
 import (
-	"crypto/sha256"
-	"encoding/base64"
 	"fmt"
-	"log"
-	"math/rand"
 	"net/http"
 	"regexp"
 
@@ -16,8 +12,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
-
-var pkce_verifier = sdktypes.NewSymbol("pkce_verifier")
 
 // handleSave saves connection variables for an AutoKitteh connection.
 // This may result in a fully-initialized and usable connection, or it
@@ -72,22 +66,6 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// PKCE requires a code_verifier between 43–128 characters from [A-Z, a-z, 0-9, "-", ".", "_", "~"]
-func generateCodeVerifier() (string, error) {
-	// 64 bytes gives ~86-character base64 string
-	b := make([]byte, 64)
-	if _, err := rand.Read(b); err != nil {
-		return "", err
-	}
-	verifier := base64.RawURLEncoding.EncodeToString(b)
-	return verifier, nil
-}
-
-func codeChallengeS256(verifier string) string {
-	hash := sha256.Sum256([]byte(verifier))
-	return base64.RawURLEncoding.EncodeToString(hash[:])
-}
-
 // startOAuth redirects the user to the AutoKitteh server's
 // generic OAuth service, to start a 3-legged OAuth 2.0 flow.
 func (h handler) startOAuth(w http.ResponseWriter, r *http.Request, c sdkintegrations.ConnectionInit, l *zap.Logger, vsid sdktypes.VarScopeID) {
@@ -100,19 +78,6 @@ func (h handler) startOAuth(w http.ResponseWriter, r *http.Request, c sdkintegra
 		return
 	}
 
-	verifier, err := generateCodeVerifier()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	vs := sdktypes.NewVars(sdktypes.NewVar(pkce_verifier).SetValue(verifier).SetSecret(true))
-	if err := h.vars.Set(r.Context(), vs.WithScopeID(vsid)...); err != nil {
-		l.Warn("failed to save vars", zap.Error(err))
-		c.AbortServerError("failed to save connection variables")
-	}
-
-	challenge := codeChallengeS256(verifier)
-
-	urlPath := fmt.Sprintf("/oauth/start/airtable?cid=%s&origin=%s&code_challenge=%s&code_challenge_method=S256", c.ConnectionID, c.Origin, challenge)
+	urlPath := fmt.Sprintf("/oauth/start/airtable?cid=%s&origin=%s", c.ConnectionID, c.Origin)
 	http.Redirect(w, r, urlPath, http.StatusFound)
 }

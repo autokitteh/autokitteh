@@ -646,7 +646,9 @@ func (o *OAuth) GetConfig(ctx context.Context, integration string, cid sdktypes.
 		return cfg.Config, cfg.Opts, nil
 	}
 
-	if integration == "airtable" {
+	// If the integration uses PKCE, inject a dynamic code_challenge/code_verifier
+	// pair into the config before we apply any private OAuth app overrides.
+	if o.flags(integration).usePKCE {
 		o.generatePKCEOpts(ctx, cid, &cfg)
 	}
 
