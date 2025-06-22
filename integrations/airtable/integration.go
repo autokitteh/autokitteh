@@ -27,6 +27,7 @@ func New(v sdkservices.Vars, o *oauth.OAuth) sdkservices.Integration {
 func Start(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, o *oauth.OAuth, d sdkservices.DispatchFunc) {
 	h := newHTTPHandler(l, v, o, d)
 	common.RegisterSaveHandler(m, desc, h.handleSave)
+	common.RegisterOAuthHandler(m, desc, h.handleOAuth)
 }
 
 // handler implements several HTTP webhooks to save authentication data, as

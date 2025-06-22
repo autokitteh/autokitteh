@@ -176,7 +176,30 @@ func (o *OAuth) exchangeCodeToToken(w http.ResponseWriter, r *http.Request) {
 
 	client := &http.Client{Timeout: 3 * time.Second}
 	ctx = context.WithValue(ctx, oauth2.HTTPClient, client)
-	token, err := cfg.Exchange(ctx, code, authCodes(opts)...)
+
+	var exchangeOpts []oauth2.AuthCodeOption
+	if o.flags(integ).usePKCE {
+		// Get stored PKCE verifier
+		verifier, err := o.getPKCEVerifier(ctx, cid)
+		if err != nil {
+			l.Warn("failed to get PKCE verifier", zap.Error(err))
+			abort(w, r, cid, integ, origin, "failed to get PKCE verifier")
+			return
+		}
+
+		if verifier != "" {
+			// Use code_verifier for token exchange
+			exchangeOpts = []oauth2.AuthCodeOption{
+				oauth2.SetAuthURLParam("code_verifier", verifier),
+			}
+		} else {
+			l.Warn("PKCE verifier not found for Airtable")
+		}
+	} else {
+		exchangeOpts = authCodes(opts)
+	}
+
+	token, err := cfg.Exchange(ctx, code, exchangeOpts...)
 	if err != nil {
 		l.Warn("OAuth code exchange error", zap.Error(err))
 		abort(w, r, cid, integ, origin, "OAuth code exchange error")
