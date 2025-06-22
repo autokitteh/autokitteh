@@ -176,7 +176,7 @@ func TestLimits(t *testing.T) {
 
 	n := Configs.Default.MaxStoreKeysPerProject
 
-	for i := 0; i < n; i++ {
+	for i := range n {
 		v, err = store.Mutate(t.Context(), pids[0], "k"+strconv.Itoa(i), "set", sdktypes.NewStringValue("meow"))
 		assert.NoError(t, err)
 		assert.True(t, v.IsNothing())
