@@ -17,7 +17,6 @@ project:
   name: next_event_test
   triggers:
   - name: send_msg
-    event_type: '*'
     webhook: {}
     call: program.py:on_trigger
 
