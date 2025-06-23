@@ -537,3 +537,48 @@ func (s *workerGRPCHandler) NextSignal(ctx context.Context, req *userCode.NextSi
 		},
 	}, nil
 }
+
+func (s *workerGRPCHandler) StoreList(ctx context.Context, req *userCode.StoreListRequest) (*userCode.StoreListResponse, error) {
+	fn := func(ctx context.Context, cbs *sdkservices.RunCallbacks, rid sdktypes.RunID) (any, error) {
+		return cbs.ListStoreValues(ctx, rid)
+	}
+
+	resp, err := s.callback(ctx, req.RunnerId, "list_values", fn)
+	if err != nil {
+		return &userCode.StoreListResponse{Error: err.Error()}, nil
+	}
+
+	if resp.err != nil {
+		err = status.Errorf(codes.Internal, "list_values -> %s", err)
+		return &userCode.StoreListResponse{Error: err.Error()}, nil
+	}
+
+	return &userCode.StoreListResponse{
+		Keys: resp.value.([]string),
+	}, nil
+}
+
+func (s *workerGRPCHandler) StoreMutate(ctx context.Context, req *userCode.StoreMutateRequest) (*userCode.StoreMutateResponse, error) {
+	operands, err := kittehs.TransformError(req.Operands, sdktypes.ValueFromProto)
+	if err != nil {
+		return &userCode.StoreMutateResponse{Error: err.Error()}, nil
+	}
+
+	fn := func(ctx context.Context, cbs *sdkservices.RunCallbacks, rid sdktypes.RunID) (any, error) {
+		return cbs.MutateStoreValue(ctx, rid, req.Key, req.Operation, operands...)
+	}
+
+	resp, err := s.callback(ctx, req.RunnerId, "mutate_value", fn)
+	if err != nil {
+		return &userCode.StoreMutateResponse{Error: err.Error()}, nil
+	}
+
+	if resp.err != nil {
+		err = status.Errorf(codes.Internal, "mutate_value(%v, %v) -> %v", req.Key, req.Operation, err)
+		return &userCode.StoreMutateResponse{Error: err.Error()}, nil
+	}
+
+	return &userCode.StoreMutateResponse{
+		Result: resp.value.(sdktypes.Value).ToProto(),
+	}, nil
+}

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
+	"go.temporal.io/sdk/activity"
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
 
@@ -21,6 +22,10 @@ func sessionSignalName(sid sdktypes.SessionID) string { return sid.String() }
 
 func (w *sessionWorkflow) signal(wctx workflow.Context) func(context.Context, sdktypes.RunID, sdktypes.SessionID, string, sdktypes.Value) error {
 	return func(ctx context.Context, _ sdktypes.RunID, sid sdktypes.SessionID, name string, v sdktypes.Value) error {
+		if activity.IsActivity(ctx) {
+			return errForbiddenInActivity
+		}
+
 		_, span := w.startCallbackSpan(ctx, "signal")
 		defer span.End()
 
@@ -49,6 +54,10 @@ func (w *sessionWorkflow) signal(wctx workflow.Context) func(context.Context, sd
 
 func (w *sessionWorkflow) nextSignal(wctx workflow.Context) func(context.Context, sdktypes.RunID, []string, time.Duration) (*sdkservices.RunSignal, error) {
 	return func(ctx context.Context, _ sdktypes.RunID, names []string, timeout time.Duration) (*sdkservices.RunSignal, error) {
+		if activity.IsActivity(ctx) {
+			return nil, errForbiddenInActivity
+		}
+
 		_, span := w.startCallbackSpan(ctx, "next_signal")
 		defer span.End()
 

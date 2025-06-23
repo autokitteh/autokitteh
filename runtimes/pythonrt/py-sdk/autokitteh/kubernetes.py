@@ -10,6 +10,10 @@ from .errors import ConnectionInitError
 def kubernetes_client(connection: str) -> ModuleType:
     """Initialize a Kubernetes client, based on an AutoKitteh connection.
 
+    API reference:
+    https://github.com/kubernetes-client/python
+    https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.30/
+
     Args:
         connection: AutoKitteh connection name.
 

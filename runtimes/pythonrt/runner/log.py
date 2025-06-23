@@ -28,6 +28,7 @@ _stream_handler.setFormatter(formatter)
 _log.addHandler(_stream_handler)
 
 info = _log.info
+debug = _log.debug
 warning = _log.warning
 error = _log.error
 exception = _log.exception

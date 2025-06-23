@@ -34,6 +34,8 @@ const (
 	integrationPathPrefix = "@"
 )
 
+var errForbiddenInActivity = errors.New("this operation is not allowed in activities")
+
 var envVarsExecutorID = sdktypes.NewExecutorID(fixtures.NewBuiltinIntegrationID(envVarsModuleName))
 
 type sessionWorkflow struct {
@@ -527,6 +529,8 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (_ []sdkserv
 		IsDeploymentActive: w.isDeploymentActive(wctx),
 		Signal:             w.signal(wctx),
 		NextSignal:         w.nextSignal(wctx),
+		ListStoreValues:    w.listStoreValues(wctx),
+		MutateStoreValue:   w.mutateStoreValue(wctx),
 	}
 
 	runID, err := newRunID()

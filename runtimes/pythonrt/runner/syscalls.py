@@ -52,7 +52,7 @@ class SysCalls:
         memo: dict | None = None,
         project: str = "",
     ) -> str:
-        self.log.info("ak_start: %r", loc)
+        log.debug("ak_start: %r", loc)
         data = {} if data is None else data
         memo = {} if memo is None else memo
 
@@ -77,7 +77,7 @@ class SysCalls:
         return resp.session_id
 
     def ak_sleep(self, seconds):
-        log.info("ak_sleep: %r", seconds)
+        log.debug("ak_sleep: %r", seconds)
         if seconds < 0:
             raise ValueError("negative secs")
 
@@ -89,7 +89,7 @@ class SysCalls:
         call_grpc("sleep", self.worker.Sleep, req)
 
     def ak_subscribe(self, source: str, filter: str = "") -> str:
-        log.info("ak_subscribe: %r %r", source, filter)
+        log.debug("ak_subscribe: %r %r", source, filter)
         if not source:
             raise ValueError("missing source")
 
@@ -101,7 +101,7 @@ class SysCalls:
         return resp.signal_id
 
     def ak_next_event(self, subscription_id, *, timeout=None):
-        log.info("ak_next_event: %r %r", subscription_id, timeout)
+        log.debug("ak_next_event: %r %r", subscription_id, timeout)
 
         ids = subscription_id
         if isinstance(ids, str):
@@ -123,7 +123,7 @@ class SysCalls:
         return AttrDict(data) if isinstance(data, dict) else data
 
     def ak_unsubscribe(self, subscription_id):
-        log.info("ak_unsubscribe: %r", subscription_id)
+        log.debug("ak_unsubscribe: %r", subscription_id)
         req = pb.UnsubscribeRequest(runner_id=self.runner_id, signal_id=subscription_id)
         call_grpc("unsubscribe", self.worker.Unsubscribe, req)
 
@@ -153,7 +153,7 @@ class SysCalls:
         return resp.token, resp.expires.ToDatetime()
 
     def ak_signal(self, session_id: str, name: str, payload: any = None) -> None:
-        log.info("signal: %r %r", session_id, name)
+        log.debug("signal: %r %r", session_id, name)
 
         req = pb.SignalRequest(
             runner_id=self.runner_id,
@@ -169,7 +169,7 @@ class SysCalls:
     def ak_next_signal(
         self, name: str | list[str], *, timeout: timedelta | int | float = None
     ) -> Signal:
-        log.info("ak_next_signal: %r %r", name, timeout)
+        log.debug("ak_next_signal: %r %r", name, timeout)
 
         names = name
         if isinstance(names, str):
@@ -192,6 +192,32 @@ class SysCalls:
             )
 
         return None
+
+    def ak_mutate_value(self, key: str, op: str, *args: list[str]) -> any:
+        log.debug("ak_mutate_value: %r %r %r", key, op, args)
+        req = pb.StoreMutateRequest(
+            runner_id=self.runner_id,
+            key=key,
+            operation=op,
+            operands=[values.wrap(arg) for arg in args],
+        )
+        resp = call_grpc("store_mutate", self.worker.StoreMutate, req)
+        return values.unwrap(resp.result)
+
+    def ak_set_value(self, key: str, value: any) -> None:
+        self.ak_mutate_value(key, "set", value)
+
+    def ak_get_value(self, key: str) -> any:
+        return self.ak_mutate_value(key, "get")
+
+    def ak_del_value(self, key: str) -> any:
+        return self.ak_mutate_value(key, "del")
+
+    def ak_list_values_keys(self) -> list[str]:
+        log.debug("ak_list_values")
+        req = pb.StoreListRequest(runner_id=self.runner_id)
+        resp = call_grpc("store_list", self.worker.StoreList, req)
+        return resp.keys
 
     @classmethod
     def mark_ak_no_activity(cls):

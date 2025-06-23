@@ -12,6 +12,7 @@ import (
 )
 
 var (
+	ApiKeyVar   = sdktypes.NewSymbol("api_key")
 	AuthTypeVar = sdktypes.NewSymbol("auth_type")
 
 	OAuthAccessTokenVar  = sdktypes.NewSymbol("oauth_access_token")
