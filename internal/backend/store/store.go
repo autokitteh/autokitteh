@@ -39,6 +39,17 @@ func New(cfg *Config, db db.DB, l *zap.Logger) sdkservices.Store {
 	return &store{db: db, l: l, cfg: cfg}
 }
 
+func lockID(pid sdktypes.ProjectID) string {
+	return fmt.Sprintf("values:%v", pid.UUIDValue())
+}
+
+func PrepareLock(ctx context.Context, db db.DB, pid sdktypes.ProjectID) error {
+	if err := db.PrepareLock(ctx, lockID(pid)); err != nil {
+		return fmt.Errorf("prepare lock: %w", err)
+	}
+	return nil
+}
+
 func (s *store) Mutate(ctx context.Context, pid sdktypes.ProjectID, key, op string, operands ...sdktypes.Value) (sdktypes.Value, error) {
 	if err := authz.CheckContext(
 		ctx,
@@ -51,18 +62,23 @@ func (s *store) Mutate(ctx context.Context, pid sdktypes.ProjectID, key, op stri
 
 	ret := sdktypes.Nothing
 
-	if err := s.db.Transaction(ctx, func(tx db.DB) error {
-		r, ok := ops[op]
-		if !ok {
-			return sdkerrors.NewInvalidArgumentError("unknown operation")
+	r, ok := ops[op]
+	if !ok {
+		return sdktypes.InvalidValue, sdkerrors.NewInvalidArgumentError("unknown operation")
+	}
+
+	if err := s.db.Transaction(ctx, func(tx db.TX) error {
+		if r.write && s.cfg.MaxValueSize != 0 {
+			// The lock is only from R-M-W and conerning only values count currently.
+			if err := tx.Lock(ctx, lockID(pid)); err != nil {
+				return fmt.Errorf("lock: %w", err)
+			}
 		}
 
-		var (
-			curr, next sdktypes.Value
-			err        error
-		)
+		var curr, next sdktypes.Value
 
 		if r.read {
+			var err error
 			curr, err = tx.GetStoreValue(ctx, pid, key)
 			if err != nil && !errors.Is(err, sdkerrors.ErrNotFound) {
 				return err
@@ -70,6 +86,7 @@ func (s *store) Mutate(ctx context.Context, pid sdktypes.ProjectID, key, op stri
 		}
 
 		if r.fn != nil {
+			var err error
 			if next, ret, err = r.fn(curr, operands); err != nil {
 				return err
 			}

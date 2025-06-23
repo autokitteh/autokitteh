@@ -22,7 +22,7 @@ type Shared interface {
 
 	GormDB() (r, w *gorm.DB)
 
-	Transaction(context.Context, func(tx DB) error) error
+	Transaction(context.Context, func(tx TX) error) error
 
 	// -----------------------------------------------------------------------
 	// Returns sdkerrors.ErrAlreadyExists if either id or name is duplicate.
@@ -154,4 +154,9 @@ type Shared interface {
 
 	// Get project ID of an object.
 	GetProjectIDOf(ctx context.Context, id sdktypes.ID) (sdktypes.ProjectID, error)
+
+	// -----------------------------------------------------------------------
+
+	// This must be called once ever before calling TX.Lock on that id.
+	PrepareLock(ctx context.Context, id string) error
 }

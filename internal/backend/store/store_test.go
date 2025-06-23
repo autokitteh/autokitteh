@@ -40,6 +40,10 @@ func TestMain(m *testing.M) {
 func TestMutate(t *testing.T) {
 	db := dbtest.NewTestDB(t, o, ps[0], ps[1])
 
+	for _, pid := range pids {
+		assert.NoError(t, db.PrepareLock(t.Context(), lockID(pid)))
+	}
+
 	store := New(Configs.Default, db, zap.NewNop())
 
 	// Each test is not independent - it relies on the previous state.
@@ -163,6 +167,10 @@ func TestMutate(t *testing.T) {
 
 func TestLimits(t *testing.T) {
 	db := dbtest.NewTestDB(t, o, ps[0], ps[1])
+
+	for _, pid := range pids {
+		assert.NoError(t, db.PrepareLock(t.Context(), lockID(pid)))
+	}
 
 	store := New(Configs.Default, db, zap.NewNop())
 
