@@ -69,7 +69,7 @@ func (s *store) Mutate(ctx context.Context, pid sdktypes.ProjectID, key, op stri
 
 	if err := s.db.Transaction(ctx, func(tx db.TX) error {
 		if r.write && s.cfg.MaxValueSize != 0 {
-			// The lock is only from R-M-W and conerning only values count currently.
+			// The lock is only from R-M-W and concerning only values count currently.
 			if err := tx.Lock(ctx, lockID(pid)); err != nil {
 				return fmt.Errorf("lock: %w", err)
 			}
