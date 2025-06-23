@@ -15,6 +15,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
+	"go.autokitteh.dev/autokitteh/internal/backend/store"
 	"go.autokitteh.dev/autokitteh/internal/manifest"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -56,6 +57,10 @@ func (ps *Projects) Create(ctx context.Context, project sdktypes.Project) (sdkty
 		"create:create",
 		authz.WithData("project", project),
 	); err != nil {
+		return sdktypes.InvalidProjectID, err
+	}
+
+	if err := store.PrepareLock(ctx, ps.DB, project.ID()); err != nil {
 		return sdktypes.InvalidProjectID, err
 	}
 

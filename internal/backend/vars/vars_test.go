@@ -33,7 +33,10 @@ type dbMock struct {
 	SetVarsFunc func(context.Context, []sdktypes.Var) error
 }
 
-func (d dbMock) Transaction(ctx context.Context, f func(tx db.DB) error) error {
+func (dbMock) PrepareLock(context.Context, string) error { return nil }
+func (dbMock) Lock(context.Context, string) error        { return nil }
+
+func (d dbMock) Transaction(ctx context.Context, f func(tx db.TX) error) error {
 	return f(d)
 }
 

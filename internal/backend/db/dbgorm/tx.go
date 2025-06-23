@@ -8,10 +8,29 @@ import (
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
+	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 )
 
-func (db *gormdb) Transaction(ctx context.Context, f func(db db.DB) error) error {
-	return db.writeTransaction(ctx, func(tx *gormdb) error { return f(tx) })
+type txImpl struct {
+	*gormdb
+}
+
+func (db *gormdb) PrepareLock(ctx context.Context, id string) error {
+	return db.writer.WithContext(ctx).Create(scheme.Lock{ID: id}).Error
+}
+
+func (tx txImpl) Lock(ctx context.Context, id string) error {
+	return translateError(
+		tx.writer.
+			Model(&scheme.Lock{}).
+			Where("id = ?", id).
+			UpdateColumn("count", gorm.Expr("count + ?", 1)).
+			Error,
+	)
+}
+
+func (db *gormdb) Transaction(ctx context.Context, f func(db db.TX) error) error {
+	return db.writeTransaction(ctx, func(tx *gormdb) error { return f(txImpl{tx}) })
 }
 
 func (db *gormdb) writeTransaction(ctx context.Context, f func(tx *gormdb) error) error {

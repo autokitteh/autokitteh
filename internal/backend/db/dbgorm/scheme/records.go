@@ -627,3 +627,8 @@ func ParseOrgMember(r OrgMember) (sdktypes.OrgMember, error) {
 		sdktypes.NewIDFromUUID[sdktypes.UserID](r.UserID),
 	).WithStatus(s).WithRoles(roles...), nil
 }
+
+type Lock struct {
+	ID    string `gorm:"primaryKey;not null"`
+	Count int64  `gorm:"not null"` // how many times this lock was acquired
+}

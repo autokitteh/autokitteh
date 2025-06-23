@@ -5,6 +5,7 @@ var Tables = []any{
 	&Connection{},
 	&Deployment{},
 	&Event{},
+	&Lock{},
 	&Org{},
 	&OrgMember{},
 	&Project{},
@@ -14,8 +15,8 @@ var Tables = []any{
 	&SessionCallSpec{},
 	&SessionLogRecord{},
 	&Signal{},
+	&StoreValue{},
 	&Trigger{},
 	&User{},
-	&StoreValue{},
 	&Var{},
 }

@@ -83,7 +83,7 @@ func (v *Vars) Set(ctx context.Context, vs ...sdktypes.Var) error {
 		scids[va.ScopeID()] = true
 	}
 
-	err := v.db.Transaction(ctx, func(tx db.DB) error {
+	err := v.db.Transaction(ctx, func(tx db.TX) error {
 		if maxN := v.cfg.MaxNumVarsPerScope; maxN != 0 {
 			for scid := range scids {
 				n, err := tx.CountVars(ctx, scid)
