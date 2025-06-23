@@ -33,7 +33,7 @@ func status(v sdkservices.Vars) sdkintegrations.OptFn {
 	})
 }
 
-// TODO: Implement the connection test function for Airtable integration.
+// TODO: ENG-437 Implement the connection test function for Airtable integration.
 func test(_ *sdkservices.Vars) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
 		return sdktypes.NewStatus(sdktypes.StatusCodeUnspecified, "Not implemented"), nil
