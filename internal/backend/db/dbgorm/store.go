@@ -68,8 +68,8 @@ func (db *gormdb) HasStoreKey(ctx context.Context, pid sdktypes.ProjectID, key s
 		Where("project_id = ? AND key == ?", pid.UUIDValue(), key).
 		Select("count(*)")
 
-	var count int
-	if err := q.Find(&count).Error; err != nil {
+	var count int64
+	if err := q.Count(&count).Error; err != nil {
 		return false, translateError(err)
 	}
 

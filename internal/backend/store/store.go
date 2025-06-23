@@ -50,6 +50,46 @@ func PrepareLock(ctx context.Context, db db.DB, pid sdktypes.ProjectID) error {
 	return nil
 }
 
+func (s *store) enforceLimits(
+	ctx context.Context,
+	tx db.TX,
+	op op,
+	curr, next sdktypes.Value,
+	pid sdktypes.ProjectID,
+	key string,
+) error {
+	if s.cfg.MaxValueSize != 0 && op.write && next.ProtoSize() > s.cfg.MaxValueSize {
+		return sdkerrors.NewInvalidArgumentError("value size %d exceeds maximum allowed size %d for a single value", next.ProtoSize(), s.cfg.MaxValueSize)
+	}
+
+	if maxCount := int64(s.cfg.MaxStoreKeysPerProject); maxCount > 0 {
+		isNewKey := false
+		if op.read {
+			isNewKey = curr.IsNothing()
+		} else {
+			has, err := tx.HasStoreKey(ctx, pid, key)
+			if err != nil {
+				return fmt.Errorf("has: %w", err)
+			}
+
+			isNewKey = !has
+		}
+
+		if isNewKey {
+			count, err := tx.CountStoreKeys(ctx, pid)
+			if err != nil {
+				return fmt.Errorf("count: %w", err)
+			}
+
+			if count >= maxCount {
+				return sdkerrors.NewInvalidArgumentError("maximum number of store keys (%d) reached for project", maxCount)
+			}
+		}
+	}
+
+	return nil
+}
+
 func (s *store) Mutate(ctx context.Context, pid sdktypes.ProjectID, key, op string, operands ...sdktypes.Value) (sdktypes.Value, error) {
 	if err := authz.CheckContext(
 		ctx,
@@ -97,33 +137,8 @@ func (s *store) Mutate(ctx context.Context, pid sdktypes.ProjectID, key, op stri
 		}
 
 		if r.write {
-			if s.cfg.MaxValueSize != 0 && next.ProtoSize() > s.cfg.MaxValueSize {
-				return sdkerrors.NewInvalidArgumentError("value size %d exceeds maximum allowed size %d for a single value", next.ProtoSize(), s.cfg.MaxValueSize)
-			}
-
-			if maxCount := int64(s.cfg.MaxStoreKeysPerProject); maxCount > 0 {
-				isNewKey := false
-				if r.read {
-					isNewKey = curr.IsNothing()
-				} else {
-					has, err := tx.HasStoreKey(ctx, pid, key)
-					if err != nil {
-						return fmt.Errorf("has: %w", err)
-					}
-
-					isNewKey = !has
-				}
-
-				if isNewKey {
-					count, err := tx.CountStoreKeys(ctx, pid)
-					if err != nil {
-						return fmt.Errorf("count: %w", err)
-					}
-
-					if count >= maxCount {
-						return sdkerrors.NewInvalidArgumentError("maximum number of store keys (%d) reached for project", maxCount)
-					}
-				}
+			if err := s.enforceLimits(ctx, tx, r, curr, next, pid, key); err != nil {
+				return err
 			}
 
 			if err := tx.SetStoreValue(ctx, pid, key, next); err != nil {
