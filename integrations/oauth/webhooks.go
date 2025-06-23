@@ -193,7 +193,7 @@ func (o *OAuth) exchangeCodeToToken(w http.ResponseWriter, r *http.Request) {
 				oauth2.SetAuthURLParam("code_verifier", verifier),
 			}
 		} else {
-			l.Warn("PKCE verifier not found for Airtable")
+			l.Warn("PKCE verifier not found")
 		}
 	} else {
 		exchangeOpts = authCodes(opts)
