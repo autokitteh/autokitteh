@@ -3,15 +3,33 @@ package airtable
 import (
 	"context"
 
+	"go.autokitteh.dev/autokitteh/integrations"
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-// TODO: Implement the connection status function for Airtable integration.
-func status(_ sdkservices.Vars) sdkintegrations.OptFn {
+// status checks the connection's initialization status (is it
+// initialized? what type of authentication is configured?). This
+// ensures that the connection is at least theoretically usable.
+func status(v sdkservices.Vars) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
-		return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+		vs, errStatus, err := common.ReadVarsWithStatus(ctx, v, cid)
+		if errStatus.IsValid() || err != nil {
+			return errStatus, err
+		}
+
+		switch common.ReadAuthType(vs) {
+		case "":
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+		case integrations.OAuthDefault:
+			return common.CheckOAuthToken(vs)
+		case integrations.APIKey:
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using API key"), nil
+		default:
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil
+		}
 	})
 }
 

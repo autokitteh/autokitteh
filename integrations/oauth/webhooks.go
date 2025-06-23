@@ -167,6 +167,17 @@ func (o *OAuth) exchangeCodeToToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var pkceVerifier string
+	if o.flags(integ).usePKCE {
+		verifier, err := o.getPKCEVerifier(ctx, cid)
+		if err != nil {
+			l.Warn("failed to get PKCE verifier", zap.Error(err))
+			abort(w, r, cid, integ, origin, "failed to get PKCE verifier")
+			return
+		}
+		pkceVerifier = verifier // Save it before GetConfig overwrites it.
+	}
+
 	cfg, opts, err := o.GetConfig(ctx, integ, cid)
 	if err != nil {
 		l.Warn("failed to get OAuth config", zap.Error(err))
@@ -179,18 +190,10 @@ func (o *OAuth) exchangeCodeToToken(w http.ResponseWriter, r *http.Request) {
 
 	var exchangeOpts []oauth2.AuthCodeOption
 	if o.flags(integ).usePKCE {
-		// Get stored PKCE verifier
-		verifier, err := o.getPKCEVerifier(ctx, cid)
-		if err != nil {
-			l.Warn("failed to get PKCE verifier", zap.Error(err))
-			abort(w, r, cid, integ, origin, "failed to get PKCE verifier")
-			return
-		}
-
-		if verifier != "" {
-			// Use code_verifier for token exchange
+		if pkceVerifier != "" {
+			// Use the PKCE verifier we saved.
 			exchangeOpts = []oauth2.AuthCodeOption{
-				oauth2.SetAuthURLParam("code_verifier", verifier),
+				oauth2.SetAuthURLParam("code_verifier", pkceVerifier),
 			}
 		} else {
 			l.Warn("PKCE verifier not found")
