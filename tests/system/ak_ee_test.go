@@ -58,7 +58,6 @@ func setupExternalResources(t *testing.T) map[string]any {
 	})
 	connStr, err := pgContainer.ConnectionString(t.Context(), "sslmode=disable")
 	cfg := map[string]any{}
-	// cfg = maps.Clone(test.config.Server)
 
 	cfg["db.type"] = "postgres"
 	cfg["db.dsn"] = connStr
