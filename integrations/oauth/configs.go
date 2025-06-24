@@ -765,7 +765,22 @@ func privatizeMicrosoft(vs sdktypes.Vars, c *oauthConfig) {
 }
 
 func (o *OAuth) generatePKCEOpts(ctx context.Context, cid sdktypes.ConnectionID, cfg *oauthConfig) {
-	// generatePKCEPair generates a PKCE pair (verifier and challenge) for the OAuth 2.0 flow.
+	// Try to get existing PKCE verifier.
+	existingVerifier, err := o.getPKCEVerifier(ctx, cid)
+	if err == nil && existingVerifier != "" {
+		// Verifier exists - generate challenge from it
+		hash := sha256.Sum256([]byte(existingVerifier))
+		challenge := base64.RawURLEncoding.EncodeToString(hash[:])
+
+		if cfg.Opts == nil {
+			cfg.Opts = make(map[string]string)
+		}
+		cfg.Opts["code_challenge"] = challenge
+		cfg.Opts["code_challenge_method"] = "S256"
+		return
+	}
+
+	// No existing verifier - generate new PKCE pair.
 	verifier, challenge, err := generatePKCEPair()
 	if err != nil {
 		o.logger.Error("failed to generate PKCE pair", zap.Error(err))
@@ -773,13 +788,13 @@ func (o *OAuth) generatePKCEOpts(ctx context.Context, cid sdktypes.ConnectionID,
 	}
 
 	pkceVerifier := sdktypes.NewSymbol("pkce_verifier")
-	vs := sdktypes.NewVars(sdktypes.NewVar(pkceVerifier).SetValue(verifier).SetSecret(true))
+	v := sdktypes.NewVar(pkceVerifier).SetValue(verifier).SetSecret(true)
 
-	if err := o.vars.Set(ctx, vs.WithScopeID(sdktypes.NewVarScopeID(cid))...); err != nil {
-		o.logger.Error("failed to save PKCE verifier",
+	// Try to save the new verifier (this might fail during token refresh).
+	if err := o.vars.Set(ctx, v.WithScopeID(sdktypes.NewVarScopeID(cid))); err != nil {
+		o.logger.Warn("failed to save PKCE verifier (this is expected during token refresh)",
 			zap.String("connection_id", cid.String()),
 			zap.Error(err))
-		return
 	}
 
 	if cfg.Opts == nil {

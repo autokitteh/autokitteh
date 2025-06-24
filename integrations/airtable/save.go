@@ -1,6 +1,7 @@
 package airtable
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -53,11 +54,15 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	// Use the AutoKitteh server's default Zoom OAuth 2.0 app, i.e.
 	// immediately redirect to the 3-legged OAuth 2.0 flow's starting point.
 	case integrations.OAuthDefault:
-		h.startOAuth(w, r, c, l, vsid)
+		h.startOAuth(w, r, c, l)
 
 	// Save the user-provided personal access token (PAT) and finish.
 	case integrations.PAT:
-		// TODO: Implement PAT support.
+		if err := h.savePAT(r, vsid); err != nil {
+			l.Error("save connection: " + err.Error())
+			c.AbortBadRequest(err.Error())
+			return
+		}
 
 	// Unknown/unrecognized mode - an error.
 	default:
@@ -68,7 +73,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 
 // startOAuth redirects the user to the AutoKitteh server's
 // generic OAuth service, to start a 3-legged OAuth 2.0 flow.
-func (h handler) startOAuth(w http.ResponseWriter, r *http.Request, c sdkintegrations.ConnectionInit, l *zap.Logger, vsid sdktypes.VarScopeID) {
+func (h handler) startOAuth(w http.ResponseWriter, r *http.Request, c sdkintegrations.ConnectionInit, l *zap.Logger) {
 	// Security check: parameters must be alphanumeric strings,
 	// to prevent path traversal attacks and other issues.
 	re := regexp.MustCompile(`^\w+$`)
@@ -80,4 +85,16 @@ func (h handler) startOAuth(w http.ResponseWriter, r *http.Request, c sdkintegra
 
 	urlPath := fmt.Sprintf("/oauth/start/airtable?cid=%s&origin=%s", c.ConnectionID, c.Origin)
 	http.Redirect(w, r, urlPath, http.StatusFound)
+}
+
+func (h handler) savePAT(r *http.Request, vsid sdktypes.VarScopeID) error {
+	// Parse the PAT from the request.
+	pat := r.FormValue("pat")
+	if pat == "" {
+		return errors.New("missing personal access token (PAT)")
+	}
+
+	// Save the PAT as a connection variable.
+	v := sdktypes.NewVar(common.PATVar).SetValue(pat).SetSecret(true)
+	return h.vars.Set(r.Context(), v.WithScopeID(vsid))
 }

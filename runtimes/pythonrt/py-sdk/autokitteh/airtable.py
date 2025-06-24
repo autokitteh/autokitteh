@@ -28,6 +28,10 @@ def airtable_client(connection: str) -> Api:
     """
     check_connection_name(connection)
 
+    pat = os.getenv(f"{connection}__pat")
+    if pat:
+        return Api(pat)
+
     refresh_token = os.getenv(connection + "__oauth_refresh_token")
     if not refresh_token:
         raise ConnectionInitError(connection)
@@ -37,4 +41,4 @@ def airtable_client(connection: str) -> Api:
     except Exception as e:
         raise OAuthRefreshError(connection, str(e)) from e
 
-    return Api(access_token=access_token)
+    return Api(access_token)

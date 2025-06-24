@@ -25,8 +25,8 @@ func status(v sdkservices.Vars) sdkintegrations.OptFn {
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 		case integrations.OAuthDefault:
 			return common.CheckOAuthToken(vs)
-		case integrations.APIKey:
-			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using API key"), nil
+		case integrations.PAT:
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using personal access token"), nil
 		default:
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil
 		}
