@@ -29,6 +29,9 @@ var (
 		Default: &Config{
 			MaxConcurrentWorkflows: 1,
 		},
+		Test: &Config{
+			WorkerID: "test-worker",
+		},
 	}
 )
 
