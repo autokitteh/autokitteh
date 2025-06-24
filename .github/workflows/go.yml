@@ -40,7 +40,12 @@ jobs:
               run: go build -trimpath ${{ matrix.tags }} -o bin/ak ./cmd/ak
 
             - name: Test
-              run: gotestsum -f github-actions -- ${{ matrix.tags }} -trimpath $(find . -name "*_test.go" -not -path "*/tests/*" -exec sh -c 'grep -q -E "(go:build.*\\benterprise\\b|\\+build.*\\benterprise\\b)" "$1" && dirname "$1"' _ {} \; | sort -u)
+              run: |
+                  if [ "${{ matrix.name }}" = "OSS" ]; then
+                    gotestsum -f github-actions -- ${{ matrix.tags }} -trimpath $(go list ./... | grep -v -E "autokitteh/tests|runtimes/python")
+                  else
+                    gotestsum -f github-actions -- ${{ matrix.tags }} -trimpath $(find . -name "*_test.go" -not -path "*/tests/*" -exec sh -c 'grep -q -E "(go:build.*\\benterprise\\b|\\+build.*\\benterprise\\b)" "$1" && dirname "$1"' _ {} \; | sort -u)
+                  fi
 
     go-system-tests:
         name: Go system tests (${{matrix.name}})
