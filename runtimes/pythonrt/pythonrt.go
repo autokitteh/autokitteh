@@ -308,12 +308,12 @@ func (py *pySvc) Run(
 
 	startDone := make(chan struct{})
 
-	if py.cfg.DelayedStartPrintTimeout != 0 {
+	if t := py.cfg.DelayedStartPrintTimeout; t != 0 {
 		go func() {
 			select {
 			case <-startDone:
 				// nop
-			case <-time.After(py.cfg.DelayedStartPrintTimeout):
+			case <-time.After(t):
 				_ = cbs.Print(ctx, runID, "ᓚᘏᗢ Python runs might take a while to start when running for the first time on a new runner, hang on!")
 			}
 		}()
