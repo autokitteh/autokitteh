@@ -5,6 +5,7 @@
 # - Common enough to be included
 # So, `re` is OK, `random` is not
 
+import asyncio
 import datetime
 import functools
 import inspect
@@ -171,6 +172,22 @@ modules = {
 }
 
 functions = builtin_types | {
+    # asyncio
+    asyncio.create_task,
+    asyncio.current_task,
+    asyncio.gather,
+    asyncio.LifoQueue,
+    asyncio.PriorityQueue,
+    asyncio.Queue,
+    asyncio.run,
+    asyncio.run_coroutine_threadsafe,
+    asyncio.Runner,
+    asyncio.shield,
+    asyncio.Task,
+    asyncio.timeout,
+    asyncio.wait,
+    asyncio.wait_for,
+    # datetime
     datetime.date,
     datetime.date.fromisocalendar,
     datetime.date.fromisoformat,
@@ -223,6 +240,7 @@ functions = builtin_types | {
     datetime.time.utcoffset,
     datetime.time.dst,
     datetime.time.tzname,
+    # json
     # json.dump & json.load work with files
     json.dumps,
     json.loads,

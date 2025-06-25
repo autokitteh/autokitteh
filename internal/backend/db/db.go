@@ -136,9 +136,12 @@ type Shared interface {
 	GetSecret(ctx context.Context, key string) (string, error)
 	DeleteSecret(ctx context.Context, key string) error
 
-	SetValue(ctx context.Context, pid sdktypes.ProjectID, key string, v sdktypes.Value) error
-	GetValue(ctx context.Context, pid sdktypes.ProjectID, key string) (sdktypes.Value, error)
-	ListValues(ctx context.Context, pid sdktypes.ProjectID) (map[string]sdktypes.Value, error)
+	SetStoreValue(ctx context.Context, pid sdktypes.ProjectID, key string, v sdktypes.Value) error
+	GetStoreValue(ctx context.Context, pid sdktypes.ProjectID, key string) (sdktypes.Value, error)
+
+	// If len(keys) == 0, it returns all keys.
+	// if getValues is true, it returns values for the keys. Otherwise, it returns only keys without values.
+	ListStoreValues(ctx context.Context, pid sdktypes.ProjectID, keys []string, getValues bool) (map[string]sdktypes.Value, error)
 
 	// -----------------------------------------------------------------------
 

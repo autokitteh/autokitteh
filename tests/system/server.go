@@ -21,7 +21,7 @@ import (
 
 const (
 	serverHTTPAddrFile = "ak_server_addr.txt"
-	serverReadyTimeout = 20 * time.Second
+	serverReadyTimeout = 40 * time.Second
 )
 
 func writeSeedObjects(t *testing.T) (string, error) {

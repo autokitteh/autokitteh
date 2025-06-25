@@ -33,6 +33,7 @@ _handler.setFormatter(_formatter)
 _log.addHandler(_handler)
 
 info = _log.info
+debug = _log.debug
 warning = _log.warning
 error = _log.error
 exception = _log.exception
