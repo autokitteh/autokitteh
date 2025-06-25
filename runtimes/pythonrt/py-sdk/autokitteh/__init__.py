@@ -4,14 +4,16 @@ from . import errors
 from .activities import activity, inhibit_activities, register_no_activity
 from .attr_dict import AttrDict
 from .event import Event
-from .events import next_event, start, subscribe, unsubscribe
+from .events import next_event, start, subscribe, unsubscribe, async_next_event
 from .signals import Signal, next_signal, signal
 from .store import get_value, mutate_value, set_value, del_value, list_values_keys
+from .errors import AutoKittehError
 
 __all__ = [
     "AttrDict",
     "errors",
     "start",
+    "AutoKittehError",
     # Activities
     "activity",
     "inhibit_activities",
@@ -19,6 +21,7 @@ __all__ = [
     # Events
     "Event",
     "next_event",
+    "async_next_event",
     "subscribe",
     "unsubscribe",
     # Signals

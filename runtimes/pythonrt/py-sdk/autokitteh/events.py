@@ -18,6 +18,9 @@ def unsubscribe(subscription_id: str) -> None:
     pass
 
 
+async def async_next_event(id, timeout = None):
+    return next_event(id, timeout)
+
 def next_event(
     subscription_id: str | list[str], *, timeout: timedelta | int | float = None
 ) -> AttrDict:

@@ -1,0 +1,22 @@
+main start
+True
+True
+main end
+-- main.py:main --
+from autokitteh import AutoKittehError, activity, next_event
+
+
+@activity
+def problem():
+    try:
+        next_event('event')
+    except AutoKittehError as err:
+        text = str(err)
+    print('next_event' in text)
+    print('activity' in text)
+
+
+def main(event):
+    print('main start')
+    problem()
+    print('main end')
