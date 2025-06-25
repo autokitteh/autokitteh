@@ -34,7 +34,7 @@ const (
 	integrationPathPrefix = "@"
 )
 
-var errForbiddenInActivity = errors.New("this operation is not allowed in activities")
+var errForbiddenInActivity = fmt.Errorf("%w: this operation is not allowed in an activity", sdkerrors.ErrFailedPrecondition)
 
 var envVarsExecutorID = sdktypes.NewExecutorID(fixtures.NewBuiltinIntegrationID(envVarsModuleName))
 
