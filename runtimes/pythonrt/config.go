@@ -27,7 +27,8 @@ var Configs = configset.Set[Config]{
 		DelayedStartPrintTimeout: 10 * time.Second,
 	},
 	Test: &Config{
-		LazyLoadLocalVEnv: true,
+		LazyLoadLocalVEnv:        true,
+		DelayedStartPrintTimeout: 0,
 	},
 	Dev: &Config{
 		LogRunnerCode:            true,
