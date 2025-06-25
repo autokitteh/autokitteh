@@ -1,18 +1,24 @@
 from typing import Any
+from enum import StrEnum
 
 # Dummy implementation for local development.
 _local_dev_store = {}
 
 
-def mutate_value(key: str, op: str, *args: list[Any]) -> Any:
+class Op(StrEnum):
+    """Enum for operation types."""
+
+    SET = "set"
+    GET = "get"
+    DEL = "del"
+
+
+def mutate_value(key: str, op: Op, *args: list[Any]) -> Any:
     """Mutate a stored value.
 
     Args:
         key: Key of the value to mutate.
-        op: Operation to perform on the value. Supported operations are:
-            - "set": Set the value.
-            - "get": Get the value.
-            - "del": Delete the value.
+        op: Operation to perform on the value.
         args: Additional arguments for the operation.
 
     Returns:
@@ -49,7 +55,7 @@ def set_value(key: str, value: Any) -> None:
 
     Args:
         key: Key of the value to set.
-        value: Value to store. If Value is None, it will be deleted.
+        value: Value to store. If Value is None, it will be deleted. Value must be serializable.
 
     Returns:
         None.
