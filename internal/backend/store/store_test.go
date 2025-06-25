@@ -139,6 +139,19 @@ func TestMutate(t *testing.T) {
 			pid: pids[1],
 			ret: ivs[2],
 		},
+		{
+			key:      "k2",
+			op:       "set",
+			pid:      pids[1],
+			operands: []sdktypes.Value{sdktypes.Nothing},
+			ret:      sdktypes.Nothing,
+		},
+		{
+			key: "k2",
+			op:  "get",
+			pid: pids[1],
+			ret: sdktypes.Nothing,
+		},
 	}
 
 	for i, test := range tests {
