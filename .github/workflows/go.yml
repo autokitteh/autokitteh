@@ -13,9 +13,17 @@ permissions:
 
 jobs:
     go-unit-tests:
-        name: Go build + unit tests
+        name: Go build + unit tests (${{matrix.name}})
         runs-on: ubuntu-latest
         timeout-minutes: 10
+        strategy:
+            matrix:
+                include:
+                    - name: "OSS"
+                      tags: ""
+                    - name: "Enterprise"
+                      tags: "-tags=enterprise"
+
         steps:
             - name: Check out code
               uses: actions/checkout@v4
@@ -28,11 +36,16 @@ jobs:
             - name: Install gotestsum
               run: go install gotest.tools/gotestsum@latest
 
-            - name: Build
-              run: go build -trimpath ./...
+            - name: Build AK
+              run: go build -trimpath ${{ matrix.tags }} -o bin/ak ./cmd/ak
 
             - name: Test
-              run: gotestsum -f github-actions -- -trimpath $(go list ./... | grep -v -E "autokitteh/tests|runtimes/python")
+              run: |
+                  if [ "${{ matrix.name }}" = "OSS" ]; then
+                    gotestsum -f github-actions -- ${{ matrix.tags }} -trimpath $(go list ./... | grep -v -E "autokitteh/tests|runtimes/python")
+                  else
+                    gotestsum -f github-actions -- ${{ matrix.tags }} -trimpath $(find . -name "*_test.go" -not -path "*/tests/*" -exec sh -c 'grep -q -E "(go:build.*\\benterprise\\b|\\+build.*\\benterprise\\b)" "$1" && dirname "$1"' _ {} \; | sort -u)
+                  fi
 
     go-system-tests:
         name: Go system tests (${{matrix.name}})
