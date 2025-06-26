@@ -13,7 +13,7 @@ def test_all_modules_documented():
     }
 
     no_doc = []
-    for mod in here.glob("../autokitteh/*.py"):
+    for mod in (here.parent / "autokitteh").glob("*.py"):
         if mod.name in ignored:
             continue
 
