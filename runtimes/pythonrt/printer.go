@@ -116,11 +116,19 @@ func (d LogDispatcher) logRecord(record map[string]any) {
 	msg, ok := record[msgKey].(string)
 	if !ok {
 		msg = "runner log"
-	} else {
-		delete(record, msgKey)
 	}
 
-	d.log.Log(level, msg, zap.Any("record", record))
+	// Flatten record
+	fields := make([]zap.Field, 0, len(record))
+	for k, v := range record {
+		if k == msgKey {
+			continue
+		}
+
+		fields = append(fields, zap.Any(k, v))
+	}
+
+	d.log.Log(level, msg, fields...)
 }
 
 func pyLevelToZap(level string) zapcore.Level {
