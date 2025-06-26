@@ -112,7 +112,7 @@ class SysCalls:
         try:
             resp = call_grpc("next_event", self.worker.NextEvent, req)
         except AutoKittehError as err:
-            if "now allowed" in str(err):
+            if "not allowed" in str(err):
                 log.error("next_event inside an activity")
             raise AutoKittehError(f"next_event inside activity: {err}") from err
 
