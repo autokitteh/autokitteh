@@ -1,6 +1,7 @@
 main start
 True
 True
+True
 main end
 -- main.py:main --
 from autokitteh import AutoKittehError, activity, next_event
@@ -12,7 +13,9 @@ def problem():
         next_event('event')
     except AutoKittehError as err:
         text = str(err)
+    # We don't compare the exact message since it's brittle
     print('next_event' in text)
+    print('not allowed' in text)
     print('activity' in text)
 
 
