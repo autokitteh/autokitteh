@@ -47,7 +47,7 @@ var ops = map[string]op{
 
 			if !curr.IsValid() || curr.IsNothing() {
 				// If current value is invalid or nothing, we set it to the given value.
-				return vs[0], sdktypes.Nothing, nil
+				return vs[0], vs[0], nil
 			}
 
 			next, err := sdktypes.AddValues(curr, vs[0])
@@ -55,7 +55,7 @@ var ops = map[string]op{
 				return sdktypes.InvalidValue, sdktypes.InvalidValue, err
 			}
 
-			return next, sdktypes.Nothing, nil
+			return next, next, nil
 		},
 		read:  true,
 		write: true,
