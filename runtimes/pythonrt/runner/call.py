@@ -39,7 +39,7 @@ def full_func_name(fn):
 
 
 def caller_info(code_dir):
-    """"Return first location in call stack that comes from code_dir."""
+    """Return first location in call stack that comes from code_dir."""
     for frame in inspect.stack():
         if Path(frame.filename).is_relative_to(code_dir):
             return Path(frame.filename).name, frame.lineno
@@ -119,7 +119,7 @@ class AKCall:
 
     def __call__(self, func, *args, **kw):
         file, lnum = caller_info(self.code_dir)
-        log.info('CALLER: %s:%d', file, lnum)
+        log.info("CALLER: %s:%d", file, lnum)
         if not callable(func):
             raise ValueError(f"{func!r} is not callable (user bug at {file}:{lnum}?)")
 
