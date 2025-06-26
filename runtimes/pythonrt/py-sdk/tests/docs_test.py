@@ -9,7 +9,7 @@ def test_all_modules_documented():
         index_data = fp.read()
 
     ignored = {
-        '__init__.py',
+        "__init__.py",
     }
 
     no_doc = []
@@ -22,5 +22,5 @@ def test_all_modules_documented():
             no_doc.append(mod.name)
 
     if no_doc:
-        no_doc = ', '.join(sorted(no_doc))
-        assert False, f'missing from docs/index.rst: {no_doc}'
+        no_doc = ", ".join(sorted(no_doc))
+        assert False, f"missing from docs/index.rst: {no_doc}"

@@ -14,10 +14,10 @@ parser.add_argument(
 args = parser.parse_args()
 
 docs_dir = Path(__file__).parent.absolute()
-ak_dir = docs_dir / '../autokitteh'
+ak_dir = docs_dir / "../autokitteh"
 
-index_header = '''\
-.. autokitteh documentation master file, created by & gen-index.py
+index_header = """\
+.. autokitteh documentation master file, created by sphinx-quickstart & gen-index.py
    sphinx-quickstart on Wed Jul  3 11:27:22 2024.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
@@ -42,10 +42,10 @@ Module contents
 
 Submodules
 ----------
-'''
+"""
 
-mod_header = 'autokitteh.{mod} module'
-mod_template = '''\
+mod_header = "autokitteh.{mod} module"
+mod_template = """\
 {header}
 {line}
 
@@ -53,29 +53,29 @@ mod_template = '''\
    :members:
    :undoc-members:
    :show-inheritance:
-'''
+"""
 
 print(index_header, file=args.output)
 
 ignored = {
-    '__init__.py',
+    "__init__.py",
 }
-for mod in ak_dir.glob('*.py'):
+for mod in ak_dir.glob("*.py"):
     if mod.name in ignored:
         continue
 
     header = mod_header.format(mod=mod.stem)
-    line = '-' * len(header)
+    line = "-" * len(header)
     text = mod_template.format(mod=mod.stem, header=header, line=line)
     print(text, file=args.output)
 
 
-footer = '''\
+footer = """\
 Indices and tables
 ==================
 
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-'''
+"""
 print(footer, file=args.output)
