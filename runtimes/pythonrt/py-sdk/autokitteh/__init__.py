@@ -6,6 +6,7 @@ from .attr_dict import AttrDict
 from .event import Event
 from .events import next_event, start, subscribe, unsubscribe
 from .signals import Signal, next_signal, signal
+from .errors import AutoKittehError
 from .store import (
     get_value,
     mutate_value,
@@ -19,6 +20,7 @@ __all__ = [
     "AttrDict",
     "errors",
     "start",
+    "AutoKittehError",
     # Activities
     "activity",
     "inhibit_activities",
