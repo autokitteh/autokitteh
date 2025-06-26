@@ -97,7 +97,7 @@ def set_value(key: str, value: Any) -> None:
     _local_dev_store[key] = value
 
 
-def add_values(key: str, value: Any) -> None:
+def add_values(key: str, value: Any) -> Any:
     """Add to a stored value.
 
     This operation is atomic.
@@ -109,11 +109,14 @@ def add_values(key: str, value: Any) -> None:
         value: Value to add. Value must be serializable.
 
     Returns:
-        None.
+        New result value. Always the same type as the value stored under the key.
     """
 
     # Dummy implementation for local development.
-    _local_dev_store[key] += value
+    if key not in _local_dev_store:
+        _local_dev_store[key] = value
+    else:
+        _local_dev_store[key] += value
 
 
 def del_value(key: str) -> None:

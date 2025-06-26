@@ -158,7 +158,7 @@ func TestMutate(t *testing.T) {
 			op:       "add",
 			pid:      pids[1],
 			operands: []sdktypes.Value{ivs[1]},
-			ret:      sdktypes.Nothing,
+			ret:      ivs[1],
 		},
 		{
 			key: "k3",
@@ -171,7 +171,7 @@ func TestMutate(t *testing.T) {
 			op:       "add",
 			pid:      pids[1],
 			operands: []sdktypes.Value{ivs[2]},
-			ret:      sdktypes.Nothing,
+			ret:      ivs[3],
 		},
 		{
 			key: "k3",
