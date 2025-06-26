@@ -28,6 +28,7 @@ var (
 	Configs = configset.Set[Config]{
 		Default: &Config{
 			MaxConcurrentWorkflows: 1,
+			WorkerID:               "default-worker",
 		},
 		Test: &Config{
 			WorkerID: "test-worker",
