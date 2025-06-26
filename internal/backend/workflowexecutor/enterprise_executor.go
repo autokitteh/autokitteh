@@ -38,6 +38,7 @@ var (
 		Dev: &Config{
 			MaxConcurrentWorkflows: 10,
 			EnablePoller:           true,
+			WorkerID:               "dev-worker",
 		},
 	}
 )
