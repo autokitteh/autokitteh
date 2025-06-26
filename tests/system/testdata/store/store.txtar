@@ -1,0 +1,36 @@
+# Preconditions: create & build project.
+ak project create --name my_project
+return code == 0
+
+ak project build my_project --file main.py -j
+return code == 0
+capture_jq bid .build_id
+
+# Set
+ak session start --project my_project --build-id $bid --entrypoint main.py:set -j
+return code == 0
+capture_jq sid .session_id
+
+ak session watch $sid --timeout 5s
+return code == 0
+
+# Get
+ak session start --project my_project --build-id $bid --entrypoint main.py:get -j
+return code == 0
+capture_jq sid .session_id
+
+ak session watch $sid --timeout 5s
+return code == 0
+
+ak session prints $sid --no-timestamps
+return code == 0
+output equals meow
+
+-- main.py --
+from autokitteh import set_value, get_value
+
+def set(_):
+    set_value("cat", "meow")
+
+def get(_):
+    print(get_value("cat"))

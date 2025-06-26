@@ -6,12 +6,21 @@ from .attr_dict import AttrDict
 from .event import Event
 from .events import next_event, start, subscribe, unsubscribe
 from .signals import Signal, next_signal, signal
-from .store import get_value, mutate_value, set_value, del_value, list_values_keys
+from .errors import AutoKittehError
+from .store import (
+    get_value,
+    mutate_value,
+    set_value,
+    del_value,
+    list_values_keys,
+    store,
+)
 
 __all__ = [
     "AttrDict",
     "errors",
     "start",
+    "AutoKittehError",
     # Activities
     "activity",
     "inhibit_activities",
@@ -31,4 +40,5 @@ __all__ = [
     "list_values_keys",
     "mutate_value",
     "set_value",
+    "store",
 ]

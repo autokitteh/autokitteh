@@ -18,9 +18,11 @@ profiling, and load/stress testing.
 package systest
 
 import (
+	"context"
 	"embed"
 	"fmt"
 	"io/fs"
+	"maps"
 	"strings"
 	"testing"
 
@@ -44,7 +46,7 @@ func TestSystem(t *testing.T) {
 			return err
 		}
 
-		if d.IsDir() || !strings.HasSuffix(d.Name(), ".txtar") {
+		if d.IsDir() || !testFilter(d.Name()) {
 			return nil // Skip directories and non-test files.
 		}
 
@@ -80,7 +82,9 @@ func TestSystem(t *testing.T) {
 			}
 
 			tests.SwitchToTempDir(t, venvPath) // For test isolation.
-			akAddr := setUpTest(t, akPath, test.config.Server)
+			cfg := setupExternalResources(t)
+			maps.Copy(cfg, test.config.Server)
+			akAddr := setUpTest(t, akPath, cfg)
 
 			writeEmbeddedFiles(t, test.a.Files)
 
@@ -116,7 +120,7 @@ func setUpTest(t *testing.T, akPath string, cfg map[string]any) string {
 
 	// Eventual cleanup when the test is done.
 	t.Cleanup(func() {
-		if err := svc.Stop(t.Context()); err != nil {
+		if err := svc.Stop(context.Background()); err != nil {
 			t.Log(fmt.Errorf("stop AK server: %w", err))
 		}
 	})

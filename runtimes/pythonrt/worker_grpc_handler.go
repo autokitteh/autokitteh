@@ -196,7 +196,7 @@ func (s *workerGRPCHandler) Activity(ctx context.Context, req *userCode.Activity
 	runner.log.Info("activity", zap.String("function", fnName))
 	_, err := sdktypes.NewFunctionValue(runner.xid, fnName, req.Data, nil, pyModuleFunc)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "new function value: %s", err)
+		return nil, status.Errorf(codes.Internal, "new function value: %v", err)
 	}
 
 	runner.channels.request <- req
@@ -263,19 +263,19 @@ func (s *workerGRPCHandler) StartSession(ctx context.Context, req *userCode.Star
 	var data map[string]any
 	if err := json.Unmarshal(req.Data, &data); err != nil {
 		s.log.Error("unmarshal Data", zap.Error(err))
-		return nil, status.Errorf(codes.InvalidArgument, "can't unmarshal data: %s", err)
+		return nil, status.Errorf(codes.InvalidArgument, "can't unmarshal data: %v", err)
 	}
 
 	var memo map[string]string
 	if err := json.Unmarshal(req.Memo, &memo); err != nil {
 		s.log.Error("marshal Memo", zap.Error(err))
-		return nil, status.Errorf(codes.InvalidArgument, "can't unmarshal memo: %s", err)
+		return nil, status.Errorf(codes.InvalidArgument, "can't unmarshal memo: %v", err)
 	}
 
 	vdata, err := kittehs.TransformMapValuesError(data, sdktypes.DefaultValueWrapper.Wrap)
 	if err != nil {
 		s.log.Error("wrapping values", zap.Error(err))
-		return nil, status.Errorf(codes.InvalidArgument, "can't wrap data: %s", err)
+		return nil, status.Errorf(codes.InvalidArgument, "can't wrap data: %v", err)
 	}
 
 	loc, err := sdktypes.ParseCodeLocation(req.Loc)
@@ -298,7 +298,7 @@ func (s *workerGRPCHandler) StartSession(ctx context.Context, req *userCode.Star
 	}
 
 	if resp.err != nil {
-		err = status.Errorf(codes.Internal, "start(%s) -> %s", req.Loc, err)
+		err = status.Errorf(codes.Internal, "start(%s) -> %v", req.Loc, err)
 		return &userCode.StartSessionResponse{Error: err.Error()}, nil
 	}
 
@@ -320,7 +320,7 @@ func (s *workerGRPCHandler) Subscribe(ctx context.Context, req *userCode.Subscri
 	}
 
 	if resp.err != nil {
-		err = status.Errorf(codes.Internal, "subscribe(%s, %s) -> %s", req.Connection, req.Filter, resp.err)
+		err = status.Errorf(codes.Internal, "subscribe(%s, %s) -> %v", req.Connection, req.Filter, resp.err)
 		return &userCode.SubscribeResponse{Error: err.Error()}, nil
 	}
 
@@ -351,19 +351,19 @@ func (s *workerGRPCHandler) NextEvent(ctx context.Context, req *userCode.NextEve
 	}
 
 	if resp.err != nil {
-		err = status.Errorf(codes.Internal, "next_event(%s, %d) -> %s", req.SignalIds, req.TimeoutMs, err)
+		err = status.Errorf(codes.Internal, "next_event(%s, %d) -> %v", req.SignalIds, req.TimeoutMs, err)
 		return &userCode.NextEventResponse{Error: err.Error()}, nil
 	}
 
 	out, err := sdktypes.ValueWrapper{SafeForJSON: true}.Unwrap(resp.value.(sdktypes.Value))
 	if err != nil {
-		err = status.Errorf(codes.Internal, "can't unwrap %v - %s", resp.value, err)
+		err = status.Errorf(codes.Internal, "can't unwrap %v - %v", resp.value, err)
 		return &userCode.NextEventResponse{Error: err.Error()}, err
 	}
 
 	data, err := json.Marshal(out)
 	if err != nil {
-		err = status.Errorf(codes.Internal, "can't json.Marshal %v - %s", out, err)
+		err = status.Errorf(codes.Internal, "can't json.Marshal %v - %v", out, err)
 		return &userCode.NextEventResponse{Error: err.Error()}, err
 	}
 
@@ -385,7 +385,7 @@ func (s *workerGRPCHandler) Unsubscribe(ctx context.Context, req *userCode.Unsub
 	}
 
 	if resp.err != nil {
-		err = status.Errorf(codes.Internal, "unsubscribe(%s) -> %s", req.SignalId, err)
+		err = status.Errorf(codes.Internal, "unsubscribe(%s) -> %v", req.SignalId, err)
 		return &userCode.UnsubscribeResponse{Error: err.Error()}, nil
 	}
 
@@ -494,7 +494,7 @@ func (s *workerGRPCHandler) Signal(ctx context.Context, req *userCode.SignalRequ
 	}
 
 	if resp.err != nil {
-		err = status.Errorf(codes.Internal, "signal(%s,%s) -> %s", pbsig.Name, sid.String(), err)
+		err = status.Errorf(codes.Internal, "signal(%s,%s) -> %v", pbsig.Name, sid.String(), err)
 		return &userCode.SignalResponse{Error: err.Error()}, nil
 	}
 
@@ -521,7 +521,7 @@ func (s *workerGRPCHandler) NextSignal(ctx context.Context, req *userCode.NextSi
 	}
 
 	if resp.err != nil {
-		err = status.Errorf(codes.Internal, "next_signal(%v, %d) -> %s", req.Names, req.TimeoutMs, err)
+		err = status.Errorf(codes.Internal, "next_signal(%v, %d) -> %v", req.Names, req.TimeoutMs, err)
 		return &userCode.NextSignalResponse{Error: err.Error()}, nil
 	}
 
@@ -549,7 +549,7 @@ func (s *workerGRPCHandler) StoreList(ctx context.Context, req *userCode.StoreLi
 	}
 
 	if resp.err != nil {
-		err = status.Errorf(codes.Internal, "list_values -> %s", err)
+		err = status.Errorf(codes.Internal, "list_values -> %v", err)
 		return &userCode.StoreListResponse{Error: err.Error()}, nil
 	}
 

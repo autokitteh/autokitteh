@@ -11,13 +11,9 @@ from datetime import timedelta
 import grpc
 import log
 import pb.autokitteh.user_code.v1.handler_svc_pb2 as pb
-from autokitteh import AttrDict, Signal
-from autokitteh.activities import ACTIVITY_ATTR
 import values
-
-
-class SyscallError(Exception):
-    pass
+from autokitteh import AttrDict, AutoKittehError, Signal
+from autokitteh.activities import ACTIVITY_ATTR
 
 
 def mark_no_activity(fn):
@@ -113,12 +109,17 @@ class SysCalls:
             timeout_ms=_timeout_arg_into_ms(timeout),
         )
 
-        resp = call_grpc("next_event", self.worker.NextEvent, req)
+        try:
+            resp = call_grpc("next_event", self.worker.NextEvent, req)
+        except AutoKittehError as err:
+            if "not allowed" in str(err):
+                log.error("next_event inside an activity")
+            raise AutoKittehError(f"next_event inside activity: {err}") from err
 
         try:
             data = json.loads(resp.event.data)
         except (ValueError, TypeError, AttributeError) as err:
-            raise SyscallError(f"next_event: invalid event: {err}")
+            raise AutoKittehError(f"next_event: invalid event: {err}")
 
         return AttrDict(data) if isinstance(data, dict) else data
 
@@ -136,7 +137,7 @@ class SysCalls:
         )
         resp: pb.EncodeJWTResponse = call_grpc("encode_jwt", self.worker.EncodeJWT, req)
         if resp.error:
-            raise SyscallError(f"encode_jwt: {resp.error}")
+            raise AutoKittehError(f"encode_jwt: {resp.error}")
         return resp.jwt
 
     def ak_refresh_oauth(self, integration: str, connection: str):
@@ -149,7 +150,7 @@ class SysCalls:
             "refresh_oauth", self.worker.RefreshOAuthToken, req
         )
         if resp.error:
-            raise SyscallError(f"refresh_oauth: {resp.error}")
+            raise AutoKittehError(f"refresh_oauth: {resp.error}")
         return resp.token, resp.expires.ToDatetime()
 
     def ak_signal(self, session_id: str, name: str, payload: any = None) -> None:
@@ -233,9 +234,9 @@ def call_grpc(name, fn, args):
     try:
         resp = fn(args)
         if resp.error:
-            raise SyscallError(f"{name}: {resp.error}")
+            raise AutoKittehError(f"{name}: {resp.error}")
         return resp
     except grpc.RpcError as e:
         if e.code() == grpc.StatusCode.UNAVAILABLE or grpc.StatusCode.CANCELLED:
             os._exit(1)
-        raise e
+        raise AutoKittehError(str(e))

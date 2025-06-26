@@ -16,16 +16,16 @@ from time import sleep
 from traceback import TracebackException, format_exception
 
 import autokitteh
+import autokitteh.store
 import grpc
-
-# from audit import make_audit_hook  # TODO(ENG-1893): uncomment this.
-from autokitteh import AttrDict, Event, connections
-from autokitteh.errors import AutoKittehError
-
 import loader
 import log
 import pb
 import values
+
+# from audit import make_audit_hook  # TODO(ENG-1893): uncomment this.
+from autokitteh import AttrDict, Event, connections
+from autokitteh.errors import AutoKittehError
 from call import AKCall, activity_marker, full_func_name
 from syscalls import SysCalls, mark_no_activity
 
@@ -309,6 +309,12 @@ class Runner(pb.runner_rpc.RunnerService):
         autokitteh.get_value = self.syscalls.ak_get_value
         autokitteh.list_values_keys = self.syscalls.ak_list_values_keys
         autokitteh.mutate_value = self.syscalls.ak_mutate_value
+        # Need to patch autokitteh.store as well for the Store API
+        autokitteh.store.del_value = self.syscalls.ak_del_value
+        autokitteh.store.get_value = self.syscalls.ak_get_value
+        autokitteh.store.list_values_keys = self.syscalls.ak_list_values_keys
+        autokitteh.store.mutate_value = self.syscalls.ak_mutate_value
+
         autokitteh.next_event = self.syscalls.ak_next_event
         autokitteh.next_signal = self.syscalls.ak_next_signal
         autokitteh.set_value = self.syscalls.ak_set_value
