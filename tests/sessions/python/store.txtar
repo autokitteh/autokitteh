@@ -9,7 +9,7 @@ woof
 ['cat', 'dog']
 
 -- main.py main --
-from autokitteh import activity, mutate_value, get_value, set_value, list_values_keys, del_value
+from autokitteh import mutate_value, get_value, set_value, list_values_keys, del_value
 
 def main(_):
     print(mutate_value('cat', 'del'))
