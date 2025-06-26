@@ -37,6 +37,28 @@ var ops = map[string]op{
 		},
 		write: true,
 	},
+	"add": {
+		fn: func(curr sdktypes.Value, vs []sdktypes.Value) (sdktypes.Value, sdktypes.Value, error) {
+			if len(vs) == 0 {
+				return sdktypes.InvalidValue, sdktypes.InvalidValue, sdkerrors.NewInvalidArgumentError("missing value to add")
+			} else if len(vs) > 1 {
+				return sdktypes.InvalidValue, sdktypes.InvalidValue, errTooManyOperands
+			}
+
+			if !curr.IsValid() || curr.IsNothing() {
+				curr = sdktypes.NewIntegerValue(0)
+			}
+
+			next, err := sdktypes.AddValues(curr, vs[0])
+			if err != nil {
+				return sdktypes.InvalidValue, sdktypes.InvalidValue, err
+			}
+
+			return next, sdktypes.Nothing, nil
+		},
+		read:  true,
+		write: true,
+	},
 	"del": {
 		// no fn -> next is invalid -> delete on write.
 		write: true,

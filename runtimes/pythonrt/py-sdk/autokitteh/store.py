@@ -9,6 +9,8 @@ _local_dev_store = {}
 class Store(MutableMapping):
     """Store it a dict like interface to ak store.
 
+    Note that read-modify-write operations are not atomic.
+
     Values must be pickleable, see
     https://docs.python.org/3/library/pickle.html#what-can-be-pickled-and-unpickled
     """
@@ -38,6 +40,7 @@ class Op(StrEnum):
     SET = "set"
     GET = "get"
     DEL = "del"
+    ADD = "add"
 
 
 def mutate_value(key: str, op: Op, *args: list[Any]) -> Any:
@@ -92,6 +95,23 @@ def set_value(key: str, value: Any) -> None:
 
     # Dummy implementation for local development.
     _local_dev_store[key] = value
+
+
+def add_values(key: str, value: Any) -> None:
+    """Add to a stored value.
+
+    This operation is atomic.
+
+    Args:
+        key: Key of the value to set.
+        value: Value to add. Value must be serializable.
+
+    Returns:
+        None.
+    """
+
+    # Dummy implementation for local development.
+    _local_dev_store[key] += value
 
 
 def del_value(key: str) -> None:
