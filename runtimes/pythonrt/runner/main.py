@@ -535,12 +535,14 @@ class Runner(pb.runner_rpc.RunnerService):
             if asyncio.iscoroutine(value):
                 value = asyncio.run(value)
         except BaseException as err:
-            log.error("%s raised: %s", func_name, err)
+            log.error("%s raised: %r", func_name, err)
             tb = TracebackException.from_exception(err)
             # In some cases, tb can contains code objects that are not pickleable
             stack = tb_stack(tb)
             error = err
             set_exception_args(error)
+            # In asyncio value will be a coroutine which can't be pickled
+            value = None
 
         if isinstance(value, Exception):
             set_exception_args(value)
