@@ -541,8 +541,7 @@ class Runner(pb.runner_rpc.RunnerService):
             stack = tb_stack(tb)
             error = err
             set_exception_args(error)
-            # For some reason in asyncio value will be a coroutine which can't be
-            # pickled
+            # In asyncio value will be a coroutine which can't be pickled
             value = None
 
         if isinstance(value, Exception):
