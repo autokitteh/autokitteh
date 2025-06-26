@@ -20,6 +20,7 @@ install-deps:
 
 build-docs:
 	cd docs && ./gen-reqs.py
+	cd docs && ./gen-index.py
 	$(MAKE) -C docs html
 
 test:
