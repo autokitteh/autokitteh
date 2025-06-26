@@ -73,6 +73,7 @@ func (e *executor) Start(ctx context.Context) error {
 	if e.cfg.WorkerID == "" {
 		return errors.New("worker_id is required")
 	}
+
 	inProgress, err := e.svcs.DB.CountInProgressWorkflowExecutionRequests(ctx, e.cfg.WorkerID)
 	if err != nil {
 		return err
