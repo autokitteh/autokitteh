@@ -102,6 +102,8 @@ def add_values(key: str, value: Any) -> None:
 
     This operation is atomic.
 
+    If key is not found, its initial value is set to the provided value.
+
     Args:
         key: Key of the value to set.
         value: Value to add. Value must be serializable.

@@ -46,7 +46,8 @@ var ops = map[string]op{
 			}
 
 			if !curr.IsValid() || curr.IsNothing() {
-				curr = sdktypes.NewIntegerValue(0)
+				// If current value is invalid or nothing, we set it to the given value.
+				return vs[0], sdktypes.Nothing, nil
 			}
 
 			next, err := sdktypes.AddValues(curr, vs[0])
