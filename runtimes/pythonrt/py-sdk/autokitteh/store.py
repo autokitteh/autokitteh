@@ -1,8 +1,35 @@
+from collections.abc import MutableMapping
 from typing import Any
 from enum import StrEnum
 
 # Dummy implementation for local development.
 _local_dev_store = {}
+
+
+class Store(MutableMapping):
+    """Store it a dict like interface to ak store.
+
+    Values must be pickleable, see
+    https://docs.python.org/3/library/pickle.html#what-can-be-pickled-and-unpickled
+    """
+
+    def __getitem__(self, key):
+        return get_value(key)
+
+    def __setitem__(self, key, value):
+        set_value(key, value)
+
+    def __delitem__(self, key):
+        del_value(key)
+
+    def __iter__(self):
+        return iter(list_values_keys())
+
+    def __len__(self):
+        return sum(1 for _ in self)
+
+
+store = Store()
 
 
 class Op(StrEnum):
@@ -27,7 +54,6 @@ def mutate_value(key: str, op: Op, *args: list[Any]) -> Any:
     Raises:
         AutoKittehError: Value is too large.
     """
-
     # Dummy implementation for local development.
     return {
         "set": set_value,

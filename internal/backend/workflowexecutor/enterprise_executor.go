@@ -22,15 +22,23 @@ type Config struct {
 	MaxConcurrentWorkflows int                           `koanf:"max_concurrent_workflows"`
 	WorkerID               string                        `koanf:"worker_id"`
 	SessionWorkflow        temporalclient.WorkflowConfig `koanf:"session_workflow"`
+	EnablePoller           bool                          `koanf:"enable_poller"`
 }
 
 var (
 	Configs = configset.Set[Config]{
 		Default: &Config{
 			MaxConcurrentWorkflows: 1,
+			EnablePoller:           false,
 		},
 		Test: &Config{
-			WorkerID: "test-worker",
+			WorkerID:     "test-worker",
+			EnablePoller: true,
+		},
+		Dev: &Config{
+			MaxConcurrentWorkflows: 10,
+			EnablePoller:           true,
+			WorkerID:               "dev-worker",
 		},
 	}
 )
@@ -58,6 +66,15 @@ func (e *executor) WorkflowQueue() string {
 
 // Start implements WorkflowResourcesManager.
 func (e *executor) Start(ctx context.Context) error {
+	if !e.cfg.EnablePoller {
+		e.l.Info("Workflow executor polling is disabled, skipping start")
+		return nil
+	}
+
+	if e.cfg.WorkerID == "" {
+		return errors.New("worker_id is required")
+	}
+
 	inProgress, err := e.svcs.DB.CountInProgressWorkflowExecutionRequests(ctx, e.cfg.WorkerID)
 	if err != nil {
 		return err
@@ -74,9 +91,6 @@ func (e *executor) Stop(ctx context.Context) error {
 }
 
 func New(svcs Svcs, l *zap.Logger, cfg *Config) (*executor, error) {
-	if cfg.WorkerID == "" {
-		return nil, errors.New("worker_id is required")
-	}
 
 	sampledLogger := l.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
 		return zapcore.NewSamplerWithOptions(core, time.Second, 1, 0)
