@@ -26,9 +26,6 @@ import (
 )
 
 const (
-	taskQueueName       = "sessions"
-	sessionWorkflowName = "session"
-
 	terminateSessionWorkflowName        = "terminate_session"
 	delayedTerminateSessionWorkflowName = "delayed_terminate_session"
 )
@@ -71,14 +68,14 @@ func New(
 }
 
 func (ws *workflows) StartWorkers(ctx context.Context) error {
-	ws.worker = temporalclient.NewWorker(ws.l.Named("sessionworkflowsworker"), ws.svcs.Temporal.TemporalClient(), taskQueueName, ws.cfg.Worker)
+	ws.worker = temporalclient.NewWorker(ws.l.Named("sessionworkflowsworker"), ws.svcs.Temporal.TemporalClient(), ws.svcs.WorkflowExecutor.WorkflowQueue(), ws.cfg.Worker)
 	if ws.worker == nil {
 		return nil
 	}
 
 	ws.worker.RegisterWorkflowWithOptions(
 		ws.sessionWorkflow,
-		workflow.RegisterOptions{Name: sessionWorkflowName},
+		workflow.RegisterOptions{Name: ws.svcs.WorkflowExecutor.WorkflowSessionName()},
 	)
 
 	// Legacy termination workflow, using explicit parameters instead of a struct.
@@ -133,14 +130,14 @@ func (ws *workflows) StartChildWorkflow(wctx workflow.Context, data sessiondata.
 		workflow.WithChildOptions(
 			wctx,
 			ws.cfg.SessionWorkflow.ToChildWorkflowOptions(
-				taskQueueName,
+				ws.svcs.WorkflowExecutor.WorkflowQueue(),
 				workflowID(childSessionID),
 				fmt.Sprintf("session %v", childSessionID),
 				enums.PARENT_CLOSE_POLICY_ABANDON,
 				memo,
 			),
 		),
-		sessionWorkflowName,
+		ws.svcs.WorkflowExecutor.WorkflowSessionName(),
 		sessionWorkflowParams{Data: data},
 	)
 
@@ -155,9 +152,10 @@ func (ws *workflows) StartChildWorkflow(wctx workflow.Context, data sessiondata.
 }
 
 func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session, opts StartWorkflowOptions) error {
+
 	sessionID := session.ID()
 
-	l := ws.l.Sugar().With("session_id", sessionID)
+	// l := ws.l.Sugar().With("session_id", sessionID)
 
 	data, err := sessiondata.Get(ctx, ws.svcs, session)
 	if err != nil {
@@ -166,22 +164,13 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 
 	memo := memo(session, data.OrgID)
 
-	r, err := ws.svcs.Temporal.TemporalClient().ExecuteWorkflow(
-		ctx,
-		ws.cfg.SessionWorkflow.ToStartWorkflowOptions(
-			taskQueueName,
-			workflowID(sessionID),
-			fmt.Sprintf("session %v", sessionID),
-			memo,
-		),
-		sessionWorkflowName,
-		sessionWorkflowParams{Data: *data, Opts: opts},
-	)
-	if err != nil {
+	params := sessionWorkflowParams{
+		Data: *data,
+		Opts: opts,
+	}
+	if err = ws.svcs.WorkflowExecutor.Execute(ctx, sessionID, params, memo); err != nil {
 		return fmt.Errorf("execute session workflow: %w", err)
 	}
-
-	l.With("workflow_id", r.GetID(), "run_id", r.GetRunID(), "memo", memo).Infof("initiated session workflow %v", r.GetID())
 
 	return nil
 }
@@ -221,7 +210,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params sessionWorkfl
 		}
 	}
 
-	wctx = temporalclient.WithActivityOptions(wctx, taskQueueName, ws.cfg.Activity)
+	wctx = temporalclient.WithActivityOptions(wctx, ws.svcs.WorkflowExecutor.WorkflowQueue(), ws.cfg.Activity)
 
 	// metrics is using context for the data contained, not for cancellations, as it stores in memory.
 	// if it will be stuck anyway for some reason, the workflow deadlock timeout would kick in.
@@ -332,6 +321,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params sessionWorkfl
 	}
 
 	_ = workflow.ExecuteActivity(wctx, deactivateDrainedDeploymentActivityName, session.DeploymentID()).Get(wctx, nil)
+	_ = workflow.ExecuteActivity(wctx, notifyWorkflowEndedActivity, session.ID()).Get(wctx, nil)
 
 	return workflowErr
 }
@@ -420,7 +410,7 @@ func (ws *workflows) StopWorkflow(ctx context.Context, sessionID sdktypes.Sessio
 	r, err := ws.svcs.Temporal.TemporalClient().ExecuteWorkflow(
 		ctx,
 		ws.cfg.TerminationWorkflow.ToStartWorkflowOptions(
-			taskQueueName,
+			ws.svcs.WorkflowExecutor.WorkflowQueue(),
 			"terminate_"+wid,
 			fmt.Sprintf("stop %v", sessionID),
 			map[string]string{

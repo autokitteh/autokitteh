@@ -9,12 +9,14 @@ import (
 	"github.com/stretchr/testify/mock"
 	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/sdk/client"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"gotest.tools/v3/assert"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionsvcs"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
+	"go.autokitteh.dev/autokitteh/internal/backend/workflowexecutor"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -81,6 +83,10 @@ func setup(t *testing.T) (*workflows, *mockDB, *mockTemporalClient) {
 		svcs: &sessionsvcs.Svcs{
 			DB:       &db,
 			Temporal: fakeTemporalClient{t: &tc},
+			WorkflowExecutor: kittehs.Must1(workflowexecutor.New(workflowexecutor.Svcs{
+				DB:       &db,
+				Temporal: fakeTemporalClient{t: &tc},
+			}, zap.NewNop(), &workflowexecutor.Config{})),
 		},
 	}
 
