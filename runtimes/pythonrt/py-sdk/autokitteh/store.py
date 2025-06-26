@@ -7,7 +7,11 @@ _local_dev_store = {}
 
 
 class Store(MutableMapping):
-    """Store it a dict like interface to ak store."""
+    """Store it a dict like interface to ak store.
+
+    Values must be pickleable, see
+    https://docs.python.org/3/library/pickle.html#what-can-be-pickled-and-unpickled
+    """
 
     def __getitem__(self, key):
         return get_value(key)
