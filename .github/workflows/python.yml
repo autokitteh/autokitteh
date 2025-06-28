@@ -26,12 +26,14 @@ jobs:
         run: go mod download
       - name: Install gotestsum
         run: go install gotest.tools/gotestsum@latest
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
       - name: Test
         run: gotestsum -f github-actions -- -trimpath ./runtimes/pythonrt/...
 
@@ -46,7 +48,10 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
       - name: Test
         run: cd runtimes/pythonrt && make ci
 
@@ -93,5 +98,9 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
       - name: Test
         run: cd runtimes/pythonrt/py-sdk && make ci
