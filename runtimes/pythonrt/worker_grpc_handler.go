@@ -452,7 +452,7 @@ func (s *workerGRPCHandler) RefreshOAuthToken(ctx context.Context, req *userCode
 	// Get a fresh access token.
 	refreshToken, ok := runner.envVars[req.Connection+"__oauth_RefreshToken"]
 	if !ok {
-		// New connection variable name, only in Microsoft integrations for now.
+		// New connection variable name.
 		refreshToken, ok = runner.envVars[req.Connection+"__oauth_refresh_token"]
 	}
 	if !ok {
