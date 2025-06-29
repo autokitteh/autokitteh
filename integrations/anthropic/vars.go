@@ -11,4 +11,4 @@ type ChatRequest struct {
 	Messages  []Message `json:"messages"`
 }
 
-var AnthropicURL = "https://api.anthropic.com/v1/messages"
+const AnthropicURL = "https://api.anthropic.com/v1/messages"
