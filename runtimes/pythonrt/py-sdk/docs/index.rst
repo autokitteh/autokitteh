@@ -24,6 +24,14 @@ Module contents
 Submodules
 ----------
 
+autokitteh.airtable module
+-----------------------
+
+.. automodule:: autokitteh.airtable
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 autokitteh.asana module
 -----------------------
 

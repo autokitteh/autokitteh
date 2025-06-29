@@ -805,7 +805,7 @@ func (o *OAuth) generatePKCEOpts(ctx context.Context, cid sdktypes.ConnectionID,
 }
 
 func generatePKCEPair() (verifier, challenge string, err error) {
-	// 64 bytes gives ~86-character base64 string
+	// 64 bytes gives 86-character base64 string
 	b := make([]byte, 64)
 	if _, err := rand.Read(b); err != nil {
 		return "", "", err
