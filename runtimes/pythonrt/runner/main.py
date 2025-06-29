@@ -16,16 +16,16 @@ from time import sleep
 from traceback import TracebackException, format_exception
 
 import autokitteh
+import autokitteh.store
 import grpc
-
-# from audit import make_audit_hook  # TODO(ENG-1893): uncomment this.
-from autokitteh import AttrDict, Event, connections
-from autokitteh.errors import AutoKittehError
-
 import loader
 import log
 import pb
 import values
+
+# from audit import make_audit_hook  # TODO(ENG-1893): uncomment this.
+from autokitteh import AttrDict, Event, connections
+from autokitteh.errors import AutoKittehError
 from call import AKCall, activity_marker, full_func_name
 from syscalls import SysCalls, mark_no_activity
 
@@ -305,8 +305,19 @@ class Runner(pb.runner_rpc.RunnerService):
         connections.encode_jwt = self.syscalls.ak_encode_jwt
         connections.refresh_oauth = self.syscalls.ak_refresh_oauth
 
+        autokitteh.del_value = self.syscalls.ak_del_value
+        autokitteh.get_value = self.syscalls.ak_get_value
+        autokitteh.list_values_keys = self.syscalls.ak_list_values_keys
+        autokitteh.mutate_value = self.syscalls.ak_mutate_value
+        # Need to patch autokitteh.store as well for the Store API
+        autokitteh.store.del_value = self.syscalls.ak_del_value
+        autokitteh.store.get_value = self.syscalls.ak_get_value
+        autokitteh.store.list_values_keys = self.syscalls.ak_list_values_keys
+        autokitteh.store.mutate_value = self.syscalls.ak_mutate_value
+
         autokitteh.next_event = self.syscalls.ak_next_event
         autokitteh.next_signal = self.syscalls.ak_next_signal
+        autokitteh.set_value = self.syscalls.ak_set_value
         autokitteh.signal = self.syscalls.ak_signal
         autokitteh.start = self.syscalls.ak_start
         autokitteh.subscribe = self.syscalls.ak_subscribe
@@ -524,12 +535,14 @@ class Runner(pb.runner_rpc.RunnerService):
             if asyncio.iscoroutine(value):
                 value = asyncio.run(value)
         except BaseException as err:
-            log.error("%s raised: %s", func_name, err)
+            log.error("%s raised: %r", func_name, err)
             tb = TracebackException.from_exception(err)
             # In some cases, tb can contains code objects that are not pickleable
             stack = tb_stack(tb)
             error = err
             set_exception_args(error)
+            # In asyncio value will be a coroutine which can't be pickled
+            value = None
 
         if isinstance(value, Exception):
             set_exception_args(value)

@@ -67,6 +67,10 @@ type RunCallbacks struct {
 	// Signals
 	Signal     func(ctx context.Context, rid sdktypes.RunID, sid sdktypes.SessionID, name string, payload sdktypes.Value) error
 	NextSignal func(ctx context.Context, rid sdktypes.RunID, names []string, timeout time.Duration) (*RunSignal, error)
+
+	// Store
+	ListStoreValues  func(ctx context.Context, rid sdktypes.RunID) ([]string, error)
+	MutateStoreValue func(ctx context.Context, rid sdktypes.RunID, key, op string, operands ...sdktypes.Value) (sdktypes.Value, error)
 }
 
 type Run interface {

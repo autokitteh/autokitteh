@@ -58,6 +58,8 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/secrets"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessionsgrpcsvc"
+	"go.autokitteh.dev/autokitteh/internal/backend/store"
+	"go.autokitteh.dev/autokitteh/internal/backend/storegrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/backend/triggers"
@@ -70,6 +72,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/webhookssvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/webplatform"
 	"go.autokitteh.dev/autokitteh/internal/backend/webtools"
+	"go.autokitteh.dev/autokitteh/internal/backend/workflowexecutor"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/version"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimessvc"
@@ -156,6 +159,8 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		SupplyConfig("svc", svcConfigs),
 
 		LoggerFxOpt(opts.Silent),
+		Component("workflowexecutor", workflowexecutor.Configs,
+			fx.Provide(fx.Annotate(workflowexecutor.New, fx.As(new(workflowexecutor.WorkflowExecutor))))),
 		Component("usagereporter",
 			usagereporter.Configs,
 			fx.Provide(func(z *zap.Logger, cfg *usagereporter.Config) (usagereporter.UsageReporter, error) {
@@ -241,6 +246,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				})
 			}),
 		),
+		Component("store", configset.Empty, fx.Provide(store.New)),
 		Component("projects", configset.Empty, fx.Provide(projects.New)),
 		Component("projectsgrpcsvc", projectsgrpcsvc.Configs, fx.Provide(projectsgrpcsvc.New)),
 		Component(
@@ -324,6 +330,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		fx.Invoke(sessionsgrpcsvc.Init),
 		fx.Invoke(triggersgrpcsvc.Init),
 		fx.Invoke(varsgrpcsvc.Init),
+		fx.Invoke(storegrpcsvc.Init),
 		Component(
 			"http",
 			httpsvc.Configs,
@@ -452,6 +459,10 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				})
 			}),
 		),
+		fx.Invoke(func(lc fx.Lifecycle, w workflowexecutor.WorkflowExecutor) {
+			HookOnStart(lc, w.Start)
+			HookOnStop(lc, w.Stop)
+		}),
 		fx.Invoke(func(z *zap.Logger, lc fx.Lifecycle, muxes *muxes.Muxes, h healthreporter.HealthReporter) {
 			var ready atomic.Bool
 

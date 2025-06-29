@@ -308,14 +308,16 @@ func (py *pySvc) Run(
 
 	startDone := make(chan struct{})
 
-	go func() {
-		select {
-		case <-startDone:
-			// nop
-		case <-time.After(py.cfg.DelayedStartPrintTimeout):
-			_ = cbs.Print(ctx, runID, "ᓚᘏᗢ Python runs might take a while to start when running for the first time on a new runner, hang on!")
-		}
-	}()
+	if t := py.cfg.DelayedStartPrintTimeout; t != 0 {
+		go func() {
+			select {
+			case <-startDone:
+				// nop
+			case <-time.After(t):
+				_ = cbs.Print(ctx, runID, "ᓚᘏᗢ Python runs might take a while to start when running for the first time on a new runner, hang on!")
+			}
+		}()
+	}
 
 	runnerID, runner, err := runnerManager.Start(ctx, sessionID, tarData, py.envVars)
 	close(startDone)

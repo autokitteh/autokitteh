@@ -117,6 +117,27 @@ message PrintResponse {
   string error = 1;
 }
 
+message StoreListRequest {
+  string runner_id = 1;
+}
+
+message StoreListResponse {
+  string error = 1;
+  repeated string keys = 2;
+}
+
+message StoreMutateRequest {
+  string runner_id = 1;
+  string key = 2;
+  string operation = 3;
+  repeated autokitteh.values.v1.Value operands = 4;
+}
+
+message StoreMutateResponse {
+  string error = 1;
+  autokitteh.values.v1.Value result = 2;
+}
+
 message StartSessionRequest {
   string runner_id = 1;
   string loc = 2;
@@ -129,6 +150,7 @@ message StartSessionResponse {
   string session_id = 1;
   string error = 2;
 }
+
 message EncodeJWTRequest {
   string runner_id = 1;
   map<string, int64> payload = 2;
@@ -201,6 +223,8 @@ service HandlerService {
   rpc StartSession(StartSessionRequest) returns (StartSessionResponse) {}
   rpc Signal(SignalRequest) returns (SignalResponse) {}
   rpc NextSignal(NextSignalRequest) returns (NextSignalResponse) {}
+  rpc StoreList(StoreListRequest) returns (StoreListResponse) {}
+  rpc StoreMutate(StoreMutateRequest) returns (StoreMutateResponse) {}
 
   // Utility functions
   rpc EncodeJWT(EncodeJWTRequest) returns (EncodeJWTResponse) {}

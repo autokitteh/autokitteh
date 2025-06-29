@@ -32,6 +32,9 @@ const (
 	getDeploymentStateActivityName          = "get_deployment_state"
 	createSessionActivityName               = "create_session"
 	createSessionInProjectActivityName      = "create_session_in_project"
+	listStoreValuesActivityName             = "list_store_values"
+	mutateStoreValueActivityName            = "mutate_store_value"
+	notifyWorkflowEndedActivity             = "notify_workflow_ended"
 )
 
 func (ws *workflows) registerActivities() {
@@ -86,8 +89,24 @@ func (ws *workflows) registerActivities() {
 	)
 
 	ws.worker.RegisterActivityWithOptions(
+		ws.listStoreValuesActivity,
+		activity.RegisterOptions{Name: listStoreValuesActivityName},
+	)
+
+	ws.worker.RegisterActivityWithOptions(
+		ws.mutateStoreValueActivity,
+		activity.RegisterOptions{Name: mutateStoreValueActivityName},
+	)
+
+	ws.worker.RegisterActivityWithOptions(
+
 		ws.createSessionInProjectActivity,
 		activity.RegisterOptions{Name: createSessionInProjectActivityName},
+	)
+
+	ws.worker.RegisterActivityWithOptions(
+		ws.notifyWorkflowEndedActivity,
+		activity.RegisterOptions{Name: notifyWorkflowEndedActivity},
 	)
 }
 
@@ -141,6 +160,14 @@ func (ws *workflows) createSessionInProjectActivity(ctx context.Context, params 
 	}
 
 	return data, nil
+}
+
+func (ws *workflows) listStoreValuesActivity(ctx context.Context, pid sdktypes.ProjectID) ([]string, error) {
+	return ws.svcs.Store.List(authcontext.SetAuthnSystemUser(ctx), pid)
+}
+
+func (ws *workflows) mutateStoreValueActivity(ctx context.Context, pid sdktypes.ProjectID, key, op string, operands []sdktypes.Value) (sdktypes.Value, error) {
+	return ws.svcs.Store.Mutate(authcontext.SetAuthnSystemUser(ctx), pid, key, op, operands...)
 }
 
 func (ws *workflows) createSessionActivity(ctx context.Context, session sdktypes.Session) error {
@@ -296,7 +323,7 @@ func (ws *workflows) terminateSessionWorkflow(wctx workflow.Context, params term
 
 	sl.Infof("terminating session workflow %s", sid)
 
-	wctx = workflow.WithActivityOptions(wctx, ws.cfg.Activity.ToOptions(taskQueueName))
+	wctx = workflow.WithActivityOptions(wctx, ws.cfg.Activity.ToOptions(ws.svcs.WorkflowExecutor.WorkflowQueue()))
 
 	// this is fine if it runs multiple times and should be short.
 	if err := workflow.ExecuteActivity(wctx, terminateWorkflowActivityName, sid, reason).Get(wctx, nil); err != nil {
@@ -327,4 +354,8 @@ func (ws *workflows) terminateWorkflowActivity(ctx context.Context, sid sdktypes
 	}
 
 	return err
+}
+
+func (ws *workflows) notifyWorkflowEndedActivity(ctx context.Context, sid sdktypes.SessionID) error {
+	return ws.svcs.WorkflowExecutor.NotifyDone(ctx, workflowID(sid))
 }

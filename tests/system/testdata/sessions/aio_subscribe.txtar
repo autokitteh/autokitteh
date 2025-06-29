@@ -1,0 +1,35 @@
+ak deploy --manifest autokitteh.yaml
+return code == 0
+
+http get /webhooks/00000000000000000000000003
+resp code == 202
+
+ak session watch ses_00000000000000000000000007 --end-state COMPLETED
+return code == 0
+
+ak session prints ses_00000000000000000000000007 --no-timestamps
+output contains 'before'
+output contains 'after'
+
+-- autokitteh.yaml --
+version: v1
+project:
+  name: next_event_test
+  triggers:
+  - name: send_msg
+    webhook: {}
+    call: program.py:on_trigger
+
+-- program.py --
+import asyncio
+import autokitteh
+
+
+async def main():
+    print("before")
+    send_msg = autokitteh.subscribe("send_msg")
+    print("after")
+   
+
+def on_trigger(_):
+   asyncio.run(main())
