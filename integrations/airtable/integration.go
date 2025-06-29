@@ -17,7 +17,7 @@ var desc = common.Descriptor("airtable", "Airtable", "/static/images/airtable.sv
 // is registered when the AutoKitteh server starts.
 func New(v sdkservices.Vars, o *oauth.OAuth) sdkservices.Integration {
 	return sdkintegrations.NewIntegration(
-		desc, sdkmodule.New(), status(v), test(&v),
+		desc, sdkmodule.New(), status(v), test(v, o),
 		sdkintegrations.WithConnectionConfigFromVars(v))
 }
 
