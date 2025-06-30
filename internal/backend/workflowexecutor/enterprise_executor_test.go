@@ -5,6 +5,7 @@ package workflowexecutor
 
 import (
 	"context"
+	"sync/atomic"
 	"testing"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
@@ -16,14 +17,14 @@ import (
 )
 
 func TestAvailableSlots(t *testing.T) {
-	e := executor{maxConcurrent: 10, inProgressWorkflowsCount: 10}
+	e := executor{maxConcurrent: 10, metrics: newMetrics("test-worker")}
+	e.inProgressWorkflowsCount = atomic.Int64{}
+	e.inProgressWorkflowsCount.Store(int64(e.maxConcurrent))
 
-	e.inProgressWorkflowsCount = int64(e.maxConcurrent)
+	assert.Equal(t, e.availableSlots(t.Context()), 0, "Expected no available slots when all slots are in use")
 
-	assert.Equal(t, e.availableSlots(), 0, "Expected no available slots when all slots are in use")
-
-	e.inProgressWorkflowsCount = int64(e.maxConcurrent - 1)
-	assert.Equal(t, e.availableSlots(), 1, "Expected one available slot when one slot is free")
+	e.inProgressWorkflowsCount.Store(int64(e.maxConcurrent - 1))
+	assert.Equal(t, e.availableSlots(t.Context()), 1, "Expected one available slot when one slot is free")
 }
 
 func TestRunOnceNoAvailableSlots(t *testing.T) {
@@ -37,7 +38,7 @@ func TestRunOnceNoAvailableSlots(t *testing.T) {
 		},
 	)
 
-	e.inProgressWorkflowsCount = int64(e.maxConcurrent)
+	e.inProgressWorkflowsCount.Store(int64(e.maxConcurrent))
 
 	e.runOnce(t.Context())
 
@@ -83,7 +84,7 @@ func TestRunOnceOneJob(t *testing.T) {
 	assert.Equal(t, mockTemporal.executeWorkflowName, e.WorkflowSessionName(), "Expected workflow name to match")
 
 	// Verify executor
-	assert.Equal(t, e.inProgressWorkflowsCount, int64(1), "Expected in-progress workflows count to be incremented")
+	assert.Equal(t, e.inProgressWorkflowsCount.Load(), int64(1), "Expected in-progress workflows count to be incremented")
 
 	// Test we don't take more jobs if we have no slots available
 	e.runOnce(t.Context())
@@ -94,11 +95,11 @@ func TestRunOnceOneJob(t *testing.T) {
 	e.runOnce(t.Context())
 	assert.Equal(t, mdb.getRequestCount, 2, "Expected one request to be made")
 
-	assert.Equal(t, e.inProgressWorkflowsCount, int64(2), "Expected in-progress workflows count to be incremented")
+	assert.Equal(t, e.inProgressWorkflowsCount.Load(), int64(2), "Expected in-progress workflows count to be incremented")
 
 	err := e.NotifyDone(t.Context(), "test-workflow")
 	assert.NilError(t, err, "Expected NotifyDone to succeed")
-	assert.Equal(t, e.inProgressWorkflowsCount, int64(1), "Expected in-progress workflows count to be decremented")
+	assert.Equal(t, e.inProgressWorkflowsCount.Load(), int64(1), "Expected in-progress workflows count to be decremented")
 }
 
 // Utilities and mocks for testing

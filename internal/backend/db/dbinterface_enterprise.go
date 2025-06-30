@@ -14,6 +14,7 @@ type WorkflowExecutionRequest struct {
 	WorkflowID string
 	Args       any
 	Memo       map[string]string
+	Status     string
 }
 
 type DB interface {

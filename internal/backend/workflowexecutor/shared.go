@@ -26,7 +26,7 @@ func (e *executor) execute(ctx context.Context, sessionID sdktypes.SessionID, wo
 	if err != nil {
 		return err
 	}
-	e.l.Info("Started workflow", zap.String("workflow_id", r.GetID()), zap.String("workflow_name", e.WorkflowSessionName()))
+	e.l.Info("Started workflow", zap.String("workflow_id", r.GetID()), zap.String("workflow_name", e.WorkflowSessionName()), zap.String("session_id", sessionID.String()))
 
 	return nil
 }

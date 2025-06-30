@@ -62,6 +62,7 @@ func (gdb *gormdb) GetWorkflowExecutionRequests(ctx context.Context, workerID st
 			SessionID:  sdktypes.NewIDFromUUID[sdktypes.SessionID](request.SessionID),
 			Args:       args,
 			Memo:       memo,
+			Status:     request.Status,
 		}
 	}
 
