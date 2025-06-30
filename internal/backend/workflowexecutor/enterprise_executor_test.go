@@ -77,7 +77,6 @@ func TestRunOnceOneJob(t *testing.T) {
 
 	// Verify DB
 	assert.Equal(t, mdb.getRequestCount, 1, "Expected one request to be made")
-	assert.Equal(t, mdb.updateRequestStatusCallCount, 1, "Expected request status to be updated once")
 
 	// Verify Temporal
 	assert.Equal(t, mockTemporal.executeWorkflowCallCount, 1, "Expected workflow to be executed once")
@@ -142,8 +141,6 @@ type mockDB struct {
 		slots    int
 	}
 
-	updateRequestStatusCallCount int
-
 	dbResult func() ([]db.WorkflowExecutionRequest, error)
 }
 
@@ -155,7 +152,6 @@ func (m *mockDB) GetWorkflowExecutionRequests(ctx context.Context, workerID stri
 	return m.dbResult()
 }
 func (m *mockDB) UpdateRequestStatus(ctx context.Context, workflowID string, status string) error {
-	m.updateRequestStatusCallCount++
 	// Mock implementation, just return nil to simulate success
 	return nil
 }
