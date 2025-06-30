@@ -84,7 +84,7 @@ func TestRunOnceOneJob(t *testing.T) {
 	assert.Equal(t, mockTemporal.executeWorkflowName, e.WorkflowSessionName(), "Expected workflow name to match")
 
 	// Verify executor
-	assert.Equal(t, e.inProgressWorkflowsCount, int64(1), "Expected in-progress workflows count to be incremented")
+	assert.Equal(t, e.inProgressWorkflowsCount.Load(), int64(1), "Expected in-progress workflows count to be incremented")
 
 	// Test we don't take more jobs if we have no slots available
 	e.runOnce(t.Context())
@@ -95,11 +95,11 @@ func TestRunOnceOneJob(t *testing.T) {
 	e.runOnce(t.Context())
 	assert.Equal(t, mdb.getRequestCount, 2, "Expected one request to be made")
 
-	assert.Equal(t, e.inProgressWorkflowsCount, int64(2), "Expected in-progress workflows count to be incremented")
+	assert.Equal(t, e.inProgressWorkflowsCount.Load(), int64(2), "Expected in-progress workflows count to be incremented")
 
 	err := e.NotifyDone(t.Context(), "test-workflow")
 	assert.NilError(t, err, "Expected NotifyDone to succeed")
-	assert.Equal(t, e.inProgressWorkflowsCount, int64(1), "Expected in-progress workflows count to be decremented")
+	assert.Equal(t, e.inProgressWorkflowsCount.Load(), int64(1), "Expected in-progress workflows count to be decremented")
 }
 
 // Utilities and mocks for testing

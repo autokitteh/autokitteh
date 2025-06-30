@@ -155,7 +155,7 @@ func (e *executor) startPoller(ctx context.Context) {
 func (e *executor) NotifyDone(ctx context.Context, id string) error {
 	e.inProgressWorkflowsCount.Add(-1)
 
-	e.metrics.DecrementActivedWorkflows(ctx)
+	e.metrics.DecrementActiveWorkflows(ctx)
 
 	if err := e.svcs.DB.UpdateRequestStatus(ctx, id, "done"); err != nil {
 		e.l.Error("Failed to update workflow execution request status", zap.Error(err), zap.String("workflow_id", id))

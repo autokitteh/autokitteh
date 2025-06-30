@@ -42,7 +42,7 @@ func (m *metrics) DecrementQueuedWorkflows(ctx context.Context) {
 func (m *metrics) IncrementActiveWorkflows(ctx context.Context) {
 	m.activeWorkflowsGauge.Add(ctx, 1, metric.WithAttributes(attribute.String("worker_id", m.workerID)))
 }
-func (m *metrics) DecrementActivedWorkflows(ctx context.Context) {
+func (m *metrics) DecrementActiveWorkflows(ctx context.Context) {
 	m.activeWorkflowsGauge.Add(ctx, -1, metric.WithAttributes(attribute.String("worker_id", m.workerID)))
 }
 
