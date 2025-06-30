@@ -93,7 +93,7 @@ func makeAnthropicAPIRequest(ctx context.Context, apiKey string) error {
 		return fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, AnthropicURL, bytes.NewBuffer(jsonData))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, AnthropicURL, bytes.NewReader(jsonData))
 	if err != nil {
 		return fmt.Errorf("failed to construct request: %w", err)
 	}
