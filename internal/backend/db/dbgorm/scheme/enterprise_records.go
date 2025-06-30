@@ -17,6 +17,7 @@ type WorkflowExecutionRequest struct {
 	AcquiredAt *time.Time
 	AcquiredBy *string `gorm:"index:idx_acquired_by_status"` // worker ID that acquired the request
 
-	Status    string    `gorm:"default:'pending';index:idx_acquired_by_status,where:status='in_progress'"`
-	CreatedAt time.Time `gorm:"default:NOW()"`
+	Status     string    `gorm:"default:'pending';index:idx_acquired_by_status,where:status='in_progress'"`
+	CreatedAt  time.Time `gorm:"default:NOW()"`
+	RetryCount int       `gorm:"default:0"` // Number of times this request has been retried
 }
