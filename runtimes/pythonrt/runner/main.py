@@ -533,7 +533,7 @@ class Runner(pb.runner_rpc.RunnerService):
         try:
             value = fn(*args, **kw)
             if asyncio.iscoroutine(value):
-                value = asyncio.run(value)
+                value = autokitteh.run_async(value)
         except BaseException as err:
             log.error("%s raised: %r", func_name, err)
             tb = TracebackException.from_exception(err)

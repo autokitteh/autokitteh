@@ -2,6 +2,7 @@
 
 from . import errors
 from .activities import activity, inhibit_activities, register_no_activity
+from .aio import run_async
 from .attr_dict import AttrDict
 from .event import Event
 from .events import next_event, start, subscribe, unsubscribe
@@ -41,4 +42,6 @@ __all__ = [
     "mutate_value",
     "set_value",
     "store",
+    # Async
+    "run_async",
 ]
