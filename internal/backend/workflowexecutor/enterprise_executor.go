@@ -161,7 +161,7 @@ func (e *executor) NotifyDone(ctx context.Context, id string) error {
 		e.l.Error("Failed to update workflow execution request status", zap.Error(err), zap.String("workflow_id", id))
 	}
 
-	e.l.Info(fmt.Sprintf("Workflow Done. Active workflows: %d out of %d", e.inProgressWorkflowsCount.Load(), e.maxConcurrent))
+	e.l.Info(fmt.Sprintf("Workflow Done %s. Active workflows: %d out of %d", id, e.inProgressWorkflowsCount.Load(), e.maxConcurrent), zap.String("session_id", id))
 	return nil
 }
 
