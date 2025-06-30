@@ -188,17 +188,11 @@ func (e *executor) runOnce(ctx context.Context) {
 			continue
 		}
 
-		if job.Status == "pending" {
-			// only decrement the queued workflows gauge if the job was pending before
-			// if it was already in progress, a worker was stuck and we retry it
+		if job.RetryCount == 1 {
+			// we don't want to dequeue it twice if we retry it
 			e.metrics.DecrementQueuedWorkflows(ctx)
 		} else {
-			// if status wasn't pending before, it means we are retrying a workflow
 			e.metrics.IncrementRetriedWorkflowsCounter(ctx)
-		}
-
-		if err := e.svcs.DB.UpdateRequestStatus(ctx, job.WorkflowID, "in_progress"); err != nil {
-			e.l.Error("Failed to delete workflow execution request", zap.Error(err), zap.String("session_id", job.SessionID.String()))
 		}
 
 		e.sampledLogger.Info(fmt.Sprintf("Workflow Started. Active workflows: %d out of %d", e.inProgressWorkflowsCount.Load(), e.maxConcurrent))
