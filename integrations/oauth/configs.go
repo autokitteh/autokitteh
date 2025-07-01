@@ -646,21 +646,22 @@ func (o *OAuth) GetConfig(ctx context.Context, integration string, cid sdktypes.
 		return cfg.Config, cfg.Opts, nil
 	}
 
-	// If the integration uses PKCE, inject a dynamic code_challenge/code_verifier
-	// pair into the config before we apply any private OAuth app overrides.
-	if o.flags(integration).usePKCE {
-		o.generatePKCEOpts(ctx, cid, &cfg)
-	}
-
 	// The connection doesn't use private OAuth - return the default configuration.
 	// Special case: Auth0 requires manipulation even in the default OAuth mode.
-	if !o.flags(integration).customizeDefaultEndpoint && common.ReadAuthType(vs) != integrations.OAuthPrivate {
+	if !o.flags(integration).customizeDefaultEndpoint && common.ReadAuthType(vs) != integrations.OAuthPrivate && !o.flags(integration).usePKCE {
 		return cfg.Config, cfg.Opts, nil
 	}
 
 	// From this point on, we manipulate the config based on the connection's
 	// variables, so ensure we no longer reference the server's default.
 	cfg = deepCopy(cfg)
+
+	// If the integration uses PKCE, inject a dynamic code_challenge/code_verifier
+	// pair into the config before we apply any private OAuth app overrides.
+	if o.flags(integration).usePKCE {
+		o.generatePKCEOpts(ctx, cid, &cfg)
+		return cfg.Config, cfg.Opts, nil
+	}
 
 	if integration == "linear" {
 		// Linear requires the actor variable to be set in the connection's variables
@@ -805,7 +806,7 @@ func (o *OAuth) generatePKCEOpts(ctx context.Context, cid sdktypes.ConnectionID,
 }
 
 func generatePKCEPair() (verifier, challenge string, err error) {
-	// 64 bytes gives 86-character base64 string
+	// 64 bytes gives 86-character base64 string.
 	b := make([]byte, 64)
 	if _, err := rand.Read(b); err != nil {
 		return "", "", err
@@ -813,7 +814,7 @@ func generatePKCEPair() (verifier, challenge string, err error) {
 
 	verifier = base64.RawURLEncoding.EncodeToString(b)
 
-	// Generate S256 challenge from verifier
+	// Generate S256 challenge from verifier.
 	hash := sha256.Sum256([]byte(verifier))
 	challenge = base64.RawURLEncoding.EncodeToString(hash[:])
 
