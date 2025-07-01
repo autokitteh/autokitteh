@@ -825,7 +825,7 @@ func (o *OAuth) getPKCEVerifier(ctx context.Context, cid sdktypes.ConnectionID) 
 		return "", nil
 	}
 
-	vs, err := o.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+	vs, err := o.vars.Get(authcontext.SetAuthnSystemUser(ctx), sdktypes.NewVarScopeID(cid))
 	if err != nil {
 		return "", fmt.Errorf("failed to get connection variables: %w", err)
 	}
