@@ -24,6 +24,15 @@ Module contents
 Submodules
 ----------
 
+
+autokitteh.airtable module
+-----------------------
+
+.. automodule:: autokitteh.airtable
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 autokitteh.aws module
 ---------------------
 
@@ -52,6 +61,7 @@ autokitteh.openai module
 ------------------------
 
 .. automodule:: autokitteh.openai
+
    :members:
    :undoc-members:
    :show-inheritance:

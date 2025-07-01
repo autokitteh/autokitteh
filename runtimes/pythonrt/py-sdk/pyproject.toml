@@ -30,6 +30,7 @@ all = [
 	"kubernetes ~= 31.0",
 	"msgraph-sdk ~= 1.18",
 	"openai ~= 1.57",
+	"pyairtable ~= 3.1",
 	"PyGithub ~= 2.6",
 	"simple-salesforce ~= 1.12",
 	"slack-sdk ~= 3.33",
