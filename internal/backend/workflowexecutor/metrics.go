@@ -33,10 +33,10 @@ func newMetrics(workerID string) *metrics {
 }
 
 func (m *metrics) IncrementQueuedWorkflows(ctx context.Context) {
-	m.queuedWorkflowsGauge.Add(ctx, 1, metric.WithAttributes(attribute.String("worker_id", m.workerID)))
+	m.queuedWorkflowsGauge.Add(ctx, 1)
 }
 func (m *metrics) DecrementQueuedWorkflows(ctx context.Context) {
-	m.queuedWorkflowsGauge.Add(ctx, -1, metric.WithAttributes(attribute.String("worker_id", m.workerID)))
+	m.queuedWorkflowsGauge.Add(ctx, -1)
 }
 
 func (m *metrics) IncrementActiveWorkflows(ctx context.Context) {

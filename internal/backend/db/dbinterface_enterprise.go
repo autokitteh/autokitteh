@@ -14,7 +14,7 @@ type WorkflowExecutionRequest struct {
 	WorkflowID string
 	Args       any
 	Memo       map[string]string
-	Status     string
+	RetryCount int
 }
 
 type DB interface {
