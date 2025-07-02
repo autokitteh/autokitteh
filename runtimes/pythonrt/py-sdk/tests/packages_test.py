@@ -8,7 +8,7 @@ import pytest
 
 uv_exe = which("uv")
 here = Path(__file__).parent.absolute()
-sdk_path = (here / '..').absolute()
+sdk_path = (here / "..").absolute()
 
 py_code = """
 from autokitteh import packages
@@ -46,8 +46,8 @@ def test_install(venv_cmd, patch, tmp_path):
 
     # Make sure the script can import 'autokitteh'
     env = environ.copy()
-    pypath = env.get('PYTHONPATH')
-    env['PYTHONPATH'] = f'{sdk_path}:{pypath}'
+    pypath = env.get("PYTHONPATH")
+    env["PYTHONPATH"] = f"{sdk_path}:{pypath}"
 
     venv_py = venv_path / "bin/python"
 
