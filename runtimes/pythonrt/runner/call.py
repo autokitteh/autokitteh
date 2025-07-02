@@ -38,12 +38,13 @@ def full_func_name(fn):
     return name
 
 
-def caller_info():
-    frames = inspect.stack()
-    if len(frames) > 2:
-        return Path(frames[2].filename).name, frames[2].lineno
-    else:
-        return "<unknown>", 0
+def caller_info(code_dir):
+    """Return first location in call stack that comes from code_dir."""
+    for frame in inspect.stack():
+        if Path(frame.filename).is_relative_to(code_dir):
+            return Path(frame.filename).name, frame.lineno
+
+    return "<unknown>", 0
 
 
 def is_ak_func(fn):
@@ -117,8 +118,9 @@ class AKCall:
         self.loading = False
 
     def __call__(self, func, *args, **kw):
+        file, lnum = caller_info(self.code_dir)
+        log.info("CALLER: %s:%d", file, lnum)
         if not callable(func):
-            file, lnum = caller_info()
             raise ValueError(f"{func!r} is not callable (user bug at {file}:{lnum}?)")
 
         if func is time.sleep:

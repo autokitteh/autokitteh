@@ -13,3 +13,7 @@ func NewCounter(name string, description string) (metric.Int64Counter, error) {
 func NewHistogram(name string, description string) (metric.Int64Histogram, error) {
 	return M().Int64Histogram(name, metric.WithDescription(description))
 }
+
+func NewGauge(name, description string) (metric.Float64Gauge, error) {
+	return M().Float64Gauge(name, metric.WithDescription(description))
+}

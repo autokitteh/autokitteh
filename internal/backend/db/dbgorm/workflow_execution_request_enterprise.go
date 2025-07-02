@@ -40,8 +40,8 @@ func (gdb *gormdb) GetWorkflowExecutionRequests(ctx context.Context, workerID st
 	var requests []scheme.WorkflowExecutionRequest
 	if err := gdb.writer.WithContext(ctx).Model(&scheme.WorkflowExecutionRequest{}).Raw(`
 	UPDATE workflow_execution_requests
-	SET acquired_at = NOW(), acquired_by = $1
-	WHERE session_id IN (SELECT session_id FROM workflow_execution_requests WHERE status = 'pending' OR acquired_at < NOW() - INTERVAL '1 day' LIMIT $2 FOR UPDATE SKIP LOCKED)
+	SET acquired_at = NOW(), acquired_by = $1, status = 'in_progress', retry_count = retry_count + 1
+	WHERE session_id IN (SELECT session_id FROM workflow_execution_requests WHERE status = 'pending' OR (status = 'in_progress' AND acquired_at < NOW() - INTERVAL '1 day') ORDER BY created_at LIMIT $2 FOR UPDATE SKIP LOCKED)
 	RETURNING *;
 	`, workerID, maxRequests).Scan(&requests).Error; err != nil {
 		return nil, err
@@ -62,6 +62,7 @@ func (gdb *gormdb) GetWorkflowExecutionRequests(ctx context.Context, workerID st
 			SessionID:  sdktypes.NewIDFromUUID[sdktypes.SessionID](request.SessionID),
 			Args:       args,
 			Memo:       memo,
+			RetryCount: request.RetryCount,
 		}
 	}
 
