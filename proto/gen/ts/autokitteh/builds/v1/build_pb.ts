@@ -25,6 +25,11 @@ export class Build extends Message<Build> {
    */
   createdAt?: Timestamp;
 
+  /**
+   * @generated from field: autokitteh.builds.v1.Build.Status status = 4;
+   */
+  status = Build_Status.UNSPECIFIED;
+
   constructor(data?: PartialMessage<Build>) {
     super();
     proto3.util.initPartial(data, this);
@@ -36,6 +41,7 @@ export class Build extends Message<Build> {
     { no: 1, name: "build_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "created_at", kind: "message", T: Timestamp },
+    { no: 4, name: "status", kind: "enum", T: proto3.getEnumType(Build_Status) },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Build {
@@ -54,4 +60,42 @@ export class Build extends Message<Build> {
     return proto3.util.equals(Build, a, b);
   }
 }
+
+/**
+ * @generated from enum autokitteh.builds.v1.Build.Status
+ */
+export enum Build_Status {
+  /**
+   * @generated from enum value: STATUS_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: STATUS_PENDING = 1;
+   */
+  PENDING = 1,
+
+  /**
+   * @generated from enum value: STATUS_RUNNING = 2;
+   */
+  RUNNING = 2,
+
+  /**
+   * @generated from enum value: STATUS_SUCCESS = 3;
+   */
+  SUCCESS = 3,
+
+  /**
+   * @generated from enum value: STATUS_FAILED = 4;
+   */
+  FAILED = 4,
+}
+// Retrieve enum metadata with: proto3.getEnumType(Build_Status)
+proto3.util.setEnumType(Build_Status, "autokitteh.builds.v1.Build.Status", [
+  { no: 0, name: "STATUS_UNSPECIFIED" },
+  { no: 1, name: "STATUS_PENDING" },
+  { no: 2, name: "STATUS_RUNNING" },
+  { no: 3, name: "STATUS_SUCCESS" },
+  { no: 4, name: "STATUS_FAILED" },
+]);
 

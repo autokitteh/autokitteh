@@ -206,7 +206,7 @@ var tools = []server.ServerTool{
 				return mcp.NewToolResultError(err.Error()), nil
 			}
 
-			bid, err := common.Client().Projects().Build(ctx, p.ID())
+			bid, err := common.Client().Projects().Build(ctx, p.ID(), false)
 			if err != nil {
 				return toolResultErrorf("%v", err)
 			}
