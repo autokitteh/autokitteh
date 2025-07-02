@@ -25,10 +25,11 @@ install_cases = [
     ),
 ]
 
-@pytest.mark.parametrize('venv_cmd, patch', install_cases)
+
+@pytest.mark.parametrize("venv_cmd, patch", install_cases)
 def test_install(venv_cmd, patch, tmp_path):
-    if 'uv' in venv_cmd[0] and not which('uv'):
-        pytest.skip('uv not installed')
+    if "uv" in venv_cmd[0] and not which("uv"):
+        pytest.skip("uv not installed")
 
     venv_path = tmp_path / "venv"
     venv_cmd += [str(venv_path)]
