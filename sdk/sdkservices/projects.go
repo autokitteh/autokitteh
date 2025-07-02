@@ -13,7 +13,7 @@ type Projects interface {
 	GetByID(ctx context.Context, projectID sdktypes.ProjectID) (sdktypes.Project, error)
 	GetByName(ctx context.Context, oid sdktypes.OrgID, name sdktypes.Symbol) (sdktypes.Project, error)
 	List(ctx context.Context, oid sdktypes.OrgID) ([]sdktypes.Project, error)
-	Build(ctx context.Context, projectID sdktypes.ProjectID) (sdktypes.BuildID, error)
+	Build(ctx context.Context, projectID sdktypes.ProjectID, async bool) (sdktypes.BuildID, error)
 	SetResources(ctx context.Context, projectID sdktypes.ProjectID, resources map[string][]byte) error
 	DownloadResources(ctx context.Context, projectID sdktypes.ProjectID) (map[string][]byte, error)
 	Export(ctx context.Context, projectID sdktypes.ProjectID, includeVarsContents bool) ([]byte, error)
