@@ -1,5 +1,8 @@
 """AutoKitteh Python SDK."""
 
+# Modules imported here should use only the standard library.
+# We don't want people installing everything just to use autokitteh in testing
+
 from . import errors
 from .activities import activity, inhibit_activities, register_no_activity
 from .attr_dict import AttrDict
