@@ -1,7 +1,5 @@
 """AutoKitteh SDK errors."""
 
-from google.auth.exceptions import RefreshError
-
 
 class AutoKittehError(Exception):
     """Generic base class for all errors in the AutoKitteh SDK."""
@@ -27,7 +25,7 @@ class EnvVarError(AutoKittehError):
 class OAuthRefreshError(AutoKittehError):
     """OAuth token refresh failed."""
 
-    def __init__(self, connection: str, error: RefreshError):
+    def __init__(self, connection: str, error):
         super().__init__(f"OAuth refresh failed for {connection!r} connection: {error}")
 
 

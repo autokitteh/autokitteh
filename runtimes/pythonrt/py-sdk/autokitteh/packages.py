@@ -1,6 +1,7 @@
 import re
 import sys
 from subprocess import run
+from shutil import which
 
 
 def _package_name(specifier):
@@ -28,7 +29,12 @@ def _install_package(specifier, import_name):
     except ImportError:
         pass
 
-    out = run([sys.executable, "-m", "pip", "install", specifier])
+    if uv := which("uv"):
+        cmd = [uv, "pip", "install", "--python", sys.executable, specifier]
+    else:
+        cmd = [sys.executable, "-m", "pip", "install", specifier]
+
+    out = run(cmd)
     if out.returncode != 0:
         raise RuntimeError(f"can't install {specifier!r}")
 
