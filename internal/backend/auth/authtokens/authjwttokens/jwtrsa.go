@@ -119,7 +119,7 @@ func newRSA(cfg *RSAConfig) (RSATokens, error) {
 	}, nil
 }
 
-func (rs *rsaTokens) Create(u sdktypes.User) (string, error) {
+func (js *rsaTokens) Create(u sdktypes.User) (string, error) {
 	if authusers.IsSystemUserID(u.ID()) {
 		return "", sdkerrors.NewInvalidArgumentError("system user")
 	}
@@ -142,14 +142,17 @@ func (rs *rsaTokens) Create(u sdktypes.User) (string, error) {
 		ID:       uuid.String(),
 	}
 
-	return j.NewWithClaims(rsaMethod, claim).SignedString(rs.privateKey)
+	return j.NewWithClaims(rsaMethod, claim).SignedString(js.privateKey)
 }
 
-func (rs *rsaTokens) Parse(raw string) (sdktypes.User, error) {
+func (js *rsaTokens) Parse(raw string) (sdktypes.User, error) {
 	var claims j.RegisteredClaims
 
 	t, err := j.ParseWithClaims(raw, &claims, func(t *j.Token) (interface{}, error) {
-		return rs.publicKey, nil
+		if _, ok := t.Method.(*j.SigningMethodRSA); !ok {
+			return nil, errors.New("unexpected signing method")
+		}
+		return js.publicKey, nil
 	})
 	if err != nil {
 		return sdktypes.InvalidUser, err
@@ -165,4 +168,12 @@ func (rs *rsaTokens) Parse(raw string) (sdktypes.User, error) {
 	}
 
 	return tok.User, nil
+}
+
+func (js *rsaTokens) CreateInternal(data map[string]string) (string, error) {
+	return createInternalToken(rsaMethod, js.privateKey, data, 10*time.Minute)
+}
+
+func (rs *rsaTokens) ParseInternal(raw string) (map[string]string, error) {
+	return parseInternalToken(rsaMethod.Alg(), rs.publicKey, raw)
 }

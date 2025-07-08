@@ -65,6 +65,28 @@ func newTokensMiddleware(tokens authtokens.Tokens) middlewareFn {
 	}
 }
 
+func newInternalTokensMiddleware(tokens authtokens.Tokens) middlewareFn {
+	return func(r *http.Request) (sdktypes.UserID, *middlewareError) {
+		authHdr := r.Header.Get("Authorization")
+		if authHdr == "" {
+			return sdktypes.InvalidUserID, nil
+		}
+
+		kind, payload, _ := strings.Cut(authHdr, " ")
+
+		if kind != "Bearer" {
+			return sdktypes.InvalidUserID, invalidAuthHeaderErr
+		}
+
+		_, err := tokens.ParseInternal(payload)
+		if err != nil {
+			return sdktypes.InvalidUserID, invalidTokenErr
+		}
+
+		return authusers.SystemUser.ID(), nil
+	}
+}
+
 func newSessionsMiddleware(sessions authsessions.Store) middlewareFn {
 	return func(r *http.Request) (sdktypes.UserID, *middlewareError) {
 		user, err := sessions.Get(r)
@@ -88,6 +110,7 @@ func New(deps Deps) AuthMiddlewareDecorator {
 
 	if tokens != nil {
 		mws = append(mws, newTokensMiddleware(tokens))
+		mws = append(mws, newInternalTokensMiddleware(tokens))
 	}
 
 	if sessions != nil {
@@ -108,9 +131,18 @@ func New(deps Deps) AuthMiddlewareDecorator {
 
 			for _, mw := range mws {
 				// Stop processing middlewares if a valid user ID is found or there is an error.
-				if uid, mwErr = mw(r); uid.IsValid() || mwErr != nil {
+				var tempErr *middlewareError
+				uid, tempErr = mw(r)
+
+				if mwErr == nil && tempErr != nil {
+					mwErr = tempErr
+				}
+
+				if uid.IsValid() {
+					mwErr = nil // reset error if we found a valid user ID
 					break
 				}
+
 			}
 
 			l := deps.Logger
@@ -133,20 +165,26 @@ func New(deps Deps) AuthMiddlewareDecorator {
 
 			ctx := r.Context()
 
-			u, err := users.Get(authcontext.SetAuthnSystemUser(ctx), uid, "")
-			if err != nil {
-				l.Warn("failed to get user", zap.Error(err))
-				http.Error(w, "unknown user", http.StatusUnauthorized)
-				return
-			}
+			if authusers.IsSystemUserID(uid) {
+				// If the user is the system user, we can set it directly.
+				ctx = authcontext.SetAuthnSystemUser(ctx)
+				l.Info("authenticated as system user")
+			} else {
+				u, err := users.Get(authcontext.SetAuthnSystemUser(ctx), uid, "")
+				if err != nil {
+					l.Warn("failed to get user", zap.Error(err))
+					http.Error(w, "unknown user", http.StatusUnauthorized)
+					return
+				}
 
-			if u.Status() != sdktypes.UserStatusActive {
-				l.Info("user is not active")
-				http.Error(w, "user is not active", http.StatusUnauthorized)
-				return
-			}
+				if u.Status() != sdktypes.UserStatusActive {
+					l.Info("user is not active")
+					http.Error(w, "user is not active", http.StatusUnauthorized)
+					return
+				}
 
-			ctx = authcontext.SetAuthnUser(ctx, u)
+				ctx = authcontext.SetAuthnUser(ctx, u)
+			}
 
 			// Propagate the request to the next handler.
 			next.ServeHTTP(w, r.WithContext(ctx))
