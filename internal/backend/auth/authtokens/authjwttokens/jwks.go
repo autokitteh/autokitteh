@@ -21,14 +21,14 @@ type JWK struct {
 }
 
 // GetJWKS returns the JWKS containing the public key information
-func (js *rsaTokens) GetJWKS() (*JWKS, error) {
-	if js.publicKey == nil {
+func (rs *rsaTokens) GetJWKS() (*JWKS, error) {
+	if rs.publicKey == nil {
 		return nil, ErrNoPublicKey
 	}
 
 	// Convert public key components to base64url encoding
-	nBytes := js.publicKey.N.Bytes()
-	eBytes := big.NewInt(int64(js.publicKey.E)).Bytes()
+	nBytes := rs.publicKey.N.Bytes()
+	eBytes := big.NewInt(int64(rs.publicKey.E)).Bytes()
 
 	jwk := JWK{
 		Kid: "1", // You might want to make this configurable or derive it from the key
