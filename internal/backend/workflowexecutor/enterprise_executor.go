@@ -134,18 +134,13 @@ func (e *executor) Execute(ctx context.Context, sessionID sdktypes.SessionID, ar
 }
 
 func (e *executor) startPoller(ctx context.Context) {
-
-	timer := time.NewTimer(e.cfg.PollerIntervalMS)
-
 	go func() {
 		for {
 			select {
-			case <-timer.C:
+			case <-time.After(e.cfg.PollerIntervalMS):
 				e.runOnce(ctx)
-				timer = time.NewTimer(e.cfg.PollerIntervalMS) // Reset the timer for the next iteration
 			case <-e.stopChannel:
 				e.l.Info("Stopping workflow manager")
-				timer.Stop()
 				return
 			case <-ctx.Done():
 				return
