@@ -5,7 +5,16 @@ package autokitteh.builds.v1;
 import "google/protobuf/timestamp.proto";
 
 message Build {
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    STATUS_PENDING = 1;
+    STATUS_RUNNING = 2;
+    STATUS_SUCCESS = 3;
+    STATUS_FAILED = 4;
+  }
+
   string build_id = 1;
   string project_id = 2;
   google.protobuf.Timestamp created_at = 3;
+  Status status = 4;
 }

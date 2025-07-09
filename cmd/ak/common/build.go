@@ -84,7 +84,7 @@ func BuildProject(pid sdktypes.ProjectID, dirPaths, filePaths []string) (sdktype
 		return sdktypes.InvalidBuildID, fmt.Errorf("set resources: %w", err)
 	}
 
-	bid, err := Client().Projects().Build(ctx, pid)
+	bid, err := Client().Projects().Build(ctx, pid, false)
 	if err != nil {
 		return sdktypes.InvalidBuildID, fmt.Errorf("build project: %w", err)
 	}

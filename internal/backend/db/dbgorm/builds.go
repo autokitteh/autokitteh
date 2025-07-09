@@ -50,6 +50,7 @@ func (db *gormdb) SaveBuild(ctx context.Context, build sdktypes.Build, data []by
 		ProjectID: build.ProjectID().UUIDValue(),
 		BuildID:   build.ID().UUIDValue(),
 		Data:      data,
+		Status:    int32(build.Status().ToProto()),
 	}
 
 	return translateError(db.saveBuild(ctx, &b))
