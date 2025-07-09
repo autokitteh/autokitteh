@@ -791,7 +791,7 @@ func (o *OAuth) generatePKCEOpts(ctx context.Context, cid sdktypes.ConnectionID,
 	pkceVerifier := sdktypes.NewSymbol("pkce_verifier")
 	v := sdktypes.NewVar(pkceVerifier).SetValue(verifier).SetSecret(true)
 
-	// Try to save the new verifier (this might fail during token refresh).
+	// Save the new PKCE verifier.
 	if err := o.vars.Set(ctx, v.WithScopeID(sdktypes.NewVarScopeID(cid))); err != nil {
 		o.logger.Warn("failed to save PKCE verifier (this is expected during token refresh)",
 			zap.String("connection_id", cid.String()),
