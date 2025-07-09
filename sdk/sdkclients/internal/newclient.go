@@ -24,14 +24,5 @@ func New[
 		)
 	}
 
-	if p.Internal {
-		p.Options = append(
-			p.Options,
-			connect.WithInterceptors(
-				newInteralClientAuthUnaryInterceptor(),
-			),
-		)
-	}
-
 	return f(p.HTTPClient, p.URL, p.Options...)
 }

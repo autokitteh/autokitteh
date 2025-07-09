@@ -22,7 +22,6 @@ type Params struct {
 	URL        string
 	Options    []connect.ClientOption
 	AuthToken  string
-	Internal   bool
 }
 
 func (p Params) Safe() Params {

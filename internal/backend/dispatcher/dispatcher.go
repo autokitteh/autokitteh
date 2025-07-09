@@ -66,18 +66,20 @@ func (d *Dispatcher) DispatchExternal(ctx context.Context, event sdktypes.Event,
 		return sdktypes.InvalidEventID, fmt.Errorf("get org id of project %v: %w", pid, err)
 	}
 
-	internalToken, _ := d.svcs.Tokens.CreateInternal(map[string]string{
+	internalToken, err := d.svcs.Tokens.CreateInternal(map[string]string{
 		"orgID": orgID.UUIDValue().String(),
 	})
+
+	if err != nil {
+		return sdktypes.InvalidEventID, fmt.Errorf("create internal token: %w", err)
+	}
 
 	cli := sdkclients.New(sdkclient.Params{
 		URL:       d.cfg.ExternalDispatching.URL,
 		AuthToken: internalToken,
-		Internal:  true,
 	}.Safe())
 
 	return cli.Dispatcher().Dispatch(ctx, event, opts)
-
 }
 
 func (d *Dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) (sdktypes.EventID, error) {

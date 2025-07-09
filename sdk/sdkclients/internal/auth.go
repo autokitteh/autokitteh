@@ -29,22 +29,3 @@ func newClientAuthUnaryInterceptor(token string) connect.UnaryInterceptorFunc {
 
 	return connect.UnaryInterceptorFunc(interceptor)
 }
-
-func newInteralClientAuthUnaryInterceptor() connect.UnaryInterceptorFunc {
-	interceptor := func(next connect.UnaryFunc) connect.UnaryFunc {
-		return connect.UnaryFunc(
-			func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
-				if !req.Spec().IsClient {
-					msg := "client auth interceptor used in server"
-					sdklogger.DPanic(msg)
-					return nil, errors.New(msg)
-				}
-
-				req.Header().Set("x-autokitteh-internal-api-call", "true")
-				return next(ctx, req)
-			},
-		)
-	}
-
-	return connect.UnaryInterceptorFunc(interceptor)
-}
