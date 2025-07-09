@@ -97,7 +97,7 @@ def set_value(key: str, value: Any) -> None:
     _local_dev_store[key] = value
 
 
-def add_values(key: str, value: Any) -> Any:
+def add_values(key: str, value: int | float) -> int | float:
     """Add to a stored value.
 
     This operation is atomic.
@@ -113,10 +113,8 @@ def add_values(key: str, value: Any) -> Any:
     """
 
     # Dummy implementation for local development.
-    if key not in _local_dev_store:
-        _local_dev_store[key] = value
-    else:
-        _local_dev_store[key] += value
+    _local_dev_store[key] = _local_dev_store.get(key, 0) + value
+    return _local_dev_store[key]
 
 
 def del_value(key: str) -> None:

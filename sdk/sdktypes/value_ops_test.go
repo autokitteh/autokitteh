@@ -26,8 +26,9 @@ func TestAddValues(t *testing.T) {
 	t.Run("int+float", func(t *testing.T) {
 		v1 := NewIntegerValue(2)
 		v2 := NewFloatValue(3.5)
-		_, err := AddValues(v1, v2)
-		assert.Error(t, err)
+		res, err := AddValues(v1, v2)
+		assert.NoError(t, err)
+		assert.Equal(t, NewIntegerValue(5), res)
 	})
 
 	t.Run("float+int", func(t *testing.T) {

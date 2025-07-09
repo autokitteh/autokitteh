@@ -164,10 +164,10 @@ func (v Value) ToInt64() (int64, error) {
 		return vv.Value().ToInt64()
 	case DurationValue:
 		return int64(vv.Value()), nil
+	case FloatValue:
+		return int64(vv.Value()), nil
 	case IntegerValue:
 		return vv.Value(), nil
-	case StringValue:
-		return strconv.ParseInt(vv.Value(), 0, 64)
 	default:
 		return 0, errCannotConvert(v, "int64")
 	}
@@ -183,8 +183,6 @@ func (v Value) ToFloat64() (float64, error) {
 		return float64(vv.Value()), nil
 	case FloatValue:
 		return vv.Value(), nil
-	case StringValue:
-		return strconv.ParseFloat(vv.Value(), 64)
 	default:
 		return 0, errCannotConvert(v, "float64")
 	}
@@ -217,6 +215,10 @@ func (v Value) ToTime() (time.Time, error) {
 		return dateparse.ParseAny(vv.Value())
 	case IntegerValue:
 		return time.Unix(vv.Value(), 0), nil
+	case FloatValue:
+		sec := int64(vv.Value())
+		nsec := int64((vv.Value() - float64(sec)) * float64(time.Second))
+		return time.Unix(sec, nsec), nil
 	default:
 		return time.Time{}, errCannotConvert(v, "Time")
 	}

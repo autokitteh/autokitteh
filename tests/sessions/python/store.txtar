@@ -7,9 +7,9 @@ meow
 None
 woof
 ['cat', 'dog']
-None
 1
-None
+1
+42
 42
 
 -- main.py main --
