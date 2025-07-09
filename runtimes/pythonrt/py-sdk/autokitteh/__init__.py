@@ -11,11 +11,12 @@ from .events import next_event, start, subscribe, unsubscribe
 from .signals import Signal, next_signal, signal
 from .errors import AutoKittehError
 from .store import (
+    add_values,
+    del_value,
     get_value,
+    list_values_keys,
     mutate_value,
     set_value,
-    del_value,
-    list_values_keys,
     store,
 )
 
@@ -38,6 +39,7 @@ __all__ = [
     "signal",
     "Signal",
     # Values
+    "add_values",
     "del_value",
     "get_value",
     "list_values_keys",

@@ -28,6 +28,7 @@ var (
 		sdktypes.NewIntegerValue(0),
 		sdktypes.NewIntegerValue(1),
 		sdktypes.NewIntegerValue(2),
+		sdktypes.NewIntegerValue(3),
 	}
 )
 
@@ -151,6 +152,32 @@ func TestMutate(t *testing.T) {
 			op:  "get",
 			pid: pids[1],
 			ret: sdktypes.Nothing,
+		},
+		{
+			key:      "k3",
+			op:       "add",
+			pid:      pids[1],
+			operands: []sdktypes.Value{ivs[1]},
+			ret:      ivs[1],
+		},
+		{
+			key: "k3",
+			op:  "get",
+			pid: pids[1],
+			ret: ivs[1],
+		},
+		{
+			key:      "k3",
+			op:       "add",
+			pid:      pids[1],
+			operands: []sdktypes.Value{ivs[2]},
+			ret:      ivs[3],
+		},
+		{
+			key: "k3",
+			op:  "get",
+			pid: pids[1],
+			ret: ivs[3],
 		},
 	}
 

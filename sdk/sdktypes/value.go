@@ -12,6 +12,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	valuev1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/values/v1"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdklogger"
 )
 
@@ -112,75 +113,154 @@ func (v Value) Concrete() concreteValue {
 	return nil
 }
 
-func (v Value) ToDuration() (time.Duration, error) {
-	switch v := v.Concrete().(type) {
-	case CustomValue:
-		return v.Value().ToDuration()
-	case DurationValue:
-		return v.Value(), nil
+func errCannotConvert(v Value, to string) error {
+	return sdkerrors.NewInvalidArgumentError("cannot convert %s to %s", v.Type(), to)
+}
+
+func (v Value) Type() string {
+	if !v.IsValid() {
+		return "invalid"
+	}
+
+	switch v.Concrete().(type) {
+	case NothingValue:
+		return "nothing"
 	case IntegerValue:
-		return time.Second * time.Duration(v.Value()), nil
+		return "integer"
 	case FloatValue:
-		return time.Duration(float64(time.Second) * v.Value()), nil
+		return "float"
+	case BooleanValue:
+		return "boolean"
 	case StringValue:
-		return time.ParseDuration(v.Value())
+		return "string"
+	case BytesValue:
+		return "bytes"
+	case DurationValue:
+		return "duration"
+	case TimeValue:
+		return "time"
+	case SymbolValue:
+		return "symbol"
+	case ListValue:
+		return "list"
+	case SetValue:
+		return "set"
+	case DictValue:
+		return "dict"
+	case StructValue:
+		return "struct"
+	case ModuleValue:
+		return "module"
+	case CustomValue:
+		return "custom"
 	default:
-		return 0, errors.New("value not convertible to duration")
+		return "unknown"
+	}
+}
+
+func (v Value) ToInt64() (int64, error) {
+	switch vv := v.Concrete().(type) {
+	case CustomValue:
+		return vv.Value().ToInt64()
+	case DurationValue:
+		return int64(vv.Value()), nil
+	case FloatValue:
+		return int64(vv.Value()), nil
+	case IntegerValue:
+		return vv.Value(), nil
+	default:
+		return 0, errCannotConvert(v, "int64")
+	}
+}
+
+func (v Value) ToFloat64() (float64, error) {
+	switch vv := v.Concrete().(type) {
+	case CustomValue:
+		return vv.Value().ToFloat64()
+	case DurationValue:
+		return float64(vv.Value()), nil
+	case IntegerValue:
+		return float64(vv.Value()), nil
+	case FloatValue:
+		return vv.Value(), nil
+	default:
+		return 0, errCannotConvert(v, "float64")
+	}
+}
+
+func (v Value) ToDuration() (time.Duration, error) {
+	switch vv := v.Concrete().(type) {
+	case CustomValue:
+		return vv.Value().ToDuration()
+	case DurationValue:
+		return vv.Value(), nil
+	case IntegerValue:
+		return time.Second * time.Duration(vv.Value()), nil
+	case FloatValue:
+		return time.Duration(float64(time.Second) * vv.Value()), nil
+	case StringValue:
+		return time.ParseDuration(vv.Value())
+	default:
+		return 0, errCannotConvert(v, "Duration")
 	}
 }
 
 func (v Value) ToTime() (time.Time, error) {
-	switch v := v.Concrete().(type) {
+	switch vv := v.Concrete().(type) {
 	case CustomValue:
-		return v.Value().ToTime()
+		return vv.Value().ToTime()
 	case TimeValue:
-		return v.Value(), nil
+		return vv.Value(), nil
 	case StringValue:
-		return dateparse.ParseAny(v.Value())
+		return dateparse.ParseAny(vv.Value())
 	case IntegerValue:
-		return time.Unix(v.Value(), 0), nil
+		return time.Unix(vv.Value(), 0), nil
+	case FloatValue:
+		sec := int64(vv.Value())
+		nsec := int64((vv.Value() - float64(sec)) * float64(time.Second))
+		return time.Unix(sec, nsec), nil
 	default:
-		return time.Time{}, errors.New("value not convertible to time")
+		return time.Time{}, errCannotConvert(v, "Time")
 	}
 }
 
 func (v Value) ToString() (string, error) {
-	switch v := v.Concrete().(type) {
+	switch vv := v.Concrete().(type) {
 	case CustomValue:
-		return v.Value().ToString()
+		return vv.Value().ToString()
 	case StringValue:
-		return v.Value(), nil
+		return vv.Value(), nil
 	case IntegerValue:
-		return strconv.FormatInt(v.Value(), 10), nil
+		return strconv.FormatInt(vv.Value(), 10), nil
 	case FloatValue:
-		return fmt.Sprintf("%f", v.Value()), nil
+		return fmt.Sprintf("%f", vv.Value()), nil
 	case BooleanValue:
-		return strconv.FormatBool(v.Value()), nil
+		return strconv.FormatBool(vv.Value()), nil
 	case DurationValue:
-		return v.Value().String(), nil
+		return vv.Value().String(), nil
 	case TimeValue:
-		return v.Value().String(), nil
+		return vv.Value().String(), nil
 	case BytesValue:
-		return base64.StdEncoding.EncodeToString(v.Value()), nil
+		return base64.StdEncoding.EncodeToString(vv.Value()), nil
 	case SymbolValue:
-		return v.Symbol().String(), nil
+		return vv.Symbol().String(), nil
 	default:
-		return "", errors.New("not convertible to string")
+		return "", errCannotConvert(v, "String")
 	}
 }
 
 func (v Value) ToStringValuesMap() (map[string]Value, error) {
-	switch v := v.Concrete().(type) {
+	switch vv := v.Concrete().(type) {
 	case CustomValue:
-		return v.Value().ToStringValuesMap()
+		return vv.Value().ToStringValuesMap()
 	case DictValue:
-		return v.ToStringValuesMap()
+		return vv.ToStringValuesMap()
 	case StructValue:
-		return v.Fields(), nil
+		return vv.Fields(), nil
 	case ModuleValue:
-		return v.Members(), nil
+		return vv.Members(), nil
 	default:
-		return nil, errors.New("not convertible to map")
+		return nil, errCannotConvert(v, "map")
 	}
 }
 

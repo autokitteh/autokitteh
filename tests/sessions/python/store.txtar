@@ -7,9 +7,13 @@ meow
 None
 woof
 ['cat', 'dog']
+1
+1
+42
+42
 
 -- main.py main --
-from autokitteh import mutate_value, get_value, set_value, list_values_keys, del_value
+from autokitteh import mutate_value, get_value, set_value, list_values_keys, del_value, add_values
 
 def main(_):
     print(mutate_value('cat', 'del'))
@@ -22,3 +26,8 @@ def main(_):
     print(set_value('dog', 'woof'))
     print(get_value('dog'))
     print(list_values_keys())
+
+    print(add_values('x', 1))
+    print(get_value('x'))
+    print(add_values('x', 41))
+    print(get_value('x'))

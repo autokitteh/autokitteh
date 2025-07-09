@@ -318,6 +318,7 @@ class Runner(pb.runner_rpc.RunnerService):
         autokitteh.next_event = self.syscalls.ak_next_event
         autokitteh.next_signal = self.syscalls.ak_next_signal
         autokitteh.set_value = self.syscalls.ak_set_value
+        autokitteh.add_values = self.syscalls.ak_add_values
         autokitteh.signal = self.syscalls.ak_signal
         autokitteh.start = self.syscalls.ak_start
         autokitteh.subscribe = self.syscalls.ak_subscribe
