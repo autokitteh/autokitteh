@@ -11,10 +11,13 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
+	"go.autokitteh.dev/autokitteh/sdk/sdkclients"
+	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -37,6 +40,7 @@ type Svcs struct {
 	Projects    sdkservices.Projects
 	Sessions    sdkservices.Sessions
 	Triggers    sdkservices.Triggers
+	Tokens      authtokens.Tokens
 }
 
 type Dispatcher struct {
@@ -49,6 +53,33 @@ var _ sdkservices.Dispatcher = (*Dispatcher)(nil)
 
 func New(l *zap.Logger, cfg *Config, svcs Svcs) *Dispatcher {
 	return &Dispatcher{sl: l.Sugar(), cfg: cfg, svcs: svcs}
+}
+
+func (d *Dispatcher) DispatchExternal(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) (sdktypes.EventID, error) {
+	pid, err := d.svcs.DB.GetProjectIDOf(ctx, event.DestinationID())
+	if err != nil {
+		return sdktypes.InvalidEventID, fmt.Errorf("get project id of destination %v: %w", event.DestinationID(), err)
+	}
+
+	orgID, err := d.svcs.DB.GetOrgIDOf(ctx, pid)
+	if err != nil {
+		return sdktypes.InvalidEventID, fmt.Errorf("get org id of project %v: %w", pid, err)
+	}
+
+	internalToken, err := d.svcs.Tokens.CreateInternal(map[string]string{
+		"orgID": orgID.UUIDValue().String(),
+	})
+
+	if err != nil {
+		return sdktypes.InvalidEventID, fmt.Errorf("create internal token: %w", err)
+	}
+
+	cli := sdkclients.New(sdkclient.Params{
+		URL:       d.cfg.ExternalDispatching.URL,
+		AuthToken: internalToken,
+	}.Safe())
+
+	return cli.Dispatcher().Dispatch(ctx, event, opts)
 }
 
 func (d *Dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) (sdktypes.EventID, error) {

@@ -149,6 +149,9 @@ func (rs *rsaTokens) Parse(raw string) (sdktypes.User, error) {
 	var claims j.RegisteredClaims
 
 	t, err := j.ParseWithClaims(raw, &claims, func(t *j.Token) (interface{}, error) {
+		if _, ok := t.Method.(*j.SigningMethodRSA); !ok {
+			return nil, errors.New("unexpected signing method")
+		}
 		return rs.publicKey, nil
 	})
 	if err != nil {
@@ -165,4 +168,12 @@ func (rs *rsaTokens) Parse(raw string) (sdktypes.User, error) {
 	}
 
 	return tok.User, nil
+}
+
+func (rs *rsaTokens) CreateInternal(data map[string]string) (string, error) {
+	return createInternalToken(rsaMethod, rs.privateKey, data, 10*time.Minute)
+}
+
+func (rs *rsaTokens) ParseInternal(raw string) (map[string]string, error) {
+	return parseInternalToken(rsaMethod.Alg(), rs.publicKey, raw)
 }

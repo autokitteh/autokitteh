@@ -18,6 +18,13 @@ func (tokens) Parse(token string) (sdktypes.User, error) {
 	return sdktypes.InvalidUser, sdkerrors.ErrNotImplemented
 }
 
+func (tokens) CreateInternal(data map[string]string) (string, error) {
+	return "", sdkerrors.ErrNotImplemented
+}
+func (tokens) ParseInternal(token string) (map[string]string, error) {
+	return nil, sdkerrors.ErrNotImplemented
+}
+
 func TestCreateToken(t *testing.T) {
 	u := sdktypes.NewUser().WithNewID()
 
