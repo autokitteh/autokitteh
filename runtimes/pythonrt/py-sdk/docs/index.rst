@@ -154,6 +154,14 @@ autokitteh.oauth2_session module
    :undoc-members:
    :show-inheritance:
 
+autokitteh.reddit module
+--------------------------------
+
+.. automodule:: autokitteh.reddit
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 autokitteh.twilio module
 ------------------------
 
