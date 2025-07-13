@@ -6,13 +6,13 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/
 
 WORKDIR /runner
 COPY pyproject.toml .
-RUN uv pip install .[all]
+RUN uv pip install .[all] --system
 
 COPY py-sdk py-sdk
-RUN cd py-sdk && uv pip install .[all]
+RUN cd py-sdk && uv pip install .[all] --system
 
 COPY workflow/user_requirements.txt .
-RUN uv pip install -r user_requirements.txt 
+RUN uv pip install -r user_requirements.txt --system    
 
 # https://stackoverflow.com/questions/78599865/how-to-install-missing-python-modules-on-distroless-image
 FROM gcr.io/distroless/python3-debian12
