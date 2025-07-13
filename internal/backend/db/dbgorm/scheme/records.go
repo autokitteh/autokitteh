@@ -12,6 +12,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/types"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	buildsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/builds/v1"
 	commonv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/common/v1"
 	deploymentsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/deployments/v1"
 	sessionsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1"
@@ -33,6 +34,8 @@ type Build struct {
 
 	// enforce foreign keys
 	Project *Project
+
+	Status int32 `gorm:"index"` // nullable, used for build status
 }
 
 func (Build) IDFieldName() string { return "build_id" }
@@ -41,6 +44,7 @@ func ParseBuild(b Build) (sdktypes.Build, error) {
 	build, err := sdktypes.StrictBuildFromProto(&sdktypes.BuildPB{
 		BuildId:   sdktypes.NewIDFromUUID[sdktypes.BuildID](b.BuildID).String(),
 		ProjectId: sdktypes.NewIDFromUUID[sdktypes.ProjectID](b.ProjectID).String(),
+		Status:    buildsv1.Build_Status(b.Status),
 	})
 	if err != nil {
 		return sdktypes.InvalidBuild, fmt.Errorf("invalid record: %w", err)

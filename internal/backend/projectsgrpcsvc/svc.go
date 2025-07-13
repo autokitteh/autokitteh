@@ -184,7 +184,7 @@ func (s *Server) Build(ctx context.Context, req *connect.Request[projectsv1.Buil
 		return nil, sdkerrors.AsConnectError(fmt.Errorf("project_id: %w", err))
 	}
 
-	bid, err := s.projects.Build(ctx, pid)
+	bid, err := s.projects.Build(ctx, pid, msg.Async)
 	if err != nil {
 		if err, ok := sdktypes.FromError(err); ok {
 			return connect.NewResponse(&projectsv1.BuildResponse{Error: err.ToProto()}), nil
