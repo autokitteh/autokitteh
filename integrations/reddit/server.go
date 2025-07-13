@@ -1,9 +1,10 @@
 package reddit
 
 import (
+	"go.uber.org/zap"
+
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
-	"go.uber.org/zap"
 )
 
 const (

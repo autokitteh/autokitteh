@@ -3,11 +3,12 @@ package reddit
 import (
 	"net/http"
 
+	"go.uber.org/zap"
+
 	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.uber.org/zap"
 )
 
 // handler is an autokitteh webhook which implements [http.Handler]
