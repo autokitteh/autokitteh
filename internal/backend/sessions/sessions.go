@@ -19,6 +19,8 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionsvcs"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/sdk/sdkclients"
+	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -28,6 +30,7 @@ type Sessions interface {
 	sdkservices.Sessions
 
 	StartWorkers(context.Context) error
+	StartInternal(context.Context, sdktypes.Session) (sdktypes.SessionID, error)
 }
 type sessions struct {
 	config *Config
@@ -267,7 +270,7 @@ func (s *sessions) Delete(ctx context.Context, sessionID sdktypes.SessionID) err
 	return nil
 }
 
-func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktypes.SessionID, error) {
+func (s *sessions) StartInternal(ctx context.Context, session sdktypes.Session) (sdktypes.SessionID, error) {
 	if err := authz.CheckContext(
 		ctx,
 		sdktypes.InvalidSessionID,
@@ -307,4 +310,30 @@ func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktype
 	}
 
 	return session.ID(), nil
+}
+
+func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktypes.SessionID, error) {
+	if !s.config.ExternalStart.Enabled {
+		return s.StartInternal(authcontext.SetAuthnSystemUser(ctx), session)
+	}
+
+	orgID, err := s.svcs.DB.GetOrgIDOf(ctx, session.ProjectID())
+	if err != nil {
+		return sdktypes.InvalidSessionID, fmt.Errorf("get org id of project %v: %w", session.ProjectID(), err)
+	}
+
+	internalToken, err := s.svcs.Tokens.CreateInternal(map[string]string{
+		"orgID": orgID.UUIDValue().String(),
+	})
+
+	if err != nil {
+		return sdktypes.InvalidSessionID, fmt.Errorf("create internal token: %w", err)
+	}
+
+	cli := sdkclients.New(sdkclient.Params{
+		URL:       s.config.ExternalStart.URL,
+		AuthToken: internalToken,
+	}.Safe())
+
+	return cli.Sessions().Start(ctx, session)
 }
