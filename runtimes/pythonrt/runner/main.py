@@ -9,23 +9,21 @@ from collections import namedtuple
 from concurrent.futures import Future, ThreadPoolExecutor
 from functools import update_wrapper
 from io import StringIO
-from multiprocessing import cpu_count
 from pathlib import Path
-from threading import Lock, Thread, Timer
-from time import sleep
 from traceback import TracebackException, format_exception
 
 import autokitteh
 import autokitteh.store
 import grpc
-import loader
-import log
-import pb
-import values
 
 # from audit import make_audit_hook  # TODO(ENG-1893): uncomment this.
 from autokitteh import AttrDict, Event, connections
 from autokitteh.errors import AutoKittehError
+
+import loader
+import log
+import pb
+import values
 from call import AKCall, activity_marker, full_func_name
 from syscalls import SysCalls, mark_no_activity
 
@@ -223,25 +221,34 @@ def short_name(func_name: str):
 
 
 class Runner(pb.runner_rpc.RunnerService):
-    def __init__(
-        self, id, worker, code_dir, server, start_timeout=DEFAULT_START_TIMEOUT
+    # Hack to get around the fact you can't await in __init__
+    @classmethod
+    async def create(
+        cls, id, worker, code_dir, server, start_timeout=DEFAULT_START_TIMEOUT
     ):
-        self.id = id
-        self.worker: pb.handler_rpc.HandlerServiceStub = worker
-        self.code_dir = code_dir
-        self.server: grpc.Server = server
+        runner = cls()
 
-        self.executor = ThreadPoolExecutor()
+        runner.id = id
+        runner.worker: pb.handler_rpc.HandlerServiceStub = worker
+        runner.code_dir = code_dir
+        runner.server: grpc.Server = server
 
-        self.lock = Lock()
-        self.activity_call: Call = None
-        self._orig_print = print
-        self._start_called = False
-        self._inactivity_timer = Timer(
-            start_timeout, self.stop_if_start_not_called, args=(start_timeout,)
-        )
-        self._inactivity_timer.start()
-        self._stopped = False
+        runner.executor = ThreadPoolExecutor()
+
+        runner.lock = asyncio.Lock()
+        runner.activity_call: Call = None
+        runner._orig_print = print
+        runner._start_called = False
+        runner.start_inactivity_timer()
+
+        # TODO
+        # (https://stackoverflow.com/questions/45419723/python-timer-with-asyncio-coroutine)
+        # runner._inactivity_timer = Timer(
+        # start_timeout, runner.stop_if_start_not_called, args=(start_timeout,)
+        # )
+        # runner._inactivity_timer.start()
+
+        runner._stopped = False
 
     def result_error(self, err):
         io = StringIO()
@@ -257,12 +264,14 @@ class Runner(pb.runner_rpc.RunnerService):
 
         return io.getvalue()
 
-    def stop_if_start_not_called(self, timeout):
+    async def stop_if_start_not_called(self, timeout):
         log.error("Start not called after %s seconds, terminating", timeout)
         if self.server:
-            self.server.stop(SERVER_GRACE_TIMEOUT)
+            await self.server.stop(SERVER_GRACE_TIMEOUT)
 
-    def Exports(self, request: pb.runner.ExportsRequest, context: grpc.ServicerContext):
+    async def Exports(
+        self, request: pb.runner.ExportsRequest, context: grpc.ServicerContext
+    ):
         if request.file_name == "":
             context.abort(
                 grpc.StatusCode.INVALID_ARGUMENT,
@@ -276,30 +285,30 @@ class Runner(pb.runner_rpc.RunnerService):
 
         return pb.runner.ExportsResponse(exports=exports)
 
-    def should_keep_running(self, initial_delay=10, period=10):
-        sleep(initial_delay)
+    async def should_keep_running(self, initial_delay=10, period=10):
+        await asyncio.sleep(initial_delay)
         if not self._start_called:
             log.error("Start not called after %dsec", initial_delay)
-            self.server.stop(SERVER_GRACE_TIMEOUT)
+            await self.server.stop(SERVER_GRACE_TIMEOUT)
             return
 
         # Check that we are still active
         while not self._stopped:
             try:
                 req = pb.handler.IsActiveRunnerRequest(runner_id=self.id)
-                res = self.worker.IsActiveRunner(req)
+                res = await self.worker.IsActiveRunner(req)
                 if res.error:
                     break
             except grpc.RpcError:
                 break
-            sleep(period)
+            await asyncio.sleep(period)
 
         if self._stopped:
             log.info("Runner %s stopped, stopping should_keep_running loop", self.id)
             return
 
         log.error("could not verify if should keep running, killing self")
-        self.server.stop(SERVER_GRACE_TIMEOUT)
+        await self.server.stop(SERVER_GRACE_TIMEOUT)
 
     def patch_ak_funcs(self):
         connections.encode_jwt = self.syscalls.ak_encode_jwt
@@ -326,7 +335,9 @@ class Runner(pb.runner_rpc.RunnerService):
         # Not ak, but patching print as well
         builtins.print = self.ak_print
 
-    def Start(self, request: pb.runner.StartRequest, context: grpc.ServicerContext):
+    async def Start(
+        self, request: pb.runner.StartRequest, context: grpc.ServicerContext
+    ):
         # NOTE: Don't do any prints here, ak is not ready for them yet.
         if self._start_called:
             log.error("already called start before")
@@ -388,11 +399,11 @@ class Runner(pb.runner_rpc.RunnerService):
             update_wrapper(handler, orig_fn)
             fn = handler
 
-        self.executor.submit(self.on_event, fn, event)
+        asyncio.create_task(self.on_event(fn, event))
 
         return pb.runner.StartResponse()
 
-    def execute(self, fn, args, kw):
+    async def execute(self, fn, args, kw):
         req = pb.handler.ExecuteReplyRequest(
             runner_id=self.id,
         )
@@ -410,21 +421,23 @@ class Runner(pb.runner_rpc.RunnerService):
             req.error = msg
 
         log.info("execute reply")
-        resp = self.worker.ExecuteReply(req)
+        resp = await self.worker.ExecuteReply(req)
         if resp.error:
             log.error("execute reply: %r", resp.error)
 
-    def Execute(self, request: pb.runner.ExecuteRequest, context: grpc.ServicerContext):
-        with self.lock:
+    async def Execute(
+        self, request: pb.runner.ExecuteRequest, context: grpc.ServicerContext
+    ):
+        async with self.lock:
             call: Call = self.activity_call
 
         if call is None:
             context.abort(grpc.StatusCode.INTERNAL, "no pending activity calls")
 
-        self.executor.submit(self.execute, call.fn, call.args, call.kw)
+        asyncio.ensure_future(self.execute(call.fn, call.args, call.kw))
         return pb.runner.ExecuteResponse()
 
-    def ActivityReply(
+    async def ActivityReply(
         self, request: pb.runner.ActivityReplyRequest, context: grpc.ServicerContext
     ):
         if request.error or not request.result.custom.data:
@@ -434,10 +447,10 @@ class Runner(pb.runner_rpc.RunnerService):
                 error=error,
             )
             try:
-                self.worker.Done(req)
+                await self.worker.Done(req)
             except grpc.RpcError as err:
                 log.error("done send error: %r", err)
-                self.server.stop(SERVER_GRACE_TIMEOUT)
+                await self.server.stop(SERVER_GRACE_TIMEOUT)
 
             return pb.runner.ActivityReplyResponse(error=request.error)
 
@@ -455,7 +468,7 @@ class Runner(pb.runner_rpc.RunnerService):
                 grpc.StatusCode.INVALID_ARGUMENT, "ActivityReply data not a Result"
             )
 
-        with self.lock:
+        async with self.lock:
             call = self.activity_call
             self.activity_call = None
 
@@ -485,7 +498,7 @@ class Runner(pb.runner_rpc.RunnerService):
 
         return pb.runner.ActivityReplyResponse()
 
-    def Health(
+    async def Health(
         self,
         request: pb.runner.RunnerHealthRequest,
         context: grpc.ServicerContext,
@@ -520,7 +533,7 @@ class Runner(pb.runner_rpc.RunnerService):
             ),
         )
         log.info("activity: sending")
-        resp = self.worker.Activity(req)
+        resp = await self.worker.Activity(req)
         if resp.error:
             raise ActivityError(resp.error)
         log.info("activity request ended")
@@ -553,7 +566,7 @@ class Runner(pb.runner_rpc.RunnerService):
 
         return Result(value, error, stack)
 
-    def on_event(self, fn, event):
+    async def on_event(self, fn, event):
         func_name = full_func_name(fn)
         log.info("start event: %s", func_name)
 
@@ -583,11 +596,11 @@ class Runner(pb.runner_rpc.RunnerService):
             log.exception("on_event: %r", err)
 
         try:
-            self.worker.Done(req)
+            await self.worker.Done(req)
         except Exception as err:
             log.error("on_event: done send error: %r", err)
 
-        self.server.stop(SERVER_GRACE_TIMEOUT)
+        await self.server.stop(SERVER_GRACE_TIMEOUT)
 
     @mark_no_activity
     def ak_print(self, *objects, sep=" ", end="\n", file=None, flush=False):
@@ -600,13 +613,15 @@ class Runner(pb.runner_rpc.RunnerService):
             runner_id=self.id,
             message=text,
         )
+        asyncio.ensure_future(self.call_print(req))
 
+    async def call_print(self, req):
         try:
-            self.worker.Print(req)
+            await self.worker.Print(req)
         except grpc.RpcError as err:
             if err.code() == grpc.StatusCode.UNAVAILABLE or grpc.StatusCode.CANCELLED:
                 log.error("grpc cancelled or unavailable, killing self")
-                self.server.stop(SERVER_GRACE_TIMEOUT)
+                await self.server.stop(SERVER_GRACE_TIMEOUT)
             log.error("print: %s", err)
 
 
@@ -635,10 +650,10 @@ def validate_args(args):
         raise ValueError("start timeout must be positive")
 
 
-class LoggingInterceptor(grpc.ServerInterceptor):
+class LoggingInterceptor(grpc.aio.ServerInterceptor):
     runner_id = None
 
-    def intercept_service(self, continuation, handler_call_details):
+    async def intercept_service(self, continuation, handler_call_details):
         log.info("runner_id %s, call %s", self.runner_id, handler_call_details.method)
         return continuation(handler_call_details)
 
@@ -655,7 +670,47 @@ def dir_type(value):
     return path
 
 
+async def main(args):
+    # Support importing local files
+    sys.path.append(str(args.code_dir))
+
+    chan = grpc.aio.insecure_channel(args.worker_address)
+    worker = pb.handler_rpc.HandlerServiceStub(chan)
+    if not args.skip_check_worker:
+        req = pb.handler.HandlerHealthRequest()
+        try:
+            await worker.Health(req)
+        except grpc.RpcError as err:
+            raise SystemExit(f"error: worker not available - {err}")
+
+    duration = monotonic() - start_time
+    log.info(
+        "connected to worker at %r (duration = %.2fsec)", args.worker_address, duration
+    )
+
+    server = grpc.aio.server(
+        interceptors=[LoggingInterceptor(args.runner_id)],
+    )
+    runner = Runner.create(
+        args.runner_id, worker, args.code_dir, server, args.start_timeout
+    )
+    pb.runner_rpc.add_RunnerServiceServicer_to_server(runner, server)
+
+    server.add_insecure_port(f"[::]:{args.port}")
+    await server.start()
+
+    log.info("server running on port %d (duration = %.2fsec)", args.port, duration)
+
+    # TODO
+    # if not args.skip_check_worker:
+    # Thread(target=runner.should_keep_running, daemon=True).start()
+    # log.info("started 'should_keep_running' thread")
+
+    await server.wait_for_termination()
+
+
 if __name__ == "__main__":
+    import asyncio
     from argparse import ArgumentParser
     from time import monotonic
 
@@ -692,37 +747,4 @@ if __name__ == "__main__":
     except ValueError as err:
         raise SystemExit(f"error: {err}")
 
-    # Support importing local files
-    sys.path.append(str(args.code_dir))
-
-    chan = grpc.insecure_channel(args.worker_address)
-    worker = pb.handler_rpc.HandlerServiceStub(chan)
-    if not args.skip_check_worker:
-        req = pb.handler.HandlerHealthRequest()
-        try:
-            resp = worker.Health(req)
-        except grpc.RpcError as err:
-            raise SystemExit(f"error: worker not available - {err}")
-
-    duration = monotonic() - start_time
-    log.info(
-        "connected to worker at %r (duration = %.2fsec)", args.worker_address, duration
-    )
-
-    server = grpc.server(
-        thread_pool=ThreadPoolExecutor(max_workers=cpu_count() * 8),
-        interceptors=[LoggingInterceptor(args.runner_id)],
-    )
-    runner = Runner(args.runner_id, worker, args.code_dir, server, args.start_timeout)
-    pb.runner_rpc.add_RunnerServiceServicer_to_server(runner, server)
-
-    server.add_insecure_port(f"[::]:{args.port}")
-    server.start()
-
-    log.info("server running on port %d (duration = %.2fsec)", args.port, duration)
-
-    if not args.skip_check_worker:
-        Thread(target=runner.should_keep_running, daemon=True).start()
-        log.info("started 'should_keep_running' thread")
-
-    server.wait_for_termination()
+    asyncio.run(main(args))
