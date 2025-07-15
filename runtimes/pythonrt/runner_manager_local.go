@@ -85,7 +85,7 @@ func configureLocalRunnerManager(log *zap.Logger, cfg LocalRunnerManagerConfig) 
 	return nil
 }
 
-func (l *localRunnerManager) Start(ctx context.Context, sessionID sdktypes.SessionID, buildArtifacts []byte, vars map[string]string) (string, *RunnerClient, error) {
+func (l *localRunnerManager) Start(ctx context.Context, sessionID sdktypes.SessionID, buildArtifacts []byte, vars map[string]string, printFn func(string) error, runnerID string) (*RunnerClient, error) {
 	ctx, span := telemetry.T().Start(ctx, "localRunnerManager.Start")
 	defer span.End()
 
@@ -102,7 +102,7 @@ func (l *localRunnerManager) Start(ctx context.Context, sessionID sdktypes.Sessi
 		log.Info("ensuring venv lazy")
 		if err := ensureVEnv(log, l.pyExe); err != nil {
 			venvSpan.End()
-			return "", nil, fmt.Errorf("create venv: %w", err)
+			return nil, fmt.Errorf("create venv: %w", err)
 		}
 		venvSpan.End()
 		l.pyExe = venvPy
@@ -112,14 +112,14 @@ func (l *localRunnerManager) Start(ctx context.Context, sessionID sdktypes.Sessi
 		l.workerAddress = l.cfg.WorkerAddressProvider()
 		if l.workerAddress == "" {
 			log.Error("worker address could not be set")
-			return "", nil, errors.New("worker address wasnt provided and could not be inferred")
+			return nil, errors.New("worker address wasnt provided and could not be inferred")
 		}
 
 		log.Info("worker address inferred", zap.String("workerAddress", l.workerAddress))
 	}
 
-	if err := r.Start(ctx, l.pyExe, buildArtifacts, vars, l.workerAddress); err != nil {
-		return "", nil, err
+	if err := r.Start(ctx, l.pyExe, buildArtifacts, vars, l.workerAddress, printFn, runnerID); err != nil {
+		return nil, err
 	}
 
 	runnerAddr := fmt.Sprintf("0.0.0.0:%d", r.port)
@@ -129,13 +129,13 @@ func (l *localRunnerManager) Start(ctx context.Context, sessionID sdktypes.Sessi
 		if err := r.Close(); err != nil {
 			log.Warn("close runner", zap.Error(err))
 		}
-		return "", nil, err
+		return nil, err
 	}
 
 	l.mu.Lock()
 	l.runnerIDToRunner[r.id] = r
 	l.mu.Unlock()
-	return r.id, client, nil
+	return client, nil
 }
 
 func (l *localRunnerManager) RunnerHealth(ctx context.Context, runnerID string) error {
