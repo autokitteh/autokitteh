@@ -47,7 +47,8 @@ func Test_createVEnv(t *testing.T) {
 	require.NoError(t, err)
 
 	venvPath := path.Join(t.TempDir(), "venv")
-	err = createVEnv(info.Exe, venvPath)
+	log := zap.NewNop()
+	err = createVEnv(log, info.Exe, venvPath)
 	require.NoError(t, err)
 }
 
@@ -184,40 +185,42 @@ func Test_parsePyVersion(t *testing.T) {
 }
 
 // TODO: What to here
-// func Test_pyExports(t *testing.T) {
-// 	skipIfNoPython(t)
+/*
+func Test_pyExports(t *testing.T) {
+	skipIfNoPython(t)
 
-// 	log := zap.NewExample()
-// 	defer log.Sync() //nolint:all
+	log := zap.NewExample()
+	defer log.Sync() //nolint:all
 
-// 	runID := sdktypes.NewRunID()
-// 	xid := sdktypes.NewExecutorID(runID)
-// 	svc := newWorkerGRPCHandler(log, nil, runID, xid, sdktypes.Nothing)
-// 	err := svc.Start()
-// 	require.NoError(t, err)
+	runID := sdktypes.NewRunID()
+	xid := sdktypes.NewExecutorID(runID)
+	svc := newWorkerGRPCHandler(log, nil, runID, xid, sdktypes.Nothing)
+	err := svc.Start()
+	require.NoError(t, err)
 
-// 	workerAddr := fmt.Sprintf("localhost:%d", svc.port)
-// 	r := LocalPython{
-// 		log: log,
-// 	}
-// 	err = r.Start("python", tarData, nil, workerAddr)
-// 	require.NoError(t, err)
+	workerAddr := fmt.Sprintf("localhost:%d", svc.port)
+	r := LocalPython{
+		log: log,
+	}
+	err = r.Start("python", tarData, nil, workerAddr)
+	require.NoError(t, err)
 
-// 	defer r.Close() //nolint:all
+	defer r.Close() //nolint:all
 
-// 	client, err := dialRunner(fmt.Sprintf("localhost:%d", r.port))
-// 	require.NoError(t, err)
-// 	req := pb.ExportsRequest{
-// 		FileName: "simple.py",
-// 	}
-// 	ctx, cancel := testCtx(t)
-// 	defer cancel()
+	client, err := dialRunner(fmt.Sprintf("localhost:%d", r.port))
+	require.NoError(t, err)
+	req := pb.ExportsRequest{
+		FileName: "simple.py",
+	}
+	ctx, cancel := testCtx(t)
+	defer cancel()
 
-// 	resp, err := client.Exports(ctx, &req)
-// 	require.NoError(t, err)
+	resp, err := client.Exports(ctx, &req)
+	require.NoError(t, err)
 
-// 	require.Equal(t, []string{"greet"}, resp.Exports)
-// }
+	require.Equal(t, []string{"greet"}, resp.Exports)
+}
+*/
 
 const testRunnerPath = "/tmp/zzz/ak_runner"
 

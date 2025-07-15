@@ -166,6 +166,7 @@ var testCmd = common.StandardCommand(&cobra.Command{
 
 		rs, err := sessions().GetPrints(ctx, sid, sdktypes.PaginationRequest{
 			Ascending: true,
+			PageSize:  1024,
 		})
 		if err != nil {
 			return err

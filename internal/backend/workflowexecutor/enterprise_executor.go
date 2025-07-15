@@ -24,6 +24,7 @@ type Config struct {
 	WorkerID               string                        `koanf:"worker_id"`
 	SessionWorkflow        temporalclient.WorkflowConfig `koanf:"session_workflow"`
 	EnablePoller           bool                          `koanf:"enable_poller"`
+	PollerIntervalMS       time.Duration                 `koanf:"poller_interval_ms"`
 }
 
 var (
@@ -31,6 +32,7 @@ var (
 		Default: &Config{
 			MaxConcurrentWorkflows: 1,
 			EnablePoller:           false,
+			PollerIntervalMS:       100 * time.Millisecond,
 		},
 		Test: &Config{
 			WorkerID:     "test-worker",
@@ -132,17 +134,13 @@ func (e *executor) Execute(ctx context.Context, sessionID sdktypes.SessionID, ar
 }
 
 func (e *executor) startPoller(ctx context.Context) {
-	timer := time.NewTimer(100 * time.Millisecond)
-
 	go func() {
 		for {
 			select {
-			case <-timer.C:
+			case <-time.After(e.cfg.PollerIntervalMS):
 				e.runOnce(ctx)
-				timer = time.NewTimer(100 * time.Millisecond) // Reset the timer for the next iteration
 			case <-e.stopChannel:
 				e.l.Info("Stopping workflow manager")
-				timer.Stop()
 				return
 			case <-ctx.Done():
 				return

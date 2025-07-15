@@ -7,6 +7,7 @@ import (
 	"go.uber.org/zap"
 	"logur.dev/logur/integration/grpc"
 
+	"go.autokitteh.dev/autokitteh/integrations/airtable"
 	"go.autokitteh.dev/autokitteh/integrations/anthropic"
 	"go.autokitteh.dev/autokitteh/integrations/asana"
 	"go.autokitteh.dev/autokitteh/integrations/atlassian/confluence"
@@ -90,6 +91,7 @@ func integrationsFXOption() fx.Option {
 			}
 		}),
 
+		integration("airtable", configset.Empty, airtable.New),
 		integration("anthropic", configset.Empty, anthropic.New),
 		integration("asana", configset.Empty, asana.New),
 		integration("auth0", configset.Empty, auth0.New),
@@ -119,6 +121,7 @@ func integrationsFXOption() fx.Option {
 		integration("zoom", configset.Empty, zoom.New),
 		fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, muxes *muxes.Muxes, vars sdkservices.Vars, oauth *oauth.OAuth, dispatch sdkservices.DispatchFunc) {
 			HookOnStart(lc, func(ctx context.Context) error {
+				airtable.Start(l, muxes, vars, oauth, dispatch)
 				anthropic.Start(l, muxes, vars)
 				asana.Start(l, muxes)
 				auth0.Start(l, muxes, vars)

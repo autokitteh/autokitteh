@@ -208,6 +208,9 @@ class SysCalls:
     def ak_set_value(self, key: str, value: any) -> None:
         self.ak_mutate_value(key, "set", value)
 
+    def ak_add_values(self, key: str, value: int | float) -> int | float:
+        return self.ak_mutate_value(key, "add", value)
+
     def ak_get_value(self, key: str) -> any:
         return self.ak_mutate_value(key, "get")
 

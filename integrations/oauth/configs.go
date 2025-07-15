@@ -2,6 +2,9 @@ package oauth
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/base64"
 	"fmt"
 	"maps"
 	"net/url"
@@ -37,6 +40,7 @@ type internalFlags struct {
 	customizeDefaultEndpoint bool // Auth0 (used in this file)
 	expiryMissingInToken     bool // Salesforce (used in token.go)
 	useJWTsNotOAuth          bool // GitHub (used in webhooks.go)
+	usePKCE                  bool // Airtable (used in configs.go)
 }
 
 type oauthConfig struct {
@@ -49,6 +53,30 @@ type oauthConfig struct {
 // for all AutoKitteh integrations. This map must not be modified during runtime.
 func (o *OAuth) initConfigs() {
 	o.oauthConfigs = map[string]oauthConfig{
+		"airtable": {
+			Config: &oauth2.Config{
+				ClientID:     os.Getenv("AIRTABLE_CLIENT_ID"),
+				ClientSecret: os.Getenv("AIRTABLE_CLIENT_SECRET"),
+				Endpoint: oauth2.Endpoint{
+					AuthURL:  "https://airtable.com/oauth2/v1/authorize",
+					TokenURL: "https://airtable.com/oauth2/v1/token",
+				},
+				Scopes: []string{
+					"data.records:read",
+					"data.records:write",
+					"data.recordComments:read",
+					"data.recordComments:write",
+					"schema.bases:read",
+					"schema.bases:write",
+					"user.email:read",
+					"webhook:manage",
+				},
+			},
+			flags: internalFlags{
+				usePKCE: true,
+			},
+		},
+
 		// https://auth0.com/docs/api/authentication
 		// https://auth0.com/docs/get-started/authentication-and-authorization-flow/authorization-code-flow
 		"auth0": {
@@ -620,13 +648,20 @@ func (o *OAuth) GetConfig(ctx context.Context, integration string, cid sdktypes.
 
 	// The connection doesn't use private OAuth - return the default configuration.
 	// Special case: Auth0 requires manipulation even in the default OAuth mode.
-	if !o.flags(integration).customizeDefaultEndpoint && common.ReadAuthType(vs) != integrations.OAuthPrivate {
+	if !o.flags(integration).customizeDefaultEndpoint && common.ReadAuthType(vs) != integrations.OAuthPrivate && !o.flags(integration).usePKCE {
 		return cfg.Config, cfg.Opts, nil
 	}
 
 	// From this point on, we manipulate the config based on the connection's
 	// variables, so ensure we no longer reference the server's default.
 	cfg = deepCopy(cfg)
+
+	// If the integration uses PKCE, inject a dynamic code_challenge/code_verifier
+	// pair into the config before we apply any private OAuth app overrides.
+	if o.flags(integration).usePKCE {
+		o.generatePKCEOpts(ctx, cid, &cfg)
+		return cfg.Config, cfg.Opts, nil
+	}
 
 	if integration == "linear" {
 		// Linear requires the actor variable to be set in the connection's variables
@@ -728,4 +763,73 @@ func privatizeGitHub(vs sdktypes.Vars, cfg *oauthConfig) {
 
 func privatizeMicrosoft(vs sdktypes.Vars, c *oauthConfig) {
 	// TODO(INT-202): Update MS endpoints ("common" --> tenant ID).
+}
+
+func (o *OAuth) generatePKCEOpts(ctx context.Context, cid sdktypes.ConnectionID, cfg *oauthConfig) {
+	// Try to get existing PKCE verifier.
+	existingVerifier, err := o.getPKCEVerifier(ctx, cid)
+	if err == nil && existingVerifier != "" {
+		// Verifier exists - generate challenge from it
+		hash := sha256.Sum256([]byte(existingVerifier))
+		challenge := base64.RawURLEncoding.EncodeToString(hash[:])
+
+		if cfg.Opts == nil {
+			cfg.Opts = make(map[string]string)
+		}
+		cfg.Opts["code_challenge"] = challenge
+		cfg.Opts["code_challenge_method"] = "S256"
+		return
+	}
+
+	// No existing verifier - generate new PKCE pair.
+	verifier, challenge, err := generatePKCEPair()
+	if err != nil {
+		o.logger.Error("failed to generate PKCE pair", zap.Error(err))
+		return
+	}
+
+	pkceVerifier := sdktypes.NewSymbol("pkce_verifier")
+	v := sdktypes.NewVar(pkceVerifier).SetValue(verifier).SetSecret(true)
+
+	// Save the new PKCE verifier.
+	if err := o.vars.Set(ctx, v.WithScopeID(sdktypes.NewVarScopeID(cid))); err != nil {
+		o.logger.Warn("failed to save PKCE verifier (this is expected during token refresh)",
+			zap.String("connection_id", cid.String()),
+			zap.Error(err))
+	}
+
+	if cfg.Opts == nil {
+		cfg.Opts = make(map[string]string)
+	}
+	cfg.Opts["code_challenge"] = challenge
+	cfg.Opts["code_challenge_method"] = "S256"
+}
+
+func generatePKCEPair() (verifier, challenge string, err error) {
+	// 64 bytes gives 86-character base64 string.
+	b := make([]byte, 64)
+	if _, err := rand.Read(b); err != nil {
+		return "", "", err
+	}
+
+	verifier = base64.RawURLEncoding.EncodeToString(b)
+
+	// Generate S256 challenge from verifier.
+	hash := sha256.Sum256([]byte(verifier))
+	challenge = base64.RawURLEncoding.EncodeToString(hash[:])
+
+	return verifier, challenge, nil
+}
+
+func (o *OAuth) getPKCEVerifier(ctx context.Context, cid sdktypes.ConnectionID) (string, error) {
+	if !cid.IsValid() {
+		return "", nil
+	}
+
+	vs, err := o.vars.Get(authcontext.SetAuthnSystemUser(ctx), sdktypes.NewVarScopeID(cid))
+	if err != nil {
+		return "", fmt.Errorf("failed to get connection variables: %w", err)
+	}
+
+	return vs.GetValue(sdktypes.NewSymbol("pkce_verifier")), nil
 }

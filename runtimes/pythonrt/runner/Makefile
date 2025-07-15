@@ -2,12 +2,13 @@ default:
 	$(error please pick a target)
 
 test:
-	ruff check .
-	ruff format --check
-	python -m pytest
+	uv run ruff check .
+	uv run ruff format --check
+	uv run python -m pytest
 
 install-deps:
-	python -m pip install .[all]
+	uv venv
+	uv pip install .[all]
 	rm -rf build *.egg-info
 
 ci: install-deps test

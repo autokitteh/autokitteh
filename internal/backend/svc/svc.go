@@ -291,6 +291,9 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			fx.Provide(func(lc fx.Lifecycle, l *zap.Logger, cfg *dispatcher.Config, svcs dispatcher.Svcs) (sdkservices.Dispatcher, sdkservices.DispatchFunc) {
 				d := dispatcher.New(l, cfg, svcs)
 				HookOnStart(lc, d.Start)
+				if cfg.ExternalDispatching.Enabled {
+					return d, d.DispatchExternal
+				}
 				return d, d.Dispatch
 			}),
 		),
