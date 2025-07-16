@@ -215,9 +215,10 @@ def gspread_client(connection: str, **kwargs) -> gspread.Client:
     """
 
     default_scopes = ["https://www.googleapis.com/auth/spreadsheets"]
-    creds = google_creds(
-        "googlesheets", connection, default_scopes, **kwargs
-    )  # TODO: INT-445 add drive scope "https://www.googleapis.com/auth/drive"
+    # TODO: INT-445 add drive scope "https://www.googleapis.com/auth/drive"
+    # After we add a unified OAuth connection for Google that have Drive and Sheets.
+
+    creds = google_creds("googlesheets", connection, default_scopes, **kwargs)
     return gspread.authorize(creds)
 
 
