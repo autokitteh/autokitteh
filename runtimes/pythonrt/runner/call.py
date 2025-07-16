@@ -1,3 +1,4 @@
+import asyncio
 import inspect
 import sys
 import time
@@ -152,9 +153,51 @@ class AKCall:
         log.info("ACTION: activity call %s", full_name)
         self.in_activity = True
         try:
-            return self.runner.call_in_activity(func, args, kw)
+            return self.runner.call_sync_in_activity(func, args, kw)
         finally:
             self.in_activity = False
 
     async def async_call(self, func, *args, **kw):
-        return await self(func, *args, **kw)
+        # FIXME:: This is a copy of __call__ but with async, need to think how to combine the code
+        file, lnum = caller_info(self.code_dir)
+        log.info("CALLER: %s:%d", file, lnum)
+        if not callable(func):
+            raise ValueError(f"{func!r} is not callable (user bug at {file}:{lnum}?)")
+
+        if func is asyncio.sleep:
+            if (n := len(args)) != 1:
+                raise TypeError(f"time.sleep takes exactly one argument ({n} given)")
+
+            seconds = args[0]
+            if self.in_activity:
+                return await asyncio.sleep(seconds)
+
+            loop = asyncio._get_running_loop()
+            return await loop.run_in_executor(
+                self.runner.executore, self.runner.syscalls.ak_sleep, seconds
+            )
+
+        inhibit = getattr(func, activities.INHIBIT_ACTIVITIES_ATTR, False)
+        if inhibit:
+            self.activities_inhibitions += 1
+            log.info(f"inhibiting activities: {self.activities_inhibitions}")
+
+        full_name = full_func_name(func)
+        if not self.should_run_as_activity(func):
+            log.info(
+                f"calling {full_name} directly (in_activity={self.in_activity}, inhibitions={self.activities_inhibitions})",
+            )
+
+            try:
+                return await func(*args, **kw)
+            finally:
+                if inhibit:
+                    log.info(f"uninhibiting activities: {self.activities_inhibitions}")
+                    self.activities_inhibitions -= 1
+
+        log.info("ACTION: activity call %s", full_name)
+        self.in_activity = True
+        try:
+            return await self.runner.call_in_activity(func, args, kw)
+        finally:
+            self.in_activity = False

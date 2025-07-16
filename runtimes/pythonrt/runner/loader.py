@@ -4,6 +4,7 @@ import sys
 from importlib.util import spec_from_file_location
 from pathlib import Path
 
+import aiofiles
 import log
 
 
@@ -155,11 +156,11 @@ def class_args(node):
         return args[1:]  # Remove self
 
 
-def exports(code_dir, file_name):
+async def exports(code_dir, file_name):
     """Returns an iterator of functions & classes defined in file_name."""
     full_path = code_dir / file_name
-    with open(full_path) as fp:
-        code = fp.read()
+    async with aiofiles.open(full_path) as fp:
+        code = await fp.read()
 
     tree = ast.parse(code, file_name, "exec")
     for node in tree.body:

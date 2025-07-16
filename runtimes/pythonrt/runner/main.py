@@ -1,3 +1,4 @@
+from enum import auto
 import asyncio
 import builtins
 import inspect
@@ -6,24 +7,23 @@ import pickle
 import sys
 from base64 import b64decode
 from collections import namedtuple
-from concurrent.futures import Future, ThreadPoolExecutor
-from functools import update_wrapper
+from concurrent.futures import ThreadPoolExecutor, Future
+from functools import update_wrapper, wraps
 from io import StringIO
 from pathlib import Path
 from traceback import TracebackException, format_exception
+from typing import Callable
 
 import autokitteh
-import autokitteh.store
 import grpc
-
-# from audit import make_audit_hook  # TODO(ENG-1893): uncomment this.
-from autokitteh import AttrDict, Event, connections
-from autokitteh.errors import AutoKittehError
-
 import loader
 import log
 import pb
 import values
+
+# from audit import make_audit_hook  # TODO(ENG-1893): uncomment this.
+from autokitteh import AttrDict, Event, connections
+from autokitteh.errors import AutoKittehError
 from call import AKCall, activity_marker, full_func_name
 from syscalls import SysCalls, mark_no_activity
 
@@ -221,34 +221,46 @@ def short_name(func_name: str):
 
 
 class Runner(pb.runner_rpc.RunnerService):
+    # Make pyright happy
+    id: str
+    worker_address: str
+    worker: pb.handler_rpc.HandlerServiceStub
+    sync_worker: pb.handler_rpc.HandlerServiceStub
+    code_dir: Path
+    server: grpc.Server
+    executor: ThreadPoolExecutor
+    lock: asyncio.Lock
+    activity_call: Call | None
+    _orig_print: Callable
+
     # Hack to get around the fact you can't await in __init__
     @classmethod
     async def create(
-        cls, id, worker, code_dir, server, start_timeout=DEFAULT_START_TIMEOUT
+        cls, id, worker_address, code_dir, server, start_timeout=DEFAULT_START_TIMEOUT
     ):
         runner = cls()
 
         runner.id = id
-        runner.worker: pb.handler_rpc.HandlerServiceStub = worker
+        runner.worker_address = worker_address
+
+        chan = grpc.aio.insecure_channel(args.worker_address)
+        runner.worker = pb.handler_rpc.HandlerServiceStub(chan)
+        chan = grpc.insecure_channel(args.worker_address)
+        runner.sync_worker = pb.handler_rpc.HandlerServiceStub(chan)
         runner.code_dir = code_dir
-        runner.server: grpc.Server = server
+        runner.server = server
 
         runner.executor = ThreadPoolExecutor()
 
         runner.lock = asyncio.Lock()
-        runner.activity_call: Call = None
+        runner.activity_call = None
         runner._orig_print = print
         runner._start_called = False
-        runner.start_inactivity_timer()
 
-        # TODO
-        # (https://stackoverflow.com/questions/45419723/python-timer-with-asyncio-coroutine)
-        # runner._inactivity_timer = Timer(
-        # start_timeout, runner.stop_if_start_not_called, args=(start_timeout,)
-        # )
-        # runner._inactivity_timer.start()
+        asyncio.ensure_future(runner.stop_if_start_not_called(args.timeout))
 
         runner._stopped = False
+        return runner
 
     def result_error(self, err):
         io = StringIO()
@@ -265,6 +277,10 @@ class Runner(pb.runner_rpc.RunnerService):
         return io.getvalue()
 
     async def stop_if_start_not_called(self, timeout):
+        await asyncio.sleep(timeout)
+        if self._start_called:
+            return
+
         log.error("Start not called after %s seconds, terminating", timeout)
         if self.server:
             await self.server.stop(SERVER_GRACE_TIMEOUT)
@@ -279,9 +295,12 @@ class Runner(pb.runner_rpc.RunnerService):
             )
 
         try:
-            exports = list(loader.exports(self.code_dir, request.file_name))
+            exports = []
+            async for e in loader.exports(self.code_dir, request.file_name):
+                exports.append(e)
         except OSError as err:
             abort_with_exception(context, grpc.StatusCode.INVALID_ARGUMENT, err)
+            return  # Makey pyright happy
 
         return pb.runner.ExportsResponse(exports=exports)
 
@@ -310,31 +329,38 @@ class Runner(pb.runner_rpc.RunnerService):
         log.error("could not verify if should keep running, killing self")
         await self.server.stop(SERVER_GRACE_TIMEOUT)
 
+    def make_async_wrapper(self, fn):
+        @wraps(fn)
+        async def wrapper(*args, **kw):
+            loop = asyncio.get_running_loop()
+            return await loop.run_in_executor(self.executor, fn, *args, **kw)
+
+        return wrapper
+
     def patch_ak_funcs(self):
         connections.encode_jwt = self.syscalls.ak_encode_jwt
         connections.refresh_oauth = self.syscalls.ak_refresh_oauth
 
-        autokitteh.del_value = self.syscalls.ak_del_value
-        autokitteh.get_value = self.syscalls.ak_get_value
-        autokitteh.list_values_keys = self.syscalls.ak_list_values_keys
-        autokitteh.mutate_value = self.syscalls.ak_mutate_value
         # Need to patch autokitteh.store as well for the Store API
-        autokitteh.store.del_value = self.syscalls.ak_del_value
-        autokitteh.store.get_value = self.syscalls.ak_get_value
-        autokitteh.store.list_values_keys = self.syscalls.ak_list_values_keys
-        autokitteh.store.mutate_value = self.syscalls.ak_mutate_value
+        # We can't import autokitteh.store since it's shadowed by the 'store' variable defined there
+        store = sys.modules["autokitteh.store"]
+        store.del_value = self.syscalls.ak_del_value
+        store.get_value = self.syscalls.ak_get_value
+        store.list_values_keys = self.syscalls.ak_list_values_keys
+        store.mutate_value = self.syscalls.ak_mutate_value
 
-        autokitteh.next_event = self.syscalls.ak_next_event
-        autokitteh.next_signal = self.syscalls.ak_next_signal
-        autokitteh.set_value = self.syscalls.ak_set_value
-        autokitteh.add_values = self.syscalls.ak_add_values
-        autokitteh.signal = self.syscalls.ak_signal
-        autokitteh.start = self.syscalls.ak_start
-        autokitteh.subscribe = self.syscalls.ak_subscribe
-        autokitteh.unsubscribe = self.syscalls.ak_unsubscribe
-
+        # NOTE: print makes a blocking RPC call. Won't fix this - waiting for PR #1296
         # Not ak, but patching print as well
         builtins.print = self.ak_print
+
+        from autokitteh import aio
+
+        for name in autokitteh.__all__:
+            fn = getattr(self.syscalls, "ak_" + name, None)
+            if not fn:
+                continue
+            setattr(autokitteh, name, fn)
+            setattr(aio, name, self.make_async_wrapper(fn))
 
     async def Start(
         self, request: pb.runner.StartRequest, context: grpc.ServicerContext
@@ -344,12 +370,12 @@ class Runner(pb.runner_rpc.RunnerService):
             log.error("already called start before")
             return pb.runner.StartResponse(error="start already called")
 
-        self._inactivity_timer.cancel()
+        # self._inactivity_timer.cancel()
 
         self._start_called = True
         log.info("start request: %r", request.entry_point)
 
-        self.syscalls = SysCalls(self.id, self.worker, log)
+        self.syscalls = SysCalls(self.id, self.worker_address, log)
         mod_name, fn_name = parse_entry_point(request.entry_point)
 
         # Must be before we load user code
@@ -365,7 +391,6 @@ class Runner(pb.runner_rpc.RunnerService):
                 grpc.StatusCode.INVALID_ARGUMENT,
                 f"can't load {mod_name} from {self.code_dir} - {err_text}",
             )
-            return  # Make linter happy
 
         ak_call.set_module(mod)
 
@@ -430,7 +455,7 @@ class Runner(pb.runner_rpc.RunnerService):
         self, request: pb.runner.ExecuteRequest, context: grpc.ServicerContext
     ):
         async with self.lock:
-            call: Call = self.activity_call
+            call = self.activity_call
 
         if call is None:
             context.abort(grpc.StatusCode.INTERNAL, "no pending activity calls")
@@ -509,16 +534,16 @@ class Runner(pb.runner_rpc.RunnerService):
 
         return pb.runner.RunnerHealthResponse()
 
-    def call_in_activity(self, fn, args, kw):
-        log.info("call_in_activity: %s", full_func_name(fn))
-        fut = self.start_activity(fn, args, kw)
+    def sync_call_in_activity(self, fn, args, kw):
+        log.info("sync_call_in_activity: %s", full_func_name(fn))
+        fut = self.sync_start_activity(fn, args, kw)
         return fut.result()
 
-    def start_activity(self, fn, args, kw) -> Future:
+    def sync_start_activity(self, fn, args, kw):
         fn_name = full_func_name(fn)
         log.info("calling %s", fn_name)
         call = Call(fn, args, kw, Future())
-        with self.lock:
+        async with self.lock:
             if self.activity_call:
                 log.error("nested activity: %r < %r", self.activity_call, call)
                 raise RuntimeError(f"nested activity: {self.activity_call} < {call}")
@@ -540,14 +565,43 @@ class Runner(pb.runner_rpc.RunnerService):
         log.info("activity request ended")
         return call.fut
 
-    def _call(self, fn, args, kw):
+    async def call_in_activity(self, fn, args, kw):
+        log.info("call_in_activity: %s", full_func_name(fn))
+        fut = await self.start_activity(fn, args, kw)
+        return fut.result()
+
+    async def start_activity(self, fn, args, kw) -> asyncio.Future:
+        fn_name = full_func_name(fn)
+        log.info("calling %s", fn_name)
+        call = Call(fn, args, kw, asyncio.Future())
+        async with self.lock:
+            if self.activity_call:
+                log.error("nested activity: %r < %r", self.activity_call, call)
+                raise RuntimeError(f"nested activity: {self.activity_call} < {call}")
+            self.activity_call = call
+
+        req = pb.handler.ActivityRequest(
+            runner_id=self.id,
+            call_info=pb.handler.CallInfo(
+                # AK rejects __qualname__ such as "json.loads"
+                function=short_name(fn_name),
+                args=[values.safe_wrap(a) for a in args],
+                kwargs={k: values.safe_wrap(v) for k, v in kw.items()},
+            ),
+        )
+        log.info("activity: sending")
+        resp = await self.worker.Activity(req)
+        if resp.error:
+            raise ActivityError(resp.error)
+        log.info("activity request ended")
+        return call.fut
+
+    async def _call(self, fn, args, kw):
         func_name = full_func_name(fn)
         log.info("calling %s", func_name)
         value = error = stack = None
         try:
-            value = fn(*args, **kw)
-            if asyncio.iscoroutine(value):
-                value = asyncio.run(value)
+            value = await fn(*args, **kw)
         except BaseException as err:
             log.error("%s raised: %r", func_name, err)
             tb = TracebackException.from_exception(err)
@@ -571,7 +625,7 @@ class Runner(pb.runner_rpc.RunnerService):
         func_name = full_func_name(fn)
         log.info("start event: %s", func_name)
 
-        result = self._call(fn, [event], {})
+        result = await self._call(fn, [event], {})
 
         log.info("event end: error=%r", result.error)
         self._stopped = True
@@ -692,7 +746,7 @@ async def main(args):
     server = grpc.aio.server(
         interceptors=[LoggingInterceptor(args.runner_id)],
     )
-    runner = Runner.create(
+    runner = await Runner.create(
         args.runner_id, worker, args.code_dir, server, args.start_timeout
     )
     pb.runner_rpc.add_RunnerServiceServicer_to_server(runner, server)
@@ -702,10 +756,9 @@ async def main(args):
 
     log.info("server running on port %d (duration = %.2fsec)", args.port, duration)
 
-    # TODO
-    # if not args.skip_check_worker:
-    # Thread(target=runner.should_keep_running, daemon=True).start()
-    # log.info("started 'should_keep_running' thread")
+    if not args.skip_check_worker:
+        asyncio.ensure_future(runner.should_keep_running())
+        log.info("started 'should_keep_running' thread")
 
     await server.wait_for_termination()
 

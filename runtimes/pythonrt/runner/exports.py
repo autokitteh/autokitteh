@@ -5,7 +5,8 @@ import sys
 import loader
 from main import dir_type
 
-if __name__ == "__main__":
+
+async def main():
     parser = ArgumentParser(description="print exports in JSON format")
     parser.add_argument("code_dir", help="code directory", type=dir_type)
     args = parser.parse_args()
@@ -15,6 +16,13 @@ if __name__ == "__main__":
         if path.name[0] == ".":
             continue
 
-        exports += loader.exports(args.code_dir, path.name)
+        async for e in loader.exports(args.code_dir, path.name):
+            exports.append(e)
 
     json.dump(exports, sys.stdout)
+
+
+if __name__ == "__main__":
+    import asyncio
+
+    asyncio.run(main())

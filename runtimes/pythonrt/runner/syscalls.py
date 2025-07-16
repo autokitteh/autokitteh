@@ -7,10 +7,12 @@ matching function in autokitteh (e.g. autokitteh.start).
 import json
 import os
 from datetime import timedelta
+from typing import Any, Optional
 
 import grpc
 import log
 import pb.autokitteh.user_code.v1.handler_svc_pb2 as pb
+import pb.autokitteh.user_code.v1.handler_svc_pb2_grpc as rpc
 import values
 from autokitteh import AttrDict, AutoKittehError, Signal
 from autokitteh.activities import ACTIVITY_ATTR
@@ -22,7 +24,7 @@ def mark_no_activity(fn):
     return fn
 
 
-def _timeout_arg_into_ms(timeout: timedelta | int | float) -> int:
+def timeout_arg_into_ms(timeout: timedelta | int | float | None) -> int:
     if not timeout:
         return 0
 
@@ -35,12 +37,17 @@ def _timeout_arg_into_ms(timeout: timedelta | int | float) -> int:
 
 
 class SysCalls:
-    def __init__(self, runner_id, worker, log):
+    """System calls to AK, patched by main to be the ones autokitteh."""
+
+    def __init__(self, runner_id, worker_address, log):
         self.runner_id = runner_id
-        self.worker = worker
+        chan = grpc.insecure_channel(worker_address)
+        self.worker = rpc.HandlerServiceStub(chan)
         self.log = log
         self.mark_ak_no_activity()
 
+    # NOTE: Functions name must match the patched function in autokitteh with ak_ prefix
+    # e.g. autokitteh.start -> ak_start
     def ak_start(
         self,
         loc: str,
@@ -106,7 +113,7 @@ class SysCalls:
         req = pb.NextEventRequest(
             runner_id=self.runner_id,
             signal_ids=ids,
-            timeout_ms=_timeout_arg_into_ms(timeout),
+            timeout_ms=timeout_arg_into_ms(timeout),
         )
 
         try:
@@ -153,7 +160,7 @@ class SysCalls:
             raise AutoKittehError(f"refresh_oauth: {resp.error}")
         return resp.token, resp.expires.ToDatetime()
 
-    def ak_signal(self, session_id: str, name: str, payload: any = None) -> None:
+    def ak_signal(self, session_id: str, name: str, payload: Any = None) -> None:
         log.debug("signal: %r %r", session_id, name)
 
         req = pb.SignalRequest(
@@ -168,8 +175,11 @@ class SysCalls:
         call_grpc("signal", self.worker.Signal, req)
 
     def ak_next_signal(
-        self, name: str | list[str], *, timeout: timedelta | int | float = None
-    ) -> Signal:
+        self,
+        name: str | list[str],
+        *,
+        timeout: Optional[timedelta | int | float] = None,
+    ) -> Signal | None:
         log.debug("ak_next_signal: %r %r", name, timeout)
 
         names = name
@@ -179,7 +189,7 @@ class SysCalls:
         req = pb.NextSignalRequest(
             runner_id=self.runner_id,
             names=names,
-            timeout_ms=_timeout_arg_into_ms(timeout),
+            timeout_ms=timeout_arg_into_ms(timeout),
         )
 
         resp = call_grpc("next_signal", self.worker.NextSignal, req)
@@ -194,7 +204,7 @@ class SysCalls:
 
         return None
 
-    def ak_mutate_value(self, key: str, op: str, *args: list[str]) -> any:
+    def ak_mutate_value(self, key: str, op: str, *args: list[str]) -> Any:
         log.debug("ak_mutate_value: %r %r %r", key, op, args)
         req = pb.StoreMutateRequest(
             runner_id=self.runner_id,
@@ -205,16 +215,16 @@ class SysCalls:
         resp = call_grpc("store_mutate", self.worker.StoreMutate, req)
         return values.unwrap(resp.result)
 
-    def ak_set_value(self, key: str, value: any) -> None:
+    def ak_set_value(self, key: str, value: Any) -> None:
         self.ak_mutate_value(key, "set", value)
 
     def ak_add_values(self, key: str, value: int | float) -> int | float:
         return self.ak_mutate_value(key, "add", value)
 
-    def ak_get_value(self, key: str) -> any:
+    def ak_get_value(self, key: str) -> Any:
         return self.ak_mutate_value(key, "get")
 
-    def ak_del_value(self, key: str) -> any:
+    def ak_del_value(self, key: str) -> Any:
         return self.ak_mutate_value(key, "del")
 
     def ak_list_values_keys(self) -> list[str]:

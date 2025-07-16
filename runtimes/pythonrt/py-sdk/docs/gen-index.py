@@ -60,7 +60,7 @@ print(index_header, file=args.output)
 ignored = {
     "__init__.py",
 }
-for mod in ak_dir.glob("*.py"):
+for mod in sorted(ak_dir.glob("*.py")):
     if mod.name in ignored:
         continue
 
