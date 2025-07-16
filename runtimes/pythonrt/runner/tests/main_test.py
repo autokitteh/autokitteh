@@ -6,6 +6,7 @@ Need much more:
 - Bad input tests
 """
 
+import asyncio
 import builtins
 import json
 import pickle
@@ -14,27 +15,33 @@ import traceback
 from concurrent.futures import Future
 from subprocess import Popen, TimeoutExpired, run
 from threading import Event
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
+
+import pytest
+from conftest import clear_module_cache, workflows
+from mock_worker import MockWorker
 
 import main
 import pb.autokitteh.user_code.v1.runner_svc_pb2 as runner_pb
 import pb.autokitteh.user_code.v1.user_code_pb2 as user_code
 import pb.autokitteh.values.v1.values_pb2 as pb_values
-import pytest
 import values
-from conftest import clear_module_cache, workflows
-from mock_worker import MockWorker
 
 
-def new_test_runner(code_dir, worker=None, server=None):
-    runner = main.Runner(
+async def new_test_runner(code_dir, worker=None, server=None, sync_worker=None):
+    class Runner(main.Runner):
+        async def stop_if_start_not_called(self, timeout):
+            return
+
+    runner = await Runner.create(
         id="runner1",
-        worker=worker,
+        worker_address="localhost:9999",
         code_dir=code_dir,
         server=server,
     )
-    runner._inactivity_timer.cancel()
+    runner.worker = worker
+    runner.sync_worker = sync_worker
     return runner
 
 
@@ -44,11 +51,12 @@ def test_help():
     assert out.returncode == 0
 
 
-def test_start(monkeypatch):
+@pytest.mark.asyncio
+async def test_start(monkeypatch):
     mod_name = "program"
     clear_module_cache(mod_name)
 
-    runner = new_test_runner(workflows.simple, worker=MagicMock())
+    runner = await new_test_runner(workflows.simple, sync_worker=MagicMock())
 
     event_data = json.dumps(
         {
@@ -64,7 +72,7 @@ def test_start(monkeypatch):
     # Restore print after this test
     monkeypatch.setattr(builtins, "print", print)
 
-    resp = runner.Start(req, context)
+    resp = await runner.Start(req, context)
 
     assert resp.error == ""
     assert not context.abort.called
@@ -74,35 +82,35 @@ def sub(a, b):
     return a - b
 
 
-def test_execute():
-    runner = new_test_runner(workflows.simple)
-
+@pytest.mark.asyncio
+async def test_execute():
     class Worker:
         def __init__(self):
             self.event = Event()
 
-        def ExecuteReply(self, msg):
+        async def ExecuteReply(self, msg):
             self.msg = msg
             self.event.set()
-            return MagicMock()
+            return AsyncMock()
 
-    runner.worker = Worker()
+    runner = await new_test_runner(workflows.simple, worker=Worker())
     runner.activity_call = main.Call(sub, [1, 7], {}, Future())
 
     req = runner_pb.ExecuteRequest()
-    resp = runner.Execute(req, None)
+    resp = await runner.Execute(req, None)
     assert resp.error == ""
 
-    triggered = runner.worker.event.wait(1)
+    triggered = await runner.worker.event.wait(1)
     assert triggered, "timeout waiting for worker event"
 
     result = pickle.loads(runner.worker.msg.result.custom.data)
     assert result.value == -6
 
 
-def test_activity_reply():
-    runner = new_test_runner(workflows.simple)
-    fut = Future()
+@pytest.mark.asyncio
+async def test_activity_reply():
+    runner = await new_test_runner(workflows.simple)
+    fut = asyncio.Future()
     runner.activity_call = main.Call(print, (), {}, fut)
     result = main.Result(42, None, None)
     req = runner_pb.ActivityReplyRequest(
@@ -114,7 +122,7 @@ def test_activity_reply():
             ),
         )
     )
-    resp = runner.ActivityReply(req, MagicMock())
+    resp = await runner.ActivityReply(req, MagicMock())
     assert resp.error == ""
     assert fut.done()
     assert fut.result() == result.value
@@ -142,7 +150,8 @@ def test_start_timeout(tmp_path):
         assert False, "server did not terminate"
 
 
-def test_result_error():
+@pytest.mark.asyncio
+async def test_result_error():
     msg = "oops"
 
     def fn_a():
@@ -160,7 +169,7 @@ def test_result_error():
     except ZeroDivisionError as e:
         err = e
 
-    runner = new_test_runner(workflows.simple)
+    runner = await new_test_runner(workflows.simple)
     text = runner.result_error(err)
 
     assert msg in text
@@ -192,24 +201,26 @@ pickle_cases = [
 ]
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize("err", pickle_cases)
-def test_pickle_exception(err):
+async def test_pickle_exception(err):
     def fn():
         raise err
 
-    runner = new_test_runner("/tmp")
-    result = runner._call(fn, [], {})
+    runner = await new_test_runner("/tmp")
+    result = await runner._call(fn, [], {})
     data = pickle.dumps(result)
     result2 = pickle.loads(data)
     error = main.restore_error(result2.error)
     assert isinstance(error, err.__class__)
 
 
-def test_activity():
-    runner = new_test_runner(workflows.activity)
+@pytest.mark.asyncio
+async def test_activity():
+    runner = await new_test_runner(workflows.activity)
     worker = MockWorker(runner)
     event = json.dumps({"data": {"cat": "mitzi"}})
-    worker.start("program.py:on_event", event.encode())
+    await worker.start("program.py:on_event", event.encode())
 
 
 code = """
@@ -310,21 +321,23 @@ def test_tb_stack():
     assert len(pbt) == 4
 
 
-def test_obj_callable():
-    worker = MagicMock()
+@pytest.mark.asyncio
+async def test_obj_callable():
+    worker = AsyncMock()
     worker.Activity.return_value = worker
     worker.error = None
 
-    runner = new_test_runner(workflows.simple, worker=worker)
+    runner = await new_test_runner(workflows.simple, worker=worker)
 
     class Adder:
         def __call__(self, a, b):
             return a + b
 
     fn = Adder()
-    runner.start_activity(fn, (), {})
+    await runner.start_activity(fn, (), {})
 
 
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "workflow",
     [
@@ -332,15 +345,15 @@ def test_obj_callable():
         pytest.param(workflows.async_handler, id="async_handler"),
     ],
 )
-def test_async(workflow, capsys):
+async def test_async(workflow, capsys):
     clear_module_cache("program")
-    runner = new_test_runner(workflow)
+    runner = await new_test_runner(workflow, server=AsyncMock())
     worker = MockWorker(runner)
     runner.worker = worker
 
     event = json.dumps({"data": {"cat": "mitzi"}})
-    worker.start("program.py:on_event", event.encode())
-    worker.event.wait(1)
+    await worker.start("program.py:on_event", event.encode())
+    await worker.event.wait()
 
     assert worker.calls.get("ACTIVITY")
 

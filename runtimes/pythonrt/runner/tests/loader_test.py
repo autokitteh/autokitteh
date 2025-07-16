@@ -61,16 +61,22 @@ def test_transform(code, transformed):
     assert transformed, ast.unparse(out)
 
 
-def test_exports():
+@pytest.mark.asyncio
+async def test_exports():
     code_dir, file_name = workflows.simple, "program.py"
-    exports = list(loader.exports(code_dir, file_name))
-    expected = {
-        "file": file_name,
-        "line": 6,
-        "name": "on_event",
-        "args": ["event"],
-    }
-    assert exports == [expected]
+    exports = []
+    async for e in loader.exports(code_dir, file_name):
+        exports.append(e)
+
+    expected = [
+        {
+            "file": file_name,
+            "line": 6,
+            "name": "on_event",
+            "args": ["event"],
+        }
+    ]
+    assert exports == expected
 
 
 def test_multi_file():
@@ -89,7 +95,7 @@ def test_multi_file():
 
     event = AttrDict({"data": json.dumps({"user": "joe", "action": "login"})})
     fn(event)  # Make sure it runs without error.
-    assert runner.call_in_activity.call_count == 2
+    assert runner.call_sync_in_activity.call_count == 2
 
 
 def test_class_args():

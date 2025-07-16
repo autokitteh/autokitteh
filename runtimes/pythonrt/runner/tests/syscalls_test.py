@@ -8,7 +8,7 @@ def test_ak_unsubscribe(monkeypatch):
     monkeypatch.setattr(syscalls, "call_grpc", mock)
 
     rid = "r1"
-    sc = syscalls.SysCalls(rid, mock, mock)
+    sc = syscalls.SysCalls(rid, "localhost:9999")
     sid = "s1"
     sc.ak_unsubscribe(sid)
     assert mock.called

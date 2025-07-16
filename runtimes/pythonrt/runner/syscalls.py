@@ -39,11 +39,10 @@ def timeout_arg_into_ms(timeout: timedelta | int | float | None) -> int:
 class SysCalls:
     """System calls to AK, patched by main to be the ones autokitteh."""
 
-    def __init__(self, runner_id, worker_address, log):
+    def __init__(self, runner_id, worker_address):
         self.runner_id = runner_id
         chan = grpc.insecure_channel(worker_address)
         self.worker = rpc.HandlerServiceStub(chan)
-        self.log = log
         self.mark_ak_no_activity()
 
     # NOTE: Functions name must match the patched function in autokitteh with ak_ prefix

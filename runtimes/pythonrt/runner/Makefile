@@ -8,8 +8,7 @@ test:
 
 install-deps:
 	uv venv
-	uv pip install .[all]
-	rm -rf build *.egg-info
+	uv sync --extra all
 
 ci: install-deps test
 

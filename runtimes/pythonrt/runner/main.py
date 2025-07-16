@@ -6,23 +6,25 @@ import pickle
 import sys
 from base64 import b64decode
 from collections import namedtuple
-from concurrent.futures import ThreadPoolExecutor, Future
+from concurrent.futures import Future, ThreadPoolExecutor
 from functools import update_wrapper, wraps
 from io import StringIO
 from pathlib import Path
+from threading import Lock
 from traceback import TracebackException, format_exception
 from typing import Callable
 
 import autokitteh
 import grpc
-import loader
-import log
-import pb
-import values
 
 # from audit import make_audit_hook  # TODO(ENG-1893): uncomment this.
 from autokitteh import AttrDict, Event, connections
 from autokitteh.errors import AutoKittehError
+
+import loader
+import log
+import pb
+import values
 from call import AKCall, activity_marker, full_func_name
 from syscalls import SysCalls, mark_no_activity
 
@@ -229,6 +231,7 @@ class Runner(pb.runner_rpc.RunnerService):
     server: grpc.Server
     executor: ThreadPoolExecutor
     lock: asyncio.Lock
+    sync_lock: Lock
     activity_call: Call | None
     _orig_print: Callable
 
@@ -242,9 +245,9 @@ class Runner(pb.runner_rpc.RunnerService):
         runner.id = id
         runner.worker_address = worker_address
 
-        chan = grpc.aio.insecure_channel(args.worker_address)
+        chan = grpc.aio.insecure_channel(worker_address)
         runner.worker = pb.handler_rpc.HandlerServiceStub(chan)
-        chan = grpc.insecure_channel(args.worker_address)
+        chan = grpc.insecure_channel(worker_address)
         runner.sync_worker = pb.handler_rpc.HandlerServiceStub(chan)
         runner.code_dir = code_dir
         runner.server = server
@@ -256,7 +259,7 @@ class Runner(pb.runner_rpc.RunnerService):
         runner._orig_print = print
         runner._start_called = False
 
-        asyncio.ensure_future(runner.stop_if_start_not_called(args.timeout))
+        asyncio.ensure_future(runner.stop_if_start_not_called(start_timeout))
 
         runner._stopped = False
         return runner
@@ -374,7 +377,7 @@ class Runner(pb.runner_rpc.RunnerService):
         self._start_called = True
         log.info("start request: %r", request.entry_point)
 
-        self.syscalls = SysCalls(self.id, self.worker_address, log)
+        self.syscalls = SysCalls(self.id, self.worker_address)
         mod_name, fn_name = parse_entry_point(request.entry_point)
 
         # Must be before we load user code
@@ -433,7 +436,7 @@ class Runner(pb.runner_rpc.RunnerService):
             runner_id=self.id,
         )
 
-        result = self._call(fn, args, kw)
+        result = await self._call(fn, args, kw)
         try:
             data = pickle.dumps(result)
             req.result.custom.data = data
@@ -542,7 +545,7 @@ class Runner(pb.runner_rpc.RunnerService):
         fn_name = full_func_name(fn)
         log.info("calling %s", fn_name)
         call = Call(fn, args, kw, Future())
-        async with self.lock:
+        with self.sync_lock:
             if self.activity_call:
                 log.error("nested activity: %r < %r", self.activity_call, call)
                 raise RuntimeError(f"nested activity: {self.activity_call} < {call}")
@@ -558,7 +561,7 @@ class Runner(pb.runner_rpc.RunnerService):
             ),
         )
         log.info("activity: sending")
-        resp = await self.worker.Activity(req)
+        resp = self.sync_worker.Activity(req)
         if resp.error:
             raise ActivityError(resp.error)
         log.info("activity request ended")
@@ -600,7 +603,11 @@ class Runner(pb.runner_rpc.RunnerService):
         log.info("calling %s", func_name)
         value = error = stack = None
         try:
-            value = await fn(*args, **kw)
+            if inspect.iscoroutinefunction(fn):
+                value = await fn(*args, **kw)
+            else:
+                loop = asyncio.get_running_loop()
+                value = await loop.run_in_executor(self.executor, fn, *args, **kw)
         except BaseException as err:
             log.error("%s raised: %r", func_name, err)
             tb = TracebackException.from_exception(err)
@@ -743,7 +750,8 @@ async def main(args):
     )
 
     server = grpc.aio.server(
-        interceptors=[LoggingInterceptor(args.runner_id)],
+        # FIXME: object has no attribute 'request_streaming'
+        #        interceptors=[LoggingInterceptor(args.runner_id)],
     )
     runner = await Runner.create(
         args.runner_id, worker, args.code_dir, server, args.start_timeout
