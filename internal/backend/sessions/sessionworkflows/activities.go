@@ -35,6 +35,7 @@ const (
 	listStoreValuesActivityName             = "list_store_values"
 	mutateStoreValueActivityName            = "mutate_store_value"
 	notifyWorkflowEndedActivity             = "notify_workflow_ended"
+	startChildSessionActivityName           = "start_child_session"
 )
 
 func (ws *workflows) registerActivities() {
@@ -116,6 +117,11 @@ func (ws *workflows) registerActivities() {
 	ws.sessionsWorker.RegisterActivityWithOptions(
 		ws.notifyWorkflowEndedActivity,
 		activity.RegisterOptions{Name: notifyWorkflowEndedActivity},
+	)
+
+	ws.worker.RegisterActivityWithOptions(
+		ws.startChildSessionActivity,
+		activity.RegisterOptions{Name: startChildSessionActivityName},
 	)
 }
 
@@ -366,4 +372,8 @@ func (ws *workflows) terminateWorkflowActivity(ctx context.Context, sid sdktypes
 
 func (ws *workflows) notifyWorkflowEndedActivity(ctx context.Context, sid sdktypes.SessionID) error {
 	return ws.svcs.WorkflowExecutor.NotifyDone(ctx, workflowID(sid))
+}
+
+func (ws *workflows) startChildSessionActivity(ctx context.Context, session sdktypes.Session) (sdktypes.SessionID, error) {
+	return ws.sessions.Start(ctx, session)
 }

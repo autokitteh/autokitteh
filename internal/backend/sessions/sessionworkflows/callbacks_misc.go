@@ -65,14 +65,11 @@ func (w *sessionWorkflow) start(wctx workflow.Context) func(context.Context, sdk
 			data = adata
 		}
 
-		f, err := w.ws.StartChildWorkflow(wctx, data)
-		if err != nil {
+		if err := w.ws.StartChildWorkflow(wctx, data); err != nil {
 			return sdktypes.InvalidSessionID, err
 		}
 
 		sid := data.Session.ID()
-
-		w.children[sid] = f
 
 		w.l.Info("child session started", zap.Any("child", sid), zap.Any("parent", w.data.Session.ID()))
 
