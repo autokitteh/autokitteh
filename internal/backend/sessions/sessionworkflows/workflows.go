@@ -321,7 +321,10 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params sessionWorkfl
 	}
 
 	_ = workflow.ExecuteActivity(wctx, deactivateDrainedDeploymentActivityName, session.DeploymentID()).Get(wctx, nil)
+	// context might have been canceled, create a disconnected one.
+	wctx, cancel := workflow.NewDisconnectedContext(wctx)
 	_ = workflow.ExecuteActivity(wctx, notifyWorkflowEndedActivity, session.ID()).Get(wctx, nil)
+	cancel()
 
 	return workflowErr
 }
