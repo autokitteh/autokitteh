@@ -360,6 +360,7 @@ class Runner(pb.runner_rpc.RunnerService):
 
         fn = getattr(mod, fn_name, None)
         if not callable(fn):
+            Thread(target=self.server.stop, args=(1,), daemon=True).start()
             context.abort(
                 grpc.StatusCode.INVALID_ARGUMENT,
                 f"function {fn_name!r} not found",
