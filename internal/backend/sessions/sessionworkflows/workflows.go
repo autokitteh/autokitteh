@@ -35,7 +35,7 @@ type StartWorkflowOptions struct{}
 type Workflows interface {
 	StartWorkers(context.Context) error
 	StartWorkflow(ctx context.Context, session sdktypes.Session, opts StartWorkflowOptions) error
-	StartChildWorkflow(wctx workflow.Context, data sessiondata.Data) error
+	StartChildWorkflow(wctx workflow.Context, session sdktypes.Session) error
 	GetWorkflowLog(ctx context.Context, filter sdkservices.SessionLogRecordsFilter) (*sdkservices.GetLogResults, error)
 	StopWorkflow(ctx context.Context, sessionID sdktypes.SessionID, reason string, force bool, cancelTimeout time.Duration) error
 }
@@ -125,8 +125,8 @@ func memo(session sdktypes.Session, oid sdktypes.OrgID) map[string]string {
 	return memo
 }
 
-func (ws *workflows) StartChildWorkflow(wctx workflow.Context, data sessiondata.Data) error {
-	if err := workflow.ExecuteActivity(wctx, startChildSessionActivityName, data.Session).Get(wctx, nil); err != nil {
+func (ws *workflows) StartChildWorkflow(wctx workflow.Context, session sdktypes.Session) error {
+	if err := workflow.ExecuteActivity(wctx, startChildSessionActivityName, session).Get(wctx, nil); err != nil {
 		return fmt.Errorf("start child session activity: %w", err)
 	}
 

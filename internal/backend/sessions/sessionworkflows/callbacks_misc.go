@@ -9,7 +9,7 @@ import (
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessiondata"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -40,32 +40,26 @@ func (w *sessionWorkflow) start(wctx workflow.Context) func(context.Context, sdk
 			data.Session = sdktypes.NewSession(data.Build.ID(), loc, inputs, memo).
 				WithParentSessionID(data.Session.ID()).
 				WithDeploymentID(data.Session.DeploymentID()).
-				WithProjectID(data.Session.ProjectID()).
-				WithNewID()
+				WithProjectID(data.Session.ProjectID())
+			// WithNewID()
 
-			if err := workflow.ExecuteActivity(wctx, createSessionActivityName, data.Session).Get(wctx, nil); err != nil {
-				return sdktypes.InvalidSessionID, err
-			}
+			// if err := workflow.ExecuteActivity(wctx, createSessionActivityName, data.Session).Get(wctx, nil); err != nil {
+			// 	return sdktypes.InvalidSessionID, err
+			// }
 		} else {
-			params := createSessionInProjectActivityParams{
-				ParentSessionID: data.Session.ID(),
-				OrgID:           data.OrgID,
-				Project:         project,
-				Loc:             loc,
-				Inputs:          inputs,
-				Memo:            memo,
+
+			p, err := w.ws.svcs.Projects.GetByName(authcontext.SetAuthnSystemUser(ctx), data.OrgID, project)
+			if err != nil {
+				panic(err)
 			}
 
-			// Use Get on a clean sessiondata.Data struct to avoid it following pointers and changing underlying data.
-			var adata sessiondata.Data
-			if err := workflow.ExecuteActivity(wctx, createSessionInProjectActivityName, params).Get(wctx, &adata); err != nil {
-				return sdktypes.InvalidSessionID, err
-			}
-
-			data = adata
+			data.Session = sdktypes.NewSession(data.Build.ID(), loc, inputs, memo).
+				WithParentSessionID(data.Session.ID()).
+				WithDeploymentID(data.Session.DeploymentID()).
+				WithProjectID(p.ID())
 		}
 
-		if err := w.ws.StartChildWorkflow(wctx, data); err != nil {
+		if err := w.ws.StartChildWorkflow(wctx, data.Session); err != nil {
 			return sdktypes.InvalidSessionID, err
 		}
 
