@@ -36,7 +36,6 @@ all = [
 	"PyGithub ~= 2.6",
 	"simple-salesforce ~= 1.12",
 	"slack-sdk ~= 3.33",
-	"tenacity ~= 9.0",
 	"twilio ~= 9.4",
 
 	# General
