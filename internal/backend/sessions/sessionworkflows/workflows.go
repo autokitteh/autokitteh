@@ -125,10 +125,13 @@ func memo(session sdktypes.Session, oid sdktypes.OrgID) map[string]string {
 	return memo
 }
 
-func (ws *workflows) StartChildWorkflow(wctx workflow.Context, session sdktypes.Session) error {
-	if err := workflow.ExecuteActivity(wctx, startChildSessionActivityName, session).Get(wctx, nil); err != nil {
+func (ws *workflows) StartChildWorkflow(wctx workflow.Context, data sessiondata.Data) error {
+	var sid sdktypes.SessionID
+	if err := workflow.ExecuteActivity(wctx, startChildSessionActivityName, data.Session).Get(wctx, &sid); err != nil {
 		return fmt.Errorf("start child session activity: %w", err)
 	}
+
+	data.Session.WithID(sid)
 
 	return nil
 }

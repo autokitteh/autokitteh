@@ -59,7 +59,7 @@ func (w *sessionWorkflow) start(wctx workflow.Context) func(context.Context, sdk
 				WithProjectID(p.ID())
 		}
 
-		if err := w.ws.StartChildWorkflow(wctx, data.Session); err != nil {
+		if err := w.ws.StartChildWorkflow(wctx, data); err != nil {
 			return sdktypes.InvalidSessionID, err
 		}
 
