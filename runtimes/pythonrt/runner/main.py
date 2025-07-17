@@ -349,17 +349,22 @@ class Runner(pb.runner_rpc.RunnerService):
             mod = loader.load_code(self.code_dir, ak_call, mod_name)
         except Exception as err:
             # Can't use ak_print here - ak not ready yet.
+            Thread(
+                target=self.server.stop, args=(SERVER_GRACE_TIMEOUT,), daemon=True
+            ).start()
             err_text = self.result_error(err)
             context.abort(
                 grpc.StatusCode.INVALID_ARGUMENT,
                 f"can't load {mod_name} from {self.code_dir} - {err_text}",
             )
-            return  # Make linter happy
 
         ak_call.set_module(mod)
 
         fn = getattr(mod, fn_name, None)
         if not callable(fn):
+            Thread(
+                target=self.server.stop, args=(SERVER_GRACE_TIMEOUT,), daemon=True
+            ).start()
             context.abort(
                 grpc.StatusCode.INVALID_ARGUMENT,
                 f"function {fn_name!r} not found",
