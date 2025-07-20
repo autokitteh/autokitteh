@@ -22,7 +22,6 @@ pyairtable ~= 3.1
 PyGithub ~= 2.6
 simple-salesforce ~= 1.12
 slack-sdk ~= 3.33
-tenacity ~= 9.0
 twilio ~= 9.4
 beautifulsoup4 ~= 4.12
 grpcio ~= 1.68
