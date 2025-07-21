@@ -151,15 +151,18 @@ func (e *executor) startPoller(ctx context.Context) {
 }
 
 func (e *executor) NotifyDone(ctx context.Context, id string) error {
-	e.inProgressWorkflowsCount.Add(-1)
-
-	e.metrics.DecrementActiveWorkflows(ctx)
-
-	if err := e.svcs.DB.UpdateRequestStatus(ctx, id, "done"); err != nil {
+	didUpdate, err := e.svcs.DB.UpdateRequestStatus(ctx, id, "done")
+	if err != nil {
 		e.l.Error("Failed to update workflow execution request status", zap.Error(err), zap.String("workflow_id", id))
+		return err
 	}
 
-	e.l.Info(fmt.Sprintf("Workflow Done %s. Active workflows: %d out of %d", id, e.inProgressWorkflowsCount.Load(), e.maxConcurrent), zap.String("session_id", id))
+	if didUpdate {
+		e.inProgressWorkflowsCount.Add(-1)
+		e.metrics.DecrementActiveWorkflows(ctx)
+		e.l.Info(fmt.Sprintf("Workflow Done %s. Active workflows: %d out of %d", id, e.inProgressWorkflowsCount.Load(), e.maxConcurrent), zap.String("session_id", id))
+	}
+
 	return nil
 }
 

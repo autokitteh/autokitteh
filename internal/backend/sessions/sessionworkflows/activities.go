@@ -38,73 +38,82 @@ const (
 )
 
 func (ws *workflows) registerActivities() {
-	ws.worker.RegisterActivityWithOptions(
+	// Utils Worker activities
+
+	// We need to registrer the terminate workflow activity on the utils worker,
+	// since it is used to terminate workflows and should not be registered on the sessions worker.
+	ws.utilsWorker.RegisterActivityWithOptions(
 		ws.updateSessionStateActivity,
 		activity.RegisterOptions{Name: updateSessionStateActivityName},
 	)
 
-	ws.worker.RegisterActivityWithOptions(
+	ws.utilsWorker.RegisterActivityWithOptions(
 		ws.terminateWorkflowActivity,
 		activity.RegisterOptions{Name: terminateWorkflowActivityName},
 	)
 
-	ws.worker.RegisterActivityWithOptions(
+	// Session Worker activities
+	ws.sessionsWorker.RegisterActivityWithOptions(
+		ws.updateSessionStateActivity,
+		activity.RegisterOptions{Name: updateSessionStateActivityName},
+	)
+
+	ws.sessionsWorker.RegisterActivityWithOptions(
 		ws.saveSignalActivity,
 		activity.RegisterOptions{Name: saveSignalActivityName},
 	)
 
-	ws.worker.RegisterActivityWithOptions(
+	ws.sessionsWorker.RegisterActivityWithOptions(
 		ws.getLatestEventSequenceActivity,
 		activity.RegisterOptions{Name: getLastEventSequenceActivityName},
 	)
 
-	ws.worker.RegisterActivityWithOptions(
+	ws.sessionsWorker.RegisterActivityWithOptions(
 		ws.getSessionStopReasonActivity,
 		activity.RegisterOptions{Name: getSessionStopReasonActivityName},
 	)
 
-	ws.worker.RegisterActivityWithOptions(
+	ws.sessionsWorker.RegisterActivityWithOptions(
 		ws.getSignalEventActivity,
 		activity.RegisterOptions{Name: getSignalEventActivityName},
 	)
 
-	ws.worker.RegisterActivityWithOptions(
+	ws.sessionsWorker.RegisterActivityWithOptions(
 		ws.removeSignalActivity,
 		activity.RegisterOptions{Name: removeSignalActivityName},
 	)
 
-	ws.worker.RegisterActivityWithOptions(
+	ws.sessionsWorker.RegisterActivityWithOptions(
 		ws.deactivateDrainedDeploymentActivity,
 		activity.RegisterOptions{Name: deactivateDrainedDeploymentActivityName},
 	)
 
-	ws.worker.RegisterActivityWithOptions(
+	ws.sessionsWorker.RegisterActivityWithOptions(
 		ws.getDeploymentStateActivity,
 		activity.RegisterOptions{Name: getDeploymentStateActivityName},
 	)
 
-	ws.worker.RegisterActivityWithOptions(
+	ws.sessionsWorker.RegisterActivityWithOptions(
 		ws.createSessionActivity,
 		activity.RegisterOptions{Name: createSessionActivityName},
 	)
 
-	ws.worker.RegisterActivityWithOptions(
+	ws.sessionsWorker.RegisterActivityWithOptions(
 		ws.listStoreValuesActivity,
 		activity.RegisterOptions{Name: listStoreValuesActivityName},
 	)
 
-	ws.worker.RegisterActivityWithOptions(
+	ws.sessionsWorker.RegisterActivityWithOptions(
 		ws.mutateStoreValueActivity,
 		activity.RegisterOptions{Name: mutateStoreValueActivityName},
 	)
 
-	ws.worker.RegisterActivityWithOptions(
-
+	ws.sessionsWorker.RegisterActivityWithOptions(
 		ws.createSessionInProjectActivity,
 		activity.RegisterOptions{Name: createSessionInProjectActivityName},
 	)
 
-	ws.worker.RegisterActivityWithOptions(
+	ws.sessionsWorker.RegisterActivityWithOptions(
 		ws.notifyWorkflowEndedActivity,
 		activity.RegisterOptions{Name: notifyWorkflowEndedActivity},
 	)
@@ -323,8 +332,7 @@ func (ws *workflows) terminateSessionWorkflow(wctx workflow.Context, params term
 
 	sl.Infof("terminating session workflow %s", sid)
 
-	wctx = workflow.WithActivityOptions(wctx, ws.cfg.Activity.ToOptions(ws.svcs.WorkflowExecutor.WorkflowQueue()))
-
+	wctx = workflow.WithActivityOptions(wctx, ws.cfg.Activity.ToOptions(utilsWorkerQueue))
 	// this is fine if it runs multiple times and should be short.
 	if err := workflow.ExecuteActivity(wctx, terminateWorkflowActivityName, sid, reason).Get(wctx, nil); err != nil {
 		sl.With("err", err).Errorf("terminate workflow %v activity: %v", sid, err)

@@ -79,8 +79,15 @@ func (gdb *gormdb) CountInProgressWorkflowExecutionRequests(ctx context.Context,
 	return count, nil
 }
 
-func (gdb *gormdb) UpdateRequestStatus(ctx context.Context, workflowID string, status string) error {
-	return gdb.writer.WithContext(ctx).Model(&scheme.WorkflowExecutionRequest{}).
+func (gdb *gormdb) UpdateRequestStatus(ctx context.Context, workflowID string, status string) (bool, error) {
+	result := gdb.writer.WithContext(ctx).Model(&scheme.WorkflowExecutionRequest{}).
 		Where("workflow_id = ?", workflowID).
-		Update("status", status).Error
+		Where("status != ?", status).
+		Update("status", status)
+
+	if result.Error != nil {
+		return false, result.Error
+	}
+
+	return result.RowsAffected > 0, nil
 }
