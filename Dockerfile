@@ -46,7 +46,7 @@ COPY ./runtimes/pythonrt/runner/pyproject.toml pyproject.toml
 RUN python -m pip install .[all]
 
 COPY ./runtimes/pythonrt/py-sdk py-sdk
-RUN cd py-sdk && python -m pip install .
+RUN cd py-sdk && python -m pip install .[all]
 
 FROM python:3.11-slim AS final
 
