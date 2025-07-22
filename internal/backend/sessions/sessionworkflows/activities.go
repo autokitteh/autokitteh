@@ -40,7 +40,7 @@ const (
 func (ws *workflows) registerActivities() {
 	// Utils Worker activities
 
-	// We need to registrer the terminate workflow activity on the utils worker,
+	// We need to register the terminate workflow activity on the utils worker,
 	// since it is used to terminate workflows and should not be registered on the sessions worker.
 	ws.utilsWorker.RegisterActivityWithOptions(
 		ws.updateSessionStateActivity,
