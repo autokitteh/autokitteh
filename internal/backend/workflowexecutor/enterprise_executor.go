@@ -82,6 +82,10 @@ func (e *executor) Start(ctx context.Context) error {
 		return errors.New("worker_id is required")
 	}
 
+	// we do this synchronus just to ensure everything is aligned on start
+	e.reconcile(ctx)
+	e.startReconcileLoop(ctx)
+
 	inProgress, err := e.svcs.DB.CountInProgressWorkflowExecutionRequests(ctx, e.cfg.WorkerID)
 	if err != nil {
 		return err
@@ -93,18 +97,20 @@ func (e *executor) Start(ctx context.Context) error {
 }
 
 func (e *executor) startReconcileLoop(ctx context.Context) {
-	e.l.Info("Starting workflow executor reconcile loop")
-	for {
-		select {
-		case <-time.After(e.cfg.ReconcileLoopIntervalMS):
-			e.reconcile(ctx)
-		case <-e.stopChannel:
-			e.l.Info("Stopping workflow executor reconcile loop")
-			return
-		case <-ctx.Done():
-			return
+	go func() {
+		e.l.Info("Starting workflow executor reconcile loop")
+		for {
+			select {
+			case <-time.After(e.cfg.ReconcileLoopIntervalMS):
+				e.reconcile(ctx)
+			case <-e.stopChannel:
+				e.l.Info("Stopping workflow executor reconcile loop")
+				return
+			case <-ctx.Done():
+				return
+			}
 		}
-	}
+	}()
 }
 
 func (e *executor) reconcile(ctx context.Context) error {
