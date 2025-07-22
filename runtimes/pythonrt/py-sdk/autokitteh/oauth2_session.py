@@ -1,4 +1,5 @@
 import requests
+from requests_toolbelt import sessions
 from os import getenv
 
 from .connections import refresh_oauth
@@ -6,7 +7,7 @@ from .connections import check_connection_name
 from .errors import ConnectionInitError
 
 
-class OAuth2Session(requests.Session):
+class OAuth2Session(sessions.BaseUrlSession):
     """Encapsulates arequests session, based on an AutoKitteh connection.
 
     - Automatically sets the Authorization header with an OAuth token.

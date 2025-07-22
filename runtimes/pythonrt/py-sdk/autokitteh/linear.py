@@ -21,4 +21,6 @@ def linear_client(connection: str) -> Session:
         ValueError: AutoKitteh connection name is invalid.
         ConnectionInitError: AutoKitteh connection was not initialized yet.
     """
-    return OAuth2Session("linear", connection)
+    return OAuth2Session(
+        "linear", connection, base_url="https://api.linear.app/graphql/"
+    )
