@@ -15,24 +15,27 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
+	v11 "go.temporal.io/api/enums/v1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
 type Config struct {
-	MaxConcurrentWorkflows int                           `koanf:"max_concurrent_workflows"`
-	WorkerID               string                        `koanf:"worker_id"`
-	SessionWorkflow        temporalclient.WorkflowConfig `koanf:"session_workflow"`
-	EnablePoller           bool                          `koanf:"enable_poller"`
-	PollerIntervalMS       time.Duration                 `koanf:"poller_interval_ms"`
+	MaxConcurrentWorkflows  int                           `koanf:"max_concurrent_workflows"`
+	WorkerID                string                        `koanf:"worker_id"`
+	SessionWorkflow         temporalclient.WorkflowConfig `koanf:"session_workflow"`
+	EnablePoller            bool                          `koanf:"enable_poller"`
+	PollerIntervalMS        time.Duration                 `koanf:"poller_interval_ms"`
+	ReconcileLoopIntervalMS time.Duration                 `koanf:"reconcile_loop_interval_ms"`
 }
 
 var (
 	Configs = configset.Set[Config]{
 		Default: &Config{
-			MaxConcurrentWorkflows: 1,
-			EnablePoller:           false,
-			PollerIntervalMS:       100 * time.Millisecond,
+			MaxConcurrentWorkflows:  1,
+			EnablePoller:            false,
+			PollerIntervalMS:        100 * time.Millisecond,
+			ReconcileLoopIntervalMS: 1 * time.Hour,
 		},
 		Test: &Config{
 			WorkerID:     "test-worker",
@@ -86,6 +89,52 @@ func (e *executor) Start(ctx context.Context) error {
 	e.inProgressWorkflowsCount.Store(inProgress)
 	e.l.Info(fmt.Sprintf("Starting workflow executor. in_progress_workflows: %d", inProgress))
 	e.startPoller(ctx)
+	return nil
+}
+
+func (e *executor) startReconcileLoop(ctx context.Context) {
+	e.l.Info("Starting workflow executor reconcile loop")
+	for {
+		select {
+		case <-time.After(e.cfg.ReconcileLoopIntervalMS):
+			e.reconcile(ctx)
+		case <-e.stopChannel:
+			e.l.Info("Stopping workflow executor reconcile loop")
+			return
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+func (e *executor) reconcile(ctx context.Context) error {
+	workflowIds, err := e.svcs.DB.GetInProgressWorkflowIds(ctx, e.cfg.WorkerID)
+	if err != nil {
+		return err
+	}
+
+	if len(workflowIds) == 0 {
+		return nil
+	}
+
+	e.l.Info("Reconciling in-progress workflows", zap.Int("count", len(workflowIds)))
+
+	for _, workflowId := range workflowIds {
+		resp, err := e.svcs.Temporal.TemporalClient().DescribeWorkflowExecution(ctx, workflowId, "")
+		if err != nil {
+			e.l.Error("Failed to describe workflow execution", zap.Error(err), zap.String("workflow_id", workflowId))
+			continue
+		}
+
+		if resp.WorkflowExecutionInfo.Status != v11.WORKFLOW_EXECUTION_STATUS_RUNNING {
+			e.l.Info("Workflow is no longer running, releasing", zap.String("workflow_id", workflowId))
+			if err := e.NotifyDone(ctx, workflowId); err != nil {
+				e.l.Error("Failed to notify workflow done", zap.Error(err), zap.String("workflow_id", workflowId))
+			} else {
+				e.l.Info("Workflow execution request status updated to done", zap.String("workflow_id", workflowId))
+			}
+		}
+	}
 	return nil
 }
 

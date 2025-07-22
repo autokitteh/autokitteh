@@ -432,6 +432,42 @@ func (ws *workflows) StopWorkflow(ctx context.Context, sessionID sdktypes.Sessio
 		return err
 	}
 
+	if !force {
+		// This is not a forced stop, we do not need to wait for the workflow to actually stop.
+		return nil
+	}
+
+	// run the termination in a separate workflow to avoid having the workflow terminated but not updated in
+	// the db if the caller croaks.
+	r, err := ws.svcs.Temporal.TemporalClient().ExecuteWorkflow(
+		ctx,
+		ws.cfg.TerminationWorkflow.ToStartWorkflowOptions(
+			utilsWorkerQueue,
+			"terminate_"+wid,
+			fmt.Sprintf("stop %v", sessionID),
+			map[string]string{
+				"process_id":   fixtures.ProcessID(),
+				"session_id":   sessionID.String(),
+				"session_uuid": sessionID.UUIDValue().String(),
+			},
+		),
+		delayedTerminateSessionWorkflowName,
+		&terminateSessionWorkflowParams{
+			SessionID: sessionID,
+			Reason:    reason,
+			Delay:     forceDelay,
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("execute terminate workflow: %w", err)
+	}
+
+	if forceDelay == 0 {
+		// wait for the deed to be done, as the termination workflow itself should not block on anything,
+		// this should be quick.
+		return r.Get(ctx, nil)
+	}
+
 	return nil
 }
 

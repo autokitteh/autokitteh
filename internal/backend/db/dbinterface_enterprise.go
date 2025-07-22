@@ -25,4 +25,5 @@ type DB interface {
 	GetWorkflowExecutionRequests(ctx context.Context, workerID string, maxRequests int) ([]WorkflowExecutionRequest, error)
 	UpdateRequestStatus(ctx context.Context, workflowID string, status string) (bool, error)
 	CountInProgressWorkflowExecutionRequests(ctx context.Context, workerID string) (int64, error)
+	GetInProgressWorkflowIds(ctx context.Context, workerID string) ([]string, error)
 }
