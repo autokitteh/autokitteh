@@ -206,7 +206,7 @@ func (e *executor) startPoller(ctx context.Context) {
 }
 
 func (e *executor) NotifyDone(ctx context.Context, id string) error {
-	didUpdate, err := e.svcs.DB.UpdateRequestStatus(ctx, id, "done")
+	didUpdate, err := e.svcs.DB.UpdateWorkflowExecutionRequestStatus(ctx, id, "done")
 	if err != nil {
 		e.l.Error("Failed to update workflow execution request status", zap.Error(err), zap.String("workflow_id", id))
 		return err

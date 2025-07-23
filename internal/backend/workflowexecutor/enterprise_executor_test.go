@@ -151,7 +151,7 @@ func (m *mockDB) GetWorkflowExecutionRequests(ctx context.Context, workerID stri
 
 	return m.dbResult()
 }
-func (m *mockDB) UpdateRequestStatus(ctx context.Context, workflowID string, status string) (bool, error) {
+func (m *mockDB) UpdateWorkflowExecutionRequestStatus(ctx context.Context, workflowID string, status string) (bool, error) {
 	// Mock implementation, just return nil to simulate success
 	return true, nil
 }

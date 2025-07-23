@@ -90,7 +90,7 @@ func (gdb *gormdb) GetInProgressWorkflowIds(ctx context.Context, workerID string
 	return workflowIds, nil
 }
 
-func (gdb *gormdb) UpdateRequestStatus(ctx context.Context, workflowID string, status string) (bool, error) {
+func (gdb *gormdb) UpdateWorkflowExecutionRequestStatus(ctx context.Context, workflowID string, status string) (bool, error) {
 	result := gdb.writer.WithContext(ctx).Model(&scheme.WorkflowExecutionRequest{}).
 		Where("workflow_id = ?", workflowID).
 		Where("status != ?", status).
