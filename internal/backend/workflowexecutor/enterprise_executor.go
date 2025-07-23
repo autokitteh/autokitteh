@@ -114,7 +114,7 @@ func (e *executor) startReconcileLoop(ctx context.Context) {
 }
 
 func (e *executor) reconcile(ctx context.Context) error {
-	workflowIds, err := e.svcs.DB.GetInProgressWorkflowIds(ctx, e.cfg.WorkerID)
+	workflowIds, err := e.svcs.DB.GetInProgressWorkflowIDs(ctx, e.cfg.WorkerID)
 	if err != nil {
 		return err
 	}

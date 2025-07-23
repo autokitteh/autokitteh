@@ -78,16 +78,16 @@ func (gdb *gormdb) CountInProgressWorkflowExecutionRequests(ctx context.Context,
 	}
 	return count, nil
 }
-func (gdb *gormdb) GetInProgressWorkflowIds(ctx context.Context, workerID string) ([]string, error) {
-	var workflowIds []string
+func (gdb *gormdb) GetInProgressWorkflowIDs(ctx context.Context, workerID string) ([]string, error) {
+	var workflowIDs []string
 	if err := gdb.writer.WithContext(ctx).Model(&scheme.WorkflowExecutionRequest{}).
 		Where("acquired_by = ? AND status = 'in_progress'", workerID).
 		Select("workflow_id").
-		Find(&workflowIds).
+		Find(&workflowIDs).
 		Error; err != nil {
 		return nil, err
 	}
-	return workflowIds, nil
+	return workflowIDs, nil
 }
 
 func (gdb *gormdb) UpdateWorkflowExecutionRequestStatus(ctx context.Context, workflowID string, status string) (bool, error) {
