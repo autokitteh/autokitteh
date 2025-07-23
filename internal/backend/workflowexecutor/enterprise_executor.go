@@ -21,21 +21,21 @@ import (
 )
 
 type Config struct {
-	MaxConcurrentWorkflows  int                           `koanf:"max_concurrent_workflows"`
-	WorkerID                string                        `koanf:"worker_id"`
-	SessionWorkflow         temporalclient.WorkflowConfig `koanf:"session_workflow"`
-	EnablePoller            bool                          `koanf:"enable_poller"`
-	PollerIntervalMS        time.Duration                 `koanf:"poller_interval_ms"`
-	ReconcileLoopIntervalMS time.Duration                 `koanf:"reconcile_loop_interval_ms"`
+	MaxConcurrentWorkflows int                           `koanf:"max_concurrent_workflows"`
+	WorkerID               string                        `koanf:"worker_id"`
+	SessionWorkflow        temporalclient.WorkflowConfig `koanf:"session_workflow"`
+	EnablePoller           bool                          `koanf:"enable_poller"`
+	PollerIntervalMS       time.Duration                 `koanf:"poller_interval_ms"`
+	ReconcileLoopInterval  time.Duration                 `koanf:"reconcile_loop_interval"`
 }
 
 var (
 	Configs = configset.Set[Config]{
 		Default: &Config{
-			MaxConcurrentWorkflows:  1,
-			EnablePoller:            false,
-			PollerIntervalMS:        100 * time.Millisecond,
-			ReconcileLoopIntervalMS: 1 * time.Hour,
+			MaxConcurrentWorkflows: 1,
+			EnablePoller:           false,
+			PollerIntervalMS:       100 * time.Millisecond,
+			ReconcileLoopInterval:  1 * time.Hour,
 		},
 		Test: &Config{
 			WorkerID:     "test-worker",
@@ -101,7 +101,7 @@ func (e *executor) startReconcileLoop(ctx context.Context) {
 		e.l.Info("Starting workflow executor reconcile loop")
 		for {
 			select {
-			case <-time.After(e.cfg.ReconcileLoopIntervalMS):
+			case <-time.After(e.cfg.ReconcileLoopInterval):
 				e.reconcile(ctx)
 			case <-e.stopChannel:
 				e.l.Info("Stopping workflow executor reconcile loop")
