@@ -153,7 +153,7 @@ func planProjectVars(ctx context.Context, mvars []*Var, client sdkservices.Servi
 			return nil, fmt.Errorf("invalid var name: %w", err)
 		}
 
-		desired := sdktypes.NewVar(n).SetValue(mvar.Value).SetSecret(mvar.Secret).WithScopeID(sid)
+		desired := sdktypes.NewVar(n).SetValue(mvar.Value).SetSecret(mvar.Secret).WithScopeID(sid).SetDescription(mvar.Description)
 
 		setAction := actions.SetVarAction{Key: mvar.GetKey(), Project: projName, Var: desired, OrgID: opts.oid}
 

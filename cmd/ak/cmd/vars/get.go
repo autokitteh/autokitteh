@@ -52,7 +52,12 @@ func (v V) ToString() string {
 		vv = strconv.Quote(v.Value())
 	}
 
-	return fmt.Sprintf("%v=%s", v.Name(), vv)
+	var desc string
+	if v.Description() != "" {
+		desc = " # " + v.Description()
+	}
+
+	return fmt.Sprintf("%v=%s%s", v.Name(), vv, desc)
 }
 
 var _ common.ToStringer = V{}

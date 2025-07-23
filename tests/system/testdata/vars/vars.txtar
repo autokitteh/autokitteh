@@ -3,19 +3,19 @@ ak project create --name my_project
 return code == 0
 output equals 'project_id: prj_00000000000000000000000001'
 
-ak var set key val -p my_project
+ak var set key val -p my_project --description "meow"
 return code == 0
 
 ak var get key -p my_project
 return code == 0
-output equals 'key="val"'
+output equals 'key="val" # meow'
 
-ak var set key updated -p my_project
+ak var set key updated -p my_project --description "woof"
 return code == 0
 
 ak var get key -p my_project
 return code == 0
-output equals 'key="updated"'
+output equals 'key="updated" # woof'
 
 # Set secret var
 ak var set key_secret secret_value -p my_project --secret
