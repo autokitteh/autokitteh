@@ -44,6 +44,7 @@ all = [
 	"grpcio-reflection ~= 1.68",
 	"PyYAML ~= 6.0",
 	"requests ~= 2.32",
+	"requests-toolbelt ~= 1.0",
 	"tenacity ~= 9.0",
 ]
 
