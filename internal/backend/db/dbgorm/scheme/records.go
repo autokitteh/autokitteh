@@ -95,6 +95,7 @@ type Var struct {
 	VarID         uuid.UUID `gorm:"primaryKey;index;type:uuid;not null"`
 	ScopeID       uuid.UUID `gorm:"-"`
 	Name          string    `gorm:"primaryKey;index;not null"`
+	Description   string
 	Value         string
 	IsSecret      bool
 	IntegrationID uuid.UUID `gorm:"index;type:uuid"` // var lookup by integration id
