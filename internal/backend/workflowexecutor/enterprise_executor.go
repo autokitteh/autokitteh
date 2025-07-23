@@ -82,7 +82,7 @@ func (e *executor) Start(ctx context.Context) error {
 		return errors.New("worker_id is required")
 	}
 
-	// we do this synchronus just to ensure everything is aligned on start
+	// we do this synchronous just to ensure everything is aligned on start
 	e.reconcile(ctx)
 	e.startReconcileLoop(ctx)
 
