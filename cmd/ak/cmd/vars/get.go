@@ -54,7 +54,7 @@ func (v V) ToString() string {
 
 	var desc string
 	if v.Description() != "" {
-		desc = fmt.Sprintf(" # %s", v.Description())
+		desc = " # " + v.Description()
 	}
 
 	return fmt.Sprintf("%v=%s%s", v.Name(), vv, desc)
