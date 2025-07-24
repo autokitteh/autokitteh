@@ -12,6 +12,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
+	"go.autokitteh.dev/autokitteh/internal/backend/sessions"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/proto"
 	sessionsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1"
@@ -22,14 +23,14 @@ import (
 )
 
 type server struct {
-	sessions sdkservices.Sessions
+	sessions sessions.Sessions
 
 	sessionsv1connect.UnimplementedSessionsServiceHandler
 }
 
 var _ sessionsv1connect.SessionsServiceHandler = (*server)(nil)
 
-func Init(muxes *muxes.Muxes, sessions sdkservices.Sessions) {
+func Init(muxes *muxes.Muxes, sessions sessions.Sessions) {
 	srv := server{sessions: sessions}
 
 	path, handler := sessionsv1connect.NewSessionsServiceHandler(&srv)
@@ -74,7 +75,7 @@ func (s *server) Start(ctx context.Context, req *connect.Request[sessionsv1.Star
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	uid, err := s.sessions.Start(ctx, session)
+	uid, err := s.sessions.StartInternal(ctx, session)
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}

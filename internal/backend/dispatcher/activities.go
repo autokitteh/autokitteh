@@ -2,6 +2,7 @@ package dispatcher
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
 	"go.temporal.io/sdk/activity"
@@ -11,6 +12,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/backend/types"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -59,6 +61,12 @@ func (d *Dispatcher) listWaitingSignalsActivity(ctx context.Context, dstid sdkty
 
 func (d *Dispatcher) startSessionActivity(ctx context.Context, session sdktypes.Session) (sdktypes.SessionID, error) {
 	sid, err := d.svcs.Sessions.Start(authcontext.SetAuthnSystemUser(ctx), session)
+
+	if err != nil && errors.Is(err, sdkerrors.ErrResourceExhausted) {
+		d.sl.With("session_id", session.ID()).Infof("session limit reached for %v: %v", session.ProjectID(), err)
+		err = errors.New("session limit reached, please try again later")
+
+	}
 	return sid, temporalclient.TranslateError(err, "start session %v", session.ID())
 }
 

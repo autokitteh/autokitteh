@@ -35,14 +35,7 @@ func (w *sessionWorkflow) signal(wctx workflow.Context) func(context.Context, sd
 			v = sdktypes.Nothing
 		}
 
-		var f workflow.Future
-
-		childFuture, ok := w.children[sid]
-		if ok {
-			f = childFuture.SignalChildWorkflow(wctx, userSignalName(name), v)
-		} else {
-			f = workflow.SignalExternalWorkflow(wctx, sid.String(), "", userSignalName(name), v)
-		}
+		f := workflow.SignalExternalWorkflow(wctx, sid.String(), "", userSignalName(name), v)
 
 		if err := f.Get(wctx, nil); err != nil {
 			return err
