@@ -28,6 +28,7 @@ import (
 const (
 	terminateSessionWorkflowName        = "terminate_session"
 	delayedTerminateSessionWorkflowName = "delayed_terminate_session"
+	utilsWorkerQueue                    = "utils"
 )
 
 type StartWorkflowOptions struct{}
@@ -46,12 +47,13 @@ type sessionWorkflowParams struct {
 }
 
 type workflows struct {
-	l        *zap.Logger
-	cfg      Config
-	worker   worker.Worker
-	svcs     *sessionsvcs.Svcs
-	sessions sdkservices.Sessions
-	calls    sessioncalls.Calls
+	l              *zap.Logger
+	cfg            Config
+	sessionsWorker worker.Worker
+	utilsWorker    worker.Worker
+	svcs           *sessionsvcs.Svcs
+	sessions       sdkservices.Sessions
+	calls          sessioncalls.Calls
 }
 
 func workflowID(sessionID sdktypes.SessionID) string { return sessionID.String() }
@@ -68,30 +70,35 @@ func New(
 }
 
 func (ws *workflows) StartWorkers(ctx context.Context) error {
-	ws.worker = temporalclient.NewWorker(ws.l.Named("sessionworkflowsworker"), ws.svcs.Temporal.TemporalClient(), ws.svcs.WorkflowExecutor.WorkflowQueue(), ws.cfg.Worker)
-	if ws.worker == nil {
+	ws.sessionsWorker = temporalclient.NewWorker(ws.l.Named("sessionworkflowsworker"), ws.svcs.Temporal.TemporalClient(), ws.svcs.WorkflowExecutor.WorkflowQueue(), ws.cfg.Worker)
+	if ws.sessionsWorker == nil {
 		return nil
 	}
 
-	ws.worker.RegisterWorkflowWithOptions(
+	ws.sessionsWorker.RegisterWorkflowWithOptions(
 		ws.sessionWorkflow,
 		workflow.RegisterOptions{Name: ws.svcs.WorkflowExecutor.WorkflowSessionName()},
 	)
 
+	ws.utilsWorker = temporalclient.NewWorker(ws.l.Named("utilsworker"), ws.svcs.Temporal.TemporalClient(), utilsWorkerQueue, ws.cfg.Worker)
+
 	// Legacy termination workflow, using explicit parameters instead of a struct.
-	ws.worker.RegisterWorkflowWithOptions(
+	ws.utilsWorker.RegisterWorkflowWithOptions(
 		ws.legacyTerminateSessionWorkflow,
 		workflow.RegisterOptions{Name: terminateSessionWorkflowName},
 	)
 
-	ws.worker.RegisterWorkflowWithOptions(
+	ws.utilsWorker.RegisterWorkflowWithOptions(
 		ws.terminateSessionWorkflow,
 		workflow.RegisterOptions{Name: delayedTerminateSessionWorkflowName},
 	)
 
 	ws.registerActivities()
 
-	return ws.worker.Start()
+	if err := ws.sessionsWorker.Start(); err != nil {
+		return err
+	}
+	return ws.utilsWorker.Start()
 }
 
 func memo(session sdktypes.Session, oid sdktypes.OrgID) map[string]string {
@@ -191,6 +198,26 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params sessionWorkfl
 		zap.String("parent_session_id", parentSessionID.String()),
 	)
 
+	didNotifyDone := false
+
+	defer func() {
+		if errors.Is(wctx.Err(), workflow.ErrCanceled) {
+			if didNotifyDone {
+				return
+			}
+
+			didNotifyDone = true
+
+			l.Info("session workflow canceled, notifying workflow ended", zap.String("session_id", sid.String()))
+			dwctx, done := workflow.NewDisconnectedContext(wctx)
+			defer done()
+			err := workflow.ExecuteActivity(dwctx, notifyWorkflowEndedActivity, session.ID()).Get(dwctx, nil)
+			if err != nil {
+				l.Info("notify workflow ended activity failed", zap.Error(err))
+			}
+		}
+	}()
+
 	eventTime := struct {
 		createdAt time.Time
 		valid     bool
@@ -247,8 +274,6 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params sessionWorkfl
 	// from this point on we should not be doing anything really that should be cancelled.
 	// the original wctx might have been cancelled, so we work with a disconnected context
 	// to avoid any belated non-timely cancellations.
-	dwctx, done := workflow.NewDisconnectedContext(wctx)
-	defer done()
 
 	sessionDurationHistogram.Record(metricsCtx, duration.Milliseconds(),
 		metric.WithAttributes(attribute.Bool("replay", isReplaying), attribute.Bool("success", err == nil)))
@@ -265,6 +290,9 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params sessionWorkfl
 	}
 
 	workflowErr := err
+
+	dwctx, done := workflow.NewDisconnectedContext(wctx)
+	defer done()
 
 	if err != nil {
 		l := l.With(zap.Error(err))
@@ -321,8 +349,12 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params sessionWorkfl
 	}
 
 	_ = workflow.ExecuteActivity(wctx, deactivateDrainedDeploymentActivityName, session.DeploymentID()).Get(wctx, nil)
-	_ = workflow.ExecuteActivity(wctx, notifyWorkflowEndedActivity, session.ID()).Get(wctx, nil)
 
+	err = workflow.ExecuteActivity(dwctx, notifyWorkflowEndedActivity, session.ID()).Get(dwctx, nil)
+	if err != nil {
+		ws.l.Info("notify workflow ended activity failed", zap.Error(err))
+	}
+	didNotifyDone = true
 	return workflowErr
 }
 
@@ -410,7 +442,7 @@ func (ws *workflows) StopWorkflow(ctx context.Context, sessionID sdktypes.Sessio
 	r, err := ws.svcs.Temporal.TemporalClient().ExecuteWorkflow(
 		ctx,
 		ws.cfg.TerminationWorkflow.ToStartWorkflowOptions(
-			ws.svcs.WorkflowExecutor.WorkflowQueue(),
+			utilsWorkerQueue,
 			"terminate_"+wid,
 			fmt.Sprintf("stop %v", sessionID),
 			map[string]string{
