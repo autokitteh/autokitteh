@@ -18,4 +18,7 @@ type Config struct {
 	// Enable test tools.
 	Test            bool                          `koanf:"test"`
 	SessionWorkflow temporalclient.WorkflowConfig `koanf:"session_workflow"`
+
+	// NextEvent
+	NextEventInActivityPollDuration time.Duration `koanf:"next_event_in_activity_poll_duration"`
 }
