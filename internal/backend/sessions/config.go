@@ -21,6 +21,7 @@ var defaultConfig = Config{
 		Worker: temporalclient.WorkerConfig{
 			WorkflowDeadlockTimeout: time.Second * 10, // TODO: bring down to 1s.
 		},
+		NextEventInActivityPollDuration: time.Millisecond * 100,
 	},
 	Calls: sessioncalls.Config{
 		ActivityHeartbeatInterval: time.Second * 5,
