@@ -119,7 +119,7 @@ func (ws *workflows) registerActivities() {
 		activity.RegisterOptions{Name: notifyWorkflowEndedActivity},
 	)
 
-	ws.worker.RegisterActivityWithOptions(
+	ws.sessionsWorker.RegisterActivityWithOptions(
 		ws.startChildSessionActivity,
 		activity.RegisterOptions{Name: startChildSessionActivityName},
 	)
