@@ -131,7 +131,7 @@ func (ws *workflows) StartChildWorkflow(wctx workflow.Context, data sessiondata.
 		return fmt.Errorf("start child session activity: %w", err)
 	}
 
-	data.Session.WithID(sid)
+	data.Session = data.Session.WithID(sid)
 
 	return nil
 }

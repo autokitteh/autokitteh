@@ -10,8 +10,7 @@ import (
 )
 
 type ExternalStartConfig struct {
-	Enabled bool   `koanf:"enabled"`
-	URL     string `koanf:"url"`
+	Enabled bool `koanf:"enabled"`
 }
 
 type Config struct {

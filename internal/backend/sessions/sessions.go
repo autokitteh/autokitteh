@@ -19,8 +19,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionsvcs"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	"go.autokitteh.dev/autokitteh/sdk/sdkclients"
-	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -322,18 +320,10 @@ func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktype
 		return sdktypes.InvalidSessionID, fmt.Errorf("get org id of project %v: %w", session.ProjectID(), err)
 	}
 
-	internalToken, err := s.svcs.Tokens.CreateInternal(map[string]string{
-		"orgID": orgID.UUIDValue().String(),
-	})
-
+	cli, err := s.svcs.InternalClient.NewOrgImpersonator(orgID)
 	if err != nil {
-		return sdktypes.InvalidSessionID, fmt.Errorf("create internal token: %w", err)
+		return sdktypes.InvalidSessionID, fmt.Errorf("create internal client: %w", err)
 	}
-
-	cli := sdkclients.New(sdkclient.Params{
-		URL:       s.config.ExternalStart.URL,
-		AuthToken: internalToken,
-	}.Safe())
 
 	return cli.Sessions().Start(ctx, session)
 }
