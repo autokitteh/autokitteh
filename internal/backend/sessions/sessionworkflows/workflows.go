@@ -135,10 +135,7 @@ func (ws *workflows) StartChildWorkflow(wctx workflow.Context, session sdktypes.
 }
 
 func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session, opts StartWorkflowOptions) error {
-
 	sessionID := session.ID()
-
-	// l := ws.l.Sugar().With("session_id", sessionID)
 
 	data, err := sessiondata.Get(ctx, ws.svcs, session)
 	if err != nil {

@@ -6,19 +6,22 @@ None
 None
 
 -- main.star main --
-
 def main():
     sid = start("main.star:fast", {"x": 1})
+    sleep(1)
     print(next_signal(sid).payload)
 
     sid = start("main.star:naughty")
+    sleep(1)
     print(next_signal(sid).payload)
 
     sid = start("main.star:slow", {"x": 1})
+    sleep(1)
     print(next_signal(sid, timeout=1))
 
     sid1 = start("main.star:fast", {"x": 1})
     sid2 = start("main.star:slow")
+    sleep(1)
     print(next_signal(sid1, sid2).payload)
     print(next_signal(sid2).payload)
 
