@@ -320,7 +320,7 @@ func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktype
 		return sdktypes.InvalidSessionID, fmt.Errorf("get org id of project %v: %w", session.ProjectID(), err)
 	}
 
-	cli, err := s.svcs.InternalClient.NewOrgImpersonator(orgID)
+	cli, err := s.svcs.ExternalClient.NewOrgImpersonator(orgID)
 	if err != nil {
 		return sdktypes.InvalidSessionID, fmt.Errorf("create internal client: %w", err)
 	}

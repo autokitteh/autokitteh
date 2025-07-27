@@ -1,4 +1,4 @@
-package internalclient
+package externalclient
 
 import (
 	"fmt"
@@ -14,22 +14,18 @@ import (
 type cli struct {
 	tokens           authtokens.Tokens
 	l                *zap.Logger
-	internalEndpoint string
+	externalEndpoint string
 }
 
-type InternalClient interface {
+type ExternalClient interface {
 	NewOrgImpersonator(orgID sdktypes.OrgID) (sdkservices.Services, error)
 }
 
-func New(tokens authtokens.Tokens, l *zap.Logger, cfg *Config) (InternalClient, error) {
-	if cfg.InternalEndpoint == "" {
-		return nil, fmt.Errorf("internal endpoint is not configured")
-	}
-
+func New(tokens authtokens.Tokens, l *zap.Logger, cfg *Config) (ExternalClient, error) {
 	return &cli{
 		tokens:           tokens,
 		l:                l,
-		internalEndpoint: cfg.InternalEndpoint,
+		externalEndpoint: cfg.ExternalEndpoint,
 	}, nil
 }
 
@@ -43,7 +39,7 @@ func (c *cli) NewOrgImpersonator(orgID sdktypes.OrgID) (sdkservices.Services, er
 	}
 
 	cli := sdkclients.New(sdkclient.Params{
-		URL:       c.internalEndpoint,
+		URL:       c.externalEndpoint,
 		AuthToken: internalToken,
 	}.Safe())
 

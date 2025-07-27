@@ -14,8 +14,8 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
+	"go.autokitteh.dev/autokitteh/internal/backend/externalclient"
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
-	"go.autokitteh.dev/autokitteh/internal/backend/internalclient"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -40,7 +40,7 @@ type Svcs struct {
 	Sessions       sdkservices.Sessions
 	Triggers       sdkservices.Triggers
 	Tokens         authtokens.Tokens
-	InternalClient internalclient.InternalClient
+	ExternalClient externalclient.ExternalClient
 }
 
 type Dispatcher struct {
@@ -66,7 +66,7 @@ func (d *Dispatcher) DispatchExternal(ctx context.Context, event sdktypes.Event,
 		return sdktypes.InvalidEventID, fmt.Errorf("get org id of project %v: %w", pid, err)
 	}
 
-	cli, err := d.svcs.InternalClient.NewOrgImpersonator(orgID)
+	cli, err := d.svcs.ExternalClient.NewOrgImpersonator(orgID)
 
 	if err != nil {
 		return sdktypes.InvalidEventID, fmt.Errorf("create internal token: %w", err)

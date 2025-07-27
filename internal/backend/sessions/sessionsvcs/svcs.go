@@ -5,7 +5,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
-	"go.autokitteh.dev/autokitteh/internal/backend/internalclient"
+	"go.autokitteh.dev/autokitteh/internal/backend/externalclient"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/backend/workflowexecutor"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -29,5 +29,5 @@ type Svcs struct {
 	Temporal     temporalclient.Client
 
 	WorkflowExecutor workflowexecutor.WorkflowExecutor
-	InternalClient   internalclient.InternalClient
+	ExternalClient   externalclient.ExternalClient
 }
