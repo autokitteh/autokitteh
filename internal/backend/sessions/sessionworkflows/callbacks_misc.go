@@ -2,6 +2,7 @@ package sessionworkflows
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -36,29 +37,29 @@ func (w *sessionWorkflow) start(wctx workflow.Context) func(context.Context, sdk
 
 		data := w.data
 
-		if !project.IsValid() {
-			data.Session = sdktypes.NewSession(data.Build.ID(), loc, inputs, memo).
-				WithParentSessionID(data.Session.ID()).
-				WithDeploymentID(data.Session.DeploymentID()).
-				WithProjectID(data.Session.ProjectID())
-		} else {
-
+		var projectID sdktypes.ProjectID
+		if project.IsValid() {
 			p, err := w.ws.svcs.Projects.GetByName(authcontext.SetAuthnSystemUser(ctx), data.OrgID, project)
 			if err != nil {
-				//TODO: handle this better
-				panic(err)
+				return sdktypes.InvalidSessionID, fmt.Errorf("could not project %s: %w", project, err)
 			}
 
-			data.Session = sdktypes.NewSession(data.Build.ID(), loc, inputs, memo).
-				WithParentSessionID(data.Session.ID()).
-				WithDeploymentID(data.Session.DeploymentID()).
-				WithProjectID(p.ID())
+			projectID = p.ID()
+		} else {
+			projectID = data.Session.ProjectID()
 		}
 
-		sid, err := w.ws.StartChildWorkflow(wctx, data)
+		data.Session = sdktypes.NewSession(data.Build.ID(), loc, inputs, memo).
+			WithParentSessionID(data.Session.ID()).
+			WithDeploymentID(data.Session.DeploymentID()).
+			WithProjectID(projectID)
+
+		sid, err := w.ws.StartChildWorkflow(wctx, data.Session)
 		if err != nil {
 			return sdktypes.InvalidSessionID, err
 		}
+
+		data.Session = data.Session.WithID(sid)
 
 		w.l.Info("child session started", zap.Any("child", sid), zap.Any("parent", w.data.Session.ID()))
 
