@@ -41,15 +41,11 @@ func (w *sessionWorkflow) start(wctx workflow.Context) func(context.Context, sdk
 				WithParentSessionID(data.Session.ID()).
 				WithDeploymentID(data.Session.DeploymentID()).
 				WithProjectID(data.Session.ProjectID())
-			// WithNewID()
-
-			// if err := workflow.ExecuteActivity(wctx, createSessionActivityName, data.Session).Get(wctx, nil); err != nil {
-			// 	return sdktypes.InvalidSessionID, err
-			// }
 		} else {
 
 			p, err := w.ws.svcs.Projects.GetByName(authcontext.SetAuthnSystemUser(ctx), data.OrgID, project)
 			if err != nil {
+				//TODO: handle this better
 				panic(err)
 			}
 
@@ -59,11 +55,10 @@ func (w *sessionWorkflow) start(wctx workflow.Context) func(context.Context, sdk
 				WithProjectID(p.ID())
 		}
 
-		if err := w.ws.StartChildWorkflow(wctx, data); err != nil {
+		sid, err := w.ws.StartChildWorkflow(wctx, data)
+		if err != nil {
 			return sdktypes.InvalidSessionID, err
 		}
-
-		sid := data.Session.ID()
 
 		w.l.Info("child session started", zap.Any("child", sid), zap.Any("parent", w.data.Session.ID()))
 
