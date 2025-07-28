@@ -41,7 +41,7 @@ func (w *sessionWorkflow) start(wctx workflow.Context) func(context.Context, sdk
 
 		if project.IsValid() {
 			var resp getProjectIDAndActiveBuildIDResponse
-			if err := workflow.ExecuteActivity(wctx, getProjectIDAndActiveBuildID, project).Get(wctx, &resp); err != nil {
+			if err := workflow.ExecuteActivity(wctx, getProjectIDAndActiveBuildID, &getProjectIDAndActiveBuildIDParams{Project: project, OrgID: data.OrgID}).Get(wctx, &resp); err != nil {
 				return sdktypes.InvalidSessionID, fmt.Errorf("could not get active build ID for project %s: %w", project, err)
 			}
 			buildID = resp.BuildID
