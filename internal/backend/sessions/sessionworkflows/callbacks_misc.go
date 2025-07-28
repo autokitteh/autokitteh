@@ -2,6 +2,7 @@ package sessionworkflows
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -13,6 +14,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
+	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -37,19 +39,39 @@ func (w *sessionWorkflow) start(wctx workflow.Context) func(context.Context, sdk
 
 		data := w.data
 
-		var projectID sdktypes.ProjectID
+		projectID := data.Session.ProjectID()
+		buildID := data.Session.BuildID()
+
 		if project.IsValid() {
 			p, err := w.ws.svcs.Projects.GetByName(authcontext.SetAuthnSystemUser(ctx), data.OrgID, project)
 			if err != nil {
 				return sdktypes.InvalidSessionID, fmt.Errorf("could not project %s: %w", project, err)
 			}
 
+			ds, err := w.ws.svcs.Deployments.List(
+				authcontext.SetAuthnSystemUser(ctx),
+				sdkservices.ListDeploymentsFilter{
+					OrgID:     p.OrgID(),
+					ProjectID: p.ID(),
+					State:     sdktypes.DeploymentStateActive,
+					Limit:     1,
+				},
+			)
+			if err != nil {
+				return sdktypes.InvalidSessionID, errors.New("failed to list deployments: " + err.Error())
+			}
+
+			if len(ds) == 0 {
+				return sdktypes.InvalidSessionID, errors.New("no active deployment for project")
+			}
+
+			d := ds[0]
+			buildID = d.BuildID()
 			projectID = p.ID()
-		} else {
-			projectID = data.Session.ProjectID()
+
 		}
 
-		data.Session = sdktypes.NewSession(data.Build.ID(), loc, inputs, memo).
+		data.Session = sdktypes.NewSession(buildID, loc, inputs, memo).
 			WithParentSessionID(data.Session.ID()).
 			WithDeploymentID(data.Session.DeploymentID()).
 			WithProjectID(projectID)
