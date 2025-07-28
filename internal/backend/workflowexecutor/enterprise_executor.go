@@ -11,13 +11,14 @@ import (
 	"sync/atomic"
 	"time"
 
+	v11 "go.temporal.io/api/enums/v1"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	v11 "go.temporal.io/api/enums/v1"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 type Config struct {

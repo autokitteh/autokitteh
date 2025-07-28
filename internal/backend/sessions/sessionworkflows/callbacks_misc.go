@@ -2,6 +2,7 @@ package sessionworkflows
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -9,7 +10,6 @@ import (
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessiondata"
 	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -36,43 +36,30 @@ func (w *sessionWorkflow) start(wctx workflow.Context) func(context.Context, sdk
 
 		data := w.data
 
-		if !project.IsValid() {
-			data.Session = sdktypes.NewSession(data.Build.ID(), loc, inputs, memo).
-				WithParentSessionID(data.Session.ID()).
-				WithDeploymentID(data.Session.DeploymentID()).
-				WithProjectID(data.Session.ProjectID()).
-				WithNewID()
+		projectID := data.Session.ProjectID()
+		buildID := data.Session.BuildID()
 
-			if err := workflow.ExecuteActivity(wctx, createSessionActivityName, data.Session).Get(wctx, nil); err != nil {
-				return sdktypes.InvalidSessionID, err
+		if project.IsValid() {
+			var resp getProjectIDAndActiveBuildIDResponse
+			if err := workflow.ExecuteActivity(wctx, getProjectIDAndActiveBuildID, &getProjectIDAndActiveBuildIDParams{Project: project, OrgID: data.OrgID}).Get(wctx, &resp); err != nil {
+				return sdktypes.InvalidSessionID, fmt.Errorf("could not get active build ID for project %s: %w", project, err)
 			}
-		} else {
-			params := createSessionInProjectActivityParams{
-				ParentSessionID: data.Session.ID(),
-				OrgID:           data.OrgID,
-				Project:         project,
-				Loc:             loc,
-				Inputs:          inputs,
-				Memo:            memo,
-			}
+			buildID = resp.BuildID
+			projectID = resp.ProjectID
 
-			// Use Get on a clean sessiondata.Data struct to avoid it following pointers and changing underlying data.
-			var adata sessiondata.Data
-			if err := workflow.ExecuteActivity(wctx, createSessionInProjectActivityName, params).Get(wctx, &adata); err != nil {
-				return sdktypes.InvalidSessionID, err
-			}
-
-			data = adata
 		}
 
-		f, err := w.ws.StartChildWorkflow(wctx, data)
+		data.Session = sdktypes.NewSession(buildID, loc, inputs, memo).
+			WithParentSessionID(data.Session.ID()).
+			WithDeploymentID(data.Session.DeploymentID()).
+			WithProjectID(projectID)
+
+		sid, err := w.ws.StartChildWorkflow(wctx, data.Session)
 		if err != nil {
 			return sdktypes.InvalidSessionID, err
 		}
 
-		sid := data.Session.ID()
-
-		w.children[sid] = f
+		data.Session = data.Session.WithID(sid)
 
 		w.l.Info("child session started", zap.Any("child", sid), zap.Any("parent", w.data.Session.ID()))
 

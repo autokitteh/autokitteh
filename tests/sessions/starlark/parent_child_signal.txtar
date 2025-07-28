@@ -6,7 +6,6 @@ None
 None
 
 -- main.star main --
-
 def main():
     sid = start("main.star:fast", {"x": 1})
     print(next_signal(sid).payload)

@@ -42,6 +42,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/dispatchergrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/events"
 	"go.autokitteh.dev/autokitteh/internal/backend/eventsgrpcsvc"
+	"go.autokitteh.dev/autokitteh/internal/backend/externalclient"
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/health/healthchecker"
 	"go.autokitteh.dev/autokitteh/internal/backend/health/healthreporter"
@@ -176,6 +177,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		DBFxOpt(),
 
 		Component("auth", configset.Empty, fx.Provide(authsvc.New)),
+		Component("externalclient", externalclient.Configs, fx.Provide(externalclient.New)),
 		Component("authjwttokens", authjwttokens.Configs, fx.Provide(authjwttokens.New)),
 		Component("authsessions", authsessions.Configs, fx.Provide(authsessions.New)),
 		Component(
