@@ -12,7 +12,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
-	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessiondata"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/backend/types"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -31,7 +30,7 @@ const (
 	deactivateDrainedDeploymentActivityName = "deactivate_drained_deployment"
 	getDeploymentStateActivityName          = "get_deployment_state"
 	createSessionActivityName               = "create_session"
-	createSessionInProjectActivityName      = "create_session_in_project"
+	getProjectIDAndActiveBuildID            = "get_project_id_and_active_build_id"
 	listStoreValuesActivityName             = "list_store_values"
 	mutateStoreValueActivityName            = "mutate_store_value"
 	notifyWorkflowEndedActivity             = "notify_workflow_ended"
@@ -110,8 +109,8 @@ func (ws *workflows) registerActivities() {
 	)
 
 	ws.sessionsWorker.RegisterActivityWithOptions(
-		ws.createSessionInProjectActivity,
-		activity.RegisterOptions{Name: createSessionInProjectActivityName},
+		ws.getProjectIDAndActiveBuildID,
+		activity.RegisterOptions{Name: getProjectIDAndActiveBuildID},
 	)
 
 	ws.sessionsWorker.RegisterActivityWithOptions(
@@ -125,16 +124,17 @@ func (ws *workflows) registerActivities() {
 	)
 }
 
-type createSessionInProjectActivityParams struct {
-	ParentSessionID sdktypes.SessionID
-	OrgID           sdktypes.OrgID
-	Project         sdktypes.Symbol
-	Loc             sdktypes.CodeLocation
-	Inputs          map[string]sdktypes.Value
-	Memo            map[string]string
+type getProjectIDAndActiveBuildIDParams struct {
+	OrgID   sdktypes.OrgID
+	Project sdktypes.Symbol
 }
 
-func (ws *workflows) createSessionInProjectActivity(ctx context.Context, params createSessionInProjectActivityParams) (*sessiondata.Data, error) {
+type getProjectIDAndActiveBuildIDResponse struct {
+	BuildID   sdktypes.BuildID
+	ProjectID sdktypes.ProjectID
+}
+
+func (ws *workflows) getProjectIDAndActiveBuildID(ctx context.Context, params getProjectIDAndActiveBuildIDParams) (*getProjectIDAndActiveBuildIDResponse, error) {
 	p, err := ws.svcs.Projects.GetByName(authcontext.SetAuthnSystemUser(ctx), params.OrgID, params.Project)
 	if err != nil {
 		return nil, temporalclient.TranslateError(err, "get project %v", params.Project)
@@ -159,22 +159,10 @@ func (ws *workflows) createSessionInProjectActivity(ctx context.Context, params 
 
 	d := ds[0]
 
-	session := sdktypes.NewSession(d.BuildID(), params.Loc, params.Inputs, params.Memo).
-		WithParentSessionID(params.ParentSessionID).
-		WithDeploymentID(d.ID()).
-		WithProjectID(p.ID()).
-		WithNewID()
-
-	if err := ws.svcs.DB.CreateSession(ctx, session); err != nil {
-		return nil, temporalclient.TranslateError(err, "%v: create session", session.ID())
-	}
-
-	data, err := sessiondata.Get(authcontext.SetAuthnSystemUser(ctx), ws.svcs, session)
-	if err != nil {
-		return nil, temporalclient.TranslateError(err, "%v: get session data", session.ID())
-	}
-
-	return data, nil
+	return &getProjectIDAndActiveBuildIDResponse{
+		BuildID:   d.BuildID(),
+		ProjectID: p.ID(),
+	}, nil
 }
 
 func (ws *workflows) listStoreValuesActivity(ctx context.Context, pid sdktypes.ProjectID) ([]string, error) {

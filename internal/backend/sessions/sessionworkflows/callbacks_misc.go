@@ -2,7 +2,6 @@ package sessionworkflows
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -11,10 +10,8 @@ import (
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
-	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -43,31 +40,12 @@ func (w *sessionWorkflow) start(wctx workflow.Context) func(context.Context, sdk
 		buildID := data.Session.BuildID()
 
 		if project.IsValid() {
-			p, err := w.ws.svcs.Projects.GetByName(authcontext.SetAuthnSystemUser(ctx), data.OrgID, project)
-			if err != nil {
-				return sdktypes.InvalidSessionID, fmt.Errorf("could not project %s: %w", project, err)
+			var resp getProjectIDAndActiveBuildIDResponse
+			if err := workflow.ExecuteActivity(wctx, getProjectIDAndActiveBuildID, project).Get(wctx, &resp); err != nil {
+				return sdktypes.InvalidSessionID, fmt.Errorf("could not get active build ID for project %s: %w", project, err)
 			}
-
-			ds, err := w.ws.svcs.Deployments.List(
-				authcontext.SetAuthnSystemUser(ctx),
-				sdkservices.ListDeploymentsFilter{
-					OrgID:     p.OrgID(),
-					ProjectID: p.ID(),
-					State:     sdktypes.DeploymentStateActive,
-					Limit:     1,
-				},
-			)
-			if err != nil {
-				return sdktypes.InvalidSessionID, errors.New("failed to list deployments: " + err.Error())
-			}
-
-			if len(ds) == 0 {
-				return sdktypes.InvalidSessionID, errors.New("no active deployment for project")
-			}
-
-			d := ds[0]
-			buildID = d.BuildID()
-			projectID = p.ID()
+			buildID = resp.BuildID
+			projectID = resp.ProjectID
 
 		}
 
