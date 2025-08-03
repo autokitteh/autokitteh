@@ -225,8 +225,6 @@ def gspread_client(connection: str, **kwargs) -> gspread.Client:
 def youtube_client(connection: str, **kwargs):
     """Initialize a YouTube Data API client, based on an AutoKitteh connection.
 
-    API documentation:
-    https://docs.autokitteh.com/integrations/google/youtube/python
 
     Code samples:
     - https://github.com/autokitteh/kittehub/tree/main/samples/google/youtube
