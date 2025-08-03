@@ -227,7 +227,6 @@ def youtube_client(connection: str, **kwargs):
 
 
     Code samples:
-    - https://github.com/autokitteh/kittehub/tree/main/samples/google/youtube
     - https://github.com/youtube/api-samples/tree/master/python
 
     Args:
