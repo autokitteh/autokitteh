@@ -112,6 +112,9 @@
         "name": {
           "type": "string"
         },
+        "description": {
+          "type": "string"
+        },
         "value": {
           "type": "string"
         },

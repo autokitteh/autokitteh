@@ -14,6 +14,7 @@ import (
 var (
 	ApiKeyVar   = sdktypes.NewSymbol("api_key")
 	AuthTypeVar = sdktypes.NewSymbol("auth_type")
+	PATVar      = sdktypes.NewSymbol("pat")
 
 	OAuthAccessTokenVar  = sdktypes.NewSymbol("oauth_access_token")
 	OAuthExpiryVar       = sdktypes.NewSymbol("oauth_expiry")

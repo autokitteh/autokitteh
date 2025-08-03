@@ -74,6 +74,9 @@ func (js *hmacTokens) Parse(raw string) (sdktypes.User, error) {
 	var claims j.RegisteredClaims
 
 	t, err := j.ParseWithClaims(raw, &claims, func(t *j.Token) (interface{}, error) {
+		if _, ok := t.Method.(*j.SigningMethodHMAC); !ok {
+			return nil, errors.New("unexpected signing method")
+		}
 		return js.signKey, nil
 	})
 	if err != nil {
@@ -90,4 +93,12 @@ func (js *hmacTokens) Parse(raw string) (sdktypes.User, error) {
 	}
 
 	return tok.User, nil
+}
+
+func (js *hmacTokens) CreateInternal(data map[string]string) (string, error) {
+	return createInternalToken(hmacMethod, js.signKey, data, 10*time.Minute)
+}
+
+func (js *hmacTokens) ParseInternal(raw string) (map[string]string, error) {
+	return parseInternalToken(hmacMethod.Alg(), js.signKey, raw)
 }

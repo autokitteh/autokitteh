@@ -14,17 +14,21 @@ upload: build
 		dist/autokitteh-*
 
 install-deps:
-	python -m pip install build twine
-	python -m pip install .[all,dev]
+	uv pip install build twine
+	uv pip install .[all,dev]
 	rm -rf build *.egg-info
 
 build-docs:
 	cd docs && ./gen-reqs.py
+	cd docs && ./gen-index.py
 	$(MAKE) -C docs html
 
 test:
-	ruff check .
-	ruff format --check
-	python -m pytest tests
+	uv run ruff check .
+	uv run ruff format --check
+	uv run python -m pytest tests
 
-ci: install-deps test
+venv:
+	uv venv
+
+ci: venv install-deps test

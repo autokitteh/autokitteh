@@ -268,5 +268,5 @@ func ensureVEnv(log *zap.Logger, pyExe string) error {
 	}
 
 	log.Info("creating venv", zap.String("path", venvPath))
-	return createVEnv(pyExe, venvPath)
+	return createVEnv(log, pyExe, venvPath)
 }

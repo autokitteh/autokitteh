@@ -26,14 +26,16 @@ all = [
 	"google-auth-httplib2 ~= 0.2",
 	"google-auth-oauthlib ~= 1.2",
 	"google-generativeai ~= 0.8",
+	"gspread ~= 6.2",
 	"hubspot-api-client ~= 11.1",
 	"kubernetes ~= 31.0",
 	"msgraph-sdk ~= 1.18",
 	"openai ~= 1.57",
+	"praw ~= 7.8",
+	"pyairtable ~= 3.1",
 	"PyGithub ~= 2.6",
 	"simple-salesforce ~= 1.12",
 	"slack-sdk ~= 3.33",
-	"tenacity ~= 9.0",
 	"twilio ~= 9.4",
 
 	# General
@@ -42,6 +44,7 @@ all = [
 	"grpcio-reflection ~= 1.68",
 	"PyYAML ~= 6.0",
 	"requests ~= 2.32",
+	"requests-toolbelt ~= 1.0",
 	"tenacity ~= 9.0",
 ]
 

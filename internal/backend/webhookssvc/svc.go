@@ -97,6 +97,11 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	eid, err := s.dispatch(authcontext.SetAuthnSystemUser(ctx), event, nil)
 	if err != nil {
+		if errors.Is(err, sdkerrors.ErrResourceExhausted) {
+			sl.Warnw("dispatch failed: resource exhausted", "event", event, "err", err)
+			http.Error(w, "Resource Exhausted", http.StatusTooManyRequests)
+			return
+		}
 		sl.Errorw("dispatch failed", "event", event, "err", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return

@@ -7,13 +7,17 @@ from .attr_dict import AttrDict
 
 
 def subscribe(source: str, filter: str = "") -> str:
-    """Subscribe to events on connection. Optional filter is a CEL expression."""
+    """Subscribe to events on connection. Optional filter is a CEL expression.
+
+    Cannot be used in an activity."""
     # Dummy implementation for local development.
     return f"sig_{uuid4().hex}"
 
 
 def unsubscribe(subscription_id: str) -> None:
-    """Unsubscribe from events."""
+    """Unsubscribe from events.
+
+    Cannot be used in an activity."""
     # Dummy implementation for local development.
     pass
 
@@ -25,6 +29,8 @@ def next_event(
 
     If timeout is not None and there are no new events after timeout, this function will
     return None.
+
+    Cannot be used in an activity.
     """
     # Dummy implementation for local development.
     return AttrDict()
@@ -36,6 +42,8 @@ def start(
     memo: dict | None = None,
     project: str = "",
 ) -> str:
-    """Start a new session."""
+    """Start a new session.
+
+    Cannot be used in an activity."""
     # Dummy implementation for local development.
     return f"ses_{uuid4().hex}"

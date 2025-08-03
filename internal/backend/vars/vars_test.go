@@ -116,7 +116,7 @@ func TestSetVar(t *testing.T) {
 		secrets: secretsMock{},
 	}
 
-	va := sdktypes.NewVar(sdktypes.NewSymbol("test")).SetValue("value")
+	va := sdktypes.NewVar(sdktypes.NewSymbol("test")).SetValue("value").SetDescription("test description")
 	err := v.Set(context.TODO(), va)
 
 	require.Nil(t, err)

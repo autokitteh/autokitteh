@@ -21,4 +21,4 @@ def zoom_client(connection: str) -> Session:
         ValueError: AutoKitteh connection name is invalid.
         ConnectionInitError: AutoKitteh connection was not initialized yet.
     """
-    return OAuth2Session("zoom", connection)
+    return OAuth2Session("zoom", connection, base_url="https://api.zoom.us/v2/")

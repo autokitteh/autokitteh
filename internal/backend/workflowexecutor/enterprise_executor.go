@@ -8,29 +8,44 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
+
+	v11 "go.temporal.io/api/enums/v1"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 type Config struct {
 	MaxConcurrentWorkflows int                           `koanf:"max_concurrent_workflows"`
 	WorkerID               string                        `koanf:"worker_id"`
 	SessionWorkflow        temporalclient.WorkflowConfig `koanf:"session_workflow"`
+	EnablePoller           bool                          `koanf:"enable_poller"`
+	PollerIntervalMS       time.Duration                 `koanf:"poller_interval_ms"`
+	ReconcileLoopInterval  time.Duration                 `koanf:"reconcile_loop_interval"`
 }
 
 var (
 	Configs = configset.Set[Config]{
 		Default: &Config{
 			MaxConcurrentWorkflows: 1,
+			EnablePoller:           false,
+			PollerIntervalMS:       100 * time.Millisecond,
+			ReconcileLoopInterval:  1 * time.Hour,
 		},
 		Test: &Config{
-			WorkerID: "test-worker",
+			WorkerID:     "test-worker",
+			EnablePoller: true,
+		},
+		Dev: &Config{
+			MaxConcurrentWorkflows: 10,
+			EnablePoller:           true,
+			WorkerID:               "dev-worker",
 		},
 	}
 )
@@ -46,10 +61,11 @@ type executor struct {
 
 	stopChannel chan struct{}
 
-	inProgressWorkflowsCount int64
+	inProgressWorkflowsCount atomic.Int64
 	cfg                      *Config
 
 	executeLock sync.Mutex
+	metrics     *metrics
 }
 
 func (e *executor) WorkflowQueue() string {
@@ -58,13 +74,74 @@ func (e *executor) WorkflowQueue() string {
 
 // Start implements WorkflowResourcesManager.
 func (e *executor) Start(ctx context.Context) error {
+	if !e.cfg.EnablePoller {
+		e.l.Info("Workflow executor polling is disabled, skipping start")
+		return nil
+	}
+
+	if e.cfg.WorkerID == "" {
+		return errors.New("worker_id is required")
+	}
+
+	// we do this synchronous just to ensure everything is aligned on start
+	e.reconcile(ctx)
+	e.startReconcileLoop(ctx)
+
 	inProgress, err := e.svcs.DB.CountInProgressWorkflowExecutionRequests(ctx, e.cfg.WorkerID)
 	if err != nil {
 		return err
 	}
-	e.inProgressWorkflowsCount = inProgress
-	e.l.Info("Starting workflow executor", zap.Int64("in_progress_workflows", e.inProgressWorkflowsCount))
+	e.inProgressWorkflowsCount.Store(inProgress)
+	e.l.Info(fmt.Sprintf("Starting workflow executor. in_progress_workflows: %d", inProgress))
 	e.startPoller(ctx)
+	return nil
+}
+
+func (e *executor) startReconcileLoop(ctx context.Context) {
+	go func() {
+		e.l.Info("Starting workflow executor reconcile loop")
+		for {
+			select {
+			case <-time.After(e.cfg.ReconcileLoopInterval):
+				e.reconcile(ctx)
+			case <-e.stopChannel:
+				e.l.Info("Stopping workflow executor reconcile loop")
+				return
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+}
+
+func (e *executor) reconcile(ctx context.Context) error {
+	workflowIds, err := e.svcs.DB.GetInProgressWorkflowIDs(ctx, e.cfg.WorkerID)
+	if err != nil {
+		return err
+	}
+
+	if len(workflowIds) == 0 {
+		return nil
+	}
+
+	e.l.Info("Reconciling in-progress workflows", zap.Int("count", len(workflowIds)))
+
+	for _, workflowId := range workflowIds {
+		resp, err := e.svcs.Temporal.TemporalClient().DescribeWorkflowExecution(ctx, workflowId, "")
+		if err != nil {
+			e.l.Error("Failed to describe workflow execution", zap.Error(err), zap.String("workflow_id", workflowId))
+			continue
+		}
+
+		if resp.WorkflowExecutionInfo.Status != v11.WORKFLOW_EXECUTION_STATUS_RUNNING {
+			e.l.Info("Workflow is no longer running, releasing", zap.String("workflow_id", workflowId))
+			if err := e.NotifyDone(ctx, workflowId); err != nil {
+				e.l.Error("Failed to notify workflow done", zap.Error(err), zap.String("workflow_id", workflowId))
+			} else {
+				e.l.Info("Workflow execution request status updated to done", zap.String("workflow_id", workflowId))
+			}
+		}
+	}
 	return nil
 }
 
@@ -74,10 +151,6 @@ func (e *executor) Stop(ctx context.Context) error {
 }
 
 func New(svcs Svcs, l *zap.Logger, cfg *Config) (*executor, error) {
-	if cfg.WorkerID == "" {
-		return nil, errors.New("worker_id is required")
-	}
-
 	sampledLogger := l.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
 		return zapcore.NewSamplerWithOptions(core, time.Second, 1, 0)
 	}))
@@ -89,36 +162,41 @@ func New(svcs Svcs, l *zap.Logger, cfg *Config) (*executor, error) {
 		stopChannel:   make(chan struct{}, 1),
 		cfg:           cfg,
 		executeLock:   sync.Mutex{},
+		metrics:       newMetrics(cfg.WorkerID),
 	}
 
 	return e, nil
 }
 
-func (e *executor) availableSlots() int {
-	return e.maxConcurrent - int(e.inProgressWorkflowsCount)
+func (e *executor) availableSlots(ctx context.Context) int {
+	active := int(e.inProgressWorkflowsCount.Load())
+	max := e.maxConcurrent
+	load := (float64(active) * 100.0) / float64(max)
+	e.metrics.SetWorkerLoad(ctx, load)
+	return max - active
 }
 
 func (e *executor) Execute(ctx context.Context, sessionID sdktypes.SessionID, args any, memo map[string]string) error {
-	return e.svcs.DB.CreateWorkflowExecutionRequest(ctx, db.WorkflowExecutionRequest{
+	if err := e.svcs.DB.CreateWorkflowExecutionRequest(ctx, db.WorkflowExecutionRequest{
 		SessionID:  sessionID,
 		WorkflowID: workflowID(sessionID),
 		Args:       args,
 		Memo:       memo,
-	})
+	}); err != nil {
+		return err
+	}
+	e.metrics.IncrementQueuedWorkflows(ctx)
+	return nil
 }
 
 func (e *executor) startPoller(ctx context.Context) {
-	timer := time.NewTimer(100 * time.Millisecond)
-
 	go func() {
 		for {
 			select {
-			case <-timer.C:
+			case <-time.After(e.cfg.PollerIntervalMS):
 				e.runOnce(ctx)
-				timer = time.NewTimer(100 * time.Millisecond) // Reset the timer for the next iteration
 			case <-e.stopChannel:
 				e.l.Info("Stopping workflow manager")
-				timer.Stop()
 				return
 			case <-ctx.Done():
 				return
@@ -129,11 +207,18 @@ func (e *executor) startPoller(ctx context.Context) {
 }
 
 func (e *executor) NotifyDone(ctx context.Context, id string) error {
-	e.inProgressWorkflowsCount--
-	if err := e.svcs.DB.UpdateRequestStatus(ctx, id, "done"); err != nil {
+	didUpdate, err := e.svcs.DB.UpdateWorkflowExecutionRequestStatus(ctx, id, "done")
+	if err != nil {
 		e.l.Error("Failed to update workflow execution request status", zap.Error(err), zap.String("workflow_id", id))
+		return err
 	}
-	e.l.Info(fmt.Sprintf("Active workflows: %d out of %d", e.inProgressWorkflowsCount, e.maxConcurrent))
+
+	if didUpdate {
+		e.inProgressWorkflowsCount.Add(-1)
+		e.metrics.DecrementActiveWorkflows(ctx)
+		e.l.Info(fmt.Sprintf("Workflow Done %s. Active workflows: %d out of %d", id, e.inProgressWorkflowsCount.Load(), e.maxConcurrent), zap.String("session_id", id))
+	}
+
 	return nil
 }
 
@@ -141,7 +226,7 @@ func (e *executor) runOnce(ctx context.Context) {
 	e.executeLock.Lock()
 	defer e.executeLock.Unlock()
 
-	availableSlots := e.availableSlots()
+	availableSlots := e.availableSlots(ctx)
 	if availableSlots <= 0 {
 		e.sampledLogger.Info("Max concurrent workflows reached, waiting for free slots", zap.Int("MaxConcurrent", e.maxConcurrent))
 		return
@@ -160,11 +245,14 @@ func (e *executor) runOnce(ctx context.Context) {
 			continue
 		}
 
-		if err := e.svcs.DB.UpdateRequestStatus(ctx, job.WorkflowID, "in_progress"); err != nil {
-			e.l.Error("Failed to delete workflow execution request", zap.Error(err), zap.String("session_id", job.SessionID.String()))
+		if job.RetryCount == 1 {
+			// we don't want to dequeue it twice if we retry it
+			e.metrics.DecrementQueuedWorkflows(ctx)
+		} else {
+			e.metrics.IncrementRetriedWorkflowsCounter(ctx)
 		}
 
-		e.sampledLogger.Info(fmt.Sprintf("Active workflows: %d out of %d", e.inProgressWorkflowsCount, e.maxConcurrent))
+		e.sampledLogger.Info(fmt.Sprintf("Workflow Started. Active workflows: %d out of %d", e.inProgressWorkflowsCount.Load(), e.maxConcurrent))
 	}
 }
 
@@ -173,7 +261,9 @@ func (e *executor) executeAndIncrement(ctx context.Context, sessionID sdktypes.S
 	if err != nil {
 		return err
 	}
-	e.inProgressWorkflowsCount++
+	e.inProgressWorkflowsCount.Add(1)
+
+	e.metrics.IncrementActiveWorkflows(ctx)
 
 	return nil
 }

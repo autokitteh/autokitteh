@@ -11,8 +11,10 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
+	"go.autokitteh.dev/autokitteh/internal/backend/externalclient"
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -31,12 +33,14 @@ type Svcs struct {
 	DB       db.DB
 	Temporal temporalclient.Client
 
-	Connections sdkservices.Connections
-	Deployments sdkservices.Deployments
-	Events      sdkservices.Events
-	Projects    sdkservices.Projects
-	Sessions    sdkservices.Sessions
-	Triggers    sdkservices.Triggers
+	Connections    sdkservices.Connections
+	Deployments    sdkservices.Deployments
+	Events         sdkservices.Events
+	Projects       sdkservices.Projects
+	Sessions       sdkservices.Sessions
+	Triggers       sdkservices.Triggers
+	Tokens         authtokens.Tokens
+	ExternalClient externalclient.ExternalClient
 }
 
 type Dispatcher struct {
@@ -49,6 +53,26 @@ var _ sdkservices.Dispatcher = (*Dispatcher)(nil)
 
 func New(l *zap.Logger, cfg *Config, svcs Svcs) *Dispatcher {
 	return &Dispatcher{sl: l.Sugar(), cfg: cfg, svcs: svcs}
+}
+
+func (d *Dispatcher) DispatchExternal(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) (sdktypes.EventID, error) {
+	pid, err := d.svcs.DB.GetProjectIDOf(ctx, event.DestinationID())
+	if err != nil {
+		return sdktypes.InvalidEventID, fmt.Errorf("get project id of destination %v: %w", event.DestinationID(), err)
+	}
+
+	orgID, err := d.svcs.DB.GetOrgIDOf(ctx, pid)
+	if err != nil {
+		return sdktypes.InvalidEventID, fmt.Errorf("get org id of project %v: %w", pid, err)
+	}
+
+	cli, err := d.svcs.ExternalClient.NewOrgImpersonator(orgID)
+
+	if err != nil {
+		return sdktypes.InvalidEventID, fmt.Errorf("create internal token: %w", err)
+	}
+
+	return cli.Dispatcher().Dispatch(ctx, event, opts)
 }
 
 func (d *Dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) (sdktypes.EventID, error) {

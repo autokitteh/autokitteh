@@ -109,6 +109,8 @@ func AsConnectError(err error) error {
 		return connect.NewError(connect.CodeUnimplemented, err)
 	case errors.Is(err, ErrFailedPrecondition):
 		return connect.NewError(connect.CodeFailedPrecondition, err)
+	case errors.Is(err, ErrResourceExhausted):
+		return connect.NewError(connect.CodeResourceExhausted, err)
 	case errors.Is(err, ErrProgram):
 		fallthrough
 	default:

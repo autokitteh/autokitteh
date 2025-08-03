@@ -12,7 +12,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
-	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessiondata"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/backend/types"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -31,95 +30,111 @@ const (
 	deactivateDrainedDeploymentActivityName = "deactivate_drained_deployment"
 	getDeploymentStateActivityName          = "get_deployment_state"
 	createSessionActivityName               = "create_session"
-	createSessionInProjectActivityName      = "create_session_in_project"
+	getProjectIDAndActiveBuildID            = "get_project_id_and_active_build_id"
 	listStoreValuesActivityName             = "list_store_values"
 	mutateStoreValueActivityName            = "mutate_store_value"
 	notifyWorkflowEndedActivity             = "notify_workflow_ended"
+	startChildSessionActivityName           = "start_child_session"
 )
 
 func (ws *workflows) registerActivities() {
-	ws.worker.RegisterActivityWithOptions(
+	// Utils Worker activities
+
+	// We need to register the terminate workflow activity on the utils worker,
+	// since it is used to terminate workflows and should not be registered on the sessions worker.
+	ws.utilsWorker.RegisterActivityWithOptions(
 		ws.updateSessionStateActivity,
 		activity.RegisterOptions{Name: updateSessionStateActivityName},
 	)
 
-	ws.worker.RegisterActivityWithOptions(
+	ws.utilsWorker.RegisterActivityWithOptions(
 		ws.terminateWorkflowActivity,
 		activity.RegisterOptions{Name: terminateWorkflowActivityName},
 	)
 
-	ws.worker.RegisterActivityWithOptions(
+	// Session Worker activities
+	ws.sessionsWorker.RegisterActivityWithOptions(
+		ws.updateSessionStateActivity,
+		activity.RegisterOptions{Name: updateSessionStateActivityName},
+	)
+
+	ws.sessionsWorker.RegisterActivityWithOptions(
 		ws.saveSignalActivity,
 		activity.RegisterOptions{Name: saveSignalActivityName},
 	)
 
-	ws.worker.RegisterActivityWithOptions(
+	ws.sessionsWorker.RegisterActivityWithOptions(
 		ws.getLatestEventSequenceActivity,
 		activity.RegisterOptions{Name: getLastEventSequenceActivityName},
 	)
 
-	ws.worker.RegisterActivityWithOptions(
+	ws.sessionsWorker.RegisterActivityWithOptions(
 		ws.getSessionStopReasonActivity,
 		activity.RegisterOptions{Name: getSessionStopReasonActivityName},
 	)
 
-	ws.worker.RegisterActivityWithOptions(
+	ws.sessionsWorker.RegisterActivityWithOptions(
 		ws.getSignalEventActivity,
 		activity.RegisterOptions{Name: getSignalEventActivityName},
 	)
 
-	ws.worker.RegisterActivityWithOptions(
+	ws.sessionsWorker.RegisterActivityWithOptions(
 		ws.removeSignalActivity,
 		activity.RegisterOptions{Name: removeSignalActivityName},
 	)
 
-	ws.worker.RegisterActivityWithOptions(
+	ws.sessionsWorker.RegisterActivityWithOptions(
 		ws.deactivateDrainedDeploymentActivity,
 		activity.RegisterOptions{Name: deactivateDrainedDeploymentActivityName},
 	)
 
-	ws.worker.RegisterActivityWithOptions(
+	ws.sessionsWorker.RegisterActivityWithOptions(
 		ws.getDeploymentStateActivity,
 		activity.RegisterOptions{Name: getDeploymentStateActivityName},
 	)
 
-	ws.worker.RegisterActivityWithOptions(
+	ws.sessionsWorker.RegisterActivityWithOptions(
 		ws.createSessionActivity,
 		activity.RegisterOptions{Name: createSessionActivityName},
 	)
 
-	ws.worker.RegisterActivityWithOptions(
+	ws.sessionsWorker.RegisterActivityWithOptions(
 		ws.listStoreValuesActivity,
 		activity.RegisterOptions{Name: listStoreValuesActivityName},
 	)
 
-	ws.worker.RegisterActivityWithOptions(
+	ws.sessionsWorker.RegisterActivityWithOptions(
 		ws.mutateStoreValueActivity,
 		activity.RegisterOptions{Name: mutateStoreValueActivityName},
 	)
 
-	ws.worker.RegisterActivityWithOptions(
-
-		ws.createSessionInProjectActivity,
-		activity.RegisterOptions{Name: createSessionInProjectActivityName},
+	ws.sessionsWorker.RegisterActivityWithOptions(
+		ws.getProjectIDAndActiveBuildID,
+		activity.RegisterOptions{Name: getProjectIDAndActiveBuildID},
 	)
 
-	ws.worker.RegisterActivityWithOptions(
+	ws.sessionsWorker.RegisterActivityWithOptions(
 		ws.notifyWorkflowEndedActivity,
 		activity.RegisterOptions{Name: notifyWorkflowEndedActivity},
 	)
+
+	ws.sessionsWorker.RegisterActivityWithOptions(
+		ws.startChildSessionActivity,
+		activity.RegisterOptions{Name: startChildSessionActivityName},
+	)
 }
 
-type createSessionInProjectActivityParams struct {
-	ParentSessionID sdktypes.SessionID
-	OrgID           sdktypes.OrgID
-	Project         sdktypes.Symbol
-	Loc             sdktypes.CodeLocation
-	Inputs          map[string]sdktypes.Value
-	Memo            map[string]string
+type getProjectIDAndActiveBuildIDParams struct {
+	OrgID   sdktypes.OrgID
+	Project sdktypes.Symbol
 }
 
-func (ws *workflows) createSessionInProjectActivity(ctx context.Context, params createSessionInProjectActivityParams) (*sessiondata.Data, error) {
+type getProjectIDAndActiveBuildIDResponse struct {
+	BuildID   sdktypes.BuildID
+	ProjectID sdktypes.ProjectID
+}
+
+func (ws *workflows) getProjectIDAndActiveBuildID(ctx context.Context, params getProjectIDAndActiveBuildIDParams) (*getProjectIDAndActiveBuildIDResponse, error) {
 	p, err := ws.svcs.Projects.GetByName(authcontext.SetAuthnSystemUser(ctx), params.OrgID, params.Project)
 	if err != nil {
 		return nil, temporalclient.TranslateError(err, "get project %v", params.Project)
@@ -144,22 +159,10 @@ func (ws *workflows) createSessionInProjectActivity(ctx context.Context, params 
 
 	d := ds[0]
 
-	session := sdktypes.NewSession(d.BuildID(), params.Loc, params.Inputs, params.Memo).
-		WithParentSessionID(params.ParentSessionID).
-		WithDeploymentID(d.ID()).
-		WithProjectID(p.ID()).
-		WithNewID()
-
-	if err := ws.svcs.DB.CreateSession(ctx, session); err != nil {
-		return nil, temporalclient.TranslateError(err, "%v: create session", session.ID())
-	}
-
-	data, err := sessiondata.Get(authcontext.SetAuthnSystemUser(ctx), ws.svcs, session)
-	if err != nil {
-		return nil, temporalclient.TranslateError(err, "%v: get session data", session.ID())
-	}
-
-	return data, nil
+	return &getProjectIDAndActiveBuildIDResponse{
+		BuildID:   d.BuildID(),
+		ProjectID: p.ID(),
+	}, nil
 }
 
 func (ws *workflows) listStoreValuesActivity(ctx context.Context, pid sdktypes.ProjectID) ([]string, error) {
@@ -323,8 +326,7 @@ func (ws *workflows) terminateSessionWorkflow(wctx workflow.Context, params term
 
 	sl.Infof("terminating session workflow %s", sid)
 
-	wctx = workflow.WithActivityOptions(wctx, ws.cfg.Activity.ToOptions(ws.svcs.WorkflowExecutor.WorkflowQueue()))
-
+	wctx = workflow.WithActivityOptions(wctx, ws.cfg.Activity.ToOptions(utilsWorkerQueue))
 	// this is fine if it runs multiple times and should be short.
 	if err := workflow.ExecuteActivity(wctx, terminateWorkflowActivityName, sid, reason).Get(wctx, nil); err != nil {
 		sl.With("err", err).Errorf("terminate workflow %v activity: %v", sid, err)
@@ -358,4 +360,8 @@ func (ws *workflows) terminateWorkflowActivity(ctx context.Context, sid sdktypes
 
 func (ws *workflows) notifyWorkflowEndedActivity(ctx context.Context, sid sdktypes.SessionID) error {
 	return ws.svcs.WorkflowExecutor.NotifyDone(ctx, workflowID(sid))
+}
+
+func (ws *workflows) startChildSessionActivity(ctx context.Context, session sdktypes.Session) (sdktypes.SessionID, error) {
+	return ws.sessions.Start(ctx, session)
 }
