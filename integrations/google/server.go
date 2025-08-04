@@ -49,6 +49,9 @@ func Start(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, o *oauth.OAuth, d 
 	urlPath = strings.ReplaceAll(uiPath, "google", "googlesheets")
 	m.Auth.Handle(urlPath, http.FileServer(http.FS(static.GoogleSheetsWebContent)))
 
+	urlPath = strings.ReplaceAll(uiPath, "google", "youtube")
+	m.Auth.Handle(urlPath, http.FileServer(http.FS(static.YouTubeWebContent)))
+
 	h := NewHTTPHandler(l, o, v, d)
 	common.RegisterSaveHandler(m, desc, h.handleCreds)
 	common.RegisterOAuthHandler(m, desc, h.handleOAuth)
