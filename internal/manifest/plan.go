@@ -84,6 +84,8 @@ func planProject(ctx context.Context, mproj *Project, client sdkservices.Service
 	} else {
 		pid = curr.ID()
 
+		add(actions.TouchedProjectAction{Key: mproj.GetKey(), ProjectID: pid})
+
 		log.Printf("found, id=%q", pid)
 
 		desired = desired.WithID(pid)
