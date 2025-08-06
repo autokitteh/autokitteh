@@ -685,6 +685,11 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 
 			py.log.Info("done signal")
 
+			if done == nil {
+				py.log.Error("done: nil request")
+				return sdktypes.InvalidValue, errors.New("done request is nil")
+			}
+
 			if done.Error != "" {
 				py.log.Info("done error", zap.String("error", done.Error))
 				perr := sdktypes.NewProgramError(
