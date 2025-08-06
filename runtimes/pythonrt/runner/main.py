@@ -737,5 +737,9 @@ if __name__ == "__main__":
         Thread(target=runner.should_keep_running, daemon=True).start()
         log.info("started 'should_keep_running' thread")
 
-    server.wait_for_termination()
-    force_close(server)
+    try:
+        server.wait_for_termination()
+    except Exception as e:
+        log.error("server terminated with error: %s", e)
+    finally:
+        force_close(server)
