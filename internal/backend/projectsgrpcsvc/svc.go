@@ -271,9 +271,13 @@ func (s *Server) Export(ctx context.Context, req *connect.Request[projectsv1.Exp
 }
 
 func (s *Server) Lint(ctx context.Context, req *connect.Request[projectsv1.LintRequest]) (*connect.Response[projectsv1.LintResponse], error) {
-	// TODO: Need to work with our without project
+	msg := req.Msg
 
-	pid, err := sdktypes.ParseProjectID(req.Msg.ProjectId)
+	if err := proto.Validate(msg); err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	pid, err := sdktypes.ParseProjectID(msg.ProjectId)
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
@@ -281,7 +285,8 @@ func (s *Server) Lint(ctx context.Context, req *connect.Request[projectsv1.LintR
 	if !pid.IsValid() {
 		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("project_id: %w", err))
 	}
-	vs, err := s.projects.Lint(ctx, pid, req.Msg.Resources, req.Msg.ManifestFile)
+
+	vs, err := s.projects.Lint(ctx, pid, msg.Resources, msg.ManifestFile)
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
