@@ -16,6 +16,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/manifest"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -350,6 +351,10 @@ func (ps *Projects) Lint(ctx context.Context, projectID sdktypes.ProjectID, reso
 	}
 
 	if resources == nil {
+		if !projectID.IsValid() {
+			return nil, sdkerrors.NewInvalidArgumentError("project_id is required when resources are not provided")
+		}
+
 		var err error
 		if resources, err = ps.DB.GetProjectResources(ctx, projectID); err != nil {
 			return nil, err

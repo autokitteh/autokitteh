@@ -282,17 +282,12 @@ func (s *Server) Lint(ctx context.Context, req *connect.Request[projectsv1.LintR
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	if !pid.IsValid() {
-		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("project_id: %w", err))
-	}
-
 	vs, err := s.projects.Lint(ctx, pid, msg.Resources, msg.ManifestFile)
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	resp := projectsv1.LintResponse{
-		Violations: vs,
-	}
+	resp := projectsv1.LintResponse{Violations: vs}
+
 	return connect.NewResponse(&resp), nil
 }
