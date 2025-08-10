@@ -1,6 +1,7 @@
 import asyncio
 import inspect
 import json
+import os
 import pickle
 import sys
 from base64 import b64decode
@@ -221,6 +222,11 @@ def short_name(func_name: str):
     return func_name[i + 1 :]
 
 
+def force_close(server):
+    server.stop(SERVER_GRACE_TIMEOUT)
+    os._exit(1)
+
+
 class Runner(pb.runner_rpc.RunnerService):
     def __init__(
         self, id, worker, code_dir, server, start_timeout=DEFAULT_START_TIMEOUT
@@ -259,7 +265,7 @@ class Runner(pb.runner_rpc.RunnerService):
     def stop_if_start_not_called(self, timeout):
         log.error("Start not called after %s seconds, terminating", timeout)
         if self.server:
-            self.server.stop(SERVER_GRACE_TIMEOUT)
+            force_close(self.server)
 
     def Exports(self, request: pb.runner.ExportsRequest, context: grpc.ServicerContext):
         if request.file_name == "":
@@ -279,7 +285,7 @@ class Runner(pb.runner_rpc.RunnerService):
         sleep(initial_delay)
         if not self._start_called:
             log.error("Start not called after %dsec", initial_delay)
-            self.server.stop(SERVER_GRACE_TIMEOUT)
+            force_close(self.server)
             return
 
         # Check that we are still active
@@ -298,7 +304,7 @@ class Runner(pb.runner_rpc.RunnerService):
             return
 
         log.error("could not verify if should keep running, killing self")
-        self.server.stop(SERVER_GRACE_TIMEOUT)
+        force_close(self.server)
 
     def patch_ak_funcs(self):
         connections.encode_jwt = self.syscalls.ak_encode_jwt
@@ -439,7 +445,7 @@ class Runner(pb.runner_rpc.RunnerService):
                 self.worker.Done(req)
             except grpc.RpcError as err:
                 log.error("done send error: %r", err)
-                self.server.stop(SERVER_GRACE_TIMEOUT)
+                force_close(self.server)
 
             return pb.runner.ActivityReplyResponse(error=request.error)
 
@@ -590,7 +596,7 @@ class Runner(pb.runner_rpc.RunnerService):
         except Exception as err:
             log.error("on_event: done send error: %r", err)
 
-        self.server.stop(SERVER_GRACE_TIMEOUT)
+        force_close(self.server)
 
 
 def is_valid_port(port):
@@ -710,4 +716,9 @@ if __name__ == "__main__":
         Thread(target=runner.should_keep_running, daemon=True).start()
         log.info("started 'should_keep_running' thread")
 
-    server.wait_for_termination()
+    try:
+        server.wait_for_termination()
+    except Exception as e:
+        log.error("server terminated with error: %s", e)
+    finally:
+        force_close(server)

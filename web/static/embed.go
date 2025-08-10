@@ -76,5 +76,8 @@ var SlackWebContent embed.FS
 //go:embed twilio
 var TwilioWebContent embed.FS
 
+//go:embed youtube
+var YouTubeWebContent embed.FS
+
 //go:embed zoom
 var ZoomWebContent embed.FS

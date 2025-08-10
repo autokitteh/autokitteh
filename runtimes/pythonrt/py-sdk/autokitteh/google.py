@@ -222,6 +222,34 @@ def gspread_client(connection: str, **kwargs) -> gspread.Client:
     return gspread.authorize(creds)
 
 
+def youtube_client(connection: str, **kwargs):
+    """Initialize a YouTube Data API client, based on an AutoKitteh connection.
+
+
+    Code samples:
+    - https://github.com/youtube/api-samples/tree/master/python
+
+    Args:
+        connection: AutoKitteh connection name.
+
+    Returns:
+        YouTube Data API client.
+
+    Raises:
+        ValueError: AutoKitteh connection name is invalid.
+        ConnectionInitError: AutoKitteh connection was not initialized yet.
+        OAuthRefreshError: OAuth token refresh failed.
+    """
+    # https://developers.google.com/youtube/v3/guides/auth/installed-apps
+    default_scopes = [
+        "https://www.googleapis.com/auth/youtube.readonly",
+        "https://www.googleapis.com/auth/youtube.upload",
+        "https://www.googleapis.com/auth/youtube",
+    ]
+    creds = google_creds("youtube", connection, default_scopes, **kwargs)
+    return build("youtube", "v3", credentials=creds, **kwargs)
+
+
 def google_creds(integration: str, connection: str, scopes: list[str], **kwargs):
     """Initialize credentials for a Google APIs client, for service discovery.
 

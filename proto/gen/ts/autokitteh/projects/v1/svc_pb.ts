@@ -705,12 +705,14 @@ export class LintRequest extends Message<LintRequest> {
   projectId = "";
 
   /**
+   * if project_id is not empty and resources are empty, resources are fetched from the project.
+   *
    * @generated from field: map<string, bytes> resources = 2;
    */
   resources: { [key: string]: Uint8Array } = {};
 
   /**
-   * name of manifest file
+   * name of manifest file, can be empty if project_id is not empty.
    *
    * @generated from field: string manifest_file = 3;
    */

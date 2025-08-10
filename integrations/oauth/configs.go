@@ -23,6 +23,7 @@ import (
 	"google.golang.org/api/gmail/v1"
 	googleoauth2 "google.golang.org/api/oauth2/v2"
 	"google.golang.org/api/sheets/v4"
+	"google.golang.org/api/youtube/v3"
 
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/auth0"
@@ -178,6 +179,9 @@ func (o *OAuth) initConfigs() {
 				forms.FormsBodyScope,
 				forms.FormsResponsesReadonlyScope,
 				sheets.SpreadsheetsScope,
+				youtube.YoutubeScope,
+				youtube.YoutubeReadonlyScope,
+				youtube.YoutubeUploadScope,
 				// Restricted.
 				// drive.DriveScope, // See ENG-1701
 				gmail.GmailModifyScope,
@@ -252,6 +256,21 @@ func (o *OAuth) initConfigs() {
 				googleoauth2.UserinfoProfileScope,
 				// Sensitive.
 				sheets.SpreadsheetsScope,
+			}),
+			Opts: offlineOpts(withConsent()),
+		},
+
+		// https://developers.google.com/youtube/v3/guides/authentication
+		"googleyoutube": {
+			Config: googleConfig([]string{
+				// Non-sensitive.
+				googleoauth2.OpenIDScope,
+				googleoauth2.UserinfoEmailScope,
+				googleoauth2.UserinfoProfileScope,
+				// YouTube scopes.
+				youtube.YoutubeScope,
+				youtube.YoutubeReadonlyScope,
+				youtube.YoutubeUploadScope,
 			}),
 			Opts: offlineOpts(withConsent()),
 		},
@@ -529,6 +548,8 @@ func (o *OAuth) initRedirectURLs() {
 		// Special case: Google and Microsoft integrations are generic.
 		switch {
 		case k == "gmail":
+			k = "google"
+		case k == "youtube":
 			k = "google"
 		case strings.HasPrefix(k, "google"):
 			k = "google"
