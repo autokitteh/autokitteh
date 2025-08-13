@@ -136,8 +136,6 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request) map[string
 		return nil
 	}
 
-	l.Warn("incoming event: missing HubSpot verification headers")
-
 	return payload[0]
 }
 

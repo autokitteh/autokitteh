@@ -79,19 +79,24 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	accountResp, err := common.HTTPGet(r.Context(), accountURL, auth)
 	if err != nil {
 		l.Warn("failed to get HubSpot account details", zap.Error(err))
+		c.AbortServerError("failed to get account details")
 	} else {
 		// Parse response and extract portal ID.
-		var accountData map[string]any
-		if json.Unmarshal(accountResp, &accountData) == nil {
-			if id, ok := accountData["portalId"].(float64); ok {
-				portalID := strconv.FormatFloat(id, 'f', 0, 64)
-				portal_id_var := sdktypes.NewVar(portalIDVar).SetValue(portalID)
-				if err := h.vars.Set(r.Context(), portal_id_var.WithScopeID(vsid)); err != nil {
-					l.Warn("failed to save portal ID", zap.Error(err))
-					c.AbortServerError("failed to save portal ID")
-				}
-				l.Info("saved HubSpot portal ID", zap.String("portalId", portalID))
+		type HubSpotAccount struct {
+			PortalId int64 `json:"portalId"`
+		}
+
+		var account HubSpotAccount
+		if json.Unmarshal(accountResp, &account) == nil && account.PortalId != 0 {
+			portalID := strconv.FormatInt(account.PortalId, 10)
+
+			portal_id_var := sdktypes.NewVar(portalIDVar).SetValue(portalID)
+			if err := h.vars.Set(r.Context(), portal_id_var.WithScopeID(vsid)); err != nil {
+				l.Warn("failed to save portal ID", zap.Error(err))
+				c.AbortServerError("failed to save portal ID")
 			}
+
+			l.Info("saved HubSpot portal ID", zap.String("portalId", portalID))
 		}
 	}
 
