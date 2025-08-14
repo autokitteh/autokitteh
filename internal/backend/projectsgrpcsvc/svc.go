@@ -3,7 +3,6 @@ package projectsgrpcsvc
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"connectrpc.com/connect"
 
@@ -17,6 +16,8 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
+
+var errProjectIDRequired = sdkerrors.AsConnectError(sdkerrors.NewInvalidArgumentError("project_id is required"))
 
 type Config struct {
 	MaxUploadSize int `koanf:"max_upload_size"`
@@ -181,7 +182,7 @@ func (s *Server) Build(ctx context.Context, req *connect.Request[projectsv1.Buil
 	}
 
 	if !pid.IsValid() {
-		return nil, sdkerrors.AsConnectError(fmt.Errorf("project_id: %w", err))
+		return nil, errProjectIDRequired
 	}
 
 	bid, err := s.projects.Build(ctx, pid)
@@ -208,7 +209,7 @@ func (s *Server) SetResources(ctx context.Context, req *connect.Request[projects
 	}
 
 	if !pid.IsValid() {
-		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("project_id: %w", err))
+		return nil, errProjectIDRequired
 	}
 
 	if err := s.projects.SetResources(ctx, pid, msg.Resources); err != nil {
@@ -231,7 +232,7 @@ func (s *Server) DownloadResources(ctx context.Context, req *connect.Request[pro
 	}
 
 	if !pid.IsValid() {
-		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("project_id: %w", err))
+		return nil, errProjectIDRequired
 	}
 
 	resources, err := s.projects.DownloadResources(ctx, pid)
@@ -255,7 +256,7 @@ func (s *Server) Export(ctx context.Context, req *connect.Request[projectsv1.Exp
 	}
 
 	if !pid.IsValid() {
-		return nil, connect.NewError(connect.CodeNotFound, fmt.Errorf("project_id: %w", err))
+		return nil, errProjectIDRequired
 	}
 
 	zipData, err := s.projects.Export(ctx, pid, req.Msg.IncludeVarsContents)
