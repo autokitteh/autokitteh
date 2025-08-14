@@ -25,6 +25,8 @@ var (
 )
 
 // handleEvent receives and dispatches asynchronous HubSpot events.
+// We must respond with 200 OK within 5 seconds, otherwise HubSpot
+// will consider the event failed and may retry.
 func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
