@@ -19,7 +19,10 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var portalIDVar = sdktypes.NewSymbol("portal_id")
+var (
+	portalIDVar      = sdktypes.NewSymbol("portal_id")
+	allowed_Duration = 5 * time.Minute // Default allowed duration for HubSpot signature.
+)
 
 // handleEvent receives and dispatches asynchronous HubSpot events.
 func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
@@ -148,17 +151,16 @@ func (h handler) signingSecret() (string, error) {
 }
 
 func checkSignature(signature, timestamp, secret string, body []byte, method, uri string) (bool, error) {
-	allowed_Duration := 5 * time.Minute
 	currentTime := time.Now()
 	tsInt, err := strconv.ParseInt(timestamp, 10, 64)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("parse int(%s): %w", timestamp, err)
 	}
 	tsTime := time.UnixMilli(tsInt)
 
 	// Check if the timestamp is within the allowed duration according to hubspot's guidelines.
 	if currentTime.Sub(tsTime) > allowed_Duration {
-		return false, errors.New("timestamp is too old")
+		return false, fmt.Errorf("timestamp %s is older than allowed duration %s", tsTime, allowed_Duration)
 	}
 
 	// HubSpot v3 signature: method + uri + body + timestamp.
