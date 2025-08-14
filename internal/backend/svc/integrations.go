@@ -137,7 +137,7 @@ func integrationsFXOption() fx.Option {
 				github.Start(l, muxes, vars, oauth, dispatch)
 				google.Start(l, muxes, vars, oauth, dispatch)
 				height.Start(l, muxes, vars, oauth, dispatch)
-				hubspot.Start(l, muxes, oauth)
+				hubspot.Start(l, muxes, vars, oauth, dispatch)
 				jira.Start(l, muxes, vars, oauth, dispatch)
 				kubernetes.Start(l, muxes)
 				linear.Start(l, muxes, vars, oauth, dispatch)
