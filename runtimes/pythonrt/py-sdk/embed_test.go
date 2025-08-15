@@ -2,6 +2,7 @@ package pysdk_test
 
 import (
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -29,7 +30,11 @@ func TestClientNames(t *testing.T) {
 	t.Logf("Client names: %v", names)
 	assert.NotEmpty(t, names)
 
+	for _, name := range names {
+		assert.True(t, strings.HasSuffix(name, "_client"))
+	}
+
 	// sanity checks
-	assert.Less(t, sort.SearchStrings(names, "requests"), len(names))
-	assert.Less(t, sort.SearchStrings(names, "boto3"), len(names))
+	assert.Less(t, sort.SearchStrings(names, "requests_client"), len(names))
+	assert.Less(t, sort.SearchStrings(names, "boto3_client"), len(names))
 }

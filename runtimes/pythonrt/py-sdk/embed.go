@@ -18,7 +18,7 @@ var codeFS embed.FS
 //go:embed pyproject.toml
 var pyProject string
 
-var clientDefRegex = regexp.MustCompile(`^def (\w+)_client\(`)
+var clientDefRegex = regexp.MustCompile(`^def (\w+_client)\(`)
 
 func ClientNames() (names []string) {
 	fs.WalkDir(codeFS, "autokitteh", func(path string, d fs.DirEntry, err error) error {
