@@ -146,6 +146,12 @@ func Test_checkHandlers(t *testing.T) {
 	vs := checkHandlers(sdktypes.InvalidProjectID, m, resources)
 	require.Equal(t, 0, len(vs))
 
+	m.Project.Triggers[0].Filter = "hiss"
+	vs = checkHandlers(sdktypes.InvalidProjectID, m, resources)
+	require.Equal(t, 1, len(vs))
+	require.Equal(t, sdktypes.InvalidEventFilterRuleID, vs[0].RuleId)
+
+	m.Project.Triggers[0].Filter = ""
 	resources = createResources(fileName, funcName+"ZZZ")
 	vs = checkHandlers(sdktypes.InvalidProjectID, m, resources)
 	require.Equal(t, 1, len(vs))

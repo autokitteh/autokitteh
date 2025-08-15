@@ -207,6 +207,16 @@ func checkHandlers(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[str
 	var vs []*sdktypes.CheckViolation
 
 	for _, t := range m.Project.Triggers {
+		if err := sdktypes.ValidateEventFilterField(t.Filter); err != nil {
+			vs = append(vs, sdktypes.NewCheckViolation(
+				manifestFilePath,
+				sdktypes.InvalidEventFilterRuleID,
+				fmt.Sprintf("invalid event filter %q - %s", t.Filter, err),
+			))
+
+			continue
+		}
+
 		// It OK to have a trigger without "Call"
 		if t.Call == "" {
 			continue
