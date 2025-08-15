@@ -18,7 +18,9 @@ import (
 	"slices"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/projectsgrpcsvc"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/manifest"
+	pysdk "go.autokitteh.dev/autokitteh/runtimes/pythonrt/py-sdk"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -409,22 +411,7 @@ func pyConnCalls(data []byte) []connCall {
 }
 
 // Should be in sync with runtimes/pythonrt/py-sdk/autokitteh
-var pyClientFns = map[string]bool{
-	"asana_client":           true,
-	"boto3_client":           true,
-	"confluence_client":      true,
-	"discord_client":         true,
-	"github_client":          true,
-	"gmail_client":           true,
-	"google_calendar_client": true,
-	"google_drive_client":    true,
-	"google_forms_client":    true,
-	"google_sheets_client":   true,
-	"jira_client":            true,
-	"openai_client":          true,
-	"slack_client":           true,
-	"twilio_client":          true,
-}
+var pyClientFns = kittehs.ListToBoolSet(pysdk.ClientNames())
 
 var callRe = regexp.MustCompile(`^(def|class)\s+(\w+)\(`)
 

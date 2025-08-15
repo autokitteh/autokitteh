@@ -33,6 +33,12 @@ func ContainedIn[T comparable](xs ...T) func(T) bool {
 	return func(t T) bool { return m[t] }
 }
 
+func ListToBoolSet[T comparable](ts []T) map[T]bool {
+	return ListToMap(ts, func(t T) (T, bool) {
+		return t, true
+	})
+}
+
 // This does not guard against duplicate keys.
 func ListToMap[T any, K comparable, V any](ts []T, f func(T) (K, V)) map[K]V {
 	m := make(map[K]V, len(ts))
