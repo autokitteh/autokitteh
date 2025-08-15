@@ -133,6 +133,14 @@ func VerifyEventFilter(filter string) error {
 }
 
 func eventFilterField(name string, expr string) error {
+	if err := ValidateEventFilterField(expr); err != nil {
+		return fmt.Errorf("%s: %w", name, err)
+	}
+
+	return nil
+}
+
+func ValidateEventFilterField(expr string) error {
 	// HACK: "." is a signal for an empty filter.
 	if expr == "" || expr == "." {
 		return nil
@@ -140,7 +148,7 @@ func eventFilterField(name string, expr string) error {
 
 	_, issues := eventFilterEnv.Compile(expr)
 	if err := issues.Err(); err != nil {
-		return fmt.Errorf("%s: %w", name, err)
+		return err
 	}
 
 	return nil
