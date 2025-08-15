@@ -34,6 +34,7 @@ const (
 	NonexistingConnectionRuleID   = "E8"
 	MalformedNameRuleID           = "E9"
 	InvalidManifestRuleID         = "E10"
+	FileCannotExportRuleID        = "E11"
 
 	EmptyVariableRuleID     = "W1"
 	NoTriggersDefinedRuleID = "W2"

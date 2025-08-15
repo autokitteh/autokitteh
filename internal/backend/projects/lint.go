@@ -12,6 +12,7 @@ package projects
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"path"
 	"regexp"
@@ -21,6 +22,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/manifest"
 	pysdk "go.autokitteh.dev/autokitteh/runtimes/pythonrt/py-sdk"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -234,6 +236,15 @@ func checkHandlers(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[str
 
 		exports, err := fileExports(fileName, data)
 		if err != nil {
+			if errors.Is(err, sdkerrors.ErrNotImplemented) {
+				vs = append(vs, sdktypes.NewCheckViolation(
+					manifestFilePath,
+					sdktypes.FileCannotExportRuleID,
+					fmt.Sprintf("file %q cannot export", fileName),
+				))
+				continue
+			}
+
 			vs = append(vs, sdktypes.NewCheckViolation(
 				manifestFilePath,
 				sdktypes.SyntaxErrorRuleID,
@@ -243,7 +254,7 @@ func checkHandlers(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[str
 		}
 
 		handler := loc.Name()
-		if exports != nil && !slices.Contains(exports, handler) {
+		if !slices.Contains(exports, handler) {
 			vs = append(vs, sdktypes.NewCheckViolation(
 				manifestFilePath,
 				sdktypes.MissingHandlerRuleID,
@@ -387,7 +398,7 @@ func fileExports(fileName string, data []byte) ([]string, error) {
 	ext := path.Ext(fileName)
 	exportsFn, ok := exportsByExt[ext]
 	if !ok {
-		return nil, nil
+		return nil, sdkerrors.ErrNotImplemented
 	}
 
 	names, err := exportsFn(data)
