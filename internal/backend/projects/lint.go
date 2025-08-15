@@ -24,51 +24,77 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+const (
+	ProjectSizeTooLargeRuleID     = "E1"
+	DuplicateConnectionNameRuleID = "E2"
+	DuplicateTriggerNameRuleID    = "E3"
+	BadCallFormatRuleID           = "E4"
+	FileNotFoundRuleID            = "E5"
+	SyntaxErrorRuleID             = "E6"
+	MissingHandlerRuleID          = "E7"
+	NonexistingConnectionRuleID   = "E8"
+	MalformedNameRuleID           = "E9"
+	InvalidManifestRuleID         = "E10"
+
+	EmptyVariableRuleID     = "W1"
+	NoTriggersDefinedRuleID = "W2"
+)
+
+var Rules = map[string]string{ // ID -> Description
+	ProjectSizeTooLargeRuleID:     "Project size too large",
+	DuplicateConnectionNameRuleID: "Duplicate connection name",
+	DuplicateTriggerNameRuleID:    "Duplicate trigger name",
+	BadCallFormatRuleID:           "Bad `call` format",
+	FileNotFoundRuleID:            "File not found",
+	SyntaxErrorRuleID:             "Syntax error",
+	MissingHandlerRuleID:          "Missing handler",
+	NonexistingConnectionRuleID:   "Nonexisting connection",
+	MalformedNameRuleID:           "Malformed name",
+	InvalidManifestRuleID:         "Invalid manifest",
+
+	EmptyVariableRuleID:     "Empty variable",
+	NoTriggersDefinedRuleID: "No triggers defined",
+}
+
 type Checker func(projectID sdktypes.ProjectID, manifest *manifest.Manifest, resources map[string][]byte) []*sdktypes.CheckViolation
 
-var lintCheckers []Checker
+var lintCheckers = []Checker{
+	// Generic
+	checkConnectionNames,
+	checkEmptyVars,
+	checkProjectName,
+	checkSize,
+	checkNoTriggers,
+	checkTriggerNames,
+
+	// Runtime
+	checkCodeConnections,
+	checkHandlers,
+}
 
 const manifestFilePath = "autokitteh.yaml"
 
-func init() {
-	// Please keep the groups sorted alphabetically
-	lintCheckers = []Checker{
-		// Generic
-		checkConnectionNames,
-		checkEmptyVars,
-		checkNoTriggers,
-		checkProjectName,
-		checkSize,
-		checkTriggerNames,
-
-		// Runtime
-		checkCodeConnections,
-		checkHandlers,
+func Validate(projectID sdktypes.ProjectID, manifestData []byte, resources map[string][]byte) []*sdktypes.CheckViolation {
+	manifest, err := manifest.Read(manifestData)
+	if err != nil {
+		return []*sdktypes.CheckViolation{
+			{
+				Location: &sdktypes.CodeLocationPB{
+					Path: manifestFilePath,
+				},
+				Level:   sdktypes.ViolationError,
+				Message: fmt.Sprintf("bad manifest - %s", err),
+				RuleId:  InvalidManifestRuleID,
+			},
+		}
 	}
-}
 
-func Validate(projectID sdktypes.ProjectID, manifest *manifest.Manifest, resources map[string][]byte) []*sdktypes.CheckViolation {
 	var vs []*sdktypes.CheckViolation
 	for _, checker := range lintCheckers {
 		vs = append(vs, checker(projectID, manifest, resources)...)
 	}
 
 	return vs
-}
-
-var Rules = map[string]string{ // ID -> Description
-	"E1": "Project size too large",
-	"E2": "Duplicate connection name",
-	"E3": "Duplicate trigger name",
-	"E4": "Bad `call` format",
-	"E5": "File not found",
-	"E6": "Syntax error",
-	"E7": "Missing handler",
-	"E8": "Nonexisting connection",
-	"E9": "Malformed name",
-
-	"W1": "Empty variable",
-	"W2": "No triggers defined",
 }
 
 func checkNoTriggers(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string][]byte) []*sdktypes.CheckViolation {
@@ -80,7 +106,7 @@ func checkNoTriggers(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string][]
 				},
 				Level:   sdktypes.ViolationWarning,
 				Message: "no triggers",
-				RuleId:  "W2",
+				RuleId:  NoTriggersDefinedRuleID,
 			},
 		}
 	}
@@ -102,7 +128,7 @@ func checkEmptyVars(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string][]b
 				},
 				Level:   sdktypes.ViolationWarning,
 				Message: fmt.Sprintf("variable %q is empty", v.Name),
-				RuleId:  "W1",
+				RuleId:  EmptyVariableRuleID,
 			})
 		}
 	}
@@ -116,7 +142,7 @@ func checkEmptyVars(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string][]b
 					},
 					Level:   sdktypes.ViolationWarning,
 					Message: fmt.Sprintf("connection %q variable %q is empty", conn.Name, v.Name),
-					RuleId:  "W1",
+					RuleId:  EmptyVariableRuleID,
 				})
 			}
 		}
@@ -146,7 +172,7 @@ func checkSize(_ sdktypes.ProjectID, _ *manifest.Manifest, resources map[string]
 				},
 				Level:   sdktypes.ViolationError,
 				Message: fmt.Sprintf("project size (%.2fMB) exceeds limit of %dMB", sizeMB, maxProjectSize/mb),
-				RuleId:  "E2",
+				RuleId:  DuplicateConnectionNameRuleID,
 			},
 		}
 	}
@@ -173,7 +199,7 @@ func checkConnectionNames(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[stri
 				},
 				Level:   sdktypes.ViolationError,
 				Message: fmt.Sprintf("%q - malformed name (%s)", name, err),
-				RuleId:  "E10",
+				RuleId:  MalformedNameRuleID,
 			})
 		}
 
@@ -184,7 +210,7 @@ func checkConnectionNames(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[stri
 				},
 				Level:   sdktypes.ViolationWarning,
 				Message: fmt.Sprintf("%d connections are named %q", count, name),
-				RuleId:  "E3",
+				RuleId:  DuplicateConnectionNameRuleID,
 			})
 		}
 	}
@@ -211,7 +237,7 @@ func checkTriggerNames(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string]
 				},
 				Level:   sdktypes.ViolationError,
 				Message: fmt.Sprintf("%q - malformed name (%s)", name, err),
-				RuleId:  "E10",
+				RuleId:  MalformedNameRuleID,
 			})
 		}
 
@@ -222,7 +248,7 @@ func checkTriggerNames(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string]
 				},
 				Level:   sdktypes.ViolationWarning,
 				Message: fmt.Sprintf("%d triggers are named %q", count, name),
-				RuleId:  "E4",
+				RuleId:  DuplicateTriggerNameRuleID,
 			})
 		}
 	}
@@ -253,7 +279,7 @@ func checkHandlers(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[str
 				},
 				Level:   sdktypes.ViolationError,
 				Message: fmt.Sprintf(`%q - bad call definition (should be something like "handler.py:on_event")`, t.Call),
-				RuleId:  "E5",
+				RuleId:  BadCallFormatRuleID,
 			})
 			continue
 		}
@@ -267,7 +293,7 @@ func checkHandlers(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[str
 				},
 				Level:   sdktypes.ViolationError,
 				Message: fmt.Sprintf("file %q not found", fileName),
-				RuleId:  "E6",
+				RuleId:  FileNotFoundRuleID,
 			})
 			continue
 		}
@@ -280,7 +306,7 @@ func checkHandlers(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[str
 				},
 				Level:   sdktypes.ViolationError,
 				Message: fmt.Sprintf("can't parse %q - %s", fileName, err),
-				RuleId:  "E7",
+				RuleId:  SyntaxErrorRuleID,
 			})
 			continue
 		}
@@ -293,7 +319,7 @@ func checkHandlers(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[str
 				},
 				Level:   sdktypes.ViolationError,
 				Message: fmt.Sprintf("%q not found in %q", handler, fileName),
-				RuleId:  "E8",
+				RuleId:  MissingHandlerRuleID,
 			})
 			continue
 		}
@@ -328,7 +354,7 @@ func checkCodeConnections(_ sdktypes.ProjectID, m *manifest.Manifest, resources 
 					},
 					Message: fmt.Sprintf("%q - non existing connection", conn.Name),
 					Level:   sdktypes.ViolationError,
-					RuleId:  "E9",
+					RuleId:  NonexistingConnectionRuleID,
 				})
 			}
 		}
@@ -346,7 +372,7 @@ func checkProjectName(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[
 				},
 				Message: "bad project names",
 				Level:   sdktypes.ViolationError,
-				RuleId:  "E10",
+				RuleId:  MalformedNameRuleID,
 			},
 		}
 	}
@@ -359,7 +385,7 @@ func checkProjectName(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[
 				},
 				Message: fmt.Sprintf("%q - bad project name (%s)", m.Project.Name, err),
 				Level:   sdktypes.ViolationError,
-				RuleId:  "E10",
+				RuleId:  MalformedNameRuleID,
 			},
 		}
 	}

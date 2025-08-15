@@ -206,8 +206,5 @@ func Test_checkCodeConnections(t *testing.T) {
 }
 
 func TestNilSafe(t *testing.T) {
-	m, err := manifest.Read([]byte("version: 1"))
-	require.NoError(t, err)
-
-	Validate(sdktypes.InvalidProjectID, m, nil) // should not panic
+	Validate(sdktypes.InvalidProjectID, []byte("version: 1"), nil) // should not panic
 }
