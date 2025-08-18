@@ -361,20 +361,14 @@ func (ps *Projects) Lint(ctx context.Context, projectID sdktypes.ProjectID, reso
 		}
 	}
 
-	data, ok := resources[manifestPath]
+	manifestCode, ok := resources[manifestPath]
 	if !ok {
 		var err error
-		data, err = ps.exportManifest(ctx, projectID, true)
+		manifestCode, err = ps.exportManifest(ctx, projectID, true)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	m, err := manifest.Read(data)
-	if err != nil {
-		return nil, err
-	}
-
-	violations := Validate(projectID, m, resources)
-	return violations, nil
+	return Validate(projectID, manifestCode, resources), nil
 }
