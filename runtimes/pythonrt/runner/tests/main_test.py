@@ -346,3 +346,17 @@ def test_async(workflow, capsys):
 
     captured = capsys.readouterr()
     assert "on_event: end (out=8)" in captured.out
+
+
+def test_async_exc():
+    clear_module_cache("program")
+    runner = new_test_runner(workflows.async_exc, server=MagicMock())
+    worker = MockWorker(runner)
+    runner.worker = worker
+    breakpoint()
+
+    event = json.dumps({"data": {"cat": "mitzi"}})
+    worker.start("program.py:on_event", event.encode())
+    worker.event.wait(1)
+
+    assert worker.calls.get("ACTIVITY")
