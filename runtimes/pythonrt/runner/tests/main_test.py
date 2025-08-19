@@ -8,6 +8,7 @@ Need much more:
 
 import builtins
 import json
+import os
 import pickle
 import sys
 import traceback
@@ -346,3 +347,21 @@ def test_async(workflow, capsys):
 
     captured = capsys.readouterr()
     assert "on_event: end (out=8)" in captured.out
+
+
+def test_async_exc(monkeypatch):
+    clear_module_cache("program")
+    runner = new_test_runner(workflows.async_exc, server=MagicMock())
+    worker = MockWorker(runner)
+    runner.worker = worker
+
+    def exit():
+        raise SystemExit(1)
+
+    monkeypatch.setattr(os, "_exit", exit)
+
+    event = json.dumps({"data": {"cat": "mitzi"}})
+    worker.start("program.py:on_event", event.encode())
+    worker.event.wait(1)
+
+    assert worker.calls.get("ACTIVITY")
