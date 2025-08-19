@@ -5,6 +5,7 @@ dependencies = [
 	"grpcio ~= 1.68",
 	"autokitteh[all] ~= 0.6",
 ]
+requires-python = ">= 3.11"
 
 [project.optional-dependencies]
 all = [
