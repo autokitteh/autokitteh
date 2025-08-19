@@ -164,7 +164,11 @@ def set_exception_args(err):
     for name in init_args[len(err_args) :]:
         extra.append(getattr(err, name, None))
 
-    err.args += tuple(extra)
+    try:
+        err.args += tuple(extra)
+    except Exception as e:
+        # Some errors (msgraph ODataError) raise when you set args
+        log.warning("can't set args for %r - %r", err, e)
 
 
 Call = namedtuple("Call", "fn args kw fut")

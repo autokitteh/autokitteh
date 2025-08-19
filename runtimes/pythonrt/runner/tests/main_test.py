@@ -353,7 +353,6 @@ def test_async_exc():
     runner = new_test_runner(workflows.async_exc, server=MagicMock())
     worker = MockWorker(runner)
     runner.worker = worker
-    breakpoint()
 
     event = json.dumps({"data": {"cat": "mitzi"}})
     worker.start("program.py:on_event", event.encode())
