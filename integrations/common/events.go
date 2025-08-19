@@ -2,10 +2,12 @@ package common
 
 import (
 	"context"
+	"errors"
 
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -51,7 +53,12 @@ func DispatchEvent(ctx context.Context, l *zap.Logger, d sdkservices.DispatchFun
 			zap.String("event_id", eid.String()),
 		)
 		if err != nil {
-			l.Error("event dispatch failed", zap.Error(err))
+			if errors.Is(err, sdkerrors.ErrResourceExhausted) {
+				l.Info("Event dispatch failed due to resource exhaustion")
+			} else {
+				l.Error("Event dispatch failed", zap.Error(err))
+			}
+
 			return
 		}
 		l.Debug("event dispatched")

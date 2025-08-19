@@ -105,6 +105,7 @@ func findExports(log *zap.Logger, fsys fs.FS) ([]sdktypes.BuildExport, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer os.RemoveAll(codeDir) // We will copy the code to this dir.
 
 	if err := os.CopyFS(codeDir, fsys); err != nil {
 		return nil, err
@@ -114,6 +115,8 @@ func findExports(log *zap.Logger, fsys fs.FS) ([]sdktypes.BuildExport, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer os.RemoveAll(runnerDir) // We will copy the runner code to this dir.
+
 	if err := os.CopyFS(runnerDir, runnerPyCode); err != nil {
 		return nil, err
 	}

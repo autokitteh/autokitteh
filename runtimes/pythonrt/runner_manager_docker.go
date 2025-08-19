@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"errors"
 	"fmt"
+	"os"
 	"sync"
 
 	"go.uber.org/zap"
@@ -87,6 +88,7 @@ func (rm *dockerRunnerManager) Start(ctx context.Context, sessionID sdktypes.Ses
 	if err != nil {
 		return nil, fmt.Errorf("prepare user code: %w", err)
 	}
+	defer os.RemoveAll(codePath)
 
 	hash := md5.Sum(buildArtifacts)
 	version := fmt.Sprintf("u%x", hash)

@@ -431,6 +431,10 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				w.Header().Set("Content-Type", "application/json")
 				kittehs.Must0(json.NewEncoder(w).Encode(version.Version))
 			})
+			muxes.NoAuth.HandleFunc("GET /version", func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				kittehs.Must0(json.NewEncoder(w).Encode(version.Version))
+			})
 			muxes.NoAuth.HandleFunc("GET /internal/uptime", func(w http.ResponseWriter, r *http.Request) {
 				uptime := fixtures.Uptime().Truncate(time.Second)
 
