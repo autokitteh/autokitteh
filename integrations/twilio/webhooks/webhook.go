@@ -2,10 +2,12 @@ package webhooks
 
 import (
 	"context"
+	"errors"
 
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -56,7 +58,11 @@ func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, cids []sd
 			zap.String("eventID", eid.String()),
 		)
 		if err != nil {
-			l.Error("Event dispatch failed", zap.Error(err))
+			if errors.Is(err, sdkerrors.ErrResourceExhausted) {
+				l.Info("Event dispatch failed due to resource exhaustion")
+			} else {
+				l.Error("Event dispatch failed", zap.Error(err))
+			}
 			return
 		}
 		l.Debug("Event dispatched")
