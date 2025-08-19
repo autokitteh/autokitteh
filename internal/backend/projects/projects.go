@@ -143,6 +143,7 @@ func (ps *Projects) Build(ctx context.Context, projectID sdktypes.ProjectID, asy
 func (ps *Projects) buildAsync(ctx context.Context, projectID sdktypes.ProjectID) (sdktypes.BuildID, error) {
 	return ps.Builds.Save(ctx, sdktypes.NewBuild().WithProjectID(projectID).WithStatus(sdktypes.BuildStatusPending), nil)
 }
+
 func (ps *Projects) buildSync(ctx context.Context, projectID sdktypes.ProjectID) (sdktypes.BuildID, error) {
 	fs, hash, err := ps.openProjectResourcesFS(ctx, projectID)
 	if err != nil {
