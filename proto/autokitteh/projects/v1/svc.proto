@@ -76,6 +76,7 @@ message ListResponse {
 
 message BuildRequest {
   string project_id = 1 [(buf.validate.field).string.min_len = 1];
+  bool async = 2;
 }
 
 message BuildResponse {
