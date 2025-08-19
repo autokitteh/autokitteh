@@ -6,7 +6,6 @@ Need much more:
 - Bad input tests
 """
 
-import builtins
 import json
 import os
 import pickle
@@ -61,9 +60,6 @@ def test_start(monkeypatch):
     entry_point = f"{mod_name}.py:on_event"
     req = runner_pb.StartRequest(entry_point=entry_point, event=event)
     context = MagicMock()
-
-    # Restore print after this test
-    monkeypatch.setattr(builtins, "print", print)
 
     resp = runner.Start(req, context)
 
