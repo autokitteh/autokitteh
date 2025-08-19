@@ -139,9 +139,9 @@ func (c *client) List(ctx context.Context, oid sdktypes.OrgID) ([]sdktypes.Proje
 	return kittehs.TransformError(resp.Msg.Projects, sdktypes.StrictProjectFromProto)
 }
 
-func (c *client) Build(ctx context.Context, pid sdktypes.ProjectID) (sdktypes.BuildID, error) {
+func (c *client) Build(ctx context.Context, pid sdktypes.ProjectID, async bool) (sdktypes.BuildID, error) {
 	resp, err := c.client.Build(ctx, connect.NewRequest(
-		&projectsv1.BuildRequest{ProjectId: pid.String()},
+		&projectsv1.BuildRequest{ProjectId: pid.String(), Async: async},
 	))
 	if err != nil {
 		return sdktypes.InvalidBuildID, rpcerrors.ToSDKError(err)
