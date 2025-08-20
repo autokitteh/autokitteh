@@ -7,6 +7,8 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations/common"
+	"go.autokitteh.dev/autokitteh/integrations/microsoft/connection"
+	"go.autokitteh.dev/autokitteh/integrations/microsoft/teams"
 )
 
 // https://learn.microsoft.com/en-us/graph/api/resources/changenotificationcollection
@@ -45,8 +47,34 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO(INT-203): Dispatch change notifications to AutoKitteh connections.
-	for _, n := range notifs.Value {
-		l.Warn("TODO: handle MS change notif", zap.Any("change_notif", n))
+	tenantID, ok := notifs.Value[0]["tenantId"].(string)
+	if !ok || tenantID == "" {
+		h.logger.Error("MS change notif: missing tenantId in notification data")
+		common.HTTPError(w, http.StatusBadRequest)
+		return
 	}
+
+	changeType, ok := notifs.Value[0]["changeType"].(string)
+	if !ok || changeType == "" {
+		h.logger.Error("MS change notif: missing changeType in notification data")
+		common.HTTPError(w, http.StatusBadRequest)
+		return
+	}
+
+	akEvent, err := common.TransformEvent(h.logger, notifs.Value[0], changeType)
+	if err != nil {
+		h.logger.Error("failed to transform event", zap.Error(err))
+		common.HTTPError(w, http.StatusInternalServerError)
+		return
+	}
+
+	ctx := r.Context()
+	cids, err := h.vars.FindConnectionIDs(ctx, teams.Desc.ID(), connection.PrivateTenantIDVar, tenantID)
+	if err != nil {
+		h.logger.Error("failed to find connection IDs", zap.Error(err))
+		common.HTTPError(w, http.StatusInternalServerError)
+		return
+	}
+
+	common.DispatchEvent(ctx, h.logger, h.dispatch, akEvent, cids)
 }

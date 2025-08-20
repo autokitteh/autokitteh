@@ -58,7 +58,11 @@ func Subscribe(ctx context.Context, svc Services, cid sdktypes.ConnectionID, res
 
 	var errs []error
 	for _, r := range resources {
-		if _, ok := subs[r]; !ok {
+		if sub, ok := subs[r]; ok { // TODO: do we need to renew
+			// Subscription exists, renew it
+			errs = append(errs, RenewSubscription(ctx, svc, cid, r, sub.ID))
+		} else {
+			// No subscription exists, create new one
 			errs = append(errs, CreateSubscription(ctx, svc, cid, r))
 		}
 	}

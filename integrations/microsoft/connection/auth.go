@@ -21,7 +21,7 @@ import (
 // (based on: https://learn.microsoft.com/en-us/entra/identity-platform/scenario-daemon-acquire-token).
 func DaemonToken(ctx context.Context, vs sdktypes.Vars) (*oauth2.Token, error) {
 	// https://learn.microsoft.com/en-us/answers/questions/1853467/aadsts7000229-the-client-application-is-missing-se
-	tenantID := vs.GetValue(privateTenantIDVar)
+	tenantID := vs.GetValue(PrivateTenantIDVar)
 	if tenantID == "" {
 		tenantID = vs.GetValue(orgIDVar)
 	}

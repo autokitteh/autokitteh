@@ -1,6 +1,7 @@
 package microsoft
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -129,38 +130,41 @@ func (h handler) savePrivateDaemonApp(r *http.Request, i sdktypes.Integration, c
 		return errors.New("missing private app details")
 	}
 
-	// Test the app's usability by generating a new token.
 	ctx := r.Context()
+	vs := sdktypes.EncodeVars(app)
 	vsid := sdktypes.NewVarScopeID(cid)
-	vs, err := h.vars.Get(ctx, vsid)
-	if err != nil {
-		h.logger.Error("failed to read connection vars", zap.Error(err))
-		return errors.New("failed to read connection vars")
-	}
 
+	// Test the app's usability by generating a new token.
 	t, err := connection.DaemonToken(ctx, vs)
 	if err != nil {
 		h.logger.Error("failed to generate MS daemon app token", zap.Error(err))
 		return err
 	}
 
-	vs = sdktypes.EncodeVars(app)
-
 	// Optional: save the tenant details, if the app is allowed to read them.
 	if org, err := connection.GetOrgInfo(ctx, t); err == nil {
 		vs = vs.Append(sdktypes.EncodeVars(org)...)
 	}
 
-	// Subscribe to receive asynchronous change notifications from
-	// Microsoft Graph, based on the connection's integration type.
-	svc := connection.NewServices(h.logger, h.vars, h.oauth)
-	err = errors.Join(connection.Subscribe(ctx, svc, cid, resources(i))...)
-	if err != nil {
-		h.logger.Error("failed to create MS event subscriptions", zap.Error(err))
-		return err
+	// Save variables after successful token validation.
+	if err := h.vars.Set(ctx, vs.WithScopeID(vsid)...); err != nil {
+		h.logger.Error("failed to save connection vars", zap.Error(err))
+		return errors.New("failed to save connection vars")
 	}
 
-	return h.vars.Set(ctx, vs.WithScopeID(vsid)...)
+	// Subscribe to receive asynchronous change notifications from
+	// Microsoft Graph, based on the connection's integration type.
+	// Run this in background to avoid HTTP timeouts
+	go func() { // TODO: why is it taking so much time?
+		bgCtx := context.Background() // Use background context to avoid HTTP timeout
+		svc := connection.NewServices(h.logger, h.vars, h.oauth)
+		err := errors.Join(connection.Subscribe(bgCtx, svc, cid, resources(i))...)
+		if err != nil {
+			h.logger.Error("some MS Graph subscriptions failed", zap.Error(err))
+		}
+	}()
+
+	return nil
 }
 
 // startOAuth redirects the user to the AutoKitteh server's
