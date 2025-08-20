@@ -39,7 +39,7 @@ func Config() *svc.Config { return cfg }
 func ServerURL() *url.URL { return serverURL }
 
 func readServerURL() (ret *url.URL, err error) {
-	u := sdkclient.DefaultLocalURL
+	u := sdkclient.DefaultCloudURL
 	if _, err = cfg.Get("http.service_url", &u); err != nil {
 		return
 	} // if not overridden by config, then url will remain default
