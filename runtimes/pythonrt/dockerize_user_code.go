@@ -10,11 +10,8 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/tar"
 )
 
-//go:embed dockerfilenodeps
-var dockerfileNoDeps string
-
-//go:embed dockerfilewithdeps
-var dockerfileWithDeps string
+//go:embed Dockerfile
+var dockerfile string
 
 //go:embed sitecustomize.py
 var siteCustomize []byte
@@ -75,18 +72,20 @@ func prepareUserCode(code []byte, gzipped bool) (string, error) {
 				return "", err
 			}
 		}
+	}
 
+	if !hasRequirementsFile {
+		// default empty requirements.txt file
+		if err := os.WriteFile(path.Join(workflowDir, "user_requirements.txt"), []byte(""), 0o777); err != nil {
+			return "", err
+		}
 	}
 
 	if err := os.WriteFile(path.Join(tmpDir, "sitecustomize.py"), siteCustomize, 0o777); err != nil {
 		return "", err
 	}
 
-	dockerfile := []byte(dockerfileNoDeps)
-	if hasRequirementsFile {
-		dockerfile = []byte(dockerfileWithDeps)
-	}
-	if err := os.WriteFile(path.Join(tmpDir, "Dockerfile"), dockerfile, 0o777); err != nil {
+	if err := os.WriteFile(path.Join(tmpDir, "Dockerfile"), []byte(dockerfile), 0o777); err != nil {
 		return "", err
 	}
 
