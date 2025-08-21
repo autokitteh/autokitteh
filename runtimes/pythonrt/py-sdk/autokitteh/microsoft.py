@@ -105,7 +105,7 @@ class OAuthTokenProvider(credentials.TokenCredential):
         self._refresh_token = os.getenv(connection + "__oauth_refresh_token", "")
 
     def get_token(self, *scopes: str, **kwargs) -> credentials.AccessToken:
-        if self._expiry + self._buffer_time >= datetime.now(UTC):
+        if self._expiry + self._buffer_time < datetime.now(UTC):
             self._refresh_oauth_token()
 
         expires_on = int(self._expiry.timestamp())
