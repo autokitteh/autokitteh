@@ -12,6 +12,7 @@ require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.6-20250425153114-8976f5be98c1.1
 	connectrpc.com/connect v1.18.1
 	connectrpc.com/grpcreflect v1.3.0
+	github.com/BurntSushi/toml v1.5.0
 	github.com/Masterminds/sprig/v3 v3.3.0
 	github.com/adrg/xdg v0.5.3
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
@@ -33,7 +34,7 @@ require (
 	github.com/fergusstrange/embedded-postgres v1.30.0
 	github.com/flosch/pongo2/v6 v6.0.0
 	github.com/glebarez/sqlite v1.11.0
-	github.com/go-viper/mapstructure/v2 v2.3.0
+	github.com/go-viper/mapstructure/v2 v2.4.0
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/google/cel-go v0.25.0
 	github.com/google/generative-ai-go v0.19.0
@@ -103,6 +104,7 @@ require (
 	gorm.io/driver/sqlite v1.5.7
 	gorm.io/gorm v1.26.1
 	gotest.tools/v3 v3.5.2
+	k8s.io/client-go v0.33.2
 	logur.dev/adapter/zap v0.5.0
 	logur.dev/logur v0.17.0
 	moul.io/zapgorm2 v1.3.0
@@ -129,7 +131,6 @@ require (
 	github.com/Antonboom/nilnil v1.1.0 // indirect
 	github.com/Antonboom/testifylint v1.6.1 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect
-	github.com/BurntSushi/toml v1.5.0 // indirect
 	github.com/Djarvur/go-err113 v0.0.0-20210108212216-aea10b59be24 // indirect
 	github.com/GaijinEntertainment/go-exhaustruct/v3 v3.3.1 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
@@ -462,7 +463,6 @@ require (
 	honnef.co/go/tools v0.6.1 // indirect
 	k8s.io/api v0.33.2 // indirect
 	k8s.io/apimachinery v0.33.2 // indirect
-	k8s.io/client-go v0.33.2 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20250318190949-c8a335a9a2ff // indirect
 	k8s.io/utils v0.0.0-20241104100929-3ea5e8cea738 // indirect
