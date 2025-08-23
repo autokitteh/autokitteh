@@ -6,7 +6,7 @@ import (
 
 var (
 	orgIDVar           = sdktypes.NewSymbol("org_id")
-	privateTenantIDVar = sdktypes.NewSymbol("private_tenant_id")
+	PrivateTenantIDVar = sdktypes.NewSymbol("private_tenant_id")
 )
 
 // OrgInfo contains basic details about a Microsoft organization

@@ -13,14 +13,14 @@ const (
 	IntegrationName = "microsoft_teams"
 )
 
-var desc = common.Descriptor(IntegrationName, "Microsoft Teams", "/static/images/microsoft_teams.svg").
+var Desc = common.Descriptor(IntegrationName, "Microsoft Teams", "/static/images/microsoft_teams.svg").
 	WithConnectionURL("/microsoft/teams")
 
 // New defines an AutoKitteh integration, which
 // is registered when the AutoKitteh server starts.
 func New(v sdkservices.Vars, o *oauth.OAuth) sdkservices.Integration {
 	return sdkintegrations.NewIntegration(
-		desc, sdkmodule.New(),
+		Desc, sdkmodule.New(),
 		connection.Status(v), connection.Test(v, o),
 		sdkintegrations.WithConnectionConfigFromVars(v))
 }

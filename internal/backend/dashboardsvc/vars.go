@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -71,6 +72,8 @@ func (s *svc) setVar(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *svc) genVarsList(w http.ResponseWriter, r *http.Request, sid sdktypes.VarScopeID) (list, error) {
+	reveal, _ := strconv.ParseBool(r.URL.Query().Get("reveal"))
+
 	vs, err := s.Vars().Get(r.Context(), sid)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -82,7 +85,7 @@ func (s *svc) genVarsList(w http.ResponseWriter, r *http.Request, sid sdktypes.V
 		Headers: []string{"", "name", "value"},
 		Items: kittehs.Transform(vs, func(cv sdktypes.Var) []template.HTML {
 			v := cv.Value()
-			if cv.IsSecret() {
+			if !reveal && cv.IsSecret() {
 				v = "🤐"
 			}
 

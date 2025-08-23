@@ -1,6 +1,7 @@
 {{ define "vars_" }}
 
-<h2>{{ .N }} Vars</h2>
+<h2>{{ .N }} Vars <button onclick="revealAllVars()" title="Reveal secrets">🫢</button>&nbsp;<button onclick="hideAllVars()" title="Hide secrets">🫣</button></h2>
+
 <button onclick="deleteVars()">Delete</button>
 <button onclick="setVar()">Set:</button>
 <input type="text" id="var-name" placeholder="name" />
@@ -11,6 +12,18 @@
 {{ template "list_table_" . }}
 
 <script>
+    function revealAllVars() {
+        const params = new URLSearchParams(window.location.search);
+        params.set('reveal', 'true');
+        window.location.search = params.toString();
+    }
+
+    function hideAllVars() {
+        const params = new URLSearchParams(window.location.search);
+        params.delete('reveal');
+        window.location.search = params.toString();
+    }
+
     function deleteVars() {
         const checkedBoxes = document.querySelectorAll('input[name=vars]:checked');
         const keys = Array.from(checkedBoxes).map(checkbox => checkbox.value)
