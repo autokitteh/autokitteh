@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"go.uber.org/zap"
@@ -53,27 +55,49 @@ type Subscription struct {
 // Subscribe creates subscriptions for a given list of resources.
 // If a subscription already exists for a given resource, we just renew it,
 // because Microsoft Graph limits the number of subscriptions per resource to 1.
-func Subscribe(ctx context.Context, svc Services, cid sdktypes.ConnectionID, resources []string) []error {
-	subs := existingSubscriptions(ctx, svc, cid)
+func Subscribe(ctx context.Context, svcs Services, cid sdktypes.ConnectionID, resources []string) error {
+	subs := existingSubscriptions(ctx, svcs, cid)
 
-	var errs []error
-	for _, r := range resources {
-		if sub, ok := subs[r]; ok { // TODO: do we need to renew
-			// Subscription exists, renew it
-			errs = append(errs, RenewSubscription(ctx, svc, cid, r, sub.ID))
-		} else {
-			// No subscription exists, create new one
-			errs = append(errs, CreateSubscription(ctx, svc, cid, r))
-		}
+	var wg sync.WaitGroup
+	wg.Add(len(resources))
+
+	errs := make([]error, len(resources))
+
+	changeURL, lifecycleNotificationUrl := webhookURLs()
+
+	for i, r := range resources {
+		go func(i int, r string) {
+			var err error
+
+			defer func() {
+				errs[i] = err
+				wg.Done()
+			}()
+
+			if sub, ok := subs[r]; ok {
+				if sub.NotificationURL == changeURL || sub.LifecycleNotificationURL == lifecycleNotificationUrl {
+					err = RenewSubscription(ctx, svcs, cid, r, sub.ID)
+					return
+				}
+
+				if err = DeleteSubscription(ctx, svcs, cid, sub.ID); err != nil {
+					return
+				}
+			}
+
+			err = CreateSubscription(ctx, svcs, cid, r)
+		}(i, r)
 	}
 
-	return errs
+	wg.Wait()
+
+	return errors.Join(errs...)
 }
 
 // existingSubscriptions returns a map of all the existing
 // subscriptions for a given connection, keyed by resource name.
 func existingSubscriptions(ctx context.Context, svc Services, cid sdktypes.ConnectionID) map[string]*Subscription {
-	subs, err := sendRequest(ctx, svc, cid, http.MethodGet, "", nil)
+	subs, err := sendSubscriptionRequest(ctx, svc, cid, http.MethodGet, "", nil)
 	if err != nil {
 		subs = []Subscription{}
 	}
@@ -111,29 +135,29 @@ func CreateSubscription(ctx context.Context, svc Services, cid sdktypes.Connecti
 		ClientState:        cid.String(),
 	}
 
-	_, err := sendRequest(ctx, svc, cid, http.MethodPost, "", sub)
+	_, err := sendSubscriptionRequest(ctx, svc, cid, http.MethodPost, "", sub)
 	if err == nil {
 		svc.Logger.Info("Microsoft Graph subscription created", zap.Any("subscription", sub))
 	}
 	return err
 }
 
-func RenewSubscription(ctx context.Context, svc Services, cid sdktypes.ConnectionID, resource, id string) error {
+func RenewSubscription(ctx context.Context, svcs Services, cid sdktypes.ConnectionID, resource, id string) error {
 	sub := &Subscription{
 		ExpirationDateTime: expiration(resource),
 	}
 
-	_, err := sendRequest(ctx, svc, cid, http.MethodPatch, id, sub)
+	_, err := sendSubscriptionRequest(ctx, svcs, cid, http.MethodPatch, id, sub)
 	if err == nil {
-		svc.Logger.Info("Microsoft Graph subscription renewed", zap.Any("subscription", sub))
+		svcs.Logger.Info("Microsoft Graph subscription renewed", zap.Any("subscription", sub))
 	}
 	return err
 }
 
-func DeleteSubscription(ctx context.Context, svc Services, cid sdktypes.ConnectionID, id string) error {
-	_, err := sendRequest(ctx, svc, cid, http.MethodDelete, id, nil)
+func DeleteSubscription(ctx context.Context, svcs Services, cid sdktypes.ConnectionID, id string) error {
+	_, err := sendSubscriptionRequest(ctx, svcs, cid, http.MethodDelete, id, nil)
 	if err == nil {
-		svc.Logger.Info("Microsoft Graph subscription deleted", zap.Any("subscription", id))
+		svcs.Logger.Info("Microsoft Graph subscription deleted", zap.Any("subscription", id))
 	}
 	return err
 }
@@ -170,14 +194,21 @@ type subscriptionsList struct {
 	Subscriptions []Subscription `json:"value"`
 }
 
-// sendRequest sends a subscription-related request to the Microsoft Graph API. If
+// sendSubscriptionRequest sends a subscription-related request to the Microsoft Graph API. If
 // this function is successful (error == nil), it updates the input [Subscription] details
 // (based on: https://learn.microsoft.com/en-us/graph/change-notifications-delivery-webhooks).
-func sendRequest(ctx context.Context, svc Services, cid sdktypes.ConnectionID, httpMethod, subID string, s *Subscription) ([]Subscription, error) {
-	l := svc.Logger.With(
+func sendSubscriptionRequest(ctx context.Context, svcs Services, cid sdktypes.ConnectionID, httpMethod, subID string, s *Subscription) ([]Subscription, error) {
+	l := svcs.Logger.With(
 		zap.String("http_method", httpMethod),
 		zap.String("subscription_id", subID),
 	)
+
+	if s != nil {
+		l = l.With(
+			zap.String("subscription_change_type", s.ChangeType),
+			zap.String("subscription_resource", s.Resource),
+		)
+	}
 
 	u, err := url.JoinPath(apiURL, subID)
 	if err != nil {
@@ -198,22 +229,26 @@ func sendRequest(ctx context.Context, svc Services, cid sdktypes.ConnectionID, h
 		return nil, err
 	}
 
-	req.Header.Set(common.HeaderAuthorization, bearerToken(ctx, l, svc, cid))
+	req.Header.Set(common.HeaderAuthorization, bearerToken(ctx, l, svcs, cid))
 	if s != nil {
 		req.Header.Set(common.HeaderContentType, common.ContentTypeJSON)
 	}
 
+	l.Info("sending subscription request")
+
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		l.Warn("MS Graph subscription request failed", zap.Error(err))
+		l.Warn("subscription request failed", zap.Error(err))
 		return nil, err
 	}
 	defer resp.Body.Close()
 
+	l.Info("received subscription response", zap.String("status", resp.Status))
+
 	// Read the response's body, up to 1 MiB.
 	body, err := io.ReadAll(http.MaxBytesReader(nil, resp.Body, 1<<20))
 	if err != nil {
-		l.Warn("failed to read MS Graph subscription response", zap.Error(err))
+		l.Warn("failed to read subscription response", zap.Error(err))
 		return nil, err
 	}
 

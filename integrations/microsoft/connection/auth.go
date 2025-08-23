@@ -57,10 +57,10 @@ func DaemonToken(ctx context.Context, vs sdktypes.Vars) (*oauth2.Token, error) {
 }
 
 // bearerToken returns a bearer token for an HTTP Authorization header based on the connection's auth type.
-func bearerToken(ctx context.Context, l *zap.Logger, svc Services, cid sdktypes.ConnectionID) string {
+func bearerToken(ctx context.Context, l *zap.Logger, svcs Services, cid sdktypes.ConnectionID) string {
 	ctx = authcontext.SetAuthnSystemUser(ctx)
 
-	vs, err := svc.Vars.Get(ctx, sdktypes.NewVarScopeID(cid))
+	vs, err := svcs.Vars.Get(ctx, sdktypes.NewVarScopeID(cid))
 	if err != nil {
 		l.Error("failed to read connection vars",
 			zap.String("connection_id", cid.String()), zap.Error(err),
@@ -71,7 +71,7 @@ func bearerToken(ctx context.Context, l *zap.Logger, svc Services, cid sdktypes.
 	switch authType := common.ReadAuthType(vs); authType {
 	case integrations.OAuthDefault, integrations.OAuthPrivate:
 		desc := common.Descriptor("microsoft", "", "")
-		t := svc.OAuth.FreshToken(ctx, l, desc, vs)
+		t := svcs.OAuth.FreshToken(ctx, l, desc, vs)
 		return "Bearer " + t.AccessToken
 
 	case integrations.DaemonApp:

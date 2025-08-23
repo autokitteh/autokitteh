@@ -1,7 +1,6 @@
 package microsoft
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -146,23 +145,17 @@ func (h handler) savePrivateDaemonApp(r *http.Request, i sdktypes.Integration, c
 		vs = vs.Append(sdktypes.EncodeVars(org)...)
 	}
 
-	// Save variables after successful token validation.
 	if err := h.vars.Set(ctx, vs.WithScopeID(vsid)...); err != nil {
 		h.logger.Error("failed to save connection vars", zap.Error(err))
 		return errors.New("failed to save connection vars")
 	}
 
-	// Subscribe to receive asynchronous change notifications from
-	// Microsoft Graph, based on the connection's integration type.
-	// Run this in background to avoid HTTP timeouts
-	go func() { // TODO: why is it taking so much time?
-		bgCtx := context.Background() // Use background context to avoid HTTP timeout
-		svc := connection.NewServices(h.logger, h.vars, h.oauth)
-		err := errors.Join(connection.Subscribe(bgCtx, svc, cid, resources(i))...)
-		if err != nil {
-			h.logger.Error("some MS Graph subscriptions failed", zap.Error(err))
-		}
-	}()
+	svc := connection.NewServices(h.logger, h.vars, h.oauth)
+
+	if err := connection.Subscribe(ctx, svc, cid, resources(i)); err != nil {
+		h.logger.Error("some subscriptions failed", zap.Error(err))
+		return err
+	}
 
 	return nil
 }
