@@ -28,6 +28,8 @@ type dockerRunnerManager struct {
 	workerAddressProvider func() string
 }
 
+const baseImage = "baseimage:latest"
+
 func configureDockerRunnerManager(log *zap.Logger, cfg DockerRuntimeConfig) error {
 	dc, err := NewDockerClient(log, cfg.LogRunnerCode, cfg.LogBuildCode)
 	if err != nil {
@@ -53,6 +55,22 @@ func configureDockerRunnerManager(log *zap.Logger, cfg DockerRuntimeConfig) erro
 			}
 
 			log.Debug("stopped runner: " + rid)
+		}
+	}
+
+	baseImagePath, err := prepareBaseImageCode("")
+	if err != nil {
+		return fmt.Errorf("prepare base image code: %w", err)
+	}
+
+	exists, err := dc.ImageExists(context.Background(), baseImage)
+	if err != nil {
+		return fmt.Errorf("check image exists: %w", err)
+	}
+	if !exists {
+		log.Info("building base image", zap.String("image", baseImage))
+		if err := dc.BuildImage(context.Background(), baseImage, baseImagePath); err != nil {
+			return fmt.Errorf("build base image: %w", err)
 		}
 	}
 
@@ -85,18 +103,39 @@ func (rm *dockerRunnerManager) Start(ctx context.Context, sessionID sdktypes.Ses
 		return "", nil, errors.New("no build artifacts")
 	}
 
-	codePath, err := prepareUserCode(buildArtifacts, false)
+	details, err := prepareUserCode(buildArtifacts, false)
 	if err != nil {
 		return "", nil, fmt.Errorf("prepare user code: %w", err)
 	}
-	defer os.RemoveAll(codePath)
+	fmt.Println("code_path", details.codePath)
+	// defer os.RemoveAll(codePath)
 
-	hash := md5.Sum(buildArtifacts)
-	version := fmt.Sprintf("u%x", hash)
-	containerName := "usercode:" + version
+	selectedImage := baseImage
+	if details.hasCustomRequirements {
+		reqFileBytes, err := os.ReadFile(details.requirementsFilePath)
+		if err != nil {
+			return "", nil, fmt.Errorf("read requirements file: %w", err)
+		}
+		hash := md5.Sum(reqFileBytes)
+		version := fmt.Sprintf("u%x", hash)
+		selectedImage := "usercode:" + version
 
-	if err := rm.client.BuildImage(ctx, containerName, codePath); err != nil {
-		return "", nil, fmt.Errorf("build image: %w", err)
+		exists, err := rm.client.ImageExists(ctx, selectedImage)
+		if err != nil {
+			return "", nil, fmt.Errorf("check image exists: %w", err)
+		}
+		if !exists {
+			rm.logger.Info("building new user code image", zap.String("image", selectedImage))
+			tmpBaseImageCode, err := prepareBaseImageCode(details.requirementsFilePath)
+			if err != nil {
+				return "", nil, fmt.Errorf("prepare base image code: %w", err)
+			}
+
+			if err := rm.client.BuildImage(ctx, selectedImage, tmpBaseImageCode); err != nil {
+				return "", nil, fmt.Errorf("build image: %w", err)
+			}
+		}
+
 	}
 
 	rid, err := typeid.WithPrefix("runner")
@@ -106,7 +145,7 @@ func (rm *dockerRunnerManager) Start(ctx context.Context, sessionID sdktypes.Ses
 	runnerID := rid.String()
 	cmd := createStartCommand("/runner/main.py", rm.workerAddressProvider(), runnerID)
 
-	cid, port, err := rm.client.StartRunner(ctx, containerName, sessionID, cmd, vars)
+	cid, port, err := rm.client.StartRunner(ctx, selectedImage, details.codePath, sessionID, cmd, vars)
 	if err != nil {
 		return "", nil, fmt.Errorf("start runner: %w", err)
 	}

@@ -12,6 +12,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
+	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
@@ -90,7 +91,7 @@ func (d *dockerClient) ensureNetwork() (string, error) {
 	return inspectResult.ID, nil
 }
 
-func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, sessionID sdktypes.SessionID, cmd []string, vars map[string]string) (string, string, error) {
+func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, codePath string, sessionID sdktypes.SessionID, cmd []string, vars map[string]string) (string, string, error) {
 	envVars := make([]string, 0, len(vars))
 	for k, v := range vars {
 		envVars = append(envVars, k+"="+v)
@@ -108,10 +109,17 @@ func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, sess
 			WorkingDir: "/workflow",
 		},
 		&container.HostConfig{
-			AutoRemove:   true,
+			// AutoRemove:   true,
 			NetworkMode:  container.NetworkMode(networkName),
 			PortBindings: nat.PortMap{internalRunnerPort: []nat.PortBinding{{HostIP: "127.0.0.1"}}},
 			Tmpfs:        map[string]string{"/tmp": "size=64m"},
+			Mounts: []mount.Mount{
+				{
+					Type:   mount.TypeBind,
+					Source: codePath,
+					Target: "/workflow",
+				},
+			},
 		}, nil, nil, "")
 	if err != nil {
 		return "", "", err

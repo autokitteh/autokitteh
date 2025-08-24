@@ -16,17 +16,7 @@ var dockerfile string
 //go:embed sitecustomize.py
 var siteCustomize []byte
 
-func prepareUserCode(code []byte, gzipped bool) (string, error) {
-	tf, err := tar.FromBytes(code, gzipped)
-	if err != nil {
-		return "", err
-	}
-
-	content, err := tf.Content()
-	if err != nil {
-		return "", err
-	}
-
+func prepareBaseImageCode(customReqFilePath string) (string, error) {
 	tmpDir, err := os.MkdirTemp("", "")
 	if err != nil {
 		return "", err
@@ -50,35 +40,16 @@ func prepareUserCode(code []byte, gzipped bool) (string, error) {
 	if err := os.Mkdir(workflowDir, 0o777); err != nil {
 		return "", err
 	}
-
-	hasRequirementsFile := false
-	for file, content := range content {
-		if strings.HasPrefix(file, ".") {
-			continue
-		}
-
-		dir := path.Dir(path.Join(workflowDir, file))
-		if err := os.MkdirAll(dir, 0o750); err != nil {
+	customReqBytes := []byte("")
+	if customReqFilePath != "" {
+		customReqBytes, err = os.ReadFile(customReqFilePath)
+		if err != nil {
 			return "", err
-		}
-
-		if file == "requirements.txt" {
-			hasRequirementsFile = true
-			if err := os.WriteFile(path.Join(workflowDir, "user_requirements.txt"), content, 0o777); err != nil {
-				return "", err
-			}
-		} else {
-			if err := os.WriteFile(path.Join(workflowDir, file), content, 0o777); err != nil {
-				return "", err
-			}
 		}
 	}
 
-	if !hasRequirementsFile {
-		// default empty requirements.txt file
-		if err := os.WriteFile(path.Join(workflowDir, "user_requirements.txt"), []byte(""), 0o777); err != nil {
-			return "", err
-		}
+	if err := os.WriteFile(path.Join(workflowDir, "user_requirements.txt"), customReqBytes, 0o777); err != nil {
+		return "", err
 	}
 
 	if err := os.WriteFile(path.Join(tmpDir, "sitecustomize.py"), siteCustomize, 0o777); err != nil {
@@ -98,4 +69,56 @@ func prepareUserCode(code []byte, gzipped bool) (string, error) {
 	}
 
 	return tmpDir, nil
+}
+
+type userCodeDetails struct {
+	codePath              string
+	hasCustomRequirements bool
+	requirementsFilePath  string
+}
+
+func prepareUserCode(code []byte, gzipped bool) (userCodeDetails, error) {
+	tf, err := tar.FromBytes(code, gzipped)
+	if err != nil {
+		return userCodeDetails{}, err
+	}
+
+	content, err := tf.Content()
+	if err != nil {
+		return userCodeDetails{}, err
+	}
+
+	tmpDir, err := os.MkdirTemp("", "")
+	if err != nil {
+		return userCodeDetails{}, err
+	}
+
+	hasRequirementsFile := false
+	for file, content := range content {
+		if strings.HasPrefix(file, ".") {
+			continue
+		}
+
+		dir := path.Dir(path.Join(tmpDir, file))
+		if err := os.MkdirAll(dir, 0o750); err != nil {
+			return userCodeDetails{}, err
+		}
+
+		if file == "requirements.txt" {
+			hasRequirementsFile = true
+			if err := os.WriteFile(path.Join(tmpDir, "user_requirements.txt"), content, 0o777); err != nil {
+				return userCodeDetails{}, err
+			}
+		} else {
+			if err := os.WriteFile(path.Join(tmpDir, file), content, 0o777); err != nil {
+				return userCodeDetails{}, err
+			}
+		}
+	}
+
+	return userCodeDetails{
+		codePath:              tmpDir,
+		hasCustomRequirements: hasRequirementsFile,
+		requirementsFilePath:  path.Join(tmpDir, "user_requirements.txt"),
+	}, nil
 }
