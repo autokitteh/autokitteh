@@ -93,6 +93,10 @@ func prepareUserCode(code []byte, gzipped bool) (userCodeDetails, error) {
 		return userCodeDetails{}, err
 	}
 
+	if err := os.Chmod(tmpDir, 0o755); err != nil {
+		return userCodeDetails{}, err
+	}
+
 	hasRequirementsFile := false
 	for file, content := range content {
 		if strings.HasPrefix(file, ".") {
@@ -100,17 +104,18 @@ func prepareUserCode(code []byte, gzipped bool) (userCodeDetails, error) {
 		}
 
 		dir := path.Dir(path.Join(tmpDir, file))
-		if err := os.MkdirAll(dir, 0o750); err != nil {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
 			return userCodeDetails{}, err
 		}
 
 		if file == "requirements.txt" {
 			hasRequirementsFile = true
-			if err := os.WriteFile(path.Join(tmpDir, "user_requirements.txt"), content, 0o777); err != nil {
+			if err := os.WriteFile(path.Join(tmpDir, "user_requirements.txt"), content, 0o644); err != nil {
 				return userCodeDetails{}, err
 			}
 		} else {
-			if err := os.WriteFile(path.Join(tmpDir, file), content, 0o777); err != nil {
+			targetPath := path.Join(tmpDir, file)
+			if err := os.WriteFile(targetPath, content, 0o777); err != nil {
 				return userCodeDetails{}, err
 			}
 		}
