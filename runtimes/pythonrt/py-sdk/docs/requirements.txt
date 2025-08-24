@@ -23,6 +23,7 @@ PyGithub ~= 2.6
 simple-salesforce ~= 1.12
 slack-sdk ~= 3.33
 twilio ~= 9.4
+O365 ~= 2.1.0
 beautifulsoup4 ~= 4.12
 grpcio ~= 1.68
 grpcio-reflection ~= 1.68
