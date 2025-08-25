@@ -124,8 +124,10 @@ func New(
 			return nil, errors.New("worker address is required for docker runner")
 		}
 		if err := configureDockerRunnerManager(l, DockerRuntimeConfig{
-			LogRunnerCode: cfg.LogRunnerCode,
-			LogBuildCode:  cfg.LogBuildCode,
+			LogRunnerCode:          cfg.LogRunnerCode,
+			LogBuildCode:           cfg.LogBuildCode,
+			MaxMemoryPerWorkflowMB: cfg.MaxMemoryPerWorkflowMB,
+			MaxCPUsPerWorkflow:     cfg.MaxCPUsPerWorkflow,
 			WorkerAddressProvider: func() string {
 				_, port, _ := net.SplitHostPort(getLocalAddr())
 				return fmt.Sprintf("%s:%s", cfg.WorkerAddress, port)
