@@ -22,7 +22,8 @@
 **/charts
 **/docker-compose*
 **/compose*
-**/Dockerfile*
+Dockerfile.*
+!runtimes/pythonrt/Dockerfile
 **/node_modules
 **/npm-debug.log
 **/obj
