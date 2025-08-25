@@ -19,12 +19,17 @@ type Config struct {
 	RunnerType string `koanf:"runner_type"`
 
 	DelayedStartPrintTimeout time.Duration `koanf:"delayed_start_print_timeout"`
+
+	MaxMemoryPerWorkflowMB int64   `koanf:"max_memory_per_workflow_mb"`
+	MaxCPUsPerWorkflow     float32 `koanf:"max_cpus_per_workflow"`
 }
 
 var Configs = configset.Set[Config]{
 	Default: &Config{
 		RunnerType:               "local",
 		DelayedStartPrintTimeout: 10 * time.Second,
+		MaxMemoryPerWorkflowMB:   512, // 512MB
+		MaxCPUsPerWorkflow:       1,
 	},
 	Test: &Config{
 		LazyLoadLocalVEnv:        true,
