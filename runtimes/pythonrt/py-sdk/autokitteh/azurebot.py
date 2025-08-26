@@ -83,4 +83,6 @@ class AzureBotClient:
 
 
 def azurebot_client(connection: str) -> AzureBotClient:
+    check_connection_name(connection)
+
     return AzureBotClient(connection)
