@@ -15,9 +15,11 @@ import (
 )
 
 type DockerRuntimeConfig struct {
-	WorkerAddressProvider func() string
-	LogRunnerCode         bool
-	LogBuildCode          bool
+	WorkerAddressProvider  func() string
+	LogRunnerCode          bool
+	LogBuildCode           bool
+	MaxMemoryPerWorkflowMB int64
+	MaxCPUsPerWorkflow     float32
 }
 
 type dockerRunnerManager struct {
@@ -31,7 +33,7 @@ type dockerRunnerManager struct {
 const baseImage = "baseimage:latest"
 
 func configureDockerRunnerManager(log *zap.Logger, cfg DockerRuntimeConfig) error {
-	dc, err := NewDockerClient(log, cfg.LogRunnerCode, cfg.LogBuildCode)
+	dc, err := NewDockerClient(log, cfg)
 	if err != nil {
 		return err
 	}
