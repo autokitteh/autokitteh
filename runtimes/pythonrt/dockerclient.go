@@ -30,31 +30,35 @@ const (
 )
 
 type dockerClient struct {
-	client          *client.Client
-	activeRunnerIDs map[string]struct{}
-	allRunnerIDs    map[string]struct{}
-	mu              *sync.Mutex
-	runnerLabels    map[string]string
-	logBuildProcess bool
-	logRunner       bool
-	logger          *zap.Logger
+	client                     *client.Client
+	activeRunnerIDs            map[string]struct{}
+	allRunnerIDs               map[string]struct{}
+	mu                         sync.Mutex
+	runnerLabels               map[string]string
+	logBuildProcess            bool
+	logRunner                  bool
+	logger                     *zap.Logger
+	maxMemoryBytesPerContainer int64
+	maxNanoCPUPerContainer     int64
 }
 
-func NewDockerClient(logger *zap.Logger, logRunner, logBuildProcess bool) (*dockerClient, error) {
+func NewDockerClient(logger *zap.Logger, cfg DockerRuntimeConfig) (*dockerClient, error) {
 	apiClient, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		return nil, err
 	}
 
 	dc := &dockerClient{
-		client:          apiClient,
-		mu:              new(sync.Mutex),
-		runnerLabels:    map[string]string{runnersLabel: ""},
-		activeRunnerIDs: map[string]struct{}{},
-		allRunnerIDs:    map[string]struct{}{},
-		logger:          logger,
-		logBuildProcess: logBuildProcess,
-		logRunner:       logRunner,
+		client:                     apiClient,
+		mu:                         sync.Mutex{},
+		runnerLabels:               map[string]string{runnersLabel: ""},
+		activeRunnerIDs:            map[string]struct{}{},
+		allRunnerIDs:               map[string]struct{}{},
+		logger:                     logger,
+		logBuildProcess:            cfg.LogBuildCode,
+		logRunner:                  cfg.LogRunnerCode,
+		maxMemoryBytesPerContainer: cfg.MaxMemoryPerWorkflowMB * 1024 * 1024,
+		maxNanoCPUPerContainer:     int64(cfg.MaxCPUsPerWorkflow * 1000000000),
 	}
 
 	if err := dc.SyncCurrentState(); err != nil {
@@ -112,6 +116,10 @@ func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, sess
 			NetworkMode:  container.NetworkMode(networkName),
 			PortBindings: nat.PortMap{internalRunnerPort: []nat.PortBinding{{HostIP: "127.0.0.1"}}},
 			Tmpfs:        map[string]string{"/tmp": "size=64m"},
+			Resources: container.Resources{
+				Memory:   d.maxMemoryBytesPerContainer,
+				NanoCPUs: d.maxNanoCPUPerContainer,
+			},
 		}, nil, nil, "")
 	if err != nil {
 		return "", "", err
