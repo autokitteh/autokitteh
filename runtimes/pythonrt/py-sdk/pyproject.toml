@@ -38,6 +38,7 @@ all = [
 	"simple-salesforce ~= 1.12",
 	"slack-sdk ~= 3.33",
 	"twilio ~= 9.4",
+	"O365 ~= 2.1.0",
 
 	# General
 	"beautifulsoup4 ~= 4.12",
