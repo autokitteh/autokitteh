@@ -1,0 +1,43 @@
+{
+    "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.16/MicrosoftTeams.schema.json",
+    "manifestVersion": "1.16",
+    "version": "1.0.0",
+    "id": "{{.AppID}}",
+    "packageName": "com.autokitteh.bot",
+    "developer": {
+        "name": "AutoKitteh",
+        "websiteUrl": "https://autokitteh.com",
+        "privacyUrl": "https://autokitteh.com/privacy-policy/",
+        "termsOfUseUrl": "https://autokitteh.com/terms-of-service/"
+    },
+    "icons": {
+        "color": "color.png",
+        "outline": "outline.png"
+    },
+    "name": {
+        "short": "AutoKitteh",
+        "full": "AutoKitteh"
+    },
+    "description": {
+        "short": "AutoKitteh",
+        "full": "AutoKitteh"
+    },
+    "accentColor": "#FFFFFF",
+    "bots": [
+        {
+            "botId": "{{.AppID}}",
+            "scopes": [
+                "personal",
+                "team",
+                "groupchat"
+            ],
+            "supportsFiles": false,
+            "isNotificationOnly": false
+        }
+    ],
+    "permissions": [
+        "identity",
+        "messageTeamMembers"
+    ],
+    "validDomains": []
+}
