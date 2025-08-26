@@ -5,8 +5,6 @@ from typing import Any
 import os
 import requests
 
-import O365
-
 from .connections import check_connection_name
 from .errors import ConnectionInitError, AuthenticationError
 from .activities import activity
