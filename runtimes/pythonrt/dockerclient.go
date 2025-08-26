@@ -33,7 +33,7 @@ type dockerClient struct {
 	client                     *client.Client
 	activeRunnerIDs            map[string]struct{}
 	allRunnerIDs               map[string]struct{}
-	mu                         *sync.Mutex
+	mu                         sync.Mutex
 	runnerLabels               map[string]string
 	logBuildProcess            bool
 	logRunner                  bool
@@ -50,7 +50,7 @@ func NewDockerClient(logger *zap.Logger, cfg DockerRuntimeConfig) (*dockerClient
 
 	dc := &dockerClient{
 		client:                     apiClient,
-		mu:                         new(sync.Mutex),
+		mu:                         sync.Mutex{},
 		runnerLabels:               map[string]string{runnersLabel: ""},
 		activeRunnerIDs:            map[string]struct{}{},
 		allRunnerIDs:               map[string]struct{}{},
@@ -117,7 +117,7 @@ func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, sess
 			PortBindings: nat.PortMap{internalRunnerPort: []nat.PortBinding{{HostIP: "127.0.0.1"}}},
 			Tmpfs:        map[string]string{"/tmp": "size=64m"},
 			Resources: container.Resources{
-				Memory:   d.maxMemoryBytesPerContainer, // 512MB memory limit
+				Memory:   d.maxMemoryBytesPerContainer,
 				NanoCPUs: d.maxNanoCPUPerContainer,
 			},
 		}, nil, nil, "")
