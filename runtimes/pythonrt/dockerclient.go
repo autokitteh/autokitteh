@@ -417,9 +417,13 @@ func (p *logParser) Write(data []byte) (n int, err error) {
 			p.logs = append(p.logs, log.(string))
 		}
 
-		if _, ok := logEntry["error"]; ok {
+		if err, ok := logEntry["error"]; ok {
 			p.hasErrors = true
-			p.errors = append(p.errors, p.logs[len(p.logs)-1])
+			if len(p.logs) == 0 {
+				p.errors = append(p.errors, err.(string))
+			} else {
+				p.errors = append(p.errors, p.logs[len(p.logs)-1])
+			}
 		}
 
 	}
