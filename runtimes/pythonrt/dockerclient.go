@@ -325,6 +325,9 @@ func (d *dockerClient) BuildImage(ctx context.Context, name, directory string) e
 
 	if parser.hasErrors {
 		d.logger.Debug(fmt.Sprintf("found errors when building image %s ", name), zap.Strings("errors", parser.errors))
+		if len(parser.errors) == 0 {
+			return errors.New("Internal error, contact support")
+		}
 		return errors.New(parser.errors[0])
 	}
 
@@ -404,8 +407,8 @@ type logParser struct {
 }
 
 func (p *logParser) Write(data []byte) (n int, err error) {
-	splitted := bytes.Split(data, []byte("\r\n"))
-	for _, line := range splitted {
+	lines := bytes.Split(data, []byte("\r\n"))
+	for _, line := range lines {
 		if len(line) == 0 {
 			continue
 		}
@@ -414,13 +417,17 @@ func (p *logParser) Write(data []byte) (n int, err error) {
 			continue
 		}
 		if log, ok := logEntry["stream"]; ok {
-			p.logs = append(p.logs, log.(string))
+			if logStr, ok := log.(string); ok {
+				p.logs = append(p.logs, logStr)
+			}
 		}
 
 		if err, ok := logEntry["error"]; ok {
 			p.hasErrors = true
 			if len(p.logs) == 0 {
-				p.errors = append(p.errors, err.(string))
+				if errStr, ok := err.(string); ok {
+					p.errors = append(p.errors, errStr)
+				}
 			} else {
 				p.errors = append(p.errors, p.logs[len(p.logs)-1])
 			}
