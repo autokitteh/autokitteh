@@ -93,7 +93,7 @@ func prepareUserCode(code []byte, gzipped bool) (userCodeDetails, error) {
 		return userCodeDetails{}, err
 	}
 
-	if err := os.Chmod(tmpDir, 0o755); err != nil {
+	if err := os.Chmod(tmpDir, 0o777); err != nil {
 		return userCodeDetails{}, err
 	}
 
@@ -104,7 +104,7 @@ func prepareUserCode(code []byte, gzipped bool) (userCodeDetails, error) {
 		}
 
 		dir := path.Dir(path.Join(tmpDir, file))
-		if err := os.MkdirAll(dir, 0o755); err != nil {
+		if err := os.MkdirAll(dir, 0o777); err != nil {
 			return userCodeDetails{}, err
 		}
 
