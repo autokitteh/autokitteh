@@ -326,7 +326,7 @@ func (d *dockerClient) BuildImage(ctx context.Context, name, directory string) e
 	if parser.hasErrors {
 		d.logger.Debug(fmt.Sprintf("found errors when building image %s ", name), zap.Strings("errors", parser.errors))
 		if len(parser.errors) == 0 {
-			return errors.New("Internal error, contact support")
+			return errors.New("internal error, contact support")
 		}
 		return errors.New(parser.errors[0])
 	}
