@@ -3,9 +3,10 @@ package pythonrt
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
-	"os"
 	"sync"
 	"time"
 
@@ -315,13 +316,19 @@ func (d *dockerClient) BuildImage(ctx context.Context, name, directory string) e
 	}
 	defer resp.Body.Close()
 
-	dest := io.Discard
-	if d.logBuildProcess {
-		dest = os.Stdout
-	}
-	if _, err := io.Copy(dest, resp.Body); err != nil {
+	parser := &logParser{}
+
+	if _, err := io.Copy(parser, resp.Body); err != nil {
 		d.logger.Error("Error printing build output", zap.Error(err))
 		return err
+	}
+
+	if parser.hasErrors {
+		d.logger.Debug(fmt.Sprintf("found errors when building image %s ", name), zap.Strings("errors", parser.errors))
+		if len(parser.errors) == 0 {
+			return errors.New("internal error, contact support")
+		}
+		return errors.New(parser.errors[0])
 	}
 
 	exists, err := d.ImageExists(ctx, name)
@@ -333,7 +340,7 @@ func (d *dockerClient) BuildImage(ctx context.Context, name, directory string) e
 		return errors.New("failed creating image")
 	}
 
-	d.logger.Info("Image built successfully")
+	d.logger.Debug("Image built successfully")
 	return nil
 }
 
@@ -391,4 +398,41 @@ func (d *dockerClient) StopRunner(ctx context.Context, id string) error {
 	}
 
 	return nil
+}
+
+type logParser struct {
+	hasErrors bool
+	errors    []string
+	logs      []string
+}
+
+func (p *logParser) Write(data []byte) (n int, err error) {
+	lines := bytes.Split(data, []byte("\r\n"))
+	for _, line := range lines {
+		if len(line) == 0 {
+			continue
+		}
+		var logEntry map[string]interface{}
+		if err := json.Unmarshal(line, &logEntry); err != nil {
+			continue
+		}
+		if log, ok := logEntry["stream"]; ok {
+			if logStr, ok := log.(string); ok {
+				p.logs = append(p.logs, logStr)
+			}
+		}
+
+		if err, ok := logEntry["error"]; ok {
+			p.hasErrors = true
+			if len(p.logs) == 0 {
+				if errStr, ok := err.(string); ok {
+					p.errors = append(p.errors, errStr)
+				}
+			} else {
+				p.errors = append(p.errors, p.logs[len(p.logs)-1])
+			}
+		}
+
+	}
+	return len(data), nil
 }
