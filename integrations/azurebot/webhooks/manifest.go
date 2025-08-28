@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"context"
 	_ "embed"
+	"fmt"
 	"html/template"
 	"net/http"
 
@@ -46,17 +47,22 @@ func (h handler) getVars(ctx context.Context, cid sdktypes.ConnectionID) (vars V
 func (h handler) HandleManifest(w http.ResponseWriter, r *http.Request) {
 	cidStr := r.PathValue("cid")
 
+	l := h.logger.With(zap.String("connection_id", cidStr))
+
+	internalError := func(desc string, err error) {
+		l.Error(desc, zap.Error(err))
+		http.Error(w, desc, http.StatusInternalServerError)
+	}
+
 	cid, err := sdktypes.StrictParseConnectionID(cidStr)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, fmt.Errorf("failed to parse connection ID: %w", err).Error(), http.StatusBadRequest)
 		return
 	}
 
-	l := h.logger.With(zap.String("connection_id", cid.String()))
-
 	vars, err := h.getVars(r.Context(), cid)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		internalError("failed to get connection vars", err)
 		return
 	}
 
@@ -67,36 +73,39 @@ func (h handler) HandleManifest(w http.ResponseWriter, r *http.Request) {
 
 	fw, err := zw.Create("manifest.json")
 	if err != nil {
-		l.Error("failed to create manifest.json", zap.Error(err))
+		internalError("failed to create manifest.json", err)
 		return
 	}
 
 	if err := manifestTemplate.Execute(fw, vars); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		internalError("failed to execute manifest template", err)
 		return
 	}
 
 	fw, err = zw.Create("color.png")
 	if err != nil {
-		l.Error("failed to create color.png", zap.Error(err))
+		internalError("failed to create color.png", err)
 		return
 	}
 
 	if _, err := fw.Write(manifestColorImage); err != nil {
-		l.Error("failed to write color.png", zap.Error(err))
+		internalError("failed to write color.png", err)
 		return
 	}
 
 	fw, err = zw.Create("outline.png")
 	if err != nil {
-		l.Error("failed to create outline.png", zap.Error(err))
+		internalError("failed to create outline.png", err)
 		return
 	}
 
 	if _, err := fw.Write(manifestOutlineImage); err != nil {
-		l.Error("failed to write outline.png", zap.Error(err))
+		internalError("failed to write outline.png", err)
 		return
 	}
 
-	zw.Close()
+	if err := zw.Close(); err != nil {
+		internalError("failed to close zip writer", err)
+		return
+	}
 }
