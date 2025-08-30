@@ -271,6 +271,11 @@ export class RunRequest extends Message<RunRequest> {
    */
   globals: { [key: string]: Value } = {};
 
+  /**
+   * @generated from field: bool durable = 5;
+   */
+  durable = false;
+
   constructor(data?: PartialMessage<RunRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -283,6 +288,7 @@ export class RunRequest extends Message<RunRequest> {
     { no: 2, name: "artifact", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
     { no: 3, name: "path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "globals", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: Value} },
+    { no: 5, name: "durable", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RunRequest {

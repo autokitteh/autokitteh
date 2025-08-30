@@ -54,7 +54,6 @@ type sessionWorkflow struct {
 	callSeq uint32
 
 	lastReadEventSeqForSignal map[uuid.UUID]uint64 // map signals to last read event seq num.
-
 }
 
 type connInfo struct {
@@ -414,9 +413,9 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (_ []sdkserv
 	ctx, workflowSpan := startTrace(ctx, "sessionWorkflow.run")
 	defer workflowSpan.End()
 
-	workflowSpan.SetAttributes(attribute.String("session_id", w.data.Session.ID().String()))
-
 	session := w.data.Session
+
+	workflowSpan.SetAttributes(attribute.String("session_id", session.ID().String()))
 
 	newRunID := func() (runID sdktypes.RunID, err error) {
 		if err = workflow.SideEffect(wctx, func(workflow.Context) any {
@@ -460,6 +459,11 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (_ []sdkserv
 				// This happens only during initial evaluation (the first run because invoking the entrypoint function),
 				// and the runtime tries to call itself in order to start an activity with its own functions.
 				return sdktypes.InvalidValue, errors.New("cannot call self during initial evaluation")
+			}
+
+			if !session.IsDurable() {
+				l.Error("call in non-durable session")
+				return sdktypes.InvalidValue, errors.New("calls are not supported in non-durable sessions")
 			}
 
 			if isActivity {
@@ -559,6 +563,7 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (_ []sdkserv
 					FallthroughCallbacks: cbs,
 					EntryPointPath:       entryPoint.Path(),
 					SessionID:            session.ID(),
+					IsDurable:            session.IsDurable(),
 				},
 			)
 		},
@@ -603,7 +608,13 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (_ []sdkserv
 		callCtx, callSpan := startTrace(ctx, "session.call")
 		callSpan.SetAttributes(attribute.String("function_name", callValue.GetFunction().Name().String()))
 
-		if retVal, err = run.Call(callCtx, callValue, nil, inputs); err != nil {
+		if session.IsDurable() {
+			retVal, err = run.Call(callCtx, callValue, nil, inputs)
+		} else {
+			retVal, err = w.call(wctx, runID, callValue, nil, inputs)
+		}
+
+		if err != nil {
 			return printer.Finalize(), sdktypes.InvalidValue, err
 		}
 

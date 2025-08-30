@@ -397,6 +397,7 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 
 		desired, err := sdktypes.TriggerFromProto(&sdktypes.TriggerPB{
 			Filter:       mtrigger.Filter,
+			IsDurable:    mtrigger.IsDurable,
 			EventType:    mtrigger.EventType,
 			CodeLocation: loc.ToProto(),
 			Name:         mtrigger.Name,
