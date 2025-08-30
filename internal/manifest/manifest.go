@@ -67,6 +67,7 @@ type Trigger struct {
 	Name      string `yaml:"name" json:"name" jsonschema:"required,pattern=^\\w+$"`
 	EventType string `yaml:"event_type,omitempty" json:"event_type,omitempty"`
 	Filter    string `yaml:"filter,omitempty" json:"filter,omitempty"`
+	IsDurable bool   `yaml:"is_durable,omitempty" json:"is_durable,omitempty"`
 
 	Type          string    `yaml:"type,omitempty" json:"type,omitempty" jsonschema:"enum=schedule,enum=webhook,enum=connection"`
 	Schedule      *string   `yaml:"schedule,omitempty" json:"schedule,omitempty"`

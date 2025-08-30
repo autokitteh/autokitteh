@@ -148,6 +148,8 @@ message Session {
 
   SessionStateType state = 12;
 
+  bool is_durable = 13;
+
   // These are for auditing/searches only.
   string deployment_id = 20;
   string event_id = 21;

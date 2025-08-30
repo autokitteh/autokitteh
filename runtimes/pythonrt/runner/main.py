@@ -351,10 +351,20 @@ class Runner(pb.runner_rpc.RunnerService):
         self.syscalls = SysCalls(self.id, self.worker, log)
         mod_name, fn_name = parse_entry_point(request.entry_point)
 
+        inputs = json.loads(request.event.data)
+
+        fix_http_body(inputs)
+
+        event = Event(
+            data=AttrDict(inputs.get("data", {})),
+            session_id=inputs.get("session_id"),
+        )
+
         # Must be before we load user code
         self.patch_ak_funcs()
 
-        ak_call = AKCall(self, self.code_dir)
+        ak_call = AKCall(self, self.code_dir) if request.is_durable else None
+
         try:
             mod = loader.load_code(self.code_dir, ak_call, mod_name)
         except Exception as err:
@@ -368,7 +378,23 @@ class Runner(pb.runner_rpc.RunnerService):
                 f"can't load {mod_name} from {self.code_dir} - {err_text}",
             )
 
-        ak_call.set_module(mod)
+        if ak_call:
+            ak_call.set_module(mod)
+
+            # TODO(ENG-1893): Disabled temporarily due to issues with HubSpot client - need to investigate.
+            # # Warn on I/O outside an activity. Should come after importing the user module
+            # hook = make_audit_hook(ak_call, self.code_dir)
+            # sys.addaudithook(hook)
+
+            # Top-level handler marked as activity.
+            if activity_marker(fn):
+                orig_fn = fn
+
+                def handler(event):
+                    return ak_call(orig_fn, event)
+
+                update_wrapper(handler, orig_fn)
+                fn = handler
 
         fn = getattr(mod, fn_name, None)
         if not callable(fn):
@@ -379,30 +405,6 @@ class Runner(pb.runner_rpc.RunnerService):
                 grpc.StatusCode.INVALID_ARGUMENT,
                 f"function {fn_name!r} not found",
             )
-
-        inputs = json.loads(request.event.data)
-
-        fix_http_body(inputs)
-
-        event = Event(
-            data=AttrDict(inputs.get("data", {})),
-            session_id=inputs.get("session_id"),
-        )
-
-        # TODO(ENG-1893): Disabled temporarily due to issues with HubSpot client - need to investigate.
-        # # Warn on I/O outside an activity. Should come after importing the user module
-        # hook = make_audit_hook(ak_call, self.code_dir)
-        # sys.addaudithook(hook)
-
-        # Top-level handler marked as activity.
-        if activity_marker(fn):
-            orig_fn = fn
-
-            def handler(event):
-                return ak_call(orig_fn, event)
-
-            update_wrapper(handler, orig_fn)
-            fn = handler
 
         self.executor.submit(self.on_event, fn, event)
 

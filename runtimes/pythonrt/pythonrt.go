@@ -78,6 +78,7 @@ type pySvc struct {
 	exports   map[string]sdktypes.Value
 	fileName  string // main user code file name (entry point)
 	envVars   map[string]string
+	durable   bool
 
 	runner   *RunnerClient
 	runnerID string
@@ -275,6 +276,7 @@ func (py *pySvc) Run(
 	mainPath string,
 	compiled map[string][]byte,
 	values map[string]sdktypes.Value,
+	durable bool,
 	cbs *sdkservices.RunCallbacks,
 ) (sdkservices.Run, error) {
 	ctx, runSpan := telemetry.T().Start(ctx, "pythonrt.Run")
@@ -292,6 +294,7 @@ func (py *pySvc) Run(
 	)
 
 	py.cbs = cbs
+	py.durable = durable
 
 	// Load environment defined by user in the `vars` section of the manifest,
 	// these are injected to the Python subprocess environment.
@@ -465,6 +468,7 @@ func (py *pySvc) startRequest(ctx context.Context, funcName string, eventData []
 		Event: &pbUserCode.Event{
 			Data: eventData,
 		},
+		IsDurable: py.durable,
 	}
 	if _, err := py.runner.Start(ctx, &req); err != nil {
 		// TODO: Handle traceback

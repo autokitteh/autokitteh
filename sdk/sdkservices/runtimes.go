@@ -23,6 +23,7 @@ type Runtimes interface {
 		path string,
 		build *sdkbuildfile.BuildFile,
 		globals map[string]sdktypes.Value,
+		durable bool,
 		cbs *RunCallbacks,
 	) (Run, error)
 }
@@ -41,6 +42,7 @@ type Runtime interface {
 		path string, // where to start running from.
 		compiled map[string][]byte,
 		values map[string]sdktypes.Value,
+		durable bool,
 		cbs *RunCallbacks,
 	) (Run, error)
 }

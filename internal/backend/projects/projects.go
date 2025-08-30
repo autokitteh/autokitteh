@@ -301,6 +301,8 @@ func (ps *Projects) exportManifest(ctx context.Context, projectID sdktypes.Proje
 			mt.EventType = etype
 		}
 
+		mt.IsDurable = t.IsDurable()
+
 		switch t.SourceType() {
 		case sdktypes.TriggerSourceTypeWebhook:
 			var wh struct{}

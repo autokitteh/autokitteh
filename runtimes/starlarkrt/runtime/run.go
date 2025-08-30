@@ -47,6 +47,7 @@ func Run(
 	mainPath string,
 	compiled map[string][]byte,
 	givenValues map[string]sdktypes.Value,
+	durable bool,
 	cbs *sdkservices.RunCallbacks,
 ) (sdkservices.Run, error) {
 	prog, err := getProgram(compiled, mainPath)
@@ -109,13 +110,6 @@ func Run(
 	maps.Copy(predeclared, givens)
 	maps.Copy(predeclared, libs)
 
-	vctx.SetTLS(th)
-	tls.Set(th, &tls.Context{
-		GoCtx:     ctx,
-		RunID:     runID,
-		Callbacks: cbs,
-	})
-
 	var errorReporter errorReporter
 	starlarktest.SetReporter(th, &errorReporter)
 
@@ -156,7 +150,29 @@ func Run(
 		return nil, fmt.Errorf("converting values from starlark: %w", err)
 	}
 
-	return &run{runID: runID, compiled: compiled, exports: exports, globals: globals, vctx: vctx, cbs: cbs}, nil
+	run := &run{runID: runID, compiled: compiled, exports: exports, globals: globals, vctx: vctx, cbs: cbs}
+
+	if !durable {
+		// Short circuit, no activity needed.
+		vctx.Call = func(ctx context.Context, _ sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+			return run.Call(ctx, v, args, kwargs)
+		}
+
+		cbs1 := *cbs
+		cbs = &cbs1
+		cbs.Call = vctx.Call
+		run.cbs = cbs
+	}
+
+	tls.Set(th, &tls.Context{
+		GoCtx:     ctx,
+		RunID:     runID,
+		Callbacks: cbs,
+	})
+
+	vctx.SetTLS(th)
+
+	return run, nil
 }
 
 func (r *run) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {

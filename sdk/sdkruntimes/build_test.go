@@ -25,7 +25,7 @@ func (f *fakeRuntime) Build(_ context.Context, _ fs.FS, path string, _ []sdktype
 	return sdktypes.InvalidBuildArtifact, nil
 }
 
-func (*fakeRuntime) Run(context.Context, sdktypes.RunID, sdktypes.SessionID, string, map[string][]byte, map[string]sdktypes.Value, *sdkservices.RunCallbacks) (sdkservices.Run, error) {
+func (*fakeRuntime) Run(context.Context, sdktypes.RunID, sdktypes.SessionID, string, map[string][]byte, map[string]sdktypes.Value, bool, *sdkservices.RunCallbacks) (sdkservices.Run, error) {
 	return nil, nil
 }
 
