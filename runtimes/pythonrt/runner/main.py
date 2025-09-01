@@ -433,7 +433,7 @@ class Runner(pb.runner_rpc.RunnerService):
                 req.result.custom.data = data
                 req.result.custom.value.CopyFrom(values.safe_wrap(result.value))
             else:
-                req.error = "request too large"
+                req.error = "response size too large"
                 print(
                     f"response size {format_size(size_of_request)} is too large, max allowed is {format_size(MAX_SIZE_OF_REQUEST)}"
                 )
