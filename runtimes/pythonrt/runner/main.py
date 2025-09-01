@@ -232,6 +232,18 @@ def force_close(server):
     os._exit(1)
 
 
+MAX_SIZE_OF_REQUEST = 1 * 1024 * 1024
+
+
+def format_size(size):
+    if size < 1024:
+        return f"{size} B"
+    elif size < 1024 * 1024:
+        return f"{size // 1024} KB"
+    else:
+        return f"{size // (1024 * 1024)} MB"
+
+
 class Runner(pb.runner_rpc.RunnerService):
     def __init__(
         self, id, worker, code_dir, server, start_timeout=DEFAULT_START_TIMEOUT
@@ -416,8 +428,15 @@ class Runner(pb.runner_rpc.RunnerService):
         result = self._call(fn, args, kw)
         try:
             data = pickle.dumps(result)
-            req.result.custom.data = data
-            req.result.custom.value.CopyFrom(values.safe_wrap(result.value))
+            size_of_request = len(data)
+            if size_of_request < MAX_SIZE_OF_REQUEST:
+                req.result.custom.data = data
+                req.result.custom.value.CopyFrom(values.safe_wrap(result.value))
+            else:
+                req.error = "request too large"
+                print(
+                    f"response size {format_size(size_of_request)} is too large, max allowed is {format_size(MAX_SIZE_OF_REQUEST)}"
+                )
         except Exception as err:
             # Print so it'll get to session log
             msg = f"error processing result - {err!r}"
@@ -425,10 +444,15 @@ class Runner(pb.runner_rpc.RunnerService):
             print(self.result_error(err))
             req.error = msg
 
-        log.info("execute reply")
-        resp = self.worker.ExecuteReply(req)
-        if resp.error:
-            log.error("execute reply: %r", resp.error)
+        try:
+            log.info("execute reply")
+            resp = self.worker.ExecuteReply(req)
+            if resp.error:
+                log.error("execute reply: %r", resp.error)
+                # TODO: need to handle this case (ENG-2253)
+        except grpc.RpcError as err:
+            log.error("execute reply send error: %r", err)
+            # TODO: need to handle this case (ENG-2253)
 
     def Execute(self, request: pb.runner.ExecuteRequest, context: grpc.ServicerContext):
         with self.lock:
