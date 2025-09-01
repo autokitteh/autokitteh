@@ -450,9 +450,14 @@ class Runner(pb.runner_rpc.RunnerService):
             if resp.error:
                 log.error("execute reply: %r", resp.error)
                 # TODO: need to handle this case (ENG-2253)
+            return
         except grpc.RpcError as err:
             log.error("execute reply send error: %r", err)
             # TODO: need to handle this case (ENG-2253)
+
+        # for now, if we got here, we need to kill self
+        # should handle better with ENG-2253
+        force_close(self.server)
 
     def Execute(self, request: pb.runner.ExecuteRequest, context: grpc.ServicerContext):
         with self.lock:
