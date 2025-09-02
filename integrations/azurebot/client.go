@@ -71,12 +71,19 @@ func connTest(i *integration) sdkintegrations.OptFn {
 		var vars webhooks.Vars
 		vs.Decode(&vars)
 
-		resp, err := http.PostForm("https://login.microsoftonline.com/botframework.com/oauth2/v2.0/token", url.Values{
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://login.microsoftonline.com/botframework.com/oauth2/v2.0/token", nil)
+		if err != nil {
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, "failed to create request"), nil
+		}
+
+		req.PostForm = url.Values{
 			"grant_type":    {"client_credentials"},
 			"client_id":     {vars.AppID},
 			"client_secret": {vars.AppPassword},
 			"scope":         {"https://api.botframework.com/.default"},
-		})
+		}
+
+		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, "failed to connect"), nil
 		}
@@ -86,7 +93,7 @@ func connTest(i *integration) sdkintegrations.OptFn {
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, "failed to read response body"), nil
 		}
 
-		if resp.StatusCode != 200 {
+		if resp.StatusCode != http.StatusOK {
 			return sdktypes.NewStatusf(sdktypes.StatusCodeError, "error: %s", resp.Status), nil
 		}
 
