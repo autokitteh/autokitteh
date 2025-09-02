@@ -7,18 +7,16 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	j "github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authusers"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
-
-const issuer = "autokitteh.cloud"
 
 var rsaMethod = j.SigningMethodRS256
 
@@ -124,50 +122,23 @@ func (rs *rsaTokens) Create(u sdktypes.User) (string, error) {
 		return "", sdkerrors.NewInvalidArgumentError("system user")
 	}
 
-	uuid, err := uuid.NewV7()
-	if err != nil {
-		return "", fmt.Errorf("generate UUID: %w", err)
-	}
-
 	tok := token{User: u}
 	bs, err := json.Marshal(tok)
 	if err != nil {
 		return "", fmt.Errorf("marshal token: %w", err)
 	}
 
-	claim := j.RegisteredClaims{
-		IssuedAt: j.NewNumericDate(time.Now()),
-		Issuer:   issuer,
-		Subject:  string(bs),
-		ID:       uuid.String(),
+	email := u.Email()
+	emailParts := strings.Split(email, "@")
+	internalUser := false
+	if len(emailParts) == 2 && emailParts[1] == "autokitteh.com" {
+		internalUser = true
 	}
-
-	return j.NewWithClaims(rsaMethod, claim).SignedString(rs.privateKey)
+	return createExternalToken(rsaMethod, rs.privateKey, bs, internalUser)
 }
 
 func (rs *rsaTokens) Parse(raw string) (sdktypes.User, error) {
-	var claims j.RegisteredClaims
-
-	t, err := j.ParseWithClaims(raw, &claims, func(t *j.Token) (interface{}, error) {
-		if _, ok := t.Method.(*j.SigningMethodRSA); !ok {
-			return nil, errors.New("unexpected signing method")
-		}
-		return rs.publicKey, nil
-	})
-	if err != nil {
-		return sdktypes.InvalidUser, err
-	}
-
-	if !t.Valid {
-		return sdktypes.InvalidUser, errors.New("invalid token")
-	}
-
-	var tok token
-	if err := json.Unmarshal([]byte(claims.Subject), &tok); err != nil {
-		return sdktypes.InvalidUser, fmt.Errorf("unmarshal token: %w", err)
-	}
-
-	return tok.User, nil
+	return parseExternalToken(rsaMethod.Alg(), rs.publicKey, raw)
 }
 
 func (rs *rsaTokens) CreateInternal(data map[string]string) (string, error) {
