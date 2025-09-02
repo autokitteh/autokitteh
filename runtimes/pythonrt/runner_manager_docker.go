@@ -60,19 +60,14 @@ func configureDockerRunnerManager(log *zap.Logger, cfg DockerRuntimeConfig) erro
 		}
 	}
 
-	exists, err := dc.ImageExists(context.Background(), baseImage)
+	baseImagePath, err := prepareBaseImageCode("")
 	if err != nil {
-		return fmt.Errorf("check image exists: %w", err)
+		return fmt.Errorf("prepare base image code: %w", err)
 	}
-	if !exists {
-		baseImagePath, err := prepareBaseImageCode("")
-		if err != nil {
-			return fmt.Errorf("prepare base image code: %w", err)
-		}
-		log.Info("building base image", zap.String("image", baseImage))
-		if err := dc.BuildImage(context.Background(), baseImage, baseImagePath); err != nil {
-			return fmt.Errorf("build base image: %w", err)
-		}
+
+	log.Info("building base image", zap.String("image", baseImage))
+	if err := dc.BuildImage(context.Background(), baseImage, baseImagePath); err != nil {
+		return fmt.Errorf("build base image: %w", err)
 	}
 
 	drm := &dockerRunnerManager{
