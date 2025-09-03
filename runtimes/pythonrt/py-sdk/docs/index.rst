@@ -154,6 +154,14 @@ autokitteh.oauth2_session module
    :undoc-members:
    :show-inheritance:
 
+autokitteh.pipedrive module
+---------------------------
+
+.. automodule:: autokitteh.pipedrive
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 autokitteh.reddit module
 --------------------------------
 
