@@ -16,6 +16,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/manifest"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -125,13 +126,25 @@ func (ps *Projects) List(ctx context.Context, oid sdktypes.OrgID) ([]sdktypes.Pr
 	return ps.DB.ListProjects(ctx, oid)
 }
 
-func (ps *Projects) Build(ctx context.Context, projectID sdktypes.ProjectID) (sdktypes.BuildID, error) {
+func (ps *Projects) Build(ctx context.Context, projectID sdktypes.ProjectID, async bool) (sdktypes.BuildID, error) {
 	// Permission is read since it's reading from the project data. A separate check will be done
 	// in the builds storage component for creation of a new build.
 	if err := authz.CheckContext(ctx, projectID, "write:build"); err != nil {
 		return sdktypes.InvalidBuildID, err
 	}
 
+	if async {
+		return ps.buildAsync(ctx, projectID)
+	}
+
+	return ps.buildSync(ctx, projectID)
+}
+
+func (ps *Projects) buildAsync(ctx context.Context, projectID sdktypes.ProjectID) (sdktypes.BuildID, error) {
+	return ps.Builds.Save(ctx, sdktypes.NewBuild().WithProjectID(projectID).WithStatus(sdktypes.BuildStatusPending), nil)
+}
+
+func (ps *Projects) buildSync(ctx context.Context, projectID sdktypes.ProjectID) (sdktypes.BuildID, error) {
 	fs, hash, err := ps.openProjectResourcesFS(ctx, projectID)
 	if err != nil {
 		return sdktypes.InvalidBuildID, err
@@ -161,7 +174,7 @@ func (ps *Projects) Build(ctx context.Context, projectID sdktypes.ProjectID) (sd
 		return sdktypes.InvalidBuildID, err
 	}
 
-	return ps.Builds.Save(ctx, sdktypes.NewBuild().WithProjectID(projectID), buf.Bytes())
+	return ps.Builds.Save(ctx, sdktypes.NewBuild().WithProjectID(projectID).WithStatus(sdktypes.BuildStatusSuccess), buf.Bytes())
 }
 
 func (ps *Projects) SetResources(ctx context.Context, projectID sdktypes.ProjectID, resources map[string][]byte) error {
@@ -350,26 +363,24 @@ func (ps *Projects) Lint(ctx context.Context, projectID sdktypes.ProjectID, reso
 	}
 
 	if resources == nil {
+		if !projectID.IsValid() {
+			return nil, sdkerrors.NewInvalidArgumentError("project_id is required when resources are not provided")
+		}
+
 		var err error
 		if resources, err = ps.DB.GetProjectResources(ctx, projectID); err != nil {
 			return nil, err
 		}
 	}
 
-	data, ok := resources[manifestPath]
+	manifestCode, ok := resources[manifestPath]
 	if !ok {
 		var err error
-		data, err = ps.exportManifest(ctx, projectID, true)
+		manifestCode, err = ps.exportManifest(ctx, projectID, true)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	m, err := manifest.Read(data)
-	if err != nil {
-		return nil, err
-	}
-
-	violations := Validate(projectID, m, resources)
-	return violations, nil
+	return Validate(projectID, manifestCode, resources), nil
 }

@@ -55,7 +55,6 @@ type sessionWorkflow struct {
 
 	lastReadEventSeqForSignal map[uuid.UUID]uint64 // map signals to last read event seq num.
 
-	children map[sdktypes.SessionID]workflow.ChildWorkflowFuture
 }
 
 type connInfo struct {
@@ -75,8 +74,6 @@ func runWorkflow(
 		opts:                      params.Opts,
 		ws:                        ws,
 		lastReadEventSeqForSignal: make(map[uuid.UUID]uint64),
-		children:                  make(map[sdktypes.SessionID]workflow.ChildWorkflowFuture),
-		workflowExecutionID:       workflow.GetInfo(wctx).WorkflowExecution.ID,
 	}
 
 	var cinfos map[string]connInfo

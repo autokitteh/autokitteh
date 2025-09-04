@@ -36,6 +36,9 @@ func NewBuild() Build { return kittehs.Must1(BuildFromProto(&BuildPB{})) }
 func (p Build) ID() (_ BuildID)          { return kittehs.Must1(ParseBuildID(p.read().BuildId)) }
 func (p Build) ProjectID() (_ ProjectID) { return kittehs.Must1(ParseProjectID(p.read().ProjectId)) }
 func (p Build) CreatedAt() time.Time     { return p.read().CreatedAt.AsTime() }
+func (p Build) Status() (_ BuildStatus) {
+	return kittehs.Must1(BuildStatusFromProto(p.read().Status))
+}
 
 func (p Build) WithID(id BuildID) Build {
 	return Build{p.forceUpdate(func(m *BuildPB) { m.BuildId = id.String() })}
@@ -47,6 +50,10 @@ func (p Build) WithNewID() Build {
 
 func (p Build) WithProjectID(pid ProjectID) Build {
 	return Build{p.forceUpdate(func(m *BuildPB) { m.ProjectId = pid.String() })}
+}
+
+func (p Build) WithStatus(status BuildStatus) Build {
+	return Build{p.forceUpdate(func(m *BuildPB) { m.Status = status.ToProto() })}
 }
 
 func (p Build) WithCreatedAt(t time.Time) Build {

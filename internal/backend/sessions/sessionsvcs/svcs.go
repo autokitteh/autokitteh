@@ -3,7 +3,9 @@ package sessionsvcs
 import (
 	"go.uber.org/fx"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
+	"go.autokitteh.dev/autokitteh/internal/backend/externalclient"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/backend/workflowexecutor"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -23,8 +25,9 @@ type Svcs struct {
 	Vars         sdkservices.Vars
 	Projects     sdkservices.Projects
 	Store        sdkservices.Store
-
-	Temporal temporalclient.Client
+	Tokens       authtokens.Tokens
+	Temporal     temporalclient.Client
 
 	WorkflowExecutor workflowexecutor.WorkflowExecutor
+	ExternalClient   externalclient.ExternalClient
 }

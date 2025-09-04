@@ -124,12 +124,12 @@ func Test_checkTriggerNames(t *testing.T) {
 	require.Len(t, vs, 2)
 }
 
-func createResources(fileName, fnName string) map[string][]byte {
+func createResources(fileName, funcName string) map[string][]byte {
 	codeTmpl := `
 def %s(event):
 	pass
 	`
-	code := []byte(fmt.Sprintf(codeTmpl, fnName))
+	code := fmt.Appendf(nil, codeTmpl, funcName)
 	m := map[string][]byte{
 		fileName: code,
 	}
@@ -140,15 +140,28 @@ def %s(event):
 func Test_checkHandlers(t *testing.T) {
 	m := initialManifest()
 
-	fileName, fnName, found := strings.Cut(m.Project.Triggers[0].Call, ":")
+	fileName, funcName, found := strings.Cut(m.Project.Triggers[0].Call, ":")
 	require.Truef(t, found, "bad call - %q", m.Project.Triggers[0].Call)
-	resources := createResources(fileName, fnName)
+	resources := createResources(fileName, funcName)
 	vs := checkHandlers(sdktypes.InvalidProjectID, m, resources)
 	require.Equal(t, 0, len(vs))
 
-	resources = createResources(fileName, fnName+"ZZZ")
+	m.Project.Triggers[0].Filter = "hiss"
 	vs = checkHandlers(sdktypes.InvalidProjectID, m, resources)
 	require.Equal(t, 1, len(vs))
+	require.Equal(t, sdktypes.InvalidEventFilterRuleID, vs[0].RuleId)
+
+	m.Project.Triggers[0].Filter = ""
+	resources = createResources(fileName, funcName+"ZZZ")
+	vs = checkHandlers(sdktypes.InvalidProjectID, m, resources)
+	require.Equal(t, 1, len(vs))
+	require.Equal(t, sdktypes.MissingHandlerRuleID, vs[0].RuleId)
+
+	m.Project.Triggers[0].Call = "README.md:meow"
+
+	vs = checkHandlers(sdktypes.InvalidProjectID, m, map[string][]byte{"README.md": []byte("meow")})
+	require.Equal(t, 1, len(vs))
+	require.Equal(t, sdktypes.FileCannotExportRuleID, vs[0].RuleId)
 }
 
 func Test_pyExports(t *testing.T) {
@@ -206,8 +219,5 @@ func Test_checkCodeConnections(t *testing.T) {
 }
 
 func TestNilSafe(t *testing.T) {
-	m, err := manifest.Read([]byte("version: 1"))
-	require.NoError(t, err)
-
-	Validate(sdktypes.InvalidProjectID, m, nil) // should not panic
+	Validate(sdktypes.InvalidProjectID, []byte("version: 1"), nil) // should not panic
 }

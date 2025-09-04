@@ -28,6 +28,7 @@ type Sessions interface {
 	sdkservices.Sessions
 
 	StartWorkers(context.Context) error
+	StartInternal(context.Context, sdktypes.Session) (sdktypes.SessionID, error)
 }
 type sessions struct {
 	config *Config
@@ -267,7 +268,7 @@ func (s *sessions) Delete(ctx context.Context, sessionID sdktypes.SessionID) err
 	return nil
 }
 
-func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktypes.SessionID, error) {
+func (s *sessions) StartInternal(ctx context.Context, session sdktypes.Session) (sdktypes.SessionID, error) {
 	if err := authz.CheckContext(
 		ctx,
 		sdktypes.InvalidSessionID,
@@ -307,4 +308,22 @@ func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktype
 	}
 
 	return session.ID(), nil
+}
+
+func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktypes.SessionID, error) {
+	if !s.config.ExternalStart.Enabled {
+		return s.StartInternal(authcontext.SetAuthnSystemUser(ctx), session)
+	}
+
+	orgID, err := s.svcs.DB.GetOrgIDOf(ctx, session.ProjectID())
+	if err != nil {
+		return sdktypes.InvalidSessionID, fmt.Errorf("get org id of project %v: %w", session.ProjectID(), err)
+	}
+
+	cli, err := s.svcs.ExternalClient.NewOrgImpersonator(orgID)
+	if err != nil {
+		return sdktypes.InvalidSessionID, fmt.Errorf("create internal client: %w", err)
+	}
+
+	return cli.Sessions().Start(ctx, session)
 }

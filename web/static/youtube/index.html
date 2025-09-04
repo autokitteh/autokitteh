@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>AutoKitteh - YouTube - New Connection</title>
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/static/apple-touch-icon.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/static/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/static/favicon-16x16.png"
+    />
+    <link rel="manifest" href="/static/site.webmanifest" />
+    <link rel="stylesheet" type="text/css" href="styles.css" />
+    <meta name="robots" content="noindex, nofollow" />
+    <script src="form.js" defer></script>
+  </head>
+
+  <body>
+    <a href="/" target="_self">
+      <img class="banner" src="/static/banner.svg" alt="AutoKitteh" />
+    </a>
+
+    <table class="title">
+      <td><img class="logo" src="/static/images/youtube.svg" alt="Logo" /></td>
+      <td>
+        <h1>YouTube - Create a New Connection</h1>
+      </td>
+    </table>
+
+    <div class="tab" id="tab1">
+      <p class="info">Information:</p>
+      <ul class="links">
+        <li>
+          <a
+            href="https://docs.autokitteh.com/integrations/youtube/config"
+            target="_blank"
+            class="info"
+          >
+            AutoKitteh guide: configuring YouTube integration
+          </a>
+        </li>
+        <li>
+          <a
+            href="https://developers.google.com/youtube/v3/guides/authentication"
+            target="_blank"
+            class="info"
+          >
+            YouTube Data API v3 Authentication Guide
+          </a>
+        </li>
+        <li>
+          <a
+            href="https://developers.google.com/youtube/v3/getting-started"
+            target="_blank"
+            class="info"
+          >
+            YouTube Data API v3 Getting Started
+          </a>
+        </li>
+      </ul>
+
+      <form id="save-form-oauth" method="post" action="/google/save">
+        <input type="hidden" name="auth_type" value="oauth" />
+        <input type="hidden" name="auth_scopes" value="youtube" />
+
+        <div class="form-group">
+          <p class="info">
+            Click the button below to authorize the
+            <strong>AutoKitteh</strong> service to access your YouTube account
+          </p>
+        </div>
+
+        <button type="submit" class="submit-btn">Start OAuth Flow</button>
+      </form>
+    </div>
+
+    <script>
+      const queryString = window.location.search;
+      document
+        .getElementById("save-form-oauth")
+        .setAttribute("action", "/google/save" + queryString);
+    </script>
+  </body>
+</html>

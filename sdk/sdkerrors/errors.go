@@ -27,7 +27,7 @@ var (
 	ErrUnauthenticated    = newTypedError("unauthenticated")
 	ErrUnknown            = NewRetryableErrorf("unknown")
 	ErrFailedPrecondition = newTypedError("failed_precondition")
-	ErrResourceExhausted  = NewRetryableErrorf("resource_exhausted")
+	ErrResourceExhausted  = newTypedError("resource_exhausted")
 	ErrProgram            = newTypedError("program_error")
 )
 
@@ -109,6 +109,8 @@ func AsConnectError(err error) error {
 		return connect.NewError(connect.CodeUnimplemented, err)
 	case errors.Is(err, ErrFailedPrecondition):
 		return connect.NewError(connect.CodeFailedPrecondition, err)
+	case errors.Is(err, ErrResourceExhausted):
+		return connect.NewError(connect.CodeResourceExhausted, err)
 	case errors.Is(err, ErrProgram):
 		fallthrough
 	default:

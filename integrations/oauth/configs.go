@@ -23,6 +23,7 @@ import (
 	"google.golang.org/api/gmail/v1"
 	googleoauth2 "google.golang.org/api/oauth2/v2"
 	"google.golang.org/api/sheets/v4"
+	"google.golang.org/api/youtube/v3"
 
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/auth0"
@@ -178,6 +179,9 @@ func (o *OAuth) initConfigs() {
 				forms.FormsBodyScope,
 				forms.FormsResponsesReadonlyScope,
 				sheets.SpreadsheetsScope,
+				youtube.YoutubeScope,
+				youtube.YoutubeReadonlyScope,
+				youtube.YoutubeUploadScope,
 				// Restricted.
 				// drive.DriveScope, // See ENG-1701
 				gmail.GmailModifyScope,
@@ -256,6 +260,21 @@ func (o *OAuth) initConfigs() {
 			Opts: offlineOpts(withConsent()),
 		},
 
+		// https://developers.google.com/youtube/v3/guides/authentication
+		"googleyoutube": {
+			Config: googleConfig([]string{
+				// Non-sensitive.
+				googleoauth2.OpenIDScope,
+				googleoauth2.UserinfoEmailScope,
+				googleoauth2.UserinfoProfileScope,
+				// YouTube scopes.
+				youtube.YoutubeScope,
+				youtube.YoutubeReadonlyScope,
+				youtube.YoutubeUploadScope,
+			}),
+			Opts: offlineOpts(withConsent()),
+		},
+
 		// https://height.notion.site/OAuth-Apps-on-Height-a8ebeab3f3f047e3857bd8ce60c2f640
 		"height": {
 			Config: &oauth2.Config{
@@ -284,6 +303,7 @@ func (o *OAuth) initConfigs() {
 					TokenURL: "https://api.hubapi.com/oauth/v1/token",
 				},
 				Scopes: []string{
+					"conversations.read",
 					"crm.objects.companies.read",
 					"crm.objects.companies.write",
 					"crm.objects.contacts.read",
@@ -291,6 +311,9 @@ func (o *OAuth) initConfigs() {
 					"crm.objects.deals.read",
 					"crm.objects.deals.write",
 					"crm.objects.owners.read",
+					"crm.objects.line_items.read",
+					"crm.objects.products.read",
+					"oauth",
 				},
 			},
 		},
@@ -529,6 +552,8 @@ func (o *OAuth) initRedirectURLs() {
 		// Special case: Google and Microsoft integrations are generic.
 		switch {
 		case k == "gmail":
+			k = "google"
+		case k == "youtube":
 			k = "google"
 		case strings.HasPrefix(k, "google"):
 			k = "google"

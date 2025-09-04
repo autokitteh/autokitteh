@@ -24,6 +24,7 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/google/gemini"
 	"go.autokitteh.dev/autokitteh/integrations/google/gmail"
 	"go.autokitteh.dev/autokitteh/integrations/google/sheets"
+	"go.autokitteh.dev/autokitteh/integrations/google/youtube"
 	"go.autokitteh.dev/autokitteh/integrations/height"
 	"go.autokitteh.dev/autokitteh/integrations/hubspot"
 	"go.autokitteh.dev/autokitteh/integrations/kubernetes"
@@ -120,6 +121,7 @@ func integrationsFXOption() fx.Option {
 		integration("sheets", configset.Empty, sheets.New),
 		integration("slack", configset.Empty, slack.New),
 		integration("twilio", configset.Empty, twilio.New),
+		integration("youtube", configset.Empty, youtube.New),
 		integration("zoom", configset.Empty, zoom.New),
 		fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, muxes *muxes.Muxes, vars sdkservices.Vars, oauth *oauth.OAuth, dispatch sdkservices.DispatchFunc) {
 			HookOnStart(lc, func(ctx context.Context) error {
@@ -135,7 +137,7 @@ func integrationsFXOption() fx.Option {
 				github.Start(l, muxes, vars, oauth, dispatch)
 				google.Start(l, muxes, vars, oauth, dispatch)
 				height.Start(l, muxes, vars, oauth, dispatch)
-				hubspot.Start(l, muxes, oauth)
+				hubspot.Start(l, muxes, vars, oauth, dispatch)
 				jira.Start(l, muxes, vars, oauth, dispatch)
 				kubernetes.Start(l, muxes)
 				linear.Start(l, muxes, vars, oauth, dispatch)

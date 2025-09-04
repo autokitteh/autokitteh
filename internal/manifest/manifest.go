@@ -32,7 +32,7 @@ type Manifest struct {
 }
 
 type Project struct {
-	Name        string        `yaml:"name,omitempty" json:"name,omitempty"`
+	Name        string        `yaml:"name,omitempty" json:"name,omitempty" jsonschema:"pattern=^\\w+$"`
 	Connections []*Connection `yaml:"connections,omitempty" json:"connections,omitempty"`
 	Triggers    []*Trigger    `yaml:"triggers,omitempty" json:"triggers,omitempty"`
 	Vars        []*Var        `yaml:"vars,omitempty" json:"vars,omitempty"`
@@ -43,7 +43,7 @@ func (p Project) GetKey() string { return p.Name }
 type Connection struct {
 	ProjectKey string `yaml:"-" json:"-"` // belongs to project.
 
-	Name           string `yaml:"name" json:"name" jsonschema:"required"`
+	Name           string `yaml:"name" json:"name" jsonschema:"required,pattern=^\\w+$"`
 	IntegrationKey string `yaml:"integration" json:"integration" jsonschema:"required"`
 	Vars           []*Var `yaml:"vars,omitempty" json:"vars,omitempty"`
 }
@@ -53,7 +53,7 @@ func (c Connection) GetKey() string { return c.ProjectKey + "/" + c.Name }
 type Var struct {
 	ParentKey string `yaml:"-" json:"-"` // associated with project or connection.
 
-	Name        string `yaml:"name" json:"name" jsonschema:"required"`
+	Name        string `yaml:"name" json:"name" jsonschema:"required,pattern=^\\w+$"`
 	Description string `yaml:"description,omitempty" json:"description,omitempty"`
 	Value       string `yaml:"value" json:"value"`
 	Secret      bool   `yaml:"secret,omitempty" json:"secret,omitempty"`
@@ -64,7 +64,7 @@ func (v Var) GetKey() string { return v.ParentKey + "/" + v.Name }
 type Trigger struct {
 	ProjectKey string `yaml:"-" json:"-"` // associated with project.
 
-	Name      string `yaml:"name" json:"name"`
+	Name      string `yaml:"name" json:"name" jsonschema:"required,pattern=^\\w+$"`
 	EventType string `yaml:"event_type,omitempty" json:"event_type,omitempty"`
 	Filter    string `yaml:"filter,omitempty" json:"filter,omitempty"`
 

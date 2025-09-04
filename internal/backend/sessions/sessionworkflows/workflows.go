@@ -8,7 +8,6 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/sdk/worker"
 	"go.temporal.io/sdk/workflow"
@@ -36,7 +35,7 @@ type StartWorkflowOptions struct{}
 type Workflows interface {
 	StartWorkers(context.Context) error
 	StartWorkflow(ctx context.Context, session sdktypes.Session, opts StartWorkflowOptions) error
-	StartChildWorkflow(wctx workflow.Context, data sessiondata.Data) (workflow.ChildWorkflowFuture, error)
+	StartChildWorkflow(wctx workflow.Context, session sdktypes.Session) (sdktypes.SessionID, error)
 	GetWorkflowLog(ctx context.Context, filter sdkservices.SessionLogRecordsFilter) (*sdkservices.GetLogResults, error)
 	StopWorkflow(ctx context.Context, sessionID sdktypes.SessionID, reason string, force bool, cancelTimeout time.Duration) error
 }
@@ -126,43 +125,17 @@ func memo(session sdktypes.Session, oid sdktypes.OrgID) map[string]string {
 	return memo
 }
 
-func (ws *workflows) StartChildWorkflow(wctx workflow.Context, data sessiondata.Data) (workflow.ChildWorkflowFuture, error) {
-	childSessionID := data.Session.ID()
-
-	l := ws.l.With(zap.Any("child_session_id", childSessionID))
-
-	memo := memo(data.Session, data.OrgID)
-
-	f := workflow.ExecuteChildWorkflow(
-		workflow.WithChildOptions(
-			wctx,
-			ws.cfg.SessionWorkflow.ToChildWorkflowOptions(
-				ws.svcs.WorkflowExecutor.WorkflowQueue(),
-				workflowID(childSessionID),
-				fmt.Sprintf("session %v", childSessionID),
-				enums.PARENT_CLOSE_POLICY_ABANDON,
-				memo,
-			),
-		),
-		ws.svcs.WorkflowExecutor.WorkflowSessionName(),
-		sessionWorkflowParams{Data: data},
-	)
-
-	var r workflow.Execution
-	if err := f.GetChildWorkflowExecution().Get(wctx, &r); err != nil {
-		return nil, fmt.Errorf("child workflow execution: %w", err)
+func (ws *workflows) StartChildWorkflow(wctx workflow.Context, session sdktypes.Session) (sdktypes.SessionID, error) {
+	var sid sdktypes.SessionID
+	if err := workflow.ExecuteActivity(wctx, startChildSessionActivityName, session).Get(wctx, &sid); err != nil {
+		return sdktypes.InvalidSessionID, fmt.Errorf("start child session activity: %w", err)
 	}
 
-	l.With(zap.String("workflow_id", r.ID), zap.String("run_id", r.RunID), zap.Any("memo", memo)).Info("initiated child session workflow")
-
-	return f, nil
+	return sid, nil
 }
 
 func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session, opts StartWorkflowOptions) error {
-
 	sessionID := session.ID()
-
-	// l := ws.l.Sugar().With("session_id", sessionID)
 
 	data, err := sessiondata.Get(ctx, ws.svcs, session)
 	if err != nil {

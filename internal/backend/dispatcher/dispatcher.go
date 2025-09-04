@@ -14,10 +14,9 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
+	"go.autokitteh.dev/autokitteh/internal/backend/externalclient"
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
-	"go.autokitteh.dev/autokitteh/sdk/sdkclients"
-	"go.autokitteh.dev/autokitteh/sdk/sdkclients/sdkclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -34,13 +33,14 @@ type Svcs struct {
 	DB       db.DB
 	Temporal temporalclient.Client
 
-	Connections sdkservices.Connections
-	Deployments sdkservices.Deployments
-	Events      sdkservices.Events
-	Projects    sdkservices.Projects
-	Sessions    sdkservices.Sessions
-	Triggers    sdkservices.Triggers
-	Tokens      authtokens.Tokens
+	Connections    sdkservices.Connections
+	Deployments    sdkservices.Deployments
+	Events         sdkservices.Events
+	Projects       sdkservices.Projects
+	Sessions       sdkservices.Sessions
+	Triggers       sdkservices.Triggers
+	Tokens         authtokens.Tokens
+	ExternalClient externalclient.ExternalClient
 }
 
 type Dispatcher struct {
@@ -66,18 +66,11 @@ func (d *Dispatcher) DispatchExternal(ctx context.Context, event sdktypes.Event,
 		return sdktypes.InvalidEventID, fmt.Errorf("get org id of project %v: %w", pid, err)
 	}
 
-	internalToken, err := d.svcs.Tokens.CreateInternal(map[string]string{
-		"orgID": orgID.UUIDValue().String(),
-	})
+	cli, err := d.svcs.ExternalClient.NewOrgImpersonator(orgID)
 
 	if err != nil {
 		return sdktypes.InvalidEventID, fmt.Errorf("create internal token: %w", err)
 	}
-
-	cli := sdkclients.New(sdkclient.Params{
-		URL:       d.cfg.ExternalDispatching.URL,
-		AuthToken: internalToken,
-	}.Safe())
 
 	return cli.Dispatcher().Dispatch(ctx, event, opts)
 }

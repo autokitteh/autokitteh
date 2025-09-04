@@ -76,6 +76,7 @@ message ListResponse {
 
 message BuildRequest {
   string project_id = 1 [(buf.validate.field).string.min_len = 1];
+  bool async = 2;
 }
 
 message BuildResponse {
@@ -109,9 +110,9 @@ message ExportResponse {
 }
 
 message LintRequest {
-  string project_id = 1 [(buf.validate.field).string.min_len = 1];
-  map<string, bytes> resources = 2;
-  string manifest_file = 3; // name of manifest file
+  string project_id = 1;
+  map<string, bytes> resources = 2; // if project_id is not empty and resources are empty, resources are fetched from the project.
+  string manifest_file = 3; // name of manifest file, can be empty if project_id is not empty.
 }
 
 message CheckViolation {

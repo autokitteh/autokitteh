@@ -3,15 +3,17 @@ package pythonrt
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
-	"os"
 	"sync"
 	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
+	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
@@ -30,31 +32,35 @@ const (
 )
 
 type dockerClient struct {
-	client          *client.Client
-	activeRunnerIDs map[string]struct{}
-	allRunnerIDs    map[string]struct{}
-	mu              *sync.Mutex
-	runnerLabels    map[string]string
-	logBuildProcess bool
-	logRunner       bool
-	logger          *zap.Logger
+	client                     *client.Client
+	activeRunnerIDs            map[string]struct{}
+	allRunnerIDs               map[string]struct{}
+	mu                         sync.Mutex
+	runnerLabels               map[string]string
+	logBuildProcess            bool
+	logRunner                  bool
+	logger                     *zap.Logger
+	maxMemoryBytesPerContainer int64
+	maxNanoCPUPerContainer     int64
 }
 
-func NewDockerClient(logger *zap.Logger, logRunner, logBuildProcess bool) (*dockerClient, error) {
+func NewDockerClient(logger *zap.Logger, cfg DockerRuntimeConfig) (*dockerClient, error) {
 	apiClient, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		return nil, err
 	}
 
 	dc := &dockerClient{
-		client:          apiClient,
-		mu:              new(sync.Mutex),
-		runnerLabels:    map[string]string{runnersLabel: ""},
-		activeRunnerIDs: map[string]struct{}{},
-		allRunnerIDs:    map[string]struct{}{},
-		logger:          logger,
-		logBuildProcess: logBuildProcess,
-		logRunner:       logRunner,
+		client:                     apiClient,
+		mu:                         sync.Mutex{},
+		runnerLabels:               map[string]string{runnersLabel: ""},
+		activeRunnerIDs:            map[string]struct{}{},
+		allRunnerIDs:               map[string]struct{}{},
+		logger:                     logger,
+		logBuildProcess:            cfg.LogBuildCode,
+		logRunner:                  cfg.LogRunnerCode,
+		maxMemoryBytesPerContainer: cfg.MaxMemoryPerWorkflowMB * 1024 * 1024,
+		maxNanoCPUPerContainer:     int64(cfg.MaxCPUsPerWorkflow * 1000000000),
 	}
 
 	if err := dc.SyncCurrentState(); err != nil {
@@ -90,7 +96,7 @@ func (d *dockerClient) ensureNetwork() (string, error) {
 	return inspectResult.ID, nil
 }
 
-func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, sessionID sdktypes.SessionID, cmd []string, vars map[string]string) (string, string, error) {
+func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, codePath string, sessionID sdktypes.SessionID, cmd []string, vars map[string]string) (string, string, error) {
 	envVars := make([]string, 0, len(vars))
 	for k, v := range vars {
 		envVars = append(envVars, k+"="+v)
@@ -108,9 +114,21 @@ func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, sess
 			WorkingDir: "/workflow",
 		},
 		&container.HostConfig{
+			AutoRemove:   true,
 			NetworkMode:  container.NetworkMode(networkName),
 			PortBindings: nat.PortMap{internalRunnerPort: []nat.PortBinding{{HostIP: "127.0.0.1"}}},
 			Tmpfs:        map[string]string{"/tmp": "size=64m"},
+			Mounts: []mount.Mount{
+				{
+					Type:   mount.TypeBind,
+					Source: codePath,
+					Target: "/workflow",
+				},
+			},
+			Resources: container.Resources{
+				Memory:   d.maxMemoryBytesPerContainer,
+				NanoCPUs: d.maxNanoCPUPerContainer,
+			},
 		}, nil, nil, "")
 	if err != nil {
 		return "", "", err
@@ -298,13 +316,19 @@ func (d *dockerClient) BuildImage(ctx context.Context, name, directory string) e
 	}
 	defer resp.Body.Close()
 
-	dest := io.Discard
-	if d.logBuildProcess {
-		dest = os.Stdout
-	}
-	if _, err := io.Copy(dest, resp.Body); err != nil {
+	parser := &logParser{}
+
+	if _, err := io.Copy(parser, resp.Body); err != nil {
 		d.logger.Error("Error printing build output", zap.Error(err))
 		return err
+	}
+
+	if parser.hasErrors {
+		d.logger.Debug(fmt.Sprintf("found errors when building image %s ", name), zap.Strings("errors", parser.errors))
+		if len(parser.errors) == 0 {
+			return errors.New("internal error, contact support")
+		}
+		return errors.New(parser.errors[0])
 	}
 
 	exists, err := d.ImageExists(ctx, name)
@@ -316,7 +340,7 @@ func (d *dockerClient) BuildImage(ctx context.Context, name, directory string) e
 		return errors.New("failed creating image")
 	}
 
-	d.logger.Info("Image built successfully")
+	d.logger.Debug("Image built successfully")
 	return nil
 }
 
@@ -374,4 +398,41 @@ func (d *dockerClient) StopRunner(ctx context.Context, id string) error {
 	}
 
 	return nil
+}
+
+type logParser struct {
+	hasErrors bool
+	errors    []string
+	logs      []string
+}
+
+func (p *logParser) Write(data []byte) (n int, err error) {
+	lines := bytes.Split(data, []byte("\r\n"))
+	for _, line := range lines {
+		if len(line) == 0 {
+			continue
+		}
+		var logEntry map[string]interface{}
+		if err := json.Unmarshal(line, &logEntry); err != nil {
+			continue
+		}
+		if log, ok := logEntry["stream"]; ok {
+			if logStr, ok := log.(string); ok {
+				p.logs = append(p.logs, logStr)
+			}
+		}
+
+		if err, ok := logEntry["error"]; ok {
+			p.hasErrors = true
+			if len(p.logs) == 0 {
+				if errStr, ok := err.(string); ok {
+					p.errors = append(p.errors, errStr)
+				}
+			} else {
+				p.errors = append(p.errors, p.logs[len(p.logs)-1])
+			}
+		}
+
+	}
+	return len(data), nil
 }

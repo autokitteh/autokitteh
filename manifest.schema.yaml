@@ -6,7 +6,8 @@
     "Connection": {
       "properties": {
         "name": {
-          "type": "string"
+          "type": "string",
+          "pattern": "^\\w+$"
         },
         "integration": {
           "type": "string"
@@ -43,7 +44,8 @@
     "Project": {
       "properties": {
         "name": {
-          "type": "string"
+          "type": "string",
+          "pattern": "^\\w+$"
         },
         "connections": {
           "items": {
@@ -70,7 +72,8 @@
     "Trigger": {
       "properties": {
         "name": {
-          "type": "string"
+          "type": "string",
+          "pattern": "^\\w+$"
         },
         "event_type": {
           "type": "string"
@@ -110,7 +113,8 @@
     "Var": {
       "properties": {
         "name": {
-          "type": "string"
+          "type": "string",
+          "pattern": "^\\w+$"
         },
         "description": {
           "type": "string"

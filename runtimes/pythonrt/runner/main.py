@@ -2,6 +2,7 @@ import asyncio
 import builtins
 import inspect
 import json
+import os
 import pickle
 import sys
 from base64 import b64decode
@@ -163,7 +164,11 @@ def set_exception_args(err):
     for name in init_args[len(err_args) :]:
         extra.append(getattr(err, name, None))
 
-    err.args += tuple(extra)
+    try:
+        err.args += tuple(extra)
+    except Exception as e:
+        # Some errors (msgraph ODataError) raise when you set args
+        log.warning("can't set args for %r - %r", err, e)
 
 
 Call = namedtuple("Call", "fn args kw fut")
@@ -222,6 +227,23 @@ def short_name(func_name: str):
     return func_name[i + 1 :]
 
 
+def force_close(server):
+    server.stop(SERVER_GRACE_TIMEOUT)
+    os._exit(1)
+
+
+MAX_SIZE_OF_REQUEST = 1 * 1024 * 1024
+
+
+def format_size(size):
+    if size < 1024:
+        return f"{size} B"
+    elif size < 1024 * 1024:
+        return f"{size // 1024} KB"
+    else:
+        return f"{size // (1024 * 1024)} MB"
+
+
 class Runner(pb.runner_rpc.RunnerService):
     def __init__(
         self, id, worker, code_dir, server, start_timeout=DEFAULT_START_TIMEOUT
@@ -260,7 +282,7 @@ class Runner(pb.runner_rpc.RunnerService):
     def stop_if_start_not_called(self, timeout):
         log.error("Start not called after %s seconds, terminating", timeout)
         if self.server:
-            self.server.stop(SERVER_GRACE_TIMEOUT)
+            force_close(self.server)
 
     def Exports(self, request: pb.runner.ExportsRequest, context: grpc.ServicerContext):
         if request.file_name == "":
@@ -280,7 +302,7 @@ class Runner(pb.runner_rpc.RunnerService):
         sleep(initial_delay)
         if not self._start_called:
             log.error("Start not called after %dsec", initial_delay)
-            self.server.stop(SERVER_GRACE_TIMEOUT)
+            force_close(self.server)
             return
 
         # Check that we are still active
@@ -299,7 +321,7 @@ class Runner(pb.runner_rpc.RunnerService):
             return
 
         log.error("could not verify if should keep running, killing self")
-        self.server.stop(SERVER_GRACE_TIMEOUT)
+        force_close(self.server)
 
     def patch_ak_funcs(self):
         connections.encode_jwt = self.syscalls.ak_encode_jwt
@@ -406,8 +428,15 @@ class Runner(pb.runner_rpc.RunnerService):
         result = self._call(fn, args, kw)
         try:
             data = pickle.dumps(result)
-            req.result.custom.data = data
-            req.result.custom.value.CopyFrom(values.safe_wrap(result.value))
+            size_of_request = len(data)
+            if size_of_request < MAX_SIZE_OF_REQUEST:
+                req.result.custom.data = data
+                req.result.custom.value.CopyFrom(values.safe_wrap(result.value))
+            else:
+                req.error = "response size too large"
+                print(
+                    f"response size {format_size(size_of_request)} is too large, max allowed is {format_size(MAX_SIZE_OF_REQUEST)}"
+                )
         except Exception as err:
             # Print so it'll get to session log
             msg = f"error processing result - {err!r}"
@@ -415,10 +444,20 @@ class Runner(pb.runner_rpc.RunnerService):
             print(self.result_error(err))
             req.error = msg
 
-        log.info("execute reply")
-        resp = self.worker.ExecuteReply(req)
-        if resp.error:
-            log.error("execute reply: %r", resp.error)
+        try:
+            log.info("execute reply")
+            resp = self.worker.ExecuteReply(req)
+            if resp.error:
+                log.error("execute reply: %r", resp.error)
+                # TODO: need to handle this case (ENG-2253)
+            return
+        except grpc.RpcError as err:
+            log.error("execute reply send error: %r", err)
+            # TODO: need to handle this case (ENG-2253)
+
+        # for now, if we got here, we need to kill self
+        # should handle better with ENG-2253
+        force_close(self.server)
 
     def Execute(self, request: pb.runner.ExecuteRequest, context: grpc.ServicerContext):
         with self.lock:
@@ -443,7 +482,7 @@ class Runner(pb.runner_rpc.RunnerService):
                 self.worker.Done(req)
             except grpc.RpcError as err:
                 log.error("done send error: %r", err)
-                self.server.stop(SERVER_GRACE_TIMEOUT)
+                force_close(self.server)
 
             return pb.runner.ActivityReplyResponse(error=request.error)
 
@@ -593,7 +632,7 @@ class Runner(pb.runner_rpc.RunnerService):
         except Exception as err:
             log.error("on_event: done send error: %r", err)
 
-        self.server.stop(SERVER_GRACE_TIMEOUT)
+        force_close(self.server)
 
     @mark_no_activity
     def ak_print(self, *objects, sep=" ", end="\n", file=None, flush=False):
@@ -612,7 +651,7 @@ class Runner(pb.runner_rpc.RunnerService):
         except grpc.RpcError as err:
             if err.code() == grpc.StatusCode.UNAVAILABLE or grpc.StatusCode.CANCELLED:
                 log.error("grpc cancelled or unavailable, killing self")
-                self.server.stop(SERVER_GRACE_TIMEOUT)
+                force_close(self.server)
             log.error("print: %s", err)
 
 
@@ -731,4 +770,9 @@ if __name__ == "__main__":
         Thread(target=runner.should_keep_running, daemon=True).start()
         log.info("started 'should_keep_running' thread")
 
-    server.wait_for_termination()
+    try:
+        server.wait_for_termination()
+    except Exception as e:
+        log.error("server terminated with error: %s", e)
+    finally:
+        force_close(server)
