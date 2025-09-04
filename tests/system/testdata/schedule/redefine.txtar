@@ -49,6 +49,7 @@ def on_cron_trigger():
   "name": "cron",
   "source_type": "SOURCE_TYPE_SCHEDULE",
   "project_id": "prj_00000000000000000000000001",
+  "is_durable": true,
   "code_location": {
     "path": "cron.star",
     "name": "on_cron_trigger"

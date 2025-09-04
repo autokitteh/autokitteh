@@ -22,6 +22,7 @@ func (w *sessionWorkflow) startCallbackSpan(ctx context.Context, name string) (c
 func (w *sessionWorkflow) start(wctx workflow.Context) func(context.Context, sdktypes.RunID, sdktypes.Symbol, sdktypes.CodeLocation, map[string]sdktypes.Value, map[string]string) (sdktypes.SessionID, error) {
 	return func(ctx context.Context, rid sdktypes.RunID, project sdktypes.Symbol, loc sdktypes.CodeLocation, inputs map[string]sdktypes.Value, memo map[string]string) (sdktypes.SessionID, error) {
 		if activity.IsActivity(ctx) {
+			// TODO(ENG-2258): Work in activity.
 			return sdktypes.InvalidSessionID, errForbiddenInActivity
 		}
 
@@ -52,7 +53,8 @@ func (w *sessionWorkflow) start(wctx workflow.Context) func(context.Context, sdk
 		data.Session = sdktypes.NewSession(buildID, loc, inputs, memo).
 			WithParentSessionID(data.Session.ID()).
 			WithDeploymentID(data.Session.DeploymentID()).
-			WithProjectID(projectID)
+			WithProjectID(projectID).
+			SetDurable(data.Session.IsDurable())
 
 		sid, err := w.ws.StartChildWorkflow(wctx, data.Session)
 		if err != nil {

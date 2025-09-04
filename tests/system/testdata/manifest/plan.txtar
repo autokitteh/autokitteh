@@ -68,6 +68,7 @@ project:
           "name": "on_test",
           "path": "my_program.star"
         },
+        "is_durable": true,
         "event_type": "get",
         "name": "meow",
         "source_type": "SOURCE_TYPE_CONNECTION"
@@ -113,6 +114,7 @@ project:
           "path": "my_program.star"
         },
         "event_type": "get",
+        "is_durable": true,
         "name": "meow",
         "source_type": "SOURCE_TYPE_CONNECTION"
       }

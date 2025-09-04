@@ -120,7 +120,7 @@ class Finder:
         if not full_path.is_file():
             return None
 
-        loader = Loader(self.ak_call)
+        loader = Loader(self.ak_call) if self.ak_call else None
         spec = spec_from_file_location(fullname, full_path, loader=loader)
         return spec
 

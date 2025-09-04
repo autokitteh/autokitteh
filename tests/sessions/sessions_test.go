@@ -86,7 +86,7 @@ func runTest(t *testing.T, akPath, venvPath, txtarPath string) {
 		}
 
 		// Run session test.
-		args = []string{"session", "test", absPath, "--project", projName}
+		args = []string{"session", "test", absPath, "--project", projName, "--durable"}
 		result, err = tests.RunAKClient(t, akPath, server.Addr, "", clientTimeout, args)
 		if err != nil {
 			server.PrintLog(t)
