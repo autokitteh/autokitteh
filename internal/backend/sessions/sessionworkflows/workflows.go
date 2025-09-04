@@ -169,6 +169,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params sessionWorkfl
 		zap.String("run_id", wi.WorkflowExecution.RunID),
 		zap.Int32("attempt", wi.Attempt),
 		zap.String("parent_session_id", parentSessionID.String()),
+		zap.Bool("is_durable", session.IsDurable()),
 	)
 
 	didNotifyDone := false

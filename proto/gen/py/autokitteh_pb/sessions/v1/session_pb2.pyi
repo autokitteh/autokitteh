@@ -187,7 +187,7 @@ class SessionLogRecord(_message.Message):
     def __init__(self, t: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., process_id: _Optional[str] = ..., print: _Optional[_Union[SessionLogRecord.Print, _Mapping]] = ..., call_spec: _Optional[_Union[Call.Spec, _Mapping]] = ..., call_attempt_start: _Optional[_Union[Call.Attempt.Start, _Mapping]] = ..., call_attempt_complete: _Optional[_Union[Call.Attempt.Complete, _Mapping]] = ..., state: _Optional[_Union[SessionState, _Mapping]] = ..., stop_request: _Optional[_Union[SessionLogRecord.StopRequest, _Mapping]] = ...) -> None: ...
 
 class Session(_message.Message):
-    __slots__ = ["session_id", "build_id", "project_id", "entrypoint", "inputs", "parent_session_id", "memo", "created_at", "updated_at", "state", "deployment_id", "event_id"]
+    __slots__ = ["session_id", "build_id", "project_id", "entrypoint", "inputs", "parent_session_id", "memo", "created_at", "updated_at", "state", "is_durable", "deployment_id", "event_id"]
     class InputsEntry(_message.Message):
         __slots__ = ["key", "value"]
         KEY_FIELD_NUMBER: _ClassVar[int]
@@ -212,6 +212,7 @@ class Session(_message.Message):
     CREATED_AT_FIELD_NUMBER: _ClassVar[int]
     UPDATED_AT_FIELD_NUMBER: _ClassVar[int]
     STATE_FIELD_NUMBER: _ClassVar[int]
+    IS_DURABLE_FIELD_NUMBER: _ClassVar[int]
     DEPLOYMENT_ID_FIELD_NUMBER: _ClassVar[int]
     EVENT_ID_FIELD_NUMBER: _ClassVar[int]
     session_id: str
@@ -224,6 +225,7 @@ class Session(_message.Message):
     created_at: _timestamp_pb2.Timestamp
     updated_at: _timestamp_pb2.Timestamp
     state: SessionStateType
+    is_durable: bool
     deployment_id: str
     event_id: str
-    def __init__(self, session_id: _Optional[str] = ..., build_id: _Optional[str] = ..., project_id: _Optional[str] = ..., entrypoint: _Optional[_Union[_program_pb2.CodeLocation, _Mapping]] = ..., inputs: _Optional[_Mapping[str, _values_pb2.Value]] = ..., parent_session_id: _Optional[str] = ..., memo: _Optional[_Mapping[str, str]] = ..., created_at: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., updated_at: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., state: _Optional[_Union[SessionStateType, str]] = ..., deployment_id: _Optional[str] = ..., event_id: _Optional[str] = ...) -> None: ...
+    def __init__(self, session_id: _Optional[str] = ..., build_id: _Optional[str] = ..., project_id: _Optional[str] = ..., entrypoint: _Optional[_Union[_program_pb2.CodeLocation, _Mapping]] = ..., inputs: _Optional[_Mapping[str, _values_pb2.Value]] = ..., parent_session_id: _Optional[str] = ..., memo: _Optional[_Mapping[str, str]] = ..., created_at: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., updated_at: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., state: _Optional[_Union[SessionStateType, str]] = ..., is_durable: bool = ..., deployment_id: _Optional[str] = ..., event_id: _Optional[str] = ...) -> None: ...

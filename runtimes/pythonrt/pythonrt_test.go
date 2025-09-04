@@ -221,7 +221,7 @@ func Test_pySvc_Run(t *testing.T) {
 	}()
 
 	sessionID := sdktypes.NewSessionID()
-	run, err := svc.Run(ctx, runID, sessionID, mainPath, compiled, values, cbs)
+	run, err := svc.Run(ctx, runID, sessionID, mainPath, compiled, values, true, cbs)
 	require.NoError(t, err, "run")
 
 	fn, err := sdktypes.NewFunctionValue(xid, "greet", nil, nil, mod)
@@ -362,7 +362,7 @@ func TestProgramError(t *testing.T) {
 	cbs := newCallbacks(svc)
 	ctx := t.Context()
 	sid := sdktypes.NewSessionID()
-	_, err = svc.Run(ctx, runID, sid, pyFile, compiled, values, cbs)
+	_, err = svc.Run(ctx, runID, sid, pyFile, compiled, values, true, cbs)
 	require.NoError(t, err)
 
 	xid := sdktypes.NewExecutorID(runID)

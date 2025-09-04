@@ -233,6 +233,7 @@ type Trigger struct {
 	EventType    string
 	Filter       string
 	CodeLocation string
+	IsDurable    bool
 
 	Name string
 	// Makes sure name is unique - this is the project_id with name.
@@ -284,6 +285,7 @@ func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
 		Name:         e.Name,
 		WebhookSlug:  e.WebhookSlug,
 		Schedule:     e.Schedule,
+		IsDurable:    e.IsDurable,
 	})
 }
 
