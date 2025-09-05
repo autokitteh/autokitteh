@@ -38,7 +38,6 @@ func (db *gormdb) Migrate(ctx context.Context) error {
 	}
 
 	return m.Migrate(ctx)
-
 }
 
 var _ db.DB = (*gormdb)(nil)
@@ -74,7 +73,11 @@ func connect(_ context.Context, z *zap.Logger, cfg *Config) (r *gorm.DB, w *gorm
 
 	n := cfg.MaxOpenConns
 	if n == 0 {
-		n = max(4, runtime.NumCPU())
+		if cfg.InferredType() == "sqlite" {
+			n = 1
+		} else {
+			n = min(4, runtime.NumCPU())
+		}
 	}
 
 	sqlDB.SetMaxOpenConns(n)
