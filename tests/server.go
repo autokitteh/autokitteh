@@ -5,12 +5,9 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"syscall"
 	"testing"
 	"time"
-
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )
 
 type AKServer struct {
@@ -19,12 +16,10 @@ type AKServer struct {
 	Addr string
 }
 
-const startTimeout = 10 * time.Second
-
-var (
-	tmpDir       = kittehs.Must1(os.MkdirTemp("", "session-tests-*"))
-	addrFilename = filepath.Join(tmpDir, "ak_addr")
-	logFilename  = filepath.Join(tmpDir, "ak_server.log")
+const (
+	addrFilename = "ak_addr"
+	logFilename  = "ak_server.log"
+	startTimeout = 10 * time.Second
 )
 
 // StartAKServer starts the AK server as a subprocess.
