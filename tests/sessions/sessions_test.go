@@ -5,9 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 	"math/rand/v2"
-	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -15,27 +13,15 @@ import (
 	"go.autokitteh.dev/autokitteh/tests"
 )
 
-const clientTimeout = 30 * time.Second
-
-var individualServers, _ = strconv.ParseBool(os.Getenv("INDIVIDUAL_SERVERS"))
+const (
+	clientTimeout = 30 * time.Second
+)
 
 //go:embed *
 var testFiles embed.FS
 
 func TestSessions(t *testing.T) {
 	akPath, venvPath := setUpSuite(t)
-
-	var server *tests.AKServer
-
-	if !individualServers {
-		var err error
-		server, err = tests.StartAKServer(akPath, "dev")
-		t.Cleanup(server.Stop)
-		if err != nil {
-			server.PrintLog(t)
-			t.Fatal(err)
-		}
-	}
 
 	err := fs.WalkDir(testFiles, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -46,7 +32,7 @@ func TestSessions(t *testing.T) {
 			return nil // Skip directories and non-test files.
 		}
 
-		runTest(t, akPath, venvPath, path, server)
+		runTest(t, akPath, venvPath, path)
 		return nil
 	})
 	if err != nil {
@@ -69,7 +55,7 @@ func setUpSuite(t *testing.T) (akPath, venvPath string) {
 	return
 }
 
-func runTest(t *testing.T, akPath, venvPath, txtarPath string, server *tests.AKServer) {
+func runTest(t *testing.T, akPath, venvPath, txtarPath string) {
 	t.Run(txtarPath, func(t *testing.T) {
 		absPath, err := filepath.Abs(txtarPath)
 		if err != nil {
@@ -79,13 +65,11 @@ func runTest(t *testing.T, akPath, venvPath, txtarPath string, server *tests.AKS
 		// Start AK server.
 		tests.SwitchToTempDir(t, venvPath) // For test isolation.
 
-		if server == nil {
-			server, err = tests.StartAKServer(akPath, "dev")
-			t.Cleanup(server.Stop)
-			if err != nil {
-				server.PrintLog(t)
-				t.Fatal(err)
-			}
+		server, err := tests.StartAKServer(akPath, "dev")
+		t.Cleanup(server.Stop)
+		if err != nil {
+			server.PrintLog(t)
+			t.Fatal(err)
 		}
 
 		// Create project.
