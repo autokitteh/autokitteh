@@ -5,6 +5,7 @@ on_event: end (out=8)
 import autokitteh
 
 
+# nondurable: ignored.
 @autokitteh.activity
 async def main(event):
     print("on_event: start")

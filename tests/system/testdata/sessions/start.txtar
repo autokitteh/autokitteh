@@ -11,7 +11,7 @@ output equals 'Error: at least one of the flags in the group [deployment-id proj
 return code == 1
 
 # Start and watch a session.
-ak session start --project my_project --build-id $bid --entrypoint main.star:main --input a=1 --input b=2.3 --input c="meow" -j
+ak session start --project my_project --build-id $bid --entrypoint main.star:main --input a=1 --input b=2.3 --input c="meow" -j --durable
 return code == 0
 capture_jq sid .session_id
 

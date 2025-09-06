@@ -21,10 +21,7 @@ func (w *sessionWorkflow) startCallbackSpan(ctx context.Context, name string) (c
 
 func (w *sessionWorkflow) start(wctx workflow.Context) func(context.Context, sdktypes.RunID, sdktypes.Symbol, sdktypes.CodeLocation, map[string]sdktypes.Value, map[string]string) (sdktypes.SessionID, error) {
 	return func(ctx context.Context, rid sdktypes.RunID, project sdktypes.Symbol, loc sdktypes.CodeLocation, inputs map[string]sdktypes.Value, memo map[string]string) (sdktypes.SessionID, error) {
-		if activity.IsActivity(ctx) {
-			// TODO(ENG-2258): Work in activity.
-			return sdktypes.InvalidSessionID, errForbiddenInActivity
-		}
+		inActivity := activity.IsActivity(ctx)
 
 		_, span := w.startCallbackSpan(ctx, "start")
 		defer span.End()
@@ -41,13 +38,25 @@ func (w *sessionWorkflow) start(wctx workflow.Context) func(context.Context, sdk
 		buildID := data.Session.BuildID()
 
 		if project.IsValid() {
-			var resp getProjectIDAndActiveBuildIDResponse
-			if err := workflow.ExecuteActivity(wctx, getProjectIDAndActiveBuildID, &getProjectIDAndActiveBuildIDParams{Project: project, OrgID: data.OrgID}).Get(wctx, &resp); err != nil {
+			params := getProjectIDAndActiveBuildIDParams{Project: project, OrgID: data.OrgID}
+
+			var (
+				resp *getProjectIDAndActiveBuildIDResponse
+				err  error
+			)
+
+			if inActivity {
+				err = workflow.ExecuteActivity(wctx, getProjectIDAndActiveBuildIDActivityName, &params).Get(wctx, &resp)
+			} else if resp, err = w.ws.getProjectIDAndActiveBuildIDActivity(ctx, params); err != nil {
 				return sdktypes.InvalidSessionID, fmt.Errorf("could not get active build ID for project %s: %w", project, err)
 			}
-			buildID = resp.BuildID
-			projectID = resp.ProjectID
 
+			if err != nil {
+				return sdktypes.InvalidSessionID, fmt.Errorf("could not get active build ID for project %s: %w", project, err)
+			}
+
+			projectID = resp.ProjectID
+			buildID = resp.BuildID
 		}
 
 		data.Session = sdktypes.NewSession(buildID, loc, inputs, memo).
@@ -56,7 +65,17 @@ func (w *sessionWorkflow) start(wctx workflow.Context) func(context.Context, sdk
 			WithProjectID(projectID).
 			SetDurable(data.Session.IsDurable())
 
-		sid, err := w.ws.StartChildWorkflow(wctx, data.Session)
+		var (
+			sid sdktypes.SessionID
+			err error
+		)
+
+		if inActivity {
+			sid, err = w.ws.startChildSessionActivity(ctx, data.Session)
+		} else {
+			sid, err = w.ws.StartChildWorkflow(wctx, data.Session)
+		}
+
 		if err != nil {
 			return sdktypes.InvalidSessionID, err
 		}
