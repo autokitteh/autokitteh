@@ -350,6 +350,7 @@ type Session struct {
 	Entrypoint       string
 	Inputs           datatypes.JSON
 	Memo             datatypes.JSON
+	IsDurable        bool
 
 	UpdatedBy uuid.UUID `gorm:"type:uuid"`
 	UpdatedAt time.Time
@@ -398,6 +399,7 @@ func ParseSession(s Session) (sdktypes.Session, error) {
 		UpdatedAt:    timestamppb.New(s.UpdatedAt),
 		State:        sessionsv1.SessionStateType(s.CurrentStateType),
 		Memo:         memo,
+		IsDurable:    s.IsDurable,
 	})
 	if err != nil {
 		return sdktypes.InvalidSession, err
