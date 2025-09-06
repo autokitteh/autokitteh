@@ -87,6 +87,7 @@ func (db *gormdb) CreateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 		UniqueName:   uniqueName,
 		WebhookSlug:  trigger.WebhookSlug(),
 		Schedule:     trigger.Schedule(),
+		IsDurable:    trigger.IsDurable(),
 	}
 
 	return translateError(db.createTrigger(ctx, t))

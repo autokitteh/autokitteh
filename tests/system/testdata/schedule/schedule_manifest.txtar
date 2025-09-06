@@ -61,5 +61,6 @@ def on_cron_trigger():
     "path": "cron.star",
     "name": "on_cron_trigger"
   },
+  "is_durable": true,
   "schedule": "*/1 * * * * * *"
 }

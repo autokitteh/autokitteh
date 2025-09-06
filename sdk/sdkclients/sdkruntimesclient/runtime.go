@@ -31,6 +31,7 @@ func (r *runtime) Run(
 	mainPath string,
 	compiled map[string][]byte,
 	values map[string]sdktypes.Value,
+	durable bool,
 	cbs *sdkservices.RunCallbacks,
 ) (sdkservices.Run, error) {
 	return nil, sdkerrors.ErrNotImplemented

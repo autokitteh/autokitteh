@@ -8,7 +8,7 @@ return code == 0
 capture_jq bid .build_id
 
 # Preconditions: start a slow session, and wait for it to start running.
-ak session start --build-id $bid --project my_project --entrypoint main.star:main -j
+ak session start --build-id $bid --project my_project --entrypoint main.star:main -j --durable
 return code == 0
 capture_jq sid .session_id
 
@@ -34,7 +34,7 @@ ak deploy --manifest test.yaml --file test.star
 return code == 0
 capture_re did dep_[0-9a-z]+
 
-ak session start --deployment-id $did --entrypoint test.star:test -j
+ak session start --deployment-id $did --entrypoint test.star:test -j --durable
 return code == 0
 capture_jq sid .session_id
 
