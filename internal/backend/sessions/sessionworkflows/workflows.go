@@ -302,7 +302,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params sessionWorkfl
 	}
 
 	// Signal parent session on completion.
-	if parentSessionID.IsValid() {
+	if session.IsDurable() && parentSessionID.IsValid() {
 		payload := map[string]sdktypes.Value{
 			"completed": sdktypes.NewBooleanValue(err == nil),
 		}

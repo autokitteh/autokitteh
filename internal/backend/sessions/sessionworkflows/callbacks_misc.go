@@ -34,8 +34,11 @@ func (w *sessionWorkflow) start(wctx workflow.Context) func(context.Context, sdk
 
 		data := w.data
 
-		projectID := data.Session.ProjectID()
-		buildID := data.Session.BuildID()
+		data.Session = sdktypes.NewSession(data.Session.BuildID(), loc, inputs, memo).
+			WithParentSessionID(data.Session.ID()).
+			WithDeploymentID(data.Session.DeploymentID()).
+			WithProjectID(data.Session.ProjectID()).
+			SetDurable(data.Session.IsDurable())
 
 		if project.IsValid() {
 			params := getProjectIDAndActiveBuildIDParams{Project: project, OrgID: data.OrgID}
@@ -46,24 +49,21 @@ func (w *sessionWorkflow) start(wctx workflow.Context) func(context.Context, sdk
 			)
 
 			if inActivity {
+				resp, err = w.ws.getProjectIDAndActiveBuildIDActivity(ctx, params)
+			} else {
 				err = workflow.ExecuteActivity(wctx, getProjectIDAndActiveBuildIDActivityName, &params).Get(wctx, &resp)
-			} else if resp, err = w.ws.getProjectIDAndActiveBuildIDActivity(ctx, params); err != nil {
-				return sdktypes.InvalidSessionID, fmt.Errorf("could not get active build ID for project %s: %w", project, err)
 			}
 
 			if err != nil {
 				return sdktypes.InvalidSessionID, fmt.Errorf("could not get active build ID for project %s: %w", project, err)
 			}
 
-			projectID = resp.ProjectID
-			buildID = resp.BuildID
-		}
+			data.Session = data.Session.
+				WithProjectID(resp.ProjectID).
+				WithBuildID(resp.BuildID)
 
-		data.Session = sdktypes.NewSession(buildID, loc, inputs, memo).
-			WithParentSessionID(data.Session.ID()).
-			WithDeploymentID(data.Session.DeploymentID()).
-			WithProjectID(projectID).
-			SetDurable(data.Session.IsDurable())
+			l = l.With(zap.Any("child_project_id", resp.ProjectID), zap.Any("child_build_id", resp.BuildID))
+		}
 
 		var (
 			sid sdktypes.SessionID
@@ -82,7 +82,7 @@ func (w *sessionWorkflow) start(wctx workflow.Context) func(context.Context, sdk
 
 		data.Session = data.Session.WithID(sid)
 
-		w.l.Info("child session started", zap.Any("child", sid), zap.Any("parent", w.data.Session.ID()))
+		l.Info("child session started", zap.Any("child_session", data.Session))
 
 		return sid, nil
 	}
