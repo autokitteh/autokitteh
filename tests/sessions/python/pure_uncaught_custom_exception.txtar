@@ -15,7 +15,7 @@ def callstuff():
 def main(_):
     callstuff()
 
--- error.txt --
+-- error.durable.txt --
 error: X(1, 2)
 
 Traceback (most recent call last):
@@ -35,4 +35,16 @@ Traceback (most recent call last):
            ~~~~~~~~~~~~~~~~~^^
   File "/usr/lib/python3.13/concurrent/futures/_base.py", line 401, in __get_result
     raise self._exception
+main.X: (1, 2)
+
+-- error.nondurable.txt --
+error: X(1, 2)
+
+Traceback (most recent call last):
+   ak-runner
+    value = fn(*args, **kw)
+  File "main.py", line 15, in main
+    callstuff()
+  File "main.py", line 11, in callstuff
+    raise X(1, 2)
 main.X: (1, 2)

@@ -34,7 +34,7 @@ type StartWorkflowOptions struct{}
 
 type Workflows interface {
 	StartWorkers(context.Context) error
-	StartWorkflow(ctx context.Context, session sdktypes.Session, opts StartWorkflowOptions) error
+	StartWorkflow(ctx context.Context, session sdktypes.Session) error
 	StartChildWorkflow(wctx workflow.Context, session sdktypes.Session) (sdktypes.SessionID, error)
 	GetWorkflowLog(ctx context.Context, filter sdkservices.SessionLogRecordsFilter) (*sdkservices.GetLogResults, error)
 	StopWorkflow(ctx context.Context, sessionID sdktypes.SessionID, reason string, force bool, cancelTimeout time.Duration) error
@@ -42,7 +42,6 @@ type Workflows interface {
 
 type sessionWorkflowParams struct {
 	Data sessiondata.Data
-	Opts StartWorkflowOptions
 }
 
 type workflows struct {
@@ -134,7 +133,7 @@ func (ws *workflows) StartChildWorkflow(wctx workflow.Context, session sdktypes.
 	return sid, nil
 }
 
-func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session, opts StartWorkflowOptions) error {
+func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session) error {
 	sessionID := session.ID()
 
 	data, err := sessiondata.Get(ctx, ws.svcs, session)
@@ -146,7 +145,6 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 
 	params := sessionWorkflowParams{
 		Data: *data,
-		Opts: opts,
 	}
 	if err = ws.svcs.WorkflowExecutor.Execute(ctx, sessionID, params, memo); err != nil {
 		return fmt.Errorf("execute session workflow: %w", err)
