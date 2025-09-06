@@ -1,0 +1,41 @@
+ak project create --name p1
+return code == 0
+
+ak project deploy p1 --file p1.py
+return code == 0
+
+ak project create --name p2
+return code == 0
+
+ak project deploy p2 --file p2.py
+return code == 0
+
+# non-durable
+ak session start --project p1 --entrypoint p1.py:main -j
+return code == 0
+capture_jq sid .session_id
+
+ak session watch $sid --timeout 20s
+return code == 0
+
+ak session prints $sid --no-timestamps
+return code == 0
+capture_re child_sid ses_.*
+
+ak session watch $child_sid --timeout 20s
+return code == 0
+
+ak session prints $child_sid --no-timestamps
+return code == 0
+output contains '2'
+
+-- p1.py --
+from autokitteh import start, next_signal
+
+def main(_):
+  print(start("p2.py:foo", {"x": 1}, project="p2"))
+
+-- p2.py --
+def foo(event):
+  print(event.data.get("x") + 1)
+
