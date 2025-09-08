@@ -44,6 +44,6 @@ func (c *cli) NewOrgImpersonator(orgID sdktypes.OrgID) (sdkservices.Services, er
 		AuthToken: internalToken,
 	}.Safe())
 
-	c.l.Debug("created internal client for org", zap.String("orgID", orgID.UUIDValue().String()))
+	c.l.Debug(fmt.Sprintf("created internal client for org: %s", orgID.UUIDValue().String()))
 	return cli, nil
 }

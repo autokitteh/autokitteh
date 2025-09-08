@@ -23,6 +23,7 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/google/gmail"
 	"go.autokitteh.dev/autokitteh/integrations/google/vars"
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -196,7 +197,7 @@ func (h handler) handleGmailNotification(w http.ResponseWriter, r *http.Request)
 		zap.String("publishTime", r.Header.Get("X-Goog-Pubsub-Publish-Time")),
 		zap.String("subscriptionName", r.Header.Get("X-Goog-Pubsub-Subscription-Name")),
 	)
-	l.Info("Received Gmail notification")
+	l.Info("Received Gmail notification", zap.Any("headers", r.Header))
 
 	// Parse event details from the JSON body.
 	defer r.Body.Close()
@@ -218,6 +219,7 @@ func (h handler) handleGmailNotification(w http.ResponseWriter, r *http.Request)
 		zap.String("emailAddress", notif.EmailAddress),
 		zap.Int("historyID", notif.HistoryID),
 	)
+	l.Debug(fmt.Sprintf("Parsed gmail notification email: %s", notif.EmailAddress))
 
 	// Find all the connection IDs associated with the email address.
 	ctx := extrazap.AttachLoggerToContext(l, r.Context())
@@ -227,6 +229,11 @@ func (h handler) handleGmailNotification(w http.ResponseWriter, r *http.Request)
 		common.HTTPError(w, http.StatusInternalServerError)
 		return
 	}
+	cidsString := strings.Join(kittehs.Transform(cids, func(cid sdktypes.ConnectionID) string {
+		return cid.String()
+	}), ",")
+
+	l.Debug(fmt.Sprintf("Found %d connections for gmail", len(cids)), zap.String("connectionIDs", cidsString))
 
 	// Construct the event and dispatch it to all the connections.
 	gmailEvent := map[string]any{

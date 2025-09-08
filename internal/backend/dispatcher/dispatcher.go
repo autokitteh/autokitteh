@@ -66,6 +66,8 @@ func (d *Dispatcher) DispatchExternal(ctx context.Context, event sdktypes.Event,
 		return sdktypes.InvalidEventID, fmt.Errorf("get org id of project %v: %w", pid, err)
 	}
 
+	d.sl.Info("external dispatch found pid", pid.String(), "and orgID", orgID.String(), "for eventID", event.ID().String(), "and destinationID", event.DestinationID().String())
+
 	cli, err := d.svcs.ExternalClient.NewOrgImpersonator(orgID)
 
 	if err != nil {
