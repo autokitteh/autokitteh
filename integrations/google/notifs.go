@@ -323,7 +323,7 @@ func checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Logger) bool {
 
 		key, exists := rsaPublicKeys[kid]
 		if !exists {
-			return nil, fmt.Errorf("ggmail notification check request missing google public key not found for kid: %s", kid)
+			return nil, fmt.Errorf("gmail notification check request missing google public key not found for kid: %s", kid)
 		}
 		return key, nil
 	})
