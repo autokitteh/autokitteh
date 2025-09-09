@@ -1,6 +1,8 @@
 package sdktypes
 
 import (
+	"fmt"
+
 	projectv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/projects/v1"
 )
 
@@ -14,28 +16,30 @@ const (
 	ViolationWarning ViolationLevel = projectv1.CheckViolation_LEVEL_WARNING
 )
 
-func NewCheckViolation(filename string, ruleID string, message string) *CheckViolation {
+func NewCheckViolationf(filename string, ruleID string, f string, vs ...any) *CheckViolation {
 	return &CheckViolation{
 		Location: &CodeLocationPB{Path: filename},
 		Level:    CheckRules[ruleID].Level,
-		Message:  message,
+		Message:  fmt.Sprintf(f, vs...),
 		RuleId:   ruleID,
 	}
 }
 
 const (
-	ProjectSizeTooLargeRuleID     = "E1"
-	DuplicateConnectionNameRuleID = "E2"
-	DuplicateTriggerNameRuleID    = "E3"
-	BadCallFormatRuleID           = "E4"
-	FileNotFoundRuleID            = "E5"
-	SyntaxErrorRuleID             = "E6"
-	MissingHandlerRuleID          = "E7"
-	NonexistingConnectionRuleID   = "E8"
-	MalformedNameRuleID           = "E9"
-	InvalidManifestRuleID         = "E10"
-	FileCannotExportRuleID        = "E11"
-	InvalidEventFilterRuleID      = "E12"
+	ProjectSizeTooLargeRuleID                   = "E1"
+	DuplicateConnectionNameRuleID               = "E2"
+	DuplicateTriggerNameRuleID                  = "E3"
+	BadCallFormatRuleID                         = "E4"
+	FileNotFoundRuleID                          = "E5"
+	SyntaxErrorRuleID                           = "E6"
+	MissingHandlerRuleID                        = "E7"
+	NonexistingConnectionRuleID                 = "E8"
+	MalformedNameRuleID                         = "E9"
+	InvalidManifestRuleID                       = "E10"
+	FileCannotExportRuleID                      = "E11"
+	InvalidEventFilterRuleID                    = "E12"
+	InvalidPyRequirementsRuleID                 = "E13"
+	PyRequirementsPackageAlreadyInstalledRuleID = "E14"
 
 	EmptyVariableRuleID     = "W1"
 	NoTriggersDefinedRuleID = "W2"
