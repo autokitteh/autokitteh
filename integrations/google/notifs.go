@@ -225,7 +225,7 @@ func (h handler) handleGmailNotification(w http.ResponseWriter, r *http.Request)
 		zap.Int("historyID", notif.HistoryID),
 	)
 
-	l.Debug(fmt.Sprintf("received gmail notification for: %s", notif.EmailAddress))
+	l.Debug("received gmail notification for: " + notif.EmailAddress)
 
 	// Find all the connection IDs associated with the email address.
 	ctx := extrazap.AttachLoggerToContext(l, r.Context())
