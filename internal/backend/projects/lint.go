@@ -368,7 +368,7 @@ func checkPyRequirements(_ sdktypes.ProjectID, _ *manifest.Manifest, resources m
 		return nil
 	}
 
-	inEmbeddedDependencies := kittehs.ContainedIn(pysdk.Dependencies()...)
+	inEmbeddedDependency := kittehs.ContainedIn(pysdk.Dependencies()...)
 
 	// parse requirements.txt line by line
 	lines := strings.Split(string(txt), "\n")
@@ -394,9 +394,9 @@ func checkPyRequirements(_ sdktypes.ProjectID, _ *manifest.Manifest, resources m
 			continue
 		}
 
-		name := string(matches[1])
+		name := matches[1]
 
-		if inEmbeddedDependencies(name) {
+		if inEmbeddedDependency(name) {
 			vs = append(
 				vs,
 				sdktypes.NewCheckViolationf(
