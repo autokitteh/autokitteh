@@ -11,10 +11,6 @@ concurrency:
 
 run-name: Publish image ${{inputs.enterprise && 'ee/server' || 'server'}}:${{inputs.version}} to ECR
 
-permissions:
-    contents: read
-    id-token: write
-
 on:
     workflow_dispatch:
         inputs:
