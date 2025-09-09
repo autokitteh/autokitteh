@@ -26,9 +26,9 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-type Checker func(projectID sdktypes.ProjectID, manifest *manifest.Manifest, resources map[string][]byte) []*sdktypes.CheckViolation
+type checker func(projectID sdktypes.ProjectID, manifest *manifest.Manifest, resources map[string][]byte) []*sdktypes.CheckViolation
 
-var lintCheckers = []Checker{
+var lintCheckers = []checker{
 	// Generic
 	checkConnectionNames,
 	checkEmptyVars,
@@ -44,6 +44,8 @@ var lintCheckers = []Checker{
 }
 
 const manifestFilePath = "autokitteh.yaml"
+
+var pythonRequirementPackageNameRegexp = regexp.MustCompile(`^([A-Za-z_][A-Za-z0-9_.-]+)`)
 
 func Validate(projectID sdktypes.ProjectID, manifestData []byte, resources map[string][]byte) []*sdktypes.CheckViolation {
 	manifest, err := manifest.Read(manifestData)
@@ -379,8 +381,7 @@ func checkPyRequirements(_ sdktypes.ProjectID, _ *manifest.Manifest, resources m
 		}
 
 		// parse line using regex to get the first part (package name)
-		re := regexp.MustCompile(`^([A-Za-z_][A-Za-z0-9_.-]+)`)
-		matches := re.FindStringSubmatch(line)
+		matches := pythonRequirementPackageNameRegexp.FindStringSubmatch(line)
 		if matches == nil {
 			vs = append(
 				vs,
