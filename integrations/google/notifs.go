@@ -328,7 +328,7 @@ func checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Logger) bool {
 		return key, nil
 	})
 	if err != nil {
-		l.Error("gmail notification check request missing failed to parse JWT in Google push notification", zap.Error(err))
+		l.Error("gmail notification check request failed to parse JWT in Google push notification", zap.Error(err))
 		common.HTTPError(w, http.StatusInternalServerError)
 		return false
 	}
