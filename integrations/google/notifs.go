@@ -215,7 +215,7 @@ func (h handler) handleGmailNotification(w http.ResponseWriter, r *http.Request)
 	}
 
 	if notif.EmailAddress == "" {
-		l.Error("missing email address in gmail notification, body: " + string(body))
+		l.Error("missing email address in gmail notification, probably misconfigured subscription", zap.String("body", string(body)))
 		common.HTTPError(w, http.StatusBadRequest)
 		return
 	}
