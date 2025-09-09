@@ -388,7 +388,7 @@ func checkPyRequirements(_ sdktypes.ProjectID, _ *manifest.Manifest, resources m
 					path,
 					sdktypes.InvalidPyRequirementsRuleID,
 					"invalid requirement - line %d is not a valid requirement",
-					i,
+					i+1,
 				),
 			)
 			continue
