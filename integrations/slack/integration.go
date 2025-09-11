@@ -68,7 +68,7 @@ func newHTTPHandler(l *zap.Logger, v sdkservices.Vars, d sdkservices.DispatchFun
 // for existing Socket Mode connections when the AutoKitteh server starts.
 func reopenExistingWebSocketConnections(ctx context.Context, l *zap.Logger, v sdkservices.Vars, h websockets.Handler) {
 	iid := sdktypes.NewIntegrationIDFromName(desc.UniqueName().String())
-	cids, err := v.FindConnectionIDs(ctx, iid, vars.AppTokenVar, "")
+	cids, err := v.FindActiveConnectionIDs(ctx, iid, vars.AppTokenVar, "")
 	if err != nil {
 		l.Error("failed to list WebSocket-based connection IDs", zap.Error(err))
 		return
