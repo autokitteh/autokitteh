@@ -62,7 +62,7 @@ func (h handler) HandleMessage(w http.ResponseWriter, r *http.Request) {
 
 	// Retrieve all the relevant connections for this event.
 	ctx := extrazap.AttachLoggerToContext(l, r.Context())
-	cids, err := h.vars.FindConnectionIDs(ctx, h.integrationID, sdktypes.NewSymbol("account_sid"), aid)
+	cids, err := h.vars.FindActiveConnectionIDs(ctx, h.integrationID, sdktypes.NewSymbol("account_sid"), aid)
 	if err != nil {
 		l.Error("Failed to find connection IDs", zap.Error(err))
 		common.HTTPError(w, http.StatusInternalServerError)

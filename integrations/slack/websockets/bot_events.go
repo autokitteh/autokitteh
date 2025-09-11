@@ -64,7 +64,7 @@ func (h Handler) handleBotEvent(e *socketmode.Event, c *socketmode.Client) {
 	}
 
 	// Retrieve all the relevant connections for this event.
-	cids, err := h.vars.FindConnectionIDs(context.Background(), h.integrationID, vars.AppTokenVar, "")
+	cids, err := h.vars.FindActiveConnectionIDs(context.Background(), h.integrationID, vars.AppTokenVar, "")
 	if err != nil {
 		h.logger.Error("Failed to find connection IDs", zap.Error(err))
 		return
