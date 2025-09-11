@@ -91,6 +91,6 @@ func (m *mockVars) Get(ctx context.Context, sid sdktypes.VarScopeID, names ...sd
 	return nil, nil
 }
 
-func (m *mockVars) FindConnectionIDs(ctx context.Context, iid sdktypes.IntegrationID, name sdktypes.Symbol, value string) ([]sdktypes.ConnectionID, error) {
+func (m *mockVars) FindActiveConnectionIDs(ctx context.Context, iid sdktypes.IntegrationID, name sdktypes.Symbol, value string) ([]sdktypes.ConnectionID, error) {
 	return nil, nil
 }

@@ -74,16 +74,23 @@ func (gdb *gormdb) listVars(ctx context.Context, scopeID uuid.UUID, names ...str
 }
 
 func (gdb *gormdb) findConnectionIDsByVar(ctx context.Context, integrationID uuid.UUID, name string, v string) ([]uuid.UUID, error) {
-	db := gdb.reader.WithContext(ctx).Where("integration_id = ? AND name = ?", integrationID, name)
+	db := gdb.reader.WithContext(ctx).Where("vars.integration_id = ? AND vars.name = ?", integrationID, name)
 	if v != "" {
-		db = db.Where("value = ? AND is_secret is false", v)
+		db = db.Where("vars.value = ? AND vars.is_secret is false", v)
 	}
+
+	// Join with connections and deployments to filter by active projects only.
+	db = db.Model(&scheme.Var{}).
+		Joins("JOIN connections ON vars.var_id = connections.connection_id").
+		Joins("JOIN deployments ON connections.project_id = deployments.project_id").
+		Where("deployments.state = ? AND deployments.deleted_at IS NULL", 1)
 
 	// Note(s):
 	// - will skip not user owned vars
 	// - not checking if scope is deleted, since scope deletion will cascade deletion of relevant vars
+	// - only returns connections for projects with active deployments
 	var ids []uuid.UUID
-	if err := db.Model(&scheme.Var{}).Distinct("var_id").Find(&ids).Error; err != nil {
+	if err := db.Distinct("vars.var_id").Find(&ids).Error; err != nil {
 		return nil, err
 	}
 	return ids, nil
