@@ -303,7 +303,6 @@ func (o *OAuth) initConfigs() {
 					TokenURL: "https://api.hubapi.com/oauth/v1/token",
 				},
 				Scopes: []string{
-					"conversations.read",
 					"crm.objects.companies.read",
 					"crm.objects.companies.write",
 					"crm.objects.contacts.read",
@@ -311,9 +310,6 @@ func (o *OAuth) initConfigs() {
 					"crm.objects.deals.read",
 					"crm.objects.deals.write",
 					"crm.objects.owners.read",
-					"crm.objects.line_items.read",
-					"crm.objects.products.read",
-					"oauth",
 				},
 			},
 		},
