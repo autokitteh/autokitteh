@@ -1,11 +1,17 @@
 meow, world!
+meow, earth!
 
 -- main.py:main --
 import foo
+from foo import bar
 
 def main(event):
     foo.foo("meow")
+    bar("meow")
 
 -- foo/__init__.py --
 def foo(x):
     print(x + ", world!")
+
+def bar(x):
+    print(x + ", earth!")
