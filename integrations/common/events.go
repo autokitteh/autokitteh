@@ -55,6 +55,7 @@ func DispatchEvent(ctx context.Context, l *zap.Logger, d sdkservices.DispatchFun
 		if err != nil {
 			if errors.Is(err, sdkerrors.ErrResourceExhausted) {
 				l.Info("Event dispatch failed due to resource exhaustion")
+				continue
 			} else {
 				l.Error("Event dispatch failed", zap.Error(err))
 			}
