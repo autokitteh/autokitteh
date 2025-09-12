@@ -34,21 +34,25 @@ class AzureBotClient:
     def _get_access_token(self) -> str:
         url = f"https://login.microsoftonline.com/{self._credentials.tenant_id}/oauth2/v2.0/token"
         data = {
-            'grant_type': 'client_credentials',
-            'client_id': self._credentials.app_id,
-            'client_secret': self._credentials.app_password,
-            'scope': 'https://api.botframework.com/.default'
+            "grant_type": "client_credentials",
+            "client_id": self._credentials.app_id,
+            "client_secret": self._credentials.app_password,
+            "scope": "https://api.botframework.com/.default",
         }
-        
+
         response = requests.post(url, data=data)
         if response.status_code != 200:
-            raise AuthenticationError(self._connection, f"Failed to get token: {response.text}")
+            raise AuthenticationError(
+                self._connection, f"Failed to get token: {response.text}"
+            )
 
         token_data = response.json()
-        if token_data.get('error'):
-            raise AuthenticationError(self._connection, f"Failed to get token: {token_data['error']}")
+        if token_data.get("error"):
+            raise AuthenticationError(
+                self._connection, f"Failed to get token: {token_data['error']}"
+            )
 
-        return token_data['access_token']
+        return token_data["access_token"]
 
     @activity
     def send_conversation_activity(
@@ -58,7 +62,7 @@ class AzureBotClient:
         service_url: str = "https://smba.trafficmanager.net/teams/",
     ) -> Any:
         """Send activity synchronously.
-        
+
         If this is sent as a reply to an event, use the service_url from that event.
 
         Raises on non-2xx statuses.
@@ -71,12 +75,12 @@ class AzureBotClient:
             url = f"{service_url}v3/conversations/{conversation_id}/activities"
         else:
             url = f"{service_url}v3/conversations"
-                
+
         headers = {
             "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
-        
+
         response = requests.post(url, json=activity, headers=headers)
         response.raise_for_status()
         return response.json()

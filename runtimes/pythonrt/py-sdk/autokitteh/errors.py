@@ -37,8 +37,11 @@ class AtlassianOAuthError(AutoKittehError):
         msg += "use a token-based connection instead"
         super().__init__(msg)
 
+
 class AuthenticationError(Exception):
     """Authentication failed."""
 
     def __init__(self, connection: str, reason: str):
-        super().__init__(f"Authentication failed for connection {connection!r}: {reason}")
+        super().__init__(
+            f"Authentication failed for connection {connection!r}: {reason}"
+        )
