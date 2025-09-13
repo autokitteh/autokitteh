@@ -570,7 +570,7 @@ class Runner(pb.runner_rpc.RunnerService):
         req_size = req.ByteSize()
         if req_size > MAX_SIZE_OF_REQUEST:
             raise ActivityError(
-                f"request payload size {format_size(req_size)} is too large. max allowed is {format_size(MAX_SIZE_OF_REQUEST)}"
+                f"Request payload size {format_size(req_size)} is larger than maximum supported ({format_size(MAX_SIZE_OF_REQUEST)})."
             )
         log.info("activity: sending")
         resp = self.worker.Activity(req)
