@@ -135,9 +135,6 @@
       "properties": {
         "sync": {
           "type": "boolean"
-        },
-        "timeout": {
-          "type": "integer"
         }
       },
       "additionalProperties": false,
