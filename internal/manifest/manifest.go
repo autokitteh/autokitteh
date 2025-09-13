@@ -3,7 +3,6 @@ package manifest
 
 import (
 	"encoding/json"
-	"time"
 
 	"github.com/invopop/jsonschema"
 
@@ -63,8 +62,7 @@ type Var struct {
 func (v Var) GetKey() string { return v.ParentKey + "/" + v.Name }
 
 type Webhook struct {
-	Sync    bool          `yaml:"sync,omitempty" json:"sync,omitempty"`
-	Timeout time.Duration `yaml:"timeout,omitempty" json:"timeout,omitempty"`
+	Sync bool `yaml:"sync,omitempty" json:"sync,omitempty"`
 }
 
 type Trigger struct {

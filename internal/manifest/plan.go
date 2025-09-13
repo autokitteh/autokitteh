@@ -415,7 +415,7 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 				wh = &Webhook{}
 			}
 
-			desired = desired.WithWebhook().WithSyncWebhook(wh.Sync).WithWebhookResponseTimeout(wh.Timeout)
+			desired = desired.WithWebhook().WithSyncWebhook(wh.Sync)
 		}
 
 		if mtrigger.ConnectionKey != nil || mtrigger.Type == "connection" {

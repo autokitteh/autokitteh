@@ -4,7 +4,7 @@
 // @ts-nocheck
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
-import { Duration, Message, proto3 } from "@bufbuild/protobuf";
+import { Message, proto3 } from "@bufbuild/protobuf";
 import { CodeLocation } from "../../program/v1/program_pb.js";
 
 /**
@@ -63,16 +63,9 @@ export class Trigger extends Message<Trigger> {
   /**
    * if source_type == WEBHOOK. If true, webhook returns a response from session.
    *
-   * @generated from field: bool sync_webhook = 52;
+   * @generated from field: bool webhook_sync = 52;
    */
-  syncWebhook = false;
-
-  /**
-   * if source_type == WEBHOOK. 0 to use default.
-   *
-   * @generated from field: google.protobuf.Duration webhook_response_timeout = 53;
-   */
-  webhookResponseTimeout?: Duration;
+  webhookSync = false;
 
   /**
    * read only.
@@ -100,8 +93,7 @@ export class Trigger extends Message<Trigger> {
     { no: 7, name: "filter", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 50, name: "connection_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 51, name: "schedule", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 52, name: "sync_webhook", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 53, name: "webhook_response_timeout", kind: "message", T: Duration },
+    { no: 52, name: "webhook_sync", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 100, name: "webhook_slug", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 

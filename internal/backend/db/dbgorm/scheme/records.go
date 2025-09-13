@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
@@ -277,18 +276,17 @@ func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
 	}
 
 	return sdktypes.StrictTriggerFromProto(&sdktypes.TriggerPB{
-		TriggerId:              sdktypes.NewIDFromUUID[sdktypes.TriggerID](e.TriggerID).String(),
-		SourceType:             srcType.ToProto(),
-		ConnectionId:           sdktypes.NewIDFromUUIDPtr[sdktypes.ConnectionID](e.ConnectionID).String(),
-		ProjectId:              sdktypes.NewIDFromUUID[sdktypes.ProjectID](e.ProjectID).String(),
-		EventType:              e.EventType,
-		Filter:                 filter,
-		CodeLocation:           loc.ToProto(),
-		Name:                   e.Name,
-		WebhookSlug:            e.WebhookSlug,
-		Schedule:               e.Schedule,
-		SyncWebhook:            e.WebhookSync,
-		WebhookResponseTimeout: durationpb.New(time.Duration(e.WebhookResponseTimeout)),
+		TriggerId:    sdktypes.NewIDFromUUID[sdktypes.TriggerID](e.TriggerID).String(),
+		SourceType:   srcType.ToProto(),
+		ConnectionId: sdktypes.NewIDFromUUIDPtr[sdktypes.ConnectionID](e.ConnectionID).String(),
+		ProjectId:    sdktypes.NewIDFromUUID[sdktypes.ProjectID](e.ProjectID).String(),
+		EventType:    e.EventType,
+		Filter:       filter,
+		CodeLocation: loc.ToProto(),
+		Name:         e.Name,
+		WebhookSlug:  e.WebhookSlug,
+		Schedule:     e.Schedule,
+		WebhookSync:  e.WebhookSync,
 	})
 }
 

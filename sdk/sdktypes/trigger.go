@@ -2,9 +2,6 @@ package sdktypes
 
 import (
 	"errors"
-	"time"
-
-	"google.golang.org/protobuf/types/known/durationpb"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	triggerv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/triggers/v1"
@@ -141,15 +138,7 @@ func (p Trigger) WithWebhook() Trigger {
 	})}
 }
 
-func (p Trigger) IsSyncWebhook() bool { return p.read().SyncWebhook }
+func (p Trigger) IsSyncWebhook() bool { return p.read().WebhookSync }
 func (p Trigger) WithSyncWebhook(sync bool) Trigger {
-	return Trigger{p.forceUpdate(func(m *TriggerPB) { m.SyncWebhook = sync })}
-}
-
-func (p Trigger) WebhookResponseTimeout() time.Duration {
-	return p.read().WebhookResponseTimeout.AsDuration()
-}
-
-func (p Trigger) WithWebhookResponseTimeout(timeout time.Duration) Trigger {
-	return Trigger{p.forceUpdate(func(m *TriggerPB) { m.WebhookResponseTimeout = durationpb.New(timeout) })}
+	return Trigger{p.forceUpdate(func(m *TriggerPB) { m.WebhookSync = sync })}
 }

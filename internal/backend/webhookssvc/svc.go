@@ -29,12 +29,12 @@ const WebhooksPathPrefix = "/webhooks/"
 
 type Config struct {
 	SessionOutcomePollInterval time.Duration `koanf:"session_outcome_poll_interval"`
-	MaxWebhookResponseTimeout  time.Duration `koanf:"max_webhook_response_timeout"`
+	WebhookResponseTimeout     time.Duration `koanf:"webhook_response_timeout"`
 }
 
 var Configs = configset.Set[Config]{
 	Default: &Config{
-		MaxWebhookResponseTimeout:  30 * time.Second,
+		WebhookResponseTimeout:     30 * time.Second,
 		SessionOutcomePollInterval: 100 * time.Millisecond,
 	},
 }
@@ -162,15 +162,11 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("AutoKitteh-Session-ID", session.ID().String())
 
-	tmo := t.WebhookResponseTimeout()
-	if tmo == 0 {
-		tmo = s.cfg.MaxWebhookResponseTimeout
-	} else {
-		tmo = min(tmo, s.cfg.MaxWebhookResponseTimeout)
+	if tmo := s.cfg.WebhookResponseTimeout; tmo != 0 {
+		var done context.CancelFunc
+		ctx, done = context.WithTimeout(ctx, tmo)
+		defer done()
 	}
-
-	ctx, done := context.WithTimeout(ctx, tmo)
-	defer done()
 
 	var (
 		firstResponseSent bool
