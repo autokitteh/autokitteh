@@ -8,10 +8,25 @@ import (
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
+	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func (db *gormdb) Transaction(ctx context.Context, f func(db db.DB) error) error {
-	return db.writeTransaction(ctx, func(tx *gormdb) error { return f(tx) })
+type txImpl struct {
+	*gormdb
+}
+
+func (tx txImpl) LockProject(ctx context.Context, pid sdktypes.ProjectID) error {
+	return translateError(
+		tx.writer.
+			Model(&scheme.Project{}).
+			Where("id = ?", pid).
+			Error,
+	)
+}
+
+func (db *gormdb) Transaction(ctx context.Context, f func(db db.TX) error) error {
+	return db.writeTransaction(ctx, func(tx *gormdb) error { return f(txImpl{tx}) })
 }
 
 func (db *gormdb) writeTransaction(ctx context.Context, f func(tx *gormdb) error) error {
