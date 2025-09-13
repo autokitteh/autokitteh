@@ -41,7 +41,9 @@ type testDB struct {
 	deployments map[sdktypes.DeploymentID]*testDeployment
 }
 
-func (db *testDB) Transaction(_ context.Context, f func(tx db.DB) error) error { return f(db) }
+func (*testDB) LockProject(context.Context, sdktypes.ProjectID) error { return nil }
+
+func (db *testDB) Transaction(_ context.Context, f func(tx db.TX) error) error { return f(db) }
 
 func (db *testDB) DeploymentHasActiveSessions(_ context.Context, id sdktypes.DeploymentID) (bool, error) {
 	return db.deployments[id].NumRunningSessions > 0, nil

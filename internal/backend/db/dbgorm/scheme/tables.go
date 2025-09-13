@@ -14,8 +14,8 @@ var Tables = []any{
 	&SessionCallSpec{},
 	&SessionLogRecord{},
 	&Signal{},
+	&StoreValue{},
 	&Trigger{},
 	&User{},
-	&StoreValue{},
 	&Var{},
 }
