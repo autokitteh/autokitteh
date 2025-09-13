@@ -111,6 +111,7 @@ func memo(session sdktypes.Session, oid sdktypes.OrgID) map[string]string {
 		"project_uuid":    session.ProjectID().UUIDValue().String(),
 		"org_id":          oid.String(),
 		"org_uuid":        oid.UUIDValue().String(),
+		"durable":         fmt.Sprint(session.IsDurable()),
 	}
 
 	if session.ParentSessionID().IsValid() {
