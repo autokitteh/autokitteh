@@ -3,6 +3,7 @@ package dispatcher
 import (
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/google/uuid"
 	"go.temporal.io/api/serviceerror"
@@ -187,6 +188,10 @@ func newSession(event sdktypes.Event, inputs map[string]sdktypes.Value, data ses
 		memo["trigger_uuid"] = t.ID().UUIDValue().String()
 		memo["trigger_source_type"] = t.SourceType().String()
 		memo["trigger_name"] = t.Name().String()
+
+		if t.SourceType() == sdktypes.TriggerSourceTypeWebhook {
+			memo["trigger_webhook_sync"] = strconv.FormatBool(t.IsSyncWebhook())
+		}
 	}
 
 	if c := data.Connection; c.IsValid() {
