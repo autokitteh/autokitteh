@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -111,7 +112,7 @@ func memo(session sdktypes.Session, oid sdktypes.OrgID) map[string]string {
 		"project_uuid":    session.ProjectID().UUIDValue().String(),
 		"org_id":          oid.String(),
 		"org_uuid":        oid.UUIDValue().String(),
-		"durable":         fmt.Sprint(session.IsDurable()),
+		"durable":         strconv.FormatBool(session.IsDurable()),
 	}
 
 	if session.ParentSessionID().IsValid() {
