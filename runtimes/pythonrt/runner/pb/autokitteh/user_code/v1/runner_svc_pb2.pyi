@@ -34,12 +34,14 @@ class ExportsResponse(_message.Message):
     def __init__(self, exports: _Optional[_Iterable[_Union[Export, _Mapping]]] = ..., error: _Optional[str] = ...) -> None: ...
 
 class StartRequest(_message.Message):
-    __slots__ = ["entry_point", "event"]
+    __slots__ = ["entry_point", "event", "is_durable"]
     ENTRY_POINT_FIELD_NUMBER: _ClassVar[int]
     EVENT_FIELD_NUMBER: _ClassVar[int]
+    IS_DURABLE_FIELD_NUMBER: _ClassVar[int]
     entry_point: str
     event: _user_code_pb2.Event
-    def __init__(self, entry_point: _Optional[str] = ..., event: _Optional[_Union[_user_code_pb2.Event, _Mapping]] = ...) -> None: ...
+    is_durable: bool
+    def __init__(self, entry_point: _Optional[str] = ..., event: _Optional[_Union[_user_code_pb2.Event, _Mapping]] = ..., is_durable: bool = ...) -> None: ...
 
 class ExecuteRequest(_message.Message):
     __slots__ = ["data"]

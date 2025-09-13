@@ -43,12 +43,13 @@ project:
       value: Garfield
 
 -- autokitteh.exported.sans_vars.yaml --
-version: v1
+version: v2
 project:
   name: simple
   triggers:
   - name: events
     event_type: post
+    is_durable: true
     webhook: {}
     call: program.py:handle
   vars:
@@ -56,12 +57,13 @@ project:
     value: ""
 
 -- autokitteh.exported.with_vars.yaml --
-version: v1
+version: v2
 project:
   name: simple
   triggers:
   - name: events
     event_type: post
+    is_durable: true
     webhook: {}
     call: program.py:handle
   vars:

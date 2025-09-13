@@ -210,7 +210,7 @@ def test_activity():
     runner = new_test_runner(workflows.activity)
     worker = MockWorker(runner)
     event = json.dumps({"data": {"cat": "mitzi"}})
-    worker.start("program.py:on_event", event.encode())
+    worker.start("program.py:on_event", event.encode(), True)
 
 
 code = """
@@ -333,14 +333,14 @@ def test_obj_callable():
         pytest.param(workflows.async_handler, id="async_handler"),
     ],
 )
-def test_async(workflow, capsys):
+def test_durable_async(workflow, capsys):
     clear_module_cache("program")
     runner = new_test_runner(workflow)
     worker = MockWorker(runner)
     runner.worker = worker
 
     event = json.dumps({"data": {"cat": "mitzi"}})
-    worker.start("program.py:on_event", event.encode())
+    worker.start("program.py:on_event", event.encode(), True)
     worker.event.wait(1)
 
     assert worker.calls.get("ACTIVITY")
@@ -349,7 +349,7 @@ def test_async(workflow, capsys):
     assert "on_event: end (out=8)" in captured.out
 
 
-def test_async_exc(monkeypatch):
+def test_durable_async_exc(monkeypatch):
     clear_module_cache("program")
     runner = new_test_runner(workflows.async_exc, server=MagicMock())
     worker = MockWorker(runner)
@@ -361,7 +361,7 @@ def test_async_exc(monkeypatch):
     monkeypatch.setattr(os, "_exit", exit)
 
     event = json.dumps({"data": {"cat": "mitzi"}})
-    worker.start("program.py:on_event", event.encode())
+    worker.start("program.py:on_event", event.encode(), True)
     worker.event.wait(1)
 
     assert worker.calls.get("ACTIVITY")

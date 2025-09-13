@@ -125,3 +125,11 @@ func (s Session) WithID(id SessionID) Session {
 func (s Session) WithState(state SessionStateType) Session {
 	return Session{s.forceUpdate(func(pb *SessionPB) { pb.State = state.ToProto() })}
 }
+
+func (s Session) SetDurable(durable bool) Session {
+	return Session{s.forceUpdate(func(pb *SessionPB) { pb.IsDurable = durable })}
+}
+
+func (s Session) IsDurable() bool {
+	return s.read().IsDurable
+}

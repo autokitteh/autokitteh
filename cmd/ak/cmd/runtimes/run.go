@@ -133,7 +133,7 @@ func run(ctx context.Context, b *sdkbuildfile.BuildFile, path string) (map[strin
 			return nil, sdkerrors.ErrNotFound
 		},
 		Call: func(context.Context, sdktypes.RunID, sdktypes.Value, []sdktypes.Value, map[string]sdktypes.Value) (sdktypes.Value, error) {
-			return sdktypes.InvalidValue, sdkerrors.ErrNotImplemented
+			panic("since running as nondurable, must never be called")
 		},
 		NewRunID: func() (sdktypes.RunID, error) { return sdktypes.NewRunID(), nil },
 		Sleep:    func(_ context.Context, _ sdktypes.RunID, d time.Duration) error { time.Sleep(d); return nil },
@@ -146,7 +146,7 @@ func run(ctx context.Context, b *sdkbuildfile.BuildFile, path string) (map[strin
 		defer cancel()
 	}
 
-	run, err := runtimes().Run(ctx, sdktypes.NewRunID(), sdktypes.InvalidSessionID, path, b, nil, cbs)
+	run, err := runtimes().Run(ctx, sdktypes.NewRunID(), sdktypes.InvalidSessionID, path, b, nil, false /* non-durable */, cbs)
 	if err != nil {
 		return nil, nil, fmt.Errorf("run build: %w", err)
 	}

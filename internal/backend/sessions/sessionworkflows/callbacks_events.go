@@ -17,6 +17,7 @@ import (
 func (w *sessionWorkflow) subscribe(wctx workflow.Context) func(context.Context, sdktypes.RunID, string, string) (string, error) {
 	return func(ctx context.Context, rid sdktypes.RunID, name, filter string) (string, error) {
 		if activity.IsActivity(ctx) {
+			// TODO(ENG-2258): Work in activity.
 			return "", errForbiddenInActivity
 		}
 

@@ -24,9 +24,11 @@ class MockWorker(pb.handler_rpc.HandlerService):
         self.calls = Counter()
         self.verbose = verbose
 
-    def start(self, entry_point, data):
+    def start(self, entry_point, data, is_durable=False):
         req = pb.runner.StartRequest(
-            entry_point=entry_point, event=pb.user_code.Event(data=data)
+            entry_point=entry_point,
+            event=pb.user_code.Event(data=data),
+            is_durable=is_durable,
         )
         ctx = MagicMock()
         resp: pb.runner.StartResponse = self.runner.Start(req, ctx)
