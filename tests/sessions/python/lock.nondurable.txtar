@@ -1,0 +1,11 @@
+locked
+unlocked
+
+-- main.py:main --
+from threading import Lock
+
+def main(event):
+    lock = Lock()
+    with lock:
+        print('locked')
+    print('unlocked')
