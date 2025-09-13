@@ -71,6 +71,9 @@ type RunCallbacks struct {
 	// Store
 	ListStoreValues  func(ctx context.Context, rid sdktypes.RunID) ([]string, error)
 	MutateStoreValue func(ctx context.Context, rid sdktypes.RunID, key, op string, operands ...sdktypes.Value) (sdktypes.Value, error)
+
+	// HTTP Response
+	HTTPResponse func(ctx context.Context, rid sdktypes.RunID, resp sdktypes.SessionHTTPResponse) error
 }
 
 type Run interface {

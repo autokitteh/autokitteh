@@ -10,7 +10,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/backend/types"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -22,8 +21,7 @@ type eventsWorkflowInput struct {
 }
 
 type eventsWorkflowOutput struct {
-	Started  []string
-	Signaled []string
+	Started, Signaled []sdktypes.SessionID
 }
 
 func (d *Dispatcher) startSessions(wctx workflow.Context, event sdktypes.Event, sds []sessionData) ([]sdktypes.SessionID, error) {
@@ -92,12 +90,12 @@ func (d *Dispatcher) eventsWorkflow(wctx workflow.Context, input eventsWorkflowI
 	}
 
 	return &eventsWorkflowOutput{
-		Started:  kittehs.Transform(started, kittehs.ToString),
+		Started:  started,
 		Signaled: wids,
 	}, nil
 }
 
-func (d *Dispatcher) signalWorkflows(wctx workflow.Context, event sdktypes.Event) ([]string, error) {
+func (d *Dispatcher) signalWorkflows(wctx workflow.Context, event sdktypes.Event) ([]sdktypes.SessionID, error) {
 	eid := event.ID()
 
 	sl := d.sl.With("event_id", eid, "destination_id", event.DestinationID())
@@ -111,7 +109,7 @@ func (d *Dispatcher) signalWorkflows(wctx workflow.Context, event sdktypes.Event
 
 	wg := workflow.NewWaitGroup(wctx)
 
-	var wids []string
+	var wids []sdktypes.SessionID
 
 	for _, signal := range signals {
 		sl := sl.With("signal_id", signal.ID.String(), "workflow_id", signal.WorkflowID, "filter", signal.Filter)
@@ -127,7 +125,13 @@ func (d *Dispatcher) signalWorkflows(wctx workflow.Context, event sdktypes.Event
 			continue
 		}
 
-		wids = append(wids, signal.WorkflowID)
+		sid, err := sdktypes.ParseSessionID(signal.WorkflowID)
+		if err != nil {
+			sl.With("err", err).Errorf("invalid signal workflow ID: %v", err)
+			continue
+		}
+
+		wids = append(wids, sid)
 
 		wg.Add(1)
 

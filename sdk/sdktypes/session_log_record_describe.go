@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"strings"
 	"time"
 
@@ -55,6 +56,22 @@ func (r SessionLogRecord) Describe(opts *SessionLogRecordDescribeOptions) string
 	}
 
 	switch {
+	case m.HttpResponse != nil:
+		fmt.Fprintf(b, "HTTP Response: %d %s\n", m.HttpResponse.StatusCode, http.StatusText(int(m.HttpResponse.StatusCode)))
+		w := opts.indent(b)
+		if len(m.HttpResponse.Headers) > 0 {
+			fmt.Fprintln(w, "Headers:")
+			ww := opts.indent(w)
+			for k, v := range m.HttpResponse.Headers {
+				fmt.Fprintf(ww, "%s: %s\n", k, v)
+			}
+		}
+		if len(m.HttpResponse.Body) > 0 {
+			fmt.Fprintf(w, "Body: %d bytes\n", len(m.HttpResponse.Body))
+		}
+		if m.HttpResponse.More {
+			fmt.Fprintln(w, "(more)")
+		}
 	case m.Print != nil:
 		fmt.Fprintf(b, "Print: %s\n", m.Print.Text)
 	case m.StopRequest != nil:

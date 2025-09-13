@@ -104,6 +104,7 @@ type Shared interface {
 	UpdateSessionState(ctx context.Context, sessionID sdktypes.SessionID, state sdktypes.SessionState) error
 	AddSessionPrint(ctx context.Context, sessionID sdktypes.SessionID, v sdktypes.Value, callSeq uint32) error
 	AddSessionStopRequest(ctx context.Context, sessionID sdktypes.SessionID, reason string) error
+	AddSessionHTTPResponse(ctx context.Context, sessionID sdktypes.SessionID, resp sdktypes.SessionHTTPResponse) error
 	ListSessions(ctx context.Context, f sdkservices.ListSessionsFilter) (*sdkservices.ListSessionResult, error)
 	DeleteSession(ctx context.Context, sessionID sdktypes.SessionID) error
 

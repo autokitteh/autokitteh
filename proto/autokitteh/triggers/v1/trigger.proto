@@ -3,6 +3,7 @@ syntax = "proto3";
 package autokitteh.triggers.v1;
 
 import "autokitteh/program/v1/program.proto";
+import "google/protobuf/duration.proto";
 
 message Trigger {
   enum SourceType {
@@ -22,6 +23,8 @@ message Trigger {
 
   string connection_id = 50; // if source_type == CONNECTION.
   string schedule = 51; // if source_type == SCHEDULE.
+  bool sync_webhook = 52; // if source_type == WEBHOOK. If true, webhook returns a response from session.
+  google.protobuf.Duration webhook_response_timeout = 53; // if source_type == WEBHOOK. 0 to use default.
 
   // read only.
   string webhook_slug = 100; // if source_type == WEBHOOK, after creation.

@@ -227,6 +227,33 @@ class StoreMutateResponse(_message.Message):
     result: _values_pb2.Value
     def __init__(self, error: _Optional[str] = ..., result: _Optional[_Union[_values_pb2.Value, _Mapping]] = ...) -> None: ...
 
+class HTTPResponseRequest(_message.Message):
+    __slots__ = ["runner_id", "status", "headers", "body", "more"]
+    class HeadersEntry(_message.Message):
+        __slots__ = ["key", "value"]
+        KEY_FIELD_NUMBER: _ClassVar[int]
+        VALUE_FIELD_NUMBER: _ClassVar[int]
+        key: str
+        value: str
+        def __init__(self, key: _Optional[str] = ..., value: _Optional[str] = ...) -> None: ...
+    RUNNER_ID_FIELD_NUMBER: _ClassVar[int]
+    STATUS_FIELD_NUMBER: _ClassVar[int]
+    HEADERS_FIELD_NUMBER: _ClassVar[int]
+    BODY_FIELD_NUMBER: _ClassVar[int]
+    MORE_FIELD_NUMBER: _ClassVar[int]
+    runner_id: str
+    status: int
+    headers: _containers.ScalarMap[str, str]
+    body: bytes
+    more: bool
+    def __init__(self, runner_id: _Optional[str] = ..., status: _Optional[int] = ..., headers: _Optional[_Mapping[str, str]] = ..., body: _Optional[bytes] = ..., more: bool = ...) -> None: ...
+
+class HTTPResponseResponse(_message.Message):
+    __slots__ = ["error"]
+    ERROR_FIELD_NUMBER: _ClassVar[int]
+    error: str
+    def __init__(self, error: _Optional[str] = ...) -> None: ...
+
 class StartSessionRequest(_message.Message):
     __slots__ = ["runner_id", "loc", "data", "memo", "project"]
     RUNNER_ID_FIELD_NUMBER: _ClassVar[int]

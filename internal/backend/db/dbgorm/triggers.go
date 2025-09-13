@@ -75,18 +75,20 @@ func (db *gormdb) CreateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 	uniqueName := triggerUniqueName(pid.String(), trigger.Name())
 
 	t := &scheme.Trigger{
-		Base:         based(ctx),
-		ProjectID:    trigger.ProjectID().UUIDValue(),
-		TriggerID:    trigger.ID().UUIDValue(),
-		ConnectionID: trigger.ConnectionID().UUIDValuePtr(),
-		SourceType:   trigger.SourceType().String(),
-		EventType:    trigger.EventType(),
-		Filter:       trigger.Filter(),
-		CodeLocation: trigger.CodeLocation().CanonicalString(),
-		Name:         trigger.Name().String(),
-		UniqueName:   uniqueName,
-		WebhookSlug:  trigger.WebhookSlug(),
-		Schedule:     trigger.Schedule(),
+		Base:                   based(ctx),
+		ProjectID:              trigger.ProjectID().UUIDValue(),
+		TriggerID:              trigger.ID().UUIDValue(),
+		ConnectionID:           trigger.ConnectionID().UUIDValuePtr(),
+		SourceType:             trigger.SourceType().String(),
+		EventType:              trigger.EventType(),
+		Filter:                 trigger.Filter(),
+		CodeLocation:           trigger.CodeLocation().CanonicalString(),
+		Name:                   trigger.Name().String(),
+		UniqueName:             uniqueName,
+		WebhookSlug:            trigger.WebhookSlug(),
+		Schedule:               trigger.Schedule(),
+		WebhookSync:            trigger.IsSyncWebhook(),
+		WebhookResponseTimeout: int64(trigger.WebhookResponseTimeout()),
 	}
 
 	return translateError(db.createTrigger(ctx, t))
@@ -114,6 +116,8 @@ func (db *gormdb) UpdateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 	r.UniqueName = triggerUniqueName(r.ProjectID.String(), trigger.Name())
 	r.UpdatedAt = kittehs.Now().UTC()
 	r.UpdatedBy = authcontext.GetAuthnUserID(ctx).UUIDValue()
+	r.WebhookSync = trigger.IsSyncWebhook()
+	r.WebhookResponseTimeout = int64(trigger.WebhookResponseTimeout())
 
 	return translateError(db.updateTrigger(ctx, r))
 }

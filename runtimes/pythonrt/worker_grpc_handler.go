@@ -582,3 +582,26 @@ func (s *workerGRPCHandler) StoreMutate(ctx context.Context, req *userCode.Store
 		Result: resp.value.(sdktypes.Value).ToProto(),
 	}, nil
 }
+
+func (s *workerGRPCHandler) HTTPResponse(ctx context.Context, req *userCode.HTTPResponseRequest) (*userCode.HTTPResponseResponse, error) {
+	fn := func(ctx context.Context, cbs *sdkservices.RunCallbacks, rid sdktypes.RunID) (any, error) {
+		return nil, cbs.HTTPResponse(ctx, rid, sdktypes.SessionHTTPResponse{
+			StatusCode: int(req.Status),
+			Body:       req.Body,
+			Headers:    req.Headers,
+			More:       req.More,
+		})
+	}
+
+	resp, err := s.callback(ctx, req.RunnerId, "http_respond", fn)
+	if err != nil {
+		return &userCode.HTTPResponseResponse{Error: err.Error()}, nil
+	}
+
+	if resp.err != nil {
+		err = status.Errorf(codes.Internal, "http_respond(%v, %v, %v, %v) -> %v", req.Status, req.Body, req.Headers, req.More, resp.err)
+		return &userCode.HTTPResponseResponse{Error: err.Error()}, nil
+	}
+
+	return &userCode.HTTPResponseResponse{}, nil
+}

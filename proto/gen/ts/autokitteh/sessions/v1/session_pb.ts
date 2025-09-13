@@ -656,6 +656,11 @@ export class SessionLogRecord extends Message<SessionLogRecord> {
    */
   stopRequest?: SessionLogRecord_StopRequest;
 
+  /**
+   * @generated from field: autokitteh.sessions.v1.SessionLogRecord.HTTPResponse http_response = 16;
+   */
+  httpResponse?: SessionLogRecord_HTTPResponse;
+
   constructor(data?: PartialMessage<SessionLogRecord>) {
     super();
     proto3.util.initPartial(data, this);
@@ -672,6 +677,7 @@ export class SessionLogRecord extends Message<SessionLogRecord> {
     { no: 13, name: "call_attempt_complete", kind: "message", T: Call_Attempt_Complete },
     { no: 14, name: "state", kind: "message", T: SessionState },
     { no: 15, name: "stop_request", kind: "message", T: SessionLogRecord_StopRequest },
+    { no: 16, name: "http_response", kind: "message", T: SessionLogRecord_HTTPResponse },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SessionLogRecord {
@@ -703,8 +709,6 @@ export enum SessionLogRecord_Type {
   UNSPECIFIED = 0,
 
   /**
-   * deprecated, avoid.
-   *
    * @generated from enum value: TYPE_PRINT = 1;
    */
   PRINT = 1,
@@ -733,6 +737,11 @@ export enum SessionLogRecord_Type {
    * @generated from enum value: TYPE_STOP_REQUEST = 32;
    */
   STOP_REQUEST = 32,
+
+  /**
+   * @generated from enum value: TYPE_HTTP_RESPONSE = 64;
+   */
+  HTTP_RESPONSE = 64,
 }
 // Retrieve enum metadata with: proto3.getEnumType(SessionLogRecord_Type)
 proto3.util.setEnumType(SessionLogRecord_Type, "autokitteh.sessions.v1.SessionLogRecord.Type", [
@@ -743,6 +752,7 @@ proto3.util.setEnumType(SessionLogRecord_Type, "autokitteh.sessions.v1.SessionLo
   { no: 8, name: "TYPE_CALL_ATTEMPT_COMPLETE" },
   { no: 16, name: "TYPE_STATE" },
   { no: 32, name: "TYPE_STOP_REQUEST" },
+  { no: 64, name: "TYPE_HTTP_RESPONSE" },
 ]);
 
 /**
@@ -832,6 +842,67 @@ export class SessionLogRecord_StopRequest extends Message<SessionLogRecord_StopR
 
   static equals(a: SessionLogRecord_StopRequest | PlainMessage<SessionLogRecord_StopRequest> | undefined, b: SessionLogRecord_StopRequest | PlainMessage<SessionLogRecord_StopRequest> | undefined): boolean {
     return proto3.util.equals(SessionLogRecord_StopRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.sessions.v1.SessionLogRecord.HTTPResponse
+ */
+export class SessionLogRecord_HTTPResponse extends Message<SessionLogRecord_HTTPResponse> {
+  /**
+   * Must always be present at first response. Ignored after. If set to 0, default to 200.
+   *
+   * @generated from field: uint32 status_code = 1;
+   */
+  statusCode = 0;
+
+  /**
+   * Ignored if not specified at first response.
+   *
+   * @generated from field: map<string, string> headers = 2;
+   */
+  headers: { [key: string]: string } = {};
+
+  /**
+   * @generated from field: bytes body = 3;
+   */
+  body = new Uint8Array(0);
+
+  /**
+   * if false, this is the final response and the HTTP connection should be closed.
+   *
+   * @generated from field: bool more = 4;
+   */
+  more = false;
+
+  constructor(data?: PartialMessage<SessionLogRecord_HTTPResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.sessions.v1.SessionLogRecord.HTTPResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "status_code", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 2, name: "headers", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 3, name: "body", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
+    { no: 4, name: "more", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SessionLogRecord_HTTPResponse {
+    return new SessionLogRecord_HTTPResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SessionLogRecord_HTTPResponse {
+    return new SessionLogRecord_HTTPResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SessionLogRecord_HTTPResponse {
+    return new SessionLogRecord_HTTPResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SessionLogRecord_HTTPResponse | PlainMessage<SessionLogRecord_HTTPResponse> | undefined, b: SessionLogRecord_HTTPResponse | PlainMessage<SessionLogRecord_HTTPResponse> | undefined): boolean {
+    return proto3.util.equals(SessionLogRecord_HTTPResponse, a, b);
   }
 }
 

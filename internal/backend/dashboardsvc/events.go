@@ -164,11 +164,11 @@ func (s *svc) redispatchEvent(w http.ResponseWriter, r *http.Request) {
 		DeploymentID: did,
 	}
 
-	eid1, err := s.Dispatcher().Redispatch(r.Context(), eid, &opts)
+	resp, err := s.Dispatcher().Redispatch(r.Context(), eid, &opts)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	http.Redirect(w, r, rootPath+"events/"+eid1.String(), http.StatusSeeOther)
+	http.Redirect(w, r, rootPath+"events/"+resp.EventID.String(), http.StatusSeeOther)
 }

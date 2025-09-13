@@ -383,7 +383,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		fx.Invoke(connectionsinitsvc.Init),
 		Component(
 			"webhooks",
-			configset.Empty,
+			webhookssvc.Configs,
 			fx.Provide(webhookssvc.New),
 			fx.Invoke(func(lc fx.Lifecycle, w *webhookssvc.Service, muxes *muxes.Muxes) {
 				HookSimpleOnStart(lc, func() { w.Start(muxes) })

@@ -137,7 +137,7 @@ class Call(_message.Message):
     def __init__(self, spec: _Optional[_Union[Call.Spec, _Mapping]] = ..., attempts: _Optional[_Iterable[_Union[Call.Attempt, _Mapping]]] = ...) -> None: ...
 
 class SessionLogRecord(_message.Message):
-    __slots__ = ["t", "process_id", "print", "call_spec", "call_attempt_start", "call_attempt_complete", "state", "stop_request"]
+    __slots__ = ["t", "process_id", "print", "call_spec", "call_attempt_start", "call_attempt_complete", "state", "stop_request", "http_response"]
     class Type(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
         __slots__ = []
         TYPE_UNSPECIFIED: _ClassVar[SessionLogRecord.Type]
@@ -147,6 +147,7 @@ class SessionLogRecord(_message.Message):
         TYPE_CALL_ATTEMPT_COMPLETE: _ClassVar[SessionLogRecord.Type]
         TYPE_STATE: _ClassVar[SessionLogRecord.Type]
         TYPE_STOP_REQUEST: _ClassVar[SessionLogRecord.Type]
+        TYPE_HTTP_RESPONSE: _ClassVar[SessionLogRecord.Type]
     TYPE_UNSPECIFIED: SessionLogRecord.Type
     TYPE_PRINT: SessionLogRecord.Type
     TYPE_CALL_SPEC: SessionLogRecord.Type
@@ -154,6 +155,7 @@ class SessionLogRecord(_message.Message):
     TYPE_CALL_ATTEMPT_COMPLETE: SessionLogRecord.Type
     TYPE_STATE: SessionLogRecord.Type
     TYPE_STOP_REQUEST: SessionLogRecord.Type
+    TYPE_HTTP_RESPONSE: SessionLogRecord.Type
     class Print(_message.Message):
         __slots__ = ["text", "value", "call_seq"]
         TEXT_FIELD_NUMBER: _ClassVar[int]
@@ -168,6 +170,24 @@ class SessionLogRecord(_message.Message):
         REASON_FIELD_NUMBER: _ClassVar[int]
         reason: str
         def __init__(self, reason: _Optional[str] = ...) -> None: ...
+    class HTTPResponse(_message.Message):
+        __slots__ = ["status_code", "headers", "body", "more"]
+        class HeadersEntry(_message.Message):
+            __slots__ = ["key", "value"]
+            KEY_FIELD_NUMBER: _ClassVar[int]
+            VALUE_FIELD_NUMBER: _ClassVar[int]
+            key: str
+            value: str
+            def __init__(self, key: _Optional[str] = ..., value: _Optional[str] = ...) -> None: ...
+        STATUS_CODE_FIELD_NUMBER: _ClassVar[int]
+        HEADERS_FIELD_NUMBER: _ClassVar[int]
+        BODY_FIELD_NUMBER: _ClassVar[int]
+        MORE_FIELD_NUMBER: _ClassVar[int]
+        status_code: int
+        headers: _containers.ScalarMap[str, str]
+        body: bytes
+        more: bool
+        def __init__(self, status_code: _Optional[int] = ..., headers: _Optional[_Mapping[str, str]] = ..., body: _Optional[bytes] = ..., more: bool = ...) -> None: ...
     T_FIELD_NUMBER: _ClassVar[int]
     PROCESS_ID_FIELD_NUMBER: _ClassVar[int]
     PRINT_FIELD_NUMBER: _ClassVar[int]
@@ -176,6 +196,7 @@ class SessionLogRecord(_message.Message):
     CALL_ATTEMPT_COMPLETE_FIELD_NUMBER: _ClassVar[int]
     STATE_FIELD_NUMBER: _ClassVar[int]
     STOP_REQUEST_FIELD_NUMBER: _ClassVar[int]
+    HTTP_RESPONSE_FIELD_NUMBER: _ClassVar[int]
     t: _timestamp_pb2.Timestamp
     process_id: str
     print: SessionLogRecord.Print
@@ -184,7 +205,8 @@ class SessionLogRecord(_message.Message):
     call_attempt_complete: Call.Attempt.Complete
     state: SessionState
     stop_request: SessionLogRecord.StopRequest
-    def __init__(self, t: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., process_id: _Optional[str] = ..., print: _Optional[_Union[SessionLogRecord.Print, _Mapping]] = ..., call_spec: _Optional[_Union[Call.Spec, _Mapping]] = ..., call_attempt_start: _Optional[_Union[Call.Attempt.Start, _Mapping]] = ..., call_attempt_complete: _Optional[_Union[Call.Attempt.Complete, _Mapping]] = ..., state: _Optional[_Union[SessionState, _Mapping]] = ..., stop_request: _Optional[_Union[SessionLogRecord.StopRequest, _Mapping]] = ...) -> None: ...
+    http_response: SessionLogRecord.HTTPResponse
+    def __init__(self, t: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., process_id: _Optional[str] = ..., print: _Optional[_Union[SessionLogRecord.Print, _Mapping]] = ..., call_spec: _Optional[_Union[Call.Spec, _Mapping]] = ..., call_attempt_start: _Optional[_Union[Call.Attempt.Start, _Mapping]] = ..., call_attempt_complete: _Optional[_Union[Call.Attempt.Complete, _Mapping]] = ..., state: _Optional[_Union[SessionState, _Mapping]] = ..., stop_request: _Optional[_Union[SessionLogRecord.StopRequest, _Mapping]] = ..., http_response: _Optional[_Union[SessionLogRecord.HTTPResponse, _Mapping]] = ...) -> None: ...
 
 class Session(_message.Message):
     __slots__ = ["session_id", "build_id", "project_id", "entrypoint", "inputs", "parent_session_id", "memo", "created_at", "updated_at", "state", "deployment_id", "event_id"]

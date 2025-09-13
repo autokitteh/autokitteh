@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
@@ -238,8 +239,10 @@ type Trigger struct {
 	// Makes sure name is unique - this is the project_id with name.
 	UniqueName string `gorm:"uniqueIndex;not null"` // project_id + name
 
-	WebhookSlug string `gorm:"index"`
-	Schedule    string
+	WebhookSlug            string `gorm:"index"`
+	WebhookSync            bool
+	WebhookResponseTimeout int64 // duration. For some reason gorm got issues with time.Duration.
+	Schedule               string
 
 	UpdatedBy uuid.UUID `gorm:"type:uuid"`
 	UpdatedAt time.Time
@@ -274,16 +277,18 @@ func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
 	}
 
 	return sdktypes.StrictTriggerFromProto(&sdktypes.TriggerPB{
-		TriggerId:    sdktypes.NewIDFromUUID[sdktypes.TriggerID](e.TriggerID).String(),
-		SourceType:   srcType.ToProto(),
-		ConnectionId: sdktypes.NewIDFromUUIDPtr[sdktypes.ConnectionID](e.ConnectionID).String(),
-		ProjectId:    sdktypes.NewIDFromUUID[sdktypes.ProjectID](e.ProjectID).String(),
-		EventType:    e.EventType,
-		Filter:       filter,
-		CodeLocation: loc.ToProto(),
-		Name:         e.Name,
-		WebhookSlug:  e.WebhookSlug,
-		Schedule:     e.Schedule,
+		TriggerId:              sdktypes.NewIDFromUUID[sdktypes.TriggerID](e.TriggerID).String(),
+		SourceType:             srcType.ToProto(),
+		ConnectionId:           sdktypes.NewIDFromUUIDPtr[sdktypes.ConnectionID](e.ConnectionID).String(),
+		ProjectId:              sdktypes.NewIDFromUUID[sdktypes.ProjectID](e.ProjectID).String(),
+		EventType:              e.EventType,
+		Filter:                 filter,
+		CodeLocation:           loc.ToProto(),
+		Name:                   e.Name,
+		WebhookSlug:            e.WebhookSlug,
+		Schedule:               e.Schedule,
+		SyncWebhook:            e.WebhookSync,
+		WebhookResponseTimeout: durationpb.New(time.Duration(e.WebhookResponseTimeout)),
 	})
 }
 

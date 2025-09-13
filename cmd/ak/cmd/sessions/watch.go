@@ -124,7 +124,7 @@ func sessionWatch(sid sdktypes.SessionID, endState sdktypes.SessionStateType, en
 			logs := res.Records
 
 			for _, log := range logs {
-				if p, ok := log.GetPrint(); ok {
+				if p := log.GetPrint(); p.IsValid() {
 					s, _ := p.ToString()
 					if matchPrint(s) {
 						cancel()
