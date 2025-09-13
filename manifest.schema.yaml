@@ -93,9 +93,7 @@
           "type": "string"
         },
         "webhook": {
-          "properties": {},
-          "additionalProperties": false,
-          "type": "object"
+          "$ref": "#/$defs/Webhook"
         },
         "connection": {
           "type": "string"
@@ -132,6 +130,15 @@
         "name",
         "value"
       ]
+    },
+    "Webhook": {
+      "properties": {
+        "sync": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
     }
   }
 }

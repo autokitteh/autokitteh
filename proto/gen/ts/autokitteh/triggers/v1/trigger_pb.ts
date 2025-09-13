@@ -61,6 +61,13 @@ export class Trigger extends Message<Trigger> {
   schedule = "";
 
   /**
+   * if source_type == WEBHOOK. If true, webhook returns a response from session.
+   *
+   * @generated from field: bool webhook_sync = 52;
+   */
+  webhookSync = false;
+
+  /**
    * read only.
    *
    * if source_type == WEBHOOK, after creation.
@@ -86,6 +93,7 @@ export class Trigger extends Message<Trigger> {
     { no: 7, name: "filter", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 50, name: "connection_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 51, name: "schedule", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 52, name: "webhook_sync", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 100, name: "webhook_slug", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 

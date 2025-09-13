@@ -238,8 +238,10 @@ type Trigger struct {
 	// Makes sure name is unique - this is the project_id with name.
 	UniqueName string `gorm:"uniqueIndex;not null"` // project_id + name
 
-	WebhookSlug string `gorm:"index"`
-	Schedule    string
+	WebhookSlug            string `gorm:"index"`
+	WebhookSync            bool
+	WebhookResponseTimeout int64 // duration. For some reason gorm got issues with time.Duration.
+	Schedule               string
 
 	UpdatedBy uuid.UUID `gorm:"type:uuid"`
 	UpdatedAt time.Time
@@ -284,6 +286,7 @@ func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
 		Name:         e.Name,
 		WebhookSlug:  e.WebhookSlug,
 		Schedule:     e.Schedule,
+		WebhookSync:  e.WebhookSync,
 	})
 }
 

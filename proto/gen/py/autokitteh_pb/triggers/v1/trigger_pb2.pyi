@@ -7,7 +7,7 @@ from typing import ClassVar as _ClassVar, Mapping as _Mapping, Optional as _Opti
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class Trigger(_message.Message):
-    __slots__ = ["trigger_id", "name", "source_type", "project_id", "event_type", "code_location", "filter", "connection_id", "schedule", "webhook_slug"]
+    __slots__ = ["trigger_id", "name", "source_type", "project_id", "event_type", "code_location", "filter", "connection_id", "schedule", "webhook_sync", "webhook_slug"]
     class SourceType(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
         __slots__ = []
         SOURCE_TYPE_UNSPECIFIED: _ClassVar[Trigger.SourceType]
@@ -27,6 +27,7 @@ class Trigger(_message.Message):
     FILTER_FIELD_NUMBER: _ClassVar[int]
     CONNECTION_ID_FIELD_NUMBER: _ClassVar[int]
     SCHEDULE_FIELD_NUMBER: _ClassVar[int]
+    WEBHOOK_SYNC_FIELD_NUMBER: _ClassVar[int]
     WEBHOOK_SLUG_FIELD_NUMBER: _ClassVar[int]
     trigger_id: str
     name: str
@@ -37,5 +38,6 @@ class Trigger(_message.Message):
     filter: str
     connection_id: str
     schedule: str
+    webhook_sync: bool
     webhook_slug: str
-    def __init__(self, trigger_id: _Optional[str] = ..., name: _Optional[str] = ..., source_type: _Optional[_Union[Trigger.SourceType, str]] = ..., project_id: _Optional[str] = ..., event_type: _Optional[str] = ..., code_location: _Optional[_Union[_program_pb2.CodeLocation, _Mapping]] = ..., filter: _Optional[str] = ..., connection_id: _Optional[str] = ..., schedule: _Optional[str] = ..., webhook_slug: _Optional[str] = ...) -> None: ...
+    def __init__(self, trigger_id: _Optional[str] = ..., name: _Optional[str] = ..., source_type: _Optional[_Union[Trigger.SourceType, str]] = ..., project_id: _Optional[str] = ..., event_type: _Optional[str] = ..., code_location: _Optional[_Union[_program_pb2.CodeLocation, _Mapping]] = ..., filter: _Optional[str] = ..., connection_id: _Optional[str] = ..., schedule: _Optional[str] = ..., webhook_sync: bool = ..., webhook_slug: _Optional[str] = ...) -> None: ...

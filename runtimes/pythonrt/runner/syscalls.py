@@ -7,6 +7,7 @@ matching function in autokitteh (e.g. autokitteh.start).
 import json
 import os
 from datetime import timedelta
+from typing import Any
 
 import grpc
 import log
@@ -153,7 +154,7 @@ class SysCalls:
             raise AutoKittehError(f"refresh_oauth: {resp.error}")
         return resp.token, resp.expires.ToDatetime()
 
-    def ak_signal(self, session_id: str, name: str, payload: any = None) -> None:
+    def ak_signal(self, session_id: str, name: str, payload: Any = None) -> None:
         log.debug("signal: %r %r", session_id, name)
 
         req = pb.SignalRequest(
@@ -194,7 +195,7 @@ class SysCalls:
 
         return None
 
-    def ak_mutate_value(self, key: str, op: str, *args: list[str]) -> any:
+    def ak_mutate_value(self, key: str, op: str, *args: list[str]) -> Any:
         log.debug("ak_mutate_value: %r %r %r", key, op, args)
         req = pb.StoreMutateRequest(
             runner_id=self.runner_id,
@@ -205,16 +206,16 @@ class SysCalls:
         resp = call_grpc("store_mutate", self.worker.StoreMutate, req)
         return values.unwrap(resp.result)
 
-    def ak_set_value(self, key: str, value: any) -> None:
+    def ak_set_value(self, key: str, value: Any) -> None:
         self.ak_mutate_value(key, "set", value)
 
     def ak_add_values(self, key: str, value: int | float) -> int | float:
         return self.ak_mutate_value(key, "add", value)
 
-    def ak_get_value(self, key: str) -> any:
+    def ak_get_value(self, key: str) -> Any:
         return self.ak_mutate_value(key, "get")
 
-    def ak_del_value(self, key: str) -> any:
+    def ak_del_value(self, key: str) -> Any:
         return self.ak_mutate_value(key, "del")
 
     def ak_list_values_keys(self) -> list[str]:
@@ -222,6 +223,37 @@ class SysCalls:
         req = pb.StoreListRequest(runner_id=self.runner_id)
         resp = call_grpc("store_list", self.worker.StoreList, req)
         return resp.keys
+
+    def ak_http_respond(
+        self,
+        status: int = 0,
+        body: Any = None,
+        headers: dict[str, str] | None = None,
+        more: bool = False,
+    ) -> None:
+        if body is None:
+            pass
+        elif isinstance(body, dict) or isinstance(body, list):
+            body = json.dumps(body).encode()
+            if headers is None:
+                headers = {}
+            if "Content-Type" not in headers:
+                headers["Content-Type"] = "application/json"
+        elif isinstance(body, str):
+            body = body.encode()
+        elif not isinstance(body, bytes):
+            raise ValueError("body must be str, bytes, dict, list or None")
+
+        log.debug("ak_http_respond: %r %r %r %r", status, len(body), headers, more)
+        req = pb.HTTPResponseRequest(
+            runner_id=self.runner_id,
+            status=status,
+            body=body,
+            headers=headers,
+            more=more,
+        )
+
+        call_grpc("http_respond", self.worker.HTTPResponse, req)
 
     @classmethod
     def mark_ak_no_activity(cls):

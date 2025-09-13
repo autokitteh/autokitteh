@@ -303,8 +303,9 @@ func (ps *Projects) exportManifest(ctx context.Context, projectID sdktypes.Proje
 
 		switch t.SourceType() {
 		case sdktypes.TriggerSourceTypeWebhook:
-			var wh struct{}
-			mt.Webhook = &wh
+			mt.Webhook = &manifest.Webhook{
+				Sync: t.IsSyncWebhook(),
+			}
 		case sdktypes.TriggerSourceTypeSchedule:
 			sched := t.Schedule()
 			mt.Schedule = &sched

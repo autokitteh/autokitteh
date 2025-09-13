@@ -54,7 +54,6 @@ type sessionWorkflow struct {
 	callSeq uint32
 
 	lastReadEventSeqForSignal map[uuid.UUID]uint64 // map signals to last read event seq num.
-
 }
 
 type connInfo struct {
@@ -147,6 +146,23 @@ func (w *sessionWorkflow) load(ctx context.Context, _ sdktypes.RunID, path strin
 	}
 
 	return vs, nil
+}
+
+func (w *sessionWorkflow) httpResponse(wctx workflow.Context) func(ctx context.Context, runID sdktypes.RunID, resp sdktypes.SessionHTTPResponse) error {
+	return func(ctx context.Context, runID sdktypes.RunID, resp sdktypes.SessionHTTPResponse) error {
+		ctx, span := w.startCallbackSpan(ctx, "http_response")
+		defer span.End()
+
+		isActivity := activity.IsActivity(ctx)
+
+		w.l.Debug("http_response", zap.Any("run_id", runID), zap.Bool("is_activity", isActivity), zap.Bool("more", resp.More), zap.Int("status", resp.StatusCode), zap.Any("headers", resp.Headers), zap.Int("body_len", len(resp.Body)))
+
+		if isActivity {
+			return w.ws.httpResponseActivity(ctx, w.data.Session.ID(), resp)
+		} else {
+			return workflow.ExecuteActivity(wctx, httpResponseActivityName, w.data.Session.ID(), resp).Get(wctx, nil)
+		}
+	}
 }
 
 func (w *sessionWorkflow) call(ctx workflow.Context, _ sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
@@ -469,6 +485,7 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (_ []sdkserv
 
 			return w.call(wctx, runID, v, args, kwargs)
 		},
+		HTTPResponse: w.httpResponse(wctx),
 		Print: func(printCtx context.Context, runID sdktypes.RunID, text string) error {
 			ctx, span := w.startCallbackSpan(printCtx, "print")
 			defer span.End()

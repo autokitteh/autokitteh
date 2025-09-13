@@ -139,10 +139,10 @@ func transformEvent(l *zap.Logger, slackEvent any, eventType string) (sdktypes.E
 func (h Handler) dispatchAsyncEventsToConnections(cids []sdktypes.ConnectionID, e sdktypes.Event) {
 	ctx := extrazap.AttachLoggerToContext(h.logger, context.Background())
 	for _, cid := range cids {
-		eid, err := h.dispatch(ctx, e.WithConnectionDestinationID(cid), nil)
+		resp, err := h.dispatch(ctx, e.WithConnectionDestinationID(cid), nil)
 		l := h.logger.With(
 			zap.String("connectionID", cid.String()),
-			zap.String("eventID", eid.String()),
+			zap.String("eventID", resp.EventID.String()),
 		)
 		if err != nil {
 			if errors.Is(err, sdkerrors.ErrResourceExhausted) {

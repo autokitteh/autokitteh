@@ -35,6 +35,7 @@ const (
 	mutateStoreValueActivityName            = "mutate_store_value"
 	notifyWorkflowEndedActivity             = "notify_workflow_ended"
 	startChildSessionActivityName           = "start_child_session"
+	httpResponseActivityName                = "http_response"
 )
 
 func (ws *workflows) registerActivities() {
@@ -122,6 +123,11 @@ func (ws *workflows) registerActivities() {
 		ws.startChildSessionActivity,
 		activity.RegisterOptions{Name: startChildSessionActivityName},
 	)
+
+	ws.sessionsWorker.RegisterActivityWithOptions(
+		ws.httpResponseActivity,
+		activity.RegisterOptions{Name: httpResponseActivityName},
+	)
 }
 
 type getProjectIDAndActiveBuildIDParams struct {
@@ -163,6 +169,10 @@ func (ws *workflows) getProjectIDAndActiveBuildID(ctx context.Context, params ge
 		BuildID:   d.BuildID(),
 		ProjectID: p.ID(),
 	}, nil
+}
+
+func (ws *workflows) httpResponseActivity(ctx context.Context, sid sdktypes.SessionID, resp sdktypes.SessionHTTPResponse) error {
+	return ws.svcs.DB.AddSessionHTTPResponse(ctx, sid, resp)
 }
 
 func (ws *workflows) listStoreValuesActivity(ctx context.Context, pid sdktypes.ProjectID) ([]string, error) {

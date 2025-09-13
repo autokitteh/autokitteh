@@ -61,6 +61,10 @@ type Var struct {
 
 func (v Var) GetKey() string { return v.ParentKey + "/" + v.Name }
 
+type Webhook struct {
+	Sync bool `yaml:"sync,omitempty" json:"sync,omitempty"`
+}
+
 type Trigger struct {
 	ProjectKey string `yaml:"-" json:"-"` // associated with project.
 
@@ -68,10 +72,10 @@ type Trigger struct {
 	EventType string `yaml:"event_type,omitempty" json:"event_type,omitempty"`
 	Filter    string `yaml:"filter,omitempty" json:"filter,omitempty"`
 
-	Type          string    `yaml:"type,omitempty" json:"type,omitempty" jsonschema:"enum=schedule,enum=webhook,enum=connection"`
-	Schedule      *string   `yaml:"schedule,omitempty" json:"schedule,omitempty"`
-	Webhook       *struct{} `yaml:"webhook,omitempty" json:"webhook,omitempty"`
-	ConnectionKey *string   `yaml:"connection,omitempty" json:"connection,omitempty" `
+	Type          string   `yaml:"type,omitempty" json:"type,omitempty" jsonschema:"enum=schedule,enum=webhook,enum=connection"`
+	Schedule      *string  `yaml:"schedule,omitempty" json:"schedule,omitempty"`
+	Webhook       *Webhook `yaml:"webhook,omitempty" json:"webhook,omitempty"`
+	ConnectionKey *string  `yaml:"connection,omitempty" json:"connection,omitempty"`
 
 	Call string `yaml:"call,omitempty" json:"call,omitempty"`
 }

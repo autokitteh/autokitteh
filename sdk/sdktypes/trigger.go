@@ -56,7 +56,7 @@ func (TriggerTraits) StrictValidate(m *TriggerPB) error {
 }
 
 func (TriggerTraits) Mutables() []string {
-	return []string{"filter", "code_location", "name", "source_type"}
+	return []string{"filter", "code_location", "name", "source_type", "sync_webhook", "webhook_response_timeout"}
 }
 
 func TriggerFromProto(m *TriggerPB) (Trigger, error)       { return FromProto[Trigger](m) }
@@ -136,4 +136,9 @@ func (p Trigger) WithWebhook() Trigger {
 	return Trigger{p.forceUpdate(func(m *TriggerPB) {
 		m.SourceType = triggerv1.Trigger_SOURCE_TYPE_WEBHOOK
 	})}
+}
+
+func (p Trigger) IsSyncWebhook() bool { return p.read().WebhookSync }
+func (p Trigger) WithSyncWebhook(sync bool) Trigger {
+	return Trigger{p.forceUpdate(func(m *TriggerPB) { m.WebhookSync = sync })}
 }

@@ -19,9 +19,10 @@ import (
 )
 
 const (
-	printSessionLogRecordType = "print"
-	stateSessionLogRecordType = "state"
-	stopSessionLogRecordType  = "stop_request"
+	printSessionLogRecordType        = "print"
+	stateSessionLogRecordType        = "state"
+	stopSessionLogRecordType         = "stop_request"
+	httpResponseSessionLogRecordType = "http_response"
 )
 
 func (gdb *gormdb) createSession(ctx context.Context, session *scheme.Session) error {
@@ -195,6 +196,7 @@ func (gdb *gormdb) getSessionLogRecords(ctx context.Context, filter sdkservices.
 			specific(sdktypes.PrintSessionLogRecordType, printSessionLogRecordType)
 			specific(sdktypes.StateSessionLogRecordType, stateSessionLogRecordType)
 			specific(sdktypes.StopRequestSessionLogRecordType, stopSessionLogRecordType)
+			specific(sdktypes.HTTPResponseSessionLogRecordType, httpResponseSessionLogRecordType)
 
 			q = q.Where("type in (?)", qtypes)
 		}
@@ -292,6 +294,14 @@ func (db *gormdb) AddSessionStopRequest(ctx context.Context, sessionID sdktypes.
 		return err
 	}
 	return translateError(db.addSessionLogRecord(ctx, logr, stopSessionLogRecordType))
+}
+
+func (db *gormdb) AddSessionHTTPResponse(ctx context.Context, sessionID sdktypes.SessionID, resp sdktypes.SessionHTTPResponse) error {
+	logr, err := toSessionLogRecord(sessionID.UUIDValue(), sdktypes.NewHTTPResponseSessionLogRecord(kittehs.Now(), resp))
+	if err != nil {
+		return err
+	}
+	return translateError(db.addSessionLogRecord(ctx, logr, httpResponseSessionLogRecordType))
 }
 
 func (db *gormdb) GetSessionLog(ctx context.Context, filter sdkservices.SessionLogRecordsFilter) (*sdkservices.GetLogResults, error) {

@@ -2,6 +2,7 @@
 
 from datetime import timedelta
 from uuid import uuid4
+from typing import Any
 
 from .attr_dict import AttrDict
 
@@ -47,3 +48,21 @@ def start(
     Cannot be used in an activity."""
     # Dummy implementation for local development.
     return f"ses_{uuid4().hex}"
+
+
+def http_respond(
+    status_code: int, body: Any = None, headers: dict | None = None, more: bool = False
+) -> None:
+    """Respond to an HTTP request.
+
+    This function has an effect only within a session that was triggered by a Webhook trigger with sync_webhook=True.
+
+    Args:
+        status_code: HTTP status code to return. Ignored if not the first response to a request.
+        body: body to return. If it is a dict or a list, it will be serialized as
+            JSON. If it is a string or bytes, it will be returned as-is.
+        headers: dict of headers to return.
+        more: If True, indicates that more responses will follow for this request.
+    """
+    # Dummy implementation for local development.
+    pass

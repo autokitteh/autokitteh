@@ -6,6 +6,7 @@ import (
 	"connectrpc.com/connect"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/proto"
 	dispatcher1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/dispatcher/v1"
 	"go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/dispatcher/v1/dispatcherv1connect"
@@ -46,12 +47,12 @@ func (s *server) Dispatch(ctx context.Context, req *connect.Request[dispatcher1.
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	eventID, err := s.dispatcher.Dispatch(ctx, event, &sdkservices.DispatchOptions{DeploymentID: deploymentID})
+	resp, err := s.dispatcher.Dispatch(ctx, event, &sdkservices.DispatchOptions{DeploymentID: deploymentID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	return connect.NewResponse(&dispatcher1.DispatchResponse{EventId: eventID.String()}), nil
+	return connect.NewResponse(&dispatcher1.DispatchResponse{EventId: resp.EventID.String(), SessionIds: kittehs.TransformToStrings(resp.SessionIDs)}), nil
 }
 
 func (s *server) Redispatch(ctx context.Context, req *connect.Request[dispatcher1.RedispatchRequest]) (*connect.Response[dispatcher1.RedispatchResponse], error) {
@@ -71,10 +72,10 @@ func (s *server) Redispatch(ctx context.Context, req *connect.Request[dispatcher
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	newEventID, err := s.dispatcher.Redispatch(ctx, eventID, &sdkservices.DispatchOptions{DeploymentID: deploymentID})
+	resp, err := s.dispatcher.Redispatch(ctx, eventID, &sdkservices.DispatchOptions{DeploymentID: deploymentID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	return connect.NewResponse(&dispatcher1.RedispatchResponse{EventId: newEventID.String()}), nil
+	return connect.NewResponse(&dispatcher1.RedispatchResponse{EventId: resp.EventID.String(), SessionIds: kittehs.TransformToStrings(resp.SessionIDs)}), nil
 }

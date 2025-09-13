@@ -94,12 +94,13 @@ message SessionLogRecord {
   // Bitfield.
   enum Type {
     TYPE_UNSPECIFIED = 0;
-    TYPE_PRINT = 1; // deprecated, avoid.
+    TYPE_PRINT = 1;
     TYPE_CALL_SPEC = 2;
     TYPE_CALL_ATTEMPT_START = 4;
     TYPE_CALL_ATTEMPT_COMPLETE = 8;
     TYPE_STATE = 16;
     TYPE_STOP_REQUEST = 32;
+    TYPE_HTTP_RESPONSE = 64;
   }
 
   message Print {
@@ -115,6 +116,13 @@ message SessionLogRecord {
     string reason = 2;
   }
 
+  message HTTPResponse {
+    uint32 status_code = 1; // Must always be present at first response. Ignored after. If set to 0, default to 200.
+    map<string, string> headers = 2; // Ignored if not specified at first response.
+    bytes body = 3;
+    bool more = 4; // if false, this is the final response and the HTTP connection should be closed.
+  }
+
   google.protobuf.Timestamp t = 1;
   string process_id = 2;
 
@@ -125,6 +133,7 @@ message SessionLogRecord {
   Call.Attempt.Complete call_attempt_complete = 13;
   SessionState state = 14;
   StopRequest stop_request = 15;
+  HTTPResponse http_response = 16;
 }
 
 message Session {

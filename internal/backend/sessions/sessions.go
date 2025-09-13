@@ -86,11 +86,9 @@ func (s *sessions) GetPrints(ctx context.Context, sid sdktypes.SessionID, pagina
 	}
 
 	prints := kittehs.Transform(lr.Records, func(r sdktypes.SessionLogRecord) *sdkservices.SessionPrint {
-		p, _ := r.GetPrint()
-
 		return &sdkservices.SessionPrint{
 			Timestamp: r.Timestamp(),
-			Value:     p,
+			Value:     r.GetPrint(),
 		}
 	})
 
@@ -164,8 +162,8 @@ func (s *sessions) DownloadLogs(ctx context.Context, sid sdktypes.SessionID) ([]
 }
 
 func writeFormattedSessionLog(buf io.StringWriter, record sdktypes.SessionLogRecord) error {
-	value, ok := record.GetPrint()
-	if !ok {
+	value := record.GetPrint()
+	if !value.IsValid() {
 		return nil
 	}
 

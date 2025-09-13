@@ -22,6 +22,7 @@ message Trigger {
 
   string connection_id = 50; // if source_type == CONNECTION.
   string schedule = 51; // if source_type == SCHEDULE.
+  bool webhook_sync = 52; // if source_type == WEBHOOK. If true, webhook returns a response from session.
 
   // read only.
   string webhook_slug = 100; // if source_type == WEBHOOK, after creation.

@@ -406,12 +406,16 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 			return nil, fmt.Errorf("trigger %q: invalid: %w", mtrigger.GetKey(), err)
 		}
 
-		if mtrigger.Webhook != nil || mtrigger.Type == "webhook" {
+		if wh := mtrigger.Webhook; wh != nil || mtrigger.Type == "webhook" {
 			if mtrigger.Type != "" && mtrigger.Type != "webhook" {
 				return nil, fmt.Errorf("trigger %q: type %q is not supported for webhook", mtrigger.GetKey(), mtrigger.Type)
 			}
 
-			desired = desired.WithWebhook()
+			if wh == nil {
+				wh = &Webhook{}
+			}
+
+			desired = desired.WithWebhook().WithSyncWebhook(wh.Sync)
 		}
 
 		if mtrigger.ConnectionKey != nil || mtrigger.Type == "connection" {

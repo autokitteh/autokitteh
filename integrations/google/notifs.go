@@ -267,10 +267,10 @@ func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, cids []sd
 	l := extrazap.ExtractLoggerFromContext(ctx)
 
 	for _, cid := range cids {
-		eid, err := h.dispatch(ctx, e.WithConnectionDestinationID(cid), nil)
+		resp, err := h.dispatch(ctx, e.WithConnectionDestinationID(cid), nil)
 		l := l.With(
 			zap.String("connectionID", cid.String()),
-			zap.String("eventID", eid.String()),
+			zap.String("eventID", resp.EventID.String()),
 		)
 		if err != nil {
 			if errors.Is(err, sdkerrors.ErrResourceExhausted) {

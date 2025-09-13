@@ -28,6 +28,7 @@ func (SessionLogRecordTraits) Validate(m *SessionLogRecordPB) error {
 		objectField[SessionCallAttemptComplete]("call_attempt_complete", m.CallAttemptComplete),
 		objectField[SessionCallSpec]("call_spec", m.CallSpec),
 		objectField[SessionState]("state", m.State),
+		// TODO: add http response.
 	)
 }
 
@@ -46,16 +47,16 @@ func StrictSessionLogRecordFromProto(m *SessionLogRecordPB) (SessionLogRecord, e
 	return Strict(SessionLogRecordFromProto(m))
 }
 
-func (s SessionLogRecord) GetPrint() (Value, bool) {
+func (s SessionLogRecord) GetPrint() Value {
 	if m := s.read(); m.Print != nil {
 		if m.Print.Value == nil {
-			return NewStringValue(m.Print.Text), true
+			return NewStringValue(m.Print.Text)
 		}
 
-		return kittehs.Must1(ValueFromProto(m.Print.Value)), true
+		return kittehs.Must1(ValueFromProto(m.Print.Value))
 	}
 
-	return InvalidValue, false
+	return InvalidValue
 }
 
 func (s SessionLogRecord) GetCallSpec() SessionCallSpec {
@@ -66,12 +67,44 @@ func (s SessionLogRecord) GetState() SessionState {
 	return forceFromProto[SessionState](s.read().State)
 }
 
+type SessionHTTPResponse struct {
+	Body       []byte
+	StatusCode int
+	Headers    map[string]string
+	More       bool
+}
+
+func (s SessionLogRecord) GetHTTPResponse() *SessionHTTPResponse {
+	if m := s.read(); m.HttpResponse != nil {
+		return &SessionHTTPResponse{
+			Body:       m.HttpResponse.Body,
+			StatusCode: int(m.HttpResponse.StatusCode),
+			Headers:    m.HttpResponse.Headers,
+			More:       m.HttpResponse.More,
+		}
+	}
+
+	return nil
+}
+
 func (s SessionLogRecord) GetStopRequest() (string, bool) {
 	if m := s.read(); m.StopRequest != nil {
 		return m.StopRequest.Reason, true
 	}
 
 	return "", false
+}
+
+func NewHTTPResponseSessionLogRecord(t time.Time, r SessionHTTPResponse) SessionLogRecord {
+	return forceFromProto[SessionLogRecord](&SessionLogRecordPB{
+		T: timestamppb.New(t),
+		HttpResponse: &sessionv1.SessionLogRecord_HTTPResponse{
+			Body:       r.Body,
+			StatusCode: uint32(r.StatusCode),
+			Headers:    r.Headers,
+			More:       r.More,
+		},
+	})
 }
 
 func NewPrintSessionLogRecord(t time.Time, v Value, callSeq uint32) SessionLogRecord {

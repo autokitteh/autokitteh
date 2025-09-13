@@ -1012,14 +1012,14 @@ var tools = []server.ServerTool{
 				return toolResultErrorf("build_id: %v", err)
 			}
 
-			eid, err = common.Client().Dispatcher().Redispatch(ctx, eid, &sdkservices.DispatchOptions{
+			resp, err := common.Client().Dispatcher().Redispatch(ctx, eid, &sdkservices.DispatchOptions{
 				DeploymentID: did,
 			})
 			if err != nil {
 				return toolResultErrorf("%v", err)
 			}
 
-			return toolResultTextf("Event redispatched as event id %q", eid)
+			return toolResultTextf("Event redispatched as event id %q, session ids: %q", resp.EventID, resp.SessionIDs)
 		},
 	},
 }
