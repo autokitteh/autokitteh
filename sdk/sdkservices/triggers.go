@@ -22,5 +22,6 @@ type Triggers interface {
 	Update(ctx context.Context, trigger sdktypes.Trigger) error
 	Delete(ctx context.Context, triggerID sdktypes.TriggerID) error
 	Get(ctx context.Context, triggerID sdktypes.TriggerID) (sdktypes.Trigger, error)
+	GetWithActiveDeployment(ctx context.Context, triggerID sdktypes.TriggerID) (sdktypes.Trigger, error)
 	List(ctx context.Context, filter ListTriggersFilter) ([]sdktypes.Trigger, error)
 }

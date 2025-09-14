@@ -73,17 +73,17 @@ func (gdb *gormdb) listVars(ctx context.Context, scopeID uuid.UUID, names ...str
 	return vars, nil
 }
 
-func (gdb *gormdb) findConnectionIDsByVar(ctx context.Context, integrationID uuid.UUID, name string, v string) ([]uuid.UUID, error) {
+func (gdb *gormdb) findConnectionIDsWithActiveDeploymentByVar(ctx context.Context, integrationID uuid.UUID, name string, v string) ([]uuid.UUID, error) {
 	db := gdb.reader.WithContext(ctx).Where("vars.integration_id = ? AND vars.name = ?", integrationID, name)
 	if v != "" {
 		db = db.Where("vars.value = ? AND vars.is_secret is false", v)
 	}
 
-	// Join with connections and deployments to filter by active projects only.
+	// Join with connections and deployments to filter by projects with active deployments only.
 	db = db.Model(&scheme.Var{}).
 		Joins("JOIN connections ON vars.var_id = connections.connection_id").
 		Joins("JOIN deployments ON connections.project_id = deployments.project_id").
-		Where("deployments.state = ? AND deployments.deleted_at IS NULL", 1)
+		Where("deployments.state = ? AND deployments.deleted_at IS NULL", sdktypes.DeploymentStateActive.ToProto())
 
 	// Note(s):
 	// - will skip not user owned vars
@@ -186,12 +186,12 @@ func (db *gormdb) GetVars(ctx context.Context, sid sdktypes.VarScopeID, names []
 	)
 }
 
-func (db *gormdb) FindConnectionIDsByVar(ctx context.Context, iid sdktypes.IntegrationID, n sdktypes.Symbol, v string) ([]sdktypes.ConnectionID, error) {
+func (db *gormdb) FindConnectionIDsWithActiveDeploymentByVar(ctx context.Context, iid sdktypes.IntegrationID, n sdktypes.Symbol, v string) ([]sdktypes.ConnectionID, error) {
 	if !iid.IsValid() {
 		return nil, sdkerrors.NewInvalidArgumentError("integration id is invalid")
 	}
 
-	ids, err := db.findConnectionIDsByVar(ctx, iid.UUIDValue(), n.String(), v)
+	ids, err := db.findConnectionIDsWithActiveDeploymentByVar(ctx, iid.UUIDValue(), n.String(), v)
 	if err != nil {
 		return nil, translateError(err)
 	}

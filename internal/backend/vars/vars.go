@@ -194,5 +194,5 @@ func (v *Vars) FindActiveConnectionIDs(ctx context.Context, iid sdktypes.Integra
 		return nil, err
 	}
 
-	return v.db.FindConnectionIDsByVar(ctx, iid, name, value)
+	return v.db.FindConnectionIDsWithActiveDeploymentByVar(ctx, iid, name, value)
 }

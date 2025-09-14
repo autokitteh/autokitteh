@@ -10,6 +10,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -127,6 +128,39 @@ func (db *gormdb) GetTriggerByID(ctx context.Context, triggerID sdktypes.Trigger
 	return scheme.ParseTrigger(*r)
 }
 
+// hasActiveDeployment checks if a project has active deployments
+func (db *gormdb) hasActiveDeployment(ctx context.Context, projectID uuid.UUID) error {
+	var deploymentCount int64
+	err := db.reader.WithContext(ctx).
+		Model(&scheme.Deployment{}).
+		Where("project_id = ? AND state = ? AND deleted_at IS NULL", projectID, sdktypes.DeploymentStateActive.ToProto()).
+		Count(&deploymentCount).Error
+	if err != nil {
+		return translateError(err)
+	}
+
+	if deploymentCount == 0 {
+		return sdkerrors.ErrFailedPrecondition
+	}
+
+	return nil
+}
+
+func (db *gormdb) GetTriggerWithActiveDeploymentByID(ctx context.Context, triggerID sdktypes.TriggerID) (sdktypes.Trigger, error) {
+	// Check if the trigger exists.
+	trigger, err := db.getTriggerByID(ctx, triggerID.UUIDValue())
+	if trigger == nil || err != nil {
+		return sdktypes.InvalidTrigger, translateError(err)
+	}
+
+	// Check if there's an active deployment for this trigger's project.
+	if err := db.hasActiveDeployment(ctx, trigger.ProjectID); err != nil {
+		return sdktypes.InvalidTrigger, err
+	}
+
+	return scheme.ParseTrigger(*trigger)
+}
+
 func (db *gormdb) ListTriggers(ctx context.Context, filter sdkservices.ListTriggersFilter) ([]sdktypes.Trigger, error) {
 	ts, err := db.listTriggers(ctx, filter)
 	if ts == nil || err != nil {
@@ -135,11 +169,21 @@ func (db *gormdb) ListTriggers(ctx context.Context, filter sdkservices.ListTrigg
 	return kittehs.TransformError(ts, scheme.ParseTrigger)
 }
 
-func (db *gormdb) GetTriggerByWebhookSlug(ctx context.Context, slug string) (sdktypes.Trigger, error) {
-	r, err := getOne[scheme.Trigger](db.reader.WithContext(ctx), "webhook_slug = ?", slug)
+func (db *gormdb) GetTriggerWithActiveDeploymentByWebhookSlug(ctx context.Context, slug string) (sdktypes.Trigger, error) {
+	// Check if the trigger exists.
+	var trigger scheme.Trigger
+	err := db.reader.WithContext(ctx).
+		Model(&scheme.Trigger{}).
+		Where("webhook_slug = ?", slug).
+		First(&trigger).Error
 	if err != nil {
 		return sdktypes.InvalidTrigger, translateError(err)
 	}
 
-	return scheme.ParseTrigger(*r)
+	// Check if there's an active deployment for this trigger's project.
+	if err := db.hasActiveDeployment(ctx, trigger.ProjectID); err != nil {
+		return sdktypes.InvalidTrigger, err
+	}
+
+	return scheme.ParseTrigger(trigger)
 }

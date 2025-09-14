@@ -133,15 +133,28 @@ func (sch *Scheduler) activity(ctx context.Context, tid sdktypes.TriggerID) erro
 
 	ctx = authcontext.SetAuthnSystemUser(ctx)
 
-	t, err := sch.triggers.Get(ctx, tid)
+	trigger, err := sch.triggers.GetWithActiveDeployment(ctx, tid)
 	if err != nil {
-		if !errors.Is(err, sdkerrors.ErrNotFound) {
-			return temporalclient.TranslateError(err, "get trigger %v", tid)
+		if errors.Is(err, sdkerrors.ErrNotFound) {
+			sl.Warnf("trigger %v not found, removing schedule", tid)
+
+			if err := sch.Delete(ctx, tid); err != nil {
+				return temporalclient.TranslateError(err, "delete schedule for %v", tid)
+			}
+
+			return nil
 		}
+
+		if errors.Is(err, sdkerrors.ErrFailedPrecondition) {
+			sl.Warnf("trigger %v found but project not deployed, skipping execution", tid)
+			return nil
+		}
+
+		return temporalclient.TranslateError(err, "get trigger with active deployment %v", tid)
 	}
 
-	if !t.IsValid() {
-		sl.Warnf("trigger %v not found, removing schedule", tid)
+	if !trigger.IsValid() {
+		sl.Warnf("trigger %v invalid, removing schedule", tid)
 
 		if err := sch.Delete(ctx, tid); err != nil {
 			return temporalclient.TranslateError(err, "delete schedule for %v", tid)
