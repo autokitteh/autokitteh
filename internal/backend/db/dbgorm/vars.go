@@ -83,7 +83,7 @@ func (gdb *gormdb) findConnectionIDsWithActiveDeploymentByVar(ctx context.Contex
 	db = db.Model(&scheme.Var{}).
 		Joins("JOIN connections ON vars.var_id = connections.connection_id").
 		Joins("JOIN deployments ON connections.project_id = deployments.project_id").
-		Where("deployments.state = ? AND deployments.deleted_at IS NULL", sdktypes.DeploymentStateActive.ToProto())
+		Where("deployments.state = ? AND deployments.deleted_at IS NULL", int32(sdktypes.DeploymentStateActive.ToProto()))
 
 	// Note(s):
 	// - will skip not user owned vars

@@ -133,7 +133,7 @@ func (db *gormdb) hasActiveDeployment(ctx context.Context, projectID uuid.UUID) 
 	var deploymentCount int64
 	err := db.reader.WithContext(ctx).
 		Model(&scheme.Deployment{}).
-		Where("project_id = ? AND state = ? AND deleted_at IS NULL", projectID, sdktypes.DeploymentStateActive.ToProto()).
+		Where("project_id = ? AND state = ? AND deleted_at IS NULL", projectID, int32(sdktypes.DeploymentStateActive.ToProto())).
 		Count(&deploymentCount).Error
 	if err != nil {
 		return translateError(err)
