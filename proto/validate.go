@@ -20,6 +20,7 @@ import (
 	integrationsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/integrations/v1"
 	modulev1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/module/v1"
 	orgsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/orgs/v1"
+	policyv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/policy/v1"
 	programv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/program/v1"
 	projectsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/projects/v1"
 	runnerManager "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/runner_manager/v1"
@@ -77,6 +78,7 @@ var fds = []protoreflect.FileDescriptor{
 	modulev1.File_autokitteh_module_v1_module_proto,
 	orgsv1.File_autokitteh_orgs_v1_org_proto,
 	orgsv1.File_autokitteh_orgs_v1_svc_proto,
+	policyv1.File_autokitteh_policy_v1_svc_proto,
 	programv1.File_autokitteh_program_v1_program_proto,
 	projectsv1.File_autokitteh_projects_v1_project_proto,
 	projectsv1.File_autokitteh_projects_v1_svc_proto,
