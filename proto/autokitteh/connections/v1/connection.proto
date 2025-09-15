@@ -19,6 +19,9 @@ message Connection {
   common.v1.Status status = 5;
   Capabilities capabilities = 6;
   map<string, string> links = 7;
+
+  string target = 8;
+  string org_id = 9;
 }
 
 message Capabilities {
