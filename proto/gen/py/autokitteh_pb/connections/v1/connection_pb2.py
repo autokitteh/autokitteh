@@ -14,7 +14,7 @@ _sym_db = _symbol_database.Default()
 from autokitteh_pb.common.v1 import status_pb2 as autokitteh_dot_common_dot_v1_dot_status__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n*autokitteh/connections/v1/connection.proto\x12\x19\x61utokitteh.connections.v1\x1a!autokitteh/common/v1/status.proto\"\xbf\x03\n\nConnection\x12#\n\rconnection_id\x18\x01 \x01(\tR\x0c\x63onnectionId\x12%\n\x0eintegration_id\x18\x02 \x01(\tR\rintegrationId\x12\x1d\n\nproject_id\x18\x03 \x01(\tR\tprojectId\x12\x12\n\x04name\x18\x04 \x01(\tR\x04name\x12\x34\n\x06status\x18\x05 \x01(\x0b\x32\x1c.autokitteh.common.v1.StatusR\x06status\x12K\n\x0c\x63\x61pabilities\x18\x06 \x01(\x0b\x32\'.autokitteh.connections.v1.CapabilitiesR\x0c\x63\x61pabilities\x12\x46\n\x05links\x18\x07 \x03(\x0b\x32\x30.autokitteh.connections.v1.Connection.LinksEntryR\x05links\x12\x16\n\x06target\x18\x08 \x01(\tR\x06target\x12\x15\n\x06org_id\x18\t \x01(\tR\x05orgId\x1a\x38\n\nLinksEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n\x05value\x18\x02 \x01(\tR\x05value:\x02\x38\x01\"\xbc\x01\n\x0c\x43\x61pabilities\x12\x38\n\x18supports_connection_test\x18\x01 \x01(\x08R\x16supportsConnectionTest\x12\x38\n\x18supports_connection_init\x18\x02 \x01(\x08R\x16supportsConnectionInit\x12\x38\n\x18requires_connection_init\x18\x03 \x01(\x08R\x16requiresConnectionInitB\x89\x02\n\x1d\x63om.autokitteh.connections.v1B\x0f\x43onnectionProtoP\x01ZQgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/connections/v1;connectionsv1\xa2\x02\x03\x41\x43X\xaa\x02\x19\x41utokitteh.Connections.V1\xca\x02\x19\x41utokitteh\\Connections\\V1\xe2\x02%Autokitteh\\Connections\\V1\\GPBMetadata\xea\x02\x1b\x41utokitteh::Connections::V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n*autokitteh/connections/v1/connection.proto\x12\x19\x61utokitteh.connections.v1\x1a!autokitteh/common/v1/status.proto\"\xbd\x03\n\nConnection\x12#\n\rconnection_id\x18\x01 \x01(\tR\x0c\x63onnectionId\x12%\n\x0eintegration_id\x18\x02 \x01(\tR\rintegrationId\x12\x1d\n\nproject_id\x18\x03 \x01(\tR\tprojectId\x12\x12\n\x04name\x18\x04 \x01(\tR\x04name\x12\x34\n\x06status\x18\x05 \x01(\x0b\x32\x1c.autokitteh.common.v1.StatusR\x06status\x12K\n\x0c\x63\x61pabilities\x18\x06 \x01(\x0b\x32\'.autokitteh.connections.v1.CapabilitiesR\x0c\x63\x61pabilities\x12\x46\n\x05links\x18\x07 \x03(\x0b\x32\x30.autokitteh.connections.v1.Connection.LinksEntryR\x05links\x12\x14\n\x05scope\x18\x08 \x01(\tR\x05scope\x12\x15\n\x06org_id\x18\t \x01(\tR\x05orgId\x1a\x38\n\nLinksEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n\x05value\x18\x02 \x01(\tR\x05value:\x02\x38\x01\"\xbc\x01\n\x0c\x43\x61pabilities\x12\x38\n\x18supports_connection_test\x18\x01 \x01(\x08R\x16supportsConnectionTest\x12\x38\n\x18supports_connection_init\x18\x02 \x01(\x08R\x16supportsConnectionInit\x12\x38\n\x18requires_connection_init\x18\x03 \x01(\x08R\x16requiresConnectionInitB\x89\x02\n\x1d\x63om.autokitteh.connections.v1B\x0f\x43onnectionProtoP\x01ZQgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/connections/v1;connectionsv1\xa2\x02\x03\x41\x43X\xaa\x02\x19\x41utokitteh.Connections.V1\xca\x02\x19\x41utokitteh\\Connections\\V1\xe2\x02%Autokitteh\\Connections\\V1\\GPBMetadata\xea\x02\x1b\x41utokitteh::Connections::V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -25,9 +25,9 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _CONNECTION_LINKSENTRY._options = None
   _CONNECTION_LINKSENTRY._serialized_options = b'8\001'
   _globals['_CONNECTION']._serialized_start=109
-  _globals['_CONNECTION']._serialized_end=556
-  _globals['_CONNECTION_LINKSENTRY']._serialized_start=500
-  _globals['_CONNECTION_LINKSENTRY']._serialized_end=556
-  _globals['_CAPABILITIES']._serialized_start=559
-  _globals['_CAPABILITIES']._serialized_end=747
+  _globals['_CONNECTION']._serialized_end=554
+  _globals['_CONNECTION_LINKSENTRY']._serialized_start=498
+  _globals['_CONNECTION_LINKSENTRY']._serialized_end=554
+  _globals['_CAPABILITIES']._serialized_start=557
+  _globals['_CAPABILITIES']._serialized_end=745
 # @@protoc_insertion_point(module_scope)

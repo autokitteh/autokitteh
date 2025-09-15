@@ -60,9 +60,9 @@ export class Connection extends Message<Connection> {
   links: { [key: string]: string } = {};
 
   /**
-   * @generated from field: string target = 8;
+   * @generated from field: string scope = 8;
    */
-  target = "";
+  scope = "";
 
   /**
    * @generated from field: string org_id = 9;
@@ -84,7 +84,7 @@ export class Connection extends Message<Connection> {
     { no: 5, name: "status", kind: "message", T: Status },
     { no: 6, name: "capabilities", kind: "message", T: Capabilities },
     { no: 7, name: "links", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 8, name: "target", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "scope", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "org_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 

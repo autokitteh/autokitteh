@@ -7,6 +7,11 @@ import (
 	connectionv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/connections/v1"
 )
 
+const (
+	ConnectionScopeProject = "project"
+	ConnectionScopeOrg     = "org"
+)
+
 type Connection struct {
 	object[*ConnectionPB, ConnectionTraits]
 }
@@ -32,7 +37,7 @@ func (ConnectionTraits) Validate(m *ConnectionPB) error {
 func (ConnectionTraits) StrictValidate(m *ConnectionPB) error {
 	return errors.Join(
 		mandatory("name", m.Name),
-		mandatory("project_id", m.ProjectId),
+		mandatory("org_id", m.OrgId),
 		mandatory("integration_id", m.IntegrationId),
 	)
 }
@@ -66,6 +71,12 @@ func (p Connection) WithID(id ConnectionID) Connection {
 func (p Connection) WithProjectID(id ProjectID) Connection {
 	return Connection{p.forceUpdate(func(pb *ConnectionPB) { pb.ProjectId = id.String() })}
 }
+
+func (p Connection) WithOrgID(id OrgID) Connection {
+	return Connection{p.forceUpdate(func(pb *ConnectionPB) { pb.OrgId = id.String() })}
+}
+
+func (p Connection) OrgID() OrgID { return kittehs.Must1(ParseOrgID(p.read().OrgId)) }
 
 func (p Connection) WithIntegrationID(id IntegrationID) Connection {
 	return Connection{p.forceUpdate(func(pb *ConnectionPB) { pb.IntegrationId = id.String() })}
@@ -124,4 +135,16 @@ func (p Connection) AddLink(name, value string) Connection {
 
 		pb.Links[name] = value
 	})}
+}
+
+func (p Connection) WithScope(scope string) Connection {
+	return Connection{p.forceUpdate(func(pb *ConnectionPB) { pb.Scope = scope })}
+}
+
+func (p Connection) Scope() string {
+	scope := p.read().Scope
+	if scope == "" {
+		return ConnectionScopeOrg
+	}
+	return scope
 }

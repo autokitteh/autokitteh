@@ -132,9 +132,18 @@ func (db *gormdb) CreateConnection(ctx context.Context, conn sdktypes.Connection
 		return err
 	}
 
+	target := sdktypes.ConnectionTargetOrg
+	projectID := uuid.Nil
+	if conn.Target() == sdktypes.ConnectionTargetProject {
+		target = sdktypes.ConnectionTargetProject
+		projectID = conn.ProjectID().UUIDValue()
+	}
+
 	c := scheme.Connection{
 		Base:          based(ctx),
-		ProjectID:     conn.ProjectID().UUIDValue(),
+		ProjectID:     &projectID,
+		Scope:         target,
+		OrgID:         conn.OrgID().UUIDValue(),
 		ConnectionID:  conn.ID().UUIDValue(),
 		IntegrationID: uuidPtrOrNil(conn.IntegrationID()),
 		Name:          conn.Name().String(),

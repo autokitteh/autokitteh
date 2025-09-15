@@ -2,7 +2,7 @@
 -- add column "org_id" to table: "connections"
 ALTER TABLE `connections` ADD COLUMN `org_id` uuid NULL;
 -- add column "target" to table: "connections"
-ALTER TABLE `connections` ADD COLUMN `target` text NULL;
+ALTER TABLE `connections` ADD COLUMN `scope` text NULL;
 -- create index "idx_connections_org_id" to table: "connections"
 CREATE INDEX `idx_connections_org_id` ON `connections` (`org_id`);
 
@@ -10,6 +10,6 @@ CREATE INDEX `idx_connections_org_id` ON `connections` (`org_id`);
 -- reverse: create index "idx_connections_org_id" to table: "connections"
 DROP INDEX `idx_connections_org_id`;
 -- reverse: add column "target" to table: "connections"
-ALTER TABLE `connections` DROP COLUMN `target`;
+ALTER TABLE `connections` DROP COLUMN `scope`;
 -- reverse: add column "org_id" to table: "connections"
 ALTER TABLE `connections` DROP COLUMN `org_id`;
