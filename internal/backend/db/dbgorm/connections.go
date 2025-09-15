@@ -104,9 +104,13 @@ func (gdb *gormdb) getConnections(ctx context.Context, ids ...uuid.UUID) ([]sche
 func (gdb *gormdb) listConnections(ctx context.Context, filter sdkservices.ListConnectionsFilter, idsOnly bool) ([]scheme.Connection, error) {
 	q := gdb.reader.WithContext(ctx)
 
-	q = withProjectID(q, "connections", filter.ProjectID)
+	// q = withProjectID(q, "connections", filter.ProjectID)
 
-	q = withProjectOrgID(q, filter.OrgID, "connections")
+	// q = withProjectOrgID(q, filter.OrgID, "connections")
+
+	if filter.OrgID.IsValid() {
+		q = q.Where("org_id = ?", filter.OrgID.UUIDValue())
+	}
 
 	if filter.IntegrationID.IsValid() {
 		q = q.Where("integration_id = ?", filter.IntegrationID.UUIDValue())
@@ -132,17 +136,20 @@ func (db *gormdb) CreateConnection(ctx context.Context, conn sdktypes.Connection
 		return err
 	}
 
-	target := sdktypes.ConnectionTargetOrg
-	projectID := uuid.Nil
-	if conn.Target() == sdktypes.ConnectionTargetProject {
-		target = sdktypes.ConnectionTargetProject
+	scope := sdktypes.ConnectionScopeOrg
+	var projectID uuid.UUID
+	if conn.Scope() == sdktypes.ConnectionScopeProject {
+		if !conn.ProjectID().IsValid() {
+			return errors.New("project_id must be set for project-scoped connections")
+		}
+		scope = sdktypes.ConnectionScopeProject
 		projectID = conn.ProjectID().UUIDValue()
 	}
 
 	c := scheme.Connection{
 		Base:          based(ctx),
 		ProjectID:     &projectID,
-		Scope:         target,
+		Scope:         scope,
 		OrgID:         conn.OrgID().UUIDValue(),
 		ConnectionID:  conn.ID().UUIDValue(),
 		IntegrationID: uuidPtrOrNil(conn.IntegrationID()),

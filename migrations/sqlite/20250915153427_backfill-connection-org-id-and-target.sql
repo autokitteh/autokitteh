@@ -1,9 +1,9 @@
 -- +goose Up
 -- Set all current connections to be project scoped and update org id
-UPDATE connections c
-SET org_id = o.org_id, target = 'project'
-FROM projects p
-JOIN orgs o USING(org_id)
-WHERE c.project_id = p.project_id AND p.org_id IS NOT NULL;
+UPDATE connections 
+SET org_id = orgs.org_id, scope = 'project'
+FROM projects 
+JOIN orgs USING(org_id)
+WHERE connections.project_id = projects.project_id AND projects.org_id IS NOT NULL;
 
 -- +goose Down
