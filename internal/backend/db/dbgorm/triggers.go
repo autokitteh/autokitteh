@@ -2,10 +2,12 @@ package dbgorm
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
@@ -128,22 +130,21 @@ func (db *gormdb) GetTriggerByID(ctx context.Context, triggerID sdktypes.Trigger
 	return scheme.ParseTrigger(*r)
 }
 
-// hasActiveDeployment checks if a project has active deployments
-func (db *gormdb) hasActiveDeployment(ctx context.Context, projectID uuid.UUID) error {
-	var deploymentCount int64
+// hasActiveDeployment checks if a project has active deployments.
+func (db *gormdb) hasActiveDeployment(ctx context.Context, projectID uuid.UUID) (bool, error) {
+	var deployment scheme.Deployment
 	err := db.reader.WithContext(ctx).
-		Model(&scheme.Deployment{}).
 		Where("project_id = ? AND state = ? AND deleted_at IS NULL", projectID, int32(sdktypes.DeploymentStateActive.ToProto())).
-		Count(&deploymentCount).Error
+		Take(&deployment).Error
+
 	if err != nil {
-		return translateError(err)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return false, nil
+		}
+		return false, translateError(err)
 	}
 
-	if deploymentCount == 0 {
-		return sdkerrors.ErrFailedPrecondition
-	}
-
-	return nil
+	return true, nil
 }
 
 func (db *gormdb) GetTriggerWithActiveDeploymentByID(ctx context.Context, triggerID sdktypes.TriggerID) (sdktypes.Trigger, error) {
@@ -154,8 +155,12 @@ func (db *gormdb) GetTriggerWithActiveDeploymentByID(ctx context.Context, trigge
 	}
 
 	// Check if there's an active deployment for this trigger's project.
-	if err := db.hasActiveDeployment(ctx, trigger.ProjectID); err != nil {
+	hasActive, err := db.hasActiveDeployment(ctx, trigger.ProjectID)
+	if err != nil {
 		return sdktypes.InvalidTrigger, err
+	}
+	if !hasActive {
+		return sdktypes.InvalidTrigger, sdkerrors.ErrFailedPrecondition
 	}
 
 	return scheme.ParseTrigger(*trigger)
@@ -181,8 +186,12 @@ func (db *gormdb) GetTriggerWithActiveDeploymentByWebhookSlug(ctx context.Contex
 	}
 
 	// Check if there's an active deployment for this trigger's project.
-	if err := db.hasActiveDeployment(ctx, trigger.ProjectID); err != nil {
+	hasActive, err := db.hasActiveDeployment(ctx, trigger.ProjectID)
+	if err != nil {
 		return sdktypes.InvalidTrigger, err
+	}
+	if !hasActive {
+		return sdktypes.InvalidTrigger, sdkerrors.ErrFailedPrecondition
 	}
 
 	return scheme.ParseTrigger(trigger)

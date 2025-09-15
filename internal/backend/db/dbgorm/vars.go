@@ -90,7 +90,7 @@ func (gdb *gormdb) findConnectionIDsWithActiveDeploymentByVar(ctx context.Contex
 	// - not checking if scope is deleted, since scope deletion will cascade deletion of relevant vars
 	// - only returns connections for projects with active deployments
 	var ids []uuid.UUID
-	if err := db.Distinct("vars.var_id").Find(&ids).Error; err != nil {
+	if err := db.Pluck("vars.var_id", &ids).Error; err != nil {
 		return nil, err
 	}
 	return ids, nil

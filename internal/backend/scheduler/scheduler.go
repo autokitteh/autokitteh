@@ -136,17 +136,16 @@ func (sch *Scheduler) activity(ctx context.Context, tid sdktypes.TriggerID) erro
 	trigger, err := sch.triggers.GetWithActiveDeployment(ctx, tid)
 	if err != nil {
 		if errors.Is(err, sdkerrors.ErrNotFound) {
-			sl.Warnf("trigger %v not found, removing schedule", tid)
-
 			if err := sch.Delete(ctx, tid); err != nil {
 				return temporalclient.TranslateError(err, "delete schedule for %v", tid)
 			}
 
+			sl.Infof("schedule removed for non-existent trigger %v", tid)
 			return nil
 		}
 
 		if errors.Is(err, sdkerrors.ErrFailedPrecondition) {
-			sl.Warnf("trigger %v found but project not deployed, skipping execution", tid)
+			sl.Infof("trigger %v found but project not deployed, skipping execution", tid)
 			return nil
 		}
 
@@ -154,12 +153,11 @@ func (sch *Scheduler) activity(ctx context.Context, tid sdktypes.TriggerID) erro
 	}
 
 	if !trigger.IsValid() {
-		sl.Warnf("trigger %v invalid, removing schedule", tid)
-
 		if err := sch.Delete(ctx, tid); err != nil {
 			return temporalclient.TranslateError(err, "delete schedule for %v", tid)
 		}
 
+		sl.Infof("schedule removed for invalid trigger %v", tid)
 		return nil
 	}
 
