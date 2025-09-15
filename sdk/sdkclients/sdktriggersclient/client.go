@@ -2,7 +2,6 @@ package sdktriggersclient
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"connectrpc.com/connect"
@@ -84,12 +83,6 @@ func (c *client) Get(ctx context.Context, triggerID sdktypes.TriggerID) (sdktype
 	}
 
 	return sdktypes.TriggerFromProto(resp.Msg.Trigger)
-}
-
-func (c *client) GetWithActiveDeployment(ctx context.Context, triggerID sdktypes.TriggerID) (sdktypes.Trigger, error) {
-	// This method is not supported for remote clients as it requires server-side deployment checking
-	// It's primarily used by internal services like the scheduler
-	return sdktypes.InvalidTrigger, errors.New("GetWithActiveDeployment not supported for remote clients")
 }
 
 func (c *client) List(ctx context.Context, filter sdkservices.ListTriggersFilter) ([]sdktypes.Trigger, error) {

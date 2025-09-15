@@ -12,6 +12,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -40,10 +41,11 @@ type Scheduler struct {
 	sl         *zap.SugaredLogger
 	dispatcher sdkservices.Dispatcher
 	triggers   sdkservices.Triggers
+	db         db.DB
 }
 
-func New(l *zap.Logger, tc temporalclient.Client, cfg *Config) *Scheduler {
-	return &Scheduler{sl: l.Sugar(), temporal: tc, cfg: cfg}
+func New(l *zap.Logger, tc temporalclient.Client, db db.DB, cfg *Config) *Scheduler {
+	return &Scheduler{sl: l.Sugar(), temporal: tc, db: db, cfg: cfg}
 }
 
 func (sch *Scheduler) Start(ctx context.Context, dispatcher sdkservices.Dispatcher, triggers sdkservices.Triggers) error {
@@ -133,7 +135,7 @@ func (sch *Scheduler) activity(ctx context.Context, tid sdktypes.TriggerID) erro
 
 	ctx = authcontext.SetAuthnSystemUser(ctx)
 
-	trigger, err := sch.triggers.GetWithActiveDeployment(ctx, tid)
+	trigger, err := sch.db.GetTriggerWithActiveDeploymentByID(ctx, tid)
 	if err != nil {
 		if errors.Is(err, sdkerrors.ErrNotFound) {
 			sl.Infof("skipping execution for trigger %v: not found or project not deployed", tid)
