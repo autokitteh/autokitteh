@@ -55,6 +55,7 @@ func (p Connection) Name() Symbol     { return kittehs.Must1(ParseSymbol(p.read(
 func NewConnection(id ConnectionID) Connection {
 	return kittehs.Must1(ConnectionFromProto(&ConnectionPB{
 		ConnectionId: id.String(),
+		Scope:        ConnectionScopeOrg, // default value
 	}))
 }
 
@@ -142,9 +143,5 @@ func (p Connection) WithScope(scope string) Connection {
 }
 
 func (p Connection) Scope() string {
-	scope := p.read().Scope
-	if scope == "" {
-		return ConnectionScopeOrg
-	}
-	return scope
+	return p.read().Scope
 }

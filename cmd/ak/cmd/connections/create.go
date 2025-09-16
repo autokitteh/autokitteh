@@ -13,6 +13,7 @@ import (
 
 var (
 	project string
+	org     string
 	quiet   bool
 )
 
@@ -27,13 +28,20 @@ var createCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		pid, err := r.ProjectNameOrID(ctx, sdktypes.InvalidOrgID, project)
-		if err != nil {
-			return err
-		}
-		if !pid.IsValid() {
-			err = fmt.Errorf("project %q not found", project)
-			return common.NewExitCodeError(common.NotFoundExitCode, err)
+		scope := sdktypes.ConnectionScopeOrg
+		pidStr := ""
+
+		if project != "" {
+			pid, err := r.ProjectNameOrID(ctx, sdktypes.InvalidOrgID, project)
+			if err != nil {
+				return err
+			}
+			if !pid.IsValid() {
+				err = fmt.Errorf("project %q not found", project)
+				return common.NewExitCodeError(common.NotFoundExitCode, err)
+			}
+			scope = sdktypes.ConnectionScopeProject
+			pidStr = pid.String()
 		}
 
 		i, iid, err := r.IntegrationNameOrID(ctx, integration)
@@ -47,8 +55,10 @@ var createCmd = common.StandardCommand(&cobra.Command{
 
 		c, err := sdktypes.ConnectionFromProto(&sdktypes.ConnectionPB{
 			IntegrationId: iid.String(),
-			ProjectId:     pid.String(),
+			ProjectId:     pidStr,
+			OrgId:         org,
 			Name:          args[0],
+			Scope:         scope,
 		})
 		if err != nil {
 			return fmt.Errorf("invalid connection: %w", err)
@@ -82,10 +92,12 @@ var createCmd = common.StandardCommand(&cobra.Command{
 func init() {
 	// Command-specific flags.
 	createCmd.Flags().StringVarP(&project, "project", "p", "", "project name or ID")
-	kittehs.Must0(createCmd.MarkFlagRequired("project"))
+	createCmd.MarkFlagsMutuallyExclusive("project", "org")
+	createCmd.MarkFlagsOneRequired("project", "org")
 
 	createCmd.Flags().StringVarP(&integration, "integration", "i", "", "integration name or ID")
 	kittehs.Must0(createCmd.MarkFlagRequired("integration"))
 
 	createCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "do not print initialization guidance")
+	createCmd.Flags().StringVarP(&org, "org", "o", "", "organization name or ID (for org-scoped connections)")
 }

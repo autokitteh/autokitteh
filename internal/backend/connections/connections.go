@@ -34,6 +34,7 @@ func (c *Connections) Create(ctx context.Context, conn sdktypes.Connection) (sdk
 		authz.WithData("connection", conn),
 		authz.WithAssociationWithID("integration", conn.IntegrationID()),
 		authz.WithAssociationWithID("project", conn.ProjectID()),
+		authz.WithAssociationWithID("org", conn.OrgID()),
 	); err != nil {
 		return sdktypes.InvalidConnectionID, err
 	}
@@ -58,6 +59,10 @@ func (c *Connections) Create(ctx context.Context, conn sdktypes.Connection) (sdk
 		if status, err = i.GetConnectionStatus(ctx, sdktypes.InvalidConnectionID); err != nil {
 			return sdktypes.InvalidConnectionID, err
 		}
+	}
+
+	if conn.Scope() == "" {
+		conn = conn.WithScope(sdktypes.ConnectionScopeOrg)
 	}
 
 	conn = conn.WithStatus(status).WithNewID()
