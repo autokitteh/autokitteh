@@ -150,12 +150,8 @@ func (db *gormdb) GetTriggerWithActiveDeploymentByID(ctx context.Context, trigge
 		return sdktypes.InvalidTrigger, false, translateError(err)
 	}
 
-	if !triggerAndDeployment.HasActiveDeployment {
-		return sdktypes.InvalidTrigger, false, nil // Trigger exists but no active deployment.
-	}
-
 	trigger, err := scheme.ParseTrigger(triggerAndDeployment.Trigger)
-	return trigger, true, err
+	return trigger, triggerAndDeployment.HasActiveDeployment, err
 }
 
 func (db *gormdb) ListTriggers(ctx context.Context, filter sdkservices.ListTriggersFilter) ([]sdktypes.Trigger, error) {
