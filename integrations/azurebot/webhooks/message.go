@@ -7,6 +7,7 @@ import (
 	"github.com/infracloudio/msbotbuilder-go/schema"
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -28,26 +29,26 @@ func (h handler) HandleMessage(w http.ResponseWriter, r *http.Request) {
 
 	l := h.logger.With(zap.String("tenant_id", tenantID))
 
-	l.Debug("Received activity", zap.Any("activity", act))
+	l.Debug("received activity for tenant "+tenantID, zap.Any("activity", act))
 
-	cids, err := h.vars.FindConnectionIDs(r.Context(), h.integrationID, sdktypes.NewSymbol("tenant_id"), tenantID)
+	cids, err := h.vars.FindActiveConnectionIDs(r.Context(), h.integrationID, sdktypes.NewSymbol("tenant_id"), tenantID)
 	if err != nil {
-		l.Error("Failed to find connection IDs", zap.Error(err))
-		http.Error(w, "failed to find connection IDs", http.StatusInternalServerError)
+		l.Warn("failed to find connection IDs for tenant "+tenantID, zap.Error(err))
+		http.Error(w, "no connections configured for tenant", http.StatusBadRequest)
 		return
 
 	}
 
 	v, err := sdktypes.WrapValue(act)
 	if err != nil {
-		l.Error("Failed to wrap activity", zap.Error(err))
+		l.Error("failed to wrap activity for tenant"+tenantID, zap.Error(err))
 		http.Error(w, "failed to wrap activity", http.StatusInternalServerError)
 		return
 	}
 
 	m, err := v.ToStringValuesMap()
 	if err != nil {
-		l.Error("failed to convert wrapped event", zap.Error(err))
+		l.Error("failed to convert wrapped event for tenant "+tenantID, zap.Error(err))
 		http.Error(w, "failed to convert wrapped event", http.StatusInternalServerError)
 		return
 	}
@@ -57,12 +58,12 @@ func (h handler) HandleMessage(w http.ResponseWriter, r *http.Request) {
 		Data:      kittehs.TransformMapValues(m, sdktypes.ToProto),
 	})
 	if err != nil {
-		l.Error("failed to convert protocol buffer to SDK event", zap.Error(err))
+		l.Error("failed to convert protocol buffer to SDK event for tenant "+tenantID, zap.Error(err))
 		http.Error(w, "failed to convert protocol buffer to SDK event", http.StatusInternalServerError)
 		return
 	}
 
-	h.dispatchAsyncEventsToConnections(r.Context(), cids, evt)
+	common.DispatchEvent(r.Context(), h.logger, h.dispatch, evt, cids)
 
 	w.WriteHeader(http.StatusOK)
 }

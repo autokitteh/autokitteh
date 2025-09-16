@@ -56,6 +56,7 @@ func (h handler) HandleManifest(w http.ResponseWriter, r *http.Request) {
 
 	cid, err := sdktypes.StrictParseConnectionID(cidStr)
 	if err != nil {
+		l.Info("failed to parse connection id", zap.Error(err))
 		http.Error(w, fmt.Errorf("failed to parse connection ID: %w", err).Error(), http.StatusBadRequest)
 		return
 	}

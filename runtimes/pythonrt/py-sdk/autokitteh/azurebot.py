@@ -1,4 +1,4 @@
-"""Initialize a Twilio client, based on an AutoKitteh connection."""
+"""Initialize a AzureBot client, based on an AutoKitteh connection."""
 
 from dataclasses import dataclass
 from typing import Any

@@ -19,29 +19,34 @@ import (
 
 var desc = common.Descriptor("azurebot", "Azure Bot Service", "/static/images/azure_bot.svg")
 
-type integration struct{ vars sdkservices.Vars }
+type integration struct {
+	vars sdkservices.Vars
+	l    *zap.Logger
+}
 
-func New(vars sdkservices.Vars) sdkservices.Integration {
-	i := &integration{vars: vars}
+func New(vars sdkservices.Vars, l *zap.Logger) sdkservices.Integration {
+	i := &integration{vars: vars, l: l}
 
 	return sdkintegrations.NewIntegration(
 		desc,
 		sdkmodule.New(),
-		connStatus(i),
-		connTest(i),
+		i.connStatus(),
+		i.connTest(),
 		sdkintegrations.WithConnectionConfigFromVars(vars),
 	)
 }
 
-func connStatus(i *integration) sdkintegrations.OptFn {
+func (i *integration) connStatus() sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
+		l := i.l.With(zap.String("connection_id", cid.String()))
+
 		if !cid.IsValid() {
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Init required"), nil
 		}
 
 		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
 		if err != nil {
-			zap.L().Error("failed to read connection vars", zap.String("connection_id", cid.String()), zap.Error(err))
+			l.Error("failed to read connection "+cid.String()+" vars", zap.String("connection_id", cid.String()), zap.Error(err))
 			return sdktypes.InvalidStatus, err
 		}
 
@@ -56,15 +61,17 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 	})
 }
 
-func connTest(i *integration) sdkintegrations.OptFn {
+func (i *integration) connTest() sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
+		l := i.l.With(zap.String("connection_id", cid.String()))
+
 		if !cid.IsValid() {
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Init required"), nil
 		}
 
 		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
 		if err != nil {
-			zap.L().Error("failed to read connection vars", zap.String("connection_id", cid.String()), zap.Error(err))
+			l.Error("failed to read connection "+cid.String()+" vars", zap.String("connection_id", cid.String()), zap.Error(err))
 			return sdktypes.InvalidStatus, err
 		}
 
