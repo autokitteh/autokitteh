@@ -62,7 +62,7 @@ func (c *client) Get(ctx context.Context, sid sdktypes.VarScopeID, names ...sdkt
 	return kittehs.TransformError[*varsv1.Var, sdktypes.Var](resp.Msg.Vars, sdktypes.FromProto)
 }
 
-func (c *client) FindConnectionIDs(ctx context.Context, iid sdktypes.IntegrationID, name sdktypes.Symbol, value string) ([]sdktypes.ConnectionID, error) {
+func (c *client) FindActiveConnectionIDs(ctx context.Context, iid sdktypes.IntegrationID, name sdktypes.Symbol, value string) ([]sdktypes.ConnectionID, error) {
 	resp, err := c.client.FindConnectionIDs(ctx, connect.NewRequest(&varsv1.FindConnectionIDsRequest{
 		IntegrationId: iid.String(),
 		Name:          name.String(),

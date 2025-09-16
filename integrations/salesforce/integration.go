@@ -54,7 +54,7 @@ func newHTTPHandler(l *zap.Logger, v sdkservices.Vars, o *oauth.OAuth, d sdkserv
 }
 
 func (h handler) reopenExistingPubSubConnections(ctx context.Context) {
-	cids, err := h.vars.FindConnectionIDs(ctx, desc.ID(), instanceURLVar, "")
+	cids, err := h.vars.FindActiveConnectionIDs(ctx, desc.ID(), instanceURLVar, "")
 	if err != nil {
 		h.logger.Error("failed to list connection IDs", zap.Error(err))
 		return

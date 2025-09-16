@@ -53,6 +53,6 @@ func (s *fakeVarsService) Delete(ctx context.Context, sid sdktypes.VarScopeID, n
 	return nil
 }
 
-func (s *fakeVarsService) FindConnectionIDs(ctx context.Context, iid sdktypes.IntegrationID, name sdktypes.Symbol, value string) ([]sdktypes.ConnectionID, error) {
+func (s *fakeVarsService) FindActiveConnectionIDs(ctx context.Context, iid sdktypes.IntegrationID, name sdktypes.Symbol, value string) ([]sdktypes.ConnectionID, error) {
 	return nil, errors.New("not implemented")
 }
