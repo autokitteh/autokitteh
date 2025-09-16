@@ -137,21 +137,20 @@ func (sch *Scheduler) activity(ctx context.Context, tid sdktypes.TriggerID) erro
 
 	trigger, err := sch.db.GetTriggerWithActiveDeploymentByID(ctx, tid)
 	if err != nil {
-		if errors.Is(err, sdkerrors.ErrNotFound) {
-			sl.Infof("skipping execution for trigger %v: not found or project not deployed", tid)
+		if errors.Is(err, sdkerrors.ErrNotFound) && !trigger.IsValid() {
+			if err := sch.Delete(ctx, tid); err != nil {
+				return temporalclient.TranslateError(err, "delete schedule for %v", tid)
+			}
+			sl.Infof("schedule removed for non-existent trigger %v", tid)
+			return nil
+		}
+
+		if errors.Is(err, sdkerrors.ErrFailedPrecondition) {
+			sl.Infof("skipping execution for trigger %v: project not deployed", tid)
 			return nil
 		}
 
 		return temporalclient.TranslateError(err, "get trigger with active deployment %v", tid)
-	}
-
-	if !trigger.IsValid() {
-		if err := sch.Delete(ctx, tid); err != nil {
-			return temporalclient.TranslateError(err, "delete schedule for %v", tid)
-		}
-
-		sl.Infof("schedule removed for invalid trigger %v", tid)
-		return nil
 	}
 
 	eid, err := sch.dispatcher.Dispatch(ctx, sdktypes.NewEvent(tid).WithType("tick"), nil)

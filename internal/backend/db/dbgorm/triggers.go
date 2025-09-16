@@ -2,14 +2,17 @@ package dbgorm
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -128,19 +131,30 @@ func (db *gormdb) GetTriggerByID(ctx context.Context, triggerID sdktypes.Trigger
 }
 
 func (db *gormdb) GetTriggerWithActiveDeploymentByID(ctx context.Context, triggerID sdktypes.TriggerID) (sdktypes.Trigger, error) {
-	var trigger scheme.Trigger
+	var triggerAndDeployment struct {
+		scheme.Trigger
+		HasActiveDeployment bool `gorm:"column:has_active_deployment"`
+	}
+
 	err := db.reader.WithContext(ctx).
 		Model(&scheme.Trigger{}).
-		Joins("JOIN deployments ON triggers.project_id = deployments.project_id").
-		Where("triggers.trigger_id = ? AND deployments.state = ? AND deployments.deleted_at IS NULL",
-			triggerID.UUIDValue(),
+		Select("triggers.*, CASE WHEN deployments.deployment_id IS NOT NULL THEN true ELSE false END as has_active_deployment").
+		Joins("LEFT JOIN deployments ON triggers.project_id = deployments.project_id AND deployments.state = ? AND deployments.deleted_at IS NULL",
 			int32(sdktypes.DeploymentStateActive.ToProto())).
-		First(&trigger).Error
+		Where("triggers.trigger_id = ?", triggerID.UUIDValue()).
+		First(&triggerAndDeployment).Error
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return sdktypes.InvalidTrigger, sdkerrors.ErrNotFound // Trigger doesn't exist.
+		}
 		return sdktypes.InvalidTrigger, translateError(err)
 	}
 
-	return scheme.ParseTrigger(trigger)
+	if !triggerAndDeployment.HasActiveDeployment {
+		return sdktypes.InvalidTrigger, sdkerrors.ErrFailedPrecondition // Trigger exists but no active deployment.
+	}
+
+	return scheme.ParseTrigger(triggerAndDeployment.Trigger)
 }
 
 func (db *gormdb) ListTriggers(ctx context.Context, filter sdkservices.ListTriggersFilter) ([]sdktypes.Trigger, error) {
