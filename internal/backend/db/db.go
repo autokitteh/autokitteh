@@ -64,7 +64,7 @@ type Shared interface {
 	CreateTrigger(context.Context, sdktypes.Trigger) error
 	UpdateTrigger(context.Context, sdktypes.Trigger) error
 	GetTriggerByID(context.Context, sdktypes.TriggerID) (sdktypes.Trigger, error)
-	GetTriggerWithActiveDeploymentByID(context.Context, sdktypes.TriggerID) (sdktypes.Trigger, error)
+	GetTriggerWithActiveDeploymentByID(context.Context, sdktypes.TriggerID) (sdktypes.Trigger, bool, error)
 	DeleteTrigger(context.Context, sdktypes.TriggerID) error
 	ListTriggers(context.Context, sdkservices.ListTriggersFilter) ([]sdktypes.Trigger, error)
 	GetTriggerWithActiveDeploymentByWebhookSlug(ctx context.Context, slug string) (sdktypes.Trigger, error)

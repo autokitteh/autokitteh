@@ -161,15 +161,6 @@ func (m *triggers) Get(ctx context.Context, triggerID sdktypes.TriggerID) (sdkty
 	return m.db.GetTriggerByID(ctx, triggerID)
 }
 
-// GetWithActiveDeployment gets a trigger only if it has an active deployment.
-func (m *triggers) GetWithActiveDeployment(ctx context.Context, triggerID sdktypes.TriggerID) (sdktypes.Trigger, error) {
-	if err := authz.CheckContext(ctx, triggerID, "read:get", authz.WithConvertForbiddenToNotFound); err != nil {
-		return sdktypes.InvalidTrigger, err
-	}
-
-	return m.db.GetTriggerWithActiveDeploymentByID(ctx, triggerID)
-}
-
 // List implements sdkservices.Triggers.
 func (m *triggers) List(ctx context.Context, filter sdkservices.ListTriggersFilter) ([]sdktypes.Trigger, error) {
 	if !filter.AnyIDSpecified() {

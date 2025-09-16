@@ -135,9 +135,9 @@ func (sch *Scheduler) activity(ctx context.Context, tid sdktypes.TriggerID) erro
 
 	ctx = authcontext.SetAuthnSystemUser(ctx)
 
-	trigger, err := sch.db.GetTriggerWithActiveDeploymentByID(ctx, tid)
+	_, hasTrigger, err := sch.db.GetTriggerWithActiveDeploymentByID(ctx, tid)
 	if err != nil {
-		if errors.Is(err, sdkerrors.ErrNotFound) && !trigger.IsValid() {
+		if errors.Is(err, sdkerrors.ErrNotFound) {
 			if err := sch.Delete(ctx, tid); err != nil {
 				return temporalclient.TranslateError(err, "delete schedule for %v", tid)
 			}
@@ -145,12 +145,12 @@ func (sch *Scheduler) activity(ctx context.Context, tid sdktypes.TriggerID) erro
 			return nil
 		}
 
-		if errors.Is(err, sdkerrors.ErrFailedPrecondition) {
-			sl.Infof("skipping execution for trigger %v: project not deployed", tid)
-			return nil
-		}
-
 		return temporalclient.TranslateError(err, "get trigger with active deployment %v", tid)
+	}
+
+	if !hasTrigger {
+		sl.Infof("skipping execution for trigger %v: project not deployed", tid)
+		return nil
 	}
 
 	eid, err := sch.dispatcher.Dispatch(ctx, sdktypes.NewEvent(tid).WithType("tick"), nil)

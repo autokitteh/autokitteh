@@ -130,7 +130,7 @@ func (db *gormdb) GetTriggerByID(ctx context.Context, triggerID sdktypes.Trigger
 	return scheme.ParseTrigger(*r)
 }
 
-func (db *gormdb) GetTriggerWithActiveDeploymentByID(ctx context.Context, triggerID sdktypes.TriggerID) (sdktypes.Trigger, error) {
+func (db *gormdb) GetTriggerWithActiveDeploymentByID(ctx context.Context, triggerID sdktypes.TriggerID) (sdktypes.Trigger, bool, error) {
 	var triggerAndDeployment struct {
 		scheme.Trigger
 		HasActiveDeployment bool `gorm:"column:has_active_deployment"`
@@ -145,16 +145,17 @@ func (db *gormdb) GetTriggerWithActiveDeploymentByID(ctx context.Context, trigge
 		First(&triggerAndDeployment).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return sdktypes.InvalidTrigger, sdkerrors.ErrNotFound // Trigger doesn't exist.
+			return sdktypes.InvalidTrigger, false, sdkerrors.ErrNotFound // Trigger doesn't exist.
 		}
-		return sdktypes.InvalidTrigger, translateError(err)
+		return sdktypes.InvalidTrigger, false, translateError(err)
 	}
 
 	if !triggerAndDeployment.HasActiveDeployment {
-		return sdktypes.InvalidTrigger, sdkerrors.ErrFailedPrecondition // Trigger exists but no active deployment.
+		return sdktypes.InvalidTrigger, false, nil // Trigger exists but no active deployment.
 	}
 
-	return scheme.ParseTrigger(triggerAndDeployment.Trigger)
+	trigger, err := scheme.ParseTrigger(triggerAndDeployment.Trigger)
+	return trigger, true, err
 }
 
 func (db *gormdb) ListTriggers(ctx context.Context, filter sdkservices.ListTriggersFilter) ([]sdktypes.Trigger, error) {
