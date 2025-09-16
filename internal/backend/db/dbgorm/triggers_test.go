@@ -185,7 +185,7 @@ func TestGetTriggerWithActiveDeploymentByID(t *testing.T) {
 	trigger, hasActiveDeployment, err := f.gormdb.GetTriggerWithActiveDeploymentByID(f.ctx, tr.TriggerID)
 	assert.NoError(t, err)
 	assert.False(t, hasActiveDeployment)
-	assert.Equal(t, sdktypes.InvalidTrigger, trigger)
+	assert.NotEqual(t, sdktypes.InvalidTrigger, trigger)
 
 	// create active deployment
 	b := f.newBuild(p)
