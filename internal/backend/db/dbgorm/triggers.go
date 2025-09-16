@@ -130,7 +130,7 @@ func (db *gormdb) GetTriggerByID(ctx context.Context, triggerID sdktypes.Trigger
 	return scheme.ParseTrigger(*r)
 }
 
-func (db *gormdb) GetTriggerWithActiveDeploymentByID(ctx context.Context, triggerID sdktypes.TriggerID) (sdktypes.Trigger, bool, error) {
+func (db *gormdb) GetTriggerWithActiveDeploymentByID(ctx context.Context, triggerID uuid.UUID) (sdktypes.Trigger, bool, error) {
 	var triggerAndDeployment struct {
 		scheme.Trigger
 		HasActiveDeployment bool `gorm:"column:has_active_deployment"`
@@ -141,7 +141,7 @@ func (db *gormdb) GetTriggerWithActiveDeploymentByID(ctx context.Context, trigge
 		Select("triggers.*, CASE WHEN deployments.deployment_id IS NOT NULL THEN true ELSE false END as has_active_deployment").
 		Joins("LEFT JOIN deployments ON triggers.project_id = deployments.project_id AND deployments.state = ? AND deployments.deleted_at IS NULL",
 			int32(sdktypes.DeploymentStateActive.ToProto())).
-		Where("triggers.trigger_id = ?", triggerID.UUIDValue()).
+		Where("triggers.trigger_id = ?", triggerID).
 		First(&triggerAndDeployment).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
