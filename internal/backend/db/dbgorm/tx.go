@@ -21,8 +21,8 @@ func (tx txImpl) LockProject(ctx context.Context, pid sdktypes.ProjectID) error 
 	return translateError(
 		tx.writer.
 			Clauses(clause.Locking{Strength: "UPDATE"}).
-			Where("id = ?", pid).
-			Find(&scheme.Project{}).
+			Where("project_id = ?", pid.UUIDValue()).
+			First(&scheme.Project{}). // want to make sure project exists.
 			Error,
 	)
 }

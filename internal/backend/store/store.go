@@ -39,10 +39,6 @@ func New(cfg *Config, db db.DB, l *zap.Logger) sdkservices.Store {
 	return &store{db: db, l: l, cfg: cfg}
 }
 
-func lockID(pid sdktypes.ProjectID) string {
-	return fmt.Sprintf("values:%v", pid.UUIDValue())
-}
-
 func (s *store) enforceLimits(
 	ctx context.Context,
 	tx db.TX,

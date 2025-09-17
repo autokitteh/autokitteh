@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"google.golang.org/protobuf/proto"
+	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -63,18 +64,19 @@ func (db *gormdb) GetStoreValue(ctx context.Context, pid sdktypes.ProjectID, key
 }
 
 func (db *gormdb) HasStoreKey(ctx context.Context, pid sdktypes.ProjectID, key string) (bool, error) {
-	var exists bool
-
 	err := db.reader.WithContext(ctx).
 		Model(&scheme.StoreValue{}).
 		Where("project_id = ? AND key == ?", pid.UUIDValue(), key).
-		Find(&exists).
+		First(&scheme.StoreValue{}).
 		Error
-	if err != nil {
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return false, nil
+	} else if err != nil {
 		return false, translateError(err)
 	}
 
-	return exists, nil
+	return true, nil
 }
 
 func (db *gormdb) CountStoreKeys(ctx context.Context, pid sdktypes.ProjectID) (int64, error) {
