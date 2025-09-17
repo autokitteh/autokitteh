@@ -88,7 +88,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		l := l.With(zap.String("webhook_id", webhookID))
 
 		ctx := r.Context()
-		cids, err := h.vars.FindConnectionIDs(ctx, h.integrationID, vars.PATKey, webhookID)
+		cids, err := h.vars.FindActiveConnectionIDs(ctx, h.integrationID, vars.PATKey, webhookID)
 		if err != nil {
 			l.Error("failed to find connection IDs", zap.Error(err))
 			common.HTTPError(w, http.StatusInternalServerError)
@@ -181,7 +181,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if installID != "" {
 		// App webhook.
-		icids, err := h.vars.FindConnectionIDs(ctx, h.integrationID, vars.InstallKey(appID, installID), "")
+		icids, err := h.vars.FindActiveConnectionIDs(ctx, h.integrationID, vars.InstallKey(appID, installID), "")
 		if err != nil {
 			l.Error("failed to find connection IDs", zap.Error(err))
 			common.HTTPError(w, http.StatusInternalServerError)
@@ -204,7 +204,7 @@ func (h handler) webhookSecret(r *http.Request) (string, error) {
 	}
 
 	ctx := r.Context()
-	cids, err := h.vars.FindConnectionIDs(ctx, h.integrationID, vars.AppID, appID)
+	cids, err := h.vars.FindActiveConnectionIDs(ctx, h.integrationID, vars.AppID, appID)
 	if err != nil {
 		return "", fmt.Errorf("failed to find connection IDs: %w", err)
 	}

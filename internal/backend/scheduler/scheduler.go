@@ -12,6 +12,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -40,10 +41,11 @@ type Scheduler struct {
 	sl         *zap.SugaredLogger
 	dispatcher sdkservices.Dispatcher
 	triggers   sdkservices.Triggers
+	db         db.DB
 }
 
-func New(l *zap.Logger, tc temporalclient.Client, cfg *Config) *Scheduler {
-	return &Scheduler{sl: l.Sugar(), temporal: tc, cfg: cfg}
+func New(l *zap.Logger, tc temporalclient.Client, db db.DB, cfg *Config) *Scheduler {
+	return &Scheduler{sl: l.Sugar(), temporal: tc, db: db, cfg: cfg}
 }
 
 func (sch *Scheduler) Start(ctx context.Context, dispatcher sdkservices.Dispatcher, triggers sdkservices.Triggers) error {
@@ -133,20 +135,21 @@ func (sch *Scheduler) activity(ctx context.Context, tid sdktypes.TriggerID) erro
 
 	ctx = authcontext.SetAuthnSystemUser(ctx)
 
-	t, err := sch.triggers.Get(ctx, tid)
+	_, hasActiveDeployment, err := sch.db.GetTriggerWithActiveDeploymentByID(ctx, tid.UUIDValue())
 	if err != nil {
-		if !errors.Is(err, sdkerrors.ErrNotFound) {
-			return temporalclient.TranslateError(err, "get trigger %v", tid)
+		if errors.Is(err, sdkerrors.ErrNotFound) {
+			if err := sch.Delete(ctx, tid); err != nil {
+				return temporalclient.TranslateError(err, "delete schedule for %v", tid)
+			}
+			sl.Infof("schedule removed for non-existent trigger %v", tid)
+			return nil
 		}
+
+		return temporalclient.TranslateError(err, "get trigger with active deployment %v", tid)
 	}
 
-	if !t.IsValid() {
-		sl.Warnf("trigger %v not found, removing schedule", tid)
-
-		if err := sch.Delete(ctx, tid); err != nil {
-			return temporalclient.TranslateError(err, "delete schedule for %v", tid)
-		}
-
+	if !hasActiveDeployment {
+		sl.Infof("skipping execution for trigger %v: project not deployed", tid)
 		return nil
 	}
 

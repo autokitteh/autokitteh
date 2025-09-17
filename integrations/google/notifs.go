@@ -51,7 +51,7 @@ func (h handler) handleCalNotification(w http.ResponseWriter, r *http.Request) {
 	// Find all the connection IDs associated with the watch ID.
 	ctx := extrazap.AttachLoggerToContext(l, r.Context())
 	name := vars.CalendarEventsWatchID
-	cids, err := h.vars.FindConnectionIDs(ctx, calendar.IntegrationID, name, channelID)
+	cids, err := h.vars.FindActiveConnectionIDs(ctx, calendar.IntegrationID, name, channelID)
 	if err != nil {
 		l.Error("Failed to find connection IDs", zap.Error(err))
 		common.HTTPError(w, http.StatusInternalServerError)
@@ -98,7 +98,7 @@ func (h handler) handleDriveNotification(w http.ResponseWriter, r *http.Request)
 	// Find all the connection IDs associated with the watch ID.
 	ctx := extrazap.AttachLoggerToContext(l, r.Context())
 	name := vars.DriveEventsWatchID
-	cids, err := h.vars.FindConnectionIDs(ctx, drive.IntegrationID, name, channelID)
+	cids, err := h.vars.FindActiveConnectionIDs(ctx, drive.IntegrationID, name, channelID)
 	if err != nil {
 		l.Error("Failed to find connection IDs", zap.Error(err))
 		common.HTTPError(w, http.StatusInternalServerError)
@@ -151,7 +151,7 @@ func (h handler) handleFormsNotification(w http.ResponseWriter, r *http.Request)
 
 	// Find all the connection IDs associated with the watch ID.
 	ctx := extrazap.AttachLoggerToContext(l, r.Context())
-	cids, err := h.vars.FindConnectionIDs(ctx, forms.IntegrationID, name, watchID)
+	cids, err := h.vars.FindActiveConnectionIDs(ctx, forms.IntegrationID, name, watchID)
 	if err != nil {
 		l.Error("Failed to find connection IDs", zap.Error(err))
 		common.HTTPError(w, http.StatusInternalServerError)
@@ -230,7 +230,7 @@ func (h handler) handleGmailNotification(w http.ResponseWriter, r *http.Request)
 	// Find all the connection IDs associated with the email address.
 	ctx := extrazap.AttachLoggerToContext(l, r.Context())
 	l.Debug(fmt.Sprintf("finding connections ids for email %s integrationID %s", notif.EmailAddress, gmail.IntegrationID))
-	cids, err := h.vars.FindConnectionIDs(ctx, gmail.IntegrationID, vars.UserEmail, notif.EmailAddress)
+	cids, err := h.vars.FindActiveConnectionIDs(ctx, gmail.IntegrationID, vars.UserEmail, notif.EmailAddress)
 	if err != nil {
 		l.Error("Failed to find connection IDs", zap.Error(err))
 		common.HTTPError(w, http.StatusInternalServerError)
