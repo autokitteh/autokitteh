@@ -63,17 +63,18 @@ func (db *gormdb) GetStoreValue(ctx context.Context, pid sdktypes.ProjectID, key
 }
 
 func (db *gormdb) HasStoreKey(ctx context.Context, pid sdktypes.ProjectID, key string) (bool, error) {
-	q := db.reader.WithContext(ctx).
+	var exists bool
+
+	err := db.reader.WithContext(ctx).
 		Model(&scheme.StoreValue{}).
 		Where("project_id = ? AND key == ?", pid.UUIDValue(), key).
-		Select("count(*)")
-
-	var count int64
-	if err := q.Count(&count).Error; err != nil {
+		Find(&exists).
+		Error
+	if err != nil {
 		return false, translateError(err)
 	}
 
-	return count > 0, nil
+	return exists, nil
 }
 
 func (db *gormdb) CountStoreKeys(ctx context.Context, pid sdktypes.ProjectID) (int64, error) {
