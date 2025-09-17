@@ -51,7 +51,7 @@ func Create(ctx context.Context, db db.DB, org sdktypes.Org) (sdktypes.OrgID, er
 func (o *orgs) Create(ctx context.Context, org sdktypes.Org) (sdktypes.OrgID, error) {
 	var oid sdktypes.OrgID
 
-	err := o.db.Transaction(ctx, func(tx db.DB) (err error) {
+	err := o.db.Transaction(ctx, func(tx db.TX) (err error) {
 		if oid, err = Create(ctx, tx, org); err != nil {
 			return
 		}
@@ -206,7 +206,7 @@ func (o *orgs) UpdateMember(ctx context.Context, m sdktypes.OrgMember, fm *sdkty
 
 	oid, uid := m.OrgID(), m.UserID()
 
-	return o.db.Transaction(ctx, func(tx db.DB) error {
+	return o.db.Transaction(ctx, func(tx db.TX) error {
 		curr, err := tx.GetOrgMember(ctx, oid, uid)
 		if err != nil {
 			return err

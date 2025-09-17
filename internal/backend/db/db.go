@@ -22,7 +22,7 @@ type Shared interface {
 
 	GormDB() (r, w *gorm.DB)
 
-	Transaction(context.Context, func(tx DB) error) error
+	Transaction(context.Context, func(tx TX) error) error
 
 	// -----------------------------------------------------------------------
 	// Returns sdkerrors.ErrAlreadyExists if either id or name is duplicate.
@@ -137,8 +137,11 @@ type Shared interface {
 	GetSecret(ctx context.Context, key string) (string, error)
 	DeleteSecret(ctx context.Context, key string) error
 
+	// -----------------------------------------------------------------------
 	SetStoreValue(ctx context.Context, pid sdktypes.ProjectID, key string, v sdktypes.Value) error
 	GetStoreValue(ctx context.Context, pid sdktypes.ProjectID, key string) (sdktypes.Value, error)
+	HasStoreKey(ctx context.Context, pid sdktypes.ProjectID, key string) (bool, error)
+	CountStoreKeys(ctx context.Context, pid sdktypes.ProjectID) (int64, error)
 
 	// If len(keys) == 0, it returns all keys.
 	// if getValues is true, it returns values for the keys. Otherwise, it returns only keys without values.
