@@ -37,7 +37,12 @@ func (ConnectionTraits) Validate(m *ConnectionPB) error {
 func (ConnectionTraits) StrictValidate(m *ConnectionPB) error {
 	return errors.Join(
 		mandatory("name", m.Name),
-		mandatory("org_id", m.OrgId),
+		// this is optional for backwards compatibility
+		// once the UI is updated this should be made mandatory
+		// mandatory("org_id", m.OrgId),
+		// This is mandatory for now until the UI is updated
+		// to always pass org_id and only project if needed
+		// mandatory("project_id", m.ProjectId),
 		mandatory("integration_id", m.IntegrationId),
 	)
 }

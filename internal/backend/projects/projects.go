@@ -263,7 +263,7 @@ func (ps *Projects) exportManifest(ctx context.Context, projectID sdktypes.Proje
 
 	p := manifest.Project{Name: prj.Name().String()}
 
-	cf := sdkservices.ListConnectionsFilter{ProjectID: projectID}
+	cf := sdkservices.ListConnectionsFilter{ProjectID: projectID, OrgID: prj.OrgID()}
 	conns, err := ps.DB.ListConnections(ctx, cf, false)
 	if err != nil {
 		return nil, err

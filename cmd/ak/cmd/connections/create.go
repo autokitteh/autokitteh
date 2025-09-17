@@ -24,9 +24,28 @@ var createCmd = common.StandardCommand(&cobra.Command{
 	Args:    cobra.ExactArgs(1),
 
 	RunE: func(cmd *cobra.Command, args []string) error {
-		r := resolver.Resolver{Client: common.Client()}
+		cli := common.Client()
+		r := resolver.Resolver{Client: cli}
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
+
+		if org == "" {
+			u, err := cli.Auth().WhoAmI(ctx)
+			if err != nil {
+				err := fmt.Errorf("org not provided and could not resolve current user: %w", err)
+				return common.NewExitCodeError(common.UnauthenticatedExitCode, err)
+			}
+
+			org = u.DefaultOrgID().String()
+		}
+
+		org, err := r.Org(ctx, org)
+		if err != nil {
+			err := fmt.Errorf("resolve org: %w", err)
+			return common.NewExitCodeError(common.GenericFailureExitCode, err)
+		}
+
+		orgID := org.String()
 
 		scope := sdktypes.ConnectionScopeOrg
 		pidStr := ""
@@ -56,7 +75,7 @@ var createCmd = common.StandardCommand(&cobra.Command{
 		c, err := sdktypes.ConnectionFromProto(&sdktypes.ConnectionPB{
 			IntegrationId: iid.String(),
 			ProjectId:     pidStr,
-			OrgId:         org,
+			OrgId:         orgID,
 			Name:          args[0],
 			Scope:         scope,
 		})
@@ -91,13 +110,13 @@ var createCmd = common.StandardCommand(&cobra.Command{
 
 func init() {
 	// Command-specific flags.
-	createCmd.Flags().StringVarP(&project, "project", "p", "", "project name or ID")
+	createCmd.Flags().StringVarP(&project, "project", "p", "", "project name or ID (creates a project-scoped connection)")
+	createCmd.Flags().StringVarP(&org, "org", "o", "", "organization name or ID (creates an org-scoped connection)")
+	// createCmd.MarkFlagsOneRequired("project", "org")
 	createCmd.MarkFlagsMutuallyExclusive("project", "org")
-	createCmd.MarkFlagsOneRequired("project", "org")
 
 	createCmd.Flags().StringVarP(&integration, "integration", "i", "", "integration name or ID")
 	kittehs.Must0(createCmd.MarkFlagRequired("integration"))
 
 	createCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "do not print initialization guidance")
-	createCmd.Flags().StringVarP(&org, "org", "o", "", "organization name or ID (for org-scoped connections)")
 }

@@ -56,9 +56,9 @@ func ParseBuild(b Build) (sdktypes.Build, error) {
 type Connection struct {
 	Base
 
-	ProjectID     *uuid.UUID `gorm:"index;type:uuid;not null"`
-	OrgID         uuid.UUID  `gorm:"index;type:uuid"`
-	Scope         string     //`gorm:"not null"` // org, project
+	ProjectID     *uuid.UUID `gorm:"index;type:uuid;"`
+	OrgID         uuid.UUID  `gorm:"index;type:uuid;not null"`
+	Scope         string     `gorm:"not null"` // org, project
 	ConnectionID  uuid.UUID  `gorm:"primaryKey;type:uuid;not null"`
 	IntegrationID *uuid.UUID `gorm:"index;type:uuid"`
 	Name          string
