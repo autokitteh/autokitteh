@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
@@ -19,8 +20,9 @@ type txImpl struct {
 func (tx txImpl) LockProject(ctx context.Context, pid sdktypes.ProjectID) error {
 	return translateError(
 		tx.writer.
-			Model(&scheme.Project{}).
+			Clauses(clause.Locking{Strength: "UPDATE"}).
 			Where("id = ?", pid).
+			Find(&scheme.Project{}).
 			Error,
 	)
 }
