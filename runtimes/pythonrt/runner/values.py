@@ -3,7 +3,6 @@
 Wraps and unwraps autokitteh values.
 """
 
-from collections import namedtuple
 from datetime import UTC, datetime, timedelta
 from typing import Any, Callable
 
