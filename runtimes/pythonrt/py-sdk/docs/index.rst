@@ -146,6 +146,14 @@ autokitteh.microsoft module
    :undoc-members:
    :show-inheritance:
 
+autokitteh.notion module
+---------------------------
+
+.. automodule:: autokitteh.notion
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 autokitteh.oauth2_session module
 --------------------------------
 
