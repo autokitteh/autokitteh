@@ -269,19 +269,11 @@ func (v Value) UnwrapInto(dst any) error { return UnwrapValueInto(dst, v) }
 
 // An unwrapper that is always safe to serialize to string afterwards.
 var valueStringUnwrapper = ValueWrapper{
-	SafeForJSON: true,
+	SafeForJSON:         true,
+	UnwrapStructsAsJSON: true,
 	Preunwrap: func(v Value) (Value, error) {
 		if v.IsFunction() {
 			return NewStringValuef("|function: %v|", v.GetFunction().Name()), nil
-		}
-
-		if v.IsStruct() {
-			ctor := v.GetStruct().Ctor()
-			str, err := ctor.ToString()
-			if err != nil {
-				str = ctor.String()
-			}
-			return NewStringValuef("|struct: %v|", str), nil
 		}
 
 		return v, nil
