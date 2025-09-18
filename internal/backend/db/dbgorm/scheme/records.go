@@ -56,8 +56,9 @@ func ParseBuild(b Build) (sdktypes.Build, error) {
 type Connection struct {
 	Base
 
-	ProjectID uuid.UUID `gorm:"index;type:uuid;not null"`
-
+	ProjectID     *uuid.UUID `gorm:"index;type:uuid;"`
+	OrgID         uuid.UUID  `gorm:"index;type:uuid;not null"`
+	Scope         string     `gorm:"not null"` // org, project
 	ConnectionID  uuid.UUID  `gorm:"primaryKey;type:uuid;not null"`
 	IntegrationID *uuid.UUID `gorm:"index;type:uuid"`
 	Name          string
@@ -76,10 +77,19 @@ type Connection struct {
 func (Connection) IDFieldName() string { return "connection_id" }
 
 func ParseConnection(c Connection) (sdktypes.Connection, error) {
+	projectID, scope := "", sdktypes.ConnectionScopeOrg
+	if c.Scope == sdktypes.ConnectionScopeProject {
+		projectID = sdktypes.NewIDFromUUID[sdktypes.ProjectID](*c.ProjectID).String()
+		scope = sdktypes.ConnectionScopeProject
+
+	}
+
 	conn, err := sdktypes.StrictConnectionFromProto(&sdktypes.ConnectionPB{
 		ConnectionId:  sdktypes.NewIDFromUUID[sdktypes.ConnectionID](c.ConnectionID).String(),
 		IntegrationId: sdktypes.NewIDFromUUIDPtr[sdktypes.IntegrationID](c.IntegrationID).String(),
-		ProjectId:     sdktypes.NewIDFromUUID[sdktypes.ProjectID](c.ProjectID).String(),
+		ProjectId:     projectID,
+		Scope:         scope,
+		OrgId:         sdktypes.NewIDFromUUID[sdktypes.OrgID](c.OrgID).String(),
 		Name:          c.Name,
 		Status: &sdktypes.StatusPB{
 			Code:    commonv1.Status_Code(c.StatusCode),

@@ -27,6 +27,16 @@ type Connections struct {
 func New(c Connections) sdkservices.Connections { return &c }
 
 func (c *Connections) Create(ctx context.Context, conn sdktypes.Connection) (sdktypes.ConnectionID, error) {
+	// TODO: This is for backwards compatibility.
+	// We should remove it once the UI is updated to always pass org_id
+	if conn.OrgID() == sdktypes.InvalidOrgID {
+		orgID, err := c.DB.GetOrgIDOf(ctx, conn.ProjectID())
+		if err != nil {
+			return sdktypes.InvalidConnectionID, err
+		}
+		conn = conn.WithOrgID(orgID)
+	}
+
 	if err := authz.CheckContext(
 		ctx,
 		sdktypes.InvalidConnectionID,
@@ -34,6 +44,7 @@ func (c *Connections) Create(ctx context.Context, conn sdktypes.Connection) (sdk
 		authz.WithData("connection", conn),
 		authz.WithAssociationWithID("integration", conn.IntegrationID()),
 		authz.WithAssociationWithID("project", conn.ProjectID()),
+		authz.WithAssociationWithID("org", conn.OrgID()),
 	); err != nil {
 		return sdktypes.InvalidConnectionID, err
 	}
@@ -58,6 +69,10 @@ func (c *Connections) Create(ctx context.Context, conn sdktypes.Connection) (sdk
 		if status, err = i.GetConnectionStatus(ctx, sdktypes.InvalidConnectionID); err != nil {
 			return sdktypes.InvalidConnectionID, err
 		}
+	}
+
+	if conn.Scope() == "" {
+		conn = conn.WithScope(sdktypes.ConnectionScopeOrg)
 	}
 
 	conn = conn.WithStatus(status).WithNewID()
@@ -90,7 +105,7 @@ func (c *Connections) Delete(ctx context.Context, id sdktypes.ConnectionID) erro
 }
 
 func (c *Connections) List(ctx context.Context, filter sdkservices.ListConnectionsFilter) ([]sdktypes.Connection, error) {
-	if !filter.AnyIDSpecified() {
+	if filter.OrgID == sdktypes.InvalidOrgID {
 		filter.OrgID = authcontext.GetAuthnInferredOrgID(ctx)
 	}
 
