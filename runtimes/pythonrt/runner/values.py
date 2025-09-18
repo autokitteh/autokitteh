@@ -195,7 +195,7 @@ def unwrap(v: pb.Value, custom: Callable[[pb.Value], Any] = None) -> Any:
     if v.HasField("bytes"):
         return v.bytes.v
     if v.HasField("struct"):
-        return AttrDict({k: unwrap(v) for k, v in v.struct.fields.items()})
+        return AttrDict({k: unwrap(v, custom) for k, v in v.struct.fields.items()})
     if v.HasField("time"):
         return v.time.v.ToDatetime(UTC)
     if v.HasField("duration"):
