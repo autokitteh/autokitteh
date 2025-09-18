@@ -3,7 +3,6 @@ package store
 import (
 	"os"
 	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -41,7 +40,7 @@ func TestMain(m *testing.M) {
 func TestMutate(t *testing.T) {
 	db := dbtest.NewTestDB(t, o, ps[0], ps[1])
 
-	store := New(Configs.Default, db, zap.NewNop())
+	store := New(db, zap.NewNop())
 
 	// Each test is not independent - it relies on the previous state.
 	tests := []struct {
@@ -199,51 +198,4 @@ func TestMutate(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestLimits(t *testing.T) {
-	db := dbtest.NewTestDB(t, o, ps[0], ps[1])
-
-	store := New(Configs.Default, db, zap.NewNop())
-
-	v, err := store.Mutate(t.Context(), pids[0], "k1", "set", sdktypes.NewStringValue(strings.Repeat("x", Configs.Default.MaxValueSize+1)))
-	assert.EqualError(t, err, "value size 65545 exceeds maximum allowed size 65536 for a single value")
-	assert.False(t, v.IsValid())
-
-	v, err = store.Mutate(t.Context(), pids[0], "k1", "set", sdktypes.NewStringValue("meow"))
-	assert.NoError(t, err)
-	assert.True(t, v.IsNothing())
-
-	n := Configs.Default.MaxStoreKeysPerProject
-
-	for i := range n {
-		v, err = store.Mutate(t.Context(), pids[0], "k"+strconv.Itoa(i), "set", sdktypes.NewStringValue("meow"))
-		assert.NoError(t, err)
-		assert.True(t, v.IsNothing())
-	}
-
-	v, err = store.Mutate(t.Context(), pids[0], "k"+strconv.Itoa(n+1), "set", sdktypes.NewStringValue("meow"))
-	assert.EqualError(t, err, "maximum number of store keys (64) reached for project")
-	assert.False(t, v.IsValid())
-
-	// make sure get on a "new" non-existing key works.
-	v, err = store.Mutate(t.Context(), pids[0], "k"+strconv.Itoa(n+1), "get")
-	assert.NoError(t, err)
-	assert.True(t, v.IsNothing())
-
-	v, err = store.Mutate(t.Context(), pids[0], "k0", "get")
-	assert.NoError(t, err)
-	assert.True(t, v.Equal(sdktypes.NewStringValue("meow")))
-
-	v, err = store.Mutate(t.Context(), pids[0], "k0", "del")
-	assert.NoError(t, err)
-	assert.True(t, v.IsNothing())
-
-	v, err = store.Mutate(t.Context(), pids[0], "k"+strconv.Itoa(n+1), "set", sdktypes.NewStringValue("meow"))
-	assert.NoError(t, err)
-	assert.True(t, v.IsNothing())
-
-	v, err = store.Mutate(t.Context(), pids[0], "k0", "set", sdktypes.NewStringValue("meow"))
-	assert.EqualError(t, err, "maximum number of store keys (64) reached for project")
-	assert.False(t, v.IsValid())
 }

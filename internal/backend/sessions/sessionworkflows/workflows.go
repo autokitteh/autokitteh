@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -111,6 +112,7 @@ func memo(session sdktypes.Session, oid sdktypes.OrgID) map[string]string {
 		"project_uuid":    session.ProjectID().UUIDValue().String(),
 		"org_id":          oid.String(),
 		"org_uuid":        oid.UUIDValue().String(),
+		"durable":         strconv.FormatBool(session.IsDurable()),
 	}
 
 	if session.ParentSessionID().IsValid() {
@@ -169,6 +171,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params sessionWorkfl
 		zap.String("run_id", wi.WorkflowExecution.RunID),
 		zap.Int32("attempt", wi.Attempt),
 		zap.String("parent_session_id", parentSessionID.String()),
+		zap.Bool("is_durable", session.IsDurable()),
 	)
 
 	didNotifyDone := false

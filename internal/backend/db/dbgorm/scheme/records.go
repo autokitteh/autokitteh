@@ -233,6 +233,7 @@ type Trigger struct {
 	EventType    string
 	Filter       string
 	CodeLocation string
+	IsDurable    bool `gorm:"not null;default:false"`
 
 	Name string
 	// Makes sure name is unique - this is the project_id with name.
@@ -284,6 +285,7 @@ func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
 		Name:         e.Name,
 		WebhookSlug:  e.WebhookSlug,
 		Schedule:     e.Schedule,
+		IsDurable:    e.IsDurable,
 	})
 }
 
@@ -348,6 +350,7 @@ type Session struct {
 	Entrypoint       string
 	Inputs           datatypes.JSON
 	Memo             datatypes.JSON
+	IsDurable        bool `gorm:"not null;default:false"`
 
 	UpdatedBy uuid.UUID `gorm:"type:uuid"`
 	UpdatedAt time.Time
@@ -396,6 +399,7 @@ func ParseSession(s Session) (sdktypes.Session, error) {
 		UpdatedAt:    timestamppb.New(s.UpdatedAt),
 		State:        sessionsv1.SessionStateType(s.CurrentStateType),
 		Memo:         memo,
+		IsDurable:    s.IsDurable,
 	})
 	if err != nil {
 		return sdktypes.InvalidSession, err

@@ -76,7 +76,7 @@ func normalizeOutput(ps string) (string, error) {
 }
 
 var testCmd = common.StandardCommand(&cobra.Command{
-	Use:   "test <txtar-file> [--build-id=...] [--project project] [--deployment-id=...] [--entrypoint=...] [--quiet] [--timeout DURATION] [--poll-interval DURATION] [--no-timestamps]",
+	Use:   "test <txtar-file> [--build-id=...] [--project project] [--deployment-id=...] [--entrypoint=...] [--quiet] [--timeout DURATION] [--poll-interval DURATION] [--no-timestamps] [--durable]",
 	Short: "Test a session run",
 	Args:  cobra.ExactArgs(1),
 
@@ -150,7 +150,7 @@ var testCmd = common.StandardCommand(&cobra.Command{
 			return fmt.Errorf("open error.txt: %w", err)
 		}
 
-		s := sdktypes.NewSession(bid, ep, nil, nil).WithDeploymentID(did).WithProjectID(pid)
+		s := sdktypes.NewSession(bid, ep, nil, nil).WithDeploymentID(did).WithProjectID(pid).SetDurable(durable)
 
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
@@ -230,7 +230,7 @@ var testCmd = common.StandardCommand(&cobra.Command{
 			}
 		}
 
-		if expectedCallsTxt != nil {
+		if durable && expectedCallsTxt != nil {
 			results, err := sessions().GetLog(ctx, sdkservices.SessionLogRecordsFilter{
 				SessionID: sid,
 				Types:     sdktypes.CallSpecSessionLogRecordType,
@@ -261,6 +261,7 @@ func init() {
 	testCmd.Flags().DurationVarP(&watchTimeout, "timeout", "t", 0, "watch timeout duration")
 	testCmd.Flags().BoolVar(&noTimestamps, "no-timestamps", false, "omit timestamps from watch output")
 	testCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "don't print anything, just wait to finish")
+	testCmd.Flags().BoolVarP(&durable, "durable", "D", false, "durable run")
 	testCmd.Flags().StringVarP(&project, "project", "p", "", "project name or ID")
 	testCmd.Flags().StringVarP(&deploymentID, "deployment-id", "d", "", "deployment ID")
 	testCmd.Flags().StringVarP(&buildID, "build-id", "b", "", "build ID, mutually exclusive with --deployment-id")

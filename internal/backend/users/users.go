@@ -125,7 +125,7 @@ func (u *users) Create(ctx context.Context, user sdktypes.User) (sdktypes.UserID
 
 	var uid sdktypes.UserID
 
-	err := u.db.Transaction(ctx, func(db db.TX) error {
+	err := u.db.Transaction(ctx, func(db db.DB) error {
 		var (
 			err   error
 			roles []sdktypes.Symbol

@@ -117,7 +117,7 @@ func (s *server) FindConnectionID(ctx context.Context, req *connect.Request[vars
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	cids, err := s.vars.FindActiveConnectionIDs(ctx, iid, n, msg.Value)
+	cids, err := s.vars.FindConnectionIDs(ctx, iid, n, msg.Value)
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}

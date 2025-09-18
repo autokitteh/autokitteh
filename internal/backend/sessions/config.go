@@ -18,6 +18,8 @@ type Config struct {
 	Workflows     sessionworkflows.Config `koanf:"workflows"`
 	Calls         sessioncalls.Config     `koanf:"calls"`
 	ExternalStart ExternalStartConfig     `koanf:"external_start"`
+
+	EnableNondurableSessions bool `koanf:"enable_nondurable_sessions"`
 }
 
 var defaultConfig = Config{
@@ -46,6 +48,7 @@ var Configs = configset.Set[Config]{
 	Dev: func() *Config {
 		c := defaultConfig
 		c.Workflows.Test = true
+		c.EnableNondurableSessions = true
 		return &c
 	}(),
 }

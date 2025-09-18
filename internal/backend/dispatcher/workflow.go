@@ -202,6 +202,7 @@ func newSession(event sdktypes.Event, inputs map[string]sdktypes.Value, data ses
 	return sdktypes.NewSession(data.Deployment.BuildID(), data.CodeLocation, inputs, memo).
 			WithDeploymentID(data.Deployment.ID()).
 			WithEventID(event.ID()).
-			WithProjectID(pid),
+			WithProjectID(pid).
+			SetDurable(data.Trigger.IsDurable()),
 		nil
 }
