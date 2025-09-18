@@ -140,14 +140,35 @@ var testCmd = common.StandardCommand(&cobra.Command{
 			}
 		}
 
-		expectedCallsTxt, err := fs.ReadFile(txtarFS, "calls.txt")
-		if err != nil && !errors.Is(err, os.ErrNotExist) {
-			return fmt.Errorf("open calls.txt: %w", err)
+		var expectedCallsTxt []byte
+
+		if durable {
+			expectedCallsTxt, err = fs.ReadFile(txtarFS, "calls.txt")
+			if err != nil && !errors.Is(err, os.ErrNotExist) {
+				return fmt.Errorf("open calls.txt: %w", err)
+			}
 		}
 
-		expectedErrTxt, err := fs.ReadFile(txtarFS, "error.txt")
-		if err != nil && !errors.Is(err, os.ErrNotExist) {
-			return fmt.Errorf("open error.txt: %w", err)
+		var (
+			expectedErrTxt []byte
+			errPath        string
+		)
+
+		if _, err := fs.Stat(txtarFS, "error.txt"); err == nil {
+			errPath = "error.txt"
+		} else if durable {
+			if _, err := fs.Stat(txtarFS, "error.durable.txt"); err == nil {
+				errPath = "error.durable.txt"
+			}
+		} else if _, err := fs.Stat(txtarFS, "error.nondurable.txt"); err == nil {
+			errPath = "error.nondurable.txt"
+		}
+
+		if errPath != "" {
+			expectedErrTxt, err = fs.ReadFile(txtarFS, errPath)
+			if err != nil && !errors.Is(err, os.ErrNotExist) {
+				return fmt.Errorf("open %s: %w", errPath, err)
+			}
 		}
 
 		s := sdktypes.NewSession(bid, ep, nil, nil).WithDeploymentID(did).WithProjectID(pid).SetDurable(durable)
@@ -230,7 +251,7 @@ var testCmd = common.StandardCommand(&cobra.Command{
 			}
 		}
 
-		if durable && expectedCallsTxt != nil {
+		if expectedCallsTxt != nil {
 			results, err := sessions().GetLog(ctx, sdkservices.SessionLogRecordsFilter{
 				SessionID: sid,
 				Types:     sdktypes.CallSpecSessionLogRecordType,

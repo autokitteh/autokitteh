@@ -312,7 +312,7 @@ func (s *sessions) StartInternal(ctx context.Context, session sdktypes.Session) 
 		return sdktypes.InvalidSessionID, fmt.Errorf("start session: %w", err)
 	}
 
-	if err := s.workflows.StartWorkflow(ctx, session, sessionworkflows.StartWorkflowOptions{}); err != nil {
+	if err := s.workflows.StartWorkflow(ctx, session); err != nil {
 		err = fmt.Errorf("start workflow: %w", err)
 		if uerr := s.svcs.DB.UpdateSessionState(ctx, session.ID(), sdktypes.NewSessionStateError(err, nil)); uerr != nil {
 			l.Sugar().With("err", err).Error("update session state: %v")

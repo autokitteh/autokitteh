@@ -21,10 +21,7 @@ func (w *sessionWorkflow) startCallbackSpan(ctx context.Context, name string) (c
 
 func (w *sessionWorkflow) start(wctx workflow.Context) func(context.Context, sdktypes.RunID, sdktypes.Symbol, sdktypes.CodeLocation, map[string]sdktypes.Value, map[string]string) (sdktypes.SessionID, error) {
 	return func(ctx context.Context, rid sdktypes.RunID, project sdktypes.Symbol, loc sdktypes.CodeLocation, inputs map[string]sdktypes.Value, memo map[string]string) (sdktypes.SessionID, error) {
-		if activity.IsActivity(ctx) {
-			// TODO(ENG-2258): Work in activity.
-			return sdktypes.InvalidSessionID, errForbiddenInActivity
-		}
+		inActivity := activity.IsActivity(ctx)
 
 		_, span := w.startCallbackSpan(ctx, "start")
 		defer span.End()
@@ -36,34 +33,57 @@ func (w *sessionWorkflow) start(wctx workflow.Context) func(context.Context, sdk
 		l.Info("child session start requested")
 
 		data := w.data
+		parentSessionID := data.Session.ID()
 
-		projectID := data.Session.ProjectID()
-		buildID := data.Session.BuildID()
-
-		if project.IsValid() {
-			var resp getProjectIDAndActiveBuildIDResponse
-			if err := workflow.ExecuteActivity(wctx, getProjectIDAndActiveBuildID, &getProjectIDAndActiveBuildIDParams{Project: project, OrgID: data.OrgID}).Get(wctx, &resp); err != nil {
-				return sdktypes.InvalidSessionID, fmt.Errorf("could not get active build ID for project %s: %w", project, err)
-			}
-			buildID = resp.BuildID
-			projectID = resp.ProjectID
-
-		}
-
-		data.Session = sdktypes.NewSession(buildID, loc, inputs, memo).
-			WithParentSessionID(data.Session.ID()).
+		data.Session = sdktypes.NewSession(data.Session.BuildID(), loc, inputs, memo).
+			WithParentSessionID(parentSessionID).
 			WithDeploymentID(data.Session.DeploymentID()).
-			WithProjectID(projectID).
+			WithProjectID(data.Session.ProjectID()).
 			SetDurable(data.Session.IsDurable())
 
-		sid, err := w.ws.StartChildWorkflow(wctx, data.Session)
+		if project.IsValid() {
+			params := getProjectIDAndActiveBuildIDParams{Project: project, OrgID: data.OrgID}
+
+			var (
+				resp *getProjectIDAndActiveBuildIDResponse
+				err  error
+			)
+
+			if inActivity {
+				resp, err = w.ws.getProjectIDAndActiveBuildIDActivity(ctx, params)
+			} else {
+				err = workflow.ExecuteActivity(wctx, getProjectIDAndActiveBuildIDActivityName, &params).Get(wctx, &resp)
+			}
+
+			if err != nil {
+				return sdktypes.InvalidSessionID, fmt.Errorf("could not get active build ID for project %s: %w", project, err)
+			}
+
+			data.Session = data.Session.
+				WithProjectID(resp.ProjectID).
+				WithBuildID(resp.BuildID)
+
+			l = l.With(zap.Any("child_project_id", resp.ProjectID), zap.Any("child_build_id", resp.BuildID))
+		}
+
+		var (
+			sid sdktypes.SessionID
+			err error
+		)
+
+		if inActivity {
+			sid, err = w.ws.startChildSessionActivity(ctx, data.Session)
+		} else {
+			sid, err = w.ws.StartChildWorkflow(wctx, data.Session)
+		}
+
 		if err != nil {
 			return sdktypes.InvalidSessionID, err
 		}
 
 		data.Session = data.Session.WithID(sid)
 
-		w.l.Info("child session started", zap.Any("child", sid), zap.Any("parent", w.data.Session.ID()))
+		l.Info("child session "+sid.String()+" of "+parentSessionID.String()+" started", zap.Any("child_session", data.Session))
 
 		return sid, nil
 	}
