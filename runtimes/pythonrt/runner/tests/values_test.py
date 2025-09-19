@@ -56,19 +56,6 @@ wrap_test_cases = [
         id="dict",
     ),
     pytest.param(
-        namedtuple("Point", ["y", "x"])(2, 1),
-        pb.Value(
-            struct=pb.Struct(
-                ctor=pb.Value(string=pb.String(v="Point")),
-                fields={
-                    "x": intv(1),
-                    "y": intv(2),
-                },
-            )
-        ),
-        id="namedtuple",
-    ),
-    pytest.param(
         timedelta(days=1),
         pb.Value(duration=pb.Duration(v=duration_pb2.Duration(seconds=86400))),
         id="timedelta",
@@ -129,7 +116,7 @@ def test_special_wraps():
 
     assert wrap(C()) == cv
 
-    assert unwrap(cv) == namedtuple("C", ["a", "b"])(1, "meow")
+    assert unwrap(cv) == {"a": 1, "b": "meow"}
 
     class D:
         __slots__ = ("a", "b")
@@ -142,7 +129,20 @@ def test_special_wraps():
 
     assert wrap(D()) == dv
 
-    assert unwrap(dv) == namedtuple("D", ["a", "b"])(1, "meow")
+    unw = unwrap(dv)
+    assert unw == {"a": 1, "b": "meow"}
+    assert unw.a == 1
+
+    t = namedtuple("Point", ["y", "x"])(2, 1)
+    assert wrap(t) == pb.Value(
+        struct=pb.Struct(
+            ctor=pb.Value(string=pb.String(v="Point")),
+            fields={
+                "x": intv(1),
+                "y": intv(2),
+            },
+        )
+    )
 
 
 def test_safe_wrap():
