@@ -240,7 +240,14 @@ func (s *Service) handleSyncResponse(ctx context.Context, w http.ResponseWriter,
 			}
 
 			if v := r.GetOutcome(); v.IsValid() {
-				more, err := s.handleOutcome(w, v, firstOutcomeHandled)
+				outcome, err := parseOutcomeValue(v)
+				if err != nil {
+					sl.Errorw("failed to parse outcome value", "err", err)
+					http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+					return
+				}
+
+				more, err := s.writeOutcome(w, outcome, firstOutcomeHandled)
 				if err != nil {
 					sl.Errorw("failed to handle outcome", "err", err)
 					http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -257,12 +264,7 @@ func (s *Service) handleSyncResponse(ctx context.Context, w http.ResponseWriter,
 	}
 }
 
-func (s *Service) handleOutcome(w http.ResponseWriter, v sdktypes.Value, firstOutcomeHandled bool) (more bool, err error) {
-	outcome, err := parseOutcomeValue(v)
-	if err != nil {
-		return false, fmt.Errorf("parse outcome value: %w", err)
-	}
-
+func (s *Service) writeOutcome(w http.ResponseWriter, outcome httpOutcome, firstOutcomeHandled bool) (more bool, err error) {
 	body, err := outcome.BodyBytes()
 	if err != nil {
 		return false, fmt.Errorf("get outcome body bytes: %w", err)
