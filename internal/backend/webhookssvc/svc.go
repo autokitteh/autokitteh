@@ -139,23 +139,27 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	s.handleSyncResponse(ctx, w, resp.SessionIDs, sl)
+}
+
+func (s *Service) handleSyncResponse(ctx context.Context, w http.ResponseWriter, sids []sdktypes.SessionID, sl *zap.SugaredLogger) {
 	w.Header().Set("Connection", "keep-alive")
 
-	if len(resp.SessionIDs) == 0 {
+	if len(sids) == 0 {
 		sl.Warnw("no session was created for event")
 		http.Error(w, "No session was created for event", http.StatusBadGateway)
 		return
 	}
 
-	if len(resp.SessionIDs) > 1 {
-		sl.Warnw("multiple sessions were created for event", "session_ids", resp.SessionIDs)
+	if len(sids) > 1 {
+		sl.Warnw("multiple sessions were created for event", "session_ids", sids)
 		http.Error(w, "Multiple sessions were created for event", http.StatusBadGateway)
 		return
 	}
 
-	session, err := s.db.GetSession(ctx, resp.SessionIDs[0])
+	session, err := s.db.GetSession(ctx, sids[0])
 	if err != nil {
-		sl.Errorw("get session failed", "session_id", resp.SessionIDs[0], "err", err)
+		sl.Errorw("get session failed", "session_id", sids[0], "err", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
@@ -169,34 +173,29 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var (
-		firstResponseSent bool
-		skip              int32 // no need to reprocess records we've already seen.
+		firstOutcomeHandled bool
+		skip                int32 // no need to reprocess records we've already seen.
 	)
 
 	for {
-		var pollTimeout <-chan time.Time
-
-		if skip == 0 {
-			pollTimeout = time.After(0)
-		} else {
+		if skip > 0 {
 			// delay poll only after first iteration.
-			pollTimeout = time.After(s.cfg.SessionOutcomePollInterval)
-		}
 
-		select {
-		case <-pollTimeout:
-			// nop
-		case <-ctx.Done():
-			if ctx.Err() == context.DeadlineExceeded {
-				// timeout
-				sl.Debugw("timed out waiting for session to complete")
-				w.WriteHeader(http.StatusGatewayTimeout)
-			} else {
-				// cancelled
-				sl.Debugw("request context cancelled", "err", ctx.Err())
-				w.WriteHeader(http.StatusRequestTimeout)
+			select {
+			case <-time.After(s.cfg.SessionOutcomePollInterval):
+				// nop
+			case <-ctx.Done():
+				if ctx.Err() == context.DeadlineExceeded {
+					// timeout
+					sl.Debugw("timed out waiting for session to complete")
+					w.WriteHeader(http.StatusGatewayTimeout)
+				} else {
+					// cancelled
+					sl.Debugw("request context cancelled", "err", ctx.Err())
+					w.WriteHeader(http.StatusRequestTimeout)
+				}
+				return
 			}
-			return
 		}
 
 		log, err := s.db.GetSessionLog(
@@ -241,59 +240,64 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 
 			if v := r.GetOutcome(); v.IsValid() {
-				outcome, err := parseOutcomeValue(v)
+				more, err := s.handleOutcome(w, v, firstOutcomeHandled)
 				if err != nil {
-					sl.Errorw("failed to parse outcome value", "value", v, "err", err)
+					sl.Errorw("failed to handle outcome", "err", err)
 					http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 					return
 				}
 
-				body, err := outcome.BodyBytes()
-				if err != nil {
-					sl.Errorw("failed to get outcome body bytes", "value", v, "err", err)
-					http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+				if !more {
 					return
 				}
 
-				if !firstResponseSent {
-					var hadContentType bool
-
-					for k, v := range outcome.Headers {
-						w.Header().Set(k, v)
-
-						if strings.ToLower(k) == "content-type" {
-							hadContentType = true
-						}
-					}
-
-					if !hadContentType && outcome.JSON.IsValid() {
-						w.Header().Set("Content-Type", "application/json")
-					}
-
-					code := outcome.StatusCode
-					if code == 0 {
-						code = http.StatusOK
-					}
-
-					w.WriteHeader(code)
-
-					firstResponseSent = true
-				}
-
-				w.Write(body)
-
-				if flusher, ok := w.(http.Flusher); ok {
-					flusher.Flush()
-				}
-
-				if !outcome.More {
-					return
-				}
+				firstOutcomeHandled = true
 			}
 		}
 	}
+}
 
-	// TODO: Send default response code if none sent?
+func (s *Service) handleOutcome(w http.ResponseWriter, v sdktypes.Value, firstOutcomeHandled bool) (more bool, err error) {
+	outcome, err := parseOutcomeValue(v)
+	if err != nil {
+		return false, fmt.Errorf("parse outcome value: %w", err)
+	}
+
+	body, err := outcome.BodyBytes()
+	if err != nil {
+		return false, fmt.Errorf("get outcome body bytes: %w", err)
+	}
+
+	if !firstOutcomeHandled {
+		var hadContentType bool
+
+		for k, v := range outcome.Headers {
+			w.Header().Set(k, v)
+
+			if strings.ToLower(k) == "content-type" {
+				hadContentType = true
+			}
+		}
+
+		if !hadContentType && outcome.JSON.IsValid() {
+			w.Header().Set("Content-Type", "application/json")
+		}
+
+		code := outcome.StatusCode
+		if code == 0 {
+			code = http.StatusOK
+		}
+
+		w.WriteHeader(code)
+	}
+
+	w.Write(body)
+
+	if flusher, ok := w.(http.Flusher); ok {
+		flusher.Flush()
+	}
+
+	return outcome.More, nil
 }
 
 type httpOutcome struct {
