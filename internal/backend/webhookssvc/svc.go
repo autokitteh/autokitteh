@@ -331,12 +331,12 @@ func parseOutcomeValue(v sdktypes.Value) (outcome httpOutcome, err error) {
 //
 // If neither Body nor JSON is set, nil and no error are returned.
 func (o httpOutcome) WriteBody(w io.Writer) error {
-	if o.Body.IsValid() && o.Json.IsValid() {
-		return errors.New("outcome cannot have both 'body' and 'json' fields set together")
-	}
-
 	var b sdktypes.Value
-	if o.Body.IsValid() {
+
+	switch {
+	case o.Body.IsValid() && o.Json.IsValid():
+		return errors.New("outcome cannot have both 'body' and 'json' fields set together")
+	case o.Body.IsValid():
 		if v := o.Body.GetString(); v.IsValid() {
 			if _, err := w.Write([]byte(v.Value())); err != nil {
 				return fmt.Errorf("write body string: %w", err)
@@ -352,9 +352,9 @@ func (o httpOutcome) WriteBody(w io.Writer) error {
 		}
 
 		b = o.Body
-	} else if o.Json.IsValid() {
+	case o.Json.IsValid():
 		b = o.Json
-	} else {
+	default:
 		// nothing to write
 		return nil
 	}
