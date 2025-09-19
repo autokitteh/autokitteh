@@ -79,7 +79,7 @@ func (d *deployments) Activate(ctx context.Context, id sdktypes.DeploymentID) er
 	}
 
 	l := d.l.With(zap.String("deployment_id", id.String()))
-	err := d.db.Transaction(ctx, func(tx db.TX) error {
+	err := d.db.Transaction(ctx, func(tx db.DB) error {
 		deployment, err := tx.GetDeployment(ctx, id)
 		if err != nil {
 			return fmt.Errorf("get deployment: %w", err)
@@ -125,7 +125,7 @@ func (d *deployments) Test(ctx context.Context, id sdktypes.DeploymentID) error 
 		return err
 	}
 
-	return d.db.Transaction(ctx, func(tx db.TX) error {
+	return d.db.Transaction(ctx, func(tx db.DB) error {
 		deployment, err := tx.GetDeployment(ctx, id)
 		if err != nil {
 			return fmt.Errorf("get deployment: %w", err)
@@ -170,7 +170,7 @@ func (d *deployments) Deactivate(ctx context.Context, id sdktypes.DeploymentID) 
 		return err
 	}
 
-	return d.db.Transaction(ctx, func(tx db.TX) error { return deactivate(ctx, tx, id) })
+	return d.db.Transaction(ctx, func(tx db.DB) error { return deactivate(ctx, tx, id) })
 }
 
 func deactivate(ctx context.Context, tx db.DB, id sdktypes.DeploymentID) error {

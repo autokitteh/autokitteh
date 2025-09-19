@@ -64,7 +64,7 @@ class BuildResponse(_message.Message):
     def __init__(self, artifact: _Optional[bytes] = ..., error: _Optional[_Union[_program_pb2.Error, _Mapping]] = ...) -> None: ...
 
 class RunRequest(_message.Message):
-    __slots__ = ["run_id", "artifact", "path", "globals"]
+    __slots__ = ["run_id", "artifact", "path", "globals", "durable"]
     class GlobalsEntry(_message.Message):
         __slots__ = ["key", "value"]
         KEY_FIELD_NUMBER: _ClassVar[int]
@@ -76,11 +76,13 @@ class RunRequest(_message.Message):
     ARTIFACT_FIELD_NUMBER: _ClassVar[int]
     PATH_FIELD_NUMBER: _ClassVar[int]
     GLOBALS_FIELD_NUMBER: _ClassVar[int]
+    DURABLE_FIELD_NUMBER: _ClassVar[int]
     run_id: str
     artifact: bytes
     path: str
     globals: _containers.MessageMap[str, _values_pb2.Value]
-    def __init__(self, run_id: _Optional[str] = ..., artifact: _Optional[bytes] = ..., path: _Optional[str] = ..., globals: _Optional[_Mapping[str, _values_pb2.Value]] = ...) -> None: ...
+    durable: bool
+    def __init__(self, run_id: _Optional[str] = ..., artifact: _Optional[bytes] = ..., path: _Optional[str] = ..., globals: _Optional[_Mapping[str, _values_pb2.Value]] = ..., durable: bool = ...) -> None: ...
 
 class RunResponse(_message.Message):
     __slots__ = ["print", "error", "result"]

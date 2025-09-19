@@ -224,6 +224,7 @@ func (db *gormdb) CreateSession(ctx context.Context, session sdktypes.Session) e
 		CurrentStateType: int(sdktypes.SessionStateTypeCreated.ToProto()),
 		Inputs:           kittehs.Must1(json.Marshal(session.Inputs())),
 		Memo:             kittehs.Must1(json.Marshal(session.Memo())),
+		IsDurable:        session.IsDurable(),
 	}
 	return translateError(db.createSession(ctx, &s))
 }

@@ -35,6 +35,6 @@ func TestClientNames(t *testing.T) {
 	}
 
 	// sanity checks
-	assert.Less(t, sort.SearchStrings(names, "requests_client"), len(names))
-	assert.Less(t, sort.SearchStrings(names, "boto3_client"), len(names))
+	assert.Contains(t, names, "asana_client")
+	assert.Contains(t, names, "boto3_client")
 }

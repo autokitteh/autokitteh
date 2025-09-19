@@ -131,6 +131,7 @@ test-starlark: bin/ak
 .PHONY: test-sessions
 test-sessions: bin/ak
 	$(GOTEST) ./tests/sessions/...
+	$(GOTEST) ./tests/sessions/... --durable
 
 .PHONY: proto
 proto:

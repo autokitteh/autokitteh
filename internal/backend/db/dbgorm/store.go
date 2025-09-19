@@ -5,13 +5,14 @@ import (
 	"errors"
 
 	"google.golang.org/protobuf/proto"
-	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
+
+const maxValueSize = 64 * 1024
 
 func (db *gormdb) SetStoreValue(ctx context.Context, pid sdktypes.ProjectID, key string, v sdktypes.Value) error {
 	if !pid.IsValid() {
@@ -24,6 +25,10 @@ func (db *gormdb) SetStoreValue(ctx context.Context, pid sdktypes.ProjectID, key
 		return translateError(
 			q.Where("project_id = ? AND key = ?", pid.UUIDValue(), key).Delete(&scheme.StoreValue{}).Error,
 		)
+	}
+
+	if v.ProtoSize() > maxValueSize {
+		return sdkerrors.NewInvalidArgumentError("value too large > %d bytes", maxValueSize)
 	}
 
 	bs, err := proto.Marshal(v.ToProto())
@@ -61,35 +66,6 @@ func (db *gormdb) GetStoreValue(ctx context.Context, pid sdktypes.ProjectID, key
 	}
 
 	return v, nil
-}
-
-func (db *gormdb) HasStoreKey(ctx context.Context, pid sdktypes.ProjectID, key string) (bool, error) {
-	err := db.reader.WithContext(ctx).
-		Model(&scheme.StoreValue{}).
-		Where("project_id = ? AND key == ?", pid.UUIDValue(), key).
-		First(&scheme.StoreValue{}).
-		Error
-
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return false, nil
-	} else if err != nil {
-		return false, translateError(err)
-	}
-
-	return true, nil
-}
-
-func (db *gormdb) CountStoreKeys(ctx context.Context, pid sdktypes.ProjectID) (int64, error) {
-	q := db.reader.WithContext(ctx).
-		Model(&scheme.StoreValue{}).
-		Where("project_id = ?", pid.UUIDValue())
-
-	var count int64
-	if err := q.Count(&count).Error; err != nil {
-		return 0, translateError(err)
-	}
-
-	return count, nil
 }
 
 func (db *gormdb) ListStoreValues(ctx context.Context, pid sdktypes.ProjectID, keys []string, getValues bool) (map[string]sdktypes.Value, error) {

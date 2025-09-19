@@ -22,9 +22,7 @@ type fakeDB struct {
 	orgMembers map[sdktypes.OrgID]map[sdktypes.UserID]sdktypes.OrgMember
 }
 
-func (fakeDB) LockProject(context.Context, sdktypes.ProjectID) error { return nil }
-
-func (d *fakeDB) Transaction(ctx context.Context, f func(tx db.TX) error) error { return f(d) }
+func (d *fakeDB) Transaction(ctx context.Context, f func(tx db.DB) error) error { return f(d) }
 
 func (d *fakeDB) CreateOrg(ctx context.Context, org sdktypes.Org) (sdktypes.OrgID, error) {
 	if d.orgs == nil {

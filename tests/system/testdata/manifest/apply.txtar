@@ -107,6 +107,7 @@ project:
     - name: get
       type: webhook
       event_type: get
+      is_durable: false
       call: my_program.star:on_http_get
 
 -- expected_on_full_apply.txt --
@@ -170,6 +171,7 @@ project:
       "path": "my_program.star",
       "name": "on_test"
     },
+    "is_durable": true,
     "connection_id": "con_00000000000000000000000002"
   }
 }

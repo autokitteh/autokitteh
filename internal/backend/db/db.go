@@ -22,7 +22,7 @@ type Shared interface {
 
 	GormDB() (r, w *gorm.DB)
 
-	Transaction(context.Context, func(tx TX) error) error
+	Transaction(context.Context, func(tx DB) error) error
 
 	// -----------------------------------------------------------------------
 	// Returns sdkerrors.ErrAlreadyExists if either id or name is duplicate.
@@ -51,7 +51,7 @@ type Shared interface {
 	GetVars(context.Context, sdktypes.VarScopeID, []sdktypes.Symbol) ([]sdktypes.Var, error)
 	CountVars(context.Context, sdktypes.VarScopeID) (int, error)
 	DeleteVars(context.Context, sdktypes.VarScopeID, []sdktypes.Symbol) error
-	FindConnectionIDsWithActiveDeploymentByVar(context.Context, sdktypes.IntegrationID, sdktypes.Symbol, string) ([]sdktypes.ConnectionID, error)
+	FindConnectionIDsByVar(context.Context, sdktypes.IntegrationID, sdktypes.Symbol, string) ([]sdktypes.ConnectionID, error)
 
 	// -----------------------------------------------------------------------
 	// This is idempotent.
@@ -64,10 +64,9 @@ type Shared interface {
 	CreateTrigger(context.Context, sdktypes.Trigger) error
 	UpdateTrigger(context.Context, sdktypes.Trigger) error
 	GetTriggerByID(context.Context, sdktypes.TriggerID) (sdktypes.Trigger, error)
-	GetTriggerWithActiveDeploymentByID(context.Context, uuid.UUID) (sdktypes.Trigger, bool, error)
 	DeleteTrigger(context.Context, sdktypes.TriggerID) error
 	ListTriggers(context.Context, sdkservices.ListTriggersFilter) ([]sdktypes.Trigger, error)
-	GetTriggerWithActiveDeploymentByWebhookSlug(ctx context.Context, slug string) (sdktypes.Trigger, error)
+	GetTriggerByWebhookSlug(ctx context.Context, slug string) (sdktypes.Trigger, error)
 
 	// -----------------------------------------------------------------------
 	GetBuild(ctx context.Context, buildID sdktypes.BuildID) (sdktypes.Build, error)
@@ -137,11 +136,8 @@ type Shared interface {
 	GetSecret(ctx context.Context, key string) (string, error)
 	DeleteSecret(ctx context.Context, key string) error
 
-	// -----------------------------------------------------------------------
 	SetStoreValue(ctx context.Context, pid sdktypes.ProjectID, key string, v sdktypes.Value) error
 	GetStoreValue(ctx context.Context, pid sdktypes.ProjectID, key string) (sdktypes.Value, error)
-	HasStoreKey(ctx context.Context, pid sdktypes.ProjectID, key string) (bool, error)
-	CountStoreKeys(ctx context.Context, pid sdktypes.ProjectID) (int64, error)
 
 	// If len(keys) == 0, it returns all keys.
 	// if getValues is true, it returns values for the keys. Otherwise, it returns only keys without values.

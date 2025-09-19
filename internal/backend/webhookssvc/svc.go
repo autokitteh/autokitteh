@@ -57,10 +57,10 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	t, err := s.db.GetTriggerWithActiveDeploymentByWebhookSlug(ctx, slug)
+	t, err := s.db.GetTriggerByWebhookSlug(ctx, slug)
 	if err != nil {
 		if errors.Is(err, sdkerrors.ErrNotFound) {
-			sl.Infof("could not find an active deployment for trigger by slug %q", slug)
+			sl.Infof("slug %q not found", slug)
 			http.Error(w, "Not Found", http.StatusNotFound)
 			return
 		}

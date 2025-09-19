@@ -133,6 +133,8 @@ func run(ctx context.Context, b *sdkbuildfile.BuildFile, path string) (map[strin
 			return nil, sdkerrors.ErrNotFound
 		},
 		Call: func(context.Context, sdktypes.RunID, sdktypes.Value, []sdktypes.Value, map[string]sdktypes.Value) (sdktypes.Value, error) {
+			// This callback is not implemented for non-durable runs.
+			// It should never be called.
 			return sdktypes.InvalidValue, sdkerrors.ErrNotImplemented
 		},
 		NewRunID: func() (sdktypes.RunID, error) { return sdktypes.NewRunID(), nil },
@@ -146,7 +148,7 @@ func run(ctx context.Context, b *sdkbuildfile.BuildFile, path string) (map[strin
 		defer cancel()
 	}
 
-	run, err := runtimes().Run(ctx, sdktypes.NewRunID(), sdktypes.InvalidSessionID, path, b, nil, cbs)
+	run, err := runtimes().Run(ctx, sdktypes.NewRunID(), sdktypes.InvalidSessionID, path, b, nil, false /* non-durable */, cbs)
 	if err != nil {
 		return nil, nil, fmt.Errorf("run build: %w", err)
 	}
