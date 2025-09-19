@@ -3,7 +3,6 @@
 Wraps and unwraps autokitteh values.
 """
 
-from collections import namedtuple
 from datetime import UTC, datetime, timedelta
 from typing import Any, Callable
 
@@ -12,6 +11,7 @@ import requests
 import pb.autokitteh.values.v1.values_pb2 as pb
 from google.protobuf.duration_pb2 import Duration
 from google.protobuf.timestamp_pb2 import Timestamp
+from autokitteh import AttrDict
 
 
 def wrap_unhandled(v: Any) -> pb.Value:
@@ -164,7 +164,7 @@ def wrap(v: Any, unhandled: Callable[[Any], pb.Value] = None, history=None) -> p
 def unwrap(v: pb.Value, custom: Callable[[pb.Value], Any] = None) -> Any:
     """Unwrap an autokitteh value into a python value.
 
-    Note that wrap and unwrap are guaranteed to be symmetric.
+    Note that wrap and unwrap are NOT guaranteed to be symmetric.
     Two notable examples:
 
     >>> unwrap(wrap((1, 2))) == [1, 2]
@@ -172,7 +172,7 @@ def unwrap(v: pb.Value, custom: Callable[[pb.Value], Any] = None) -> Any:
     >>> class C:
     ...   def __init__(self):
     ...     self.x = 42
-    >>> unwrap(wrap(C())) == namedtuple("C", {"x"})(42)
+    >>> unwrap(wrap(C())) == AttrDict({"x": 42})
     True
     """
 
@@ -195,8 +195,7 @@ def unwrap(v: pb.Value, custom: Callable[[pb.Value], Any] = None) -> Any:
     if v.HasField("bytes"):
         return v.bytes.v
     if v.HasField("struct"):
-        tpl = namedtuple(str(unwrap(v.struct.ctor, custom)), v.struct.fields.keys())
-        return tpl(*[unwrap(x, custom) for x in v.struct.fields.values()])
+        return AttrDict({k: unwrap(v, custom) for k, v in v.struct.fields.items()})
     if v.HasField("time"):
         return v.time.v.ToDatetime(UTC)
     if v.HasField("duration"):
