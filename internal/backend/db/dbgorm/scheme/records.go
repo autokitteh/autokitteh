@@ -234,6 +234,7 @@ type Trigger struct {
 	Filter       string
 	CodeLocation string
 	IsDurable    bool `gorm:"not null;default:false"`
+	IsSync       bool
 
 	Name string
 	// Makes sure name is unique - this is the project_id with name.
@@ -286,6 +287,7 @@ func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
 		WebhookSlug:  e.WebhookSlug,
 		Schedule:     e.Schedule,
 		IsDurable:    e.IsDurable,
+		IsSync:       e.IsSync,
 	})
 }
 

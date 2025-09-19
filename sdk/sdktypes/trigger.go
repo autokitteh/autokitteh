@@ -56,7 +56,7 @@ func (TriggerTraits) StrictValidate(m *TriggerPB) error {
 }
 
 func (TriggerTraits) Mutables() []string {
-	return []string{"filter", "code_location", "name", "source_type", "is_durable"}
+	return []string{"filter", "code_location", "name", "source_type", "sync", "is_durable"}
 }
 
 func TriggerFromProto(m *TriggerPB) (Trigger, error)       { return FromProto[Trigger](m) }
@@ -138,10 +138,12 @@ func (p Trigger) WithWebhook() Trigger {
 	})}
 }
 
-func (p Trigger) IsDurable() bool {
-	return p.read().IsDurable
-}
-
+func (p Trigger) IsDurable() bool { return p.read().IsDurable }
 func (p Trigger) SetDurable(d bool) Trigger {
 	return Trigger{p.forceUpdate(func(m *TriggerPB) { m.IsDurable = d })}
+}
+
+func (p Trigger) IsSync() bool { return p.read().IsSync }
+func (p Trigger) SetIsSync(sync bool) Trigger {
+	return Trigger{p.forceUpdate(func(m *TriggerPB) { m.IsSync = sync })}
 }

@@ -73,6 +73,9 @@ type RunCallbacks struct {
 	// Store
 	ListStoreValues  func(ctx context.Context, rid sdktypes.RunID) ([]string, error)
 	MutateStoreValue func(ctx context.Context, rid sdktypes.RunID, key, op string, operands ...sdktypes.Value) (sdktypes.Value, error)
+
+	// Outcome
+	Outcome func(ctx context.Context, rid sdktypes.RunID, v sdktypes.Value) error
 }
 
 type Run interface {

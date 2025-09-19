@@ -295,6 +295,7 @@ func (ps *Projects) exportManifest(ctx context.Context, projectID sdktypes.Proje
 		mt := manifest.Trigger{
 			Name:      t.Name().String(),
 			Call:      t.CodeLocation().CanonicalString(),
+			IsSync:    t.IsSync(),
 			IsDurable: &isDurable,
 		}
 		if filter := t.Filter(); filter != "" {
@@ -306,8 +307,7 @@ func (ps *Projects) exportManifest(ctx context.Context, projectID sdktypes.Proje
 
 		switch t.SourceType() {
 		case sdktypes.TriggerSourceTypeWebhook:
-			var wh struct{}
-			mt.Webhook = &wh
+			mt.Webhook = &struct{}{}
 		case sdktypes.TriggerSourceTypeSchedule:
 			sched := t.Schedule()
 			mt.Schedule = &sched

@@ -88,6 +88,7 @@ func (db *gormdb) CreateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 		WebhookSlug:  trigger.WebhookSlug(),
 		Schedule:     trigger.Schedule(),
 		IsDurable:    trigger.IsDurable(),
+		IsSync:       trigger.IsSync(),
 	}
 
 	return translateError(db.createTrigger(ctx, t))
@@ -115,6 +116,7 @@ func (db *gormdb) UpdateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 	r.UniqueName = triggerUniqueName(r.ProjectID.String(), trigger.Name())
 	r.UpdatedAt = kittehs.Now().UTC()
 	r.UpdatedBy = authcontext.GetAuthnUserID(ctx).UUIDValue()
+	r.IsSync = trigger.IsSync()
 
 	return translateError(db.updateTrigger(ctx, r))
 }

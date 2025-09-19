@@ -89,7 +89,7 @@ func integrationsFXOption() fx.Option {
 
 		fx.Decorate(func(vs sdkservices.Vars) sdkservices.Vars { return sysVars{vs} }),
 		fx.Decorate(func(dispatch sdkservices.DispatchFunc) sdkservices.DispatchFunc {
-			return func(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) (sdktypes.EventID, error) {
+			return func(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) (*sdkservices.DispatchResponse, error) {
 				return dispatch(authcontext.SetAuthnSystemUser(ctx), event, opts)
 			}
 		}),

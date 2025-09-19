@@ -12,4 +12,5 @@ const (
 	StateSessionLogRecordType               SessionLogRecordType = sessionv1.SessionLogRecord_TYPE_STATE
 	PrintSessionLogRecordType               SessionLogRecordType = sessionv1.SessionLogRecord_TYPE_PRINT
 	StopRequestSessionLogRecordType         SessionLogRecordType = sessionv1.SessionLogRecord_TYPE_STOP_REQUEST
+	OutcomeSessionLogRecordType             SessionLogRecordType = sessionv1.SessionLogRecord_TYPE_OUTCOME
 )

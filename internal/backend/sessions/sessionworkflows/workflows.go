@@ -100,7 +100,9 @@ func (ws *workflows) StartWorkers(ctx context.Context) error {
 	return ws.utilsWorker.Start()
 }
 
-func memo(session sdktypes.Session, oid sdktypes.OrgID) map[string]string {
+func memo(data *sessiondata.Data) map[string]string {
+	session, oid := data.Session, data.OrgID
+
 	memo := map[string]string{
 		"process_id":      fixtures.ProcessID(),
 		"session_id":      session.ID().String(),
@@ -143,7 +145,7 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 		return fmt.Errorf("get session data: %w", err)
 	}
 
-	memo := memo(session, data.OrgID)
+	memo := memo(data)
 
 	params := sessionWorkflowParams{
 		Data: *data,
