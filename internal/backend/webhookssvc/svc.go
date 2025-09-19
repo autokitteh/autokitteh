@@ -329,7 +329,7 @@ func parseOutcomeValue(v sdktypes.Value) (outcome httpOutcome, err error) {
 // If neither Body nor JSON is set, nil and no error are returned.
 func (o httpOutcome) BodyBytes() ([]byte, error) {
 	if o.Body.IsValid() && o.JSON.IsValid() {
-		return nil, fmt.Errorf("outcome cannot have both 'body' and 'json' fields set together")
+		return nil, errors.New("outcome cannot have both 'body' and 'json' fields set together")
 	}
 
 	if b := o.Body; b.IsValid() {
