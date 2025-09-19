@@ -338,17 +338,25 @@ func (o httpOutcome) WriteBody(w io.Writer) error {
 	var b sdktypes.Value
 	if o.Body.IsValid() {
 		if v := o.Body.GetString(); v.IsValid() {
-			w.Write([]byte(v.Value()))
+			if _, err := w.Write([]byte(v.Value())); err != nil {
+				return fmt.Errorf("write body string: %w", err)
+			}
 			return nil
 		}
 
 		if v := o.Body.GetBytes(); v.IsValid() {
-			w.Write(v.Value())
+			if _, err := w.Write(v.Value()); err != nil {
+				return fmt.Errorf("write body bytes: %w", err)
+			}
 			return nil
 		}
+
 		b = o.Body
-	} else {
+	} else if o.Json.IsValid() {
 		b = o.Json
+	} else {
+		// nothing to write
+		return nil
 	}
 
 	u, err := unwrapper.Unwrap(b)

@@ -193,7 +193,7 @@ func TestHTTPOutcome_WriteBody(t *testing.T) {
 			outcome:     httpOutcome{},
 			expectError: false,
 			validate: func(t *testing.T, buf *bytes.Buffer) {
-				assert.Equal(t, "null\n", buf.String())
+				assert.Equal(t, "", buf.String())
 			},
 		},
 		{
