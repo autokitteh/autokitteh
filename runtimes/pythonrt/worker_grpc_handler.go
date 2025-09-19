@@ -582,3 +582,26 @@ func (s *workerGRPCHandler) StoreMutate(ctx context.Context, req *userCode.Store
 		Result: resp.value.(sdktypes.Value).ToProto(),
 	}, nil
 }
+
+func (s *workerGRPCHandler) Outcome(ctx context.Context, req *userCode.OutcomeRequest) (*userCode.OutcomeResponse, error) {
+	v, err := sdktypes.ValueFromProto(req.Value)
+	if err != nil {
+		return &userCode.OutcomeResponse{Error: fmt.Sprintf("invalid value: %v", err)}, nil
+	}
+
+	fn := func(ctx context.Context, cbs *sdkservices.RunCallbacks, rid sdktypes.RunID) (any, error) {
+		return nil, cbs.Outcome(ctx, rid, v)
+	}
+
+	resp, err := s.callback(ctx, req.RunnerId, "outcome", fn)
+	if err != nil {
+		return &userCode.OutcomeResponse{Error: err.Error()}, nil
+	}
+
+	if resp.err != nil {
+		err = status.Errorf(codes.Internal, "outcome(%v) -> %v", v, resp.err)
+		return &userCode.OutcomeResponse{Error: err.Error()}, nil
+	}
+
+	return &userCode.OutcomeResponse{}, nil
+}

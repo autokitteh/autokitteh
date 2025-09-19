@@ -52,6 +52,11 @@ export class Trigger extends Message<Trigger> {
   isDurable = false;
 
   /**
+   * @generated from field: bool is_sync = 9;
+   */
+  isSync = false;
+
+  /**
    * if source_type == CONNECTION.
    *
    * @generated from field: string connection_id = 50;
@@ -90,6 +95,7 @@ export class Trigger extends Message<Trigger> {
     { no: 6, name: "code_location", kind: "message", T: CodeLocation },
     { no: 7, name: "filter", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "is_durable", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 9, name: "is_sync", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 50, name: "connection_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 51, name: "schedule", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 100, name: "webhook_slug", kind: "scalar", T: 9 /* ScalarType.STRING */ },

@@ -16,25 +16,24 @@ message DispatchRequest {
 
   string deployment_id = 2;
   string project = 3; // either project id or name.
-
-  // TODO: auth.
+  bool wait = 4; // if true, the call will block until the dispatch is done.
 }
 
 message DispatchResponse {
   string event_id = 1 [(buf.validate.field).string.min_len = 1];
+  repeated string session_ids = 2 [(buf.validate.field).repeated.items.string.min_len = 1]; // only if wait
 }
 
 message RedispatchRequest {
   string event_id = 1 [(buf.validate.field).string.min_len = 1];
   string deployment_id = 3;
+  bool wait = 4; // if true, the call will block until the dispatch is done.
 }
 
 message RedispatchResponse {
   string event_id = 1 [(buf.validate.field).string.min_len = 1];
+  repeated string session_ids = 2 [(buf.validate.field).repeated.items.string.min_len = 1]; // only if wait
 }
-
-// TODO: The dispatcher knows which connections it sent the event to. Add ability to query for this.
-// Consider interaction with the event services - maybe all listing need to be done in the dispatcher?
 
 service DispatcherService {
   rpc Dispatch(DispatchRequest) returns (DispatchResponse);

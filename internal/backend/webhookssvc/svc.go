@@ -2,6 +2,7 @@ package webhookssvc
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,11 +10,13 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"go.jetify.com/typeid"
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
+	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -24,14 +27,27 @@ import (
 
 const WebhooksPathPrefix = "/webhooks/"
 
+type Config struct {
+	SessionOutcomePollInterval time.Duration `koanf:"session_outcome_poll_interval"`
+	WebhookResponseTimeout     time.Duration `koanf:"webhook_response_timeout"`
+}
+
+var Configs = configset.Set[Config]{
+	Default: &Config{
+		WebhookResponseTimeout:     30 * time.Second,
+		SessionOutcomePollInterval: 100 * time.Millisecond,
+	},
+}
+
 type Service struct {
 	logger   *zap.Logger
 	dispatch sdkservices.DispatchFunc
 	db       db.DB
+	cfg      *Config
 }
 
-func New(l *zap.Logger, db db.DB, dispatch sdkservices.DispatchFunc) *Service {
-	return &Service{logger: l, db: db, dispatch: dispatch}
+func New(l *zap.Logger, cfg *Config, db db.DB, dispatch sdkservices.DispatchFunc) *Service {
+	return &Service{logger: l, db: db, dispatch: dispatch, cfg: cfg}
 }
 
 func (s *Service) Start(muxes *muxes.Muxes) {
@@ -69,7 +85,9 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
-	sl.Infof("webhook request: method=%s, trigger_event_type=%s", r.Method, t.EventType())
+
+	sl.With("trigger", t).Infof("webhook request: method=%s, trigger_event_type=%s", r.Method, t.EventType())
+
 	data, err := requestToData(r)
 	if err != nil {
 		sl.Errorw("failed to convert request to data", "err", err)
@@ -95,7 +113,13 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	eid, err := s.dispatch(authcontext.SetAuthnSystemUser(ctx), event, nil)
+	isSync := t.IsSync()
+
+	sl = sl.With("sync", isSync, "event_id", event.ID())
+
+	opts := &sdkservices.DispatchOptions{Wait: isSync}
+
+	resp, err := s.dispatch(authcontext.SetAuthnSystemUser(ctx), event, opts)
 	if err != nil {
 		if errors.Is(err, sdkerrors.ErrResourceExhausted) {
 			sl.Warnw("dispatch failed: resource exhausted", "event", event, "err", err)
@@ -107,8 +131,228 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("AutoKitteh-Event-ID", eid.String())
-	w.WriteHeader(http.StatusAccepted)
+	w.Header().Set("AutoKitteh-Event-ID", resp.EventID.String())
+	w.Header().Set("Cache-Control", "no-cache")
+
+	if !isSync {
+		w.WriteHeader(http.StatusAccepted)
+		return
+	}
+
+	w.Header().Set("Connection", "keep-alive")
+
+	if len(resp.SessionIDs) == 0 {
+		sl.Warnw("no session was created for event")
+		http.Error(w, "No session was created for event", http.StatusBadGateway)
+		return
+	}
+
+	if len(resp.SessionIDs) > 1 {
+		sl.Warnw("multiple sessions were created for event", "session_ids", resp.SessionIDs)
+		http.Error(w, "Multiple sessions were created for event", http.StatusBadGateway)
+		return
+	}
+
+	session, err := s.db.GetSession(ctx, resp.SessionIDs[0])
+	if err != nil {
+		sl.Errorw("get session failed", "session_id", resp.SessionIDs[0], "err", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("AutoKitteh-Session-ID", session.ID().String())
+
+	if tmo := s.cfg.WebhookResponseTimeout; tmo != 0 {
+		var done context.CancelFunc
+		ctx, done = context.WithTimeout(ctx, tmo)
+		defer done()
+	}
+
+	var (
+		firstResponseSent bool
+		skip              int32 // no need to reprocess records we've already seen.
+	)
+
+	for {
+		var pollTimeout <-chan time.Time
+
+		if skip == 0 {
+			pollTimeout = time.After(0)
+		} else {
+			// delay poll only after first iteration.
+			pollTimeout = time.After(s.cfg.SessionOutcomePollInterval)
+		}
+
+		select {
+		case <-pollTimeout:
+			// nop
+		case <-ctx.Done():
+			if ctx.Err() == context.DeadlineExceeded {
+				// timeout
+				sl.Debugw("timed out waiting for session to complete")
+				w.WriteHeader(http.StatusGatewayTimeout)
+			} else {
+				// cancelled
+				sl.Debugw("request context cancelled", "err", ctx.Err())
+				w.WriteHeader(http.StatusRequestTimeout)
+			}
+			return
+		}
+
+		log, err := s.db.GetSessionLog(
+			ctx,
+			sdkservices.SessionLogRecordsFilter{
+				SessionID: session.ID(),
+				Types:     sdktypes.OutcomeSessionLogRecordType | sdktypes.StateSessionLogRecordType,
+				PaginationRequest: sdktypes.PaginationRequest{
+					Ascending: true,
+					Skip:      skip,
+				},
+			},
+		)
+		if err != nil {
+			sl.Errorw("get session log failed", "err", err)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+
+		for _, r := range log.Records {
+			skip++
+
+			if state := r.GetState(); state.IsValid() {
+				switch state.Type() {
+				case sdktypes.SessionStateTypeError:
+					sl.Warnw("session ended in error", "state", state)
+					w.WriteHeader(http.StatusBadGateway)
+
+				case sdktypes.SessionStateTypeStopped:
+					sl.Warnw("session was stopped before producing an outcome", "state", state)
+					w.WriteHeader(http.StatusBadGateway)
+
+				case sdktypes.SessionStateTypeCompleted:
+					w.WriteHeader(http.StatusOK)
+
+				default:
+					// not final
+					continue
+				}
+
+				return
+			}
+
+			if v := r.GetOutcome(); v.IsValid() {
+				outcome, err := parseOutcomeValue(v)
+				if err != nil {
+					sl.Errorw("failed to parse outcome value", "value", v, "err", err)
+					http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+					return
+				}
+
+				body, err := outcome.BodyBytes()
+				if err != nil {
+					sl.Errorw("failed to get outcome body bytes", "value", v, "err", err)
+					http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+					return
+				}
+
+				if !firstResponseSent {
+					var hadContentType bool
+
+					for k, v := range outcome.Headers {
+						w.Header().Set(k, v)
+
+						if strings.ToLower(k) == "content-type" {
+							hadContentType = true
+						}
+					}
+
+					if !hadContentType && outcome.JSON.IsValid() {
+						w.Header().Set("Content-Type", "application/json")
+					}
+
+					code := outcome.StatusCode
+					if code == 0 {
+						code = http.StatusOK
+					}
+
+					w.WriteHeader(code)
+
+					firstResponseSent = true
+				}
+
+				w.Write(body)
+
+				if flusher, ok := w.(http.Flusher); ok {
+					flusher.Flush()
+				}
+
+				if !outcome.More {
+					return
+				}
+			}
+		}
+	}
+
+	// TODO: Send default response code if none sent?
+}
+
+type httpOutcome struct {
+	StatusCode int               `json:"status_code"`
+	Body       sdktypes.Value    `json:"body"`
+	JSON       sdktypes.Value    `json:"json"`
+	Headers    map[string]string `json:"headers"`
+	More       bool              `json:"more"`
+}
+
+func parseOutcomeValue(v sdktypes.Value) (outcome httpOutcome, err error) {
+	err = sdktypes.UnwrapValueInto(&outcome, v)
+	return
+}
+
+// BodyBytes returns the body bytes to be sent in the HTTP response.
+//
+// If both Body and JSON are set, an error is returned.
+//
+// If Body is set, it is converted to bytes as follows:
+//   - If Body is a string, it is converted to []byte of the string.
+//   - If Body is []byte, it is returned as-is.
+//   - Otherwise, Body is marshaled to JSON and the resulting bytes are returned.
+//
+// If JSON is set, it is marshaled to JSON and the resulting bytes are returned.
+//
+// If neither Body nor JSON is set, nil and no error are returned.
+func (o httpOutcome) BodyBytes() ([]byte, error) {
+	if o.Body.IsValid() && o.JSON.IsValid() {
+		return nil, fmt.Errorf("outcome cannot have both 'body' and 'json' fields set together")
+	}
+
+	if b := o.Body; b.IsValid() {
+		if v := b.GetString(); v.IsValid() {
+			return []byte(v.Value()), nil
+		}
+
+		if v := b.GetBytes(); v.IsValid() {
+			return v.Value(), nil
+		}
+
+		bs, err := b.MarshalJSON()
+		if err != nil {
+			return nil, fmt.Errorf("outcome json marshal: %w", err)
+		}
+
+		return bs, nil
+	}
+
+	if j := o.JSON; j.IsValid() {
+		bs, err := j.MarshalJSON()
+		if err != nil {
+			return nil, fmt.Errorf("outcome json marshal: %w", err)
+		}
+
+		return bs, nil
+	}
+
+	return nil, nil
 }
 
 func requestToData(r *http.Request) (map[string]sdktypes.Value, error) {

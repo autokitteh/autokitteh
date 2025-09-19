@@ -20,21 +20,23 @@ import (
 )
 
 const (
-	updateSessionStateActivityName           = "update_session_state"
-	terminateWorkflowActivityName            = "terminate_workflow"
-	saveSignalActivityName                   = "save_signal"
-	getLastEventSequenceActivityName         = "get_last_event_sequence"
-	getSessionStopReasonActivityName         = "get_session_stop_reason"
-	getSignalEventActivityName               = "get_signal_event"
-	removeSignalActivityName                 = "remove_signal"
+	createSessionActivityName                = "create_session"
 	deactivateDrainedDeploymentActivityName  = "deactivate_drained_deployment"
 	getDeploymentStateActivityName           = "get_deployment_state"
-	createSessionActivityName                = "create_session"
+	getLastEventSequenceActivityName         = "get_last_event_sequence"
+	getProjectIDAndActiveBuildID             = "get_project_id_and_active_build_id"
 	getProjectIDAndActiveBuildIDActivityName = "get_project_id_and_active_build_id"
+	getSessionStopReasonActivityName         = "get_session_stop_reason"
+	getSignalEventActivityName               = "get_signal_event"
 	listStoreValuesActivityName              = "list_store_values"
 	mutateStoreValueActivityName             = "mutate_store_value"
 	notifyWorkflowEndedActivity              = "notify_workflow_ended"
+	outcomeActivityName                      = "outcome"
+	removeSignalActivityName                 = "remove_signal"
+	saveSignalActivityName                   = "save_signal"
 	startChildSessionActivityName            = "start_child_session"
+	terminateWorkflowActivityName            = "terminate_workflow"
+	updateSessionStateActivityName           = "update_session_state"
 )
 
 func (ws *workflows) registerActivities() {
@@ -122,6 +124,11 @@ func (ws *workflows) registerActivities() {
 		ws.startChildSessionActivity,
 		activity.RegisterOptions{Name: startChildSessionActivityName},
 	)
+
+	ws.sessionsWorker.RegisterActivityWithOptions(
+		ws.outcomeActivity,
+		activity.RegisterOptions{Name: outcomeActivityName},
+	)
 }
 
 type getProjectIDAndActiveBuildIDParams struct {
@@ -163,6 +170,10 @@ func (ws *workflows) getProjectIDAndActiveBuildIDActivity(ctx context.Context, p
 		BuildID:   d.BuildID(),
 		ProjectID: p.ID(),
 	}, nil
+}
+
+func (ws *workflows) outcomeActivity(ctx context.Context, sid sdktypes.SessionID, v sdktypes.Value) error {
+	return ws.svcs.DB.AddSessionOutcome(ctx, sid, v)
 }
 
 func (ws *workflows) listStoreValuesActivity(ctx context.Context, pid sdktypes.ProjectID) ([]string, error) {

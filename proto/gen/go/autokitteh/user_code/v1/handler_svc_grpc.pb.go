@@ -33,6 +33,7 @@ const (
 	HandlerService_NextSignal_FullMethodName        = "/autokitteh.user_code.v1.HandlerService/NextSignal"
 	HandlerService_StoreList_FullMethodName         = "/autokitteh.user_code.v1.HandlerService/StoreList"
 	HandlerService_StoreMutate_FullMethodName       = "/autokitteh.user_code.v1.HandlerService/StoreMutate"
+	HandlerService_Outcome_FullMethodName           = "/autokitteh.user_code.v1.HandlerService/Outcome"
 	HandlerService_EncodeJWT_FullMethodName         = "/autokitteh.user_code.v1.HandlerService/EncodeJWT"
 	HandlerService_RefreshOAuthToken_FullMethodName = "/autokitteh.user_code.v1.HandlerService/RefreshOAuthToken"
 	HandlerService_Health_FullMethodName            = "/autokitteh.user_code.v1.HandlerService/Health"
@@ -63,6 +64,7 @@ type HandlerServiceClient interface {
 	NextSignal(ctx context.Context, in *NextSignalRequest, opts ...grpc.CallOption) (*NextSignalResponse, error)
 	StoreList(ctx context.Context, in *StoreListRequest, opts ...grpc.CallOption) (*StoreListResponse, error)
 	StoreMutate(ctx context.Context, in *StoreMutateRequest, opts ...grpc.CallOption) (*StoreMutateResponse, error)
+	Outcome(ctx context.Context, in *OutcomeRequest, opts ...grpc.CallOption) (*OutcomeResponse, error)
 	// Utility functions
 	EncodeJWT(ctx context.Context, in *EncodeJWTRequest, opts ...grpc.CallOption) (*EncodeJWTResponse, error)
 	RefreshOAuthToken(ctx context.Context, in *RefreshRequest, opts ...grpc.CallOption) (*RefreshResponse, error)
@@ -218,6 +220,16 @@ func (c *handlerServiceClient) StoreMutate(ctx context.Context, in *StoreMutateR
 	return out, nil
 }
 
+func (c *handlerServiceClient) Outcome(ctx context.Context, in *OutcomeRequest, opts ...grpc.CallOption) (*OutcomeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(OutcomeResponse)
+	err := c.cc.Invoke(ctx, HandlerService_Outcome_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *handlerServiceClient) EncodeJWT(ctx context.Context, in *EncodeJWTRequest, opts ...grpc.CallOption) (*EncodeJWTResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(EncodeJWTResponse)
@@ -282,6 +294,7 @@ type HandlerServiceServer interface {
 	NextSignal(context.Context, *NextSignalRequest) (*NextSignalResponse, error)
 	StoreList(context.Context, *StoreListRequest) (*StoreListResponse, error)
 	StoreMutate(context.Context, *StoreMutateRequest) (*StoreMutateResponse, error)
+	Outcome(context.Context, *OutcomeRequest) (*OutcomeResponse, error)
 	// Utility functions
 	EncodeJWT(context.Context, *EncodeJWTRequest) (*EncodeJWTResponse, error)
 	RefreshOAuthToken(context.Context, *RefreshRequest) (*RefreshResponse, error)
@@ -338,6 +351,9 @@ func (UnimplementedHandlerServiceServer) StoreList(context.Context, *StoreListRe
 }
 func (UnimplementedHandlerServiceServer) StoreMutate(context.Context, *StoreMutateRequest) (*StoreMutateResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StoreMutate not implemented")
+}
+func (UnimplementedHandlerServiceServer) Outcome(context.Context, *OutcomeRequest) (*OutcomeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Outcome not implemented")
 }
 func (UnimplementedHandlerServiceServer) EncodeJWT(context.Context, *EncodeJWTRequest) (*EncodeJWTResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method EncodeJWT not implemented")
@@ -624,6 +640,24 @@ func _HandlerService_StoreMutate_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _HandlerService_Outcome_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(OutcomeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HandlerServiceServer).Outcome(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HandlerService_Outcome_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HandlerServiceServer).Outcome(ctx, req.(*OutcomeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _HandlerService_EncodeJWT_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(EncodeJWTRequest)
 	if err := dec(in); err != nil {
@@ -758,6 +792,10 @@ var HandlerService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "StoreMutate",
 			Handler:    _HandlerService_StoreMutate_Handler,
+		},
+		{
+			MethodName: "Outcome",
+			Handler:    _HandlerService_Outcome_Handler,
 		},
 		{
 			MethodName: "EncodeJWT",

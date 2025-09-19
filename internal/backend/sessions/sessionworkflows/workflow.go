@@ -147,6 +147,23 @@ func (w *sessionWorkflow) load(ctx context.Context, _ sdktypes.RunID, path strin
 	return vs, nil
 }
 
+func (w *sessionWorkflow) outcome(wctx workflow.Context) func(ctx context.Context, runID sdktypes.RunID, v sdktypes.Value) error {
+	return func(ctx context.Context, runID sdktypes.RunID, v sdktypes.Value) error {
+		ctx, span := w.startCallbackSpan(ctx, "http_response")
+		defer span.End()
+
+		isActivity := activity.IsActivity(ctx)
+
+		w.l.Debug("http_response", zap.Any("run_id", runID), zap.Bool("is_activity", isActivity))
+
+		if isActivity {
+			return w.ws.outcomeActivity(ctx, w.data.Session.ID(), v)
+		} else {
+			return workflow.ExecuteActivity(wctx, outcomeActivityName, w.data.Session.ID(), v).Get(wctx, nil)
+		}
+	}
+}
+
 func (w *sessionWorkflow) call(ctx workflow.Context, _ sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
 	w.callSeq++
 
@@ -339,6 +356,7 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (_ []sdkserv
 
 			return w.call(wctx, runID, v, args, kwargs)
 		},
+		Outcome: w.outcome(wctx),
 		Print: func(printCtx context.Context, runID sdktypes.RunID, text string) error {
 			ctx, span := w.startCallbackSpan(printCtx, "print")
 			defer span.End()

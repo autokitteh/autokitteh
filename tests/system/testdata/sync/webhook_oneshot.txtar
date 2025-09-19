@@ -1,0 +1,22 @@
+ak deploy --manifest project.yaml
+return code == 0
+
+http get /webhooks/00000000000000000000000003
+resp code == 299
+
+-- project.yaml --
+version: v1
+
+project:
+  name: myproject
+  triggers:
+    - name: webhook
+      type: webhook
+      call: program.py:on_get
+      is_sync: true
+
+-- program.py --
+from autokitteh import http_outcome
+
+def on_get(_):
+  http_outcome(status_code=299, json={"cat": "meow"})

@@ -411,17 +411,18 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 			CodeLocation: loc.ToProto(),
 			Name:         mtrigger.Name,
 			ProjectId:    pid.String(),
+			IsSync:       mtrigger.IsSync,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("trigger %q: invalid: %w", mtrigger.GetKey(), err)
 		}
 
-		if mtrigger.Webhook != nil || mtrigger.Type == "webhook" {
+		if wh := mtrigger.Webhook; wh != nil || mtrigger.Type == "webhook" {
 			if mtrigger.Type != "" && mtrigger.Type != "webhook" {
 				return nil, fmt.Errorf("trigger %q: type %q is not supported for webhook", mtrigger.GetKey(), mtrigger.Type)
 			}
 
-			desired = desired.WithWebhook()
+			desired = desired.WithSourceType(sdktypes.TriggerSourceTypeWebhook)
 		}
 
 		if mtrigger.ConnectionKey != nil || mtrigger.Type == "connection" {

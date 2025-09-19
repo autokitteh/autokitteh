@@ -89,6 +89,9 @@
           "type": "boolean",
           "description": "Is handling done as a durable session? Default: true for manifest v1, false for all others."
         },
+        "is_sync": {
+          "type": "boolean"
+        },
         "type": {
           "type": "string",
           "enum": [
