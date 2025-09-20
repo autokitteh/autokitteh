@@ -1,28 +1,20 @@
 package notion
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
+	"regexp"
 
+	"go.uber.org/zap"
+
+	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
-	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.uber.org/zap"
 )
 
-// handler is an autokitteh webhook which implements [http.Handler]
-// to save data from web form submissions as connections.
-type handler struct {
-	logger *zap.Logger
-	vars   sdkservices.Vars
-}
-
-func NewHTTPHandler(l *zap.Logger, v sdkservices.Vars) http.Handler {
-	return handler{logger: l, vars: v}
-}
-
-// ServeHTTP saves a new autokitteh connection with user-submitted data.
-func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, desc)
 
 	// Check the "Content-Type" header.
@@ -49,18 +41,52 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vsid := sdktypes.NewVarScopeID(cid)
-	common.SaveAuthType(r, h.vars, vsid)
+	authType := common.SaveAuthType(r, h.vars, vsid)
+	l = l.With(zap.String("auth_type", authType))
 
-	internalIntSecret := r.FormValue("internal_integration_secret")
-	if internalIntSecret == "" {
-		l.Warn("save connection: missing Internal Integration Secret")
-		c.AbortBadRequest("missing Internal Integration Secret")
+	switch authType {
+	// Use the AutoKitteh server's default Notion OAuth 2.0 app, i.e.
+	// immediately redirect to the 3-legged OAuth 2.0 flow's starting point.
+	case integrations.OAuthDefault:
+		startOAuth(w, r, c, l)
+
+	// Check and save the provided API key, no 3-legged OAuth 2.0 flow is needed.
+	case integrations.APIKey:
+		if err := h.saveAPIKey(r, vsid); err != nil {
+			l.Warn("failed to save integration secret", zap.Error(err))
+			c.AbortServerError("failed to save integration secret")
+		}
+
+	// Unknown/unrecognized mode - an error.
+	default:
+		l.Warn("save connection: unexpected auth type")
+		c.AbortBadRequest(fmt.Sprintf("unexpected auth type %q", authType))
+	}
+}
+
+// saveAPIKey checks and saves the user-provided Notion integration secret (API key).
+func (h handler) saveAPIKey(r *http.Request, vsid sdktypes.VarScopeID) error {
+	apiKey := r.FormValue("api_key")
+	if apiKey == "" {
+		return errors.New("missing API key")
+	}
+
+	v := sdktypes.NewVar(common.ApiKeyVar).SetValue(apiKey).SetSecret(true)
+	return h.vars.Set(r.Context(), v.WithScopeID(vsid))
+}
+
+// startOAuth redirects the user to the AutoKitteh server's
+// generic OAuth service, to start a 3-legged OAuth 2.0 flow.
+func startOAuth(w http.ResponseWriter, r *http.Request, c sdkintegrations.ConnectionInit, l *zap.Logger) {
+	// Security check: parameters must be alphanumeric strings,
+	// to prevent path traversal attacks and other issues.
+	re := regexp.MustCompile(`^\w+$`)
+	if !re.MatchString(c.ConnectionID + c.Origin) {
+		l.Warn("save connection: bad OAuth redirect URL")
+		c.AbortBadRequest("bad redirect URL")
 		return
 	}
 
-	v := sdktypes.NewVar(internalIntSecretVar).SetValue(internalIntSecret).SetSecret(true)
-	if err := h.vars.Set(r.Context(), v.WithScopeID(vsid)); err != nil {
-		l.Warn("failed to save vars", zap.Error(err))
-		c.AbortServerError("failed to save connection variables")
-	}
+	urlPath := fmt.Sprintf("/oauth/start/notion?cid=%s&origin=%s&owner=user&response_type=code", c.ConnectionID, c.Origin)
+	http.Redirect(w, r, urlPath, http.StatusFound)
 }

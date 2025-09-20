@@ -24,13 +24,16 @@ def get_notion_client(connection: str) -> Client:
     Raises:
         ValueError: AutoKitteh connection name is invalid.
         ConnectionInitError: AutoKitteh connection was not initialized yet.
-
     """
     check_connection_name(connection)
 
     notion_secret = os.getenv(f"{connection}__internal_integration_secret")
 
-    if not notion_secret:
+    if notion_secret:
+        return Client(auth=notion_secret)
+
+    access_token = os.getenv(connection + "__oauth_access_token")
+    if not access_token:
         raise ConnectionInitError(connection)
 
-    return Client(auth=notion_secret)
+    return Client(auth=access_token)

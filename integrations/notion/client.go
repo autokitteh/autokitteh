@@ -6,48 +6,32 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
-	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var internalIntSecretVar = sdktypes.NewSymbol("internal_integration_secret")
-
 var desc = common.Descriptor("notion", "Notion", "/static/images/notion.svg")
-
-func New(cvars sdkservices.Vars) sdkservices.Integration {
-	return sdkintegrations.NewIntegration(
-		desc,
-		sdkmodule.New(),
-		connStatus(cvars),
-		connTest(cvars),
-		sdkintegrations.WithConnectionConfigFromVars(cvars),
-	)
-}
 
 // connStatus is an optional connection status check provided by
 // the integration to AutoKitteh. The possible results are "Init
 // required" (the connection is not usable yet) and "Initialized".
 func connStatus(cvars sdkservices.Vars) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
-		if !cid.IsValid() {
+		vs, errStatus, err := common.ReadVarsWithStatus(ctx, cvars, cid)
+		if errStatus.IsValid() || err != nil {
+			return errStatus, err
+		}
+
+		switch common.ReadAuthType(vs) {
+		case "":
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+		case integrations.OAuthDefault, integrations.OAuthPrivate:
+			return common.CheckOAuthToken(vs)
+		case integrations.APIKey:
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using API key"), nil
+		default:
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil
 		}
-
-		vs, err := cvars.Get(ctx, sdktypes.NewVarScopeID(cid))
-		if err != nil {
-			return sdktypes.InvalidStatus, err
-		}
-
-		at := vs.Get(common.AuthTypeVar)
-		if !at.IsValid() || at.Value() == "" {
-			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
-		}
-
-		if at.Value() == integrations.APIKey {
-			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Initialized"), nil
-		}
-		return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil
 	})
 }
 
