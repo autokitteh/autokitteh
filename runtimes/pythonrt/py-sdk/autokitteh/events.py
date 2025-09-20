@@ -8,7 +8,7 @@ from .attr_dict import AttrDict
 
 def subscribe(source: str, filter: str = "") -> str:
     """Subscribe to events on connection. Optional filter is a CEL expression.
-    
+
     Works both in durable and nondurable sessions.
     """
     # Dummy implementation for local development.
@@ -17,7 +17,7 @@ def subscribe(source: str, filter: str = "") -> str:
 
 def unsubscribe(subscription_id: str) -> None:
     """Unsubscribe from events.
-    
+
     Works both in durable and nondurable sessions.
     """
     # Dummy implementation for local development.
