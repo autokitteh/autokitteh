@@ -9,7 +9,8 @@ from .attr_dict import AttrDict
 def subscribe(source: str, filter: str = "") -> str:
     """Subscribe to events on connection. Optional filter is a CEL expression.
 
-    Cannot be used in an activity."""
+    Works both in durable and nondurable sessions.
+    """
     # Dummy implementation for local development.
     return f"sig_{uuid4().hex}"
 
@@ -17,7 +18,8 @@ def subscribe(source: str, filter: str = "") -> str:
 def unsubscribe(subscription_id: str) -> None:
     """Unsubscribe from events.
 
-    Cannot be used in an activity."""
+    Works both in durable and nondurable sessions.
+    """
     # Dummy implementation for local development.
     pass
 
@@ -30,7 +32,7 @@ def next_event(
     If timeout is not None and there are no new events after timeout, this function will
     return None.
 
-    Cannot be used in an activity.
+    Works both in durable and nondurable sessions.
     """
     # Dummy implementation for local development.
     return AttrDict()
@@ -44,6 +46,9 @@ def start(
 ) -> str:
     """Start a new session.
 
-    Cannot be used in an activity."""
+    Works both in durable and nondurable sessions.
+
+    Sessions started this way will have the same durability setting as the parent session.
+    """
     # Dummy implementation for local development.
     return f"ses_{uuid4().hex}"
