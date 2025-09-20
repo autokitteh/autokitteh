@@ -1,6 +1,7 @@
 package webhookssvc
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -102,20 +103,20 @@ func TestParseOutcomeValue(t *testing.T) {
 				assert.False(t, result.Body.IsValid())
 			}
 
-			if tt.expected.JSON.IsValid() {
-				assert.True(t, result.JSON.IsValid())
-				assert.Equal(t, tt.expected.JSON.String(), result.JSON.String())
+			if tt.expected.Json.IsValid() {
+				assert.True(t, result.Json.IsValid())
+				assert.Equal(t, tt.expected.Json.String(), result.Json.String())
 			}
 		})
 	}
 }
 
-func TestHTTPOutcome_BodyBytes(t *testing.T) {
+func TestHTTPOutcome_WriteBody(t *testing.T) {
 	tests := []struct {
 		name        string
 		outcome     httpOutcome
 		expectError bool
-		validate    func(t *testing.T, result []byte)
+		validate    func(t *testing.T, buf *bytes.Buffer)
 	}{
 		{
 			name: "string body",
@@ -123,8 +124,8 @@ func TestHTTPOutcome_BodyBytes(t *testing.T) {
 				Body: sdktypes.NewStringValue("hello world"),
 			},
 			expectError: false,
-			validate: func(t *testing.T, result []byte) {
-				assert.Equal(t, []byte("hello world"), result)
+			validate: func(t *testing.T, buf *bytes.Buffer) {
+				assert.Equal(t, []byte("hello world"), buf.Bytes())
 			},
 		},
 		{
@@ -133,8 +134,8 @@ func TestHTTPOutcome_BodyBytes(t *testing.T) {
 				Body: sdktypes.NewBytesValue([]byte{0x48, 0x65, 0x6c, 0x6c, 0x6f}),
 			},
 			expectError: false,
-			validate: func(t *testing.T, result []byte) {
-				assert.Equal(t, []byte{0x48, 0x65, 0x6c, 0x6c, 0x6f}, result)
+			validate: func(t *testing.T, buf *bytes.Buffer) {
+				assert.Equal(t, []byte{0x48, 0x65, 0x6c, 0x6c, 0x6f}, buf.Bytes())
 			},
 		},
 		{
@@ -149,16 +150,16 @@ func TestHTTPOutcome_BodyBytes(t *testing.T) {
 				}(),
 			},
 			expectError: false,
-			validate: func(t *testing.T, result []byte) {
-				assert.NotEmpty(t, result)
-				assert.Contains(t, string(result), "hello")
-				assert.Contains(t, string(result), "42")
+			validate: func(t *testing.T, buf *bytes.Buffer) {
+				assert.NotEmpty(t, buf.Bytes())
+				assert.Contains(t, buf.String(), "hello")
+				assert.Contains(t, buf.String(), "42")
 			},
 		},
 		{
 			name: "JSON field",
 			outcome: httpOutcome{
-				JSON: func() sdktypes.Value {
+				Json: func() sdktypes.Value {
 					v, _ := sdktypes.WrapValue(map[string]any{
 						"status_code": "ok",
 						"data":        []string{"a", "b", "c"},
@@ -167,19 +168,19 @@ func TestHTTPOutcome_BodyBytes(t *testing.T) {
 				}(),
 			},
 			expectError: false,
-			validate: func(t *testing.T, result []byte) {
-				assert.NotEmpty(t, result)
-				assert.Contains(t, string(result), "ok")
-				assert.Contains(t, string(result), "a")
-				assert.Contains(t, string(result), "b")
-				assert.Contains(t, string(result), "c")
+			validate: func(t *testing.T, buf *bytes.Buffer) {
+				assert.NotEmpty(t, buf.Bytes())
+				assert.Contains(t, buf.String(), "ok")
+				assert.Contains(t, buf.String(), "a")
+				assert.Contains(t, buf.String(), "b")
+				assert.Contains(t, buf.String(), "c")
 			},
 		},
 		{
 			name: "both body and JSON set (error)",
 			outcome: httpOutcome{
 				Body: sdktypes.NewStringValue("body content"),
-				JSON: func() sdktypes.Value {
+				Json: func() sdktypes.Value {
 					v, _ := sdktypes.WrapValue(map[string]any{"json": "content"})
 					return v
 				}(),
@@ -191,8 +192,8 @@ func TestHTTPOutcome_BodyBytes(t *testing.T) {
 			name:        "neither body nor JSON set",
 			outcome:     httpOutcome{},
 			expectError: false,
-			validate: func(t *testing.T, result []byte) {
-				assert.Nil(t, result)
+			validate: func(t *testing.T, buf *bytes.Buffer) {
+				assert.Equal(t, "", buf.String())
 			},
 		},
 		{
@@ -201,8 +202,8 @@ func TestHTTPOutcome_BodyBytes(t *testing.T) {
 				Body: sdktypes.NewStringValue(""),
 			},
 			expectError: false,
-			validate: func(t *testing.T, result []byte) {
-				assert.Equal(t, []byte(""), result)
+			validate: func(t *testing.T, buf *bytes.Buffer) {
+				assert.Equal(t, "", buf.String())
 			},
 		},
 		{
@@ -211,14 +212,14 @@ func TestHTTPOutcome_BodyBytes(t *testing.T) {
 				Body: sdktypes.NewBytesValue([]byte{}),
 			},
 			expectError: false,
-			validate: func(t *testing.T, result []byte) {
-				assert.Empty(t, result)
+			validate: func(t *testing.T, buf *bytes.Buffer) {
+				assert.Equal(t, "", buf.String())
 			},
 		},
 		{
 			name: "complex nested JSON",
 			outcome: httpOutcome{
-				JSON: func() sdktypes.Value {
+				Json: func() sdktypes.Value {
 					v, _ := sdktypes.WrapValue(map[string]any{
 						"users": []any{
 							map[string]any{"id": 1, "name": "Alice"},
@@ -233,9 +234,9 @@ func TestHTTPOutcome_BodyBytes(t *testing.T) {
 				}(),
 			},
 			expectError: false,
-			validate: func(t *testing.T, result []byte) {
-				assert.NotEmpty(t, result)
-				resultStr := string(result)
+			validate: func(t *testing.T, buf *bytes.Buffer) {
+				assert.NotEmpty(t, buf.Bytes())
+				resultStr := buf.String()
 				assert.Contains(t, resultStr, "Alice")
 				assert.Contains(t, resultStr, "Bob")
 				assert.Contains(t, resultStr, "1")
@@ -246,7 +247,8 @@ func TestHTTPOutcome_BodyBytes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := tt.outcome.BodyBytes()
+			var buf bytes.Buffer
+			err := tt.outcome.WriteBody(&buf)
 
 			if tt.expectError {
 				assert.Error(t, err)
@@ -256,7 +258,7 @@ func TestHTTPOutcome_BodyBytes(t *testing.T) {
 
 			require.NoError(t, err)
 			if tt.validate != nil {
-				tt.validate(t, result)
+				tt.validate(t, &buf)
 			}
 		})
 	}
@@ -272,7 +274,7 @@ func TestHTTPOutcome_BodyBytes_ErrorCases(t *testing.T) {
 			name: "both body and json set",
 			outcome: httpOutcome{
 				Body: sdktypes.NewStringValue("test"),
-				JSON: sdktypes.NewStringValue("test"),
+				Json: sdktypes.NewStringValue("test"),
 			},
 			expectedError: "outcome cannot have both 'body' and 'json' fields set together",
 		},
@@ -280,7 +282,8 @@ func TestHTTPOutcome_BodyBytes_ErrorCases(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := tt.outcome.BodyBytes()
+			var buf bytes.Buffer
+			err := tt.outcome.WriteBody(&buf)
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tt.expectedError)
 		})
@@ -304,10 +307,11 @@ func TestHTTPOutcome_BodyBytes_Integration(t *testing.T) {
 	outcome, err := parseOutcomeValue(wrappedValue)
 	require.NoError(t, err)
 
-	bodyBytes, err := outcome.BodyBytes()
+	var buf bytes.Buffer
+	err = outcome.WriteBody(&buf)
 	require.NoError(t, err)
 
-	assert.Equal(t, []byte("Hello, World!"), bodyBytes)
+	assert.Equal(t, []byte("Hello, World!"), buf.Bytes())
 	assert.Equal(t, 200, outcome.StatusCode)
 	assert.Equal(t, "text/plain", outcome.Headers["Content-Type"])
 	assert.Equal(t, "13", outcome.Headers["Content-Length"])

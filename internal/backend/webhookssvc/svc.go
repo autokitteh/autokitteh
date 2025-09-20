@@ -25,6 +25,12 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+// An unwrapper that is always safe to serialize to string afterwards.
+var unwrapper = sdktypes.ValueWrapper{
+	SafeForJSON:         true,
+	UnwrapStructsAsJSON: true,
+}
+
 const WebhooksPathPrefix = "/webhooks/"
 
 type Config struct {
@@ -265,11 +271,6 @@ func (s *Service) handleSyncResponse(ctx context.Context, w http.ResponseWriter,
 }
 
 func (s *Service) writeOutcome(w http.ResponseWriter, outcome httpOutcome, firstOutcomeHandled bool) (more bool, err error) {
-	body, err := outcome.BodyBytes()
-	if err != nil {
-		return false, fmt.Errorf("get outcome body bytes: %w", err)
-	}
-
 	if !firstOutcomeHandled {
 		var hadContentType bool
 
@@ -281,7 +282,7 @@ func (s *Service) writeOutcome(w http.ResponseWriter, outcome httpOutcome, first
 			}
 		}
 
-		if !hadContentType && outcome.JSON.IsValid() {
+		if !hadContentType && outcome.Json.IsValid() {
 			w.Header().Set("Content-Type", "application/json")
 		}
 
@@ -293,7 +294,9 @@ func (s *Service) writeOutcome(w http.ResponseWriter, outcome httpOutcome, first
 		w.WriteHeader(code)
 	}
 
-	w.Write(body)
+	if err := outcome.WriteBody(w); err != nil {
+		return false, fmt.Errorf("write outcome body: %w", err)
+	}
 
 	if flusher, ok := w.(http.Flusher); ok {
 		flusher.Flush()
@@ -303,11 +306,11 @@ func (s *Service) writeOutcome(w http.ResponseWriter, outcome httpOutcome, first
 }
 
 type httpOutcome struct {
-	StatusCode int               `json:"status_code"`
-	Body       sdktypes.Value    `json:"body"`
-	JSON       sdktypes.Value    `json:"json"`
-	Headers    map[string]string `json:"headers"`
-	More       bool              `json:"more"`
+	StatusCode int
+	Body       sdktypes.Value
+	Json       sdktypes.Value // due to the way unwrapping work, this must be "Json" and not "JSON".
+	Headers    map[string]string
+	More       bool
 }
 
 func parseOutcomeValue(v sdktypes.Value) (outcome httpOutcome, err error) {
@@ -315,7 +318,7 @@ func parseOutcomeValue(v sdktypes.Value) (outcome httpOutcome, err error) {
 	return
 }
 
-// BodyBytes returns the body bytes to be sent in the HTTP response.
+// WriteBody writes body bytes to a writer.
 //
 // If both Body and JSON are set, an error is returned.
 //
@@ -327,38 +330,45 @@ func parseOutcomeValue(v sdktypes.Value) (outcome httpOutcome, err error) {
 // If JSON is set, it is marshaled to JSON and the resulting bytes are returned.
 //
 // If neither Body nor JSON is set, nil and no error are returned.
-func (o httpOutcome) BodyBytes() ([]byte, error) {
-	if o.Body.IsValid() && o.JSON.IsValid() {
-		return nil, errors.New("outcome cannot have both 'body' and 'json' fields set together")
+func (o httpOutcome) WriteBody(w io.Writer) error {
+	var b sdktypes.Value
+
+	switch {
+	case o.Body.IsValid() && o.Json.IsValid():
+		return errors.New("outcome cannot have both 'body' and 'json' fields set together")
+	case o.Body.IsValid():
+		if v := o.Body.GetString(); v.IsValid() {
+			if _, err := w.Write([]byte(v.Value())); err != nil {
+				return fmt.Errorf("write body string: %w", err)
+			}
+			return nil
+		}
+
+		if v := o.Body.GetBytes(); v.IsValid() {
+			if _, err := w.Write(v.Value()); err != nil {
+				return fmt.Errorf("write body bytes: %w", err)
+			}
+			return nil
+		}
+
+		b = o.Body
+	case o.Json.IsValid():
+		b = o.Json
+	default:
+		// nothing to write
+		return nil
 	}
 
-	if b := o.Body; b.IsValid() {
-		if v := b.GetString(); v.IsValid() {
-			return []byte(v.Value()), nil
-		}
-
-		if v := b.GetBytes(); v.IsValid() {
-			return v.Value(), nil
-		}
-
-		bs, err := b.MarshalJSON()
-		if err != nil {
-			return nil, fmt.Errorf("outcome json marshal: %w", err)
-		}
-
-		return bs, nil
+	u, err := unwrapper.Unwrap(b)
+	if err != nil {
+		return fmt.Errorf("outcome body unwrap: %w", err)
 	}
 
-	if j := o.JSON; j.IsValid() {
-		bs, err := j.MarshalJSON()
-		if err != nil {
-			return nil, fmt.Errorf("outcome json marshal: %w", err)
-		}
-
-		return bs, nil
+	if err := json.NewEncoder(w).Encode(u); err != nil {
+		return fmt.Errorf("outcome json marshal: %w", err)
 	}
 
-	return nil, nil
+	return nil
 }
 
 func requestToData(r *http.Request) (map[string]sdktypes.Value, error) {
