@@ -12,7 +12,7 @@ class Store(MutableMapping):
     Note that read-modify-write operations are not atomic.
 
     Values must be pickleable, see
-    https://docs.python.org/3/library/pickle.html#what-can-be-pickled-and-unpickledd
+    https://docs.python.org/3/library/pickle.html#what-can-be-pickled-and-unpickled
 
     Works both for durable and non-durable sessions.
     """
