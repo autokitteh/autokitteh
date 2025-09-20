@@ -54,6 +54,8 @@ def install(*packages):
     or a tuple of (package specifier, import name) in case the import name differs from
     the package name (e.g. Package `pillow` import imported as `PIL`).
 
+    Please refrain from using this function in production code, specify your dependencies in requirements.txt instead.
+
     Examples:
     >>> install('requests', 'numpy')
     >>> install('requests ~= 2.32', 'numpy == 2.0.0')

@@ -4,8 +4,11 @@ from typing import Any
 def outcome(v: Any) -> None:
     """Log an outcome for the current session.
 
+    Works both in durable and nondurable sessions.
+
     Args:
         v: The outcome value. Can be any JSON-serializable value.
+
     """
     # Dummy implementation for local development.
     pass
@@ -19,6 +22,8 @@ def http_outcome(
     more: bool = False,
 ) -> None:
     """Respond to an HTTP request.
+
+    Works both in durable and nondurable sessions.
 
     Args:
         status_code: HTTP status code to return. Ignored if not the first response to a request.
