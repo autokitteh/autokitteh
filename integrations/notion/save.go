@@ -14,6 +14,11 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+// handleSave saves connection variables for an AutoKitteh connection.
+// This may result in a fully-initialized and usable connection, or it
+// may be an intermediate step before starting a 3-legged OAuth 2.0 flow.
+// This handler accepts both GET and POST requests alike. Why GET? This
+// is the only option when the web UI opens a pop-up window for OAuth.
 func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, desc)
 

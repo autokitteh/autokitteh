@@ -9,6 +9,8 @@ import (
 	"go.uber.org/zap"
 )
 
+// New defines an AutoKitteh integration, which
+// is registered when the AutoKitteh server starts.
 func New(cvars sdkservices.Vars) sdkservices.Integration {
 	return sdkintegrations.NewIntegration(
 		desc,
@@ -19,6 +21,9 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 	)
 }
 
+// Start initializes all the HTTP handlers of the integration.
+// This includes an internal connection UI, webhooks for AutoKitteh
+// connection initialization, and asynchronous event webhooks.
 func Start(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars) {
 	h := NewHTTPHandler(l, v)
 	common.RegisterSaveHandler(m, desc, h.handleSave)
