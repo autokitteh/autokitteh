@@ -40,6 +40,13 @@ autokitteh.microsoft module
    :undoc-members:
    :show-inheritance:
 
+autokitteh.notion module
+------------------------
+.. automodule:: autokitteh.notion
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 autokitteh.store module
 -----------------------
 
@@ -294,4 +301,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-

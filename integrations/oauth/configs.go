@@ -350,6 +350,19 @@ func (o *OAuth) initConfigs() {
 			},
 		},
 
+		// https://developers.notion.com/docs/authorization
+		"notion": {
+			Config: &oauth2.Config{
+				ClientID:     os.Getenv("NOTION_CLIENT_ID"),
+				ClientSecret: os.Getenv("NOTION_CLIENT_SECRET"),
+				Endpoint: oauth2.Endpoint{
+					AuthURL:  "https://api.notion.com/v1/oauth/authorize",
+					TokenURL: "https://api.notion.com/v1/oauth/token",
+				},
+				Scopes: nil, // Notion doesn't use traditional scopes in OAuth
+			},
+		},
+
 		// https://learn.microsoft.com/en-us/entra/identity-platform/v2-app-types
 		"microsoft": {
 			Config: microsoftConfig([]string{
