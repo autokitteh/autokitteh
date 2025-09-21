@@ -29,7 +29,7 @@ func New(c Connections) sdkservices.Connections { return &c }
 func (c *Connections) Create(ctx context.Context, conn sdktypes.Connection) (sdktypes.ConnectionID, error) {
 	// TODO: This is for backwards compatibility.
 	// We should remove it once the UI is updated to always pass org_id
-	if conn.OrgID() == sdktypes.InvalidOrgID {
+	if !conn.OrgID().IsValid() {
 		orgID, err := c.DB.GetOrgIDOf(ctx, conn.ProjectID())
 		if err != nil {
 			return sdktypes.InvalidConnectionID, err
