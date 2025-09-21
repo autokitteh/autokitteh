@@ -227,6 +227,20 @@ class StoreMutateResponse(_message.Message):
     result: _values_pb2.Value
     def __init__(self, error: _Optional[str] = ..., result: _Optional[_Union[_values_pb2.Value, _Mapping]] = ...) -> None: ...
 
+class OutcomeRequest(_message.Message):
+    __slots__ = ["runner_id", "value"]
+    RUNNER_ID_FIELD_NUMBER: _ClassVar[int]
+    VALUE_FIELD_NUMBER: _ClassVar[int]
+    runner_id: str
+    value: _values_pb2.Value
+    def __init__(self, runner_id: _Optional[str] = ..., value: _Optional[_Union[_values_pb2.Value, _Mapping]] = ...) -> None: ...
+
+class OutcomeResponse(_message.Message):
+    __slots__ = ["error"]
+    ERROR_FIELD_NUMBER: _ClassVar[int]
+    error: str
+    def __init__(self, error: _Optional[str] = ...) -> None: ...
+
 class StartSessionRequest(_message.Message):
     __slots__ = ["runner_id", "loc", "data", "memo", "project"]
     RUNNER_ID_FIELD_NUMBER: _ClassVar[int]

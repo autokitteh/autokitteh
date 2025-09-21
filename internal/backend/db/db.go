@@ -51,7 +51,7 @@ type Shared interface {
 	GetVars(context.Context, sdktypes.VarScopeID, []sdktypes.Symbol) ([]sdktypes.Var, error)
 	CountVars(context.Context, sdktypes.VarScopeID) (int, error)
 	DeleteVars(context.Context, sdktypes.VarScopeID, []sdktypes.Symbol) error
-	FindConnectionIDsWithActiveDeploymentByVar(context.Context, sdktypes.IntegrationID, sdktypes.Symbol, string) ([]sdktypes.ConnectionID, error)
+	FindConnectionIDsByVar(context.Context, sdktypes.IntegrationID, sdktypes.Symbol, string) ([]sdktypes.ConnectionID, error)
 
 	// -----------------------------------------------------------------------
 	// This is idempotent.
@@ -64,10 +64,9 @@ type Shared interface {
 	CreateTrigger(context.Context, sdktypes.Trigger) error
 	UpdateTrigger(context.Context, sdktypes.Trigger) error
 	GetTriggerByID(context.Context, sdktypes.TriggerID) (sdktypes.Trigger, error)
-	GetTriggerWithActiveDeploymentByID(context.Context, uuid.UUID) (sdktypes.Trigger, bool, error)
 	DeleteTrigger(context.Context, sdktypes.TriggerID) error
 	ListTriggers(context.Context, sdkservices.ListTriggersFilter) ([]sdktypes.Trigger, error)
-	GetTriggerWithActiveDeploymentByWebhookSlug(ctx context.Context, slug string) (sdktypes.Trigger, error)
+	GetTriggerByWebhookSlug(ctx context.Context, slug string) (sdktypes.Trigger, error)
 
 	// -----------------------------------------------------------------------
 	GetBuild(ctx context.Context, buildID sdktypes.BuildID) (sdktypes.Build, error)
@@ -105,6 +104,7 @@ type Shared interface {
 	UpdateSessionState(ctx context.Context, sessionID sdktypes.SessionID, state sdktypes.SessionState) error
 	AddSessionPrint(ctx context.Context, sessionID sdktypes.SessionID, v sdktypes.Value, callSeq uint32) error
 	AddSessionStopRequest(ctx context.Context, sessionID sdktypes.SessionID, reason string) error
+	AddSessionOutcome(ctx context.Context, sessionID sdktypes.SessionID, v sdktypes.Value) error
 	ListSessions(ctx context.Context, f sdkservices.ListSessionsFilter) (*sdkservices.ListSessionResult, error)
 	DeleteSession(ctx context.Context, sessionID sdktypes.SessionID) error
 

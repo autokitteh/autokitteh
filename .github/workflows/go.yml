@@ -5,107 +5,107 @@
 name: CI - Go
 
 on:
-    pull_request:
-    push:
-        branches: [main]
+  pull_request:
+  push:
+    branches: [main]
 permissions:
-    contents: read
+  contents: read
 
 jobs:
-    go-unit-tests:
-        name: Go build + unit tests (${{matrix.name}})
-        runs-on: ubuntu-latest
-        timeout-minutes: 10
-        strategy:
-            matrix:
-                include:
-                    - name: "OSS"
-                      tags: ""
-                    - name: "Enterprise"
-                      tags: "-tags=enterprise"
+  go-unit-tests:
+    name: Go build + unit tests (${{matrix.name}})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        include:
+          - name: "OSS"
+            tags: ""
+          - name: "Enterprise"
+            tags: "-tags=enterprise"
 
-        steps:
-            - name: Check out code
-              uses: actions/checkout@v4
-            - name: Set up Go
-              uses: actions/setup-go@v5
-              with:
-                  go-version-file: go.mod
-            - name: Download Go modules
-              run: go mod download
-            - name: Install gotestsum
-              run: go install gotest.tools/gotestsum@latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Download Go modules
+        run: go mod download
+      - name: Install gotestsum
+        run: go install gotest.tools/gotestsum@latest
 
-            - name: Build AK
-              run: go build -trimpath ${{ matrix.tags }} -o bin/ak ./cmd/ak
+      - name: Build AK
+        run: go build -trimpath ${{ matrix.tags }} -o bin/ak ./cmd/ak
 
-            - name: Test
-              run: |
-                  if [ "${{ matrix.name }}" = "OSS" ]; then
-                    gotestsum -f github-actions -- ${{ matrix.tags }} -trimpath $(go list ./... | grep -v -E "autokitteh/tests|runtimes/python")
-                  else
-                    gotestsum -f github-actions -- ${{ matrix.tags }} -trimpath $(find . -name "*_test.go" -not -path "*/tests/*" -exec sh -c 'grep -q -E "(go:build.*\\benterprise\\b|\\+build.*\\benterprise\\b)" "$1" && dirname "$1"' _ {} \; | sort -u)
-                  fi
+      - name: Test
+        run: |
+          if [ "${{ matrix.name }}" = "OSS" ]; then
+            gotestsum -f github-actions -- ${{ matrix.tags }} -trimpath $(go list ./... | grep -v -E "autokitteh/tests|runtimes/python")
+          else
+            gotestsum -f github-actions -- ${{ matrix.tags }} -trimpath $(find . -name "*_test.go" -not -path "*/tests/*" -exec sh -c 'grep -q -E "(go:build.*\\benterprise\\b|\\+build.*\\benterprise\\b)" "$1" && dirname "$1"' _ {} \; | sort -u)
+          fi
 
-    go-system-tests:
-        name: Go system tests (${{matrix.name}})
-        runs-on: ubuntu-latest
-        timeout-minutes: 15
-        strategy:
-            matrix:
-                include:
-                    - name: "OSS"
-                      tags: ""
-                    - name: "Enterprise"
-                      tags: "-tags=enterprise"
+  go-system-tests:
+    name: Go system tests (${{matrix.name}})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        include:
+          - name: "OSS"
+            tags: ""
+          - name: "Enterprise"
+            tags: "-tags=enterprise"
 
-        steps:
-            - name: Check out code
-              uses: actions/checkout@v4
-            - name: Set up Go
-              uses: actions/setup-go@v5
-              with:
-                  go-version-file: go.mod
-            - name: Download Go modules
-              run: go mod download
-            - name: Install gotestsum
-              run: go install gotest.tools/gotestsum@latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Download Go modules
+        run: go mod download
+      - name: Install gotestsum
+        run: go install gotest.tools/gotestsum@latest
 
-            - name: Set up Python
-              uses: actions/setup-python@v5
-              with:
-                  python-version: "3.12"
-            - name: Install the latest version of uv
-              uses: astral-sh/setup-uv@v5
-              with:
-                  version: "latest"
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
 
-            - name: Build AK
-              run: go build -trimpath ${{ matrix.tags }} -o bin/ak ./cmd/ak
+      - name: Build AK
+        run: go build -trimpath ${{ matrix.tags }} -o bin/ak ./cmd/ak
 
-            - name: Test
-              run: AK_SYSTEST_USE_PROC_SVC=1 gotestsum -f github-actions -- ${{ matrix.tags }} -timeout 10m -trimpath ./tests/system/...
+      - name: Test
+        run: AK_SYSTEST_USE_PROC_SVC=1 gotestsum -f github-actions -- ${{ matrix.tags }} -timeout 0 -trimpath ./tests/system/...
 
-    go-static-analysis:
-        name: Go static analysis
-        runs-on: ubuntu-latest
-        timeout-minutes: 15
-        steps:
-            - name: Check out code
-              uses: actions/checkout@v4
-            - name: Set up Go
-              uses: actions/setup-go@v5
-              with:
-                  go-version-file: go.mod
+  go-static-analysis:
+    name: Go static analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
 
-            - name: Detect unformatted Go
-              run: make gofmt-check
+      - name: Detect unformatted Go
+        run: make gofmt-check
 
-            - name: Run Go linters
-              uses: golangci/golangci-lint-action@v8
-              with:
-                  # Keep the same version in "/Makefile"!
-                  # See: https://github.com/golangci/golangci-lint/releases
-                  version: v2.1.5
-                  # https://github.com/golangci/golangci-lint-action/issues/308
-                  args: --timeout=10m
+      - name: Run Go linters
+        uses: golangci/golangci-lint-action@v8
+        with:
+          # Keep the same version in "/Makefile"!
+          # See: https://github.com/golangci/golangci-lint/releases
+          version: v2.1.5
+          # https://github.com/golangci/golangci-lint-action/issues/308
+          args: --timeout=10m

@@ -14,7 +14,6 @@ import (
 )
 
 func initialManifest() *manifest.Manifest {
-	var wh struct{}
 	return &manifest.Manifest{
 		Version: "v1",
 		Project: &manifest.Project{
@@ -32,7 +31,7 @@ func initialManifest() *manifest.Manifest {
 					Name:      "events",
 					EventType: "post",
 					Call:      "program.py:on_event",
-					Webhook:   &wh,
+					Webhook:   &struct{}{},
 				},
 			},
 			Vars: []*manifest.Var{

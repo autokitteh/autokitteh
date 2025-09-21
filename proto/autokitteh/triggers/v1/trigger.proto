@@ -19,6 +19,8 @@ message Trigger {
   string event_type = 5;
   program.v1.CodeLocation code_location = 6;
   string filter = 7;
+  bool is_durable = 8;
+  bool is_sync = 9;
 
   string connection_id = 50; // if source_type == CONNECTION.
   string schedule = 51; // if source_type == SCHEDULE.

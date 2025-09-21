@@ -90,7 +90,7 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := extrazap.AttachLoggerToContext(l, r.Context())
-	cids, err := h.vars.FindActiveConnectionIDs(ctx, integrationID, baseURL, atlassianURL)
+	cids, err := h.vars.FindConnectionIDs(ctx, integrationID, baseURL, atlassianURL)
 	if err != nil {
 		l.Error("Failed to find connection IDs", zap.Error(err))
 		return
@@ -198,10 +198,10 @@ func constructEvent(l *zap.Logger, atlassianEvent map[string]any, eventType stri
 func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, cids []sdktypes.ConnectionID, e sdktypes.Event) {
 	l := extrazap.ExtractLoggerFromContext(ctx)
 	for _, cid := range cids {
-		eid, err := h.dispatch(ctx, e.WithConnectionDestinationID(cid), nil)
+		resp, err := h.dispatch(ctx, e.WithConnectionDestinationID(cid), nil)
 		l := l.With(
 			zap.String("connectionID", cid.String()),
-			zap.String("eventID", eid.String()),
+			zap.String("eventID", resp.EventID.String()),
 		)
 		if err != nil {
 			if errors.Is(err, sdkerrors.ErrResourceExhausted) {

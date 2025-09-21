@@ -94,12 +94,13 @@ message SessionLogRecord {
   // Bitfield.
   enum Type {
     TYPE_UNSPECIFIED = 0;
-    TYPE_PRINT = 1; // deprecated, avoid.
+    TYPE_PRINT = 1;
     TYPE_CALL_SPEC = 2;
     TYPE_CALL_ATTEMPT_START = 4;
     TYPE_CALL_ATTEMPT_COMPLETE = 8;
     TYPE_STATE = 16;
     TYPE_STOP_REQUEST = 32;
+    TYPE_OUTCOME = 64;
   }
 
   message Print {
@@ -115,6 +116,10 @@ message SessionLogRecord {
     string reason = 2;
   }
 
+  message Outcome {
+    values.v1.Value value = 1;
+  }
+
   google.protobuf.Timestamp t = 1;
   string process_id = 2;
 
@@ -125,6 +130,7 @@ message SessionLogRecord {
   Call.Attempt.Complete call_attempt_complete = 13;
   SessionState state = 14;
   StopRequest stop_request = 15;
+  Outcome outcome = 16;
 }
 
 message Session {
@@ -147,6 +153,8 @@ message Session {
   google.protobuf.Timestamp updated_at = 11;
 
   SessionStateType state = 12;
+
+  bool is_durable = 13;
 
   // These are for auditing/searches only.
   string deployment_id = 20;

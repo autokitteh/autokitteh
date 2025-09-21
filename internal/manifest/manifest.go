@@ -20,14 +20,12 @@ var (
 	JSONSchemaString = string(kittehs.Must1(json.MarshalIndent(JSONSchema, "", "  ")))
 )
 
-const Version = "v1"
-
 type stringKeyer string
 
 func (s stringKeyer) GetKey() string { return string(s) }
 
 type Manifest struct {
-	Version string   `yaml:"version,omitempty" json:"version,omitempty" jsonschema:"required"`
+	Version string   `yaml:"version,omitempty" json:"version,omitempty" jsonschema:"required,enum=v1,enum=v2"`
 	Project *Project `yaml:"project,omitempty" json:"project,omitempty"`
 }
 
@@ -67,11 +65,13 @@ type Trigger struct {
 	Name      string `yaml:"name" json:"name" jsonschema:"required,pattern=^\\w+$"`
 	EventType string `yaml:"event_type,omitempty" json:"event_type,omitempty"`
 	Filter    string `yaml:"filter,omitempty" json:"filter,omitempty"`
+	IsDurable *bool  `yaml:"is_durable,omitempty" json:"is_durable,omitempty" jsonschema_description:"Is handling done as a durable session? Default: true for manifest v1, false for all others."`
+	IsSync    bool   `yaml:"is_sync,omitempty" json:"is_sync,omitempty"`
 
 	Type          string    `yaml:"type,omitempty" json:"type,omitempty" jsonschema:"enum=schedule,enum=webhook,enum=connection"`
 	Schedule      *string   `yaml:"schedule,omitempty" json:"schedule,omitempty"`
 	Webhook       *struct{} `yaml:"webhook,omitempty" json:"webhook,omitempty"`
-	ConnectionKey *string   `yaml:"connection,omitempty" json:"connection,omitempty" `
+	ConnectionKey *string   `yaml:"connection,omitempty" json:"connection,omitempty"`
 
 	Call string `yaml:"call,omitempty" json:"call,omitempty"`
 }

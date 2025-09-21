@@ -76,7 +76,7 @@ func normalizeOutput(ps string) (string, error) {
 }
 
 var testCmd = common.StandardCommand(&cobra.Command{
-	Use:   "test <txtar-file> [--build-id=...] [--project project] [--deployment-id=...] [--entrypoint=...] [--quiet] [--timeout DURATION] [--poll-interval DURATION] [--no-timestamps]",
+	Use:   "test <txtar-file> [--build-id=...] [--project project] [--deployment-id=...] [--entrypoint=...] [--quiet] [--timeout DURATION] [--poll-interval DURATION] [--no-timestamps] [--durable]",
 	Short: "Test a session run",
 	Args:  cobra.ExactArgs(1),
 
@@ -140,17 +140,38 @@ var testCmd = common.StandardCommand(&cobra.Command{
 			}
 		}
 
-		expectedCallsTxt, err := fs.ReadFile(txtarFS, "calls.txt")
-		if err != nil && !errors.Is(err, os.ErrNotExist) {
-			return fmt.Errorf("open calls.txt: %w", err)
+		var expectedCallsTxt []byte
+
+		if durable {
+			expectedCallsTxt, err = fs.ReadFile(txtarFS, "calls.txt")
+			if err != nil && !errors.Is(err, os.ErrNotExist) {
+				return fmt.Errorf("open calls.txt: %w", err)
+			}
 		}
 
-		expectedErrTxt, err := fs.ReadFile(txtarFS, "error.txt")
-		if err != nil && !errors.Is(err, os.ErrNotExist) {
-			return fmt.Errorf("open error.txt: %w", err)
+		var (
+			expectedErrTxt []byte
+			errPath        string
+		)
+
+		if _, err := fs.Stat(txtarFS, "error.txt"); err == nil {
+			errPath = "error.txt"
+		} else if durable {
+			if _, err := fs.Stat(txtarFS, "error.durable.txt"); err == nil {
+				errPath = "error.durable.txt"
+			}
+		} else if _, err := fs.Stat(txtarFS, "error.nondurable.txt"); err == nil {
+			errPath = "error.nondurable.txt"
 		}
 
-		s := sdktypes.NewSession(bid, ep, nil, nil).WithDeploymentID(did).WithProjectID(pid)
+		if errPath != "" {
+			expectedErrTxt, err = fs.ReadFile(txtarFS, errPath)
+			if err != nil && !errors.Is(err, os.ErrNotExist) {
+				return fmt.Errorf("open %s: %w", errPath, err)
+			}
+		}
+
+		s := sdktypes.NewSession(bid, ep, nil, nil).WithDeploymentID(did).WithProjectID(pid).SetDurable(durable)
 
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
@@ -261,6 +282,7 @@ func init() {
 	testCmd.Flags().DurationVarP(&watchTimeout, "timeout", "t", 0, "watch timeout duration")
 	testCmd.Flags().BoolVar(&noTimestamps, "no-timestamps", false, "omit timestamps from watch output")
 	testCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "don't print anything, just wait to finish")
+	testCmd.Flags().BoolVarP(&durable, "durable", "D", false, "durable run")
 	testCmd.Flags().StringVarP(&project, "project", "p", "", "project name or ID")
 	testCmd.Flags().StringVarP(&deploymentID, "deployment-id", "d", "", "deployment ID")
 	testCmd.Flags().StringVarP(&buildID, "build-id", "b", "", "build ID, mutually exclusive with --deployment-id")

@@ -656,6 +656,11 @@ export class SessionLogRecord extends Message<SessionLogRecord> {
    */
   stopRequest?: SessionLogRecord_StopRequest;
 
+  /**
+   * @generated from field: autokitteh.sessions.v1.SessionLogRecord.Outcome outcome = 16;
+   */
+  outcome?: SessionLogRecord_Outcome;
+
   constructor(data?: PartialMessage<SessionLogRecord>) {
     super();
     proto3.util.initPartial(data, this);
@@ -672,6 +677,7 @@ export class SessionLogRecord extends Message<SessionLogRecord> {
     { no: 13, name: "call_attempt_complete", kind: "message", T: Call_Attempt_Complete },
     { no: 14, name: "state", kind: "message", T: SessionState },
     { no: 15, name: "stop_request", kind: "message", T: SessionLogRecord_StopRequest },
+    { no: 16, name: "outcome", kind: "message", T: SessionLogRecord_Outcome },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SessionLogRecord {
@@ -703,8 +709,6 @@ export enum SessionLogRecord_Type {
   UNSPECIFIED = 0,
 
   /**
-   * deprecated, avoid.
-   *
    * @generated from enum value: TYPE_PRINT = 1;
    */
   PRINT = 1,
@@ -733,6 +737,11 @@ export enum SessionLogRecord_Type {
    * @generated from enum value: TYPE_STOP_REQUEST = 32;
    */
   STOP_REQUEST = 32,
+
+  /**
+   * @generated from enum value: TYPE_OUTCOME = 64;
+   */
+  OUTCOME = 64,
 }
 // Retrieve enum metadata with: proto3.getEnumType(SessionLogRecord_Type)
 proto3.util.setEnumType(SessionLogRecord_Type, "autokitteh.sessions.v1.SessionLogRecord.Type", [
@@ -743,6 +752,7 @@ proto3.util.setEnumType(SessionLogRecord_Type, "autokitteh.sessions.v1.SessionLo
   { no: 8, name: "TYPE_CALL_ATTEMPT_COMPLETE" },
   { no: 16, name: "TYPE_STATE" },
   { no: 32, name: "TYPE_STOP_REQUEST" },
+  { no: 64, name: "TYPE_OUTCOME" },
 ]);
 
 /**
@@ -836,6 +846,43 @@ export class SessionLogRecord_StopRequest extends Message<SessionLogRecord_StopR
 }
 
 /**
+ * @generated from message autokitteh.sessions.v1.SessionLogRecord.Outcome
+ */
+export class SessionLogRecord_Outcome extends Message<SessionLogRecord_Outcome> {
+  /**
+   * @generated from field: autokitteh.values.v1.Value value = 1;
+   */
+  value?: Value;
+
+  constructor(data?: PartialMessage<SessionLogRecord_Outcome>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.sessions.v1.SessionLogRecord.Outcome";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "value", kind: "message", T: Value },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SessionLogRecord_Outcome {
+    return new SessionLogRecord_Outcome().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SessionLogRecord_Outcome {
+    return new SessionLogRecord_Outcome().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SessionLogRecord_Outcome {
+    return new SessionLogRecord_Outcome().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SessionLogRecord_Outcome | PlainMessage<SessionLogRecord_Outcome> | undefined, b: SessionLogRecord_Outcome | PlainMessage<SessionLogRecord_Outcome> | undefined): boolean {
+    return proto3.util.equals(SessionLogRecord_Outcome, a, b);
+  }
+}
+
+/**
  * @generated from message autokitteh.sessions.v1.Session
  */
 export class Session extends Message<Session> {
@@ -890,6 +937,11 @@ export class Session extends Message<Session> {
   state = SessionStateType.UNSPECIFIED;
 
   /**
+   * @generated from field: bool is_durable = 13;
+   */
+  isDurable = false;
+
+  /**
    * These are for auditing/searches only.
    *
    * @generated from field: string deployment_id = 20;
@@ -919,6 +971,7 @@ export class Session extends Message<Session> {
     { no: 10, name: "created_at", kind: "message", T: Timestamp },
     { no: 11, name: "updated_at", kind: "message", T: Timestamp },
     { no: 12, name: "state", kind: "enum", T: proto3.getEnumType(SessionStateType) },
+    { no: 13, name: "is_durable", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 20, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 21, name: "event_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);

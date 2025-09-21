@@ -1,6 +1,7 @@
 on_event: start
 work
 on_event: end (out=8)
+
 -- main.py:main --
 import autokitteh
 
@@ -11,6 +12,7 @@ async def main(event):
     print(f"on_event: end ({out=})")
 
 
+# nondurable: ignored.
 @autokitteh.activity
 async def work():
     print("work")

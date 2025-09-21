@@ -47,6 +47,7 @@ func Run(
 	mainPath string,
 	compiled map[string][]byte,
 	givenValues map[string]sdktypes.Value,
+	durable bool,
 	cbs *sdkservices.RunCallbacks,
 ) (sdkservices.Run, error) {
 	prog, err := getProgram(compiled, mainPath)
@@ -57,7 +58,22 @@ func Run(
 		return nil, fmt.Errorf("not found: %q", mainPath)
 	}
 
-	vctx := &values.Context{Call: cbs.Call, RunID: runID}
+	run := &run{
+		runID:    runID,
+		compiled: compiled,
+		cbs:      cbs,
+		vctx:     &values.Context{Call: cbs.Call, RunID: runID},
+	}
+
+	if !durable {
+		cbs1 := *cbs
+		cbs = &cbs1
+
+		cbs.Call = func(ctx context.Context, _ sdktypes.RunID, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+			return run.Call(ctx, v, args, kwargs)
+		}
+		run.vctx.Call = cbs.Call
+	}
 
 	var predeclared starlark.StringDict
 
@@ -86,14 +102,14 @@ func Run(
 					return nil, sdkerrors.ErrNotFound
 				}
 
-				return kittehs.TransformMapValuesError(globals, vctx.ToStarlarkValue)
+				return kittehs.TransformMapValuesError(globals, run.vctx.ToStarlarkValue)
 			}
 
 			return prog.Init(th, predeclared)
 		},
 	}
 
-	givens, err := kittehs.TransformMapValuesError(givenValues, vctx.ToStarlarkValue)
+	givens, err := kittehs.TransformMapValuesError(givenValues, run.vctx.ToStarlarkValue)
 	if err != nil {
 		return nil, fmt.Errorf("converting values to starlark: %w", err)
 	}
@@ -109,7 +125,7 @@ func Run(
 	maps.Copy(predeclared, givens)
 	maps.Copy(predeclared, libs)
 
-	vctx.SetTLS(th)
+	run.vctx.SetTLS(th)
 	tls.Set(th, &tls.Context{
 		GoCtx:     ctx,
 		RunID:     runID,
@@ -131,8 +147,7 @@ func Run(
 	// We treat the bootstrap exported values as predeclared values in the actual program.
 	maps.Copy(predeclared, bootstrappedValues)
 
-	globals, err := prog.Init(th, predeclared)
-	if err != nil {
+	if run.globals, err = prog.Init(th, predeclared); err != nil {
 		// TODO: multierror.
 		return nil, translateError(err, nil)
 	}
@@ -142,7 +157,7 @@ func Run(
 		return nil, fmt.Errorf("%s", errorReporter.Report())
 	}
 
-	globals = kittehs.FilterMapKeys(globals, func(s string) bool {
+	run.globals = kittehs.FilterMapKeys(run.globals, func(s string) bool {
 		return !strings.HasPrefix(s, "_")
 	})
 
@@ -151,12 +166,12 @@ func Run(
 	// 	globals[testsGlobalName] = predeclared[testsGlobalName]
 	// }
 
-	exports, err := kittehs.TransformMapValuesError(globals, vctx.FromStarlarkValue)
+	run.exports, err = kittehs.TransformMapValuesError(run.globals, run.vctx.FromStarlarkValue)
 	if err != nil {
 		return nil, fmt.Errorf("converting values from starlark: %w", err)
 	}
 
-	return &run{runID: runID, compiled: compiled, exports: exports, globals: globals, vctx: vctx, cbs: cbs}, nil
+	return run, nil
 }
 
 func (r *run) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {

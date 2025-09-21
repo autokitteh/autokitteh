@@ -30,6 +30,7 @@ type Sessions interface {
 	StartWorkers(context.Context) error
 	StartInternal(context.Context, sdktypes.Session) (sdktypes.SessionID, error)
 }
+
 type sessions struct {
 	config *Config
 	l      *zap.Logger
@@ -42,6 +43,12 @@ type sessions struct {
 var _ Sessions = (*sessions)(nil)
 
 func New(l *zap.Logger, config *Config, db db.DB, svcs sessionsvcs.Svcs) (Sessions, error) {
+	if config.EnableNondurableSessions {
+		l.Warn("Nondurable sessions are enabled. This is not currently recommended for production use.")
+	} else {
+		l.Warn("Nondurable sessions are disabled. All sessions will be durable.")
+	}
+
 	return &sessions{
 		config: config,
 		svcs:   &svcs,
@@ -86,11 +93,9 @@ func (s *sessions) GetPrints(ctx context.Context, sid sdktypes.SessionID, pagina
 	}
 
 	prints := kittehs.Transform(lr.Records, func(r sdktypes.SessionLogRecord) *sdkservices.SessionPrint {
-		p, _ := r.GetPrint()
-
 		return &sdkservices.SessionPrint{
 			Timestamp: r.Timestamp(),
-			Value:     p,
+			Value:     r.GetPrint(),
 		}
 	})
 
@@ -164,8 +169,8 @@ func (s *sessions) DownloadLogs(ctx context.Context, sid sdktypes.SessionID) ([]
 }
 
 func writeFormattedSessionLog(buf io.StringWriter, record sdktypes.SessionLogRecord) error {
-	value, ok := record.GetPrint()
-	if !ok {
+	value := record.GetPrint()
+	if !value.IsValid() {
 		return nil
 	}
 
@@ -295,11 +300,17 @@ func (s *sessions) StartInternal(ctx context.Context, session sdktypes.Session) 
 	sid := session.ID()
 	l := s.l.With(zap.Any("session_id", sid))
 
+	if !session.IsDurable() && !s.config.EnableNondurableSessions {
+		// We don't want to warn here as during migration this will be very noisy.
+		l.Debug("non-durable session requested, but non-durable sessions are not allowed by config. forcing durable.")
+		session = session.SetDurable(true)
+	}
+
 	if err := s.svcs.DB.CreateSession(ctx, session); err != nil {
 		return sdktypes.InvalidSessionID, fmt.Errorf("start session: %w", err)
 	}
 
-	if err := s.workflows.StartWorkflow(ctx, session, sessionworkflows.StartWorkflowOptions{}); err != nil {
+	if err := s.workflows.StartWorkflow(ctx, session); err != nil {
 		err = fmt.Errorf("start workflow: %w", err)
 		if uerr := s.svcs.DB.UpdateSessionState(ctx, session.ID(), sdktypes.NewSessionStateError(err, nil)); uerr != nil {
 			l.Sugar().With("err", err).Error("update session state: %v")

@@ -1,4 +1,4 @@
-h1:WtYaHBzcvIWKOH2Xc8/acAxAXDkNsyr/f2YHRwmTOY4=
+h1:iIf39Qa2ZqsNpIQqaElpEQ3Gh61yKMOd41gceD6JmY0=
 20240704121932_baseline.sql h1:1JS9FYe08Ef0wTpJIeeL4wIqHc8E/RXhuqmTI/FwkzY=
 20240714051207_no-db-user.sql h1:tx0AwepNeeL/XWD74sLRGwisrkNs4lyH/H4BG/663FQ=
 20240727114921_project-not-nil-name.sql h1:ZG3tDLzQSxd81S4BDe/IOMktltkurwyuFwu5gkqQvrA=
@@ -35,6 +35,8 @@ h1:WtYaHBzcvIWKOH2Xc8/acAxAXDkNsyr/f2YHRwmTOY4=
 20250723013739_vars_descriptions.sql h1:ftGfrC2KrC631ZEJkaLOpBb6b4ax2xQKu7Hee7FMqQ4=
 20250819230044_async_builds.sql h1:E0IZ8QzryAfhsu8oT7Cke80R2sd54aymg7YWFiFxsvA=
 20250825094835_add-workflow-exec-req-status-acquired-at-idx.sql h1:pl1qMHBPZk6sgnle4VSuGppTXOHublowXh9IKXSwVaU=
-20250915152518_add-target-and-org-id-to-connections.sql h1:26/N9IvThw2L9nMltH2L2vncUYT4oRVY6EsjDYewAbA=
-20250915153404_backfill-connection-org-id-and-target.sql h1:t4arzENyeXInzNhdjvim61nzLjfmYzy+WQ92pqvv/dg=
-20250916162604_connection-project-id-nullable.sql h1:3nm2YAXFEuvj+HfQXGCYgXZa9FmOKy7/mpwTB8ojgiI=
+20250906044107_durability.sql h1:ysj8JMjwYm4z+kjjNnyw8TeILXHGIMPDpOaOO3CNH1A=
+20250915152518_add-target-and-org-id-to-connections.sql h1:+XeJANPOwfzxxGW2pOvPhPwW1k6FGUeyX4hB88K40yY=
+20250915153404_backfill-connection-org-id-and-target.sql h1:j/OCuwEvAQ9jtn4pvV6edzD1Icwo5TpvdievdpIFQHs=
+20250916162604_connection-project-id-nullable.sql h1:WCwqmJ5i3MiHP/Q0eNg6eM93B8TydHUF+mGAjVQAXAA=
+20250919055021_sync.sql h1:QT6VKXLpGyp3AdlGvnua6k7sQvAD2CN3/1RMessdy+w=

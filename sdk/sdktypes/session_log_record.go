@@ -28,6 +28,7 @@ func (SessionLogRecordTraits) Validate(m *SessionLogRecordPB) error {
 		objectField[SessionCallAttemptComplete]("call_attempt_complete", m.CallAttemptComplete),
 		objectField[SessionCallSpec]("call_spec", m.CallSpec),
 		objectField[SessionState]("state", m.State),
+		// TODO: add http response.
 	)
 }
 
@@ -46,16 +47,16 @@ func StrictSessionLogRecordFromProto(m *SessionLogRecordPB) (SessionLogRecord, e
 	return Strict(SessionLogRecordFromProto(m))
 }
 
-func (s SessionLogRecord) GetPrint() (Value, bool) {
+func (s SessionLogRecord) GetPrint() Value {
 	if m := s.read(); m.Print != nil {
 		if m.Print.Value == nil {
-			return NewStringValue(m.Print.Text), true
+			return NewStringValue(m.Print.Text)
 		}
 
-		return kittehs.Must1(ValueFromProto(m.Print.Value)), true
+		return kittehs.Must1(ValueFromProto(m.Print.Value))
 	}
 
-	return InvalidValue, false
+	return InvalidValue
 }
 
 func (s SessionLogRecord) GetCallSpec() SessionCallSpec {
@@ -66,12 +67,29 @@ func (s SessionLogRecord) GetState() SessionState {
 	return forceFromProto[SessionState](s.read().State)
 }
 
+func (s SessionLogRecord) GetOutcome() Value {
+	if m := s.read(); m.Outcome != nil && m.Outcome.Value != nil {
+		return kittehs.Must1(ValueFromProto(m.Outcome.Value))
+	}
+
+	return InvalidValue
+}
+
 func (s SessionLogRecord) GetStopRequest() (string, bool) {
 	if m := s.read(); m.StopRequest != nil {
 		return m.StopRequest.Reason, true
 	}
 
 	return "", false
+}
+
+func NewOutcomeSessionLogRecord(t time.Time, v Value) SessionLogRecord {
+	return forceFromProto[SessionLogRecord](&SessionLogRecordPB{
+		T: timestamppb.New(t),
+		Outcome: &sessionv1.SessionLogRecord_Outcome{
+			Value: v.ToProto(),
+		},
+	})
 }
 
 func NewPrintSessionLogRecord(t time.Time, v Value, callSeq uint32) SessionLogRecord {

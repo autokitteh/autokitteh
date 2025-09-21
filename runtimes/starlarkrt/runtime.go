@@ -33,7 +33,8 @@ func (s svc) Run(
 	mainPath string,
 	compiled map[string][]byte,
 	values map[string]sdktypes.Value,
+	durable bool,
 	cbs *sdkservices.RunCallbacks,
 ) (sdkservices.Run, error) {
-	return runtime.Run(ctx, runID, mainPath, compiled, values, cbs)
+	return runtime.Run(ctx, runID, mainPath, compiled, values, durable, cbs)
 }

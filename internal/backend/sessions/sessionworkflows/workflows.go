@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -34,7 +35,7 @@ type StartWorkflowOptions struct{}
 
 type Workflows interface {
 	StartWorkers(context.Context) error
-	StartWorkflow(ctx context.Context, session sdktypes.Session, opts StartWorkflowOptions) error
+	StartWorkflow(ctx context.Context, session sdktypes.Session) error
 	StartChildWorkflow(wctx workflow.Context, session sdktypes.Session) (sdktypes.SessionID, error)
 	GetWorkflowLog(ctx context.Context, filter sdkservices.SessionLogRecordsFilter) (*sdkservices.GetLogResults, error)
 	StopWorkflow(ctx context.Context, sessionID sdktypes.SessionID, reason string, force bool, cancelTimeout time.Duration) error
@@ -42,7 +43,6 @@ type Workflows interface {
 
 type sessionWorkflowParams struct {
 	Data sessiondata.Data
-	Opts StartWorkflowOptions
 }
 
 type workflows struct {
@@ -100,7 +100,9 @@ func (ws *workflows) StartWorkers(ctx context.Context) error {
 	return ws.utilsWorker.Start()
 }
 
-func memo(session sdktypes.Session, oid sdktypes.OrgID) map[string]string {
+func memo(data *sessiondata.Data) map[string]string {
+	session, oid := data.Session, data.OrgID
+
 	memo := map[string]string{
 		"process_id":      fixtures.ProcessID(),
 		"session_id":      session.ID().String(),
@@ -111,6 +113,7 @@ func memo(session sdktypes.Session, oid sdktypes.OrgID) map[string]string {
 		"project_uuid":    session.ProjectID().UUIDValue().String(),
 		"org_id":          oid.String(),
 		"org_uuid":        oid.UUIDValue().String(),
+		"durable":         strconv.FormatBool(session.IsDurable()),
 	}
 
 	if session.ParentSessionID().IsValid() {
@@ -134,7 +137,7 @@ func (ws *workflows) StartChildWorkflow(wctx workflow.Context, session sdktypes.
 	return sid, nil
 }
 
-func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session, opts StartWorkflowOptions) error {
+func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session) error {
 	sessionID := session.ID()
 
 	data, err := sessiondata.Get(ctx, ws.svcs, session)
@@ -142,11 +145,10 @@ func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session
 		return fmt.Errorf("get session data: %w", err)
 	}
 
-	memo := memo(session, data.OrgID)
+	memo := memo(data)
 
 	params := sessionWorkflowParams{
 		Data: *data,
-		Opts: opts,
 	}
 	if err = ws.svcs.WorkflowExecutor.Execute(ctx, sessionID, params, memo); err != nil {
 		return fmt.Errorf("execute session workflow: %w", err)
@@ -169,6 +171,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params sessionWorkfl
 		zap.String("run_id", wi.WorkflowExecution.RunID),
 		zap.Int32("attempt", wi.Attempt),
 		zap.String("parent_session_id", parentSessionID.String()),
+		zap.Bool("is_durable", session.IsDurable()),
 	)
 
 	didNotifyDone := false
@@ -301,7 +304,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params sessionWorkfl
 	}
 
 	// Signal parent session on completion.
-	if parentSessionID.IsValid() {
+	if session.IsDurable() && parentSessionID.IsValid() {
 		payload := map[string]sdktypes.Value{
 			"completed": sdktypes.NewBooleanValue(err == nil),
 		}

@@ -1,6 +1,6 @@
 [project]
 name = 'autokitteh'
-version = '0.6.0' # Must match the version in runner/pyproject.toml.
+version = '0.7.0' # Must match the version in runner/pyproject.toml.
 description = 'AutoKitteh Python SDK'
 readme = 'README.md'
 license = {file = 'LICENSE'}
@@ -30,6 +30,7 @@ all = [
 	"hubspot-api-client ~= 11.1",
 	"kubernetes ~= 31.0",
 	"msgraph-sdk ~= 1.18",
+	"notion_client ~= 2.0",
 	"openai ~= 1.57",
 	"pipedrive-python-lib ~= 1.2",
 	"praw ~= 7.8",

@@ -9,6 +9,8 @@ class AttrDict(dict):
     8080
     >>> config.debug
     True
+    >>> config["debug"]
+    True
     """
 
     def __getattr__(self, name: str):

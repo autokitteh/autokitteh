@@ -19,10 +19,11 @@ var (
 	entryPoint string
 	memos      []string
 	inputs     []string
+	durable    bool
 )
 
 var startCmd = common.StandardCommand(&cobra.Command{
-	Use:   "start {--deployment-id <ID>|--build-id <ID> --project <name or ID>|--project <name or ID>} --entrypoint <...> [--memo <...>] [--input <JSON> [...]] [--watch [--watch-timeout <duration>] [--poll-interval <duration>] [--no-timestamps] [--quiet]]",
+	Use:   "start {--deployment-id <ID>|--build-id <ID> --project <name or ID>|--project <name or ID>} --entrypoint <...> [--memo <...>] [--input <JSON> [...]] [--watch [--watch-timeout <duration>] [--poll-interval <duration>] [--no-timestamps] [--quiet]] [--durable]",
 	Short: "Start new session",
 	Args:  cobra.NoArgs,
 
@@ -54,7 +55,7 @@ var startCmd = common.StandardCommand(&cobra.Command{
 			did = ds[0].ID()
 		}
 
-		s := sdktypes.NewSession(bid, ep, nil, nil).WithProjectID(pid).WithDeploymentID(did).WithInputs(inputs)
+		s := sdktypes.NewSession(bid, ep, nil, nil).WithProjectID(pid).WithDeploymentID(did).WithInputs(inputs).SetDurable(durable)
 		sid, err := sessions().Start(ctx, s)
 		if err != nil {
 			return fmt.Errorf("start session: %w", err)
@@ -88,6 +89,7 @@ func init() {
 	startCmd.Flags().DurationVarP(&pollInterval, "poll-interval", "i", defaultPollInterval, "watch poll interval")
 	startCmd.Flags().BoolVarP(&noTimestamps, "no-timestamps", "n", false, "omit timestamps from watch output")
 	startCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "don't print anything, just wait to finish")
+	startCmd.Flags().BoolVarP(&durable, "durable", "D", false, "durable run")
 
 	startCmd.Flags().StringArrayVarP(&inputs, "input", "I", nil, `zero or more "key=value" pairs, where value is a JSON value`)
 }
