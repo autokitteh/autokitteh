@@ -7,11 +7,6 @@ import (
 	connectionv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/connections/v1"
 )
 
-const (
-	ConnectionScopeProject = "project"
-	ConnectionScopeOrg     = "org"
-)
-
 type Connection struct {
 	object[*ConnectionPB, ConnectionTraits]
 }
@@ -28,6 +23,7 @@ func (ConnectionTraits) Validate(m *ConnectionPB) error {
 	return errors.Join(
 		nameField("name", m.Name),
 		idField[ProjectID]("project_id", m.ProjectId),
+		idField[OrgID]("org_id", m.OrgId),
 		idField[IntegrationID]("integration_id", m.IntegrationId),
 		objectField[Status]("status", m.Status),
 		objectField[ConnectionCapabilities]("capabilities", m.Capabilities),
@@ -40,9 +36,6 @@ func (ConnectionTraits) StrictValidate(m *ConnectionPB) error {
 		// this is optional for backwards compatibility
 		// once the UI is updated this should be made mandatory
 		// mandatory("org_id", m.OrgId),
-		// This is mandatory for now until the UI is updated
-		// to always pass org_id and only project if needed
-		// mandatory("project_id", m.ProjectId),
 		mandatory("integration_id", m.IntegrationId),
 	)
 }
@@ -60,7 +53,6 @@ func (p Connection) Name() Symbol     { return kittehs.Must1(ParseSymbol(p.read(
 func NewConnection(id ConnectionID) Connection {
 	return kittehs.Must1(ConnectionFromProto(&ConnectionPB{
 		ConnectionId: id.String(),
-		Scope:        ConnectionScopeOrg, // default value
 	}))
 }
 
@@ -141,12 +133,4 @@ func (p Connection) AddLink(name, value string) Connection {
 
 		pb.Links[name] = value
 	})}
-}
-
-func (p Connection) WithScope(scope string) Connection {
-	return Connection{p.forceUpdate(func(pb *ConnectionPB) { pb.Scope = scope })}
-}
-
-func (p Connection) Scope() string {
-	return p.read().Scope
 }

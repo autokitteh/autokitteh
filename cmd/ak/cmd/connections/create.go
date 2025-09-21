@@ -47,7 +47,6 @@ var createCmd = common.StandardCommand(&cobra.Command{
 
 		orgID := org.String()
 
-		scope := sdktypes.ConnectionScopeOrg
 		pidStr := ""
 
 		if project != "" {
@@ -59,7 +58,6 @@ var createCmd = common.StandardCommand(&cobra.Command{
 				err = fmt.Errorf("project %q not found", project)
 				return common.NewExitCodeError(common.NotFoundExitCode, err)
 			}
-			scope = sdktypes.ConnectionScopeProject
 			pidStr = pid.String()
 		}
 
@@ -77,7 +75,6 @@ var createCmd = common.StandardCommand(&cobra.Command{
 			ProjectId:     pidStr,
 			OrgId:         orgID,
 			Name:          args[0],
-			Scope:         scope,
 		})
 		if err != nil {
 			return fmt.Errorf("invalid connection: %w", err)
@@ -112,7 +109,7 @@ func init() {
 	// Command-specific flags.
 	createCmd.Flags().StringVarP(&project, "project", "p", "", "project name or ID (creates a project-scoped connection)")
 	createCmd.Flags().StringVarP(&org, "org", "o", "", "organization name or ID (creates an org-scoped connection)")
-	// createCmd.MarkFlagsOneRequired("project", "org")
+	createCmd.MarkFlagsOneRequired("project", "org")
 	createCmd.MarkFlagsMutuallyExclusive("project", "org")
 
 	createCmd.Flags().StringVarP(&integration, "integration", "i", "", "integration name or ID")

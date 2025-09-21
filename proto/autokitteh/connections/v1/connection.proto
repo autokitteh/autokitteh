@@ -20,8 +20,7 @@ message Connection {
   Capabilities capabilities = 6;
   map<string, string> links = 7;
 
-  string scope = 8;
-  string org_id = 9;
+  string org_id = 8;
 }
 
 message Capabilities {

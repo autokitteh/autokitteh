@@ -71,10 +71,6 @@ func (c *Connections) Create(ctx context.Context, conn sdktypes.Connection) (sdk
 		}
 	}
 
-	if conn.Scope() == "" {
-		conn = conn.WithScope(sdktypes.ConnectionScopeOrg)
-	}
-
 	conn = conn.WithStatus(status).WithNewID()
 
 	if err := c.DB.CreateConnection(ctx, conn); err != nil {

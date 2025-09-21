@@ -100,9 +100,9 @@ func (gdb *gormdb) listConnections(ctx context.Context, filter sdkservices.ListC
 	q := gdb.reader.WithContext(ctx)
 
 	if filter.OrgID.IsValid() {
-		x := q.Where("org_id = ? AND scope = ?", filter.OrgID.UUIDValue(), sdktypes.ConnectionScopeOrg)
+		x := q.Where("org_id = ?", filter.OrgID.UUIDValue())
 		if filter.ProjectID.IsValid() {
-			x = x.Or(q.Where("project_id = ? AND scope = ?", filter.ProjectID.UUIDValue(), sdktypes.ConnectionScopeProject))
+			x = x.Or(q.Where("project_id = ?", filter.ProjectID.UUIDValue()))
 		}
 		q = x
 	}
@@ -131,16 +131,9 @@ func (db *gormdb) CreateConnection(ctx context.Context, conn sdktypes.Connection
 		return err
 	}
 
-	if conn.Scope() == sdktypes.ConnectionScopeProject {
-		if !conn.ProjectID().IsValid() {
-			return errors.New("project_id must be set for project-scoped connections")
-		}
-	}
-
 	c := scheme.Connection{
 		Base:          based(ctx),
 		ProjectID:     conn.ProjectID().UUIDValuePtr(),
-		Scope:         conn.Scope(),
 		OrgID:         conn.OrgID().UUIDValue(),
 		ConnectionID:  conn.ID().UUIDValue(),
 		IntegrationID: uuidPtrOrNil(conn.IntegrationID()),

@@ -1,6 +1,6 @@
 -- +goose Up
 -- modify "connections" table
-ALTER TABLE "connections" ADD COLUMN "org_id" uuid NULL, ADD COLUMN "scope" text NULL;
+ALTER TABLE "connections" ADD COLUMN "org_id" uuid NULL;
 -- create index "idx_connections_org_id" to table: "connections"
 CREATE INDEX "idx_connections_org_id" ON "connections" ("org_id");
 
@@ -8,4 +8,4 @@ CREATE INDEX "idx_connections_org_id" ON "connections" ("org_id");
 -- reverse: create index "idx_connections_org_id" to table: "connections"
 DROP INDEX "idx_connections_org_id";
 -- reverse: modify "connections" table
-ALTER TABLE "connections" DROP COLUMN "scope", DROP COLUMN "org_id";
+ALTER TABLE "connections" DROP COLUMN "org_id";
