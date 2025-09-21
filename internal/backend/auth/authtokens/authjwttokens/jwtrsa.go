@@ -26,8 +26,9 @@ type RSAConfig struct {
 }
 
 type rsaTokens struct {
-	privateKey *rsa.PrivateKey
-	publicKey  *rsa.PublicKey
+	privateKey     *rsa.PrivateKey
+	publicKey      *rsa.PublicKey
+	internalDomain string
 }
 
 var (
@@ -96,7 +97,7 @@ func parsePublicKey(pemStr string) (*rsa.PublicKey, error) {
 	return rsaPub, nil
 }
 
-func newRSA(cfg *RSAConfig) (RSATokens, error) {
+func newRSA(cfg *RSAConfig, internalDomain string) (RSATokens, error) {
 	if cfg.PrivateKey == "" || cfg.PublicKey == "" {
 		return nil, errors.New("both private and public keys must be provided")
 	}
@@ -112,8 +113,9 @@ func newRSA(cfg *RSAConfig) (RSATokens, error) {
 	}
 
 	return &rsaTokens{
-		privateKey: privateKey,
-		publicKey:  publicKey,
+		privateKey:     privateKey,
+		publicKey:      publicKey,
+		internalDomain: internalDomain,
 	}, nil
 }
 
@@ -131,7 +133,7 @@ func (rs *rsaTokens) Create(u sdktypes.User) (string, error) {
 	email := u.Email()
 	emailParts := strings.Split(email, "@")
 	internalUser := false
-	if len(emailParts) == 2 && emailParts[1] == "autokitteh.com" {
+	if len(emailParts) == 2 && emailParts[1] == rs.internalDomain {
 		internalUser = true
 	}
 	return createExternalToken(rsaMethod, rs.privateKey, bs, internalUser)
