@@ -22,9 +22,9 @@ type externalTokenData struct {
 
 func createExternalToken(signMethod j.SigningMethod, signKey any, data []byte, internalUser bool) (string, error) {
 	id := uuid.New()
-	aud := []string{"api.autokitteh.cloud"}
+	aud := []string{"api." + externalIssuer}
 	if internalUser {
-		aud = append(aud, "internal.autokitteh.cloud")
+		aud = append(aud, "internal."+externalIssuer)
 	}
 
 	claims := &externalTokenData{
