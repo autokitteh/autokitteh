@@ -84,6 +84,11 @@ class HandlerServiceStub(object):
                 request_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StoreMutateRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StoreMutateResponse.FromString,
                 _registered_method=True)
+        self.Outcome = channel.unary_unary(
+                '/autokitteh.user_code.v1.HandlerService/Outcome',
+                request_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.OutcomeRequest.SerializeToString,
+                response_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.OutcomeResponse.FromString,
+                _registered_method=True)
         self.EncodeJWT = channel.unary_unary(
                 '/autokitteh.user_code.v1.HandlerService/EncodeJWT',
                 request_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.EncodeJWTRequest.SerializeToString,
@@ -199,6 +204,12 @@ class HandlerServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def Outcome(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def EncodeJWT(self, request, context):
         """Utility functions
         """
@@ -296,6 +307,11 @@ def add_HandlerServiceServicer_to_server(servicer, server):
                     servicer.StoreMutate,
                     request_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StoreMutateRequest.FromString,
                     response_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StoreMutateResponse.SerializeToString,
+            ),
+            'Outcome': grpc.unary_unary_rpc_method_handler(
+                    servicer.Outcome,
+                    request_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.OutcomeRequest.FromString,
+                    response_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.OutcomeResponse.SerializeToString,
             ),
             'EncodeJWT': grpc.unary_unary_rpc_method_handler(
                     servicer.EncodeJWT,
@@ -696,6 +712,33 @@ class HandlerService(object):
             '/autokitteh.user_code.v1.HandlerService/StoreMutate',
             autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StoreMutateRequest.SerializeToString,
             autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StoreMutateResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def Outcome(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/autokitteh.user_code.v1.HandlerService/Outcome',
+            autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.OutcomeRequest.SerializeToString,
+            autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.OutcomeResponse.FromString,
             options,
             channel_credentials,
             insecure,

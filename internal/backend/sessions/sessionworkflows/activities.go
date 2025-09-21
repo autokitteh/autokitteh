@@ -20,21 +20,23 @@ import (
 )
 
 const (
-	updateSessionStateActivityName          = "update_session_state"
-	terminateWorkflowActivityName           = "terminate_workflow"
-	saveSignalActivityName                  = "save_signal"
-	getLastEventSequenceActivityName        = "get_last_event_sequence"
-	getSessionStopReasonActivityName        = "get_session_stop_reason"
-	getSignalEventActivityName              = "get_signal_event"
-	removeSignalActivityName                = "remove_signal"
-	deactivateDrainedDeploymentActivityName = "deactivate_drained_deployment"
-	getDeploymentStateActivityName          = "get_deployment_state"
-	createSessionActivityName               = "create_session"
-	getProjectIDAndActiveBuildID            = "get_project_id_and_active_build_id"
-	listStoreValuesActivityName             = "list_store_values"
-	mutateStoreValueActivityName            = "mutate_store_value"
-	notifyWorkflowEndedActivity             = "notify_workflow_ended"
-	startChildSessionActivityName           = "start_child_session"
+	createSessionActivityName                = "create_session"
+	deactivateDrainedDeploymentActivityName  = "deactivate_drained_deployment"
+	getDeploymentStateActivityName           = "get_deployment_state"
+	getLastEventSequenceActivityName         = "get_last_event_sequence"
+	getProjectIDAndActiveBuildID             = "get_project_id_and_active_build_id"
+	getProjectIDAndActiveBuildIDActivityName = "get_project_id_and_active_build_id"
+	getSessionStopReasonActivityName         = "get_session_stop_reason"
+	getSignalEventActivityName               = "get_signal_event"
+	listStoreValuesActivityName              = "list_store_values"
+	mutateStoreValueActivityName             = "mutate_store_value"
+	notifyWorkflowEndedActivity              = "notify_workflow_ended"
+	outcomeActivityName                      = "outcome"
+	removeSignalActivityName                 = "remove_signal"
+	saveSignalActivityName                   = "save_signal"
+	startChildSessionActivityName            = "start_child_session"
+	terminateWorkflowActivityName            = "terminate_workflow"
+	updateSessionStateActivityName           = "update_session_state"
 )
 
 func (ws *workflows) registerActivities() {
@@ -109,8 +111,8 @@ func (ws *workflows) registerActivities() {
 	)
 
 	ws.sessionsWorker.RegisterActivityWithOptions(
-		ws.getProjectIDAndActiveBuildID,
-		activity.RegisterOptions{Name: getProjectIDAndActiveBuildID},
+		ws.getProjectIDAndActiveBuildIDActivity,
+		activity.RegisterOptions{Name: getProjectIDAndActiveBuildIDActivityName},
 	)
 
 	ws.sessionsWorker.RegisterActivityWithOptions(
@@ -121,6 +123,11 @@ func (ws *workflows) registerActivities() {
 	ws.sessionsWorker.RegisterActivityWithOptions(
 		ws.startChildSessionActivity,
 		activity.RegisterOptions{Name: startChildSessionActivityName},
+	)
+
+	ws.sessionsWorker.RegisterActivityWithOptions(
+		ws.outcomeActivity,
+		activity.RegisterOptions{Name: outcomeActivityName},
 	)
 }
 
@@ -134,7 +141,7 @@ type getProjectIDAndActiveBuildIDResponse struct {
 	ProjectID sdktypes.ProjectID
 }
 
-func (ws *workflows) getProjectIDAndActiveBuildID(ctx context.Context, params getProjectIDAndActiveBuildIDParams) (*getProjectIDAndActiveBuildIDResponse, error) {
+func (ws *workflows) getProjectIDAndActiveBuildIDActivity(ctx context.Context, params getProjectIDAndActiveBuildIDParams) (*getProjectIDAndActiveBuildIDResponse, error) {
 	p, err := ws.svcs.Projects.GetByName(authcontext.SetAuthnSystemUser(ctx), params.OrgID, params.Project)
 	if err != nil {
 		return nil, temporalclient.TranslateError(err, "get project %v", params.Project)
@@ -163,6 +170,10 @@ func (ws *workflows) getProjectIDAndActiveBuildID(ctx context.Context, params ge
 		BuildID:   d.BuildID(),
 		ProjectID: p.ID(),
 	}, nil
+}
+
+func (ws *workflows) outcomeActivity(ctx context.Context, sid sdktypes.SessionID, v sdktypes.Value) error {
+	return ws.svcs.DB.AddSessionOutcome(ctx, sid, v)
 }
 
 func (ws *workflows) listStoreValuesActivity(ctx context.Context, pid sdktypes.ProjectID) ([]string, error) {

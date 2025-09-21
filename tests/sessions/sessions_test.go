@@ -2,6 +2,7 @@ package sessions
 
 import (
 	"embed"
+	"flag"
 	"fmt"
 	"io/fs"
 	"math/rand/v2"
@@ -15,6 +16,14 @@ import (
 
 const (
 	clientTimeout = 30 * time.Second
+)
+
+// If set, session test will run with --durable. Any *.durable.* tests will be run, and
+// any *.nondurable.* tests will be skipped.
+// If not set, session test will run without --durable. Any *.nondurable.* tests will be run,
+// and any *.durable.* tests will be skipped.
+var (
+	durable = flag.Bool("durable", false, "run sessions tests in durable mode")
 )
 
 //go:embed *
@@ -62,6 +71,16 @@ func runTest(t *testing.T, akPath, venvPath, txtarPath string) {
 			t.Fatalf("failed to convert %q to absolute path: %v", txtarPath, err)
 		}
 
+		if (strings.Contains(txtarPath, ".nondurable.") || strings.Contains(txtarPath, ".nondurable/")) && durable != nil && *durable {
+			t.Skip("skipping in durable mode")
+			return
+		}
+
+		if (strings.Contains(txtarPath, ".durable.") || strings.Contains(txtarPath, ".durable/")) && (durable == nil || !*durable) {
+			t.Skip("skipping in nondurable mode")
+			return
+		}
+
 		// Start AK server.
 		tests.SwitchToTempDir(t, venvPath) // For test isolation.
 
@@ -87,6 +106,11 @@ func runTest(t *testing.T, akPath, venvPath, txtarPath string) {
 
 		// Run session test.
 		args = []string{"session", "test", absPath, "--project", projName}
+
+		if durable != nil && *durable {
+			args = append(args, "--durable")
+		}
+
 		result, err = tests.RunAKClient(t, akPath, server.Addr, "", clientTimeout, args)
 		if err != nil {
 			server.PrintLog(t)

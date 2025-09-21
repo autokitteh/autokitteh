@@ -47,14 +47,15 @@ func TransformEvent(l *zap.Logger, payload any, eventType string) (sdktypes.Even
 // given connections, for potential asynchronous handling.
 func DispatchEvent(ctx context.Context, l *zap.Logger, d sdkservices.DispatchFunc, e sdktypes.Event, cids []sdktypes.ConnectionID) {
 	for _, cid := range cids {
-		eid, err := d(ctx, e.WithConnectionDestinationID(cid), nil)
+		resp, err := d(ctx, e.WithConnectionDestinationID(cid), nil)
 		l := l.With(
 			zap.String("connection_id", cid.String()),
-			zap.String("event_id", eid.String()),
+			zap.String("event_id", resp.EventID.String()),
 		)
 		if err != nil {
 			if errors.Is(err, sdkerrors.ErrResourceExhausted) {
 				l.Info("Event dispatch failed due to resource exhaustion")
+				continue
 			} else {
 				l.Error("Event dispatch failed", zap.Error(err))
 			}

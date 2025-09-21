@@ -2,6 +2,7 @@ package webhookssvc
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,11 +10,13 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"go.jetify.com/typeid"
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
+	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -22,16 +25,35 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+// An unwrapper that is always safe to serialize to string afterwards.
+var unwrapper = sdktypes.ValueWrapper{
+	SafeForJSON:         true,
+	UnwrapStructsAsJSON: true,
+}
+
 const WebhooksPathPrefix = "/webhooks/"
+
+type Config struct {
+	SessionOutcomePollInterval time.Duration `koanf:"session_outcome_poll_interval"`
+	WebhookResponseTimeout     time.Duration `koanf:"webhook_response_timeout"`
+}
+
+var Configs = configset.Set[Config]{
+	Default: &Config{
+		WebhookResponseTimeout:     30 * time.Second,
+		SessionOutcomePollInterval: 100 * time.Millisecond,
+	},
+}
 
 type Service struct {
 	logger   *zap.Logger
 	dispatch sdkservices.DispatchFunc
 	db       db.DB
+	cfg      *Config
 }
 
-func New(l *zap.Logger, db db.DB, dispatch sdkservices.DispatchFunc) *Service {
-	return &Service{logger: l, db: db, dispatch: dispatch}
+func New(l *zap.Logger, cfg *Config, db db.DB, dispatch sdkservices.DispatchFunc) *Service {
+	return &Service{logger: l, db: db, dispatch: dispatch, cfg: cfg}
 }
 
 func (s *Service) Start(muxes *muxes.Muxes) {
@@ -69,7 +91,9 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
-	sl.Infof("webhook request: method=%s, trigger_event_type=%s", r.Method, t.EventType())
+
+	sl.With("trigger", t).Infof("webhook request: method=%s, trigger_event_type=%s", r.Method, t.EventType())
+
 	data, err := requestToData(r)
 	if err != nil {
 		sl.Errorw("failed to convert request to data", "err", err)
@@ -95,7 +119,13 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	eid, err := s.dispatch(authcontext.SetAuthnSystemUser(ctx), event, nil)
+	isSync := t.IsSync()
+
+	sl = sl.With("sync", isSync, "event_id", event.ID())
+
+	opts := &sdkservices.DispatchOptions{Wait: isSync}
+
+	resp, err := s.dispatch(authcontext.SetAuthnSystemUser(ctx), event, opts)
 	if err != nil {
 		if errors.Is(err, sdkerrors.ErrResourceExhausted) {
 			sl.Warnw("dispatch failed: resource exhausted", "event", event, "err", err)
@@ -107,8 +137,238 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("AutoKitteh-Event-ID", eid.String())
-	w.WriteHeader(http.StatusAccepted)
+	w.Header().Set("AutoKitteh-Event-ID", resp.EventID.String())
+	w.Header().Set("Cache-Control", "no-cache")
+
+	if !isSync {
+		w.WriteHeader(http.StatusAccepted)
+		return
+	}
+
+	s.handleSyncResponse(ctx, w, resp.SessionIDs, sl)
+}
+
+func (s *Service) handleSyncResponse(ctx context.Context, w http.ResponseWriter, sids []sdktypes.SessionID, sl *zap.SugaredLogger) {
+	w.Header().Set("Connection", "keep-alive")
+
+	if len(sids) == 0 {
+		sl.Warnw("no session was created for event")
+		http.Error(w, "No session was created for event", http.StatusBadGateway)
+		return
+	}
+
+	if len(sids) > 1 {
+		sl.Warnw("multiple sessions were created for event", "session_ids", sids)
+		http.Error(w, "Multiple sessions were created for event", http.StatusBadGateway)
+		return
+	}
+
+	session, err := s.db.GetSession(ctx, sids[0])
+	if err != nil {
+		sl.Errorw("get session failed", "session_id", sids[0], "err", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("AutoKitteh-Session-ID", session.ID().String())
+
+	if tmo := s.cfg.WebhookResponseTimeout; tmo != 0 {
+		var done context.CancelFunc
+		ctx, done = context.WithTimeout(ctx, tmo)
+		defer done()
+	}
+
+	var (
+		firstOutcomeHandled bool
+		skip                int32 // no need to reprocess records we've already seen.
+	)
+
+	for {
+		if skip > 0 {
+			// delay poll only after first iteration.
+
+			select {
+			case <-time.After(s.cfg.SessionOutcomePollInterval):
+				// nop
+			case <-ctx.Done():
+				if ctx.Err() == context.DeadlineExceeded {
+					// timeout
+					sl.Debugw("timed out waiting for session to complete")
+					w.WriteHeader(http.StatusGatewayTimeout)
+				} else {
+					// cancelled
+					sl.Debugw("request context cancelled", "err", ctx.Err())
+					w.WriteHeader(http.StatusRequestTimeout)
+				}
+				return
+			}
+		}
+
+		log, err := s.db.GetSessionLog(
+			ctx,
+			sdkservices.SessionLogRecordsFilter{
+				SessionID: session.ID(),
+				Types:     sdktypes.OutcomeSessionLogRecordType | sdktypes.StateSessionLogRecordType,
+				PaginationRequest: sdktypes.PaginationRequest{
+					Ascending: true,
+					Skip:      skip,
+				},
+			},
+		)
+		if err != nil {
+			sl.Errorw("get session log failed", "err", err)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+
+		for _, r := range log.Records {
+			skip++
+
+			if state := r.GetState(); state.IsValid() {
+				switch state.Type() {
+				case sdktypes.SessionStateTypeError:
+					sl.Warnw("session ended in error", "state", state)
+					w.WriteHeader(http.StatusBadGateway)
+
+				case sdktypes.SessionStateTypeStopped:
+					sl.Warnw("session was stopped before producing an outcome", "state", state)
+					w.WriteHeader(http.StatusBadGateway)
+
+				case sdktypes.SessionStateTypeCompleted:
+					w.WriteHeader(http.StatusOK)
+
+				default:
+					// not final
+					continue
+				}
+
+				return
+			}
+
+			if v := r.GetOutcome(); v.IsValid() {
+				outcome, err := parseOutcomeValue(v)
+				if err != nil {
+					sl.Errorw("failed to parse outcome value", "err", err)
+					http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+					return
+				}
+
+				more, err := s.writeOutcome(w, outcome, firstOutcomeHandled)
+				if err != nil {
+					sl.Errorw("failed to handle outcome", "err", err)
+					http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+					return
+				}
+
+				if !more {
+					return
+				}
+
+				firstOutcomeHandled = true
+			}
+		}
+	}
+}
+
+func (s *Service) writeOutcome(w http.ResponseWriter, outcome httpOutcome, firstOutcomeHandled bool) (more bool, err error) {
+	if !firstOutcomeHandled {
+		var hadContentType bool
+
+		for k, v := range outcome.Headers {
+			w.Header().Set(k, v)
+
+			if strings.ToLower(k) == "content-type" {
+				hadContentType = true
+			}
+		}
+
+		if !hadContentType && outcome.Json.IsValid() {
+			w.Header().Set("Content-Type", "application/json")
+		}
+
+		code := outcome.StatusCode
+		if code == 0 {
+			code = http.StatusOK
+		}
+
+		w.WriteHeader(code)
+	}
+
+	if err := outcome.WriteBody(w); err != nil {
+		return false, fmt.Errorf("write outcome body: %w", err)
+	}
+
+	if flusher, ok := w.(http.Flusher); ok {
+		flusher.Flush()
+	}
+
+	return outcome.More, nil
+}
+
+type httpOutcome struct {
+	StatusCode int
+	Body       sdktypes.Value
+	Json       sdktypes.Value // due to the way unwrapping work, this must be "Json" and not "JSON".
+	Headers    map[string]string
+	More       bool
+}
+
+func parseOutcomeValue(v sdktypes.Value) (outcome httpOutcome, err error) {
+	err = sdktypes.UnwrapValueInto(&outcome, v)
+	return
+}
+
+// WriteBody writes body bytes to a writer.
+//
+// If both Body and JSON are set, an error is returned.
+//
+// If Body is set, it is converted to bytes as follows:
+//   - If Body is a string, it is converted to []byte of the string.
+//   - If Body is []byte, it is returned as-is.
+//   - Otherwise, Body is marshaled to JSON and the resulting bytes are returned.
+//
+// If JSON is set, it is marshaled to JSON and the resulting bytes are returned.
+//
+// If neither Body nor JSON is set, nil and no error are returned.
+func (o httpOutcome) WriteBody(w io.Writer) error {
+	var b sdktypes.Value
+
+	switch {
+	case o.Body.IsValid() && o.Json.IsValid():
+		return errors.New("outcome cannot have both 'body' and 'json' fields set together")
+	case o.Body.IsValid():
+		if v := o.Body.GetString(); v.IsValid() {
+			if _, err := w.Write([]byte(v.Value())); err != nil {
+				return fmt.Errorf("write body string: %w", err)
+			}
+			return nil
+		}
+
+		if v := o.Body.GetBytes(); v.IsValid() {
+			if _, err := w.Write(v.Value()); err != nil {
+				return fmt.Errorf("write body bytes: %w", err)
+			}
+			return nil
+		}
+
+		b = o.Body
+	case o.Json.IsValid():
+		b = o.Json
+	default:
+		// nothing to write
+		return nil
+	}
+
+	u, err := unwrapper.Unwrap(b)
+	if err != nil {
+		return fmt.Errorf("outcome body unwrap: %w", err)
+	}
+
+	if err := json.NewEncoder(w).Encode(u); err != nil {
+		return fmt.Errorf("outcome json marshal: %w", err)
+	}
+
+	return nil
 }
 
 func requestToData(r *http.Request) (map[string]sdktypes.Value, error) {

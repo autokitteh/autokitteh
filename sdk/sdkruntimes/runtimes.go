@@ -46,6 +46,7 @@ func (s runtimes) Run(
 	path string,
 	build *sdkbuildfile.BuildFile,
 	globals map[string]sdktypes.Value,
+	durable bool,
 	cbs *sdkservices.RunCallbacks,
 ) (sdkservices.Run, error) {
 	if cbs == nil {
@@ -59,6 +60,7 @@ func (s runtimes) Run(
 		EntryPointPath:       path,
 		BuildFile:            build,
 		Globals:              globals,
+		IsDurable:            durable,
 		FallthroughCallbacks: *cbs,
 	})
 }

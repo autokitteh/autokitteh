@@ -8,6 +8,7 @@ from .activities import activity, inhibit_activities, register_no_activity
 from .attr_dict import AttrDict
 from .event import Event
 from .events import next_event, start, subscribe, unsubscribe
+from .outcomes import outcome, http_outcome
 from .signals import Signal, next_signal, signal
 from .errors import AutoKittehError
 from .store import (
@@ -22,9 +23,11 @@ from .store import (
 
 __all__ = [
     "AttrDict",
-    "errors",
-    "start",
     "AutoKittehError",
+    "errors",
+    "http_outcome",
+    "outcome",
+    "start",
     # Activities
     "activity",
     "inhibit_activities",

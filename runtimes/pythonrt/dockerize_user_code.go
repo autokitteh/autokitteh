@@ -77,17 +77,7 @@ type userCodeDetails struct {
 	requirementsFilePath  string
 }
 
-func prepareUserCode(code []byte, gzipped bool) (userCodeDetails, error) {
-	tf, err := tar.FromBytes(code, gzipped)
-	if err != nil {
-		return userCodeDetails{}, err
-	}
-
-	content, err := tf.Content()
-	if err != nil {
-		return userCodeDetails{}, err
-	}
-
+func writeUserCodeToFS(files map[string][]byte) (userCodeDetails, error) {
 	tmpDir, err := os.MkdirTemp("", "")
 	if err != nil {
 		return userCodeDetails{}, err
@@ -98,8 +88,8 @@ func prepareUserCode(code []byte, gzipped bool) (userCodeDetails, error) {
 	}
 
 	hasRequirementsFile := false
-	for file, content := range content {
-		if strings.HasPrefix(file, ".") {
+	for file, content := range files {
+		if strings.HasPrefix(file, ".") || strings.HasSuffix(file, "/") {
 			continue
 		}
 
@@ -126,4 +116,18 @@ func prepareUserCode(code []byte, gzipped bool) (userCodeDetails, error) {
 		hasCustomRequirements: hasRequirementsFile,
 		requirementsFilePath:  path.Join(tmpDir, "user_requirements.txt"),
 	}, nil
+}
+
+func prepareUserCode(code []byte, gzipped bool) (userCodeDetails, error) {
+	tf, err := tar.FromBytes(code, gzipped)
+	if err != nil {
+		return userCodeDetails{}, err
+	}
+
+	files, err := tf.Content()
+	if err != nil {
+		return userCodeDetails{}, err
+	}
+
+	return writeUserCodeToFS(files)
 }

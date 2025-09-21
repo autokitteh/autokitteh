@@ -10,9 +10,13 @@ return code == 0
 ak project deploy p2 --file p2.py
 return code == 0
 
-ak session start --project p1 --entrypoint p1.py:main -j
+ak session start --project p1 --entrypoint p1.py:main -j --durable
 return code == 0
 capture_jq sid .session_id
+
+ak session get $sid -j
+return code == 0
+output contains '"is_durable":true'
 
 ak session watch $sid --timeout 20s
 return code == 0

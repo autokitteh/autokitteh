@@ -32,6 +32,7 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/microsoft"
 	"go.autokitteh.dev/autokitteh/integrations/microsoft/teams"
 	"go.autokitteh.dev/autokitteh/integrations/oauth"
+	"go.autokitteh.dev/autokitteh/integrations/pipedrive"
 	"go.autokitteh.dev/autokitteh/integrations/reddit"
 	"go.autokitteh.dev/autokitteh/integrations/salesforce"
 	"go.autokitteh.dev/autokitteh/integrations/slack"
@@ -88,7 +89,7 @@ func integrationsFXOption() fx.Option {
 
 		fx.Decorate(func(vs sdkservices.Vars) sdkservices.Vars { return sysVars{vs} }),
 		fx.Decorate(func(dispatch sdkservices.DispatchFunc) sdkservices.DispatchFunc {
-			return func(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) (sdktypes.EventID, error) {
+			return func(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) (*sdkservices.DispatchResponse, error) {
 				return dispatch(authcontext.SetAuthnSystemUser(ctx), event, opts)
 			}
 		}),
@@ -116,6 +117,7 @@ func integrationsFXOption() fx.Option {
 		integration("linear", configset.Empty, linear.New),
 		integration("microsoft", configset.Empty, microsoft.New),
 		integration("microsoft_teams", configset.Empty, teams.New),
+		integration("pipedrive", configset.Empty, pipedrive.New),
 		integration("reddit", configset.Empty, reddit.New),
 		integration("salesforce", configset.Empty, salesforce.New),
 		integration("sheets", configset.Empty, sheets.New),
@@ -142,6 +144,7 @@ func integrationsFXOption() fx.Option {
 				kubernetes.Start(l, muxes)
 				linear.Start(l, muxes, vars, oauth, dispatch)
 				microsoft.Start(l, muxes, vars, oauth, dispatch)
+				pipedrive.Start(l, muxes, vars)
 				reddit.Start(l, muxes, vars)
 				salesforce.Start(l, muxes, vars, oauth, dispatch)
 				slack.Start(l, muxes, vars, dispatch)

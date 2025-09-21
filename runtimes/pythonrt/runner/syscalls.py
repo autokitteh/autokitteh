@@ -7,6 +7,7 @@ matching function in autokitteh (e.g. autokitteh.start).
 import json
 import os
 from datetime import timedelta
+from typing import Any
 
 import grpc
 import log
@@ -153,7 +154,7 @@ class SysCalls:
             raise AutoKittehError(f"refresh_oauth: {resp.error}")
         return resp.token, resp.expires.ToDatetime()
 
-    def ak_signal(self, session_id: str, name: str, payload: any = None) -> None:
+    def ak_signal(self, session_id: str, name: str, payload: Any = None) -> None:
         log.debug("signal: %r %r", session_id, name)
 
         req = pb.SignalRequest(
@@ -194,7 +195,7 @@ class SysCalls:
 
         return None
 
-    def ak_mutate_value(self, key: str, op: str, *args: list[str]) -> any:
+    def ak_mutate_value(self, key: str, op: str, *args: list[str]) -> Any:
         log.debug("ak_mutate_value: %r %r %r", key, op, args)
         req = pb.StoreMutateRequest(
             runner_id=self.runner_id,
@@ -205,16 +206,16 @@ class SysCalls:
         resp = call_grpc("store_mutate", self.worker.StoreMutate, req)
         return values.unwrap(resp.result)
 
-    def ak_set_value(self, key: str, value: any) -> None:
+    def ak_set_value(self, key: str, value: Any) -> None:
         self.ak_mutate_value(key, "set", value)
 
     def ak_add_values(self, key: str, value: int | float) -> int | float:
         return self.ak_mutate_value(key, "add", value)
 
-    def ak_get_value(self, key: str) -> any:
+    def ak_get_value(self, key: str) -> Any:
         return self.ak_mutate_value(key, "get")
 
-    def ak_del_value(self, key: str) -> any:
+    def ak_del_value(self, key: str) -> Any:
         return self.ak_mutate_value(key, "del")
 
     def ak_list_values_keys(self) -> list[str]:
@@ -222,6 +223,39 @@ class SysCalls:
         req = pb.StoreListRequest(runner_id=self.runner_id)
         resp = call_grpc("store_list", self.worker.StoreList, req)
         return resp.keys
+
+    def ak_http_outcome(
+        self,
+        status_code: int = 200,
+        body: Any = None,
+        json: Any = None,
+        headers: dict[str, str] = {},
+        more: bool = False,
+    ) -> None:
+        out = {
+            "status_code": status_code,
+            "headers": headers or {},
+            "more": more,
+        }
+
+        if body is not None and json is not None:
+            raise ValueError("Cannot specify both body and json together")
+
+        if body is not None:
+            out["body"] = body
+
+        if json is not None:
+            out["json"] = json
+
+        self.ak_outcome(out)
+
+    def ak_outcome(self, v: Any) -> None:
+        log.debug("ak_outcome: %r", v)
+        req = pb.OutcomeRequest(
+            runner_id=self.runner_id,
+            value=values.wrap(v),
+        )
+        call_grpc("outcome", self.worker.Outcome, req)
 
     @classmethod
     def mark_ak_no_activity(cls):

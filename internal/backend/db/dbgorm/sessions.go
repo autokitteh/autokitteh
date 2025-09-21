@@ -19,9 +19,10 @@ import (
 )
 
 const (
-	printSessionLogRecordType = "print"
-	stateSessionLogRecordType = "state"
-	stopSessionLogRecordType  = "stop_request"
+	printSessionLogRecordType   = "print"
+	stateSessionLogRecordType   = "state"
+	stopSessionLogRecordType    = "stop_request"
+	outcomeSessionLogRecordType = "outcome"
 )
 
 func (gdb *gormdb) createSession(ctx context.Context, session *scheme.Session) error {
@@ -195,6 +196,7 @@ func (gdb *gormdb) getSessionLogRecords(ctx context.Context, filter sdkservices.
 			specific(sdktypes.PrintSessionLogRecordType, printSessionLogRecordType)
 			specific(sdktypes.StateSessionLogRecordType, stateSessionLogRecordType)
 			specific(sdktypes.StopRequestSessionLogRecordType, stopSessionLogRecordType)
+			specific(sdktypes.OutcomeSessionLogRecordType, outcomeSessionLogRecordType)
 
 			q = q.Where("type in (?)", qtypes)
 		}
@@ -224,6 +226,7 @@ func (db *gormdb) CreateSession(ctx context.Context, session sdktypes.Session) e
 		CurrentStateType: int(sdktypes.SessionStateTypeCreated.ToProto()),
 		Inputs:           kittehs.Must1(json.Marshal(session.Inputs())),
 		Memo:             kittehs.Must1(json.Marshal(session.Memo())),
+		IsDurable:        session.IsDurable(),
 	}
 	return translateError(db.createSession(ctx, &s))
 }
@@ -292,6 +295,14 @@ func (db *gormdb) AddSessionStopRequest(ctx context.Context, sessionID sdktypes.
 		return err
 	}
 	return translateError(db.addSessionLogRecord(ctx, logr, stopSessionLogRecordType))
+}
+
+func (db *gormdb) AddSessionOutcome(ctx context.Context, sessionID sdktypes.SessionID, v sdktypes.Value) error {
+	logr, err := toSessionLogRecord(sessionID.UUIDValue(), sdktypes.NewOutcomeSessionLogRecord(kittehs.Now(), v))
+	if err != nil {
+		return err
+	}
+	return translateError(db.addSessionLogRecord(ctx, logr, outcomeSessionLogRecordType))
 }
 
 func (db *gormdb) GetSessionLog(ctx context.Context, filter sdkservices.SessionLogRecordsFilter) (*sdkservices.GetLogResults, error) {

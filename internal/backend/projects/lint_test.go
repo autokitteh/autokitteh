@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/projectsgrpcsvc"
@@ -13,7 +14,6 @@ import (
 )
 
 func initialManifest() *manifest.Manifest {
-	var wh struct{}
 	return &manifest.Manifest{
 		Version: "v1",
 		Project: &manifest.Project{
@@ -31,7 +31,7 @@ func initialManifest() *manifest.Manifest {
 					Name:      "events",
 					EventType: "post",
 					Call:      "program.py:on_event",
-					Webhook:   &wh,
+					Webhook:   &struct{}{},
 				},
 			},
 			Vars: []*manifest.Var{
@@ -220,4 +220,17 @@ func Test_checkCodeConnections(t *testing.T) {
 
 func TestNilSafe(t *testing.T) {
 	Validate(sdktypes.InvalidProjectID, []byte("version: 1"), nil) // should not panic
+}
+
+func TestPyRequirements(t *testing.T) {
+	test := func(lines ...string) []*sdktypes.CheckViolation {
+		rs := map[string][]byte{"requirements.txt": []byte(strings.Join(lines, "\n"))}
+		return checkPyRequirements(sdktypes.InvalidProjectID, nil, rs)
+	}
+
+	assert.Len(t, test("flask", "numpy==1.23.4", "# meow"), 0)
+	assert.Len(t, test("1234"), 1)
+	assert.Len(t, test("!meow"), 1)
+	assert.Len(t, test("requests"), 1)
+	assert.Len(t, test("requests==1"), 1)
 }

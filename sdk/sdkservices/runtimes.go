@@ -23,6 +23,7 @@ type Runtimes interface {
 		path string,
 		build *sdkbuildfile.BuildFile,
 		globals map[string]sdktypes.Value,
+		durable bool,
 		cbs *RunCallbacks,
 	) (Run, error)
 }
@@ -41,6 +42,7 @@ type Runtime interface {
 		path string, // where to start running from.
 		compiled map[string][]byte,
 		values map[string]sdktypes.Value,
+		durable bool,
 		cbs *RunCallbacks,
 	) (Run, error)
 }
@@ -71,6 +73,9 @@ type RunCallbacks struct {
 	// Store
 	ListStoreValues  func(ctx context.Context, rid sdktypes.RunID) ([]string, error)
 	MutateStoreValue func(ctx context.Context, rid sdktypes.RunID, key, op string, operands ...sdktypes.Value) (sdktypes.Value, error)
+
+	// Outcome
+	Outcome func(ctx context.Context, rid sdktypes.RunID, v sdktypes.Value) error
 }
 
 type Run interface {

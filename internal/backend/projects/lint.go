@@ -13,10 +13,10 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
-	"fmt"
 	"path"
 	"regexp"
 	"slices"
+	"strings"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/projectsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -26,9 +26,9 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-type Checker func(projectID sdktypes.ProjectID, manifest *manifest.Manifest, resources map[string][]byte) []*sdktypes.CheckViolation
+type checker func(projectID sdktypes.ProjectID, manifest *manifest.Manifest, resources map[string][]byte) []*sdktypes.CheckViolation
 
-var lintCheckers = []Checker{
+var lintCheckers = []checker{
 	// Generic
 	checkConnectionNames,
 	checkEmptyVars,
@@ -40,18 +40,22 @@ var lintCheckers = []Checker{
 	// Runtime
 	checkCodeConnections,
 	checkHandlers,
+	checkPyRequirements,
 }
 
 const manifestFilePath = "autokitteh.yaml"
+
+var pythonRequirementPackageNameRegexp = regexp.MustCompile(`^([A-Za-z_][A-Za-z0-9_.-]+)`)
 
 func Validate(projectID sdktypes.ProjectID, manifestData []byte, resources map[string][]byte) []*sdktypes.CheckViolation {
 	manifest, err := manifest.Read(manifestData)
 	if err != nil {
 		return []*sdktypes.CheckViolation{
-			sdktypes.NewCheckViolation(
+			sdktypes.NewCheckViolationf(
 				manifestFilePath,
 				sdktypes.InvalidManifestRuleID,
-				fmt.Sprintf("bad manifest - %s", err),
+				"bad manifest - %s",
+				err,
 			),
 		}
 	}
@@ -67,7 +71,7 @@ func Validate(projectID sdktypes.ProjectID, manifestData []byte, resources map[s
 func checkNoTriggers(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string][]byte) []*sdktypes.CheckViolation {
 	if m.Project == nil || len(m.Project.Triggers) == 0 {
 		return []*sdktypes.CheckViolation{
-			sdktypes.NewCheckViolation(
+			sdktypes.NewCheckViolationf(
 				manifestFilePath,
 				sdktypes.NoTriggersDefinedRuleID,
 				"no triggers defined",
@@ -86,10 +90,11 @@ func checkEmptyVars(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string][]b
 	var vs []*sdktypes.CheckViolation
 	for _, v := range m.Project.Vars {
 		if v.Value == "" {
-			vs = append(vs, sdktypes.NewCheckViolation(
+			vs = append(vs, sdktypes.NewCheckViolationf(
 				manifestFilePath,
 				sdktypes.EmptyVariableRuleID,
-				fmt.Sprintf("project variable %q is empty", v.Name),
+				"project variable %q is empty",
+				v.Name,
 			))
 		}
 	}
@@ -97,10 +102,12 @@ func checkEmptyVars(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string][]b
 	for _, conn := range m.Project.Connections {
 		for _, v := range conn.Vars {
 			if v.Value == "" {
-				vs = append(vs, sdktypes.NewCheckViolation(
+				vs = append(vs, sdktypes.NewCheckViolationf(
 					manifestFilePath,
 					sdktypes.EmptyVariableRuleID,
-					fmt.Sprintf("connection %q variable %q is empty", conn.Name, v.Name),
+					"connection %q variable %q is empty",
+					conn.Name,
+					v.Name,
 				))
 			}
 		}
@@ -124,10 +131,12 @@ func checkSize(_ sdktypes.ProjectID, _ *manifest.Manifest, resources map[string]
 	if total > maxProjectSize {
 		sizeMB := float64(total) / mb
 		return []*sdktypes.CheckViolation{
-			sdktypes.NewCheckViolation(
+			sdktypes.NewCheckViolationf(
 				manifestFilePath,
 				sdktypes.ProjectSizeTooLargeRuleID,
-				fmt.Sprintf("project size (%.2fMB) exceeds limit of %dMB", sizeMB, maxProjectSize/mb),
+				"project size (%.2fMB) exceeds limit of %dMB",
+				sizeMB,
+				maxProjectSize/mb,
 			),
 		}
 	}
@@ -148,18 +157,22 @@ func checkConnectionNames(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[stri
 	var vs []*sdktypes.CheckViolation
 	for name, count := range names {
 		if _, err := sdktypes.ParseSymbol(name); err != nil {
-			vs = append(vs, sdktypes.NewCheckViolation(
+			vs = append(vs, sdktypes.NewCheckViolationf(
 				manifestFilePath,
 				sdktypes.MalformedNameRuleID,
-				fmt.Sprintf("%q - malformed name (%s)", name, err),
+				"%q - malformed name (%s)",
+				name,
+				err,
 			))
 		}
 
 		if count > 1 {
-			vs = append(vs, sdktypes.NewCheckViolation(
+			vs = append(vs, sdktypes.NewCheckViolationf(
 				manifestFilePath,
 				sdktypes.DuplicateConnectionNameRuleID,
-				fmt.Sprintf("%d connections are named %q", count, name),
+				"%d connections are named %q",
+				count,
+				name,
 			))
 		}
 	}
@@ -180,18 +193,22 @@ func checkTriggerNames(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string]
 	var vs []*sdktypes.CheckViolation
 	for name, count := range names {
 		if _, err := sdktypes.ParseSymbol(name); err != nil {
-			vs = append(vs, sdktypes.NewCheckViolation(
+			vs = append(vs, sdktypes.NewCheckViolationf(
 				manifestFilePath,
 				sdktypes.MalformedNameRuleID,
-				fmt.Sprintf("%q - malformed name (%s)", name, err),
+				"%q - malformed name (%s)",
+				name,
+				err,
 			))
 		}
 
 		if count > 1 {
-			vs = append(vs, sdktypes.NewCheckViolation(
+			vs = append(vs, sdktypes.NewCheckViolationf(
 				manifestFilePath,
 				sdktypes.DuplicateTriggerNameRuleID,
-				fmt.Sprintf("%d triggers are named %q", count, name),
+				"%d triggers are named %q",
+				count,
+				name,
 			))
 		}
 	}
@@ -208,10 +225,12 @@ func checkHandlers(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[str
 
 	for _, t := range m.Project.Triggers {
 		if err := sdktypes.ValidateEventFilterField(t.Filter); err != nil {
-			vs = append(vs, sdktypes.NewCheckViolation(
+			vs = append(vs, sdktypes.NewCheckViolationf(
 				manifestFilePath,
 				sdktypes.InvalidEventFilterRuleID,
-				fmt.Sprintf("invalid event filter %q - %s", t.Filter, err),
+				"invalid event filter %q - %s",
+				t.Filter,
+				err,
 			))
 
 			continue
@@ -224,10 +243,11 @@ func checkHandlers(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[str
 
 		loc, err := sdktypes.StrictParseCodeLocation(t.Call)
 		if err != nil {
-			vs = append(vs, sdktypes.NewCheckViolation(
+			vs = append(vs, sdktypes.NewCheckViolationf(
 				manifestFilePath,
 				sdktypes.BadCallFormatRuleID,
-				fmt.Sprintf(`%q - bad call definition (should be something like "handler.py:on_event")`, t.Call),
+				`%q - bad call definition (should be something like "handler.py:on_event")`,
+				t.Call,
 			))
 
 			continue
@@ -236,10 +256,11 @@ func checkHandlers(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[str
 		fileName := loc.Path()
 		data, ok := resources[fileName]
 		if !ok {
-			vs = append(vs, sdktypes.NewCheckViolation(
+			vs = append(vs, sdktypes.NewCheckViolationf(
 				manifestFilePath,
 				sdktypes.FileNotFoundRuleID,
-				fmt.Sprintf("file %q not found", fileName),
+				"file %q not found",
+				fileName,
 			))
 			continue
 		}
@@ -247,28 +268,33 @@ func checkHandlers(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[str
 		exports, err := fileExports(fileName, data)
 		if err != nil {
 			if errors.Is(err, sdkerrors.ErrNotImplemented) {
-				vs = append(vs, sdktypes.NewCheckViolation(
+				vs = append(vs, sdktypes.NewCheckViolationf(
 					manifestFilePath,
 					sdktypes.FileCannotExportRuleID,
-					fmt.Sprintf("file %q cannot export", fileName),
+					"file %q cannot export",
+					fileName,
 				))
 				continue
 			}
 
-			vs = append(vs, sdktypes.NewCheckViolation(
+			vs = append(vs, sdktypes.NewCheckViolationf(
 				manifestFilePath,
 				sdktypes.SyntaxErrorRuleID,
-				fmt.Sprintf("can't parse %q - %s", fileName, err),
+				"can't parse %q - %s",
+				fileName,
+				err,
 			))
 			continue
 		}
 
 		handler := loc.Name()
 		if !slices.Contains(exports, handler) {
-			vs = append(vs, sdktypes.NewCheckViolation(
+			vs = append(vs, sdktypes.NewCheckViolationf(
 				manifestFilePath,
 				sdktypes.MissingHandlerRuleID,
-				fmt.Sprintf("%q not found in %q", handler, fileName),
+				"%q not found in %q",
+				handler,
+				fileName,
 			))
 			continue
 		}
@@ -296,10 +322,11 @@ func checkCodeConnections(_ sdktypes.ProjectID, m *manifest.Manifest, resources 
 
 		for _, conn := range fn(code) {
 			if !defConns[conn.Name] {
-				vs = append(vs, sdktypes.NewCheckViolation(
+				vs = append(vs, sdktypes.NewCheckViolationf(
 					manifestFilePath,
 					sdktypes.NonexistingConnectionRuleID,
-					fmt.Sprintf("%q - non existing connection", conn.Name),
+					"%q - non existing connection",
+					conn.Name,
 				))
 			}
 		}
@@ -311,7 +338,7 @@ func checkCodeConnections(_ sdktypes.ProjectID, m *manifest.Manifest, resources 
 func checkProjectName(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[string][]byte) []*sdktypes.CheckViolation {
 	if m.Project == nil || m.Project.Name == "" {
 		return []*sdktypes.CheckViolation{
-			sdktypes.NewCheckViolation(
+			sdktypes.NewCheckViolationf(
 				manifestFilePath,
 				sdktypes.InvalidManifestRuleID,
 				"bad project name",
@@ -321,15 +348,69 @@ func checkProjectName(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[
 
 	if _, err := sdktypes.ParseSymbol(m.Project.Name); err != nil {
 		return []*sdktypes.CheckViolation{
-			sdktypes.NewCheckViolation(
+			sdktypes.NewCheckViolationf(
 				manifestFilePath,
 				sdktypes.MalformedNameRuleID,
-				fmt.Sprintf("%q - bad project name (%s)", m.Project.Name, err),
+				"%q - bad project name (%s)",
+				m.Project.Name,
+				err,
 			),
 		}
 	}
 
 	return nil
+}
+
+func checkPyRequirements(_ sdktypes.ProjectID, _ *manifest.Manifest, resources map[string][]byte) (vs []*sdktypes.CheckViolation) {
+	const path = "requirements.txt"
+
+	txt, ok := resources[path]
+	if !ok {
+		// No requirements.txt, nothing to check
+		return nil
+	}
+
+	inEmbeddedDependency := kittehs.ContainedIn(pysdk.Dependencies()...)
+
+	// parse requirements.txt line by line
+	lines := strings.Split(string(txt), "\n")
+	for i, line := range lines {
+		line = strings.TrimSpace(line)
+		if len(line) == 0 || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		// parse line using regex to get the first part (package name)
+		matches := pythonRequirementPackageNameRegexp.FindStringSubmatch(line)
+		if matches == nil {
+			vs = append(
+				vs,
+				sdktypes.NewCheckViolationf(
+					path,
+					sdktypes.InvalidPyRequirementsRuleID,
+					"invalid requirement - line %d is not a valid requirement",
+					i+1,
+				),
+			)
+			continue
+		}
+
+		name := matches[1]
+
+		if inEmbeddedDependency(name) {
+			vs = append(
+				vs,
+				sdktypes.NewCheckViolationf(
+					path,
+					sdktypes.PyRequirementsPackageAlreadyInstalledRuleID,
+					"dependency %q is already included in the Autokitteh Python runtime",
+					name,
+				),
+			)
+		}
+	}
+
+	return
 }
 
 type connCall struct {

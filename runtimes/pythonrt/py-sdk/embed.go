@@ -18,38 +18,42 @@ var codeFS embed.FS
 //go:embed pyproject.toml
 var pyProject string
 
-var clientDefRegex = regexp.MustCompile(`^def (\w+_client)\(`)
+var (
+	clientDefRegex = regexp.MustCompile(`^def (\w+_client)\(`)
 
-func ClientNames() (names []string) {
-	fs.WalkDir(codeFS, "autokitteh", func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if d.IsDir() || !strings.HasSuffix(path, ".py") {
-			return nil
-		}
-
-		bs, err := fs.ReadFile(codeFS, path)
-		if err != nil {
-			return err
-		}
-
-		for line := range strings.SplitSeq(string(bs), "\n") {
-			line = strings.TrimSpace(line)
-			matches := clientDefRegex.FindStringSubmatch(line)
-			if len(matches) > 1 {
-				names = append(names, matches[1])
+	clientNames = func() (names []string) {
+		kittehs.Must0(fs.WalkDir(codeFS, "autokitteh", func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
 			}
-		}
 
-		return nil
-	})
+			if d.IsDir() || !strings.HasSuffix(path, ".py") {
+				return nil
+			}
 
-	sort.Strings(names)
+			bs, err := fs.ReadFile(codeFS, path)
+			if err != nil {
+				return err
+			}
 
-	return
-}
+			for line := range strings.SplitSeq(string(bs), "\n") {
+				line = strings.TrimSpace(line)
+				matches := clientDefRegex.FindStringSubmatch(line)
+				if len(matches) > 1 {
+					names = append(names, matches[1])
+				}
+			}
+
+			return nil
+		}))
+
+		sort.Strings(names)
+
+		return
+	}()
+)
+
+func ClientNames() []string { return clientNames }
 
 func Dependencies() (names []string) {
 	var data struct {

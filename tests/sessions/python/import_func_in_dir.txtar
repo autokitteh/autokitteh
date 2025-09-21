@@ -1,0 +1,11 @@
+meow, world!
+
+-- main.py:main --
+from foo.bar import baz
+
+def main(event):
+    baz("meow")
+
+-- foo/bar.py --
+def baz(x):
+    print(x + ", world!")

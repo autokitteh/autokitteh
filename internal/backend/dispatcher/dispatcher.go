@@ -55,31 +55,32 @@ func New(l *zap.Logger, cfg *Config, svcs Svcs) *Dispatcher {
 	return &Dispatcher{sl: l.Sugar(), cfg: cfg, svcs: svcs}
 }
 
-func (d *Dispatcher) DispatchExternal(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) (sdktypes.EventID, error) {
+func (d *Dispatcher) DispatchExternal(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) (*sdkservices.DispatchResponse, error) {
 	pid, err := d.svcs.DB.GetProjectIDOf(ctx, event.DestinationID())
 	if err != nil {
-		return sdktypes.InvalidEventID, fmt.Errorf("get project id of destination %v: %w", event.DestinationID(), err)
+		return nil, fmt.Errorf("get project id of destination %v: %w", event.DestinationID(), err)
 	}
 
 	orgID, err := d.svcs.DB.GetOrgIDOf(ctx, pid)
 	if err != nil {
-		return sdktypes.InvalidEventID, fmt.Errorf("get org id of project %v: %w", pid, err)
+		return nil, fmt.Errorf("get org id of project %v: %w", pid, err)
 	}
 
-	cli, err := d.svcs.ExternalClient.NewOrgImpersonator(orgID)
+	d.sl.Info("external dispatch found pid", pid.String(), "and orgID", orgID.String(), "for eventID", event.ID().String(), "and destinationID", event.DestinationID().String())
 
+	cli, err := d.svcs.ExternalClient.NewOrgImpersonator(orgID)
 	if err != nil {
-		return sdktypes.InvalidEventID, fmt.Errorf("create internal token: %w", err)
+		return nil, fmt.Errorf("create internal token: %w", err)
 	}
 
 	return cli.Dispatcher().Dispatch(ctx, event, opts)
 }
 
-func (d *Dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) (sdktypes.EventID, error) {
+func (d *Dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) (*sdkservices.DispatchResponse, error) {
 	event = event.WithCreatedAt(time.Now())
 	eid, err := d.svcs.Events.Save(ctx, event)
 	if err != nil {
-		return sdktypes.InvalidEventID, fmt.Errorf("save event: %w", err)
+		return nil, fmt.Errorf("save event: %w", err)
 	}
 	event = event.WithID(eid)
 
@@ -88,7 +89,7 @@ func (d *Dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *s
 	sl.Infof("event saved: %v", eid)
 
 	if err := authz.CheckContext(ctx, event.ID(), "dispatch", authz.WithData("event", event), authz.WithData("opts", opts)); err != nil {
-		return sdktypes.InvalidEventID, err
+		return nil, err
 	}
 
 	memo := map[string]string{
@@ -112,30 +113,39 @@ func (d *Dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *s
 		eventsWorkflowInput{Event: event, Options: opts},
 	)
 	if err != nil {
-		return sdktypes.InvalidEventID, fmt.Errorf("failed starting workflow: %w", err)
+		return nil, fmt.Errorf("failed starting workflow: %w", err)
 	}
 
 	sl.Desugar().Info("started dispatcher workflow for event: "+eid.String(),
 		zap.Any("workflow_id", r.GetID()),
 		zap.Any("run_id", r.GetRunID()))
 
-	return eid, nil
+	if !opts.Wait {
+		return &sdkservices.DispatchResponse{EventID: eid}, nil
+	}
+
+	var out eventsWorkflowOutput
+	if err := r.Get(ctx, &out); err != nil {
+		return nil, fmt.Errorf("waiting for workflow completion: %w", err)
+	}
+
+	return &sdkservices.DispatchResponse{EventID: eid, SessionIDs: out.Started}, nil
 }
 
-func (d *Dispatcher) Redispatch(ctx context.Context, eventID sdktypes.EventID, opts *sdkservices.DispatchOptions) (sdktypes.EventID, error) {
+func (d *Dispatcher) Redispatch(ctx context.Context, eventID sdktypes.EventID, opts *sdkservices.DispatchOptions) (*sdkservices.DispatchResponse, error) {
 	sl := d.sl.With("event_id", eventID)
 
 	event, err := d.svcs.Events.Get(ctx, eventID)
 	if err != nil {
-		return sdktypes.InvalidEventID, err
+		return nil, err
 	}
 
 	if !event.IsValid() {
-		return sdktypes.InvalidEventID, sdkerrors.ErrNotFound
+		return nil, sdkerrors.ErrNotFound
 	}
 
 	if err := authz.CheckContext(ctx, eventID, "redispatch", authz.WithData("event", event), authz.WithData("opts", opts)); err != nil {
-		return sdktypes.InvalidEventID, err
+		return nil, err
 	}
 
 	memo := event.Memo()
@@ -145,15 +155,15 @@ func (d *Dispatcher) Redispatch(ctx context.Context, eventID sdktypes.EventID, o
 	memo["redispatch_of"] = eventID.String()
 	event = event.WithMemo(memo)
 
-	newEventID, err := d.Dispatch(authcontext.SetAuthnSystemUser(ctx), event, opts)
+	resp, err := d.Dispatch(authcontext.SetAuthnSystemUser(ctx), event, opts)
 	if err != nil {
 		sl.With("err", err).Errorf("failed redispatching event %v: %v", eventID, err)
-		return sdktypes.InvalidEventID, fmt.Errorf("failed redispatching event %v: %w", eventID, err)
+		return nil, fmt.Errorf("failed redispatching event %v: %w", eventID, err)
 	}
 
-	sl.With("new_event_id", newEventID).Infof("redispatched event %v as %v", eventID, newEventID)
+	sl.With("response", resp).Infof("redispatched event %v as %v", eventID, resp.EventID)
 
-	return newEventID, err
+	return resp, err
 }
 
 func (d *Dispatcher) Start(context.Context) error {

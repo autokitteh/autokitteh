@@ -28,6 +28,13 @@ export class DispatchRequest extends Message<DispatchRequest> {
    */
   project = "";
 
+  /**
+   * if true, the call will block until the dispatch is done.
+   *
+   * @generated from field: bool wait = 4;
+   */
+  wait = false;
+
   constructor(data?: PartialMessage<DispatchRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -39,6 +46,7 @@ export class DispatchRequest extends Message<DispatchRequest> {
     { no: 1, name: "event", kind: "message", T: Event },
     { no: 2, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "wait", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DispatchRequest {
@@ -67,6 +75,13 @@ export class DispatchResponse extends Message<DispatchResponse> {
    */
   eventId = "";
 
+  /**
+   * only if wait
+   *
+   * @generated from field: repeated string session_ids = 2;
+   */
+  sessionIds: string[] = [];
+
   constructor(data?: PartialMessage<DispatchResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -76,6 +91,7 @@ export class DispatchResponse extends Message<DispatchResponse> {
   static readonly typeName = "autokitteh.dispatcher.v1.DispatchResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "event_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "session_ids", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DispatchResponse {
@@ -109,6 +125,13 @@ export class RedispatchRequest extends Message<RedispatchRequest> {
    */
   deploymentId = "";
 
+  /**
+   * if true, the call will block until the dispatch is done.
+   *
+   * @generated from field: bool wait = 4;
+   */
+  wait = false;
+
   constructor(data?: PartialMessage<RedispatchRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -119,6 +142,7 @@ export class RedispatchRequest extends Message<RedispatchRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "event_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "deployment_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "wait", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RedispatchRequest {
@@ -147,6 +171,13 @@ export class RedispatchResponse extends Message<RedispatchResponse> {
    */
   eventId = "";
 
+  /**
+   * only if wait
+   *
+   * @generated from field: repeated string session_ids = 2;
+   */
+  sessionIds: string[] = [];
+
   constructor(data?: PartialMessage<RedispatchResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -156,6 +187,7 @@ export class RedispatchResponse extends Message<RedispatchResponse> {
   static readonly typeName = "autokitteh.dispatcher.v1.RedispatchResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "event_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "session_ids", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RedispatchResponse {

@@ -290,9 +290,13 @@ func (ps *Projects) exportManifest(ctx context.Context, projectID sdktypes.Proje
 	}
 
 	for _, t := range triggers {
+		isDurable := t.IsDurable()
+
 		mt := manifest.Trigger{
-			Name: t.Name().String(),
-			Call: t.CodeLocation().CanonicalString(),
+			Name:      t.Name().String(),
+			Call:      t.CodeLocation().CanonicalString(),
+			IsSync:    t.IsSync(),
+			IsDurable: &isDurable,
 		}
 		if filter := t.Filter(); filter != "" {
 			mt.Filter = filter
@@ -303,8 +307,7 @@ func (ps *Projects) exportManifest(ctx context.Context, projectID sdktypes.Proje
 
 		switch t.SourceType() {
 		case sdktypes.TriggerSourceTypeWebhook:
-			var wh struct{}
-			mt.Webhook = &wh
+			mt.Webhook = &struct{}{}
 		case sdktypes.TriggerSourceTypeSchedule:
 			sched := t.Schedule()
 			mt.Schedule = &sched
@@ -338,7 +341,7 @@ func (ps *Projects) exportManifest(ctx context.Context, projectID sdktypes.Proje
 	}
 
 	m := manifest.Manifest{
-		Version: manifest.Version,
+		Version: "v2",
 		Project: &p,
 	}
 

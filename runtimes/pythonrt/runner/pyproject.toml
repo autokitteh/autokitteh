@@ -3,7 +3,7 @@ name = "runner"
 version = "0.1.2"
 dependencies = [
 	"grpcio ~= 1.68",
-	"autokitteh[all] ~= 0.6",
+	"autokitteh[all] ~= 0.7",
 ]
 requires-python = ">= 3.11"
 

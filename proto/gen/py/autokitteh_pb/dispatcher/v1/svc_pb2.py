@@ -15,7 +15,7 @@ from autokitteh_pb.events.v1 import event_pb2 as autokitteh_dot_events_dot_v1_do
 from buf.validate import validate_pb2 as buf_dot_validate_dot_validate__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\"autokitteh/dispatcher/v1/svc.proto\x12\x18\x61utokitteh.dispatcher.v1\x1a autokitteh/events/v1/event.proto\x1a\x1b\x62uf/validate/validate.proto\"\xfc\x01\n\x0f\x44ispatchRequest\x12\x31\n\x05\x65vent\x18\x01 \x01(\x0b\x32\x1b.autokitteh.events.v1.EventR\x05\x65vent\x12#\n\rdeployment_id\x18\x02 \x01(\tR\x0c\x64\x65ploymentId\x12\x18\n\x07project\x18\x03 \x01(\tR\x07project:w\xfa\xf7\x18s\x1aq\n!dispatcher.event_id_must_be_empty\x12\x1e\x65vent_id must not be specified\x1a,has(this.event) && this.event.event_id == \'\'\"7\n\x10\x44ispatchResponse\x12#\n\x08\x65vent_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x07\x65ventId\"]\n\x11RedispatchRequest\x12#\n\x08\x65vent_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x07\x65ventId\x12#\n\rdeployment_id\x18\x03 \x01(\tR\x0c\x64\x65ploymentId\"9\n\x12RedispatchResponse\x12#\n\x08\x65vent_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x07\x65ventId2\xdf\x01\n\x11\x44ispatcherService\x12\x61\n\x08\x44ispatch\x12).autokitteh.dispatcher.v1.DispatchRequest\x1a*.autokitteh.dispatcher.v1.DispatchResponse\x12g\n\nRedispatch\x12+.autokitteh.dispatcher.v1.RedispatchRequest\x1a,.autokitteh.dispatcher.v1.RedispatchResponseB\xfb\x01\n\x1c\x63om.autokitteh.dispatcher.v1B\x08SvcProtoP\x01ZOgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/dispatcher/v1;dispatcherv1\xa2\x02\x03\x41\x44X\xaa\x02\x18\x41utokitteh.Dispatcher.V1\xca\x02\x18\x41utokitteh\\Dispatcher\\V1\xe2\x02$Autokitteh\\Dispatcher\\V1\\GPBMetadata\xea\x02\x1a\x41utokitteh::Dispatcher::V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\"autokitteh/dispatcher/v1/svc.proto\x12\x18\x61utokitteh.dispatcher.v1\x1a autokitteh/events/v1/event.proto\x1a\x1b\x62uf/validate/validate.proto\"\x90\x02\n\x0f\x44ispatchRequest\x12\x31\n\x05\x65vent\x18\x01 \x01(\x0b\x32\x1b.autokitteh.events.v1.EventR\x05\x65vent\x12#\n\rdeployment_id\x18\x02 \x01(\tR\x0c\x64\x65ploymentId\x12\x18\n\x07project\x18\x03 \x01(\tR\x07project\x12\x12\n\x04wait\x18\x04 \x01(\x08R\x04wait:w\xfa\xf7\x18s\x1aq\n!dispatcher.event_id_must_be_empty\x12\x1e\x65vent_id must not be specified\x1a,has(this.event) && this.event.event_id == \'\'\"g\n\x10\x44ispatchResponse\x12#\n\x08\x65vent_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x07\x65ventId\x12.\n\x0bsession_ids\x18\x02 \x03(\tB\r\xfa\xf7\x18\t\x92\x01\x06\"\x04r\x02\x10\x01R\nsessionIds\"q\n\x11RedispatchRequest\x12#\n\x08\x65vent_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x07\x65ventId\x12#\n\rdeployment_id\x18\x03 \x01(\tR\x0c\x64\x65ploymentId\x12\x12\n\x04wait\x18\x04 \x01(\x08R\x04wait\"i\n\x12RedispatchResponse\x12#\n\x08\x65vent_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x07\x65ventId\x12.\n\x0bsession_ids\x18\x02 \x03(\tB\r\xfa\xf7\x18\t\x92\x01\x06\"\x04r\x02\x10\x01R\nsessionIds2\xdf\x01\n\x11\x44ispatcherService\x12\x61\n\x08\x44ispatch\x12).autokitteh.dispatcher.v1.DispatchRequest\x1a*.autokitteh.dispatcher.v1.DispatchResponse\x12g\n\nRedispatch\x12+.autokitteh.dispatcher.v1.RedispatchRequest\x1a,.autokitteh.dispatcher.v1.RedispatchResponseB\xfb\x01\n\x1c\x63om.autokitteh.dispatcher.v1B\x08SvcProtoP\x01ZOgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/dispatcher/v1;dispatcherv1\xa2\x02\x03\x41\x44X\xaa\x02\x18\x41utokitteh.Dispatcher.V1\xca\x02\x18\x41utokitteh\\Dispatcher\\V1\xe2\x02$Autokitteh\\Dispatcher\\V1\\GPBMetadata\xea\x02\x1a\x41utokitteh::Dispatcher::V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -27,18 +27,22 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _DISPATCHREQUEST._serialized_options = b'\372\367\030s\032q\n!dispatcher.event_id_must_be_empty\022\036event_id must not be specified\032,has(this.event) && this.event.event_id == \'\''
   _DISPATCHRESPONSE.fields_by_name['event_id']._options = None
   _DISPATCHRESPONSE.fields_by_name['event_id']._serialized_options = b'\372\367\030\004r\002\020\001'
+  _DISPATCHRESPONSE.fields_by_name['session_ids']._options = None
+  _DISPATCHRESPONSE.fields_by_name['session_ids']._serialized_options = b'\372\367\030\t\222\001\006\"\004r\002\020\001'
   _REDISPATCHREQUEST.fields_by_name['event_id']._options = None
   _REDISPATCHREQUEST.fields_by_name['event_id']._serialized_options = b'\372\367\030\004r\002\020\001'
   _REDISPATCHRESPONSE.fields_by_name['event_id']._options = None
   _REDISPATCHRESPONSE.fields_by_name['event_id']._serialized_options = b'\372\367\030\004r\002\020\001'
+  _REDISPATCHRESPONSE.fields_by_name['session_ids']._options = None
+  _REDISPATCHRESPONSE.fields_by_name['session_ids']._serialized_options = b'\372\367\030\t\222\001\006\"\004r\002\020\001'
   _globals['_DISPATCHREQUEST']._serialized_start=128
-  _globals['_DISPATCHREQUEST']._serialized_end=380
-  _globals['_DISPATCHRESPONSE']._serialized_start=382
-  _globals['_DISPATCHRESPONSE']._serialized_end=437
-  _globals['_REDISPATCHREQUEST']._serialized_start=439
-  _globals['_REDISPATCHREQUEST']._serialized_end=532
-  _globals['_REDISPATCHRESPONSE']._serialized_start=534
-  _globals['_REDISPATCHRESPONSE']._serialized_end=591
-  _globals['_DISPATCHERSERVICE']._serialized_start=594
-  _globals['_DISPATCHERSERVICE']._serialized_end=817
+  _globals['_DISPATCHREQUEST']._serialized_end=400
+  _globals['_DISPATCHRESPONSE']._serialized_start=402
+  _globals['_DISPATCHRESPONSE']._serialized_end=505
+  _globals['_REDISPATCHREQUEST']._serialized_start=507
+  _globals['_REDISPATCHREQUEST']._serialized_end=620
+  _globals['_REDISPATCHRESPONSE']._serialized_start=622
+  _globals['_REDISPATCHRESPONSE']._serialized_end=727
+  _globals['_DISPATCHERSERVICE']._serialized_start=730
+  _globals['_DISPATCHERSERVICE']._serialized_end=953
 # @@protoc_insertion_point(module_scope)

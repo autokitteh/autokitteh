@@ -23,6 +23,7 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/google/gmail"
 	"go.autokitteh.dev/autokitteh/integrations/google/vars"
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -124,7 +125,7 @@ func (h handler) handleDriveNotification(w http.ResponseWriter, r *http.Request)
 // handleFormsNotification receives and dispatches asynchronous Google Forms
 // notifications from a push subscription to a GCP Cloud Pub/Sub topic.
 func (h handler) handleFormsNotification(w http.ResponseWriter, r *http.Request) {
-	l := h.logger.With(zap.String("urlPath", r.URL.Path))
+	l := h.logger.With(zap.String("urlPath", r.URL.Path)).With(zap.String("eventType", "forms_notification"))
 	if !checkRequest(w, r, l) {
 		return
 	}
@@ -186,7 +187,7 @@ type gmailNotifBody struct {
 // handleGmailNotification receives and dispatches asynchronous Gmail
 // notifications from a push subscription to a GCP Cloud Pub/Sub topic.
 func (h handler) handleGmailNotification(w http.ResponseWriter, r *http.Request) {
-	l := h.logger.With(zap.String("urlPath", r.URL.Path))
+	l := h.logger.With(zap.String("urlPath", r.URL.Path)).With(zap.String("eventType", "gmail_notification"))
 	if !checkRequest(w, r, l) {
 		return
 	}
@@ -196,7 +197,6 @@ func (h handler) handleGmailNotification(w http.ResponseWriter, r *http.Request)
 		zap.String("publishTime", r.Header.Get("X-Goog-Pubsub-Publish-Time")),
 		zap.String("subscriptionName", r.Header.Get("X-Goog-Pubsub-Subscription-Name")),
 	)
-	l.Info("Received Gmail notification")
 
 	// Parse event details from the JSON body.
 	defer r.Body.Close()
@@ -214,19 +214,33 @@ func (h handler) handleGmailNotification(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	if notif.EmailAddress == "" {
+		l.Error("missing email address in gmail notification, probably misconfigured subscription", zap.String("body", string(body)))
+		common.HTTPError(w, http.StatusBadRequest)
+		return
+	}
+
 	l = l.With(
 		zap.String("emailAddress", notif.EmailAddress),
 		zap.Int("historyID", notif.HistoryID),
 	)
 
+	l.Debug("received gmail notification for: " + notif.EmailAddress)
+
 	// Find all the connection IDs associated with the email address.
 	ctx := extrazap.AttachLoggerToContext(l, r.Context())
+	l.Debug(fmt.Sprintf("finding connections ids for email %s integrationID %s", notif.EmailAddress, gmail.IntegrationID))
 	cids, err := h.vars.FindConnectionIDs(ctx, gmail.IntegrationID, vars.UserEmail, notif.EmailAddress)
 	if err != nil {
 		l.Error("Failed to find connection IDs", zap.Error(err))
 		common.HTTPError(w, http.StatusInternalServerError)
 		return
 	}
+	cidsString := strings.Join(kittehs.Transform(cids, func(cid sdktypes.ConnectionID) string {
+		return cid.String()
+	}), ",")
+
+	l.Debug(fmt.Sprintf("Found %d connections for gmail %s", len(cids), notif.EmailAddress), zap.String("connectionIDs", cidsString))
 
 	// Construct the event and dispatch it to all the connections.
 	gmailEvent := map[string]any{
@@ -253,14 +267,15 @@ func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, cids []sd
 	l := extrazap.ExtractLoggerFromContext(ctx)
 
 	for _, cid := range cids {
-		eid, err := h.dispatch(ctx, e.WithConnectionDestinationID(cid), nil)
+		resp, err := h.dispatch(ctx, e.WithConnectionDestinationID(cid), nil)
 		l := l.With(
 			zap.String("connectionID", cid.String()),
-			zap.String("eventID", eid.String()),
+			zap.String("eventID", resp.EventID.String()),
 		)
 		if err != nil {
 			if errors.Is(err, sdkerrors.ErrResourceExhausted) {
 				l.Info("Event dispatch failed due to resource exhaustion")
+				continue
 			} else {
 				l.Error("Event dispatch failed", zap.Error(err))
 			}
@@ -278,13 +293,13 @@ func checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Logger) bool {
 	// Read the bearer token from the Authorization request header.
 	auth := r.Header.Get("Authorization")
 	if auth == "" {
-		l.Warn("missing authorization header in Google push notification")
+		l.Warn("gmail notification check request missing authorization header in Google push notification")
 		common.HTTPError(w, http.StatusUnauthorized)
 		return false
 	}
 
 	if !strings.HasPrefix(auth, "Bearer ") {
-		l.Warn("invalid authorization header in Google push notification")
+		l.Warn("gmail notification check request invalid authorization header in Google push notification")
 		common.HTTPError(w, http.StatusUnauthorized)
 		return false
 	}
@@ -294,7 +309,7 @@ func checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Logger) bool {
 	// Download and cache Google's OAuth public keys.
 	rsaPublicKeys, err := fetchGoogleCerts(r.Context())
 	if err != nil {
-		l.Error("failed to fetch Google OAuth certs", zap.Error(err))
+		l.Error("gmail notification check request failed to fetch Google OAuth certs", zap.Error(err))
 		common.HTTPError(w, http.StatusInternalServerError)
 		return false
 	}
@@ -303,17 +318,17 @@ func checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Logger) bool {
 	token, err := jwt.Parse(auth, func(t *jwt.Token) (interface{}, error) {
 		kid, ok := t.Header["kid"].(string)
 		if !ok {
-			return nil, errors.New("missing or invalid kid in token header")
+			return nil, errors.New("gmail notification check request missing or invalid kid in token header")
 		}
 
 		key, exists := rsaPublicKeys[kid]
 		if !exists {
-			return nil, fmt.Errorf("google public key not found for kid: %s", kid)
+			return nil, fmt.Errorf("gmail notification check request missing google public key not found for kid: %s", kid)
 		}
 		return key, nil
 	})
 	if err != nil {
-		l.Error("failed to parse JWT in Google push notification", zap.Error(err))
+		l.Error("gmail notification check request failed to parse JWT in Google push notification", zap.Error(err))
 		common.HTTPError(w, http.StatusInternalServerError)
 		return false
 	}

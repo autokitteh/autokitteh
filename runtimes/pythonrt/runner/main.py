@@ -345,6 +345,8 @@ class Runner(pb.runner_rpc.RunnerService):
         autokitteh.start = self.syscalls.ak_start
         autokitteh.subscribe = self.syscalls.ak_subscribe
         autokitteh.unsubscribe = self.syscalls.ak_unsubscribe
+        autokitteh.outcome = self.syscalls.ak_outcome
+        autokitteh.http_outcome = self.syscalls.ak_http_outcome
 
         # Not ak, but patching print as well
         builtins.print = self.ak_print
@@ -363,10 +365,20 @@ class Runner(pb.runner_rpc.RunnerService):
         self.syscalls = SysCalls(self.id, self.worker, log)
         mod_name, fn_name = parse_entry_point(request.entry_point)
 
+        inputs = json.loads(request.event.data)
+
+        fix_http_body(inputs)
+
+        event = Event(
+            data=AttrDict(inputs.get("data", {})),
+            session_id=inputs.get("session_id"),
+        )
+
         # Must be before we load user code
         self.patch_ak_funcs()
 
-        ak_call = AKCall(self, self.code_dir)
+        ak_call = AKCall(self, self.code_dir) if request.is_durable else None
+
         try:
             mod = loader.load_code(self.code_dir, ak_call, mod_name)
         except Exception as err:
@@ -380,8 +392,6 @@ class Runner(pb.runner_rpc.RunnerService):
                 f"can't load {mod_name} from {self.code_dir} - {err_text}",
             )
 
-        ak_call.set_module(mod)
-
         fn = getattr(mod, fn_name, None)
         if not callable(fn):
             Thread(
@@ -392,29 +402,23 @@ class Runner(pb.runner_rpc.RunnerService):
                 f"function {fn_name!r} not found",
             )
 
-        inputs = json.loads(request.event.data)
+        if ak_call:
+            ak_call.set_module(mod)
 
-        fix_http_body(inputs)
+            # TODO(ENG-1893): Disabled temporarily due to issues with HubSpot client - need to investigate.
+            # # Warn on I/O outside an activity. Should come after importing the user module
+            # hook = make_audit_hook(ak_call, self.code_dir)
+            # sys.addaudithook(hook)
 
-        event = Event(
-            data=AttrDict(inputs.get("data", {})),
-            session_id=inputs.get("session_id"),
-        )
+            # Top-level handler marked as activity.
+            if activity_marker(fn):
+                orig_fn = fn
 
-        # TODO(ENG-1893): Disabled temporarily due to issues with HubSpot client - need to investigate.
-        # # Warn on I/O outside an activity. Should come after importing the user module
-        # hook = make_audit_hook(ak_call, self.code_dir)
-        # sys.addaudithook(hook)
+                def handler(event):
+                    return ak_call(orig_fn, event)
 
-        # Top-level handler marked as activity.
-        if activity_marker(fn):
-            orig_fn = fn
-
-            def handler(event):
-                return ak_call(orig_fn, event)
-
-            update_wrapper(handler, orig_fn)
-            fn = handler
+                update_wrapper(handler, orig_fn)
+                fn = handler
 
         self.executor.submit(self.on_event, fn, event)
 
@@ -428,11 +432,14 @@ class Runner(pb.runner_rpc.RunnerService):
         result = self._call(fn, args, kw)
         try:
             data = pickle.dumps(result)
-            size_of_request = len(data)
-            if size_of_request < MAX_SIZE_OF_REQUEST:
-                req.result.custom.data = data
-                req.result.custom.value.CopyFrom(values.safe_wrap(result.value))
-            else:
+            req.result.custom.data = data
+            req.result.custom.value.CopyFrom(values.safe_wrap(result.value))
+            size_of_request = req.ByteSize()
+            if size_of_request > MAX_SIZE_OF_REQUEST:
+                # reset the req.result and use error only
+                req = pb.handler.ExecuteReplyRequest(
+                    runner_id=self.id,
+                )
                 req.error = "response size too large"
                 print(
                     f"response size {format_size(size_of_request)} is too large, max allowed is {format_size(MAX_SIZE_OF_REQUEST)}"
@@ -564,6 +571,11 @@ class Runner(pb.runner_rpc.RunnerService):
                 kwargs={k: values.safe_wrap(v) for k, v in kw.items()},
             ),
         )
+        req_size = req.ByteSize()
+        if req_size > MAX_SIZE_OF_REQUEST:
+            raise ActivityError(
+                f"Request payload size {format_size(req_size)} is larger than maximum supported ({format_size(MAX_SIZE_OF_REQUEST)})."
+            )
         log.info("activity: sending")
         resp = self.worker.Activity(req)
         if resp.error:

@@ -33,6 +33,29 @@ type Config struct {
 	SeedCommands string `koanf:"seed_commands"`
 }
 
+func (c Config) InferredType() string {
+	if c.Type == RequireExplicitDSNType {
+		return ""
+	}
+
+	if c.Type != "" {
+		return c.Type
+	}
+
+	if c.DSN == "" {
+		// With empty DSN, assume type is "sqlite". Will make sqlite
+		// use a temporary database.
+		return "sqlite"
+	} else {
+		t, _, ok := strings.Cut(c.DSN, ":")
+		if !ok {
+			return ""
+		}
+
+		return t
+	}
+}
+
 func (c Config) Explicit() (*Config, error) {
 	if c.Type == RequireExplicitDSNType {
 		if c.DSN == "" {
