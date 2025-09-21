@@ -1,4 +1,13 @@
 before
+error: ZeroDivisionError('division by zero')
+
+Traceback (most recent call last):
+ak-runner
+value = fn(*args, **kw)
+File "main.py", line 6, in main
+step()
+
+ak-runner
 -- main.py:main --
 import autokitteh
 

@@ -14,9 +14,9 @@ import (
 	"strings"
 	"time"
 
+	"go.jetify.com/typeid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -51,19 +51,11 @@ type callbackMessage struct {
 	ch   chan callbackResponse
 }
 
-type logMessage struct {
-	message     string
-	level       string
-	doneChannel chan struct{}
-}
-
 type comChannels struct {
 	done     chan *pbUserCode.DoneRequest
 	err      chan string
 	request  chan *pbUserCode.ActivityRequest
 	execute  chan *pbUserCode.ExecuteReplyRequest
-	print    chan *logMessage
-	log      chan *logMessage
 	callback chan *callbackMessage
 }
 
@@ -125,7 +117,6 @@ func New(
 			return nil, errors.New("worker address is required for docker runner")
 		}
 		if err := configureDockerRunnerManager(l, DockerRuntimeConfig{
-			LogRunnerCode:          cfg.LogRunnerCode,
 			LogBuildCode:           cfg.LogBuildCode,
 			MaxMemoryPerWorkflowMB: cfg.MaxMemoryPerWorkflowMB,
 			MaxCPUsPerWorkflow:     cfg.MaxCPUsPerWorkflow,
@@ -181,8 +172,6 @@ func newSvc(cfg *Config, l *zap.Logger) (sdkservices.Runtime, error) {
 			err:      make(chan string, 1),
 			request:  make(chan *pbUserCode.ActivityRequest, 1),
 			execute:  make(chan *pbUserCode.ExecuteReplyRequest, 1),
-			print:    make(chan *logMessage, 1024),
-			log:      make(chan *logMessage, 1024),
 			callback: make(chan *callbackMessage, 1),
 		},
 	}
@@ -237,31 +226,6 @@ func entryPointFileName(entryPoint string) string {
 	return entryPoint
 }
 
-func (py *pySvc) handlePrint(ctx context.Context, msg *logMessage) {
-	if err := py.cbs.Print(ctx, py.runID, msg.message); err != nil {
-		py.log.Error("print error", zap.Error(err))
-	}
-
-	close(msg.doneChannel)
-}
-
-func (py *pySvc) printConsumer(ctx context.Context) {
-	for {
-		select {
-		case p, ok := <-py.channels.print:
-			if !ok {
-				py.log.Error("print consumer stopped by closing print channel")
-				return
-			}
-
-			py.handlePrint(ctx, p)
-		case <-py.printDone:
-			py.log.Info("print consumer stopped by closing printDone channel")
-			return
-		}
-	}
-}
-
 /*
 Run starts a Python workflow.
 
@@ -281,6 +245,12 @@ func (py *pySvc) Run(
 ) (sdkservices.Run, error) {
 	ctx, runSpan := telemetry.T().Start(ctx, "pythonrt.Run")
 	defer runSpan.End()
+
+	rid, err := typeid.WithPrefix("runner")
+	if err != nil {
+		return nil, err
+	}
+	runnerID := rid.String()
 
 	runnerOK := false
 	py.ctx = ctx
@@ -324,10 +294,21 @@ func (py *pySvc) Run(
 		}()
 	}
 
-	runnerID, runner, err := runnerManager.Start(ctx, sessionID, tarData, py.envVars)
+	disp := LogDispatcher{
+		ctx:      ctx,
+		runID:    runID,
+		runnerID: runnerID,
+		log:      py.log,
+		print:    cbs.Print,
+	}
+	runner, err := runnerManager.Start(ctx, sessionID, tarData, py.envVars, disp.Print, runnerID)
 	close(startDone)
 	if err != nil {
 		return nil, fmt.Errorf("starting runner: %w", err)
+	}
+
+	if err := addRunnerToServer(runnerID, py); err != nil {
+		return nil, err
 	}
 
 	defer func() {
@@ -370,7 +351,6 @@ func (py *pySvc) Run(
 	runnerOK = true // All is good, don't kill Python subprocess.
 
 	py.printDone = make(chan struct{})
-	go py.printConsumer(ctx)
 
 	py.log.Info("run created")
 	return py, nil
@@ -392,21 +372,6 @@ func (py *pySvc) Close() {
 func (py *pySvc) kwToEvent(kwargs map[string]sdktypes.Value) (map[string]any, error) {
 	unw := sdktypes.ValueWrapper{IgnoreFunctions: true, SafeForJSON: true}.Unwrap
 	return kittehs.TransformMapValuesError(kwargs, unw)
-}
-
-func pyLevelToZap(level string) zapcore.Level {
-	switch level {
-	case "DEBUG":
-		return zap.DebugLevel
-	case "INFO":
-		return zap.InfoLevel
-	case "WARNING":
-		return zap.WarnLevel
-	case "ERROR":
-		return zap.ErrorLevel
-	}
-
-	return zap.InfoLevel
 }
 
 func (py *pySvc) call(ctx context.Context, val sdktypes.Value, args []sdktypes.Value, kw map[string]sdktypes.Value) {
@@ -612,12 +577,6 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 		ctx, selSpan := telemetry.T().Start(ctx, "pythonrt.Call.select")
 
 		select {
-		case r := <-py.channels.log:
-			selSpan.End()
-			span.AddEvent("log")
-
-			py.log.Log(pyLevelToZap(r.level), r.message)
-			close(r.doneChannel)
 		case v := <-py.channels.execute:
 			selSpan.End()
 			span.AddEvent("execute")

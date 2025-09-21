@@ -18,7 +18,7 @@ test-py:
 
 # You can set the TESTOPTS to pass options to `go test`
 test-go:
-	../../bin/tools/golangci-lint run ./...
+	go tool golangci-lint run
 	go test -v $(TESTOPTS)
 
 deps:
