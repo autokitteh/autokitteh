@@ -14,7 +14,7 @@ import (
 
 // We might update this to api.autokitteh.cloud
 // in the future
-const externalIssuer = "autokitteh.cloud"
+const issuerBase = "autokitteh.cloud"
 
 type externalTokenData struct {
 	j.RegisteredClaims
@@ -23,14 +23,14 @@ type externalTokenData struct {
 
 func createExternalToken(signMethod j.SigningMethod, signKey any, data []byte, internalUser bool) (string, error) {
 	id := uuid.New()
-	aud := []string{"api." + externalIssuer}
+	aud := []string{"api." + issuerBase}
 	if internalUser {
-		aud = append(aud, "internal."+externalIssuer)
+		aud = append(aud, "internal."+issuerBase)
 	}
 
 	claims := &externalTokenData{
 		RegisteredClaims: j.RegisteredClaims{
-			Issuer:   externalIssuer,
+			Issuer:   issuerBase,
 			Audience: aud,
 			Subject:  string(data),
 			ID:       id.String(),

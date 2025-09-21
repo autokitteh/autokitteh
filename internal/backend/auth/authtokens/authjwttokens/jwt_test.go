@@ -171,12 +171,12 @@ func TestExternalInternalUser(t *testing.T) {
 		{
 			name: "external user",
 			user: sdktypes.NewUser().WithID(sdktypes.NewUserID()).WithEmail("user@" + internalDomain + ".org"),
-			aud:  []string{"api." + externalIssuer},
+			aud:  []string{"api." + issuerBase},
 		},
 		{
 			name: "internal user",
 			user: sdktypes.NewUser().WithID(sdktypes.NewUserID()).WithEmail("user@" + internalDomain),
-			aud:  []string{"api." + externalIssuer, "internal." + externalIssuer},
+			aud:  []string{"api." + issuerBase, "internal." + issuerBase},
 		},
 	}
 
