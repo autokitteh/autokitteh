@@ -14,8 +14,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-const hmacIssuer = "ak-hmac"
-
 var (
 	hmacMethod = j.SigningMethodHS256
 	hashSize   = hmacMethod.Hash.Size()

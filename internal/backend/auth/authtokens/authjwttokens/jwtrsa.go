@@ -132,7 +132,7 @@ func (rs *rsaTokens) Create(u sdktypes.User) (string, error) {
 
 	email := u.Email()
 	emailParts := strings.Split(email, "@")
-	internalUser := false
+	var internalUser bool
 	if len(emailParts) == 2 && emailParts[1] == rs.internalDomain {
 		internalUser = true
 	}

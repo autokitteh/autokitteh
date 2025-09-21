@@ -7,6 +7,7 @@ import (
 	"time"
 
 	j "github.com/golang-jwt/jwt/v5"
+
 	"github.com/google/uuid"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
