@@ -8,12 +8,12 @@ from .connections import check_connection_name
 from .errors import ConnectionInitError
 
 
-def get_notion_client(connection: str) -> Client:
+def notion_client(connection: str) -> Client:
     """Initialize a Notion client, based on an AutoKitteh connection.
 
     API reference:
-    https://developers.notion.com/docs
-    https://github.com/ramnes/notion-sdk-py
+        https://developers.notion.com/docs
+        https://github.com/ramnes/notion-sdk-py
 
     Args:
         connection: AutoKitteh connection name.
