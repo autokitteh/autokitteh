@@ -53,7 +53,7 @@ func New(cfg *Config) (authtokens.Tokens, error) {
 	case AlgorithmHMAC:
 		return newHMAC(&cfg.HMAC)
 	case AlgorithmRSA:
-		return newRSA(&cfg.RSA)
+		return newRSA(&cfg.RSA, cfg.InternalDomain)
 	default:
 		return nil, errors.New("unsupported JWT algorithm")
 	}
