@@ -32,82 +32,33 @@ autokitteh.activities module
    :undoc-members:
    :show-inheritance:
 
-autokitteh.airtable module
---------------------------
-
-.. automodule:: autokitteh.airtable
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-autokitteh.anthropic module
+autokitteh.microsoft module
 ---------------------------
 
-.. automodule:: autokitteh.anthropic
+.. automodule:: autokitteh.microsoft
    :members:
    :undoc-members:
    :show-inheritance:
 
-autokitteh.asana module
+autokitteh.notion module
+------------------------
+.. automodule:: autokitteh.notion
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+autokitteh.store module
 -----------------------
 
-.. automodule:: autokitteh.asana
+.. automodule:: autokitteh.store
    :members:
    :undoc-members:
    :show-inheritance:
 
-autokitteh.atlassian module
----------------------------
-
-.. automodule:: autokitteh.atlassian
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-autokitteh.attr_dict module
----------------------------
-
-.. automodule:: autokitteh.attr_dict
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-autokitteh.auth0 module
------------------------
-
-.. automodule:: autokitteh.auth0
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-autokitteh.aws module
----------------------
-
-.. automodule:: autokitteh.aws
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-autokitteh.connections module
------------------------------
-
-.. automodule:: autokitteh.connections
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-autokitteh.discord module
+autokitteh.signals module
 -------------------------
 
-.. automodule:: autokitteh.discord
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-autokitteh.errors module
-------------------------
-
-.. automodule:: autokitteh.errors
+.. automodule:: autokitteh.signals
    :members:
    :undoc-members:
    :show-inheritance:
@@ -120,26 +71,10 @@ autokitteh.event module
    :undoc-members:
    :show-inheritance:
 
-autokitteh.events module
-------------------------
+autokitteh.zoom module
+----------------------
 
-.. automodule:: autokitteh.events
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-autokitteh.github module
-------------------------
-
-.. automodule:: autokitteh.github
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-autokitteh.google module
-------------------------
-
-.. automodule:: autokitteh.google
+.. automodule:: autokitteh.zoom
    :members:
    :undoc-members:
    :show-inheritance:
@@ -152,18 +87,42 @@ autokitteh.height module
    :undoc-members:
    :show-inheritance:
 
-autokitteh.hubspot module
--------------------------
+autokitteh.asana module
+-----------------------
 
-.. automodule:: autokitteh.hubspot
+.. automodule:: autokitteh.asana
    :members:
    :undoc-members:
    :show-inheritance:
 
-autokitteh.kubernetes module
+autokitteh.oauth2_session module
+--------------------------------
+
+.. automodule:: autokitteh.oauth2_session
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+autokitteh.events module
+------------------------
+
+.. automodule:: autokitteh.events
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+autokitteh.salesforce module
 ----------------------------
 
-.. automodule:: autokitteh.kubernetes
+.. automodule:: autokitteh.salesforce
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+autokitteh.hubspot module
+-------------------------
+
+.. automodule:: autokitteh.hubspot
    :members:
    :undoc-members:
    :show-inheritance:
@@ -176,26 +135,74 @@ autokitteh.linear module
    :undoc-members:
    :show-inheritance:
 
-autokitteh.microsoft module
+autokitteh.attr_dict module
 ---------------------------
 
-.. automodule:: autokitteh.microsoft
+.. automodule:: autokitteh.attr_dict
    :members:
    :undoc-members:
    :show-inheritance:
 
-autokitteh.notion module
+autokitteh.airtable module
+--------------------------
+
+.. automodule:: autokitteh.airtable
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+autokitteh.discord module
+-------------------------
+
+.. automodule:: autokitteh.discord
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+autokitteh.slack_test module
+----------------------------
+
+.. automodule:: autokitteh.slack_test
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+autokitteh.connections module
+-----------------------------
+
+.. automodule:: autokitteh.connections
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+autokitteh.google module
 ------------------------
 
-.. automodule:: autokitteh.notion
+.. automodule:: autokitteh.google
    :members:
    :undoc-members:
    :show-inheritance:
 
-autokitteh.oauth2_session module
---------------------------------
+autokitteh.packages module
+--------------------------
 
-.. automodule:: autokitteh.oauth2_session
+.. automodule:: autokitteh.packages
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+autokitteh.aws module
+---------------------
+
+.. automodule:: autokitteh.aws
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+autokitteh.pipedrive module
+---------------------------
+
+.. automodule:: autokitteh.pipedrive
    :members:
    :undoc-members:
    :show-inheritance:
@@ -216,18 +223,34 @@ autokitteh.outcomes module
    :undoc-members:
    :show-inheritance:
 
-autokitteh.packages module
---------------------------
+autokitteh.kubernetes module
+----------------------------
 
-.. automodule:: autokitteh.packages
+.. automodule:: autokitteh.kubernetes
    :members:
    :undoc-members:
    :show-inheritance:
 
-autokitteh.pipedrive module
+autokitteh.anthropic module
 ---------------------------
 
-.. automodule:: autokitteh.pipedrive
+.. automodule:: autokitteh.anthropic
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+autokitteh.errors module
+------------------------
+
+.. automodule:: autokitteh.errors
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+autokitteh.github module
+------------------------
+
+.. automodule:: autokitteh.github
    :members:
    :undoc-members:
    :show-inheritance:
@@ -240,42 +263,10 @@ autokitteh.reddit module
    :undoc-members:
    :show-inheritance:
 
-autokitteh.salesforce module
-----------------------------
+autokitteh.atlassian module
+---------------------------
 
-.. automodule:: autokitteh.salesforce
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-autokitteh.signals module
--------------------------
-
-.. automodule:: autokitteh.signals
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-autokitteh.slack module
------------------------
-
-.. automodule:: autokitteh.slack
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-autokitteh.slack_test module
-----------------------------
-
-.. automodule:: autokitteh.slack_test
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-autokitteh.store module
------------------------
-
-.. automodule:: autokitteh.store
+.. automodule:: autokitteh.atlassian
    :members:
    :undoc-members:
    :show-inheritance:
@@ -288,10 +279,18 @@ autokitteh.twilio module
    :undoc-members:
    :show-inheritance:
 
-autokitteh.zoom module
-----------------------
+autokitteh.slack module
+-----------------------
 
-.. automodule:: autokitteh.zoom
+.. automodule:: autokitteh.slack
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+autokitteh.auth0 module
+-----------------------
+
+.. automodule:: autokitteh.auth0
    :members:
    :undoc-members:
    :show-inheritance:
