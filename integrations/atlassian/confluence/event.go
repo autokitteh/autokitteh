@@ -90,7 +90,7 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := extrazap.AttachLoggerToContext(l, r.Context())
-	cids, err := h.vars.FindConnectionIDs(ctx, integrationID, baseURL, atlassianURL)
+	cids, err := h.vars.FindActiveConnectionIDs(ctx, integrationID, baseURL, atlassianURL)
 	if err != nil {
 		l.Error("Failed to find connection IDs", zap.Error(err))
 		return

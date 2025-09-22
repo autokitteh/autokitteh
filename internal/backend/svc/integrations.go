@@ -81,8 +81,8 @@ func (vs sysVars) Get(ctx context.Context, sid sdktypes.VarScopeID, names ...sdk
 	return vs.vs.Get(authcontext.SetAuthnSystemUser(ctx), sid, names...)
 }
 
-func (vs sysVars) FindConnectionIDs(ctx context.Context, iid sdktypes.IntegrationID, name sdktypes.Symbol, value string) ([]sdktypes.ConnectionID, error) {
-	return vs.vs.FindConnectionIDs(authcontext.SetAuthnSystemUser(ctx), iid, name, value)
+func (vs sysVars) FindActiveConnectionIDs(ctx context.Context, iid sdktypes.IntegrationID, name sdktypes.Symbol, value string) ([]sdktypes.ConnectionID, error) {
+	return vs.vs.FindActiveConnectionIDs(authcontext.SetAuthnSystemUser(ctx), iid, name, value)
 }
 
 func integrationsFXOption() fx.Option {

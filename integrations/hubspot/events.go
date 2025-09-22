@@ -66,7 +66,7 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 
 	// Retrieve all the relevant connections for this event.
 	ctx := r.Context()
-	cids, err := h.vars.FindConnectionIDs(ctx, desc.ID(), portalIDVar, portalID)
+	cids, err := h.vars.FindActiveConnectionIDs(ctx, desc.ID(), portalIDVar, portalID)
 	if err != nil {
 		h.logger.Error("failed to find connection IDs", zap.Error(err))
 		common.HTTPError(w, http.StatusInternalServerError)
