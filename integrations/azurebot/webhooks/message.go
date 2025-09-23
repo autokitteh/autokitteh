@@ -31,7 +31,7 @@ func (h handler) HandleMessage(w http.ResponseWriter, r *http.Request) {
 
 	l.Debug("received activity for tenant "+tenantID, zap.Any("activity", act))
 
-	cids, err := h.vars.FindActiveConnectionIDs(r.Context(), h.integrationID, sdktypes.NewSymbol("tenant_id"), tenantID)
+	cids, err := h.vars.FindConnectionIDs(r.Context(), h.integrationID, sdktypes.NewSymbol("tenant_id"), tenantID)
 	if err != nil {
 		l.Warn("failed to find connection IDs for tenant "+tenantID, zap.Error(err))
 		http.Error(w, "no connections configured for tenant", http.StatusBadRequest)
