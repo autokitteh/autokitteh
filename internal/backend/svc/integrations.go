@@ -14,6 +14,7 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/atlassian/jira"
 	"go.autokitteh.dev/autokitteh/integrations/auth0"
 	"go.autokitteh.dev/autokitteh/integrations/aws"
+	"go.autokitteh.dev/autokitteh/integrations/azurebot"
 	"go.autokitteh.dev/autokitteh/integrations/chatgpt"
 	"go.autokitteh.dev/autokitteh/integrations/discord"
 	"go.autokitteh.dev/autokitteh/integrations/github"
@@ -125,6 +126,7 @@ func integrationsFXOption() fx.Option {
 		integration("sheets", configset.Empty, sheets.New),
 		integration("slack", configset.Empty, slack.New),
 		integration("twilio", configset.Empty, twilio.New),
+		integration("azurebot", configset.Empty, azurebot.New),
 		integration("youtube", configset.Empty, youtube.New),
 		integration("zoom", configset.Empty, zoom.New),
 		fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, muxes *muxes.Muxes, vars sdkservices.Vars, oauth *oauth.OAuth, dispatch sdkservices.DispatchFunc) {
@@ -152,6 +154,7 @@ func integrationsFXOption() fx.Option {
 				salesforce.Start(l, muxes, vars, oauth, dispatch)
 				slack.Start(l, muxes, vars, dispatch)
 				twilio.Start(l, muxes, vars, dispatch)
+				azurebot.Start(l, muxes, vars, dispatch)
 				zoom.Start(l, muxes, vars, oauth, dispatch)
 				return nil
 			})
