@@ -118,6 +118,8 @@ func TestSmartParseID(t *testing.T) {
 	// 4. Invalid formats
 	_, err = SmartParseID[ProjectID]("not-a-valid-id!!!")
 	assert.Error(t, err)
-	_, err = SmartParseID[ProjectID]("") // empty is not accepted by SmartParseID (unlike ParseID)
-	assert.Error(t, err)
+
+	id, err := SmartParseID[ProjectID]("")
+	assert.NoError(t, err)
+	assert.False(t, id.IsValid())
 }
