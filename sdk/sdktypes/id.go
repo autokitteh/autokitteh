@@ -152,6 +152,41 @@ func ParseID[ID id[T], T idTraits](s string) (ID, error) {
 	return ID(id[T]{tid: tid}), nil
 }
 
+func SmartParseID[ID id[T], T idTraits](s string) (ID, error) {
+	s = strings.TrimSpace(s)
+
+	if s == "" {
+		return ID{}, nil
+	}
+
+	var t T
+	if strings.HasPrefix(s, t.Prefix()) {
+		return ParseID[ID](s)
+	}
+
+	uuid, err := uuid.Parse(s)
+	if err == nil {
+		return NewIDFromUUIDString[ID](uuid.String())
+	}
+
+	s1 := t.Prefix() + "_" + s
+	if id, err := ParseID[ID](s1); err == nil {
+		return id, nil
+	}
+
+	return ID{}, sdkerrors.NewInvalidArgumentError("unknown id format")
+}
+
+func StrictSmartParseID[ID id[T], T idTraits](s string) (ID, error) {
+	s = strings.TrimSpace(s)
+
+	if s == "" {
+		return ID{}, sdkerrors.NewInvalidArgumentError("empty id")
+	}
+
+	return SmartParseID[ID](s)
+}
+
 func FromID[RetID id[T], T idTraits](id ID) RetID {
 	return kittehs.Must1(ParseID[RetID](id.String()))
 }

@@ -6,15 +6,17 @@ import (
 )
 
 var routes = map[string]string{
-	"prj": "projects",
-	"con": "connections",
-	"int": "integrations",
-	"trg": "triggers",
-	"env": "envs",
-	"ses": "sessions",
-	"dep": "deployments",
 	"bld": "builds",
+	"con": "connections",
+	"dep": "deployments",
+	"env": "envs",
 	"evt": "events",
+	"int": "integrations",
+	"org": "orgs",
+	"prj": "projects",
+	"ses": "sessions",
+	"trg": "triggers",
+	"usr": "users",
 }
 
 func (s *svc) initObjects() {

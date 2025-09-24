@@ -29,18 +29,19 @@ func (p project) ExtraFields() map[string]any { return nil }
 
 func toProject(sdkP sdktypes.Project) project { return project{sdkP} }
 
-func (s *svc) listProjects(w http.ResponseWriter, r *http.Request) (list, error) {
-	sdkPs, err := s.Projects().List(r.Context(), sdktypes.InvalidOrgID)
+func (s *svc) listProjects(w http.ResponseWriter, r *http.Request, oid sdktypes.OrgID) (list, error) {
+	sdkPs, err := s.Projects().List(r.Context(), oid)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return list{}, err
 	}
 
-	return genListData(nil, kittehs.Transform(sdkPs, toProject)), nil
+	ps := genListData(nil, kittehs.Transform(sdkPs, toProject))
+	return ps, nil
 }
 
 func (s *svc) projects(w http.ResponseWriter, r *http.Request) {
-	ps, err := s.listProjects(w, r)
+	ps, err := s.listProjects(w, r, sdktypes.InvalidOrgID)
 	if err != nil {
 		return
 	}
