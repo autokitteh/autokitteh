@@ -106,30 +106,31 @@ func genListData[T listItem[M], M proto.Message](scope any, xs []T, drops ...str
 
 			if n != "" {
 				if i < fs.Len() {
-					fd := fs.ByName(protoreflect.Name(n))
-					fv := xr.Get(fd)
-					v = fv.String()
+					if fd := fs.ByName(protoreflect.Name(n)); fd != nil {
+						fv := xr.Get(fd)
+						v = fv.String()
 
-					if fd.Kind() == protoreflect.MessageKind {
-						switch fd.Message().FullName() {
-						case "google.protobuf.Timestamp":
-							ts := fv.Message().Interface().(*timestamppb.Timestamp)
-							v = ts.AsTime().Format("2006-01-02 15:04:05")
-						case "google.protobuf.Duration":
-							d := fv.Message().Interface().(*durationpb.Duration)
-							v = d.String()
-						default:
-							continue
+						if fd.Kind() == protoreflect.MessageKind {
+							switch fd.Message().FullName() {
+							case "google.protobuf.Timestamp":
+								ts := fv.Message().Interface().(*timestamppb.Timestamp)
+								v = ts.AsTime().Format("2006-01-02 15:04:05")
+							case "google.protobuf.Duration":
+								d := fv.Message().Interface().(*durationpb.Duration)
+								v = d.String()
+							default:
+								continue
+							}
+						} else if fd.Kind() == protoreflect.EnumKind {
+							v = fmt.Sprint(fd.Enum().Values().ByNumber(fv.Enum()).Name())
+						} else if en := fd.Enum(); en != nil {
+							v = fmt.Sprint(en.Values().ByNumber(fv.Enum()).Name())
+						} else if fd.Cardinality() == protoreflect.Repeated {
+							v = strconv.Itoa(fv.List().Len())
 						}
-					} else if fd.Kind() == protoreflect.EnumKind {
-						v = fmt.Sprint(fd.Enum().Values().ByNumber(fv.Enum()).Name())
-					} else if en := fd.Enum(); en != nil {
-						v = fmt.Sprint(en.Values().ByNumber(fv.Enum()).Name())
-					} else if fd.Cardinality() == protoreflect.Repeated {
-						v = strconv.Itoa(fv.List().Len())
+					} else {
+						v = fmt.Sprint(x.ExtraFields()[n])
 					}
-				} else {
-					v = fmt.Sprint(x.ExtraFields()[n])
 				}
 
 				item = append(item, formatField(n, v))
