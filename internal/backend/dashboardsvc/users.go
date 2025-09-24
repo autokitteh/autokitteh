@@ -54,7 +54,7 @@ func (s *svc) postUsers(w http.ResponseWriter, r *http.Request) {
 	u, err := s.Users().Get(r.Context(), id, email)
 	if err != nil {
 		if errors.Is(err, sdkerrors.ErrNotFound) {
-			http.Error(w, "user not found", http.StatusOK)
+			http.Error(w, "user not found", http.StatusNotFound)
 			return
 		}
 
@@ -66,14 +66,19 @@ func (s *svc) postUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *svc) user(w http.ResponseWriter, r *http.Request) {
-	id, err := sdktypes.SmartParseID[sdktypes.UserID](r.URL.Query().Get("id"))
+	id, err := sdktypes.SmartParseID[sdktypes.UserID](r.PathValue("id"))
 	if err != nil {
-		http.Error(w, fmt.Sprintf("org id: %v", err), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("user id: %v", err), http.StatusBadRequest)
 		return
 	}
 
 	u, err := s.Users().Get(r.Context(), id, "")
 	if err != nil {
+		if errors.Is(err, sdkerrors.ErrNotFound) {
+			http.Error(w, "user not found", http.StatusNotFound)
+			return
+		}
+
 		http.Error(w, fmt.Sprintf("get: %v", err), http.StatusInternalServerError)
 		return
 	}
