@@ -29,25 +29,22 @@ var createCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		if org == "" {
-			u, err := cli.Auth().WhoAmI(ctx)
+		var orgID string
+		if org != "" {
+			org, err := r.Org(ctx, org)
 			if err != nil {
-				err := fmt.Errorf("org not provided and could not resolve current user: %w", err)
-				return common.NewExitCodeError(common.UnauthenticatedExitCode, err)
+				err := fmt.Errorf("resolve org: %w", err)
+				return common.NewExitCodeError(common.GenericFailureExitCode, err)
 			}
+			if !org.IsValid() {
+				err := fmt.Errorf("invalid org: %w", err)
+				return common.NewExitCodeError(common.GenericFailureExitCode, err)
 
-			org = u.DefaultOrgID().String()
+			}
+			orgID = org.String()
 		}
 
-		org, err := r.Org(ctx, org)
-		if err != nil {
-			err := fmt.Errorf("resolve org: %w", err)
-			return common.NewExitCodeError(common.GenericFailureExitCode, err)
-		}
-
-		orgID := org.String()
-
-		pidStr := ""
+		var pIDStr string
 
 		if project != "" {
 			pid, err := r.ProjectNameOrID(ctx, sdktypes.InvalidOrgID, project)
@@ -58,7 +55,7 @@ var createCmd = common.StandardCommand(&cobra.Command{
 				err = fmt.Errorf("project %q not found", project)
 				return common.NewExitCodeError(common.NotFoundExitCode, err)
 			}
-			pidStr = pid.String()
+			pIDStr = pid.String()
 		}
 
 		i, iid, err := r.IntegrationNameOrID(ctx, integration)
@@ -72,7 +69,7 @@ var createCmd = common.StandardCommand(&cobra.Command{
 
 		c, err := sdktypes.ConnectionFromProto(&sdktypes.ConnectionPB{
 			IntegrationId: iid.String(),
-			ProjectId:     pidStr,
+			ProjectId:     pIDStr,
 			OrgId:         orgID,
 			Name:          args[0],
 		})

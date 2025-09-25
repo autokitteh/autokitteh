@@ -7,7 +7,6 @@ CREATE TABLE `new_connections` (
   `created_at` datetime NULL,
   `project_id` uuid NULL,
   `org_id` uuid NOT NULL,
-  `scope` text NOT NULL,
   `connection_id` uuid NOT NULL,
   `integration_id` uuid NULL,
   `name` text NULL,
@@ -20,7 +19,7 @@ CREATE TABLE `new_connections` (
   CONSTRAINT `fk_connections_project` FOREIGN KEY (`project_id`) REFERENCES `projects` (`project_id`) ON UPDATE NO ACTION ON DELETE NO ACTION
 );
 -- copy rows from old table "connections" to new temporary table "new_connections"
-INSERT INTO `new_connections` (`created_by`, `created_at`, `project_id`, `org_id`, `scope`, `connection_id`, `integration_id`, `name`, `status_code`, `status_message`, `updated_by`, `updated_at`, `deleted_at`) SELECT `created_by`, `created_at`, `project_id`, `org_id`, `scope`, `connection_id`, `integration_id`, `name`, `status_code`, `status_message`, `updated_by`, `updated_at`, `deleted_at` FROM `connections`;
+INSERT INTO `new_connections` (`created_by`, `created_at`, `project_id`, `org_id`, `connection_id`, `integration_id`, `name`, `status_code`, `status_message`, `updated_by`, `updated_at`, `deleted_at`) SELECT `created_by`, `created_at`, `project_id`, `org_id`, `connection_id`, `integration_id`, `name`, `status_code`, `status_message`, `updated_by`, `updated_at`, `deleted_at` FROM `connections`;
 -- drop "connections" table after copying rows
 DROP TABLE `connections`;
 -- rename temporary table "new_connections" to "connections"

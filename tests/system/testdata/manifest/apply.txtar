@@ -156,7 +156,8 @@ project:
     "links": {
       "self_url": "/connections/con_00000000000000000000000002",
       "test_url": "/connections/con_00000000000000000000000002/test"
-    }
+    },
+    "org_id": "org_3kthzvm10r16a40eef31710220"
   }
 }
 

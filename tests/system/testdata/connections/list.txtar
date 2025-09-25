@@ -51,8 +51,8 @@ return code == $RC_NOT_FOUND
 output equals 'Error: integration: not_found'
 
 -- expected_all_unformatted.json --
-{"connection_id":"con_00000000000000000000000002","integration_id":"int_3kth00testaf9d33c5697341f0","project_id":"prj_00000000000000000000000001","name":"my_connection_1","status":{"code":"CODE_OK","message":"OK"},"capabilities":{"supports_connection_test":true},"links":{"self_url":"/connections/con_00000000000000000000000002","test_url":"/connections/con_00000000000000000000000002/test"}}
-{"connection_id":"con_00000000000000000000000003","integration_id":"int_3kth00testaf9d33c5697341f0","project_id":"prj_00000000000000000000000001","name":"my_connection_2","status":{"code":"CODE_OK","message":"OK"},"capabilities":{"supports_connection_test":true},"links":{"self_url":"/connections/con_00000000000000000000000003","test_url":"/connections/con_00000000000000000000000003/test"}}
+{"connection_id":"con_00000000000000000000000002","integration_id":"int_3kth00testaf9d33c5697341f0","project_id":"prj_00000000000000000000000001","name":"my_connection_1","status":{"code":"CODE_OK","message":"OK"},"capabilities":{"supports_connection_test":true},"links":{"self_url":"/connections/con_00000000000000000000000002","test_url":"/connections/con_00000000000000000000000002/test"},"org_id":"org_3kthzvm10r16a40eef31710220"}
+{"connection_id":"con_00000000000000000000000003","integration_id":"int_3kth00testaf9d33c5697341f0","project_id":"prj_00000000000000000000000001","name":"my_connection_2","status":{"code":"CODE_OK","message":"OK"},"capabilities":{"supports_connection_test":true},"links":{"self_url":"/connections/con_00000000000000000000000003","test_url":"/connections/con_00000000000000000000000003/test"},"org_id":"org_3kthzvm10r16a40eef31710220"}
 
 -- expected_all_formatted.json --
 {
@@ -70,7 +70,8 @@ output equals 'Error: integration: not_found'
   "links": {
     "self_url": "/connections/con_00000000000000000000000002",
     "test_url": "/connections/con_00000000000000000000000002/test"
-  }
+  },
+  "org_id": "org_3kthzvm10r16a40eef31710220"
 }
 {
   "connection_id": "con_00000000000000000000000003",
@@ -87,5 +88,6 @@ output equals 'Error: integration: not_found'
   "links": {
     "self_url": "/connections/con_00000000000000000000000003",
     "test_url": "/connections/con_00000000000000000000000003/test"
-  }
+  },
+  "org_id": "org_3kthzvm10r16a40eef31710220"
 }

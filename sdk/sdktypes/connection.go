@@ -36,6 +36,8 @@ func (ConnectionTraits) StrictValidate(m *ConnectionPB) error {
 		// this is optional for backwards compatibility
 		// once the UI is updated this should be made mandatory
 		// mandatory("org_id", m.OrgId),
+		// oneof("org_id/project_id", m.OrgId, m.ProjectId),
+		// mandatory("project_id", m.ProjectId),
 		mandatory("integration_id", m.IntegrationId),
 	)
 }

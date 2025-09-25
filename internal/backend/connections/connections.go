@@ -30,11 +30,12 @@ func (c *Connections) Create(ctx context.Context, conn sdktypes.Connection) (sdk
 	// TODO: This is for backwards compatibility.
 	// We should remove it once the UI is updated to always pass org_id
 	if !conn.OrgID().IsValid() {
-		orgID, err := c.DB.GetOrgIDOf(ctx, conn.ProjectID())
-		if err != nil {
-			return sdktypes.InvalidConnectionID, err
+		user := authcontext.GetAuthnUser(ctx)
+		if !user.IsValid() {
+			return sdktypes.InvalidConnectionID, sdkerrors.ErrUnauthenticated
 		}
-		conn = conn.WithOrgID(orgID)
+
+		conn = conn.WithOrgID(user.DefaultOrgID())
 	}
 
 	if err := authz.CheckContext(
