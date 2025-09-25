@@ -172,7 +172,7 @@ func TestDuplicatedTrigger(t *testing.T) {
 func TestGetTriggerWithActiveDeploymentByID(t *testing.T) {
 	f := preTriggerTest(t)
 
-	// test non-existing trigger
+	// test non-existing trigger.
 	nonExistingID := sdktypes.NewTriggerID()
 	_, _, err := f.gormdb.GetTriggerWithActiveDeploymentByID(f.ctx, nonExistingID.UUIDValue())
 	assert.ErrorIs(t, err, sdkerrors.ErrNotFound)
@@ -181,20 +181,20 @@ func TestGetTriggerWithActiveDeploymentByID(t *testing.T) {
 	tr := f.newTrigger(p, c)
 	f.createTriggersAndAssert(t, tr)
 
-	// test without active deployment
+	// test without active deployment.
 	trigger, hasActiveDeployment, err := f.gormdb.GetTriggerWithActiveDeploymentByID(f.ctx, tr.TriggerID)
 	assert.NoError(t, err)
 	assert.False(t, hasActiveDeployment)
 	assert.NotEqual(t, sdktypes.InvalidTrigger, trigger)
 
-	// create active deployment
+	// create active deployment.
 	b := f.newBuild(p)
 	f.saveBuildsAndAssert(t, b)
 	d := f.newDeployment(b, p)
 	d.State = int32(sdktypes.DeploymentStateActive.ToProto())
 	f.createDeploymentsAndAssert(t, d)
 
-	// test with active deployment
+	// test with active deployment.
 	trigger, hasActiveDeployment, err = f.gormdb.GetTriggerWithActiveDeploymentByID(f.ctx, tr.TriggerID)
 	assert.NoError(t, err)
 	assert.True(t, hasActiveDeployment)
