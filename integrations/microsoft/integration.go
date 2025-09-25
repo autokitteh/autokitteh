@@ -58,10 +58,8 @@ func newHTTPHandler(l *zap.Logger, v sdkservices.Vars, o *oauth.OAuth, d sdkserv
 
 // resources returns the Microsoft Graph resources that each Microsoft integration
 // should subscribe to in order to receive asynchronous change notifications.
-func resources(i sdktypes.Integration) []string {
-	// TODO: Convert this to a switch when we add more integrations.
-	if i.UniqueName().String() == teams.IntegrationName {
-		return teams.SubscriptionResources
-	}
-	return nil
+func resources(_ sdktypes.Integration) []string {
+	// TODO: Convert this to a switch when we add more integrations. ask Itay
+	// if i.UniqueName().String() == teams.IntegrationName {
+	return teams.SubscriptionResources
 }
