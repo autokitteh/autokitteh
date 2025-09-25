@@ -1,6 +1,5 @@
 """A mock worker so we can debug the runner without ak."""
 
-import sys
 from itertools import count
 from threading import Event, Thread
 from time import sleep
@@ -76,14 +75,6 @@ class MockWorker(pb.handler_rpc.HandlerService):
         self.log("DONE", request)
         self.event.set()
 
-    def Log(self, request: pb.handler.LogRequest):
-        self.log("LOG", request)
-        return pb.handler.LogResponse()
-
-    def Print(self, request: pb.handler.PrintRequest):
-        self.log("PRINT", request.message)
-        return pb.handler.PrintResponse()
-
     def Sleep(self, request: pb.handler.SleepRequest):
         self.log("SLEEP", request.duration)
         sleep(request.duration_ms * 1000)
@@ -139,6 +130,5 @@ class MockWorker(pb.handler_rpc.HandlerService):
 
     def log(self, func, msg):
         if self.verbose:
-            # We can't use 'print' since main replaces it with a call to the worker Print
-            sys.stdout.write(f"<<{func}>> {msg}\n")
+            print(f"<<{func}>> {msg}\n")
         self.calls[func] += 1

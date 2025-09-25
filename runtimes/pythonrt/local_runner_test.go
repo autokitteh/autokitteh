@@ -74,7 +74,8 @@ func TestRunner_Start(t *testing.T) {
 	r := LocalPython{
 		log: log,
 	}
-	err := r.Start(context.Background(), "python", tarData, env, "")
+	printFn := func(line string) error { return nil }
+	err := r.Start(context.Background(), "python", tarData, env, "", printFn, "r1")
 	require.NoError(t, err)
 
 	defer r.Close() //nolint:all
@@ -258,7 +259,8 @@ func TestRunner_Close(t *testing.T) {
 		log: log,
 	}
 
-	err := r.Start(context.Background(), "python", tarData, nil, "")
+	printFn := func(line string) error { return nil }
+	err := r.Start(context.Background(), "python", tarData, nil, "", printFn, "r1")
 	require.NoError(t, err)
 
 	r.Close()

@@ -6,7 +6,6 @@ Need much more:
 - Bad input tests
 """
 
-import builtins
 import json
 import os
 import pickle
@@ -18,14 +17,16 @@ from threading import Event
 from unittest.mock import MagicMock
 from uuid import uuid4
 
+import pytest
+
+from conftest import clear_module_cache, workflows
+from mock_worker import MockWorker
+
 import main
 import pb.autokitteh.user_code.v1.runner_svc_pb2 as runner_pb
 import pb.autokitteh.user_code.v1.user_code_pb2 as user_code
 import pb.autokitteh.values.v1.values_pb2 as pb_values
-import pytest
 import values
-from conftest import clear_module_cache, workflows
-from mock_worker import MockWorker
 
 
 def new_test_runner(code_dir, worker=None, server=None):
@@ -62,11 +63,7 @@ def test_start(monkeypatch):
     req = runner_pb.StartRequest(entry_point=entry_point, event=event)
     context = MagicMock()
 
-    # Restore print after this test
-    monkeypatch.setattr(builtins, "print", print)
-
     resp = runner.Start(req, context)
-
     assert resp.error == ""
     assert not context.abort.called
 
