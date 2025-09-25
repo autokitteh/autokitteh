@@ -5,12 +5,13 @@
 package varsv1connect
 
 import (
-	connect "connectrpc.com/connect"
 	context "context"
 	errors "errors"
-	v1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/vars/v1"
 	http "net/http"
 	strings "strings"
+
+	connect "connectrpc.com/connect"
+	v1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/vars/v1"
 )
 
 // This is a compile-time assertion to ensure that this generated file and the connect package are
@@ -50,7 +51,7 @@ type VarsServiceClient interface {
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
 	Delete(context.Context, *connect.Request[v1.DeleteRequest]) (*connect.Response[v1.DeleteResponse], error)
 	// Specific for integrations.
-	FindConnectionIDs(context.Context, *connect.Request[v1.FindConnectionIDsRequest]) (*connect.Response[v1.FindConnectionIDsResponse], error)
+	FindActiveConnectionIDs(context.Context, *connect.Request[v1.FindConnectionIDsRequest]) (*connect.Response[v1.FindConnectionIDsResponse], error)
 }
 
 // NewVarsServiceClient constructs a client for the autokitteh.vars.v1.VarsService service. By
@@ -109,8 +110,8 @@ func (c *varsServiceClient) Delete(ctx context.Context, req *connect.Request[v1.
 	return c.delete.CallUnary(ctx, req)
 }
 
-// FindConnectionIDs calls autokitteh.vars.v1.VarsService.FindConnectionIDs.
-func (c *varsServiceClient) FindConnectionIDs(ctx context.Context, req *connect.Request[v1.FindConnectionIDsRequest]) (*connect.Response[v1.FindConnectionIDsResponse], error) {
+// FindActiveConnectionIDs calls autokitteh.vars.v1.VarsService.FindActiveConnectionIDs.
+func (c *varsServiceClient) FindActiveConnectionIDs(ctx context.Context, req *connect.Request[v1.FindConnectionIDsRequest]) (*connect.Response[v1.FindConnectionIDsResponse], error) {
 	return c.findConnectionIDs.CallUnary(ctx, req)
 }
 

@@ -211,7 +211,7 @@ func TestGetTriggerWithActiveDeploymentByWebhookSlug(t *testing.T) {
 
 	// test without active deployment
 	_, err := f.gormdb.GetTriggerWithActiveDeploymentByWebhookSlug(f.ctx, "test-webhook")
-	assert.Error(t, err)
+	assert.ErrorIs(t, err, sdkerrors.ErrNotFound)
 
 	// create active deployment
 	b := f.newBuild(p)
