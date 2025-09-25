@@ -190,7 +190,7 @@ func transformEvent(l *zap.Logger, slackEvent any, eventType string) (sdktypes.E
 
 func (h handler) listConnectionIDs(ctx context.Context, appID, enterpriseID, teamID string) ([]sdktypes.ConnectionID, error) {
 	ids := vars.InstallIDs(appID, enterpriseID, teamID)
-	return h.vars.FindConnectionIDs(ctx, h.integrationID, vars.InstallIDsVar, ids)
+	return h.vars.FindActiveConnectionIDs(ctx, h.integrationID, vars.InstallIDsVar, ids)
 }
 
 // extractIDs extracts the app ID, team ID, and enterprise ID from the given request body.

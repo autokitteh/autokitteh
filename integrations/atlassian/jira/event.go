@@ -117,7 +117,7 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		wk := webhookKey(u, strconv.Itoa(id))
-		cids, err := h.vars.FindConnectionIDs(ctx, IntegrationID, WebhookKeySymbol, wk)
+		cids, err := h.vars.FindActiveConnectionIDs(ctx, IntegrationID, WebhookKeySymbol, wk)
 		if err != nil {
 			l.Error("Failed to find connection IDs", zap.Error(err))
 			break

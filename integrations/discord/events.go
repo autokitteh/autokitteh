@@ -43,7 +43,7 @@ func (h *handler) handleEvent(event any, eventType string) {
 		return
 	}
 
-	cids, err := h.vars.FindConnectionIDs(context.Background(), h.integrationID, vars.BotToken, "")
+	cids, err := h.vars.FindActiveConnectionIDs(context.Background(), h.integrationID, vars.BotToken, "")
 	if err != nil {
 		l.Error("Failed to find connection IDs", zap.Error(err))
 		return
