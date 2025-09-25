@@ -18,9 +18,10 @@ const (
 
 // Config represents the top-level JWT configuration
 type Config struct {
-	Algorithm Algorithm  `koanf:"algorithm"`
-	HMAC      HMACConfig `koanf:"hmac"`
-	RSA       RSAConfig  `koanf:"rsa"`
+	Algorithm      Algorithm  `koanf:"algorithm"`
+	HMAC           HMACConfig `koanf:"hmac"`
+	RSA            RSAConfig  `koanf:"rsa"`
+	InternalDomain string     `koanf:"internal_domain"`
 }
 
 // token is shared between HMAC and RSA implementations
@@ -29,7 +30,9 @@ type token struct {
 }
 
 var Configs = configset.Set[Config]{
-	Default: &Config{},
+	Default: &Config{
+		InternalDomain: "autokitteh.com",
+	},
 	Dev: &Config{
 		Algorithm: AlgorithmHMAC,
 		HMAC: HMACConfig{
@@ -50,7 +53,7 @@ func New(cfg *Config) (authtokens.Tokens, error) {
 	case AlgorithmHMAC:
 		return newHMAC(&cfg.HMAC)
 	case AlgorithmRSA:
-		return newRSA(&cfg.RSA)
+		return newRSA(&cfg.RSA, cfg.InternalDomain)
 	default:
 		return nil, errors.New("unsupported JWT algorithm")
 	}
