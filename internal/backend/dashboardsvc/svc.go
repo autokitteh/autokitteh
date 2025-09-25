@@ -28,9 +28,11 @@ func Init(svcs sdkservices.Services, muxes *muxes.Muxes) {
 	svc.initEvents()
 	svc.initIntegrations()
 	svc.initObjects()
+	svc.initOrgs()
 	svc.initProjects()
 	svc.initSessions()
 	svc.initToken()
 	svc.initTriggers()
+	svc.initUsers()
 	svc.initVars()
 }

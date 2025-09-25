@@ -40,13 +40,6 @@ autokitteh.microsoft module
    :undoc-members:
    :show-inheritance:
 
-autokitteh.notion module
-------------------------
-.. automodule:: autokitteh.notion
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 autokitteh.store module
 -----------------------
 
@@ -131,6 +124,14 @@ autokitteh.linear module
 ------------------------
 
 .. automodule:: autokitteh.linear
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+autokitteh.azurebot module
+--------------------------
+
+.. automodule:: autokitteh.azurebot
    :members:
    :undoc-members:
    :show-inheritance:
@@ -247,6 +248,14 @@ autokitteh.errors module
    :undoc-members:
    :show-inheritance:
 
+autokitteh.notion module
+------------------------
+
+.. automodule:: autokitteh.notion
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 autokitteh.github module
 ------------------------
 
@@ -301,3 +310,4 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
