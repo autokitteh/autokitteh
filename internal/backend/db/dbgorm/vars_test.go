@@ -200,5 +200,5 @@ func TestFindConnectionIDByVar(t *testing.T) {
 	// test findConnectionIDsByVar
 	vars, err := f.gormdb.findConnectionIDsWithActiveDeploymentByVar(f.ctx, *c1.IntegrationID, "v", "")
 	assert.NoError(t, err)
-	assert.Equal(t, vars, []uuid.UUID{vc1.ScopeID, vc2.ScopeID})
+	assert.ElementsMatch(t, vars, []uuid.UUID{vc1.ScopeID, vc2.ScopeID})
 }
