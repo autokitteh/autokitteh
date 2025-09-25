@@ -1,0 +1,12 @@
+{{ template "header_" . }}
+
+<h1>Org</h1>
+<pre>{{ .JSON }}</pre>
+
+<h2>{{ .Members.N }} Members</h2>
+{{ template "list_table_" .Members }}
+
+<h2>{{ .Projects.N }} Projects</h2>
+{{ template "list_table_" .Projects }}
+
+{{ template "footer_" . }}

@@ -128,6 +128,14 @@ autokitteh.linear module
    :undoc-members:
    :show-inheritance:
 
+autokitteh.azurebot module
+--------------------------
+
+.. automodule:: autokitteh.azurebot
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 autokitteh.attr_dict module
 ---------------------------
 
@@ -236,6 +244,14 @@ autokitteh.errors module
 ------------------------
 
 .. automodule:: autokitteh.errors
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+autokitteh.notion module
+------------------------
+
+.. automodule:: autokitteh.notion
    :members:
    :undoc-members:
    :show-inheritance:

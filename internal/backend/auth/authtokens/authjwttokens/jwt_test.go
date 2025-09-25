@@ -152,6 +152,47 @@ func testTokens(t *testing.T, tokens authtokens.Tokens) {
 	}
 }
 
+func TestExternalInternalUser(t *testing.T) {
+	internalDomain := "test.internal"
+	cfg := &Config{
+		Algorithm: AlgorithmRSA,
+		RSA: RSAConfig{
+			PrivateKey: testRSAPrivateKey,
+			PublicKey:  testRSAPublicKey,
+		},
+		InternalDomain: internalDomain,
+	}
+
+	tests := []struct {
+		name string
+		user sdktypes.User
+		aud  []string
+	}{
+		{
+			name: "external user",
+			user: sdktypes.NewUser().WithID(sdktypes.NewUserID()).WithEmail("user@" + internalDomain + ".org"),
+			aud:  []string{"api." + issuerBase},
+		},
+		{
+			name: "internal user",
+			user: sdktypes.NewUser().WithID(sdktypes.NewUserID()).WithEmail("user@" + internalDomain),
+			aud:  []string{"api." + issuerBase, "internal." + issuerBase},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tokens, err := New(cfg)
+			require.NoError(t, err)
+
+			token, err := tokens.Create(tt.user)
+			require.NoError(t, err)
+			assert.NotEmpty(t, token)
+		})
+	}
+
+}
+
 func TestInvalidTokens(t *testing.T) {
 	hmacCfg := &Config{
 		Algorithm: AlgorithmHMAC,

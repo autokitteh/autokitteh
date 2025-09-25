@@ -14,6 +14,7 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/atlassian/jira"
 	"go.autokitteh.dev/autokitteh/integrations/auth0"
 	"go.autokitteh.dev/autokitteh/integrations/aws"
+	"go.autokitteh.dev/autokitteh/integrations/azurebot"
 	"go.autokitteh.dev/autokitteh/integrations/chatgpt"
 	"go.autokitteh.dev/autokitteh/integrations/discord"
 	"go.autokitteh.dev/autokitteh/integrations/github"
@@ -31,6 +32,7 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/linear"
 	"go.autokitteh.dev/autokitteh/integrations/microsoft"
 	"go.autokitteh.dev/autokitteh/integrations/microsoft/teams"
+	"go.autokitteh.dev/autokitteh/integrations/notion"
 	"go.autokitteh.dev/autokitteh/integrations/oauth"
 	"go.autokitteh.dev/autokitteh/integrations/pipedrive"
 	"go.autokitteh.dev/autokitteh/integrations/reddit"
@@ -117,12 +119,14 @@ func integrationsFXOption() fx.Option {
 		integration("linear", configset.Empty, linear.New),
 		integration("microsoft", configset.Empty, microsoft.New),
 		integration("microsoft_teams", configset.Empty, teams.New),
+		integration("notion", configset.Empty, notion.New),
 		integration("pipedrive", configset.Empty, pipedrive.New),
 		integration("reddit", configset.Empty, reddit.New),
 		integration("salesforce", configset.Empty, salesforce.New),
 		integration("sheets", configset.Empty, sheets.New),
 		integration("slack", configset.Empty, slack.New),
 		integration("twilio", configset.Empty, twilio.New),
+		integration("azurebot", configset.Empty, azurebot.New),
 		integration("youtube", configset.Empty, youtube.New),
 		integration("zoom", configset.Empty, zoom.New),
 		fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, muxes *muxes.Muxes, vars sdkservices.Vars, oauth *oauth.OAuth, dispatch sdkservices.DispatchFunc) {
@@ -144,11 +148,13 @@ func integrationsFXOption() fx.Option {
 				kubernetes.Start(l, muxes)
 				linear.Start(l, muxes, vars, oauth, dispatch)
 				microsoft.Start(l, muxes, vars, oauth, dispatch)
+				notion.Start(l, muxes, vars)
 				pipedrive.Start(l, muxes, vars)
 				reddit.Start(l, muxes, vars)
 				salesforce.Start(l, muxes, vars, oauth, dispatch)
 				slack.Start(l, muxes, vars, dispatch)
 				twilio.Start(l, muxes, vars, dispatch)
+				azurebot.Start(l, muxes, vars, dispatch)
 				zoom.Start(l, muxes, vars, oauth, dispatch)
 				return nil
 			})
