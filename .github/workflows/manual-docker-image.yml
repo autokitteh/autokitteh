@@ -5,40 +5,65 @@
 
 name: Manual Docker Image
 
-concurrency:
-    group: ${{ github.ref }}
-    cancel-in-progress: true
+# concurrency:
+#     group: ${{ github.ref }}
+#     cancel-in-progress: true
 
-run-name: Publish image ${{inputs.enterprise && 'ee/server' || 'server'}}:${{inputs.version}} to ECR
+# run-name: Publish image ${{inputs.enterprise && 'ee/server' || 'server'}}:${{inputs.version}} to ECR
 
 on:
     workflow_dispatch:
-        inputs:
-            version:
-                type: string
-                required: true
-                description: version to push
-            enterprise:
-                type: boolean
-                required: false
-                default: false
-                description: build enterprise image
+        # inputs:
+        #     version:
+        #         type: string
+        #         required: true
+        #         description: version to push
+        #     enterprise:
+        #         type: boolean
+        #         required: false
+        #         default: false
+        #         description: build enterprise image
 
 jobs:
-    build-standard:
-        if: ${{ !inputs.enterprise }}
-        uses: ./.github/workflows/docker.yml
-        with:
-            push: true
-            image: server
-            version: ${{ inputs.version }}
-        secrets: inherit
-    build-ee:
-        if: ${{ inputs.enterprise }}
-        uses: ./.github/workflows/docker.yml
-        with:
-            push: true
-            image: ee/server
-            buildTags: "enterprise"
-            version: ${{ inputs.version }}
-        secrets: inherit
+    goreleaser:
+        name: GoReleaser
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        permissions:
+            contents: write
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Set up Go
+              uses: actions/setup-go@v5
+              with:
+                  go-version-file: go.mod
+
+            - name: Fetch web platform
+              run: make webplatform
+
+            - name: Run GoReleaser
+              uses: goreleaser/goreleaser-action@v6
+              with:
+                  version: test
+                  args: build --clean
+    # build-standard:
+    #     if: ${{ !inputs.enterprise }}
+    #     uses: ./.github/workflows/docker.yml
+    #     with:
+    #         push: true
+    #         image: server
+    #         version: ${{ inputs.version }}
+    #     secrets: inherit
+    # build-ee:
+    #     if: ${{ inputs.enterprise }}
+    #     uses: ./.github/workflows/docker.yml
+    #     with:
+    #         push: true
+    #         image: ee/server
+    #         buildTags: "enterprise"
+    #         version: ${{ inputs.version }}
+    #     secrets: inherit
