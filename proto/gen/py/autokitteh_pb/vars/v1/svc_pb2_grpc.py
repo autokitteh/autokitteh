@@ -29,10 +29,10 @@ class VarsServiceStub(object):
                 request_serializer=autokitteh_dot_vars_dot_v1_dot_svc__pb2.DeleteRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_vars_dot_v1_dot_svc__pb2.DeleteResponse.FromString,
                 )
-        self.FindConnectionIDs = channel.unary_unary(
-                '/autokitteh.vars.v1.VarsService/FindConnectionIDs',
-                request_serializer=autokitteh_dot_vars_dot_v1_dot_svc__pb2.FindConnectionIDsRequest.SerializeToString,
-                response_deserializer=autokitteh_dot_vars_dot_v1_dot_svc__pb2.FindConnectionIDsResponse.FromString,
+        self.FindActiveConnectionIDs = channel.unary_unary(
+                '/autokitteh.vars.v1.VarsService/FindActiveConnectionIDs',
+                request_serializer=autokitteh_dot_vars_dot_v1_dot_svc__pb2.FindActiveConnectionIDsRequest.SerializeToString,
+                response_deserializer=autokitteh_dot_vars_dot_v1_dot_svc__pb2.FindActiveConnectionIDsResponse.FromString,
                 )
 
 
@@ -57,7 +57,7 @@ class VarsServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def FindConnectionIDs(self, request, context):
+    def FindActiveConnectionIDs(self, request, context):
         """Specific for integrations.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -82,10 +82,10 @@ def add_VarsServiceServicer_to_server(servicer, server):
                     request_deserializer=autokitteh_dot_vars_dot_v1_dot_svc__pb2.DeleteRequest.FromString,
                     response_serializer=autokitteh_dot_vars_dot_v1_dot_svc__pb2.DeleteResponse.SerializeToString,
             ),
-            'FindConnectionIDs': grpc.unary_unary_rpc_method_handler(
-                    servicer.FindConnectionIDs,
-                    request_deserializer=autokitteh_dot_vars_dot_v1_dot_svc__pb2.FindConnectionIDsRequest.FromString,
-                    response_serializer=autokitteh_dot_vars_dot_v1_dot_svc__pb2.FindConnectionIDsResponse.SerializeToString,
+            'FindActiveConnectionIDs': grpc.unary_unary_rpc_method_handler(
+                    servicer.FindActiveConnectionIDs,
+                    request_deserializer=autokitteh_dot_vars_dot_v1_dot_svc__pb2.FindActiveConnectionIDsRequest.FromString,
+                    response_serializer=autokitteh_dot_vars_dot_v1_dot_svc__pb2.FindActiveConnectionIDsResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -149,7 +149,7 @@ class VarsService(object):
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
     @staticmethod
-    def FindConnectionIDs(request,
+    def FindActiveConnectionIDs(request,
             target,
             options=(),
             channel_credentials=None,
@@ -159,8 +159,8 @@ class VarsService(object):
             wait_for_ready=None,
             timeout=None,
             metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/autokitteh.vars.v1.VarsService/FindConnectionIDs',
-            autokitteh_dot_vars_dot_v1_dot_svc__pb2.FindConnectionIDsRequest.SerializeToString,
-            autokitteh_dot_vars_dot_v1_dot_svc__pb2.FindConnectionIDsResponse.FromString,
+        return grpc.experimental.unary_unary(request, target, '/autokitteh.vars.v1.VarsService/FindActiveConnectionIDs',
+            autokitteh_dot_vars_dot_v1_dot_svc__pb2.FindActiveConnectionIDsRequest.SerializeToString,
+            autokitteh_dot_vars_dot_v1_dot_svc__pb2.FindActiveConnectionIDsResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

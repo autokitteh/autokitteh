@@ -100,7 +100,7 @@ func (s *server) Delete(ctx context.Context, req *connect.Request[varsv1.DeleteR
 	return connect.NewResponse(&varsv1.DeleteResponse{}), nil
 }
 
-func (s *server) FindConnectionID(ctx context.Context, req *connect.Request[varsv1.FindConnectionIDsRequest]) (*connect.Response[varsv1.FindConnectionIDsResponse], error) {
+func (s *server) FindActiveConnectionIDs(ctx context.Context, req *connect.Request[varsv1.FindActiveConnectionIDsRequest]) (*connect.Response[varsv1.FindActiveConnectionIDsResponse], error) {
 	msg := req.Msg
 
 	if err := proto.Validate(msg); err != nil {
@@ -122,7 +122,7 @@ func (s *server) FindConnectionID(ctx context.Context, req *connect.Request[vars
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	return connect.NewResponse(&varsv1.FindConnectionIDsResponse{
+	return connect.NewResponse(&varsv1.FindActiveConnectionIDsResponse{
 		ConnectionIds: kittehs.TransformToStrings(cids),
 	}), nil
 }

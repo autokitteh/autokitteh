@@ -63,7 +63,7 @@ func (c *client) Get(ctx context.Context, sid sdktypes.VarScopeID, names ...sdkt
 }
 
 func (c *client) FindActiveConnectionIDs(ctx context.Context, iid sdktypes.IntegrationID, name sdktypes.Symbol, value string) ([]sdktypes.ConnectionID, error) {
-	resp, err := c.client.FindActiveConnectionIDs(ctx, connect.NewRequest(&varsv1.FindConnectionIDsRequest{
+	resp, err := c.client.FindActiveConnectionIDs(ctx, connect.NewRequest(&varsv1.FindActiveConnectionIDsRequest{
 		IntegrationId: iid.String(),
 		Name:          name.String(),
 		Value:         value,
