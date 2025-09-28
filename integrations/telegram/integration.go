@@ -1,6 +1,9 @@
 package telegram
 
 import (
+	"fmt"
+	"net/http"
+
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations/common"
@@ -28,7 +31,8 @@ func Start(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, d sdkservices.Disp
 	common.RegisterSaveHandler(m, desc, h.handleSave)
 
 	// Webhook handler for receiving Telegram events (no auth required)
-	// TODO: Add event handler.
+	pattern := fmt.Sprintf("%s %s/webhook", http.MethodPost, desc.ConnectionURL().Path)
+	m.NoAuth.HandleFunc(pattern, h.handleEvent)
 }
 
 type handler struct {
