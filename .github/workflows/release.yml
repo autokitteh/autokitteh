@@ -14,6 +14,12 @@ concurrency:
 on:
     release:
         types: [published]
+    workflow_dispatch:
+        inputs:
+            version:
+                default: "latest"
+                required: true
+                description: "GoReleaser version to use, e.g. 'latest' or 'v1.10.0'"
 
 permissions:
     contents: read
@@ -43,21 +49,21 @@ jobs:
             - name: Run GoReleaser
               uses: goreleaser/goreleaser-action@v6
               with:
-                  version: latest
-                  args: release --clean
+                  version: ${{ github.event_name == 'release' && 'latest' || github.event.inputs.version }}
+                  args: release --clean --build
               env:
                   GITHUB_TOKEN: ${{secrets.HOMEBREW_TAP_TOKEN}}
 
-    build-standard:
-        uses: ./.github/workflows/docker.yml
-        with:
-            push: true
-            image: server
-        secrets: inherit
-    build-ee:
-        uses: ./.github/workflows/docker.yml
-        with:
-            push: true
-            image: ee/server
-            buildTags: "enterprise"
-        secrets: inherit
+    # build-standard:
+    #     uses: ./.github/workflows/docker.yml
+    #     with:
+    #         push: true
+    #         image: server
+    #     secrets: inherit
+    # build-ee:
+    #     uses: ./.github/workflows/docker.yml
+    #     with:
+    #         push: true
+    #         image: ee/server
+    #         buildTags: "enterprise"
+    #     secrets: inherit
