@@ -131,6 +131,10 @@ func (db *gormdb) CreateConnection(ctx context.Context, conn sdktypes.Connection
 		return err
 	}
 
+	if !conn.OrgID().IsValid() {
+		return fmt.Errorf("org ID is required")
+	}
+
 	c := scheme.Connection{
 		Base:          based(ctx),
 		ProjectID:     conn.ProjectID().UUIDValuePtr(),
