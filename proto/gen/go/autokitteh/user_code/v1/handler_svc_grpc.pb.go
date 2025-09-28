@@ -22,8 +22,6 @@ const (
 	HandlerService_Activity_FullMethodName          = "/autokitteh.user_code.v1.HandlerService/Activity"
 	HandlerService_ExecuteReply_FullMethodName      = "/autokitteh.user_code.v1.HandlerService/ExecuteReply"
 	HandlerService_Done_FullMethodName              = "/autokitteh.user_code.v1.HandlerService/Done"
-	HandlerService_Log_FullMethodName               = "/autokitteh.user_code.v1.HandlerService/Log"
-	HandlerService_Print_FullMethodName             = "/autokitteh.user_code.v1.HandlerService/Print"
 	HandlerService_Sleep_FullMethodName             = "/autokitteh.user_code.v1.HandlerService/Sleep"
 	HandlerService_Subscribe_FullMethodName         = "/autokitteh.user_code.v1.HandlerService/Subscribe"
 	HandlerService_NextEvent_FullMethodName         = "/autokitteh.user_code.v1.HandlerService/NextEvent"
@@ -50,10 +48,6 @@ type HandlerServiceClient interface {
 	ExecuteReply(ctx context.Context, in *ExecuteReplyRequest, opts ...grpc.CallOption) (*ExecuteReplyResponse, error)
 	// Runner done with activity
 	Done(ctx context.Context, in *DoneRequest, opts ...grpc.CallOption) (*DoneResponse, error)
-	// Session logs
-	Log(ctx context.Context, in *LogRequest, opts ...grpc.CallOption) (*LogResponse, error)
-	// Print to session log
-	Print(ctx context.Context, in *PrintRequest, opts ...grpc.CallOption) (*PrintResponse, error)
 	// ak functions
 	Sleep(ctx context.Context, in *SleepRequest, opts ...grpc.CallOption) (*SleepResponse, error)
 	Subscribe(ctx context.Context, in *SubscribeRequest, opts ...grpc.CallOption) (*SubscribeResponse, error)
@@ -104,26 +98,6 @@ func (c *handlerServiceClient) Done(ctx context.Context, in *DoneRequest, opts .
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DoneResponse)
 	err := c.cc.Invoke(ctx, HandlerService_Done_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *handlerServiceClient) Log(ctx context.Context, in *LogRequest, opts ...grpc.CallOption) (*LogResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(LogResponse)
-	err := c.cc.Invoke(ctx, HandlerService_Log_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *handlerServiceClient) Print(ctx context.Context, in *PrintRequest, opts ...grpc.CallOption) (*PrintResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(PrintResponse)
-	err := c.cc.Invoke(ctx, HandlerService_Print_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -280,10 +254,6 @@ type HandlerServiceServer interface {
 	ExecuteReply(context.Context, *ExecuteReplyRequest) (*ExecuteReplyResponse, error)
 	// Runner done with activity
 	Done(context.Context, *DoneRequest) (*DoneResponse, error)
-	// Session logs
-	Log(context.Context, *LogRequest) (*LogResponse, error)
-	// Print to session log
-	Print(context.Context, *PrintRequest) (*PrintResponse, error)
 	// ak functions
 	Sleep(context.Context, *SleepRequest) (*SleepResponse, error)
 	Subscribe(context.Context, *SubscribeRequest) (*SubscribeResponse, error)
@@ -318,12 +288,6 @@ func (UnimplementedHandlerServiceServer) ExecuteReply(context.Context, *ExecuteR
 }
 func (UnimplementedHandlerServiceServer) Done(context.Context, *DoneRequest) (*DoneResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Done not implemented")
-}
-func (UnimplementedHandlerServiceServer) Log(context.Context, *LogRequest) (*LogResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Log not implemented")
-}
-func (UnimplementedHandlerServiceServer) Print(context.Context, *PrintRequest) (*PrintResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Print not implemented")
 }
 func (UnimplementedHandlerServiceServer) Sleep(context.Context, *SleepRequest) (*SleepResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Sleep not implemented")
@@ -438,42 +402,6 @@ func _HandlerService_Done_Handler(srv interface{}, ctx context.Context, dec func
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(HandlerServiceServer).Done(ctx, req.(*DoneRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _HandlerService_Log_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(LogRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(HandlerServiceServer).Log(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: HandlerService_Log_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HandlerServiceServer).Log(ctx, req.(*LogRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _HandlerService_Print_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PrintRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(HandlerServiceServer).Print(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: HandlerService_Print_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HandlerServiceServer).Print(ctx, req.(*PrintRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -748,14 +676,6 @@ var HandlerService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Done",
 			Handler:    _HandlerService_Done_Handler,
-		},
-		{
-			MethodName: "Log",
-			Handler:    _HandlerService_Log_Handler,
-		},
-		{
-			MethodName: "Print",
-			Handler:    _HandlerService_Print_Handler,
 		},
 		{
 			MethodName: "Sleep",
