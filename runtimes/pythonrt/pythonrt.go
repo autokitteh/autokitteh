@@ -311,16 +311,6 @@ func (py *pySvc) Run(
 		return nil, err
 	}
 
-	defer func() {
-		if !runnerOK {
-			py.cleanup(ctx)
-		}
-	}()
-
-	if err := addRunnerToServer(runnerID, py); err != nil {
-		return nil, err
-	}
-
 	py.runner = runner
 	py.runnerID = runnerID
 	defer func() {
