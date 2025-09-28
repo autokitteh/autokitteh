@@ -132,7 +132,7 @@ func (db *gormdb) CreateConnection(ctx context.Context, conn sdktypes.Connection
 	}
 
 	if !conn.OrgID().IsValid() {
-		return fmt.Errorf("org ID is required")
+		return errors.New("org ID is required")
 	}
 
 	c := scheme.Connection{
