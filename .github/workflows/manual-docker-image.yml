@@ -48,7 +48,7 @@ jobs:
             - name: Run GoReleaser
               uses: goreleaser/goreleaser-action@v6
               with:
-                  version: test
+                  version: latest
                   args: build --clean
     # build-standard:
     #     if: ${{ !inputs.enterprise }}
