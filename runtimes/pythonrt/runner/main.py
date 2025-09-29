@@ -87,8 +87,12 @@ def pb_traceback(stack):
 def filter_traceback(stack, user_code):
     """Filter out first part of traceback until first user code frame."""
     for i, frame in enumerate(stack):
-        if Path(frame.filename).is_relative_to(user_code):
-            return stack[i:]
+        try:
+            if Path(frame.filename).is_relative_to(user_code):
+                return stack[i:]
+        except (ValueError, OSError) as err:
+            log.error(f"filter stack: {err}")
+            return stack
 
     return stack
 
@@ -681,7 +685,11 @@ def validate_args(args):
     if host == "":
         raise ValueError(f"empty host in {args.worker_address!r}")
 
-    port = int(port)
+    try:
+        port = int(port)
+    except ValueError as err:
+        raise ValueError(f"{port!r}: bad port - {err}") from None
+
     if not is_valid_port(port):
         raise ValueError(f"invalid port in {args.worker_address!r}")
 
@@ -757,7 +765,7 @@ if __name__ == "__main__":
     if not args.skip_check_worker:
         req = pb.handler.HandlerHealthRequest()
         try:
-            resp = worker.Health(req)
+            resp = worker.Health(req, timeout=3)
         except grpc.RpcError as err:
             raise SystemExit(f"error: worker not available - {err}")
 
