@@ -13,8 +13,8 @@ class Signal:
 def signal(session_id: str, name: str, payload: any = None) -> None:
     """Signal a session.
 
-    Cannot be used in an activity.
-    Works only for durable sessions.
+    Works both for durable and non-durable sessions.
+    Note that only durable sessions can receive signals.
     """
     # Dummy implementation for local development.
     pass
