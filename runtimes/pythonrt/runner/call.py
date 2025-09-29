@@ -46,7 +46,7 @@ def caller_info(code_dir):
                 return Path(frame.filename).name, frame.lineno
         except (ValueError, OSError) as err:
             log.error(f"caller_info({code_dir!r}) - {err}")
-            return "<unknown>", 0
+            continue
 
     return "<unknown>", 0
 

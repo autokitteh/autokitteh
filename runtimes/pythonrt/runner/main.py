@@ -665,7 +665,7 @@ class Runner(pb.runner_rpc.RunnerService):
         try:
             self.worker.Print(req)
         except grpc.RpcError as err:
-            if err.code() == grpc.StatusCode.UNAVAILABLE or grpc.StatusCode.CANCELLED:
+            if err.code() in (grpc.StatusCode.UNAVAILABLE, grpc.StatusCode.CANCELLED):
                 log.error("grpc cancelled or unavailable, killing self")
                 force_close(self.server)
             log.error("print: %s", err)
@@ -681,7 +681,7 @@ def validate_args(args):
 
     if ":" not in args.worker_address:
         raise ValueError("worker address must be in the form host:port")
-    host, port = args.worker_address.split(":")
+    host, port = args.worker_address.split(":", 1)
     if host == "":
         raise ValueError(f"empty host in {args.worker_address!r}")
 
