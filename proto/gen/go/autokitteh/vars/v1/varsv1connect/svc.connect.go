@@ -39,9 +39,9 @@ const (
 	VarsServiceGetProcedure = "/autokitteh.vars.v1.VarsService/Get"
 	// VarsServiceDeleteProcedure is the fully-qualified name of the VarsService's Delete RPC.
 	VarsServiceDeleteProcedure = "/autokitteh.vars.v1.VarsService/Delete"
-	// VarsServiceFindConnectionIDsProcedure is the fully-qualified name of the VarsService's
-	// FindConnectionIDs RPC.
-	VarsServiceFindConnectionIDsProcedure = "/autokitteh.vars.v1.VarsService/FindConnectionIDs"
+	// VarsServiceFindActiveConnectionIDsProcedure is the fully-qualified name of the VarsService's
+	// FindActiveConnectionIDs RPC.
+	VarsServiceFindActiveConnectionIDsProcedure = "/autokitteh.vars.v1.VarsService/FindActiveConnectionIDs"
 )
 
 // VarsServiceClient is a client for the autokitteh.vars.v1.VarsService service.
@@ -50,7 +50,7 @@ type VarsServiceClient interface {
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
 	Delete(context.Context, *connect.Request[v1.DeleteRequest]) (*connect.Response[v1.DeleteResponse], error)
 	// Specific for integrations.
-	FindConnectionIDs(context.Context, *connect.Request[v1.FindConnectionIDsRequest]) (*connect.Response[v1.FindConnectionIDsResponse], error)
+	FindActiveConnectionIDs(context.Context, *connect.Request[v1.FindActiveConnectionIDsRequest]) (*connect.Response[v1.FindActiveConnectionIDsResponse], error)
 }
 
 // NewVarsServiceClient constructs a client for the autokitteh.vars.v1.VarsService service. By
@@ -78,9 +78,9 @@ func NewVarsServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			baseURL+VarsServiceDeleteProcedure,
 			opts...,
 		),
-		findConnectionIDs: connect.NewClient[v1.FindConnectionIDsRequest, v1.FindConnectionIDsResponse](
+		findActiveConnectionIDs: connect.NewClient[v1.FindActiveConnectionIDsRequest, v1.FindActiveConnectionIDsResponse](
 			httpClient,
-			baseURL+VarsServiceFindConnectionIDsProcedure,
+			baseURL+VarsServiceFindActiveConnectionIDsProcedure,
 			opts...,
 		),
 	}
@@ -88,10 +88,10 @@ func NewVarsServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 
 // varsServiceClient implements VarsServiceClient.
 type varsServiceClient struct {
-	set               *connect.Client[v1.SetRequest, v1.SetResponse]
-	get               *connect.Client[v1.GetRequest, v1.GetResponse]
-	delete            *connect.Client[v1.DeleteRequest, v1.DeleteResponse]
-	findConnectionIDs *connect.Client[v1.FindConnectionIDsRequest, v1.FindConnectionIDsResponse]
+	set                     *connect.Client[v1.SetRequest, v1.SetResponse]
+	get                     *connect.Client[v1.GetRequest, v1.GetResponse]
+	delete                  *connect.Client[v1.DeleteRequest, v1.DeleteResponse]
+	findActiveConnectionIDs *connect.Client[v1.FindActiveConnectionIDsRequest, v1.FindActiveConnectionIDsResponse]
 }
 
 // Set calls autokitteh.vars.v1.VarsService.Set.
@@ -109,9 +109,9 @@ func (c *varsServiceClient) Delete(ctx context.Context, req *connect.Request[v1.
 	return c.delete.CallUnary(ctx, req)
 }
 
-// FindConnectionIDs calls autokitteh.vars.v1.VarsService.FindConnectionIDs.
-func (c *varsServiceClient) FindConnectionIDs(ctx context.Context, req *connect.Request[v1.FindConnectionIDsRequest]) (*connect.Response[v1.FindConnectionIDsResponse], error) {
-	return c.findConnectionIDs.CallUnary(ctx, req)
+// FindActiveConnectionIDs calls autokitteh.vars.v1.VarsService.FindActiveConnectionIDs.
+func (c *varsServiceClient) FindActiveConnectionIDs(ctx context.Context, req *connect.Request[v1.FindActiveConnectionIDsRequest]) (*connect.Response[v1.FindActiveConnectionIDsResponse], error) {
+	return c.findActiveConnectionIDs.CallUnary(ctx, req)
 }
 
 // VarsServiceHandler is an implementation of the autokitteh.vars.v1.VarsService service.
@@ -120,7 +120,7 @@ type VarsServiceHandler interface {
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
 	Delete(context.Context, *connect.Request[v1.DeleteRequest]) (*connect.Response[v1.DeleteResponse], error)
 	// Specific for integrations.
-	FindConnectionIDs(context.Context, *connect.Request[v1.FindConnectionIDsRequest]) (*connect.Response[v1.FindConnectionIDsResponse], error)
+	FindActiveConnectionIDs(context.Context, *connect.Request[v1.FindActiveConnectionIDsRequest]) (*connect.Response[v1.FindActiveConnectionIDsResponse], error)
 }
 
 // NewVarsServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -144,9 +144,9 @@ func NewVarsServiceHandler(svc VarsServiceHandler, opts ...connect.HandlerOption
 		svc.Delete,
 		opts...,
 	)
-	varsServiceFindConnectionIDsHandler := connect.NewUnaryHandler(
-		VarsServiceFindConnectionIDsProcedure,
-		svc.FindConnectionIDs,
+	varsServiceFindActiveConnectionIDsHandler := connect.NewUnaryHandler(
+		VarsServiceFindActiveConnectionIDsProcedure,
+		svc.FindActiveConnectionIDs,
 		opts...,
 	)
 	return "/autokitteh.vars.v1.VarsService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -157,8 +157,8 @@ func NewVarsServiceHandler(svc VarsServiceHandler, opts ...connect.HandlerOption
 			varsServiceGetHandler.ServeHTTP(w, r)
 		case VarsServiceDeleteProcedure:
 			varsServiceDeleteHandler.ServeHTTP(w, r)
-		case VarsServiceFindConnectionIDsProcedure:
-			varsServiceFindConnectionIDsHandler.ServeHTTP(w, r)
+		case VarsServiceFindActiveConnectionIDsProcedure:
+			varsServiceFindActiveConnectionIDsHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -180,6 +180,6 @@ func (UnimplementedVarsServiceHandler) Delete(context.Context, *connect.Request[
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.vars.v1.VarsService.Delete is not implemented"))
 }
 
-func (UnimplementedVarsServiceHandler) FindConnectionIDs(context.Context, *connect.Request[v1.FindConnectionIDsRequest]) (*connect.Response[v1.FindConnectionIDsResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.vars.v1.VarsService.FindConnectionIDs is not implemented"))
+func (UnimplementedVarsServiceHandler) FindActiveConnectionIDs(context.Context, *connect.Request[v1.FindActiveConnectionIDsRequest]) (*connect.Response[v1.FindActiveConnectionIDsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.vars.v1.VarsService.FindActiveConnectionIDs is not implemented"))
 }

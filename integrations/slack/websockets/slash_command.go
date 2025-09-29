@@ -46,7 +46,7 @@ func (h Handler) handleSlashCommand(e *socketmode.Event, c *socketmode.Client) {
 	}
 
 	// Retrieve all the relevant connections for this event.
-	cids, err := h.vars.FindConnectionIDs(context.Background(), h.integrationID, vars.AppTokenVar, "")
+	cids, err := h.vars.FindActiveConnectionIDs(context.Background(), h.integrationID, vars.AppTokenVar, "")
 	if err != nil {
 		h.logger.Error("Failed to find connection IDs", zap.Error(err))
 		c.Ack(*e.Request)

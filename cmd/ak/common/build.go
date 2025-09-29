@@ -97,12 +97,17 @@ func walk(basePath string, uploads map[string][]byte) fs.WalkDirFunc {
 		if err != nil {
 			return err // Abort the entire walk.
 		}
-		if d.IsDir() {
-			return nil // Skip directory analysis, focus on files.
+
+		if fn := filepath.Base(path); fn != "." && (fn[0] == '.' || fn[0] == '_') {
+			if d.IsDir() {
+				return fs.SkipDir
+			}
+
+			return nil
 		}
 
-		if path[0] == '.' {
-			return nil // Skip hidden files.
+		if d.IsDir() {
+			return nil // Skip directory analysis, focus on files.
 		}
 
 		// Upload a single file, relative to the base path.

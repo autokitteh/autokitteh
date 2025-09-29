@@ -22,10 +22,6 @@ func sessionSignalName(sid sdktypes.SessionID) string { return sid.String() }
 
 func (w *sessionWorkflow) signal(wctx workflow.Context) func(context.Context, sdktypes.RunID, sdktypes.SessionID, string, sdktypes.Value) error {
 	return func(ctx context.Context, _ sdktypes.RunID, sid sdktypes.SessionID, name string, v sdktypes.Value) error {
-		if activity.IsActivity(ctx) {
-			return errForbiddenInActivity
-		}
-
 		_, span := w.startCallbackSpan(ctx, "signal")
 		defer span.End()
 
@@ -35,9 +31,15 @@ func (w *sessionWorkflow) signal(wctx workflow.Context) func(context.Context, sd
 			v = sdktypes.Nothing
 		}
 
-		f := workflow.SignalExternalWorkflow(wctx, sid.String(), "", userSignalName(name), v)
+		var err error
 
-		if err := f.Get(wctx, nil); err != nil {
+		if activity.IsActivity(ctx) {
+			err = w.ws.svcs.Temporal.TemporalClient().SignalWorkflow(ctx, sid.String(), "", userSignalName(name), v)
+		} else {
+			err = workflow.SignalExternalWorkflow(wctx, sid.String(), "", userSignalName(name), v).Get(wctx, nil)
+		}
+
+		if err != nil {
 			return err
 		}
 
