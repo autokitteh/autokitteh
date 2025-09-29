@@ -2,7 +2,30 @@ package telegram
 
 import "go.autokitteh.dev/autokitteh/sdk/sdktypes"
 
-var BotToken = sdktypes.NewSymbol("BotToken")
+var (
+	BotToken    = sdktypes.NewSymbol("BotToken")
+	SecretToken = sdktypes.NewSymbol("SecretToken")
+)
+
+// List of possible Telegram event types
+var telegramEventTypes = []string{
+	"message",
+	"callback_query",
+	"edited_message",
+	"inline_query",
+	"chosen_inline_result",
+	"channel_post",
+	"edited_channel_post",
+	"shipping_query",
+	"pre_checkout_query",
+	"poll",
+	"poll_answer",
+	"my_chat_member",
+	"chat_member",
+	"chat_join_request",
+	"message_reaction",
+	"message_reaction_count",
+}
 
 // TelegramUser represents a Telegram user (bot) response from getMe API
 type TelegramUser struct {

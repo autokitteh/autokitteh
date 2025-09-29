@@ -48,6 +48,8 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	secretToken := r.FormValue("secret_token")
+
 	vsid := sdktypes.NewVarScopeID(cid)
 	authType := common.SaveAuthType(r, h.vars, vsid)
 	l = l.With(zap.String("auth_type", authType))
@@ -60,11 +62,22 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Save bot token.
 	v := sdktypes.NewVar(BotToken).SetValue(token).SetSecret(true)
 	if err := h.vars.Set(r.Context(), v.WithScopeID(vsid)); err != nil {
 		l.Error("save connection: failed to save bot token", zap.Error(err))
 		c.AbortServerError("failed to save bot token")
 		return
+	}
+
+	// Save secret token if provided.
+	if secretToken != "" {
+		sv := sdktypes.NewVar(SecretToken).SetValue(secretToken)
+		if err := h.vars.Set(r.Context(), sv.WithScopeID(vsid)); err != nil {
+			l.Error("save connection: failed to save secret token", zap.Error(err))
+			c.AbortServerError("failed to save secret token")
+			return
+		}
 	}
 
 	l.Info("Telegram bot connection saved successfully",

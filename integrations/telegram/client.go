@@ -17,11 +17,7 @@ const (
 	integrationName = "telegram"
 )
 
-var (
-	integrationID = sdktypes.NewIntegrationIDFromName(integrationName)
-
-	desc = common.Descriptor(integrationName, "Telegram", "/static/images/telegram.svg")
-)
+var desc = common.Descriptor(integrationName, "Telegram", "/static/images/telegram.svg")
 
 type integration struct{ vars sdkservices.Vars }
 
@@ -55,7 +51,7 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 // connTest is an optional connection test provided by the integration
 // to AutoKitteh. It is used to verify that the connection is working
 // as expected. The possible results are "OK" and "error".
-func connTest(i *integration) sdkintegrations.OptFn {
+func connTest(_ *integration) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
 		return sdktypes.InvalidStatus, errors.New("not implemented")
 	})
