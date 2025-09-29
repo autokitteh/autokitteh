@@ -40,10 +40,10 @@ func Test_walk(t *testing.T) {
 	for relPath, content := range files {
 		fullPath := filepath.Join(tempDir, relPath)
 		dir := filepath.Dir(fullPath)
-		if err := os.MkdirAll(dir, 0755); err != nil {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
 			t.Fatalf("Failed to create directory %s: %v", dir, err)
 		}
-		if err := os.WriteFile(fullPath, []byte(content), 0644); err != nil {
+		if err := os.WriteFile(fullPath, []byte(content), 0o644); err != nil {
 			t.Fatalf("Failed to write file %s: %v", fullPath, err)
 		}
 	}
@@ -57,8 +57,8 @@ func Test_walk(t *testing.T) {
 			name:     "walk directory with filtering",
 			basePath: tempDir,
 			want: map[string][]byte{
-				"file1.txt":      []byte("content1"),
-				"file2.go":       []byte("package main"),
+				"file1.txt":        []byte("content1"),
+				"file2.go":         []byte("package main"),
 				"subdir/file3.txt": []byte("content3"),
 				"subdir/file4.go":  []byte("package sub"),
 			},
@@ -87,18 +87,18 @@ func Test_walk_error_handling(t *testing.T) {
 
 	// Create a file that we'll make unreadable
 	unreadableFile := filepath.Join(tempDir, "unreadable.txt")
-	if err := os.WriteFile(unreadableFile, []byte("content"), 0644); err != nil {
+	if err := os.WriteFile(unreadableFile, []byte("content"), 0o644); err != nil {
 		t.Fatalf("Failed to create test file: %v", err)
 	}
 
 	// Make the file unreadable
-	if err := os.Chmod(unreadableFile, 0000); err != nil {
+	if err := os.Chmod(unreadableFile, 0o000); err != nil {
 		t.Fatalf("Failed to make file unreadable: %v", err)
 	}
 
 	// Restore permissions after test
 	defer func() {
-		os.Chmod(unreadableFile, 0644)
+		os.Chmod(unreadableFile, 0o644)
 	}()
 
 	uploads := make(map[string][]byte)
@@ -141,10 +141,10 @@ func Test_walk_hidden_and_private_filtering(t *testing.T) {
 	for _, tc := range testCases {
 		fullPath := filepath.Join(tempDir, tc.path)
 		dir := filepath.Dir(fullPath)
-		if err := os.MkdirAll(dir, 0755); err != nil {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
 			t.Fatalf("Failed to create directory %s: %v", dir, err)
 		}
-		if err := os.WriteFile(fullPath, []byte(tc.content), 0644); err != nil {
+		if err := os.WriteFile(fullPath, []byte(tc.content), 0o644); err != nil {
 			t.Fatalf("Failed to write file %s: %v", fullPath, err)
 		}
 	}
@@ -153,18 +153,18 @@ func Test_walk_hidden_and_private_filtering(t *testing.T) {
 	hiddenDir := filepath.Join(tempDir, ".hidden_dir")
 	privateDir := filepath.Join(tempDir, "_private_dir")
 
-	if err := os.MkdirAll(hiddenDir, 0755); err != nil {
+	if err := os.MkdirAll(hiddenDir, 0o755); err != nil {
 		t.Fatalf("Failed to create hidden directory: %v", err)
 	}
-	if err := os.MkdirAll(privateDir, 0755); err != nil {
+	if err := os.MkdirAll(privateDir, 0o755); err != nil {
 		t.Fatalf("Failed to create private directory: %v", err)
 	}
 
 	// Add files in hidden/private dirs (should not be included)
-	if err := os.WriteFile(filepath.Join(hiddenDir, "file.txt"), []byte("hidden dir content"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(hiddenDir, "file.txt"), []byte("hidden dir content"), 0o644); err != nil {
 		t.Fatalf("Failed to write file in hidden directory: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(privateDir, "file.txt"), []byte("private dir content"), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(privateDir, "file.txt"), []byte("private dir content"), 0o644); err != nil {
 		t.Fatalf("Failed to write file in private directory: %v", err)
 	}
 

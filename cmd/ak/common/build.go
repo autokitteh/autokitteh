@@ -98,7 +98,9 @@ func walk(basePath string, uploads map[string][]byte) fs.WalkDirFunc {
 			return err // Abort the entire walk.
 		}
 
-		if fn := filepath.Base(path); fn[0] == '.' || fn[0] == '_' {
+		fmt.Println("DEBUG: visiting", path)
+
+		if fn := filepath.Base(path); fn != "." && (fn[0] == '.' || fn[0] == '_') {
 			if d.IsDir() {
 				return fs.SkipDir
 			}
