@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { DeleteRequest, DeleteResponse, FindConnectionIDsRequest, FindConnectionIDsResponse, GetRequest, GetResponse, SetRequest, SetResponse } from "./svc_pb.js";
+import { DeleteRequest, DeleteResponse, FindActiveConnectionIDsRequest, FindActiveConnectionIDsResponse, GetRequest, GetResponse, SetRequest, SetResponse } from "./svc_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -42,12 +42,12 @@ export const VarsService = {
     /**
      * Specific for integrations.
      *
-     * @generated from rpc autokitteh.vars.v1.VarsService.FindConnectionIDs
+     * @generated from rpc autokitteh.vars.v1.VarsService.FindActiveConnectionIDs
      */
-    findConnectionIDs: {
-      name: "FindConnectionIDs",
-      I: FindConnectionIDsRequest,
-      O: FindConnectionIDsResponse,
+    findActiveConnectionIDs: {
+      name: "FindActiveConnectionIDs",
+      I: FindActiveConnectionIDsRequest,
+      O: FindActiveConnectionIDsResponse,
       kind: MethodKind.Unary,
     },
   }

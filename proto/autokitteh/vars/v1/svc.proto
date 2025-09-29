@@ -29,13 +29,13 @@ message GetResponse {
   repeated Var vars = 1 [(buf.validate.field).repeated.items.required = true];
 }
 
-message FindConnectionIDsRequest {
+message FindActiveConnectionIDsRequest {
   string integration_id = 1 [(buf.validate.field).string.min_len = 1];
   string name = 2; // if empty, return all for scope.
   string value = 3; // if set, name must be set.
 }
 
-message FindConnectionIDsResponse {
+message FindActiveConnectionIDsResponse {
   repeated string connection_ids = 1 [(buf.validate.field).repeated.items.string.min_len = 1];
 }
 
@@ -45,5 +45,5 @@ service VarsService {
   rpc Delete(DeleteRequest) returns (DeleteResponse);
 
   // Specific for integrations.
-  rpc FindConnectionIDs(FindConnectionIDsRequest) returns (FindConnectionIDsResponse);
+  rpc FindActiveConnectionIDs(FindActiveConnectionIDsRequest) returns (FindActiveConnectionIDsResponse);
 }
