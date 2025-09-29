@@ -3,9 +3,11 @@ package telegram
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"go.uber.org/zap"
 
@@ -13,17 +15,42 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-const (
-	// headerSecretToken is the HTTP header that contains the secret token for webhook verification
-	headerSecretToken = "X-Telegram-Bot-Api-Secret-Token"
-)
-
 // handleEvent processes incoming Telegram webhook events.
+// Must respond with HTTP status 2XX promptly to indicate successful processing.
+// If the response is not 2XX or times out (~60s), Telegram will retry the update
+// multiple times until it eventually gives up after a reasonable number of attempts.
 func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	// Check the request's headers and parse its body.
-	telegramEvent := h.checkRequest(w, r)
+	l := h.logger.With(
+		zap.String("url_path", r.URL.Path),
+		zap.String("event_type", r.Header.Get("Telegram-Event")),
+	)
+
+	botID, err := h.extractBotIDFromPath(r)
+	if err != nil {
+		l.Warn("failed to extract bot ID from webhook path", zap.Error(err))
+		common.HTTPError(w, http.StatusBadRequest)
+		return
+	}
+
+	// Find connection IDs for this webhook.
+	ctx := r.Context()
+	cids, err := h.vars.FindActiveConnectionIDs(ctx, desc.ID(), BotIDVar, botID)
+	if err != nil {
+		l.Error("failed to find connection IDs", zap.Error(err))
+		common.HTTPError(w, http.StatusInternalServerError)
+		return
+	}
+
+	if len(cids) == 0 {
+		l.Warn("no connections found for bot ID", zap.String("bot_id", botID))
+		common.HTTPError(w, http.StatusNotFound)
+		return
+	}
+
+	// Check the request's headers, validate secret token, and parse body.
+	telegramEvent := h.checkRequest(w, r, cids[0], l)
 	if telegramEvent == nil {
 		return
 	}
@@ -36,24 +63,13 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := r.Context()
-	// Retrieve all the relevant connections for this event.
-	cids, err := h.findAuthenticatedConnections(ctx, r, h.logger)
-	if err != nil {
-		common.HTTPError(w, http.StatusUnauthorized)
-		return
-	}
-
-	// Dispatch the event to all of them, for potential asynchronous handling.
+	// Dispatch the event to all connections for this webhook.
 	common.DispatchEvent(ctx, h.logger, h.dispatch, akEvent, cids)
 }
 
-func (h handler) checkRequest(w http.ResponseWriter, r *http.Request) map[string]any {
-	l := h.logger.With(
-		zap.String("url_path", r.URL.Path),
-		zap.String("event_type", r.Header.Get("Telegram-Event")),
-	)
-
+// checkRequest checks that the HTTP request has the right content type, validates the secret token,
+// and parses the JSON body into a map.
+func (h handler) checkRequest(w http.ResponseWriter, r *http.Request, connectionID sdktypes.ConnectionID, l *zap.Logger) map[string]any {
 	// Check the request's HTTP headers.
 	if common.PostWithoutJSONContentType(r) {
 		ct := r.Header.Get(common.HeaderContentType)
@@ -62,18 +78,9 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request) map[string
 		return nil
 	}
 
-	// Validate the secret token by looking up connections with the provided secret token.
-	cids, err := h.findAuthenticatedConnections(r.Context(), r, l)
-	if err != nil {
-		l.Error("incoming event: secret token validation failed", zap.Error(err))
+	if err := h.validateSecretTokenForConnection(r.Context(), r, connectionID, l); err != nil {
+		l.Error("secret token validation failed", zap.Error(err))
 		common.HTTPError(w, http.StatusUnauthorized)
-		return nil
-	}
-
-	if len(cids) == 0 {
-		// No connections found with the provided secret token.
-		l.Warn("incoming event: no connections found with the provided secret token")
-		common.HTTPError(w, http.StatusServiceUnavailable)
 		return nil
 	}
 
@@ -95,19 +102,55 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request) map[string
 	return payload
 }
 
-// findAuthenticatedConnections validates the webhook request against configured secret tokens.
-// Returns nil if validation passes, error otherwise.
-func (h handler) findAuthenticatedConnections(ctx context.Context, r *http.Request, l *zap.Logger) ([]sdktypes.ConnectionID, error) {
-	requestToken := r.Header.Get(headerSecretToken)
+// extractBotIDFromPath extracts the bot ID from the webhook URL path.
+func (h handler) extractBotIDFromPath(r *http.Request) (string, error) {
+	// Extract bot ID from URL path like /telegram/webhook/{botId}
+	pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
 
-	// Find all Telegram bot connections
-	cids, err := h.vars.FindConnectionIDs(ctx, desc.ID(), SecretToken, requestToken)
-	if err != nil {
-		l.Error("failed to find telegram connections", zap.Error(err))
-		return nil, fmt.Errorf("failed to lookup connections: %w", err)
+	// Expected path: ["telegram", "webhook", "{botId}"]
+	if len(pathParts) < 3 {
+		return "", errors.New("invalid webhook path: missing bot ID")
 	}
 
-	return cids, nil
+	botID := pathParts[2]
+	if botID == "" {
+		return "", errors.New("empty bot ID in webhook path")
+	}
+
+	return botID, nil
+}
+
+// validateSecretTokenForConnection validates the secret token for a specific connection.
+func (h handler) validateSecretTokenForConnection(ctx context.Context, r *http.Request, cid sdktypes.ConnectionID, l *zap.Logger) error {
+	requestToken := r.Header.Get(headerSecretToken)
+	if requestToken == "" {
+		l.Warn("webhook missing required secret token",
+			zap.String("connection_id", cid.String()))
+		return errors.New("missing required secret token")
+	}
+
+	webhookSecretVar, err := h.vars.Get(ctx, sdktypes.NewVarScopeID(cid), SecretTokenVar)
+	if err != nil {
+		l.Error("failed to get secret token for connection",
+			zap.String("connection_id", cid.String()),
+			zap.Error(err))
+		return fmt.Errorf("failed to get secret token: %w", err)
+	}
+	webhookSecret := webhookSecretVar.GetValue(SecretTokenVar)
+
+	if webhookSecret == "" {
+		l.Warn("webhook has no secret token configured.",
+			zap.String("connection_id", cid.String()))
+		return errors.New("no secret token configured for connection")
+	}
+
+	if requestToken != webhookSecret {
+		l.Warn("webhook secret token validation failed",
+			zap.String("connection_id", cid.String()))
+		return errors.New("invalid secret token")
+	}
+
+	return nil
 }
 
 // getTelegramEventType determines the Telegram event type based on the keys present in the event map.
@@ -118,5 +161,5 @@ func getTelegramEventType(event map[string]any) string {
 		}
 	}
 
-	return "unknown"
+	return "unknown telegram event"
 }

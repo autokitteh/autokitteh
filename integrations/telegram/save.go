@@ -1,10 +1,14 @@
 package telegram
 
 import (
+	"context"
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
+	"strconv"
 
 	"go.uber.org/zap"
 
@@ -14,7 +18,9 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-// ServeHTTP saves a new autokitteh connection with user-submitted data.
+// handleSave saves a new autokitteh connection with user-submitted data.
+// Embeds the bot ID in the webhook URL path since Telegram doesn't provide
+// bot identification in webhook payloads, allowing proper request routing.
 func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, desc)
 
@@ -48,8 +54,6 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	secretToken := r.FormValue("secret_token")
-
 	vsid := sdktypes.NewVarScopeID(cid)
 	authType := common.SaveAuthType(r, h.vars, vsid)
 	l = l.With(zap.String("auth_type", authType))
@@ -61,28 +65,32 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 		c.AbortBadRequest("failed to use the provided token")
 		return
 	}
+	// Use bot ID as webhook identifier - much better than random!
+	botID := strconv.FormatInt(bot.ID, 10)
+	webhookSecret := generateRandomString()
+	webhookURL := constructWebhookURL(botID)
 
-	// Save bot token.
-	v := sdktypes.NewVar(BotToken).SetValue(token).SetSecret(true)
-	if err := h.vars.Set(r.Context(), v.WithScopeID(vsid)); err != nil {
-		l.Error("save connection: failed to save bot token", zap.Error(err))
-		c.AbortServerError("failed to save bot token")
+	// Register webhook with Telegram.
+	if err := setTelegramWebhook(r.Context(), token, webhookURL, webhookSecret); err != nil {
+		l.Error("failed to register webhook with Telegram", zap.Error(err))
+		c.AbortServerError("failed to register webhook with Telegram")
 		return
 	}
 
-	// Save secret token if provided.
-	if secretToken != "" {
-		sv := sdktypes.NewVar(SecretToken).SetValue(secretToken)
-		if err := h.vars.Set(r.Context(), sv.WithScopeID(vsid)); err != nil {
-			l.Error("save connection: failed to save secret token", zap.Error(err))
-			c.AbortServerError("failed to save secret token")
-			return
-		}
+	// Prepare all variables to save at once using the struct
+	telegramVars := TelegramVars{
+		BotToken:    token,
+		SecretToken: webhookSecret,
+		BotID:       botID,
+		WebhookURL:  webhookURL,
 	}
 
-	l.Info("Telegram bot connection saved successfully",
-		zap.Int64("bot_id", bot.ID),
-		zap.String("bot_username", bot.Username))
+	vars := sdktypes.EncodeVars(telegramVars)
+	if err := h.vars.Set(r.Context(), vars.WithScopeID(vsid)...); err != nil {
+		l.Error("save connection: failed to save connection variables", zap.Error(err))
+		c.AbortServerError("failed to save connection variables")
+		return
+	}
 }
 
 // getBotInfoWithToken validates the bot token by calling Telegram's getMe API
@@ -112,4 +120,48 @@ func getBotInfoWithToken(botToken string, r *http.Request) (*TelegramUser, error
 	}
 
 	return &telegramResp.Result, nil
+}
+
+// generateRandomString generates a 10-character random string using cryptographically secure random bytes.
+func generateRandomString() string {
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	const length = 10
+
+	bytes := make([]byte, length)
+	if _, err := rand.Read(bytes); err != nil {
+		uuid := sdktypes.NewUUID()
+		return uuid.String()[:length]
+	}
+
+	for i := range bytes {
+		bytes[i] = charset[bytes[i]%byte(len(charset))]
+	}
+
+	return string(bytes)
+}
+
+// constructWebhookURL builds the full webhook URL for this connection.
+func constructWebhookURL(botID string) string {
+	baseURL := os.Getenv("AUTOKITTEH_BASE_URL")
+	if baseURL == "" {
+		baseURL = os.Getenv("WEBHOOK_ADDRESS")
+	}
+	return baseURL + "/telegram/webhook/" + botID
+}
+
+// setTelegramWebhook registers the webhook with Telegram using their API
+func setTelegramWebhook(ctx context.Context, botToken, webhookURL, secretToken string) error {
+	url := fmt.Sprintf("https://api.telegram.org/bot%s/setWebhook", botToken)
+
+	payload := map[string]string{
+		"url":          webhookURL,
+		"secret_token": secretToken,
+	}
+
+	_, err := common.HTTPPostJSON(ctx, url, "", payload)
+	if err != nil {
+		return fmt.Errorf("failed to set Telegram webhook: %w", err)
+	}
+
+	return nil
 }

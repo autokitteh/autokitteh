@@ -30,8 +30,8 @@ func Start(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, d sdkservices.Disp
 	h := NewHandler(l, v, d)
 	common.RegisterSaveHandler(m, desc, h.handleSave)
 
-	// Webhook handler for receiving Telegram events (no auth required)
-	pattern := fmt.Sprintf("%s %s/webhook", http.MethodPost, desc.ConnectionURL().Path)
+	// Webhook handler for receiving Telegram events.
+	pattern := fmt.Sprintf("%s %s/webhook/", http.MethodPost, desc.ConnectionURL().Path)
 	m.NoAuth.HandleFunc(pattern, h.handleEvent)
 }
 

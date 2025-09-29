@@ -2,9 +2,16 @@ package telegram
 
 import "go.autokitteh.dev/autokitteh/sdk/sdktypes"
 
+const (
+	// HTTP header that contains the secret token for webhook verification.
+	headerSecretToken = "X-Telegram-Bot-Api-Secret-Token"
+)
+
 var (
-	BotToken    = sdktypes.NewSymbol("BotToken")
-	SecretToken = sdktypes.NewSymbol("SecretToken")
+	BotTokenVar    = sdktypes.NewSymbol("BotToken")
+	SecretTokenVar = sdktypes.NewSymbol("SecretToken")
+	BotIDVar       = sdktypes.NewSymbol("BotID")
+	WebhookURLVar  = sdktypes.NewSymbol("WebhookURL")
 )
 
 // List of possible Telegram event types
@@ -27,6 +34,14 @@ var telegramEventTypes = []string{
 	"message_reaction_count",
 }
 
+// TelegramVars represents the variables stored for a Telegram connection
+type TelegramVars struct {
+	BotToken    string `vars:"secret"`
+	SecretToken string `vars:"secret"`
+	BotID       string
+	WebhookURL  string
+}
+
 // TelegramUser represents a Telegram user (bot) response from getMe API
 type TelegramUser struct {
 	ID        int64  `json:"id"`
@@ -39,57 +54,4 @@ type TelegramUser struct {
 type TelegramResponse struct {
 	OK     bool         `json:"ok"`
 	Result TelegramUser `json:"result"`
-}
-
-// TelegramUpdate represents a Telegram webhook update
-type TelegramUpdate struct {
-	UpdateID int               `json:"update_id"`
-	Message  *TelegramMessage  `json:"message,omitempty"`
-	Callback *TelegramCallback `json:"callback_query,omitempty"`
-	Edited   *TelegramMessage  `json:"edited_message,omitempty"`
-}
-
-// TelegramMessage represents a Telegram message
-type TelegramMessage struct {
-	MessageID int             `json:"message_id"`
-	From      *TelegramUser   `json:"from,omitempty"`
-	Chat      *TelegramChat   `json:"chat"`
-	Date      int64           `json:"date"`
-	Text      string          `json:"text,omitempty"`
-	Photo     []TelegramPhoto `json:"photo,omitempty"`
-	Document  *TelegramDoc    `json:"document,omitempty"`
-}
-
-// TelegramChat represents a Telegram chat
-type TelegramChat struct {
-	ID        int64  `json:"id"`
-	Type      string `json:"type"`
-	Title     string `json:"title,omitempty"`
-	Username  string `json:"username,omitempty"`
-	FirstName string `json:"first_name,omitempty"`
-	LastName  string `json:"last_name,omitempty"`
-}
-
-// TelegramPhoto represents a photo in different sizes
-type TelegramPhoto struct {
-	FileID   string `json:"file_id"`
-	FileSize int    `json:"file_size,omitempty"`
-	Width    int    `json:"width"`
-	Height   int    `json:"height"`
-}
-
-// TelegramDoc represents a document
-type TelegramDoc struct {
-	FileID   string `json:"file_id"`
-	FileName string `json:"file_name,omitempty"`
-	MimeType string `json:"mime_type,omitempty"`
-	FileSize int    `json:"file_size,omitempty"`
-}
-
-// TelegramCallback represents a callback query
-type TelegramCallback struct {
-	ID      string           `json:"id"`
-	From    *TelegramUser    `json:"from"`
-	Message *TelegramMessage `json:"message,omitempty"`
-	Data    string           `json:"data,omitempty"`
 }
