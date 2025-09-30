@@ -2,7 +2,6 @@ package telegram
 
 import (
 	"context"
-	"errors"
 
 	"go.uber.org/zap"
 
@@ -51,8 +50,21 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 // connTest is an optional connection test provided by the integration
 // to AutoKitteh. It is used to verify that the connection is working
 // as expected. The possible results are "OK" and "error".
-func connTest(_ *integration) sdkintegrations.OptFn {
+func connTest(i *integration) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
-		return sdktypes.InvalidStatus, errors.New("not implemented") // TODO: INT-482
+		vs, errStatus, err := common.ReadVarsWithStatus(ctx, i.vars, cid)
+		if errStatus.IsValid() || err != nil {
+			return errStatus, err
+		}
+
+		botToken := vs.GetValue(BotTokenVar)
+
+		_, err = getBotInfoWithToken(botToken, ctx)
+		if err != nil {
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Invalid bot token"), nil
+		}
+
+		// Perform any additional checks on the vars if needed.
+		return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Connection test successful"), nil
 	})
 }

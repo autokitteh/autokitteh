@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
+	"path"
 	"strings"
 
 	"go.uber.org/zap"
@@ -45,7 +45,6 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 
 	if len(cids) == 0 {
 		l.Warn("no connections found for bot ID", zap.String("bot_id", botID))
-		common.HTTPError(w, http.StatusNotFound)
 		return
 	}
 
@@ -104,15 +103,15 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request, connection
 
 // extractBotIDFromPath extracts the bot ID from the webhook URL path.
 func (h handler) extractBotIDFromPath(r *http.Request) (string, error) {
-	// Extract bot ID from URL path like /telegram/webhook/{botId}
-	pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+	// Expected path: /telegram/webhook/{botId}
+	segments := strings.Split(strings.Trim(path.Clean(r.URL.Path), "/"), "/")
 
 	// Expected path: ["telegram", "webhook", "{botId}"]
-	if len(pathParts) < 3 {
+	if len(segments) < 3 {
 		return "", errors.New("invalid webhook path: missing bot ID")
 	}
 
-	botID := pathParts[2]
+	botID := segments[2]
 	if botID == "" {
 		return "", errors.New("empty bot ID in webhook path")
 	}
@@ -129,14 +128,13 @@ func (h handler) validateSecretTokenForConnection(ctx context.Context, r *http.R
 		return errors.New("missing required secret token")
 	}
 
-	webhookSecretVar, err := h.vars.Get(ctx, sdktypes.NewVarScopeID(cid), SecretTokenVar)
-	if err != nil {
-		l.Error("failed to get secret token for connection",
-			zap.String("connection_id", cid.String()),
-			zap.Error(err))
-		return fmt.Errorf("failed to get secret token: %w", err)
+	vs, errStatus, err := common.ReadVarsWithStatus(ctx, h.vars, cid)
+	if errStatus.IsValid() || err != nil {
+		l.Error("failed to read connection vars",
+			zap.String("connection_id", cid.String()), zap.Error(err))
+		return errors.New("failed to read connection vars")
 	}
-	webhookSecret := webhookSecretVar.GetValue(SecretTokenVar)
+	webhookSecret := vs.GetValue(SecretTokenVar)
 
 	if webhookSecret == "" {
 		l.Warn("webhook has no secret token configured.",
