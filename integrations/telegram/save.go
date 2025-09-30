@@ -31,7 +31,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	/// Read and parse POST request body.
+	// Read and parse POST request body.
 	if err := r.ParseForm(); err != nil {
 		l.Warn("Failed to parse incoming HTTP request", zap.Error(err))
 		c.AbortBadRequest("form parsing error")
