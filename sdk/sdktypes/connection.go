@@ -23,6 +23,7 @@ func (ConnectionTraits) Validate(m *ConnectionPB) error {
 	return errors.Join(
 		nameField("name", m.Name),
 		idField[ProjectID]("project_id", m.ProjectId),
+		idField[OrgID]("org_id", m.OrgId),
 		idField[IntegrationID]("integration_id", m.IntegrationId),
 		objectField[Status]("status", m.Status),
 		objectField[ConnectionCapabilities]("capabilities", m.Capabilities),
@@ -32,7 +33,11 @@ func (ConnectionTraits) Validate(m *ConnectionPB) error {
 func (ConnectionTraits) StrictValidate(m *ConnectionPB) error {
 	return errors.Join(
 		mandatory("name", m.Name),
-		mandatory("project_id", m.ProjectId),
+		// this is optional for backwards compatibility
+		// once the UI is updated this should be made mandatory
+		// mandatory("org_id", m.OrgId),
+		oneof("org_id/project_id", m.OrgId, m.ProjectId),
+		// mandatory("project_id", m.ProjectId),
 		mandatory("integration_id", m.IntegrationId),
 	)
 }
@@ -66,6 +71,12 @@ func (p Connection) WithID(id ConnectionID) Connection {
 func (p Connection) WithProjectID(id ProjectID) Connection {
 	return Connection{p.forceUpdate(func(pb *ConnectionPB) { pb.ProjectId = id.String() })}
 }
+
+func (p Connection) WithOrgID(id OrgID) Connection {
+	return Connection{p.forceUpdate(func(pb *ConnectionPB) { pb.OrgId = id.String() })}
+}
+
+func (p Connection) OrgID() OrgID { return kittehs.Must1(ParseOrgID(p.read().OrgId)) }
 
 func (p Connection) WithIntegrationID(id IntegrationID) Connection {
 	return Connection{p.forceUpdate(func(pb *ConnectionPB) { pb.IntegrationId = id.String() })}
