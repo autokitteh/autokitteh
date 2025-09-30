@@ -3,3 +3,13 @@ class X(Exception): pass
 
 def main(event):
     raise X()
+
+-- error.txt --
+error: X()
+
+Traceback (most recent call last):
+   ak-runner
+    value = fn(*args, **kw)
+  File "main.py", line 4, in main
+    raise X()
+main.X
