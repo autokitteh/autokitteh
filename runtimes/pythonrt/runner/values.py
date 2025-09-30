@@ -4,14 +4,15 @@ Wraps and unwraps autokitteh values.
 """
 
 from datetime import UTC, datetime, timedelta
+from json import JSONDecodeError
 from typing import Any, Callable
 
 import requests
-
-import pb.autokitteh.values.v1.values_pb2 as pb
+from autokitteh import AttrDict
 from google.protobuf.duration_pb2 import Duration
 from google.protobuf.timestamp_pb2 import Timestamp
-from autokitteh import AttrDict
+
+import pb.autokitteh.values.v1.values_pb2 as pb
 
 
 def wrap_unhandled(v: Any) -> pb.Value:
@@ -120,7 +121,7 @@ def wrap(v: Any, unhandled: Callable[[Any], pb.Value] = None, history=None) -> p
 
             try:
                 json = dive(v.json())
-            except requests.exceptions.JSONDecodeError:
+            except JSONDecodeError:
                 json = pb.Value(nothing=pb.Nothing())
 
         return pb.Value(

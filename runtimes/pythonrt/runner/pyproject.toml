@@ -4,6 +4,7 @@ version = "0.1.2"
 dependencies = [
 	"grpcio ~= 1.68",
 	"autokitteh[all] ~= 0.7",
+	"pytest>=8.4.2",
 ]
 requires-python = ">= 3.11"
 

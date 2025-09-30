@@ -83,8 +83,12 @@ class Loader:
     def exec_module(self, module):
         log.info("importing %r", module.__file__)
 
-        with open(module.__file__) as fp:
-            src = fp.read()
+        try:
+            with open(module.__file__) as fp:
+                src = fp.read()
+        except (IOError, OSError) as err:
+            log.error(f"load {module.__file__} - {err}")
+            raise
 
         tree = ast.parse(src, module.__file__, "exec")
         trans = Transformer(module.__file__, src)
