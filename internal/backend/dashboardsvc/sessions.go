@@ -106,16 +106,21 @@ func (s *svc) session(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var prints string
+	prs, err := s.Sessions().GetPrints(r.Context(), sid, sdktypes.PaginationRequest{})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	for _, r := range log.Records {
-		if p := r.GetPrint(); p.IsValid() {
-			s, err := p.ToString()
-			if err != nil {
-				s = fmt.Sprintf("error converting print to string: %v", err.Error())
-			}
-			prints += s + "\n"
+	var prints string
+	for _, r := range prs.Prints {
+		v := r.Value.String()
+
+		if sv := r.Value.GetString(); sv.IsValid() {
+			v = sv.Value()
 		}
+
+		prints += fmt.Sprintf("[%s] %s\n", r.Timestamp.Format("2006-01-02 15:04:05"), v)
 	}
 
 	if err := webdashboard.Tmpl(r).ExecuteTemplate(w, "session.html", struct {
