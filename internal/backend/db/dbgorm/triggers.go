@@ -77,6 +77,9 @@ func (db *gormdb) CreateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 
 	uniqueName := triggerUniqueName(pid.String(), trigger.Name())
 
+	isDurable := trigger.IsDurable()
+	isSync := trigger.IsSync()
+
 	t := &scheme.Trigger{
 		Base:         based(ctx),
 		ProjectID:    trigger.ProjectID().UUIDValue(),
@@ -90,8 +93,8 @@ func (db *gormdb) CreateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 		UniqueName:   uniqueName,
 		WebhookSlug:  trigger.WebhookSlug(),
 		Schedule:     trigger.Schedule(),
-		IsDurable:    trigger.IsDurable(),
-		IsSync:       trigger.IsSync(),
+		IsDurable:    &isDurable,
+		IsSync:       &isSync,
 	}
 
 	return translateError(db.createTrigger(ctx, t))
@@ -111,6 +114,9 @@ func (db *gormdb) UpdateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 	// This means that there'll be no error if an unmodifyable field is requested
 	// to be changed by the caller, and it will not be modified in the DB.
 
+	isDurable := trigger.IsDurable()
+	isSync := trigger.IsSync()
+
 	r.CodeLocation = trigger.CodeLocation().CanonicalString()
 	r.EventType = trigger.EventType()
 	r.Filter = trigger.Filter()
@@ -119,8 +125,8 @@ func (db *gormdb) UpdateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 	r.UniqueName = triggerUniqueName(r.ProjectID.String(), trigger.Name())
 	r.UpdatedAt = kittehs.Now().UTC()
 	r.UpdatedBy = authcontext.GetAuthnUserID(ctx).UUIDValue()
-	r.IsSync = trigger.IsSync()
-	r.IsDurable = trigger.IsDurable()
+	r.IsSync = &isSync
+	r.IsDurable = &isDurable
 
 	return translateError(db.updateTrigger(ctx, r))
 }
