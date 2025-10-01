@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 	"strconv"
+	"strings"
 
 	"go.uber.org/zap"
 
@@ -66,7 +67,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	}
 	// Use bot ID as webhook identifier - much better than random!
 	botID := strconv.FormatInt(bot.ID, 10)
-	webhookSecret := sdktypes.NewUUID().String()
+	webhookSecret := strings.ReplaceAll(sdktypes.NewUUID().String(), "-", "")
 	webhookURL, err := constructWebhookURL(botID)
 	if err != nil {
 		l.Error("failed to construct webhook URL", zap.Error(err))
