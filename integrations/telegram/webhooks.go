@@ -6,8 +6,6 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"path"
-	"strings"
 
 	"go.uber.org/zap"
 
@@ -27,9 +25,9 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 		zap.String("event_type", r.Header.Get("Telegram-Event")),
 	)
 
-	botID, err := h.extractBotIDFromPath(r)
-	if err != nil {
-		l.Warn("failed to extract bot ID from webhook path", zap.Error(err))
+	botID := r.PathValue("connection_id")
+	if botID == "" {
+		l.Warn("missing bot ID in URL path")
 		common.HTTPError(w, http.StatusBadRequest)
 		return
 	}
@@ -99,24 +97,6 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request, connection
 	}
 
 	return payload
-}
-
-// extractBotIDFromPath extracts the bot ID from the webhook URL path.
-func (h handler) extractBotIDFromPath(r *http.Request) (string, error) {
-	// Expected path: /telegram/webhook/{botId}
-	segments := strings.Split(strings.Trim(path.Clean(r.URL.Path), "/"), "/")
-
-	// Expected path: ["telegram", "webhook", "{botId}"]
-	if len(segments) < 3 {
-		return "", errors.New("invalid webhook path: missing bot ID")
-	}
-
-	botID := segments[2]
-	if botID == "" {
-		return "", errors.New("empty bot ID in webhook path")
-	}
-
-	return botID, nil
 }
 
 // validateSecretTokenForConnection validates the secret token for a specific connection.

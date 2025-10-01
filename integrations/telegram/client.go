@@ -64,7 +64,6 @@ func connTest(i *integration) sdkintegrations.OptFn {
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Invalid bot token"), nil
 		}
 
-		// Perform any additional checks on the vars if needed.
 		return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Connection test successful"), nil
 	})
 }
