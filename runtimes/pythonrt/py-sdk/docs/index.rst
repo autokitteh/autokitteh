@@ -272,6 +272,14 @@ autokitteh.reddit module
    :undoc-members:
    :show-inheritance:
 
+autokitteh.telegram module
+------------------------
+
+.. automodule:: autokitteh.telegram
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 autokitteh.atlassian module
 ---------------------------
 
