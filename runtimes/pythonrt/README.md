@@ -1,6 +1,6 @@
 # Python Runtime
 
-Implementation of Python runtime. 
+Implementation of Python runtime.
 See [Python runtime](https://linear.app/autokitteh/project/python-runtime-be87fe4c4d7d) for list of issues.
 
 Currently, we don't support 3rd party packages (e.g. `pip install`) for the user code.
@@ -24,6 +24,7 @@ The return value from Python entry points is ignored and is not passed back to a
 You can't issue function calls at module level (e.g. `TOKEN = os.getenv('TOKEN')`)
 
 Python serializes function calls using `pickle`, some callables can't be pickled:
+
 - lambda
 - dynamically generate functions (notably os.environ.get)
 
@@ -39,7 +40,7 @@ urlopen(url)
 
 to:
 
-```python 
+```python
 _ak_call(urlopen, url)
 ```
 
@@ -57,6 +58,7 @@ See [ENG-495](https://linear.app/autokitteh/issue/ENG-495/better-detection-of-ex
 ## Go ↔ Python Communication Flow
 
 A run calls start a Python server with:
+
 - Tar file containing user code
 - Entry point (e.g. `review.py:on_github_pull_request`)
 
@@ -70,7 +72,7 @@ A call with function and payload:
 
 ```mermaid
 sequenceDiagram
-    Python-->>Go: Module loade
+    Python-->>Go: Module loaded
     Go-->Python Exports
     Go->>Python: Run(function, payload)
     loop
@@ -86,7 +88,6 @@ Other messages are:
 
 - `log` from Python to Go
 - `sleep` from Python to Go
-
 
 ### State Machine
 
@@ -119,15 +120,14 @@ stateDiagram-v2
 
 We're using gRPC, see the top level `proto` directory. Mostly `handler_svc.proto` and `runner_svc.proto`.
 
-
 ### Integration Testing
 
 To make sure you use `autokitteh` from the `py-sdk`, update your `PYTHONPATH` before running `ak`.
 Run the following from the root of the repo:
-    
+
     export PYTHONPATH="${PWD}/runtimes/pythonrt/py-sdk:${PYTHONPATH}"
 
-If you run `ak` with a database, then run `make create-workflow` once. 
+If you run `ak` with a database, then run `make create-workflow` once.
 Otherwise run it every time.
 This will create a deployment for `testdata/simple/`
 
@@ -139,7 +139,7 @@ Look for the `config.yaml` in `ak config where` directory. Then add the followin
 
 ```yaml
 db:
-  dsn: /tmp/ak.db  # Pick any other location
+  dsn: /tmp/ak.db # Pick any other location
   type: sqlite
 ```
 

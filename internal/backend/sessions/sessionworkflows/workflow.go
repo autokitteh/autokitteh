@@ -44,7 +44,7 @@ type sessionWorkflow struct {
 
 	data sessiondata.Data
 
-	// All the members belows must be built deterministically by the workflow.
+	// All the members below must be built deterministically by the workflow.
 	// They are not persisted in the database.
 
 	executors sdkexecutor.Executors

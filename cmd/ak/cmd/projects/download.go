@@ -36,13 +36,13 @@ var downloadCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		for filename, data := range resources {
-			fulllPath := filepath.Join(outputDirectory, filename)
+			fullPath := filepath.Join(outputDirectory, filename)
 
-			if err := os.MkdirAll(path.Dir(fulllPath), 0o755); err != nil {
+			if err := os.MkdirAll(path.Dir(fullPath), 0o755); err != nil {
 				return fmt.Errorf("create output directory: %w", err)
 			}
 
-			if err := os.WriteFile(fulllPath, data, 0o644); err != nil {
+			if err := os.WriteFile(fullPath, data, 0o644); err != nil {
 				return fmt.Errorf("write file: %w", err)
 			}
 		}

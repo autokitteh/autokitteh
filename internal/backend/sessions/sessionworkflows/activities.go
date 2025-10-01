@@ -301,7 +301,7 @@ func (ws *workflows) getSessionStopReasonActivity(ctx context.Context, sid sdkty
 func (ws *workflows) saveSignalActivity(ctx context.Context, signal *types.Signal) error {
 	if err := ws.svcs.DB.SaveSignal(ctx, signal); err != nil {
 		if errors.Is(err, sdkerrors.ErrAlreadyExists) {
-			// ignore error: since siganlID is unique - this means we got replayed/retried here and the signal was already saved prior.
+			// ignore error: since signalID is unique - this means we got replayed/retried here and the signal was already saved prior.
 			ws.l.Sugar().With("signal_id", signal.ID).Warnf("signal %v already saved", signal.ID)
 			return nil
 		}

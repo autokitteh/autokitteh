@@ -110,7 +110,7 @@ func TestDeleteTriggerForeignKeys(t *testing.T) {
 	evt := f.newEvent(trg, p)
 	f.createEventsAndAssert(t, evt)
 
-	// trigger could be deleted, even if it refenced by non-deleted event
+	// trigger could be deleted, even if it referenced by non-deleted event
 	findAndAssertOne(t, f, evt, "trigger_id = ?", trg.TriggerID)    // non-deleted event
 	assert.NoError(t, f.gormdb.deleteTrigger(f.ctx, trg.TriggerID)) // deleted trigger
 }
