@@ -120,6 +120,7 @@ func (db *gormdb) UpdateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 	r.UpdatedAt = kittehs.Now().UTC()
 	r.UpdatedBy = authcontext.GetAuthnUserID(ctx).UUIDValue()
 	r.IsSync = trigger.IsSync()
+	r.IsDurable = trigger.IsDurable()
 
 	return translateError(db.updateTrigger(ctx, r))
 }
