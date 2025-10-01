@@ -56,7 +56,7 @@ func printBanner(cfg *bannerConfig, opts RunOptions, addr, wpAddr, wpVersion, te
 	if wpVersion != "" {
 		wpVersion = " v" + wpVersion + ":"
 	} else {
-		wpVersion = ":        "
+		wpVersion = ":         "
 	}
 
 	kittehs.Must0(bannerTemplate.Execute(os.Stderr, struct {
