@@ -233,8 +233,8 @@ type Trigger struct {
 	EventType    string
 	Filter       string
 	CodeLocation string
-	IsDurable    bool `gorm:"not null;default:false"`
-	IsSync       bool
+	IsDurable    *bool
+	IsSync       *bool
 
 	Name string
 	// Makes sure name is unique - this is the project_id with name.
@@ -275,6 +275,16 @@ func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
 		filter = ""
 	}
 
+	isDurable := false
+	if e.IsDurable != nil {
+		isDurable = *e.IsDurable
+	}
+
+	isSync := false
+	if e.IsSync != nil {
+		isSync = *e.IsSync
+	}
+
 	return sdktypes.StrictTriggerFromProto(&sdktypes.TriggerPB{
 		TriggerId:    sdktypes.NewIDFromUUID[sdktypes.TriggerID](e.TriggerID).String(),
 		SourceType:   srcType.ToProto(),
@@ -286,8 +296,8 @@ func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
 		Name:         e.Name,
 		WebhookSlug:  e.WebhookSlug,
 		Schedule:     e.Schedule,
-		IsDurable:    e.IsDurable,
-		IsSync:       e.IsSync,
+		IsDurable:    isDurable,
+		IsSync:       isSync,
 	})
 }
 
