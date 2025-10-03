@@ -68,10 +68,12 @@ type Trigger struct {
 	IsDurable *bool  `yaml:"is_durable,omitempty" json:"is_durable,omitempty" jsonschema_description:"Is handling done as a durable session? Default: true for manifest v1, false for all others."`
 	IsSync    bool   `yaml:"is_sync,omitempty" json:"is_sync,omitempty"`
 
-	Type          string    `yaml:"type,omitempty" json:"type,omitempty" jsonschema:"enum=schedule,enum=webhook,enum=connection"`
-	Schedule      *string   `yaml:"schedule,omitempty" json:"schedule,omitempty"`
-	Webhook       *struct{} `yaml:"webhook,omitempty" json:"webhook,omitempty"`
-	ConnectionKey *string   `yaml:"connection,omitempty" json:"connection,omitempty"`
+	Type                  string    `yaml:"type,omitempty" json:"type,omitempty" jsonschema:"enum=schedule,enum=webhook,enum=connection"`
+	Schedule              *string   `yaml:"schedule,omitempty" json:"schedule,omitempty"`
+	Webhook               *struct{} `yaml:"webhook,omitempty" json:"webhook,omitempty"`
+	IsWebhookAuthRequired bool      `yaml:"is_webhook_auth_required,omitempty" json:"is_webhook_auth_required,omitempty" jsonschema_description:"Is authentication required for webhook triggers?"`
+
+	ConnectionKey *string `yaml:"connection,omitempty" json:"connection,omitempty"`
 
 	Call string `yaml:"call,omitempty" json:"call,omitempty"`
 }

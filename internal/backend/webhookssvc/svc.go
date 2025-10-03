@@ -16,6 +16,8 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authhttpmiddleware"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
@@ -46,14 +48,17 @@ var Configs = configset.Set[Config]{
 }
 
 type Service struct {
-	logger   *zap.Logger
+	cfg *Config
+
+	logger *zap.Logger
+	db     db.DB
+
 	dispatch sdkservices.DispatchFunc
-	db       db.DB
-	cfg      *Config
+	getUser  authhttpmiddleware.GetUserFromRequestFunc
 }
 
-func New(l *zap.Logger, cfg *Config, db db.DB, dispatch sdkservices.DispatchFunc) *Service {
-	return &Service{logger: l, db: db, dispatch: dispatch, cfg: cfg}
+func New(l *zap.Logger, cfg *Config, db db.DB, dispatch sdkservices.DispatchFunc, getUser authhttpmiddleware.GetUserFromRequestFunc) *Service {
+	return &Service{logger: l, db: db, dispatch: dispatch, cfg: cfg, getUser: getUser}
 }
 
 func (s *Service) Start(muxes *muxes.Muxes) {
@@ -94,7 +99,42 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	sl.With("trigger", t).Infof("webhook request: method=%s, trigger_event_type=%s", r.Method, t.EventType())
 
-	data, err := requestToData(r)
+	var u sdktypes.User
+
+	if t.IsWebhookAuthRequired() {
+		if s.getUser == nil {
+			sl.Warnw("webhook auth required but no auth function is configured")
+			http.Error(w, "webhook auth server configuration error", http.StatusInternalServerError)
+			return
+		}
+
+		if u, err = s.getUser(r); err != nil {
+			sl.Warnw("webhook auth failed", "err", err)
+
+			var mwErr *authhttpmiddleware.MiddlewareError
+			if errors.As(err, &mwErr) {
+				http.Error(w, err.Error(), http.StatusUnauthorized)
+				return
+			}
+
+			http.Error(w, "webhook auth failed", http.StatusInternalServerError)
+			return
+		}
+
+		ctx := authcontext.SetAuthnUser(ctx, u)
+
+		if err := authz.CheckContext(
+			ctx,
+			t.ID(),
+			"hit",
+			authz.WithData("method", r.Method),
+		); err != nil {
+			http.Error(w, "Forbidden", sdkerrors.AsHTTPStatusCode(err))
+			return
+		}
+	}
+
+	data, err := requestToData(r, u)
 	if err != nil {
 		sl.Errorw("failed to convert request to data", "err", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -371,7 +411,7 @@ func (o httpOutcome) WriteBody(w io.Writer) error {
 	return nil
 }
 
-func requestToData(r *http.Request) (map[string]sdktypes.Value, error) {
+func requestToData(r *http.Request, user sdktypes.User) (map[string]sdktypes.Value, error) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		return nil, fmt.Errorf("body read: %w", err)
@@ -380,7 +420,7 @@ func requestToData(r *http.Request) (map[string]sdktypes.Value, error) {
 	r.Body = io.NopCloser(bytes.NewReader(body))
 	_ = r.ParseForm()
 
-	return map[string]sdktypes.Value{
+	vs := map[string]sdktypes.Value{
 		"body": bodyData(body, r.PostForm),
 		"headers": sdktypes.NewDictValueFromStringMap(
 			kittehs.TransformMapValues(r.Header, func(vs []string) sdktypes.Value {
@@ -394,7 +434,17 @@ func requestToData(r *http.Request) (map[string]sdktypes.Value, error) {
 		"method":  sdktypes.NewStringValue(r.Method),
 		"raw_url": sdktypes.NewStringValue(r.RequestURI),
 		"url":     urlData(r.URL),
-	}, nil
+	}
+
+	if user.IsValid() {
+		vs["user"] = sdktypes.NewDictValueFromStringMap(map[string]sdktypes.Value{
+			"id":           sdktypes.NewStringValue(user.ID().String()),
+			"email":        sdktypes.NewStringValue(user.Email()),
+			"display_name": sdktypes.NewStringValue(user.DisplayName()),
+		})
+	}
+
+	return vs, nil
 }
 
 func bodyData(body []byte, form url.Values) sdktypes.Value {

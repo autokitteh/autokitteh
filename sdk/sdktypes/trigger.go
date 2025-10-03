@@ -147,3 +147,8 @@ func (p Trigger) IsSync() bool { return p.read().IsSync }
 func (p Trigger) SetIsSync(sync bool) Trigger {
 	return Trigger{p.forceUpdate(func(m *TriggerPB) { m.IsSync = sync })}
 }
+
+func (p Trigger) IsWebhookAuthRequired() bool { return p.read().WebhookAuthRequired }
+func (p Trigger) SetWebhookAuthRequired(requires bool) Trigger {
+	return Trigger{p.forceUpdate(func(m *TriggerPB) { m.WebhookAuthRequired = requires })}
+}
