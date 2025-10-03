@@ -108,6 +108,10 @@
           "additionalProperties": false,
           "type": "object"
         },
+        "is_webhook_auth_required": {
+          "type": "boolean",
+          "description": "Is authentication required for webhook triggers?"
+        },
         "connection": {
           "type": "string"
         },

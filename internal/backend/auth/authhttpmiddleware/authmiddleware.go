@@ -2,6 +2,7 @@ package authhttpmiddleware
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -16,7 +17,10 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-type AuthMiddlewareDecorator func(http.Handler) http.Handler
+type (
+	AuthMiddlewareDecorator func(http.Handler) http.Handler
+	GetUserFromRequestFunc  func(*http.Request) (sdktypes.User, error)
+)
 
 type Deps struct {
 	fx.In
@@ -27,24 +31,26 @@ type Deps struct {
 	Tokens   authtokens.Tokens  `optional:"true"`
 }
 
-type middlewareError struct {
+type MiddlewareError struct {
 	code int
 	msg  string // must never contain sensitive data.
 }
 
-func (m *middlewareError) apply(w http.ResponseWriter) { http.Error(w, m.msg, m.code) }
+func (err *MiddlewareError) Error() string { return fmt.Sprintf("code %d: %s", err.code, err.msg) }
 
 var (
-	invalidAuthHeaderErr = &middlewareError{http.StatusUnauthorized, "invalid authorization header"}
-	invalidTokenErr      = &middlewareError{http.StatusUnauthorized, "invalid token"}
+	errInvalidAuthHeader = &MiddlewareError{http.StatusUnauthorized, "invalid authorization header"}
+	errInvalidToken      = &MiddlewareError{http.StatusUnauthorized, "invalid token"}
+	errUserIsNotActive   = &MiddlewareError{http.StatusUnauthorized, "user is not active"}
+	errUnknownUser       = &MiddlewareError{http.StatusUnauthorized, "unknown user"}
 )
 
 // middlewareFn is a function that extracts a user ID from a request.
 // It returns the user ID and an error if the request is invalid.
-type middlewareFn func(*http.Request) (sdktypes.UserID, *middlewareError)
+type middlewareFn func(*http.Request) (sdktypes.UserID, *MiddlewareError)
 
 func newTokensMiddleware(tokens authtokens.Tokens) middlewareFn {
-	return func(r *http.Request) (sdktypes.UserID, *middlewareError) {
+	return func(r *http.Request) (sdktypes.UserID, *MiddlewareError) {
 		authHdr := r.Header.Get("Authorization")
 		if authHdr == "" {
 			return sdktypes.InvalidUserID, nil
@@ -53,12 +59,12 @@ func newTokensMiddleware(tokens authtokens.Tokens) middlewareFn {
 		kind, payload, _ := strings.Cut(authHdr, " ")
 
 		if kind != "Bearer" {
-			return sdktypes.InvalidUserID, invalidAuthHeaderErr
+			return sdktypes.InvalidUserID, errInvalidAuthHeader
 		}
 
 		u, err := tokens.Parse(payload)
 		if err != nil {
-			return sdktypes.InvalidUserID, invalidTokenErr
+			return sdktypes.InvalidUserID, errInvalidToken
 		}
 
 		return u.ID(), nil
@@ -66,7 +72,7 @@ func newTokensMiddleware(tokens authtokens.Tokens) middlewareFn {
 }
 
 func newInternalTokensMiddleware(tokens authtokens.Tokens) middlewareFn {
-	return func(r *http.Request) (sdktypes.UserID, *middlewareError) {
+	return func(r *http.Request) (sdktypes.UserID, *MiddlewareError) {
 		authHdr := r.Header.Get("Authorization")
 		if authHdr == "" {
 			return sdktypes.InvalidUserID, nil
@@ -75,12 +81,12 @@ func newInternalTokensMiddleware(tokens authtokens.Tokens) middlewareFn {
 		kind, payload, _ := strings.Cut(authHdr, " ")
 
 		if kind != "Bearer" {
-			return sdktypes.InvalidUserID, invalidAuthHeaderErr
+			return sdktypes.InvalidUserID, errInvalidAuthHeader
 		}
 
 		_, err := tokens.ParseInternal(payload)
 		if err != nil {
-			return sdktypes.InvalidUserID, invalidTokenErr
+			return sdktypes.InvalidUserID, errInvalidToken
 		}
 
 		return authusers.SystemUser.ID(), nil
@@ -88,7 +94,7 @@ func newInternalTokensMiddleware(tokens authtokens.Tokens) middlewareFn {
 }
 
 func newSessionsMiddleware(sessions authsessions.Store) middlewareFn {
-	return func(r *http.Request) (sdktypes.UserID, *middlewareError) {
+	return func(r *http.Request) (sdktypes.UserID, *MiddlewareError) {
 		user, err := sessions.Get(r)
 		// Do not fail on error - graceful degradation in case of session structure changes.
 		if err == nil && user.IsValid() {
@@ -99,11 +105,11 @@ func newSessionsMiddleware(sessions authsessions.Store) middlewareFn {
 	}
 }
 
-func setDefaultUserMiddleware(r *http.Request) (sdktypes.UserID, *middlewareError) {
+func setDefaultUserMiddleware(r *http.Request) (sdktypes.UserID, *MiddlewareError) {
 	return authusers.DefaultUser.ID(), nil
 }
 
-func New(deps Deps) AuthMiddlewareDecorator {
+func New(deps Deps) (get GetUserFromRequestFunc, mw AuthMiddlewareDecorator) {
 	sessions, users, tokens := deps.Sessions, deps.Users, deps.Tokens
 
 	var mws []middlewareFn
@@ -121,75 +127,89 @@ func New(deps Deps) AuthMiddlewareDecorator {
 		mws = append(mws, setDefaultUserMiddleware)
 	}
 
-	return func(next http.Handler) http.Handler { // = AuthMiddlewareDecorator
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Process all middlewares.
-			var (
-				uid   sdktypes.UserID
-				mwErr *middlewareError
-			)
+	get = func(r *http.Request) (u sdktypes.User, err error) {
+		var uid sdktypes.UserID
 
-			for _, mw := range mws {
-				// Stop processing middlewares if a valid user ID is found or there is an error.
-				var tempErr *middlewareError
-				uid, tempErr = mw(r)
+		// Process all middlewares.
+		for _, mw := range mws {
+			// Stop processing middlewares if a valid user ID is found or there is an error.
+			var tempErr *MiddlewareError
+			uid, tempErr = mw(r)
 
-				if mwErr == nil && tempErr != nil {
-					mwErr = tempErr
-				}
-
-				if uid.IsValid() {
-					mwErr = nil // reset error if we found a valid user ID
-					break
-				}
-
+			if err == nil && tempErr != nil {
+				err = tempErr
 			}
 
-			l := deps.Logger
+			if uid.IsValid() {
+				err = nil // reset error if we found a valid user ID
+				break
+			}
+		}
 
-			if mwErr != nil {
-				l.Info("auth middleware error", zap.Error(errors.New(mwErr.msg)))
-				mwErr.apply(w)
+		if err != nil {
+			return
+		}
+
+		// Check if authenticated.
+		if !uid.IsValid() {
+			// This is not an error.
+			return
+		}
+
+		ctx := r.Context()
+
+		if authusers.IsSystemUserID(uid) {
+			u = authusers.SystemUser
+		} else {
+			u, err = users.Get(authcontext.SetAuthnSystemUser(ctx), uid, "")
+			if err != nil {
+				err = errUnknownUser
 				return
 			}
 
-			// Check if authenticated.
-			if !uid.IsValid() {
-				l.Info("not authenticated")
+			if u.Status() != sdktypes.UserStatusActive {
+				err = errUserIsNotActive
+				return
+			}
+		}
+
+		return
+	}
+
+	mw = func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			l := deps.Logger
+
+			u, err := get(r)
+			if err != nil {
+				var mwErr *MiddlewareError
+				if ok := errors.As(err, &mwErr); ok {
+					l.Info("authentication middleware error", zap.Error(mwErr))
+					http.Error(w, mwErr.msg, mwErr.code)
+					return
+				}
+
+				l.Error("unexpected error in authentication middleware", zap.Error(err))
+				http.Error(w, "internal server error", http.StatusInternalServerError)
+				return
+			}
+
+			if !u.IsValid() {
+				l.Info("unauthenticated request")
 				http.Error(w, "unauthenticated", http.StatusUnauthorized)
 				return
 			}
 
-			// Hydrate user and check if it's active.
-			l = l.With(zap.String("user_id", uid.String()))
+			l.Debug("authenticated request", zap.String("user", u.String()))
 
-			ctx := r.Context()
+			ctx := authcontext.SetAuthnUser(r.Context(), u)
+			r = r.WithContext(ctx)
 
-			if authusers.IsSystemUserID(uid) {
-				// If the user is the system user, we can set it directly.
-				ctx = authcontext.SetAuthnSystemUser(ctx)
-				l.Info("authenticated as system user")
-			} else {
-				u, err := users.Get(authcontext.SetAuthnSystemUser(ctx), uid, "")
-				if err != nil {
-					l.Warn("failed to get user", zap.Error(err))
-					http.Error(w, "unknown user", http.StatusUnauthorized)
-					return
-				}
-
-				if u.Status() != sdktypes.UserStatusActive {
-					l.Info("user is not active")
-					http.Error(w, "user is not active", http.StatusUnauthorized)
-					return
-				}
-
-				ctx = authcontext.SetAuthnUser(ctx, u)
-			}
-
-			// Propagate the request to the next handler.
-			next.ServeHTTP(w, r.WithContext(ctx))
+			next.ServeHTTP(w, r)
 		})
 	}
+
+	return
 }
 
 type AuthHeaderExtractor func(*http.Request) sdktypes.UserID

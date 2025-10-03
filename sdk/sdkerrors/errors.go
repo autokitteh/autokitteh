@@ -3,6 +3,7 @@ package sdkerrors
 import (
 	"errors"
 	"fmt"
+	"net/http"
 
 	"connectrpc.com/connect"
 	"github.com/bufbuild/protovalidate-go"
@@ -130,4 +131,38 @@ func ErrorType(err error) string {
 	}
 
 	return terr.ErrorType()
+}
+
+// re-wrap sdk as connect error
+func AsHTTPStatusCode(err error) int {
+	// in protovalidate Error() is defined on pointer type and there is no error object
+	var validationError *protovalidate.ValidationError
+	if errors.As(err, &validationError) {
+		return http.StatusBadRequest
+	}
+
+	var invalidArg InvalidArgumentError
+
+	switch {
+	case errors.Is(err, ErrNotFound):
+		return http.StatusNotFound
+	case errors.As(err, &invalidArg):
+		return http.StatusBadRequest
+	case errors.Is(err, ErrUnauthorized):
+		return http.StatusForbidden
+	case errors.Is(err, ErrUnauthenticated):
+		return http.StatusUnauthorized
+	case errors.Is(err, ErrAlreadyExists):
+		return http.StatusConflict
+	case errors.Is(err, ErrNotImplemented):
+		return http.StatusNotImplemented
+	case errors.Is(err, ErrFailedPrecondition):
+		return http.StatusPreconditionFailed
+	case errors.Is(err, ErrResourceExhausted):
+		return http.StatusTooManyRequests
+	case errors.Is(err, ErrProgram):
+		fallthrough
+	default:
+		return http.StatusInternalServerError
+	}
 }

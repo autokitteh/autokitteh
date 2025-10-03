@@ -405,13 +405,14 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 		}
 
 		desired, err := sdktypes.TriggerFromProto(&sdktypes.TriggerPB{
-			Filter:       mtrigger.Filter,
-			IsDurable:    isDurable,
-			EventType:    mtrigger.EventType,
-			CodeLocation: loc.ToProto(),
-			Name:         mtrigger.Name,
-			ProjectId:    pid.String(),
-			IsSync:       mtrigger.IsSync,
+			Filter:              mtrigger.Filter,
+			IsDurable:           isDurable,
+			EventType:           mtrigger.EventType,
+			CodeLocation:        loc.ToProto(),
+			Name:                mtrigger.Name,
+			ProjectId:           pid.String(),
+			IsSync:              mtrigger.IsSync,
+			WebhookAuthRequired: mtrigger.IsWebhookAuthRequired,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("trigger %q: invalid: %w", mtrigger.GetKey(), err)
