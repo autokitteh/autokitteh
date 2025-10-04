@@ -4,9 +4,10 @@ import (
 	_ "embed"
 	"html/template"
 	"net/http"
-	"os"
 
 	"go.jetify.com/typeid"
+
+	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 )
 
 //go:embed index.html
@@ -21,7 +22,7 @@ func ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// a millisecond-precision timestamp and a random value).
 	random := typeid.Must(typeid.WithPrefix(""))
 	data := map[string]string{
-		"address": os.Getenv("WEBHOOK_ADDRESS"),
+		"address": fixtures.ServiceAddress(),
 		"path":    random.String(),
 	}
 	if err := tmpl.Execute(w, data); err != nil {

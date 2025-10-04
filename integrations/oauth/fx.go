@@ -3,12 +3,12 @@ package oauth
 import (
 	"fmt"
 	"net/url"
-	"os"
 	"strings"
 
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
@@ -40,7 +40,7 @@ func (o *OAuth) Start(m *muxes.Muxes) error {
 	// Set the AutoKitteh server's base URL for webhooks.
 	o.BaseURL = o.cfg.Address
 	if o.BaseURL == "" {
-		o.BaseURL = os.Getenv("WEBHOOK_ADDRESS") // Legacy
+		o.BaseURL = fixtures.ServiceAddress()
 	}
 
 	var err error
