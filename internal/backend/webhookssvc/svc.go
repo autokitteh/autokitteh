@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"path"
 	"strings"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
+	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -64,6 +66,10 @@ func (s *Service) Start(muxes *muxes.Muxes) {
 func InitTrigger(trigger sdktypes.Trigger) sdktypes.Trigger {
 	unique := typeid.Must(typeid.FromUUIDWithPrefix("", sdktypes.NewUUID().String()))
 	return trigger.WithWebhookSlug(unique.String())
+}
+
+func WebhookSlugToAddress(slug string) string {
+	return path.Join(fixtures.ServiceBaseURL(), WebhooksPathPrefix, slug)
 }
 
 func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {

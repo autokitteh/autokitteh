@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"time"
 
@@ -16,6 +15,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/oauth"
+	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -136,7 +136,7 @@ func DeleteSubscription(ctx context.Context, svc Services, cid sdktypes.Connecti
 
 func webhookURLs() (changeURL, lifecycleURL string) {
 	var err error
-	changeURL, err = url.JoinPath("https://"+os.Getenv("WEBHOOK_ADDRESS"), ChangePath)
+	changeURL, err = url.JoinPath(fixtures.ServiceBaseURL(), ChangePath)
 	if err != nil {
 		changeURL = ""
 	}

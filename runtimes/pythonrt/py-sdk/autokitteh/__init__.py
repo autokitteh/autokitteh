@@ -20,11 +20,13 @@ from .store import (
     set_value,
     store,
 )
+from .triggers import get_webhook_url
 
 __all__ = [
     "AttrDict",
     "AutoKittehError",
     "errors",
+    "get_webhook_url",
     "http_outcome",
     "outcome",
     "start",

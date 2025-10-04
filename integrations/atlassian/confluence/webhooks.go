@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -17,6 +16,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations/common"
+	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 )
 
 const (
@@ -156,8 +156,7 @@ func getWebhook(ctx context.Context, l *zap.Logger, base, user, key, category st
 	}
 
 	// Finally, filter the results based on the AutoKitteh server address.
-	webhookBase := os.Getenv("WEBHOOK_ADDRESS")
-	url := fmt.Sprintf("https://%s/confluence/webhook/%s", webhookBase, category)
+	url := fmt.Sprintf("%s/confluence/webhook/%s", fixtures.ServiceBaseURL(), category)
 	for _, w := range list {
 		if w.URL == url {
 			id, err := extractIDSuffixFromURL(w.Self)
@@ -179,8 +178,7 @@ func registerWebhook(ctx context.Context, l *zap.Logger, base, user, key, catego
 
 	l = l.With(zap.String("category", category))
 
-	webhookBase := os.Getenv("WEBHOOK_ADDRESS")
-	url := fmt.Sprintf("https://%s/confluence/webhook/%s", webhookBase, category)
+	url := fmt.Sprintf("%s/confluence/webhook/%s", fixtures.ServiceBaseURL(), category)
 	secret := typeid.Must(typeid.WithPrefix("")).String()
 	r := webhook{
 		Name:        "AutoKitteh",
