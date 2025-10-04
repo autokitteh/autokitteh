@@ -29,6 +29,9 @@ ak session watch ses_0000000000000000000000000b --end-state COMPLETED
 return code == 0
 
 ak session prints ses_0000000000000000000000000b --no-timestamps
+output contains '/webhooks/00000000000000000000000005'
+output contains '/webhooks/00000000000000000000000007'
+output contains 'ready'
 output contains '1 a'
 output contains '2 b'
 output contains '3 None'
@@ -52,15 +55,21 @@ project:
       type: webhook
 
 -- program.py --
-from autokitteh import subscribe, next_event
+from autokitteh import subscribe, next_event, get_webhook_url
 
 def on_http_start(_):
+  print(get_webhook_url("http1"))
+  print(get_webhook_url("http2"))
+
   s1 = subscribe("http2", "true")
   s2 = subscribe("http1", "true")
+
   print("ready")
+
   print(1, next_event([s2])['body']['text'])
   print(2, next_event([s1])['body']['text'])
   print(3, next_event([s2], timeout=1))
   print(4, next_event([s1, s2], timeout=2)['body']['text'])
   print(5, next_event([s1, s2], timeout=2)['body']['text'])
+  
   print("done")
