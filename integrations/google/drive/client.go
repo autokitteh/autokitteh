@@ -97,7 +97,7 @@ func oauthConfig() *oauth2.Config {
 		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
 		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
 		Endpoint:     google.Endpoint,
-		RedirectURL:  fmt.Sprintf("%s/oauth/redirect/google", fixtures.ServiceBaseURL()),
+		RedirectURL:  fixtures.ServiceBaseURL() + "/oauth/redirect/google",
 		// https://developers.google.com/drive/api/guides/api-specific-auth
 		Scopes: []string{
 			// Non-sensitive.
@@ -170,7 +170,7 @@ func (a api) watchEvents(ctx context.Context, connID sdktypes.ConnectionID, user
 	req := client.Changes.Watch(startToken.StartPageToken, &drive.Channel{
 		Id:         watchID,
 		Token:      userEmail + "/events",
-		Address:    fmt.Sprintf("%s/googledrive/notif", fixtures.ServiceBaseURL()),
+		Address:    fixtures.ServiceBaseURL() + "/googledrive/notif",
 		Type:       "web_hook",
 		Expiration: time.Now().Add(time.Hour*24*7).Unix() * 1000,
 	})

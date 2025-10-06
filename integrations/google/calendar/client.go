@@ -101,7 +101,7 @@ func oauthConfig() *oauth2.Config {
 		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
 		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
 		Endpoint:     google.Endpoint,
-		RedirectURL:  fmt.Sprintf("%s/oauth/redirect/google", fixtures.ServiceBaseURL()),
+		RedirectURL:  fixtures.ServiceBaseURL() + "/oauth/redirect/google",
 		// https://developers.google.com/calendar/api/auth
 		Scopes: []string{
 			// Non-sensitive.
@@ -157,7 +157,7 @@ func (a api) watchEvents(ctx context.Context, connID sdktypes.ConnectionID, user
 	req := client.Events.Watch(calID, &calendar.Channel{
 		Id:      connID.String() + "/events",
 		Token:   fmt.Sprintf("%s/%s/events", userEmail, calID),
-		Address: fmt.Sprintf("%s/googlecalendar/notif", fixtures.ServiceBaseURL()),
+		Address: fixtures.ServiceBaseURL() + "googlecalendar/notif",
 		Type:    "web_hook",
 	})
 

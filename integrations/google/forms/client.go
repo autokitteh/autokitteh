@@ -2,7 +2,6 @@ package forms
 
 import (
 	"context"
-	"fmt"
 	"os"
 
 	"golang.org/x/oauth2"
@@ -137,7 +136,7 @@ func oauthConfig() *oauth2.Config {
 		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
 		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
 		Endpoint:     google.Endpoint,
-		RedirectURL:  fmt.Sprintf("%s/oauth/redirect/google", fixtures.ServiceBaseURL()),
+		RedirectURL:  fixtures.ServiceBaseURL() + "/oauth/redirect/google",
 		// https://developers.google.com/identity/protocols/oauth2/scopes#script
 		Scopes: []string{
 			// Non-sensitive.
