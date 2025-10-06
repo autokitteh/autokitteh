@@ -12,4 +12,10 @@ func init() {
 }
 
 func ServiceAddress() string { return webhookAddress }
-func ServiceBaseURL() string { return "https://" + webhookAddress }
+func ServiceBaseURL() string {
+	if webhookAddress == "" {
+		return ""
+	}
+
+	return "https://" + webhookAddress
+}
