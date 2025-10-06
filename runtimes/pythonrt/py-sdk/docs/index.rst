@@ -64,6 +64,14 @@ autokitteh.event module
    :undoc-members:
    :show-inheritance:
 
+autokitteh.triggers module
+--------------------------
+
+.. automodule:: autokitteh.triggers
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 autokitteh.zoom module
 ----------------------
 
