@@ -2,20 +2,32 @@ package fixtures
 
 import "os"
 
-var webhookAddress = os.Getenv("SERVICE_ADDRESS")
+var serviceAddress string
 
-func init() {
-	if webhookAddress == "" {
-		// fallback to legacy var name.
-		webhookAddress = os.Getenv("WEBHOOK_ADDRESS")
+func initServiceAddress() {
+	// This needs to be done lazyly to let the main load dotenv.
+
+	if serviceAddress == "" {
+		serviceAddress = os.Getenv("SERVICE_ADDRESS")
+	}
+
+	if serviceAddress == "" {
+		serviceAddress = os.Getenv("WEBHOOK_ADDRESS")
 	}
 }
 
-func ServiceAddress() string { return webhookAddress }
+func ServiceAddress() string {
+	initServiceAddress()
+
+	return serviceAddress
+}
+
 func ServiceBaseURL() string {
-	if webhookAddress == "" {
-		return ""
+	initServiceAddress()
+
+	if serviceAddress != "" {
+		return "https://" + serviceAddress
 	}
 
-	return "https://" + webhookAddress
+	return ""
 }
