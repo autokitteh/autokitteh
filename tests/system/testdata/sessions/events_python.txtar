@@ -29,8 +29,8 @@ ak session watch ses_0000000000000000000000000b --end-state COMPLETED
 return code == 0
 
 ak session prints ses_0000000000000000000000000b --no-timestamps
-output contains '/webhooks/00000000000000000000000005'
-output contains '/webhooks/00000000000000000000000007'
+output contains 'webhooks/00000000000000000000000005'
+output contains 'webhooks/00000000000000000000000007'
 output contains 'ready'
 output contains '1 a'
 output contains '2 b'
