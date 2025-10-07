@@ -274,6 +274,6 @@ def call_grpc(name, fn, args):
             raise AutoKittehError(f"{name}: {resp.error}")
         return resp
     except grpc.RpcError as e:
-        if e.code() == grpc.StatusCode.UNAVAILABLE or grpc.StatusCode.CANCELLED:
+        if e.code() in (grpc.StatusCode.UNAVAILABLE, grpc.StatusCode.CANCELLED):
             os._exit(1)
-        raise AutoKittehError(str(e))
+        raise AutoKittehError(f"{name}: gRPC error - {e}")

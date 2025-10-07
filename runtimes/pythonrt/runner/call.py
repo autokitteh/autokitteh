@@ -41,8 +41,12 @@ def full_func_name(fn):
 def caller_info(code_dir):
     """Return first location in call stack that comes from code_dir."""
     for frame in inspect.stack():
-        if Path(frame.filename).is_relative_to(code_dir):
-            return Path(frame.filename).name, frame.lineno
+        try:
+            if Path(frame.filename).is_relative_to(code_dir):
+                return Path(frame.filename).name, frame.lineno
+        except (ValueError, OSError) as err:
+            log.error(f"caller_info({code_dir!r}) - {err}")
+            continue
 
     return "<unknown>", 0
 
