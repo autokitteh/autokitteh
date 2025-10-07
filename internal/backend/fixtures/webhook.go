@@ -1,19 +1,27 @@
 package fixtures
 
-import "os"
+import (
+	"os"
+	"sync"
+)
 
-var serviceAddress string
+var (
+	serviceAddress string
+	once           sync.Once
+)
 
 func initServiceAddress() {
-	// This needs to be done lazyly to let the main load dotenv.
+	// This needs to be done lazily to let the main load dotenv.
 
-	if serviceAddress == "" {
-		serviceAddress = os.Getenv("SERVICE_ADDRESS")
-	}
+	once.Do(func() {
+		if serviceAddress == "" {
+			serviceAddress = os.Getenv("SERVICE_ADDRESS")
+		}
 
-	if serviceAddress == "" {
-		serviceAddress = os.Getenv("WEBHOOK_ADDRESS")
-	}
+		if serviceAddress == "" {
+			serviceAddress = os.Getenv("WEBHOOK_ADDRESS")
+		}
+	})
 }
 
 func ServiceAddress() string {
