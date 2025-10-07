@@ -43,12 +43,6 @@ type sessions struct {
 var _ Sessions = (*sessions)(nil)
 
 func New(l *zap.Logger, config *Config, db db.DB, svcs sessionsvcs.Svcs) (Sessions, error) {
-	if config.EnableNondurableSessions {
-		l.Warn("Nondurable sessions are enabled. This is not currently recommended for production use.")
-	} else {
-		l.Warn("Nondurable sessions are disabled. All sessions will be durable.")
-	}
-
 	return &sessions{
 		config: config,
 		svcs:   &svcs,
@@ -299,12 +293,6 @@ func (s *sessions) StartInternal(ctx context.Context, session sdktypes.Session) 
 	session = session.WithNewID()
 	sid := session.ID()
 	l := s.l.With(zap.Any("session_id", sid))
-
-	if !session.IsDurable() && !s.config.EnableNondurableSessions {
-		// We don't want to warn here as during migration this will be very noisy.
-		l.Debug("non-durable session requested, but non-durable sessions are not allowed by config. forcing durable.")
-		session = session.SetDurable(true)
-	}
 
 	if err := s.svcs.DB.CreateSession(ctx, session); err != nil {
 		return sdktypes.InvalidSessionID, fmt.Errorf("start session: %w", err)
