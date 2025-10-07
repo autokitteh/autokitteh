@@ -199,8 +199,14 @@ func (w *sessionWorkflow) initEnvModule(cinfos map[string]connInfo) error {
 			continue
 		}
 
+		webhookURL, err := webhookssvc.WebhookSlugToAddress(t.WebhookSlug())
+		if err != nil {
+			w.l.Error("failed to get webhook address", zap.Any("trigger", t.Name()), zap.Error(err))
+			continue
+		}
+
 		name := t.Name().String()
-		vs[name+"__webhook_url"] = sdktypes.NewStringValue(webhookssvc.WebhookSlugToAddress(t.WebhookSlug()))
+		vs[name+"__webhook_url"] = sdktypes.NewStringValue(webhookURL)
 	}
 
 	mod := sdkexecutor.NewExecutor(

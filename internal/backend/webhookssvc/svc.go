@@ -9,7 +9,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"path"
 	"strings"
 	"time"
 
@@ -68,8 +67,8 @@ func InitTrigger(trigger sdktypes.Trigger) sdktypes.Trigger {
 	return trigger.WithWebhookSlug(unique.String())
 }
 
-func WebhookSlugToAddress(slug string) string {
-	return path.Join(fixtures.ServiceBaseURL(), WebhooksPathPrefix, slug)
+func WebhookSlugToAddress(slug string) (string, error) {
+	return url.JoinPath(fixtures.ServiceBaseURL(), WebhooksPathPrefix, slug)
 }
 
 func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
