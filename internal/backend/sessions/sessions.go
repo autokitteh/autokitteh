@@ -43,12 +43,6 @@ type sessions struct {
 var _ Sessions = (*sessions)(nil)
 
 func New(l *zap.Logger, config *Config, db db.DB, svcs sessionsvcs.Svcs) (Sessions, error) {
-	if config.EnableNondurableSessions {
-		l.Warn("Nondurable sessions are enabled. This is not currently recommended for production use.")
-	} else {
-		l.Warn("Nondurable sessions are disabled. All sessions will be durable.")
-	}
-
 	return &sessions{
 		config: config,
 		svcs:   &svcs,
