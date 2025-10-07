@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"slices"
 	"strings"
 	"time"
@@ -12,6 +11,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations/common"
+	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )
 
@@ -102,10 +102,9 @@ func getWebhook(ctx context.Context, l *zap.Logger, baseURL, token string) (int,
 	// ("GET .../webhook" doesn't show webhook URLs in the response, so
 	// we use a trick: we specify the AutoKitteh server address in the
 	// JQL filter, without affecting the actual event filtering).
-	webhookBase := os.Getenv("WEBHOOK_ADDRESS")
 	id := 0
 	for _, v := range list.Values {
-		if strings.Contains(v.JQLFilter, webhookBase) {
+		if strings.Contains(v.JQLFilter, fixtures.ServiceAddress()) {
 			if id == 0 {
 				id = v.ID
 			} else {
@@ -161,9 +160,8 @@ type webhookRegistrationResult struct {
 // https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-webhooks/#api-rest-api-3-webhook-post
 // https://developer.atlassian.com/server/jira/platform/webhooks/
 func registerWebhook(ctx context.Context, l *zap.Logger, baseURL, token string) (int, bool) {
-	webhookBase := os.Getenv("WEBHOOK_ADDRESS")
 	req := webhookRegisterRequest{
-		URL: fmt.Sprintf("https://%s/jira/webhook", webhookBase),
+		URL: fixtures.ServiceBaseURL() + "/jira/webhook",
 		Webhooks: []webhook{
 			{
 				Events: []string{
@@ -173,7 +171,7 @@ func registerWebhook(ctx context.Context, l *zap.Logger, baseURL, token string) 
 				// "GET .../webhook" doesn't show webhook URLs in the response,
 				// so we use a trick: we specify the AutoKitteh server address in
 				// the JQL filter, without affecting the actual event filtering.
-				JQLFilter: "project != " + webhookBase,
+				JQLFilter: "project != " + fixtures.ServiceAddress(),
 			},
 		},
 	}

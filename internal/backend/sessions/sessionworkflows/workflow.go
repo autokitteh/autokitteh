@@ -20,6 +20,7 @@ import (
 	testtoolsmodule "go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/testtools"
 	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
+	"go.autokitteh.dev/autokitteh/internal/backend/webhookssvc"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkexecutor"
@@ -191,6 +192,15 @@ func (w *sessionWorkflow) initEnvModule(cinfos map[string]connInfo) error {
 		}))
 		vs[name+"__connection_id"] = sdktypes.NewStringValue(conn.ID().String())
 
+	}
+
+	for _, t := range w.data.Triggers {
+		if t.SourceType() != sdktypes.TriggerSourceTypeWebhook {
+			continue
+		}
+
+		name := t.Name().String()
+		vs[name+"__webhook_url"] = sdktypes.NewStringValue(webhookssvc.WebhookSlugToAddress(t.WebhookSlug()))
 	}
 
 	mod := sdkexecutor.NewExecutor(

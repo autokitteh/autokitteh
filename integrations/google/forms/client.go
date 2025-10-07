@@ -2,7 +2,6 @@ package forms
 
 import (
 	"context"
-	"fmt"
 	"os"
 
 	"golang.org/x/oauth2"
@@ -14,6 +13,7 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/google/connections"
 	"go.autokitteh.dev/autokitteh/integrations/google/vars"
+	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -132,12 +132,11 @@ func oauthTokenSource(ctx context.Context, data string) (oauth2.TokenSource, err
 
 // TODO(ENG-112): Use OAuth().Get() instead of calling this function.
 func oauthConfig() *oauth2.Config {
-	addr := os.Getenv("WEBHOOK_ADDRESS")
 	return &oauth2.Config{
 		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
 		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
 		Endpoint:     google.Endpoint,
-		RedirectURL:  fmt.Sprintf("https://%s/oauth/redirect/google", addr),
+		RedirectURL:  fixtures.ServiceBaseURL() + "/oauth/redirect/google",
 		// https://developers.google.com/identity/protocols/oauth2/scopes#script
 		Scopes: []string{
 			// Non-sensitive.
