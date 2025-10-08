@@ -34,12 +34,13 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 			return sdktypes.InvalidStatus, err
 		}
 
-		at := vs.Get(common.AuthTypeVar)
-		if !at.IsValid() || at.Value() == "" {
-			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+		// Connection is valid if the secret token was saved after successful authentication.
+		at := vs.Get(SecretTokenVar)
+		if at.Value() != "" {
+			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Initialized"), nil
 		}
 
-		return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Initialized"), nil
+		return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 	})
 }
 
