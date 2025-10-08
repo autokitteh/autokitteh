@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
-	"path"
 	"strconv"
 	"strings"
 
@@ -76,8 +76,9 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Register webhook with Telegram.
+	l.Info("attempting to register webhook with Telegram", zap.String("webhookURL", webhookURL))
 	if err := setTelegramWebhook(r.Context(), token, webhookURL, webhookSecret); err != nil {
-		l.Error("failed to register webhook with Telegram", zap.Error(err))
+		l.Error("failed to register webhook with Telegram", zap.Error(err), zap.String("webhookURL", webhookURL))
 		c.AbortServerError("failed to register webhook with Telegram")
 		return
 	}
@@ -131,11 +132,34 @@ func getBotInfoWithToken(botToken string, ctx context.Context) (*TelegramUser, e
 func constructWebhookURL(botID string) (string, error) {
 	baseURL := os.Getenv("WEBHOOK_ADDRESS")
 	if baseURL == "" {
-		err := errors.New("WEBHOOK_ADDRESS environment variable is not set")
-		return "", err
+		return "", errors.New("WEBHOOK_ADDRESS environment variable is not set")
 	}
 
-	return path.Join(baseURL, "telegram/webhook", botID), nil
+	// Parse the base URL to ensure it's valid
+	base, err := url.Parse(baseURL)
+	if err != nil {
+		return "", fmt.Errorf("invalid WEBHOOK_ADDRESS: %w", err)
+	}
+
+	// Validate Telegram webhook requirements
+	if base.Scheme != "https" {
+		return "", errors.New("webhook URL must use HTTPS (required by Telegram)")
+	}
+
+	if base.Host == "" {
+		return "", errors.New("webhook URL must have a valid host")
+	}
+
+	// Check if port is supported by Telegram (443, 80, 88, 8443)
+	port := base.Port()
+	if port != "" && port != "443" && port != "80" && port != "88" && port != "8443" {
+		return "", fmt.Errorf("webhook URL port %s is not supported by Telegram (supported: 443, 80, 88, 8443)", port)
+	}
+
+	// Join the path components properly
+	base.Path = strings.TrimSuffix(base.Path, "/") + "/telegram/webhook/" + botID
+
+	return base.String(), nil
 }
 
 // setTelegramWebhook registers the webhook with Telegram using their API
