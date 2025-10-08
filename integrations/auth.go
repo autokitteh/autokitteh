@@ -14,4 +14,5 @@ const (
 	PAT            = "pat"
 	ServerToServer = "serverToServer" // Zoom integrations only
 	SocketMode     = "socketMode"     // Slack integration only
+	BotToken       = "botToken"       // For telegram only
 )

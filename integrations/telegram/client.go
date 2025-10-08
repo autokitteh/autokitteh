@@ -5,7 +5,6 @@ import (
 
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -40,10 +39,7 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 		}
 
-		if at.Value() == integrations.Init {
-			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Initialized"), nil
-		}
-		return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil
+		return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Initialized"), nil
 	})
 }
 
