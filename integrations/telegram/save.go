@@ -55,14 +55,12 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vsid := sdktypes.NewVarScopeID(cid)
-	authType := common.SaveAuthType(r, h.vars, vsid)
-	l = l.With(zap.String("auth_type", authType))
 
 	// Validate the bot token usability.
 	bot, err := getBotInfoWithToken(token, r.Context())
 	if err != nil {
 		l.Warn("bot token test failed", zap.Error(err))
-		c.AbortBadRequest("failed to use the provided token")
+		c.AbortBadRequest("Authentication failed. Check your Telegram bot token and retry")
 		return
 	}
 	// Use bot ID as webhook identifier - much better than random!
@@ -78,7 +76,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	// Register webhook with Telegram.
 	if err := setTelegramWebhook(r.Context(), token, webhookURL, webhookSecret); err != nil {
 		l.Error("failed to register webhook with Telegram", zap.Error(err))
-		c.AbortServerError("failed to register webhook with Telegram")
+		c.AbortServerError("failed to connect to Telegram, please try again later")
 		return
 	}
 
@@ -90,6 +88,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 		WebhookURL:  webhookURL,
 	}
 
+	common.SaveAuthType(r, h.vars, vsid)
 	vars := sdktypes.EncodeVars(telegramVars)
 	if err := h.vars.Set(r.Context(), vars.WithScopeID(vsid)...); err != nil {
 		l.Error("save connection: failed to save connection variables", zap.Error(err))
