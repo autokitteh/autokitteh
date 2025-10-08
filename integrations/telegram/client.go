@@ -35,7 +35,7 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 		}
 
 		// Connection is valid if the secret token was saved.
-		// This check is enoguh because teh token weill be saved only after successful authentication.
+		// This check is enough because the token will be saved only after successful authentication.
 		at := vs.Get(SecretTokenVar)
 		if at.Value() != "" {
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Initialized"), nil
