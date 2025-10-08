@@ -47,7 +47,7 @@ func (s *server) Dispatch(ctx context.Context, req *connect.Request[dispatcher1.
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	resp, err := s.dispatcher.Dispatch(ctx, event, &sdkservices.DispatchOptions{DeploymentID: deploymentID})
+	resp, err := s.dispatcher.Dispatch(ctx, event, &sdkservices.DispatchOptions{DeploymentID: deploymentID, Wait: msg.Wait})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -72,7 +72,7 @@ func (s *server) Redispatch(ctx context.Context, req *connect.Request[dispatcher
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	resp, err := s.dispatcher.Redispatch(ctx, eventID, &sdkservices.DispatchOptions{DeploymentID: deploymentID})
+	resp, err := s.dispatcher.Redispatch(ctx, eventID, &sdkservices.DispatchOptions{DeploymentID: deploymentID, Wait: msg.Wait})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
