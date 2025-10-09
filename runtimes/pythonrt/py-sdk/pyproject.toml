@@ -1,6 +1,6 @@
 [project]
 name = 'autokitteh'
-version = '0.8.0' # Must match the version in runner/pyproject.toml.
+version = '0.8.1' # Must match the version in runner/pyproject.toml.
 description = 'AutoKitteh Python SDK'
 readme = 'README.md'
 license = {file = 'LICENSE'}
@@ -27,6 +27,7 @@ all = [
 	"google-auth-oauthlib ~= 1.2",
 	"google-generativeai ~= 0.8",
 	"gspread ~= 6.2",
+	"gspread-formatting ~= 1.2",
 	"hubspot-api-client ~= 11.1",
 	"kubernetes ~= 31.0",
 	"msgraph-sdk ~= 1.18",
