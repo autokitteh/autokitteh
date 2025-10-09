@@ -28,7 +28,7 @@ def kubernetes_client(connection: str) -> ModuleType:
     """
     check_connection_name(connection)
 
-    config_file = os.getenv(connection + "__configFile")
+    config_file = os.getenv(connection + "__config_file")
 
     if not config_file:
         raise ConnectionInitError(connection)
