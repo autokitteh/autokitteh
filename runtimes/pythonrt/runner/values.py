@@ -6,6 +6,7 @@ Wraps and unwraps autokitteh values.
 from datetime import UTC, datetime, timedelta
 from json import JSONDecodeError
 from typing import Any, Callable
+from uuid import UUID
 
 import requests
 from autokitteh import AttrDict
@@ -135,6 +136,9 @@ def wrap(v: Any, unhandled: Callable[[Any], pb.Value] = None, history=None) -> p
                 },
             )
         )
+
+    if isinstance(v, UUID):
+        return pb.Value(string=pb.String(v=str(v)))
 
     if hasattr(v, "__dict__"):
         return pb.Value(
