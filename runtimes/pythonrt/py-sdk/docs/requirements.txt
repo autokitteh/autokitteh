@@ -13,6 +13,7 @@ google-auth-httplib2 ~= 0.2
 google-auth-oauthlib ~= 1.2
 google-generativeai ~= 0.8
 gspread ~= 6.2
+gspread-formatting ~= 1.2
 hubspot-api-client ~= 11.1
 kubernetes ~= 31.0
 msgraph-sdk ~= 1.18
