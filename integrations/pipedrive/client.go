@@ -3,7 +3,10 @@ package pipedrive
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	"go.autokitteh.dev/autokitteh/integrations"
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/github/vars"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
@@ -50,8 +53,32 @@ func connStatus(cvars sdkservices.Vars) sdkintegrations.OptFn {
 // connTest is an optional connection test provided by the integration
 // to AutoKitteh. It is used to verify that the connection is working
 // as expected. The possible results are "OK" and "error".
-func connTest(_ sdkservices.Vars) sdkintegrations.OptFn {
+func connTest(cvars sdkservices.Vars) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
-		return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "not initialized yet"), nil // TODO: INT-474 implement connTest
+		if !cid.IsValid() {
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+		}
+
+		vs, err := cvars.Get(ctx, sdktypes.NewVarScopeID(cid))
+		if err != nil {
+			zap.L().Error("failed to read connection vars", zap.String("connection_id", cid.String()), zap.Error(err))
+			return sdktypes.InvalidStatus, err
+		}
+
+		apiKey := vs.GetValue(common.ApiKeyVar)
+		if apiKey == "" {
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "API key not configured"), nil
+		}
+
+		companyDomain := vs.GetValue(companyDomainVar)
+		if companyDomain == "" {
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Company domain not configured"), nil
+		}
+
+		if err := validateAPIKey(ctx, apiKey, companyDomain); err != nil {
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
+		}
+
+		return sdktypes.NewStatus(sdktypes.StatusCodeOK, ""), nil
 	})
 }
