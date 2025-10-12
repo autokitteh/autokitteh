@@ -51,6 +51,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	l = l.With(zap.String("connection_id", cid.String()))
 	vsid := sdktypes.NewVarScopeID(cid)
 	common.SaveAuthType(r, h.vars, vsid)
 
@@ -70,7 +71,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Validate API key before saving.
 	if err := validateAPIKey(r.Context(), apiKey, companyDomain); err != nil {
-		l.Warn("save connection: invalid API key", zap.Error(err))
+		l.Debug("save connection: API key validation failed", zap.Error(err))
 		c.AbortBadRequest("invalid API key: " + err.Error())
 		return
 	}
