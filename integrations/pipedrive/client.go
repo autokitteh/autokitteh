@@ -57,30 +57,30 @@ func connTest(cvars sdkservices.Vars) sdkintegrations.OptFn {
 		l := zap.L().With(zap.String("connection_id", cid.String()))
 
 		if !cid.IsValid() {
-			l.Debug("connection test: invalid connection ID")
+			l.Debug("connection test: invalid connection ID" + cid.String())
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 		}
 
 		vs, err := cvars.Get(ctx, sdktypes.NewVarScopeID(cid))
 		if err != nil {
-			l.Error("failed to read connection vars", zap.Error(err))
+			l.Error("failed to read connection "+cid.String(), zap.String("connection_id", cid.String()), zap.Error(err))
 			return sdktypes.InvalidStatus, err
 		}
 
 		apiKey := vs.GetValue(common.ApiKeyVar)
 		if apiKey == "" {
-			l.Debug("connection test: API key not configured")
+			l.Debug("connection test: API key not configured for connection"+cid.String(), zap.String("connection_id", cid.String()))
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "API key not configured"), nil
 		}
 
 		companyDomain := vs.GetValue(companyDomainVar)
 		if companyDomain == "" {
-			l.Debug("connection test: company domain not configured")
+			l.Debug("connection test: company domain not configured for connection"+cid.String(), zap.String("connection_id", cid.String()))
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Company domain not configured"), nil
 		}
 
 		if err := validateAPIKey(ctx, apiKey, companyDomain); err != nil {
-			l.Debug("connection test: API key validation failed", zap.String("company_domain", companyDomain), zap.Error(err))
+			l.Debug("connection test: API key validation failed for connection"+cid.String(), zap.String("connection_id", cid.String()), zap.Error(err))
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
 		}
 

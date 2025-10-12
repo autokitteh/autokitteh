@@ -71,7 +71,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Validate API key before saving.
 	if err := validateAPIKey(r.Context(), apiKey, companyDomain); err != nil {
-		l.Debug("save connection: API key validation failed", zap.Error(err))
+		l.Debug("save connection: API key validation failed"+cid.String(), zap.String("company_domain", companyDomain), zap.Error(err))
 		c.AbortBadRequest("invalid API key: " + err.Error())
 		return
 	}
