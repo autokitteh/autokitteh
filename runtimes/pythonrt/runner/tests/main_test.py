@@ -13,6 +13,7 @@ import pickle
 import sys
 import traceback
 from concurrent.futures import Future
+from io import StringIO, TextIOWrapper
 from subprocess import Popen, TimeoutExpired, run
 from threading import Event
 from unittest.mock import MagicMock
@@ -365,3 +366,22 @@ def test_durable_async_exc(monkeypatch):
     worker.event.wait(1)
 
     assert worker.calls.get("ACTIVITY")
+
+
+def test_pickleable_exception():
+    class UnErr(Exception):
+        def __init__(self):
+            super().__init__("UnErr")
+            self.fp = TextIOWrapper(StringIO(""))  # unpickleable
+
+    err = UnErr()
+    perr = main.pickleable_exception(err)
+
+    raised = None
+    try:
+        raise perr
+    except UnErr as e:  # Except original class
+        raised = e
+
+    assert raised.args == err.args
+    assert raised.fp is None
