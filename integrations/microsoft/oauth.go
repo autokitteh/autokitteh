@@ -93,7 +93,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	// Subscribe to receive asynchronous change notifications from
 	// Microsoft Graph, based on the connection's integration type.
 	svc := connection.NewServices(l, h.vars, h.oauth)
-	_ = errors.Join(connection.Subscribe(ctx, svc, cid, resources(c.Integration))...)
+	_ = connection.Subscribe(ctx, svc, cid, resources(c.Integration))
 	// TODO(INT-232): "Subscription operations for tenant-wide chats subscription is not allowed in 'OnBehalfOfUser' context."
 	// if err != nil {
 	// 	c.AbortServerError("failed to create/renew event subscriptions")

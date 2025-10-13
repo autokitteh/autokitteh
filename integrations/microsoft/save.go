@@ -129,38 +129,35 @@ func (h handler) savePrivateDaemonApp(r *http.Request, i sdktypes.Integration, c
 		return errors.New("missing private app details")
 	}
 
-	// Test the app's usability by generating a new token.
 	ctx := r.Context()
+	vs := sdktypes.EncodeVars(app)
 	vsid := sdktypes.NewVarScopeID(cid)
-	vs, err := h.vars.Get(ctx, vsid)
-	if err != nil {
-		h.logger.Error("failed to read connection vars", zap.Error(err))
-		return errors.New("failed to read connection vars")
-	}
 
+	// Test the app's usability by generating a new token.
 	t, err := connection.DaemonToken(ctx, vs)
 	if err != nil {
 		h.logger.Error("failed to generate MS daemon app token", zap.Error(err))
 		return err
 	}
 
-	vs = sdktypes.EncodeVars(app)
-
 	// Optional: save the tenant details, if the app is allowed to read them.
 	if org, err := connection.GetOrgInfo(ctx, t); err == nil {
 		vs = vs.Append(sdktypes.EncodeVars(org)...)
 	}
 
-	// Subscribe to receive asynchronous change notifications from
-	// Microsoft Graph, based on the connection's integration type.
+	if err := h.vars.Set(ctx, vs.WithScopeID(vsid)...); err != nil {
+		h.logger.Error("failed to save connection vars", zap.Error(err))
+		return errors.New("failed to save connection vars")
+	}
+
 	svc := connection.NewServices(h.logger, h.vars, h.oauth)
-	err = errors.Join(connection.Subscribe(ctx, svc, cid, resources(i))...)
-	if err != nil {
-		h.logger.Error("failed to create MS event subscriptions", zap.Error(err))
+
+	if err := connection.Subscribe(ctx, svc, cid, resources(i)); err != nil {
+		h.logger.Error("some subscriptions failed", zap.Error(err))
 		return err
 	}
 
-	return h.vars.Set(ctx, vs.WithScopeID(vsid)...)
+	return nil
 }
 
 // startOAuth redirects the user to the AutoKitteh server's
