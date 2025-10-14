@@ -3,6 +3,7 @@ package dispatcher
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/google/uuid"
 	"go.temporal.io/sdk/activity"
@@ -64,9 +65,9 @@ func (d *Dispatcher) startSessionActivity(ctx context.Context, session sdktypes.
 
 	if err != nil && errors.Is(err, sdkerrors.ErrResourceExhausted) {
 		d.sl.With("session_id", session.ID()).Infof("session limit reached for %v: %v", session.ProjectID(), err)
-		err = errors.New("session limit reached, please try again later")
-
+		err = fmt.Errorf("%w: session limit reached, please try again later", err)
 	}
+
 	return sid, temporalclient.TranslateError(err, "start session %v", session.ID())
 }
 
