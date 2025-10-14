@@ -18,6 +18,7 @@ import (
 	"slices"
 	"strings"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/integrations"
 	"go.autokitteh.dev/autokitteh/internal/backend/projectsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/manifest"
@@ -30,12 +31,13 @@ type checker func(projectID sdktypes.ProjectID, manifest *manifest.Manifest, res
 
 var lintCheckers = []checker{
 	// Generic
-	checkConnectionNames,
+	checkConnectionsNames,
+	checkIntegrationsNames,
 	checkEmptyVars,
 	checkProjectName,
 	checkSize,
 	checkNoTriggers,
-	checkTriggerNames,
+	checkTriggersNames,
 
 	// Runtime
 	checkCodeConnections,
@@ -144,7 +146,7 @@ func checkSize(_ sdktypes.ProjectID, _ *manifest.Manifest, resources map[string]
 	return nil
 }
 
-func checkConnectionNames(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string][]byte) []*sdktypes.CheckViolation {
+func checkConnectionsNames(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string][]byte) []*sdktypes.CheckViolation {
 	if m.Project == nil || len(m.Project.Connections) == 0 {
 		return nil
 	}
@@ -180,7 +182,44 @@ func checkConnectionNames(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[stri
 	return vs
 }
 
-func checkTriggerNames(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string][]byte) []*sdktypes.CheckViolation {
+func checkIntegrationsNames(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string][]byte) (vs []*sdktypes.CheckViolation) {
+	if m.Project == nil || len(m.Project.Connections) == 0 {
+		return nil
+	}
+
+	hasIntegration := kittehs.ContainedIn(integrations.Names()...)
+
+	for _, c := range m.Project.Connections {
+		name := c.IntegrationKey
+
+		if _, err := sdktypes.ParseSymbol(name); err != nil {
+			vs = append(
+				vs,
+				sdktypes.NewCheckViolationf(
+					manifestFilePath,
+					sdktypes.MalformedNameRuleID,
+					"%q - malformed name (%s)",
+					name,
+					err,
+				))
+		}
+
+		if !hasIntegration(name) {
+			vs = append(
+				vs,
+				sdktypes.NewCheckViolationf(
+					manifestFilePath,
+					sdktypes.UnknownIntegrationRuleID,
+					"%q - unknown integration",
+					name,
+				))
+		}
+	}
+
+	return vs
+}
+
+func checkTriggersNames(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string][]byte) []*sdktypes.CheckViolation {
 	if m.Project == nil || len(m.Project.Triggers) == 0 {
 		return nil
 	}

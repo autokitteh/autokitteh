@@ -5,46 +5,13 @@ import (
 
 	"go.uber.org/fx"
 	"go.uber.org/zap"
-	"logur.dev/logur/integration/grpc"
 
-	"go.autokitteh.dev/autokitteh/integrations/airtable"
-	"go.autokitteh.dev/autokitteh/integrations/anthropic"
-	"go.autokitteh.dev/autokitteh/integrations/asana"
-	"go.autokitteh.dev/autokitteh/integrations/atlassian/confluence"
-	"go.autokitteh.dev/autokitteh/integrations/atlassian/jira"
-	"go.autokitteh.dev/autokitteh/integrations/auth0"
-	"go.autokitteh.dev/autokitteh/integrations/aws"
-	"go.autokitteh.dev/autokitteh/integrations/azurebot"
-	"go.autokitteh.dev/autokitteh/integrations/chatgpt"
-	"go.autokitteh.dev/autokitteh/integrations/discord"
-	"go.autokitteh.dev/autokitteh/integrations/github"
-	"go.autokitteh.dev/autokitteh/integrations/google"
-	"go.autokitteh.dev/autokitteh/integrations/google/calendar"
-	"go.autokitteh.dev/autokitteh/integrations/google/drive"
-	"go.autokitteh.dev/autokitteh/integrations/google/forms"
-	"go.autokitteh.dev/autokitteh/integrations/google/gemini"
-	"go.autokitteh.dev/autokitteh/integrations/google/gmail"
-	"go.autokitteh.dev/autokitteh/integrations/google/sheets"
-	"go.autokitteh.dev/autokitteh/integrations/google/youtube"
-	"go.autokitteh.dev/autokitteh/integrations/height"
-	"go.autokitteh.dev/autokitteh/integrations/hubspot"
-	"go.autokitteh.dev/autokitteh/integrations/kubernetes"
-	"go.autokitteh.dev/autokitteh/integrations/linear"
-	"go.autokitteh.dev/autokitteh/integrations/microsoft"
-	"go.autokitteh.dev/autokitteh/integrations/microsoft/teams"
-	"go.autokitteh.dev/autokitteh/integrations/notion"
 	"go.autokitteh.dev/autokitteh/integrations/oauth"
-	"go.autokitteh.dev/autokitteh/integrations/pipedrive"
-	"go.autokitteh.dev/autokitteh/integrations/reddit"
-	"go.autokitteh.dev/autokitteh/integrations/salesforce"
-	"go.autokitteh.dev/autokitteh/integrations/slack"
-	"go.autokitteh.dev/autokitteh/integrations/telegram"
-	"go.autokitteh.dev/autokitteh/integrations/twilio"
-	"go.autokitteh.dev/autokitteh/integrations/zoom"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/backend/integrations"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -57,15 +24,6 @@ type integrationsConfig struct {
 var integrationConfigs = configset.Set[integrationsConfig]{
 	Default: &integrationsConfig{},
 	Dev:     &integrationsConfig{Test: true},
-}
-
-func integration[T any](name string, cfg configset.Set[T], init any) fx.Option {
-	return Component(name, cfg, fx.Provide(
-		fx.Annotate(
-			init,
-			fx.ResultTags(`group:"integrations"`),
-		),
-	))
 }
 
 type sysVars struct{ vs sdkservices.Vars }
@@ -87,6 +45,12 @@ func (vs sysVars) FindActiveConnectionIDs(ctx context.Context, iid sdktypes.Inte
 }
 
 func integrationsFXOption() fx.Option {
+	inits := fx.Options(kittehs.Transform(integrations.All(), func(i integrations.Integration) fx.Option {
+		return Component(i.Name, configset.Empty, fx.Provide(
+			fx.Annotate(i.Init, fx.ResultTags(`group:"integrations"`)),
+		))
+	})...)
+
 	return fx.Module(
 		"integrations",
 
@@ -97,68 +61,20 @@ func integrationsFXOption() fx.Option {
 			}
 		}),
 
-		integration("airtable", configset.Empty, airtable.New),
-		integration("anthropic", configset.Empty, anthropic.New),
-		integration("asana", configset.Empty, asana.New),
-		integration("auth0", configset.Empty, auth0.New),
-		integration("aws", configset.Empty, aws.New),
-		integration("calendar", configset.Empty, calendar.New),
-		integration("chatgpt", configset.Empty, chatgpt.New),
-		integration("confluence", configset.Empty, confluence.New),
-		integration("discord", configset.Empty, discord.New),
-		integration("drive", configset.Empty, drive.New),
-		integration("forms", configset.Empty, forms.New),
-		integration("github", configset.Empty, github.New),
-		integration("gmail", configset.Empty, gmail.New),
-		integration("gemini", configset.Empty, gemini.New),
-		integration("google", configset.Empty, google.New),
-		integration("grpc", configset.Empty, grpc.New),
-		integration("height", configset.Empty, height.New),
-		integration("hubspot", configset.Empty, hubspot.New),
-		integration("jira", configset.Empty, jira.New),
-		integration("kubernetes", configset.Empty, kubernetes.New),
-		integration("linear", configset.Empty, linear.New),
-		integration("microsoft", configset.Empty, microsoft.New),
-		integration("microsoft_teams", configset.Empty, teams.New),
-		integration("notion", configset.Empty, notion.New),
-		integration("pipedrive", configset.Empty, pipedrive.New),
-		integration("reddit", configset.Empty, reddit.New),
-		integration("salesforce", configset.Empty, salesforce.New),
-		integration("sheets", configset.Empty, sheets.New),
-		integration("slack", configset.Empty, slack.New),
-		integration("telegram", configset.Empty, telegram.New),
-		integration("twilio", configset.Empty, twilio.New),
-		integration("azurebot", configset.Empty, azurebot.New),
-		integration("youtube", configset.Empty, youtube.New),
-		integration("zoom", configset.Empty, zoom.New),
+		inits,
+
 		fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, muxes *muxes.Muxes, vars sdkservices.Vars, oauth *oauth.OAuth, dispatch sdkservices.DispatchFunc) {
+			l.Info("supported integrations", zap.Strings("integrations", integrations.Names()))
+
 			HookOnStart(lc, func(ctx context.Context) error {
-				airtable.Start(l, muxes, vars, oauth, dispatch)
-				anthropic.Start(l, muxes, vars)
-				asana.Start(l, muxes)
-				auth0.Start(l, muxes, vars)
-				aws.Start(l, muxes)
-				chatgpt.Start(l, muxes)
-				confluence.Start(l, muxes, vars, oauth, dispatch)
-				discord.Start(l, muxes, vars, dispatch)
-				gemini.Start(l, muxes)
-				github.Start(l, muxes, vars, oauth, dispatch)
-				google.Start(l, muxes, vars, oauth, dispatch)
-				height.Start(l, muxes, vars, oauth, dispatch)
-				hubspot.Start(l, muxes, vars, oauth, dispatch)
-				jira.Start(l, muxes, vars, oauth, dispatch)
-				kubernetes.Start(l, muxes)
-				linear.Start(l, muxes, vars, oauth, dispatch)
-				microsoft.Start(l, muxes, vars, oauth, dispatch)
-				notion.Start(l, muxes, vars)
-				pipedrive.Start(l, muxes, vars)
-				reddit.Start(l, muxes, vars)
-				salesforce.Start(l, muxes, vars, oauth, dispatch)
-				slack.Start(l, muxes, vars, dispatch)
-				telegram.Start(l, muxes, vars, dispatch)
-				twilio.Start(l, muxes, vars, dispatch)
-				azurebot.Start(l, muxes, vars, dispatch)
-				zoom.Start(l, muxes, vars, oauth, dispatch)
+				for _, i := range integrations.All() {
+					if i.Start != nil {
+						l.Debug("starting integration", zap.String("integration", i.Name))
+
+						i.Start(l, muxes, vars, oauth, dispatch)
+					}
+				}
+
 				return nil
 			})
 		}),
