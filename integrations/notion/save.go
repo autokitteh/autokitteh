@@ -59,7 +59,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	case integrations.APIKey:
 		apiKey := r.FormValue("api_key")
 		if apiKey == "" {
-			l.Warn("save connection: missing API key for connection " + cid.String())
+			l.Info("save connection: missing API key for connection " + cid.String())
 			c.AbortBadRequest("missing API key")
 			return
 		}

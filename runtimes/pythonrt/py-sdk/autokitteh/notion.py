@@ -27,7 +27,7 @@ def notion_client(connection: str) -> Client:
     """
     check_connection_name(connection)
 
-    notion_secret = os.getenv(f"{connection}__internal_integration_secret")
+    notion_secret = os.getenv(f"{connection}__api_key")
 
     if notion_secret:
         return Client(auth=notion_secret)
