@@ -7,10 +7,12 @@ import (
 
 	"github.com/google/uuid"
 	"go.temporal.io/api/serviceerror"
+	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/backend/types"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -44,7 +46,15 @@ func (d *Dispatcher) startSessions(wctx workflow.Context, event sdktypes.Event, 
 		var sid sdktypes.SessionID
 
 		if err := workflow.ExecuteActivity(wctx, startSessionActivityName, session).Get(wctx, &sid); err != nil {
-			sl.With("err", err).Errorf("session activity: %v", err)
+			sl := sl.With("err", err)
+
+			var aerr *temporal.ApplicationError
+			if errors.As(err, &aerr) && aerr.Type() == sdkerrors.ErrorType(sdkerrors.ErrResourceExhausted) {
+				sl.Infof("resources exhausted: %v", err)
+			} else {
+				sl.Errorf("session activity: %v", err)
+			}
+
 			continue
 		}
 
