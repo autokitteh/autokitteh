@@ -3,13 +3,14 @@ package notion
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/oauth"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
-	"go.uber.org/zap"
 )
 
 var desc = common.Descriptor("notion", "Notion", "/static/images/notion.svg")
