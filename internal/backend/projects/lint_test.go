@@ -84,13 +84,13 @@ func Test_checkSize(t *testing.T) {
 	require.Len(t, vs, 1)
 }
 
-func Test_checkConnectionNames(t *testing.T) {
+func Test_checkConnectionsNames(t *testing.T) {
 	m := initialManifest()
 	m.Project.Connections = []*manifest.Connection{
 		{Name: "A"},
 		{Name: "B"},
 	}
-	vs := checkConnectionNames(sdktypes.InvalidProjectID, m, nil)
+	vs := checkConnectionsNames(sdktypes.InvalidProjectID, m, nil)
 	require.Len(t, vs, 0)
 
 	m.Project.Connections = []*manifest.Connection{
@@ -100,17 +100,34 @@ func Test_checkConnectionNames(t *testing.T) {
 		{Name: "C"},
 		{Name: "A"},
 	}
-	vs = checkConnectionNames(sdktypes.InvalidProjectID, m, nil)
+	vs = checkConnectionsNames(sdktypes.InvalidProjectID, m, nil)
 	require.Len(t, vs, 2)
 }
 
-func Test_checkTriggerNames(t *testing.T) {
+func Test_checkIntegrationsNames(t *testing.T) {
+	m := initialManifest()
+	m.Project.Connections = []*manifest.Connection{
+		{IntegrationKey: "slack"},
+		{IntegrationKey: "twilio"},
+	}
+	vs := checkIntegrationsNames(sdktypes.InvalidProjectID, m, nil)
+	require.Len(t, vs, 0)
+
+	m.Project.Connections = []*manifest.Connection{
+		{IntegrationKey: "slack"},
+		{IntegrationKey: "telepathy"},
+	}
+	vs = checkIntegrationsNames(sdktypes.InvalidProjectID, m, nil)
+	require.Len(t, vs, 1)
+}
+
+func Test_checkTriggersNames(t *testing.T) {
 	m := initialManifest()
 	m.Project.Triggers = []*manifest.Trigger{
 		{Name: "A"},
 		{Name: "B"},
 	}
-	vs := checkTriggerNames(sdktypes.InvalidProjectID, m, nil)
+	vs := checkTriggersNames(sdktypes.InvalidProjectID, m, nil)
 	require.Len(t, vs, 0)
 
 	m.Project.Triggers = []*manifest.Trigger{
@@ -120,7 +137,7 @@ func Test_checkTriggerNames(t *testing.T) {
 		{Name: "C"},
 		{Name: "A"},
 	}
-	vs = checkTriggerNames(sdktypes.InvalidProjectID, m, nil)
+	vs = checkTriggersNames(sdktypes.InvalidProjectID, m, nil)
 	require.Len(t, vs, 2)
 }
 

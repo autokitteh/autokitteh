@@ -40,6 +40,7 @@ const (
 	InvalidEventFilterRuleID                    = "E12"
 	InvalidPyRequirementsRuleID                 = "E13"
 	PyRequirementsPackageAlreadyInstalledRuleID = "E14"
+	UnknownIntegrationRuleID                    = "E15"
 
 	EmptyVariableRuleID     = "W1"
 	NoTriggersDefinedRuleID = "W2"
