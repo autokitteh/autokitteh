@@ -8,4 +8,5 @@ message Project {
   string project_id = 1;
   string name = 2;
   string org_id = 4;
+  string display_name = 5;
 }

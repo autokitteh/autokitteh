@@ -97,6 +97,7 @@ version: v1
 
 project:
   name: my_project
+  display_name: My Telepathy Project
   connections:
     - name: my_connection
       integration: test
@@ -135,7 +136,8 @@ project:
   "project": {
     "project_id": "prj_00000000000000000000000001",
     "name": "my_project",
-    "org_id": "org_3kthzvm10r16a40eef31710220"
+    "org_id": "org_3kthzvm10r16a40eef31710220",
+    "display_name": "My Telepathy Project"
   }
 }
 

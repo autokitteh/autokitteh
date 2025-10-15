@@ -73,8 +73,9 @@ func planProject(ctx context.Context, mproj *Project, client sdkservices.Service
 	)
 
 	desired, err := sdktypes.ProjectFromProto(&sdktypes.ProjectPB{
-		Name:  mproj.Name,
-		OrgId: opts.oid.String(),
+		Name:        mproj.Name,
+		OrgId:       opts.oid.String(),
+		DisplayName: mproj.DisplayName,
 	})
 	if err != nil {
 		return nil, err

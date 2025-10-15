@@ -28,6 +28,11 @@ export class Project extends Message<Project> {
    */
   orgId = "";
 
+  /**
+   * @generated from field: string display_name = 5;
+   */
+  displayName = "";
+
   constructor(data?: PartialMessage<Project>) {
     super();
     proto3.util.initPartial(data, this);
@@ -39,6 +44,7 @@ export class Project extends Message<Project> {
     { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "org_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Project {
