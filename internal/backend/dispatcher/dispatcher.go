@@ -120,7 +120,7 @@ func (d *Dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *s
 		zap.Any("workflow_id", r.GetID()),
 		zap.Any("run_id", r.GetRunID()))
 
-	if !opts.Wait {
+	if opts == nil || !opts.Wait {
 		return &sdkservices.DispatchResponse{EventID: eid}, nil
 	}
 

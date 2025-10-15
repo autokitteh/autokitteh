@@ -1,3 +1,9 @@
+"""
+This code is executed by build.go.
+It doesn't handle possible exceptions since build.go will get them as an error from
+cmd.Run().
+"""
+
 from argparse import ArgumentParser
 import json
 import sys

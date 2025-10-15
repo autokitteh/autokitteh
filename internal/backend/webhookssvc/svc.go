@@ -18,6 +18,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
+	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -66,6 +67,10 @@ func InitTrigger(trigger sdktypes.Trigger) sdktypes.Trigger {
 	return trigger.WithWebhookSlug(unique.String())
 }
 
+func WebhookSlugToAddress(slug string) (string, error) {
+	return url.JoinPath(fixtures.ServiceBaseURL(), WebhooksPathPrefix, slug)
+}
+
 func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	slug := r.PathValue("slug")
 
@@ -79,10 +84,10 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	t, err := s.db.GetTriggerByWebhookSlug(ctx, slug)
+	t, err := s.db.GetTriggerWithActiveDeploymentByWebhookSlug(ctx, slug)
 	if err != nil {
 		if errors.Is(err, sdkerrors.ErrNotFound) {
-			sl.Infof("slug %q not found", slug)
+			sl.Infof("could not find an active deployment for trigger by slug %q", slug)
 			http.Error(w, "Not Found", http.StatusNotFound)
 			return
 		}

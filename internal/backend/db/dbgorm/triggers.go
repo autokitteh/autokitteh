@@ -2,14 +2,17 @@ package dbgorm
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -74,6 +77,9 @@ func (db *gormdb) CreateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 
 	uniqueName := triggerUniqueName(pid.String(), trigger.Name())
 
+	isDurable := trigger.IsDurable()
+	isSync := trigger.IsSync()
+
 	t := &scheme.Trigger{
 		Base:         based(ctx),
 		ProjectID:    trigger.ProjectID().UUIDValue(),
@@ -87,8 +93,8 @@ func (db *gormdb) CreateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 		UniqueName:   uniqueName,
 		WebhookSlug:  trigger.WebhookSlug(),
 		Schedule:     trigger.Schedule(),
-		IsDurable:    trigger.IsDurable(),
-		IsSync:       trigger.IsSync(),
+		IsDurable:    &isDurable,
+		IsSync:       &isSync,
 	}
 
 	return translateError(db.createTrigger(ctx, t))
@@ -108,6 +114,9 @@ func (db *gormdb) UpdateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 	// This means that there'll be no error if an unmodifyable field is requested
 	// to be changed by the caller, and it will not be modified in the DB.
 
+	isDurable := trigger.IsDurable()
+	isSync := trigger.IsSync()
+
 	r.CodeLocation = trigger.CodeLocation().CanonicalString()
 	r.EventType = trigger.EventType()
 	r.Filter = trigger.Filter()
@@ -116,7 +125,8 @@ func (db *gormdb) UpdateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 	r.UniqueName = triggerUniqueName(r.ProjectID.String(), trigger.Name())
 	r.UpdatedAt = kittehs.Now().UTC()
 	r.UpdatedBy = authcontext.GetAuthnUserID(ctx).UUIDValue()
-	r.IsSync = trigger.IsSync()
+	r.IsSync = &isSync
+	r.IsDurable = &isDurable
 
 	return translateError(db.updateTrigger(ctx, r))
 }
@@ -130,6 +140,30 @@ func (db *gormdb) GetTriggerByID(ctx context.Context, triggerID sdktypes.Trigger
 	return scheme.ParseTrigger(*r)
 }
 
+func (db *gormdb) GetTriggerWithActiveDeploymentByID(ctx context.Context, triggerID uuid.UUID) (sdktypes.Trigger, bool, error) {
+	var triggerAndDeployment struct {
+		scheme.Trigger
+		HasActiveDeployment bool `gorm:"column:has_active_deployment"`
+	}
+
+	err := db.reader.WithContext(ctx).
+		Model(&scheme.Trigger{}).
+		Select("triggers.*, CASE WHEN deployments.deployment_id IS NOT NULL THEN true ELSE false END as has_active_deployment").
+		Joins("LEFT JOIN deployments ON triggers.project_id = deployments.project_id AND deployments.state = ? AND deployments.deleted_at IS NULL",
+			int32(sdktypes.DeploymentStateActive.ToProto())).
+		Where("triggers.trigger_id = ?", triggerID).
+		First(&triggerAndDeployment).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return sdktypes.InvalidTrigger, false, sdkerrors.ErrNotFound // Trigger doesn't exist.
+		}
+		return sdktypes.InvalidTrigger, false, translateError(err)
+	}
+
+	trigger, err := scheme.ParseTrigger(triggerAndDeployment.Trigger)
+	return trigger, triggerAndDeployment.HasActiveDeployment, err
+}
+
 func (db *gormdb) ListTriggers(ctx context.Context, filter sdkservices.ListTriggersFilter) ([]sdktypes.Trigger, error) {
 	ts, err := db.listTriggers(ctx, filter)
 	if ts == nil || err != nil {
@@ -138,11 +172,18 @@ func (db *gormdb) ListTriggers(ctx context.Context, filter sdkservices.ListTrigg
 	return kittehs.TransformError(ts, scheme.ParseTrigger)
 }
 
-func (db *gormdb) GetTriggerByWebhookSlug(ctx context.Context, slug string) (sdktypes.Trigger, error) {
-	r, err := getOne[scheme.Trigger](db.reader.WithContext(ctx), "webhook_slug = ?", slug)
+func (db *gormdb) GetTriggerWithActiveDeploymentByWebhookSlug(ctx context.Context, slug string) (sdktypes.Trigger, error) {
+	var trigger scheme.Trigger
+	err := db.reader.WithContext(ctx).
+		Model(&scheme.Trigger{}).
+		Joins("JOIN deployments ON triggers.project_id = deployments.project_id").
+		Where("triggers.webhook_slug = ? AND deployments.state = ? AND deployments.deleted_at IS NULL",
+			slug,
+			int32(sdktypes.DeploymentStateActive.ToProto())).
+		First(&trigger).Error
 	if err != nil {
 		return sdktypes.InvalidTrigger, translateError(err)
 	}
 
-	return scheme.ParseTrigger(*r)
+	return scheme.ParseTrigger(trigger)
 }

@@ -16,7 +16,7 @@ func (h handler) dispatchEvent(payload map[string]any, eventType string) {
 	}
 
 	ctx := context.Background()
-	cids, err := h.vars.FindConnectionIDs(ctx, desc.ID(), instanceURLVar, "")
+	cids, err := h.vars.FindActiveConnectionIDs(ctx, desc.ID(), instanceURLVar, "")
 	if err != nil {
 		h.logger.Error("failed to find connection IDs", zap.Error(err))
 		return

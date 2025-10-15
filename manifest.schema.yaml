@@ -51,6 +51,9 @@
           "type": "string",
           "pattern": "^\\w+$"
         },
+        "display_name": {
+          "type": "string"
+        },
         "connections": {
           "items": {
             "$ref": "#/$defs/Connection"

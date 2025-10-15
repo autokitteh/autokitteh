@@ -1,4 +1,4 @@
-h1:nxpIGP22z92WIj5KBn0I+h/aWEVuzi6UDKwG8ms0b+0=
+h1:lCg9PaQMQgEFJsDx9BwaZZpkG9eV1clC85HeSiRNC30=
 20240704121927_baseline.sql h1:Urgmm304lCno+ou4WguUjFGiqu2PYoIOlswHpSL1lRg=
 20240714051159_no-db-user.sql h1:FRReTH5AzKrGU3qp0laWWzkgiBc5693KZIpgrjY81d8=
 20240727114913_project-not-nil-name.sql h1:tRZh+O1yx/QZuytlirQJA0f9Ga/m3FDNM9yE5eJDv1I=
@@ -34,6 +34,8 @@ h1:nxpIGP22z92WIj5KBn0I+h/aWEVuzi6UDKwG8ms0b+0=
 20250819230034_async_builds.sql h1:8RhPhU+YqA1msjQcWPdfXfnS184gbE+5DGetYANfIXk=
 20250918064011_durability.sql h1:xzCE74ZMrCEvinWLb3quPOOi4nagUKv0XfJl7gWp1RA=
 20250919055014_sync.sql h1:tg+77sM+2q1TCBfu467lFuk4AQbWGZXelAzbJ+k+iOw=
-20250921155236_add-target-and-org-id-to-connections.sql h1:ssUixumAmEJOO5l9NCyZAshKasK3U7B8dsImDH5yGoA=
-20250921155237_backfill-connection-org-id-and-target.sql h1:A5uOM/VuXmKG/0eF5QHAP5pUCUCt9PQydm07pmpVoiw=
-20250921155238_connection-project-id-nullable.sql h1:8Kl0qTB+TC+EZoEAWIRKo539bSxWljxpl1gJ8i/NyM4=
+20251001070614_triggers_no_default_false.sql h1:3kk8LzRzuawW4kfPrr6b5lwBtSxQlW3onZWhErADIt8=
+20251015062139_project_display_name.sql h1:dA8miYXYaydwprA5txURD1vUJ3aDIbkkU/2x7i2W3A8=
+20251015133454_add-target-and-org-id-to-connections.sql h1:tIeySB00sfyAkJFuJ8oNCraaeb7LqZZQHMj3j7vhNmc=
+20251015133455_backfill-connection-org-id-and-target.sql h1:eQMOQz4uwL6xdyDRkxzeONhSyalBk1DgsfvTs5Zq0Yk=
+20251015133456_connection-project-id-nullable.sql h1:WLUTszqcyHbORjDtsu1XrFlpn2m7rEr6dZLsdQlaAZ8=

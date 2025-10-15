@@ -1,6 +1,8 @@
 package pipedrive
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 
 	"go.uber.org/zap"
@@ -49,6 +51,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	l = l.With(zap.String("connection_id", cid.String()))
 	vsid := sdktypes.NewVarScopeID(cid)
 	common.SaveAuthType(r, h.vars, vsid)
 
@@ -63,6 +66,13 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if companyDomain == "" {
 		l.Warn("save connection: missing company domain")
 		c.AbortBadRequest("missing company domain")
+		return
+	}
+
+	// Validate API key before saving.
+	if err := validateAPIKey(r.Context(), apiKey, companyDomain); err != nil {
+		l.Debug("save connection: API key validation failed"+cid.String(), zap.String("company_domain", companyDomain), zap.Error(err))
+		c.AbortBadRequest("invalid API key: " + err.Error())
 		return
 	}
 
@@ -85,4 +95,16 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, urlPath, http.StatusFound)
+}
+
+// validateAPIKey validates the Pipedrive API key by making a test API call.
+func validateAPIKey(ctx context.Context, apiKey, companyDomain string) error {
+	// Use a simple API call to validate the key - getting the current user info
+	url := fmt.Sprintf("%s/api/v1/users/me?api_token=%s", companyDomain, apiKey)
+
+	if _, err := common.HTTPGet(ctx, url, ""); err != nil {
+		return fmt.Errorf("API key validation failed: %w", err)
+	}
+
+	return nil
 }

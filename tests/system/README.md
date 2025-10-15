@@ -102,9 +102,9 @@ Note: May reference filenames embedded in the same txtar file.
 
 #### Optional Checks
 
-`output <euqals|contains|regex> <string>`
+`output <equals|contains|regex> <string>`
 
-`output <euqals|contains|regex> file <embedded txtar filename>`
+`output <equals|contains|regex> file <embedded txtar filename>`
 
 `return code == <integer>`
 
@@ -132,11 +132,11 @@ test integrations and sessions.
 
 `resp header <name> == <value>`
 
-`resp redirect <euqals|contains|regex> <URL>`
+`resp redirect <equals|contains|regex> <URL>`
 
-`resp body <euqals|contains|regex> <string>`
+`resp body <equals|contains|regex> <string>`
 
-`resp body <euqals|contains|regex> file <embedded txtar filename>`
+`resp body <equals|contains|regex> file <embedded txtar filename>`
 
 ### Action: Wait for|unless Session
 
@@ -165,7 +165,7 @@ req body [file] <*>
 Checks:
 
 ```
-<output | resp <body | redirect> > <euqals | contains | regex> [file] <*>
+<output | resp <body | redirect> > <equals | contains | regex> [file] <*>
 <return | resp> code == <integer>
 resp header <name> == <value>
 ```

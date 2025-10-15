@@ -234,9 +234,9 @@ export class GetResponse extends Message<GetResponse> {
 }
 
 /**
- * @generated from message autokitteh.vars.v1.FindConnectionIDsRequest
+ * @generated from message autokitteh.vars.v1.FindActiveConnectionIDsRequest
  */
-export class FindConnectionIDsRequest extends Message<FindConnectionIDsRequest> {
+export class FindActiveConnectionIDsRequest extends Message<FindActiveConnectionIDsRequest> {
   /**
    * @generated from field: string integration_id = 1;
    */
@@ -256,70 +256,70 @@ export class FindConnectionIDsRequest extends Message<FindConnectionIDsRequest> 
    */
   value = "";
 
-  constructor(data?: PartialMessage<FindConnectionIDsRequest>) {
+  constructor(data?: PartialMessage<FindActiveConnectionIDsRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "autokitteh.vars.v1.FindConnectionIDsRequest";
+  static readonly typeName = "autokitteh.vars.v1.FindActiveConnectionIDsRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "integration_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "value", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): FindConnectionIDsRequest {
-    return new FindConnectionIDsRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): FindActiveConnectionIDsRequest {
+    return new FindActiveConnectionIDsRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): FindConnectionIDsRequest {
-    return new FindConnectionIDsRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): FindActiveConnectionIDsRequest {
+    return new FindActiveConnectionIDsRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): FindConnectionIDsRequest {
-    return new FindConnectionIDsRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): FindActiveConnectionIDsRequest {
+    return new FindActiveConnectionIDsRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: FindConnectionIDsRequest | PlainMessage<FindConnectionIDsRequest> | undefined, b: FindConnectionIDsRequest | PlainMessage<FindConnectionIDsRequest> | undefined): boolean {
-    return proto3.util.equals(FindConnectionIDsRequest, a, b);
+  static equals(a: FindActiveConnectionIDsRequest | PlainMessage<FindActiveConnectionIDsRequest> | undefined, b: FindActiveConnectionIDsRequest | PlainMessage<FindActiveConnectionIDsRequest> | undefined): boolean {
+    return proto3.util.equals(FindActiveConnectionIDsRequest, a, b);
   }
 }
 
 /**
- * @generated from message autokitteh.vars.v1.FindConnectionIDsResponse
+ * @generated from message autokitteh.vars.v1.FindActiveConnectionIDsResponse
  */
-export class FindConnectionIDsResponse extends Message<FindConnectionIDsResponse> {
+export class FindActiveConnectionIDsResponse extends Message<FindActiveConnectionIDsResponse> {
   /**
    * @generated from field: repeated string connection_ids = 1;
    */
   connectionIds: string[] = [];
 
-  constructor(data?: PartialMessage<FindConnectionIDsResponse>) {
+  constructor(data?: PartialMessage<FindActiveConnectionIDsResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "autokitteh.vars.v1.FindConnectionIDsResponse";
+  static readonly typeName = "autokitteh.vars.v1.FindActiveConnectionIDsResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "connection_ids", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): FindConnectionIDsResponse {
-    return new FindConnectionIDsResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): FindActiveConnectionIDsResponse {
+    return new FindActiveConnectionIDsResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): FindConnectionIDsResponse {
-    return new FindConnectionIDsResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): FindActiveConnectionIDsResponse {
+    return new FindActiveConnectionIDsResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): FindConnectionIDsResponse {
-    return new FindConnectionIDsResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): FindActiveConnectionIDsResponse {
+    return new FindActiveConnectionIDsResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: FindConnectionIDsResponse | PlainMessage<FindConnectionIDsResponse> | undefined, b: FindConnectionIDsResponse | PlainMessage<FindConnectionIDsResponse> | undefined): boolean {
-    return proto3.util.equals(FindConnectionIDsResponse, a, b);
+  static equals(a: FindActiveConnectionIDsResponse | PlainMessage<FindActiveConnectionIDsResponse> | undefined, b: FindActiveConnectionIDsResponse | PlainMessage<FindActiveConnectionIDsResponse> | undefined): boolean {
+    return proto3.util.equals(FindActiveConnectionIDsResponse, a, b);
   }
 }
 

@@ -8,6 +8,7 @@ ak project create --name my_project
 return code == 0
 output equals 'project_id: prj_00000000000000000000000001'
 
+
 # Negative test: build project without required flag.
 ak project build my_project
 output equals 'Error: at least one of the flags in the group [dir file] is required'

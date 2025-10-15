@@ -59,6 +59,14 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate the API key by making a test request.
+	err = makeAnthropicAPIRequest(r.Context(), apiKey)
+	if err != nil {
+		l.Debug("save connection: API key validation failed for connection "+cid.String()+": "+err.Error(), zap.Error(err))
+		c.AbortBadRequest("failed to validate API key, please check your credentials and try again")
+		return
+	}
+
 	vs := sdktypes.NewVars(sdktypes.NewVar(common.ApiKeyVar).SetValue(apiKey).SetSecret(true))
 	if err := h.vars.Set(r.Context(), vs.WithScopeID(vsid)...); err != nil {
 		l.Warn("failed to save vars", zap.Error(err))

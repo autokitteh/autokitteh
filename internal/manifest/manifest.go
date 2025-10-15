@@ -31,6 +31,7 @@ type Manifest struct {
 
 type Project struct {
 	Name        string        `yaml:"name,omitempty" json:"name,omitempty" jsonschema:"pattern=^\\w+$"`
+	DisplayName string        `yaml:"display_name,omitempty" json:"display_name,omitempty"`
 	Connections []*Connection `yaml:"connections,omitempty" json:"connections,omitempty"`
 	Triggers    []*Trigger    `yaml:"triggers,omitempty" json:"triggers,omitempty"`
 	Vars        []*Var        `yaml:"vars,omitempty" json:"vars,omitempty"`

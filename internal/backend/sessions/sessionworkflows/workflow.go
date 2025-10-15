@@ -20,6 +20,7 @@ import (
 	testtoolsmodule "go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/testtools"
 	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
+	"go.autokitteh.dev/autokitteh/internal/backend/webhookssvc"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkexecutor"
@@ -44,7 +45,7 @@ type sessionWorkflow struct {
 
 	data sessiondata.Data
 
-	// All the members belows must be built deterministically by the workflow.
+	// All the members below must be built deterministically by the workflow.
 	// They are not persisted in the database.
 
 	executors sdkexecutor.Executors
@@ -191,6 +192,21 @@ func (w *sessionWorkflow) initEnvModule(cinfos map[string]connInfo) error {
 		}))
 		vs[name+"__connection_id"] = sdktypes.NewStringValue(conn.ID().String())
 
+	}
+
+	for _, t := range w.data.Triggers {
+		if t.SourceType() != sdktypes.TriggerSourceTypeWebhook {
+			continue
+		}
+
+		webhookURL, err := webhookssvc.WebhookSlugToAddress(t.WebhookSlug())
+		if err != nil {
+			w.l.Error("failed to get webhook address", zap.Any("trigger", t.Name()), zap.Error(err))
+			continue
+		}
+
+		name := t.Name().String()
+		vs[name+"__webhook_url"] = sdktypes.NewStringValue(webhookURL)
 	}
 
 	mod := sdkexecutor.NewExecutor(

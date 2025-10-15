@@ -9,6 +9,7 @@ import (
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 // specialized version of findAndAssertOne in order to exclude var.ID from the comparison
@@ -177,6 +178,16 @@ func TestFindConnectionIDByVar(t *testing.T) {
 	c1, p1 := createConnection(t, f)
 	c2, p2 := createConnection(t, f)
 
+	b1 := f.newBuild(p1)
+	b2 := f.newBuild(p2)
+	f.saveBuildsAndAssert(t, b1, b2)
+
+	d1 := f.newDeployment(b1, p1)
+	d1.State = int32(sdktypes.DeploymentStateActive.ToProto())
+	d2 := f.newDeployment(b2, p2)
+	d2.State = int32(sdktypes.DeploymentStateActive.ToProto())
+	f.createDeploymentsAndAssert(t, d1, d2)
+
 	ve1 := f.newVar("v", "p1", p1)
 	vc1 := f.newVar("v", "c1", c1)
 	ve2 := f.newVar("v", "p2", p2)
@@ -187,7 +198,7 @@ func TestFindConnectionIDByVar(t *testing.T) {
 	f.setVarsAndAssert(t, vc2)
 
 	// test findConnectionIDsByVar
-	vars, err := f.gormdb.findConnectionIDsByVar(f.ctx, *c1.IntegrationID, "v", "")
+	vars, err := f.gormdb.findConnectionIDsWithActiveDeploymentByVar(f.ctx, *c1.IntegrationID, "v", "")
 	assert.NoError(t, err)
-	assert.Equal(t, vars, []uuid.UUID{vc1.ScopeID, vc2.ScopeID})
+	assert.ElementsMatch(t, vars, []uuid.UUID{vc1.ScopeID, vc2.ScopeID})
 }

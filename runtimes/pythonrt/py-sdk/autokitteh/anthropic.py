@@ -12,8 +12,8 @@ def anthropic_client(connection: str) -> Anthropic:
     """Initialize an Anthropic client, based on an AutoKitteh connection.
 
     API reference:
-    https://docs.anthropic.com/claude/reference
-    https://github.com/anthropics/anthropic-sdk-python
+        https://docs.anthropic.com/claude/reference
+        https://github.com/anthropics/anthropic-sdk-python
 
     Args:
         connection: AutoKitteh connection name.
