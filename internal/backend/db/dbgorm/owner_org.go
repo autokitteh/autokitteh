@@ -54,6 +54,26 @@ func (gdb *gormdb) getRecordProjectOwner(
 	return sdktypes.NewIDFromUUID[sdktypes.OrgID](p.Project.OrgID), nil
 }
 
+func (gdb *gormdb) getOrgIDOfOrganizationalRecord(
+	ctx context.Context,
+	m idFieldNamer,
+	id uuidValuer,
+) (sdktypes.OrgID, error) {
+	var con scheme.Connection
+
+	err := gdb.reader.WithContext(ctx).
+		Model(m).
+		Where(m.IDFieldName()+" = ?", id.UUIDValue()).
+		Select("org_id").
+		First(&con).
+		Error
+	if err != nil {
+		return sdktypes.InvalidOrgID, translateError(err)
+	}
+
+	return sdktypes.NewIDFromUUID[sdktypes.OrgID](con.OrgID), nil
+}
+
 func (gdb *gormdb) GetOrgIDOf(ctx context.Context, id sdktypes.ID) (sdktypes.OrgID, error) {
 	switch id.Kind() {
 	case sdktypes.OrgIDKind:
@@ -65,7 +85,7 @@ func (gdb *gormdb) GetOrgIDOf(ctx context.Context, id sdktypes.ID) (sdktypes.Org
 	case sdktypes.SessionIDKind:
 		return gdb.getRecordProjectOwner(ctx, scheme.Session{}, id)
 	case sdktypes.ConnectionIDKind:
-		return gdb.getRecordProjectOwner(ctx, scheme.Connection{}, id)
+		return gdb.getOrgIDOfOrganizationalRecord(ctx, scheme.Connection{}, id)
 	case sdktypes.TriggerIDKind:
 		return gdb.getRecordProjectOwner(ctx, scheme.Trigger{}, id)
 	case sdktypes.DeploymentIDKind:

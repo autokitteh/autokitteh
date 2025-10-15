@@ -235,10 +235,18 @@ allow if {
 # Connections
 #
 
+# Project level connections
 allow if {
 	input.subject.kind == "con"
 	input.action.name == "create"
 	is_active_org_member_of(input.associations.project.org_id)
+}
+
+# Org level connections
+allow if {
+	input.subject.kind == "con"
+	input.action.name == "create"
+	is_active_org_member_of(input.associations.org.org_id) 
 }
 
 allow if {
