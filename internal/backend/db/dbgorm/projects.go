@@ -169,10 +169,11 @@ func (db *gormdb) CreateProject(ctx context.Context, p sdktypes.Project) error {
 	}
 
 	project := scheme.Project{
-		Base:      based(ctx),
-		OrgID:     p.OrgID().UUIDValue(),
-		ProjectID: p.ID().UUIDValue(),
-		Name:      p.Name().String(),
+		Base:        based(ctx),
+		OrgID:       p.OrgID().UUIDValue(),
+		ProjectID:   p.ID().UUIDValue(),
+		Name:        p.Name().String(),
+		DisplayName: p.DisplayName(),
 	}
 
 	return translateError(db.createProject(ctx, &project))
@@ -188,8 +189,9 @@ func (gdb *gormdb) UpdateProject(ctx context.Context, p sdktypes.Project) error 
 	}
 
 	project := scheme.Project{
-		ProjectID: p.ID().UUIDValue(),
-		Name:      p.Name().String(),
+		ProjectID:   p.ID().UUIDValue(),
+		Name:        p.Name().String(),
+		DisplayName: p.DisplayName(),
 	}
 
 	return translateError(gdb.updateProject(ctx, &project))
