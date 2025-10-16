@@ -58,12 +58,8 @@ func (p Project) WithID(id ProjectID) Project {
 	return Project{p.forceUpdate(func(pb *ProjectPB) { pb.ProjectId = id.String() })}
 }
 
-type (
-	CheckViolation = projectv1.CheckViolation
-	ViolationLevel = projectv1.CheckViolation_Level
-)
+func (p Project) DisplayName() string { return p.read().DisplayName }
 
-const (
-	ViolationError   ViolationLevel = projectv1.CheckViolation_LEVEL_ERROR
-	ViolationWarning ViolationLevel = projectv1.CheckViolation_LEVEL_WARNING
-)
+func (p Project) WithDisplayName(displayName string) Project {
+	return Project{p.forceUpdate(func(pb *ProjectPB) { pb.DisplayName = displayName })}
+}

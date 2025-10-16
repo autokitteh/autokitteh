@@ -3,6 +3,7 @@ package sdktypes
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -90,4 +91,35 @@ func TestNewNamedIDString(t *testing.T) {
 			assert.Equal(t, test.out, newNamedIDString(test.in, "tst"))
 		})
 	}
+}
+
+func TestSmartParseID(t *testing.T) {
+	// 1. Full valid project ID should parse directly
+	full := pidStr
+	pid, err := SmartParseID[ProjectID](full)
+	if assert.NoError(t, err) {
+		assert.Equal(t, full, pid.String())
+	}
+
+	// 2. UUID form: take underlying UUID of an ID and feed just the UUID string
+	orig := NewProjectID()
+	u := orig.UUIDValue().String()
+	pid2, err := SmartParseID[ProjectID](u)
+	assert.NoError(t, err)
+	assert.Equal(t, orig.UUIDValue().String(), pid2.UUIDValue().String())
+
+	// 3. Short suffix form (drop prefix + underscore) should be accepted
+	short := strings.TrimPrefix(full, "prj_")
+	pid3, err := SmartParseID[ProjectID](short)
+	if assert.NoError(t, err) {
+		assert.Equal(t, full, pid3.String())
+	}
+
+	// 4. Invalid formats
+	_, err = SmartParseID[ProjectID]("not-a-valid-id!!!")
+	assert.Error(t, err)
+
+	id, err := SmartParseID[ProjectID]("")
+	assert.NoError(t, err)
+	assert.False(t, id.IsValid())
 }

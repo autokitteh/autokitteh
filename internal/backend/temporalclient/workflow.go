@@ -1,8 +1,10 @@
 package temporalclient
 
 import (
+	"cmp"
 	"time"
 
+	enumspb "go.temporal.io/api/enums/v1"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/workflow"
 
@@ -22,7 +24,7 @@ type WorkflowConfig struct {
 // other overrides self.
 func (wc WorkflowConfig) With(other WorkflowConfig) WorkflowConfig {
 	return WorkflowConfig{
-		WorkflowTaskTimeout: kittehs.FirstNonZero(other.WorkflowTaskTimeout, wc.WorkflowTaskTimeout),
+		WorkflowTaskTimeout: cmp.Or(other.WorkflowTaskTimeout, wc.WorkflowTaskTimeout),
 	}
 }
 
@@ -37,12 +39,13 @@ func (wc WorkflowConfig) ToStartWorkflowOptions(qname, id, sum string, memo map[
 	}
 }
 
-func (wc WorkflowConfig) ToChildWorkflowOptions(qname, id, sum string, memo map[string]string) workflow.ChildWorkflowOptions {
+func (wc WorkflowConfig) ToChildWorkflowOptions(qname, id, sum string, pcp enumspb.ParentClosePolicy, memo map[string]string) workflow.ChildWorkflowOptions {
 	wc = wc.With(defaultWorkflowConfig)
 	return workflow.ChildWorkflowOptions{
 		WorkflowID:          id,
 		TaskQueue:           qname,
 		StaticSummary:       sum,
+		ParentClosePolicy:   pcp,
 		Memo:                kittehs.TransformMapValues(memo, func(v string) any { return v }),
 		WorkflowTaskTimeout: wc.WorkflowTaskTimeout,
 	}

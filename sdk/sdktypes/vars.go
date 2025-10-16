@@ -96,6 +96,7 @@ func EncodeVars(in any) (vs Vars) {
 }
 
 // Decode Vars into `out`. `out` must be a non-nil pointer to a struct.
+// Optional field tags can be used to rename the fields: `var:"[new_name,]secret"`.
 func (vs Vars) Decode(out any) {
 	v, t := reflect.ValueOf(out), reflect.TypeOf(out)
 
@@ -113,14 +114,20 @@ func (vs Vars) Decode(out any) {
 		fv := v.Field(i)
 		ft := t.Field(i)
 
-		n := NewSymbol(ft.Name)
-
 		if ft.Type.Kind() != reflect.String {
 			sdklogger.Panic("invalid field value type - not a string")
 		}
 
-		v := vs.Get(n).Value()
+		// Guaranteed to have at least one element, even if it's empty
+		// ("" -> [""], "x" -> ["x"], "x,y" -> ["x", "y"]).
+		tag := strings.Split(ft.Tag.Get("var"), ",")
 
+		n := NewSymbol(ft.Name)
+		if tag[0] != "" && (tag[0] != "secret" || len(tag) > 1) {
+			n = NewSymbol(tag[0])
+		}
+
+		v := vs.GetValue(n)
 		fv.SetString(v)
 	}
 }

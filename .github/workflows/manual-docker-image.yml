@@ -3,46 +3,42 @@
 # https://github.com/marketplace/actions/amazon-ecr-login-action-for-github-actions
 # https://github.com/marketplace/actions/build-and-push-docker-images
 
-name: manual_docker_image
+name: Manual Docker Image
 
-run-name: Publish image autokitteh:${{inputs.version}} to ECR
+concurrency:
+    group: ${{ github.ref }}
+    cancel-in-progress: true
+
+run-name: Publish image ${{inputs.enterprise && 'ee/server' || 'server'}}:${{inputs.version}} to ECR
 
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        type: string
-        required: true
-        description: version to push
+    workflow_dispatch:
+        inputs:
+            version:
+                type: string
+                required: true
+                description: version to push
+            enterprise:
+                type: boolean
+                required: false
+                default: false
+                description: build enterprise image
 
 jobs:
-  publish_docker_image:
-    name: Publish Docker image
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+    build-standard:
+        if: ${{ !inputs.enterprise }}
+        uses: ./.github/workflows/docker.yml
         with:
-          role-to-assume: ${{secrets.AWS_GITHUB_ROLE}}
-          role-session-name: Github_Action_Release_Autokitteh
-          aws-region: us-east-1
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Build and push
-        uses: docker/build-push-action@v6
+            push: true
+            image: server
+            version: ${{ inputs.version }}
+        secrets: inherit
+    build-ee:
+        if: ${{ inputs.enterprise }}
+        uses: ./.github/workflows/docker.yml
         with:
-          context: .
-          platforms: linux/amd64
-          tags: ${{steps.login-ecr.outputs.registry}}/autokitteh:${{inputs.version}}
-          push: true
-          provenance: false
+            push: true
+            image: ee/server
+            buildTags: "enterprise"
+            version: ${{ inputs.version }}
+        secrets: inherit

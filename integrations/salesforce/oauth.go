@@ -2,9 +2,12 @@ package salesforce
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
+	"time"
 
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
@@ -56,16 +59,35 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Test the token's usability and get authoritative installation details.
-	// TODO: Reuse "checks.go".
+	// Test the token's usability and get authoritative connection details.
 	ctx := r.Context()
+	accessToken := data.Token.AccessToken
+	instanceURL := data.Extra["instance_url"].(string)
+	userInfo, err := getUserInfo(ctx, instanceURL, accessToken)
+	if err != nil {
+		l.Error("failed to get user info", zap.Error(err))
+		c.AbortServerError("failed to get user info")
+		return
+	}
+	orgID := userInfo["organization_id"].(string)
+	userID := userInfo["user_id"].(string)
+
+	// Set the access token expiration time.
+	clientID, err := h.accessTokenExpiration(ctx, instanceURL, data.Token, cid)
+	if err != nil {
+		l.Error("failed to get OAuth access token expiration", zap.Error(err))
+		c.AbortServerError("failed to get OAuth access token expiration")
+		return
+	}
 
 	vsid := sdktypes.NewVarScopeID(cid)
-	if err := h.saveConnection(ctx, vsid, data.Token, data.Extra); err != nil {
+	if err := h.saveConnection(ctx, vsid, data.Token, data.Extra, orgID, userID); err != nil {
 		l.Error("failed to save OAuth connection details", zap.Error(err))
 		c.AbortServerError("failed to save connection details")
 		return
 	}
+
+	h.subscribe(l, clientID, cid)
 
 	// Redirect the user back to the UI.
 	urlPath, err := c.FinalURL()
@@ -74,12 +96,11 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		c.AbortServerError("bad redirect URL")
 		return
 	}
-
 	http.Redirect(w, r, urlPath, http.StatusFound)
 }
 
 // saveConnection saves OAuth token details as connection variables.
-func (h handler) saveConnection(ctx context.Context, vsid sdktypes.VarScopeID, t *oauth2.Token, extra map[string]any) error {
+func (h handler) saveConnection(ctx context.Context, vsid sdktypes.VarScopeID, t *oauth2.Token, extra map[string]any, orgID, userID string) error {
 	if t == nil {
 		return errors.New("OAuth redirection missing token data")
 	}
@@ -88,6 +109,45 @@ func (h handler) saveConnection(ctx context.Context, vsid sdktypes.VarScopeID, t
 	for k, v := range extra {
 		vs = vs.Append(sdktypes.NewVar(sdktypes.NewSymbol(k)).SetValue(fmt.Sprintf("%v", v)))
 	}
-
+	vs = vs.Append(sdktypes.NewVar(orgIDVar).SetValue(orgID))
+	vs = vs.Append(sdktypes.NewVar(userIDVar).SetValue(userID))
 	return h.vars.Set(ctx, vs.WithScopeID(vsid)...)
+}
+
+// accessTokenExpiration sets the expiration timestamp of the given access token.
+// Salesforce access tokens are time-limited, but they don't have an expiry timestamp
+// so we need to add it on our own. This function also returns the connection's client ID.
+// Based on: https://help.salesforce.com/s/articleView?id=xcloud.remoteaccess_oidc_token_introspection_endpoint.htm
+func (h handler) accessTokenExpiration(ctx context.Context, instanceURL string, t *oauth2.Token, cid sdktypes.ConnectionID) (string, error) {
+	u, err := url.JoinPath(instanceURL, "/services/oauth2/introspect")
+	if err != nil {
+		return "", err
+	}
+
+	cfg, _, err := h.oauth.GetConfig(ctx, desc.UniqueName().String(), cid)
+	if err != nil {
+		return "", err
+	}
+
+	form := url.Values{
+		"token":           {t.AccessToken},
+		"token_type_hint": {"access_token"},
+		"client_id":       {cfg.ClientID},
+		"client_secret":   {cfg.ClientSecret},
+	}
+
+	resp, err := common.HTTPPostForm(ctx, u, "", form)
+	if err != nil {
+		return "", err
+	}
+
+	info := new(struct {
+		Exp float64 `json:"exp"`
+	})
+	if err := json.Unmarshal(resp, info); err != nil {
+		return "", err
+	}
+
+	t.Expiry = time.Unix(int64(info.Exp), 0)
+	return cfg.ClientID, nil
 }

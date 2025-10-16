@@ -4,17 +4,17 @@ import time
 from pathlib import Path
 
 import autokitteh
-from autokitteh import decorators
+from autokitteh import activities
 
 import log
-from deterministic import is_deterministic
+from deterministic import is_deterministic, is_no_activity
 
 
 ak_mod_name = autokitteh.__name__
 
 
 def activity_marker(fn):
-    return getattr(fn, decorators.ACTIVITY_ATTR, None)
+    return getattr(fn, activities.ACTIVITY_ATTR, None)
 
 
 def callable_name(fn):
@@ -38,12 +38,29 @@ def full_func_name(fn):
     return name
 
 
-def caller_info():
-    frames = inspect.stack()
-    if len(frames) > 2:
-        return Path(frames[2].filename).name, frames[2].lineno
-    else:
-        return "<unknown>", 0
+def caller_info(code_dir):
+    """Return first location in call stack that comes from code_dir."""
+    for frame in inspect.stack():
+        try:
+            if Path(frame.filename).is_relative_to(code_dir):
+                return Path(frame.filename).name, frame.lineno
+        except (ValueError, OSError) as err:
+            log.error(f"caller_info({code_dir!r}) - {err}")
+            continue
+
+    return "<unknown>", 0
+
+
+def is_ak_func(fn):
+    mod = getattr(fn, "__module__", None)
+    if not mod:
+        if (inst := getattr(fn, "__self__", None)) is not None:
+            mod = inst.__class__.__module__
+
+    if not mod:
+        return False
+
+    return mod == ak_mod_name or mod.startswith(ak_mod_name + ".")
 
 
 class AKCall:
@@ -59,10 +76,15 @@ class AKCall:
         self.module = None  # Module for "local" function, filled by "run"
 
     def is_module_func(self, fn):
-        if fn.__module__ == self.module.__name__:
+        mod_name = getattr(fn, "__module__", None)
+        if mod_name is None:
+            # Example: TypeError('int required').__init__
+            return False
+
+        if mod_name == self.module.__name__:
             return True
 
-        mod = sys.modules.get(fn.__module__)
+        mod = sys.modules.get(mod_name)
         if not mod:
             return False
 
@@ -81,11 +103,13 @@ class AKCall:
         if mark in (True, False):
             return mark
 
-        fnmod = fn.__module__
-        if fnmod and (fnmod == ak_mod_name or fnmod.startswith(ak_mod_name + ".")):
+        if is_ak_func(fn):
             return False
 
         if is_deterministic(fn):
+            return False
+
+        if is_no_activity(fn):
             return False
 
         if self.is_module_func(fn):
@@ -98,8 +122,9 @@ class AKCall:
         self.loading = False
 
     def __call__(self, func, *args, **kw):
+        file, lnum = caller_info(self.code_dir)
+        log.info("CALLER: %s:%d", file, lnum)
         if not callable(func):
-            file, lnum = caller_info()
             raise ValueError(f"{func!r} is not callable (user bug at {file}:{lnum}?)")
 
         if func is time.sleep:
@@ -110,7 +135,7 @@ class AKCall:
             fn = time.sleep if self.in_activity else self.runner.syscalls.ak_sleep
             return fn(seconds)
 
-        inhibit = getattr(func, decorators.INHIBIT_ACTIVITIES_ATTR, False)
+        inhibit = getattr(func, activities.INHIBIT_ACTIVITIES_ATTR, False)
         if inhibit:
             self.activities_inhibitions += 1
             log.info(f"inhibiting activities: {self.activities_inhibitions}")
@@ -134,3 +159,6 @@ class AKCall:
             return self.runner.call_in_activity(func, args, kw)
         finally:
             self.in_activity = False
+
+    async def async_call(self, func, *args, **kw):
+        return await self(func, *args, **kw)

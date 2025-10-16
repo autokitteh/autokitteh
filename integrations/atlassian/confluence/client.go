@@ -122,7 +122,7 @@ func oauthConnTest(vs sdktypes.Vars) error {
 
 	// TODO(INT-173): Create & use a new access token using the refresh token.
 	token := vs.GetValueByString("oauth_AccessToken")
-	_, err = accessibleResources(nil, baseURL, token)
+	_, err = accessibleResources(context.Background(), nil, baseURL, token)
 
 	return err
 }
@@ -131,6 +131,9 @@ func oauthConnTest(vs sdktypes.Vars) error {
 // It sends a request to the API to confirm credentials and access.
 // https://developer.atlassian.com/cloud/confluence/rest/v2/intro/#about
 func apiTokenConnTest(ctx context.Context, l *zap.Logger, vs sdktypes.Vars) error {
+	ctx, cancel := context.WithTimeout(ctx, common.HTTPTimeout)
+	defer cancel()
+
 	baseURL := vs.Get(baseURL).Value()
 	email := vs.Get(email).Value()
 	token := vs.Get(token).Value()
@@ -145,7 +148,7 @@ func apiTokenConnTest(ctx context.Context, l *zap.Logger, vs sdktypes.Vars) erro
 	req.SetBasicAuth(email, token)
 	req.Header.Set("Accept", "application/json")
 
-	resp, err := httpClient.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		logWarnIfNotNil(l, "Failed to request current user info for Confluence API token", zap.Error(err))
 		return err

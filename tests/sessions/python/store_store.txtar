@@ -1,0 +1,20 @@
+None
+meow
+['cat']
+woof
+['cat', 'dog']
+
+-- main.py main --
+from autokitteh import store
+
+def main(_):
+    del store['cat']
+    del store['dog']
+    print(store.get('dog'))
+    store['cat'] = 'meow'
+    print(store['cat'])
+    print(list(store))
+
+    store['dog'] = 'woof'
+    print(store['dog'])
+    print(list(store))

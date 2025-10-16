@@ -1,0 +1,15 @@
+0 meow
+0 woof
+
+-- main.py main --
+from time import time
+
+t0 = time()
+
+def t():
+    return int(time() - t0)
+
+print(t(), "meow")
+
+def main(_):
+    print(t(), "woof")

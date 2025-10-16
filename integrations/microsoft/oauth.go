@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strings"
 
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
@@ -56,20 +57,30 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Test the token's usability and get authoritative installation details.
+	// Test the token's usability and get authoritative connection details.
 	ctx := r.Context()
-	org, err := connection.GetOrgInfo(ctx, data.Token)
-	if err != nil {
-		l.Warn("MS organization details request failed", zap.Error(err))
-		c.AbortServerError("organization details request failed")
-		return
-	}
-
 	user, err := connection.GetUserInfo(ctx, data.Token)
 	if err != nil {
 		l.Warn("MS user details request failed", zap.Error(err))
 		c.AbortServerError("user details request failed")
 		return
+	}
+
+	// Try to get organization details, but handle MSA accounts gracefully
+	var org *connection.OrgInfo
+	org, err = connection.GetOrgInfo(ctx, data.Token)
+	if err != nil {
+		// Check if this is a personal Microsoft account (MSA) error.
+		if strings.Contains(err.Error(), "MSA accounts") ||
+			strings.Contains(err.Error(), "DirectoryServices") {
+			l.Info("Personal Microsoft account detected - organization info not available")
+			// Create empty org info for personal accounts.
+			org = &connection.OrgInfo{}
+		} else {
+			l.Warn("MS organization details request failed", zap.Error(err))
+			c.AbortServerError("organization details request failed")
+			return
+		}
 	}
 
 	vsid := sdktypes.NewVarScopeID(cid)

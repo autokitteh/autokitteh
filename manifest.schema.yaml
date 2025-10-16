@@ -6,7 +6,8 @@
     "Connection": {
       "properties": {
         "name": {
-          "type": "string"
+          "type": "string",
+          "pattern": "^\\w+$"
         },
         "integration": {
           "type": "string"
@@ -28,7 +29,11 @@
     "Manifest": {
       "properties": {
         "version": {
-          "type": "string"
+          "type": "string",
+          "enum": [
+            "v1",
+            "v2"
+          ]
         },
         "project": {
           "$ref": "#/$defs/Project"
@@ -43,6 +48,10 @@
     "Project": {
       "properties": {
         "name": {
+          "type": "string",
+          "pattern": "^\\w+$"
+        },
+        "display_name": {
           "type": "string"
         },
         "connections": {
@@ -70,13 +79,21 @@
     "Trigger": {
       "properties": {
         "name": {
-          "type": "string"
+          "type": "string",
+          "pattern": "^\\w+$"
         },
         "event_type": {
           "type": "string"
         },
         "filter": {
           "type": "string"
+        },
+        "is_durable": {
+          "type": "boolean",
+          "description": "Is handling done as a durable session? Default: true for manifest v1, false for all others."
+        },
+        "is_sync": {
+          "type": "boolean"
         },
         "type": {
           "type": "string",
@@ -110,6 +127,10 @@
     "Var": {
       "properties": {
         "name": {
+          "type": "string",
+          "pattern": "^\\w+$"
+        },
+        "description": {
           "type": "string"
         },
         "value": {

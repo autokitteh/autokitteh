@@ -9,6 +9,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/auth"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/builds"
@@ -19,15 +20,18 @@ import (
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/experimental"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/integrations"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/manifest"
+	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/mcp"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/orgs"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/projects"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/runtimes"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/server"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/sessions"
+	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/temporal"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/triggers"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/users"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/vars"
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
+	"go.autokitteh.dev/autokitteh/internal/backend/usagereporter"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
 )
 
@@ -40,7 +44,6 @@ var (
 var RootCmd = common.StandardCommand(&cobra.Command{
 	Use:   "ak",
 	Short: "autokitteh command-line interface and local server",
-
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		// Set the output renderer based on global flags.
 		if json {
@@ -70,6 +73,16 @@ var RootCmd = common.StandardCommand(&cobra.Command{
 
 		if err := common.InitConfig(confmap); err != nil {
 			return fmt.Errorf("init root config: %w", err)
+		}
+
+		// server is reported using a report look, so this prevent double reporting
+		if cmd.Use != upCmd.Use {
+			r, _ := usagereporter.New(zap.NewNop(), usagereporter.Configs.Default, "client")
+			if r != nil {
+				data := map[string]string{}
+				data["command"] = cmd.CommandPath()
+				r.Report(data)
+			}
 		}
 
 		return common.InitRPCClient(token)
@@ -111,11 +124,13 @@ func init() {
 	experimental.AddSubcommands(RootCmd)
 	integrations.AddSubcommands(RootCmd)
 	manifest.AddSubcommands(RootCmd)
+	mcp.AddSubcommands(RootCmd)
 	orgs.AddSubcommands(RootCmd)
 	projects.AddSubcommands(RootCmd)
 	runtimes.AddSubcommands(RootCmd)
 	server.AddSubcommands(RootCmd)
 	sessions.AddSubcommands(RootCmd)
+	temporal.AddSubcommands(RootCmd)
 	triggers.AddSubcommands(RootCmd)
 	users.AddSubcommands(RootCmd)
 	vars.AddSubcommands(RootCmd)

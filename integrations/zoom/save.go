@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
-	"strings"
 
 	"go.uber.org/zap"
 
@@ -22,12 +21,11 @@ import (
 func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, desc)
 
-	// Check the "Content-Type" header in POST requests.
-	contentType := r.Header.Get("Content-Type")
-	expected := "application/x-www-form-urlencoded"
-	if r.Method == http.MethodPost && !strings.HasPrefix(contentType, expected) {
-		l.Warn("save connection: unexpected POST content type", zap.String("content_type", contentType))
-		c.AbortBadRequest("unexpected request content type")
+	// Check the "Content-Type" header.
+	if common.PostWithoutFormContentType(r) {
+		ct := r.Header.Get(common.HeaderContentType)
+		l.Warn("save connection: unexpected POST content type", zap.String("content_type", ct))
+		c.AbortBadRequest("unexpected content type")
 		return
 	}
 
@@ -87,7 +85,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 			c.AbortBadRequest("missing private app details")
 			return
 		}
-		if _, err := serverToken(r.Context(), app); err != nil {
+		if _, err := serverToken(r.Context(), *app); err != nil {
 			l.Error("save connection: " + err.Error())
 			c.AbortBadRequest(err.Error())
 			return

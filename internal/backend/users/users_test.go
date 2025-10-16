@@ -64,7 +64,7 @@ func TestCreateWithoutDefaultOrgInCfg(t *testing.T) {
 	us, err := New(&Config{}, db, zaptest.NewLogger(t))
 	require.NoError(t, err)
 
-	ctx := authcontext.SetAuthnSystemUser(context.Background())
+	ctx := authcontext.SetAuthnSystemUser(t.Context())
 
 	uid, err := us.Create(ctx, sdktypes.NewUser().WithEmail("someone@somewhere"))
 	if assert.NoError(t, err) {
@@ -89,7 +89,7 @@ func TestCreateWithoutDefaultOrgInCfg(t *testing.T) {
 
 func TestCreateWithDefaultOrgInCfg(t *testing.T) {
 	db := &fakeDB{}
-	ctx := authcontext.SetAuthnSystemUser(context.Background())
+	ctx := authcontext.SetAuthnSystemUser(t.Context())
 
 	oid, err := db.CreateOrg(ctx, sdktypes.NewOrg())
 	require.NoError(t, err)
@@ -116,7 +116,7 @@ func TestCreateWithDefaultOrgInCfg(t *testing.T) {
 
 func TestCreateWithDefaultOrgInUser(t *testing.T) {
 	db := &fakeDB{}
-	ctx := authcontext.SetAuthnSystemUser(context.Background())
+	ctx := authcontext.SetAuthnSystemUser(t.Context())
 
 	oid, err := db.CreateOrg(ctx, sdktypes.NewOrg())
 	require.NoError(t, err)
@@ -143,7 +143,7 @@ func TestCreateWithDefaultOrgInUser(t *testing.T) {
 
 func TestCreateInvitedUser(t *testing.T) {
 	db := &fakeDB{}
-	ctx := authcontext.SetAuthnSystemUser(context.Background())
+	ctx := authcontext.SetAuthnSystemUser(t.Context())
 
 	us, err := New(&Config{}, db, zaptest.NewLogger(t))
 	require.NoError(t, err)

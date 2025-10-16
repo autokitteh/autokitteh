@@ -8,7 +8,6 @@ import (
 
 	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
-	"go.autokitteh.dev/autokitteh/integrations/slack/api"
 	"go.autokitteh.dev/autokitteh/integrations/slack/events"
 )
 
@@ -56,10 +55,10 @@ var BotEventHandlers = map[string]BotEventHandler{
 // See https://api.slack.com/apis/connections/events-api#responding.
 // Compare with the [websockets.handleBotEvent] implementation.
 func (h handler) HandleBotEvent(w http.ResponseWriter, r *http.Request) {
-	l := h.logger.With(zap.String("urlPath", BotEventPath))
+	l := h.logger.With(zap.String("url_path", BotEventPath))
 
 	// Validate and parse the inbound request.
-	body := h.checkRequest(w, r, l, api.ContentTypeJSON)
+	body := h.checkRequest(w, r, l, common.ContentTypeJSON)
 	if body == nil {
 		return
 	}
@@ -106,13 +105,13 @@ func (h handler) HandleBotEvent(w http.ResponseWriter, r *http.Request) {
 	enterpriseID := "" // TODO: Support enterprise IDs.
 	cids, err := h.listConnectionIDs(ctx, cb.APIAppID, enterpriseID, cb.TeamID)
 	if err != nil {
-		l.Error("Failed to find connection IDs", zap.Error(err))
+		l.Error("failed to find connection IDs", zap.Error(err))
 		common.HTTPError(w, http.StatusInternalServerError)
 		return
 	}
 
-	// Dispatch the event to all of them, for asynchronous handling.
-	h.dispatchAsyncEventsToConnections(ctx, cids, akEvent)
+	// Dispatch the event to all of them, for potential asynchronous handling.
+	common.DispatchEvent(ctx, l, h.dispatch, akEvent, cids)
 
 	// Returning immediately without an error = acknowledgement of receipt.
 }

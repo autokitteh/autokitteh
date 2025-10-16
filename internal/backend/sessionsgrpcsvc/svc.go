@@ -12,6 +12,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
+	"go.autokitteh.dev/autokitteh/internal/backend/sessions"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/proto"
 	sessionsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1"
@@ -22,14 +23,14 @@ import (
 )
 
 type server struct {
-	sessions sdkservices.Sessions
+	sessions sessions.Sessions
 
 	sessionsv1connect.UnimplementedSessionsServiceHandler
 }
 
 var _ sessionsv1connect.SessionsServiceHandler = (*server)(nil)
 
-func Init(muxes *muxes.Muxes, sessions sdkservices.Sessions) {
+func Init(muxes *muxes.Muxes, sessions sessions.Sessions) {
 	srv := server{sessions: sessions}
 
 	path, handler := sessionsv1connect.NewSessionsServiceHandler(&srv)
@@ -74,7 +75,7 @@ func (s *server) Start(ctx context.Context, req *connect.Request[sessionsv1.Star
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	uid, err := s.sessions.Start(ctx, session)
+	uid, err := s.sessions.StartInternal(ctx, session)
 	if err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
@@ -216,9 +217,7 @@ func (s *server) GetLog(ctx context.Context, req *connect.Request[sessionsv1.Get
 		}
 	}
 
-	pblog := &sessionsv1.SessionLog{Records: pbrs}
-
-	return connect.NewResponse(&sessionsv1.GetLogResponse{Records: pbrs, Log: pblog, Count: hist.TotalCount, NextPageToken: hist.NextPageToken}), nil
+	return connect.NewResponse(&sessionsv1.GetLogResponse{Records: pbrs, Count: hist.TotalCount, NextPageToken: hist.NextPageToken}), nil
 }
 
 func (s *server) GetPrints(ctx context.Context, req *connect.Request[sessionsv1.GetPrintsRequest]) (*connect.Response[sessionsv1.GetPrintsResponse], error) {
@@ -265,6 +264,26 @@ func (s *server) GetPrints(ctx context.Context, req *connect.Request[sessionsv1.
 		}),
 		NextPageToken: prints.NextPageToken,
 	}), nil
+}
+
+func (s *server) DownloadLogs(ctx context.Context, req *connect.Request[sessionsv1.DownloadLogsRequest]) (*connect.Response[sessionsv1.DownloadLogsResponse], error) {
+	msg := req.Msg
+
+	if err := proto.Validate(msg); err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	sid, err := sdktypes.StrictParseSessionID(msg.SessionId)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	data, err := s.sessions.DownloadLogs(ctx, sid)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	return connect.NewResponse(&sessionsv1.DownloadLogsResponse{Data: data}), nil
 }
 
 func (s *server) List(ctx context.Context, req *connect.Request[sessionsv1.ListRequest]) (*connect.Response[sessionsv1.ListResponse], error) {

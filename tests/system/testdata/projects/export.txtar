@@ -2,11 +2,26 @@
 # Precondition: create project.
 ak deploy -m autokitteh.yaml
 return code == 0
-# output equals 'project_id: prj_00000000000000000000000001'
 
-ak project export -o /tmp/simple.zip simple
+ak project export -o simple.zip simple
 return code == 0
-# TODO: How to check that's a valid zip file? or event that the output file exists
+
+exec unzip simple.zip -d sans_vars
+return code == 0
+
+exec cat sans_vars/autokitteh.yaml
+return code == 0
+output equals file autokitteh.exported.sans_vars.yaml
+
+ak project export -c -o simple.zip simple
+return code == 0
+
+exec unzip simple.zip -d with_vars
+return code == 0
+
+exec cat with_vars/autokitteh.yaml
+return code == 0
+output equals file autokitteh.exported.with_vars.yaml
 
 -- program.py --
 def handle(event):
@@ -14,14 +29,43 @@ def handle(event):
 
 -- autokitteh.yaml --
 version: v1
-
 project:
   name: simple
+
   triggers:
     - name: events
       event_type: post
       call: program.py:handle
       webhook: {}
+
   vars:
     - name: USER
       value: Garfield
+
+-- autokitteh.exported.sans_vars.yaml --
+version: v2
+project:
+  name: simple
+  triggers:
+  - name: events
+    event_type: post
+    is_durable: true
+    webhook: {}
+    call: program.py:handle
+  vars:
+  - name: USER
+    value: ""
+
+-- autokitteh.exported.with_vars.yaml --
+version: v2
+project:
+  name: simple
+  triggers:
+  - name: events
+    event_type: post
+    is_durable: true
+    webhook: {}
+    call: program.py:handle
+  vars:
+  - name: USER
+    value: Garfield

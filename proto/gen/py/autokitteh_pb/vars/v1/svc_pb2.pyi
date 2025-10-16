@@ -43,7 +43,7 @@ class GetResponse(_message.Message):
     vars: _containers.RepeatedCompositeFieldContainer[_var_pb2.Var]
     def __init__(self, vars: _Optional[_Iterable[_Union[_var_pb2.Var, _Mapping]]] = ...) -> None: ...
 
-class FindConnectionIDsRequest(_message.Message):
+class FindActiveConnectionIDsRequest(_message.Message):
     __slots__ = ["integration_id", "name", "value"]
     INTEGRATION_ID_FIELD_NUMBER: _ClassVar[int]
     NAME_FIELD_NUMBER: _ClassVar[int]
@@ -53,7 +53,7 @@ class FindConnectionIDsRequest(_message.Message):
     value: str
     def __init__(self, integration_id: _Optional[str] = ..., name: _Optional[str] = ..., value: _Optional[str] = ...) -> None: ...
 
-class FindConnectionIDsResponse(_message.Message):
+class FindActiveConnectionIDsResponse(_message.Message):
     __slots__ = ["connection_ids"]
     CONNECTION_IDS_FIELD_NUMBER: _ClassVar[int]
     connection_ids: _containers.RepeatedScalarFieldContainer[str]

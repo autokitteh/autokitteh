@@ -112,23 +112,12 @@ func Test_pySvc_Build(t *testing.T) {
 	rootPath := "testdata/simple/"
 	fsys := os.DirFS(rootPath)
 
-	ctx, cancel := testCtx(t)
-	defer cancel()
-	art, err := svc.Build(ctx, fsys, ".", nil)
+	art, err := svc.Build(t.Context(), fsys, ".", nil)
 	require.NoError(t, err)
 
 	p := art.ToProto()
 	data := p.CompiledData[archiveKey]
 	validateTar(t, data, fsys)
-}
-
-func testCtx(t *testing.T) (context.Context, context.CancelFunc) {
-	d, ok := t.Deadline()
-	if !ok {
-		d = time.Now().Add(3 * time.Second)
-	}
-
-	return context.WithDeadline(context.Background(), d)
 }
 
 func newValues(t *testing.T, runID sdktypes.RunID) (sdktypes.ModuleFunction, map[string]sdktypes.Value) {
@@ -168,7 +157,7 @@ func newCallbacks(svc *pySvc) *sdkservices.RunCallbacks {
 
 func setupServer(l *zap.Logger) (net.Listener, error) {
 	mux := &http.ServeMux{}
-	ConfigureWorkerGRPCHandler(l, mux)
+	ConfigureWorkerGRPCHandler(l, mux, nil)
 	listener, err := net.Listen("tcp", ":0")
 	if err != nil {
 		return nil, err
@@ -210,8 +199,7 @@ func Test_pySvc_Run(t *testing.T) {
 	tarData, err := createTar(fsys)
 	require.NoError(t, err, "create tar")
 
-	ctx, cancel := testCtx(t)
-	defer cancel()
+	ctx := t.Context()
 	runID := sdktypes.NewRunID()
 	mainPath := "simple.py"
 	compiled := map[string][]byte{
@@ -233,7 +221,7 @@ func Test_pySvc_Run(t *testing.T) {
 	}()
 
 	sessionID := sdktypes.NewSessionID()
-	run, err := svc.Run(ctx, runID, sessionID, mainPath, compiled, values, cbs)
+	run, err := svc.Run(ctx, runID, sessionID, mainPath, compiled, values, true, cbs)
 	require.NoError(t, err, "run")
 
 	fn, err := sdktypes.NewFunctionValue(xid, "greet", nil, nil, mod)
@@ -250,6 +238,8 @@ func Test_pySvc_Run(t *testing.T) {
 	}
 	_, err = run.Call(ctx, fn, nil, kwargs)
 	require.NoError(t, err, "call")
+
+	require.True(t, svc.didCleanup, "cleanup wasn't called")
 }
 
 var isGoodVersionCasess = []struct {
@@ -312,9 +302,7 @@ func Test_pySvc_Build_PyCache(t *testing.T) {
 	rootPath := "testdata/pycache/"
 	fsys := os.DirFS(rootPath)
 
-	ctx, cancel := testCtx(t)
-	defer cancel()
-	art, err := svc.Build(ctx, fsys, ".", nil)
+	art, err := svc.Build(t.Context(), fsys, ".", nil)
 	require.NoError(t, err)
 
 	p := art.ToProto()
@@ -372,10 +360,9 @@ func TestProgramError(t *testing.T) {
 	runID := sdktypes.NewRunID()
 	mod, values := newValues(t, runID)
 	cbs := newCallbacks(svc)
-	ctx, cancel := testCtx(t)
-	defer cancel()
+	ctx := t.Context()
 	sid := sdktypes.NewSessionID()
-	_, err = svc.Run(ctx, runID, sid, pyFile, compiled, values, cbs)
+	_, err = svc.Run(ctx, runID, sid, pyFile, compiled, values, true, cbs)
 	require.NoError(t, err)
 
 	xid := sdktypes.NewExecutorID(runID)

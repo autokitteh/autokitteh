@@ -1,0 +1,14 @@
+before
+-- main.py:main --
+import autokitteh
+
+
+def main(event: autokitteh.Event):
+	print('before')
+	step()
+	print('after')  # shouldn't get here
+
+
+@autokitteh.activity
+def step():
+	1/0

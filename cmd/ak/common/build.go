@@ -84,7 +84,7 @@ func BuildProject(pid sdktypes.ProjectID, dirPaths, filePaths []string) (sdktype
 		return sdktypes.InvalidBuildID, fmt.Errorf("set resources: %w", err)
 	}
 
-	bid, err := Client().Projects().Build(ctx, pid)
+	bid, err := Client().Projects().Build(ctx, pid, false)
 	if err != nil {
 		return sdktypes.InvalidBuildID, fmt.Errorf("build project: %w", err)
 	}
@@ -97,6 +97,15 @@ func walk(basePath string, uploads map[string][]byte) fs.WalkDirFunc {
 		if err != nil {
 			return err // Abort the entire walk.
 		}
+
+		if fn := filepath.Base(path); fn != "." && (fn[0] == '.' || fn[0] == '_') {
+			if d.IsDir() {
+				return fs.SkipDir
+			}
+
+			return nil
+		}
+
 		if d.IsDir() {
 			return nil // Skip directory analysis, focus on files.
 		}

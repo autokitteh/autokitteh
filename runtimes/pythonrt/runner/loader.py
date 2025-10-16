@@ -14,11 +14,17 @@ def name_of(node, code_lines):
 
 
 AK_CALL_NAME = "_ak_call"
+AK_AYNC_CALL_NAME = "_ak_async_call"
 BUILTIN = {v for v in dir(builtins) if callable(getattr(builtins, v))}
+
+_funcs = (ast.AsyncFunctionDef, ast.FunctionDef)
+_callables = _funcs + (ast.ClassDef,)
 
 
 class Transformer(ast.NodeTransformer):
     """Replace 'fn(a, b)' with '_ak_call(fn, a, b)'."""
+
+    parent = None
 
     def __init__(self, file_name, src):
         self.file_name = file_name
@@ -27,9 +33,13 @@ class Transformer(ast.NodeTransformer):
         self.patch = False
 
     def visit(self, node):
+        # Track parent to know if call is awaited
+        node.parent = self.parent
+        self.parent = node
+
         # Visit AST nodes. We keep track of functions and indent, in order not to patch
         # module level calls.
-        if isinstance(node, (ast.FunctionDef, ast.ClassDef)) and not self.patch:
+        if isinstance(node, _callables) and not self.patch:
             self.patch = True
             self.generic_visit(node)
             self.patch = False
@@ -45,10 +55,18 @@ class Transformer(ast.NodeTransformer):
             self.generic_visit(node)
             return node
 
-        log.info("%s:%d: patching %s with ak_call", self.file_name, node.lineno, name)
         # urlopen("https://autokitteh.h") -> _call(urlopen, "https://autokitteh.com")
+        if isinstance(node.parent, ast.Await):
+            call_id = AK_AYNC_CALL_NAME
+        else:
+            call_id = AK_CALL_NAME
+
+        log.info(
+            "%s:%d: patching %s with %s", self.file_name, node.lineno, name, call_id
+        )
+
         call = ast.Call(
-            func=ast.Name(id=AK_CALL_NAME, ctx=ast.Load()),
+            func=ast.Name(id=call_id, ctx=ast.Load()),
             args=[node.func] + node.args,
             keywords=node.keywords,
         )
@@ -65,8 +83,12 @@ class Loader:
     def exec_module(self, module):
         log.info("importing %r", module.__file__)
 
-        with open(module.__file__) as fp:
-            src = fp.read()
+        try:
+            with open(module.__file__) as fp:
+                src = fp.read()
+        except (IOError, OSError) as err:
+            log.error(f"load {module.__file__} - {err}")
+            raise
 
         tree = ast.parse(src, module.__file__, "exec")
         trans = Transformer(module.__file__, src)
@@ -75,6 +97,7 @@ class Loader:
 
         code = compile(patched_tree, module.__file__, "exec")
         setattr(module, AK_CALL_NAME, self.ak_call)
+        setattr(module, AK_AYNC_CALL_NAME, self.ak_call.async_call)
         exec(code, module.__dict__)
 
     def create_module(self, spec):
@@ -101,7 +124,7 @@ class Finder:
         if not full_path.is_file():
             return None
 
-        loader = Loader(self.ak_call)
+        loader = Loader(self.ak_call) if self.ak_call else None
         spec = spec_from_file_location(fullname, full_path, loader=loader)
         return spec
 
@@ -144,10 +167,10 @@ def exports(code_dir, file_name):
 
     tree = ast.parse(code, file_name, "exec")
     for node in tree.body:
-        if not isinstance(node, (ast.FunctionDef, ast.ClassDef)):
+        if not isinstance(node, _callables):
             continue
 
-        args = fn_args(node) if isinstance(node, ast.FunctionDef) else class_args(node)
+        args = fn_args(node) if isinstance(node, _funcs) else class_args(node)
         yield {
             "file": str(file_name),
             "line": node.lineno,

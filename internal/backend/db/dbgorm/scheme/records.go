@@ -12,6 +12,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/types"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	buildsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/builds/v1"
 	commonv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/common/v1"
 	deploymentsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/deployments/v1"
 	sessionsv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/sessions/v1"
@@ -33,6 +34,8 @@ type Build struct {
 
 	// enforce foreign keys
 	Project *Project
+
+	Status int32 `gorm:"index"` // nullable, used for build status
 }
 
 func (Build) IDFieldName() string { return "build_id" }
@@ -41,6 +44,7 @@ func ParseBuild(b Build) (sdktypes.Build, error) {
 	build, err := sdktypes.StrictBuildFromProto(&sdktypes.BuildPB{
 		BuildId:   sdktypes.NewIDFromUUID[sdktypes.BuildID](b.BuildID).String(),
 		ProjectId: sdktypes.NewIDFromUUID[sdktypes.ProjectID](b.ProjectID).String(),
+		Status:    buildsv1.Build_Status(b.Status),
 	})
 	if err != nil {
 		return sdktypes.InvalidBuild, fmt.Errorf("invalid record: %w", err)
@@ -95,6 +99,7 @@ type Var struct {
 	VarID         uuid.UUID `gorm:"primaryKey;index;type:uuid;not null"`
 	ScopeID       uuid.UUID `gorm:"-"`
 	Name          string    `gorm:"primaryKey;index;not null"`
+	Description   string
 	Value         string
 	IsSecret      bool
 	IntegrationID uuid.UUID `gorm:"index;type:uuid"` // var lookup by integration id
@@ -119,11 +124,12 @@ func (v *Var) BeforeCreate(tx *gorm.DB) (err error) {
 type Project struct {
 	Base
 
-	ProjectID uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
-	OrgID     uuid.UUID `gorm:"index;type:uuid"` // TODO(authz-migration): not null.
-	Name      string    `gorm:"index;not null"`
-	RootURL   string
-	Resources []byte
+	ProjectID   uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
+	OrgID       uuid.UUID `gorm:"index;type:uuid"` // TODO(authz-migration): not null.
+	Name        string    `gorm:"index;not null"`
+	DisplayName string
+	RootURL     string
+	Resources   []byte
 
 	UpdatedBy uuid.UUID `gorm:"type:uuid"`
 	UpdatedAt time.Time
@@ -134,9 +140,10 @@ func (Project) IDFieldName() string { return "project_id" }
 
 func ParseProject(r Project) (sdktypes.Project, error) {
 	p, err := sdktypes.StrictProjectFromProto(&sdktypes.ProjectPB{
-		ProjectId: sdktypes.NewIDFromUUID[sdktypes.ProjectID](r.ProjectID).String(),
-		OrgId:     sdktypes.NewIDFromUUID[sdktypes.OrgID](r.OrgID).String(),
-		Name:      r.Name,
+		ProjectId:   sdktypes.NewIDFromUUID[sdktypes.ProjectID](r.ProjectID).String(),
+		OrgId:       sdktypes.NewIDFromUUID[sdktypes.OrgID](r.OrgID).String(),
+		Name:        r.Name,
+		DisplayName: r.DisplayName,
 	})
 	if err != nil {
 		return sdktypes.InvalidProject, fmt.Errorf("invalid project record: %w", err)
@@ -228,6 +235,8 @@ type Trigger struct {
 	EventType    string
 	Filter       string
 	CodeLocation string
+	IsDurable    *bool
+	IsSync       *bool
 
 	Name string
 	// Makes sure name is unique - this is the project_id with name.
@@ -268,6 +277,16 @@ func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
 		filter = ""
 	}
 
+	isDurable := false
+	if e.IsDurable != nil {
+		isDurable = *e.IsDurable
+	}
+
+	isSync := false
+	if e.IsSync != nil {
+		isSync = *e.IsSync
+	}
+
 	return sdktypes.StrictTriggerFromProto(&sdktypes.TriggerPB{
 		TriggerId:    sdktypes.NewIDFromUUID[sdktypes.TriggerID](e.TriggerID).String(),
 		SourceType:   srcType.ToProto(),
@@ -279,6 +298,8 @@ func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
 		Name:         e.Name,
 		WebhookSlug:  e.WebhookSlug,
 		Schedule:     e.Schedule,
+		IsDurable:    isDurable,
+		IsSync:       isSync,
 	})
 }
 
@@ -334,16 +355,16 @@ func ParseSessionCallAttemptComplete(c SessionCallAttempt) (d sdktypes.SessionCa
 
 type Session struct {
 	Base
-
 	ProjectID        uuid.UUID  `gorm:"index;type:uuid;not null"`
 	SessionID        uuid.UUID  `gorm:"primaryKey;type:uuid;not null"`
 	BuildID          uuid.UUID  `gorm:"index;type:uuid;not null"`
-	DeploymentID     *uuid.UUID `gorm:"index;type:uuid"`
+	DeploymentID     *uuid.UUID `gorm:"index;index:idx_active_sessions;type:uuid"`
 	EventID          *uuid.UUID `gorm:"index;type:uuid"`
-	CurrentStateType int        `gorm:"index"`
+	CurrentStateType int        `gorm:"index:idx_active_sessions,where:current_state_type = 1 OR current_state_type = 2"`
 	Entrypoint       string
 	Inputs           datatypes.JSON
 	Memo             datatypes.JSON
+	IsDurable        bool `gorm:"not null;default:false"`
 
 	UpdatedBy uuid.UUID `gorm:"type:uuid"`
 	UpdatedAt time.Time
@@ -392,6 +413,7 @@ func ParseSession(s Session) (sdktypes.Session, error) {
 		UpdatedAt:    timestamppb.New(s.UpdatedAt),
 		State:        sessionsv1.SessionStateType(s.CurrentStateType),
 		Memo:         memo,
+		IsDurable:    s.IsDurable,
 	})
 	if err != nil {
 		return sdktypes.InvalidSession, err
@@ -418,6 +440,12 @@ type Deployment struct {
 }
 
 func (Deployment) IDFieldName() string { return "deployment_id" }
+
+type DeploymentSessionStats struct {
+	DeploymentID uuid.UUID `gorm:"primaryKey;type:uuid;not null;"`
+	SessionState int       `gorm:"primaryKey"`
+	Count        int       `gorm:"not null;default:0"`
+}
 
 func (d *Deployment) BeforeUpdate(tx *gorm.DB) (err error) {
 	if tx.Statement.Changed() { // if any fields changed
@@ -523,10 +551,10 @@ func ParseSignal(r *Signal) (*types.Signal, error) {
 	}, nil
 }
 
-type Value struct {
+type StoreValue struct {
 	Base
 
-	ProjectID uuid.UUID `gorm:"index;type:uuid;not null"`
+	ProjectID uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
 	Key       string    `gorm:"primaryKey;not null"`
 	Value     []byte
 

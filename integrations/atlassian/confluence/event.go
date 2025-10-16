@@ -3,40 +3,34 @@ package confluence
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
-	"time"
 
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
+	"go.autokitteh.dev/autokitteh/integrations/oauth"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
-
-const (
-	headerContentType   = "Content-Type"
-	headerAuthorization = "Authorization"
-	contentTypeJSON     = "application/json"
-)
-
-// Default HTTP client with a timeout for short-lived HTTP requests.
-var httpClient = http.Client{Timeout: 3 * time.Second}
 
 // handler is an autokitteh webhook which implements [http.Handler]
 // to receive and dispatch asynchronous event notifications.
 type handler struct {
 	logger   *zap.Logger
-	oauth    sdkservices.OAuth
+	oauth    *oauth.OAuth
 	vars     sdkservices.Vars
 	dispatch sdkservices.DispatchFunc
 }
 
-func NewHTTPHandler(l *zap.Logger, o sdkservices.OAuth, v sdkservices.Vars, d sdkservices.DispatchFunc) handler {
+func NewHTTPHandler(l *zap.Logger, o *oauth.OAuth, v sdkservices.Vars, d sdkservices.DispatchFunc) handler {
+	l = l.With(zap.String("integration", desc.UniqueName().String()))
 	return handler{logger: l, oauth: o, vars: v, dispatch: d}
 }
 
@@ -49,18 +43,18 @@ func NewHTTPHandler(l *zap.Logger, o sdkservices.OAuth, v sdkservices.Vars, d sd
 // Note 3: The requests are sent by a service, so no need to respond
 // with user-friendly error web pages.
 func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
-	l := h.logger.With(zap.String("urlPath", r.URL.Path))
-
-	// TODO(ENG-1081): Verify the HMAC signature in "X-Hub-Signature"
-	// (Confluence doesn't recognize secrets when creating webhooks).
+	l := h.logger.With(zap.String("url_path", r.URL.Path))
 
 	// Check the "Content-Type" header.
-	contentType := r.Header.Get(headerContentType)
-	if !strings.HasPrefix(contentType, contentTypeJSON) {
-		l.Warn("Incoming Atlassian event with bad header", zap.String(headerContentType, contentType))
+	if common.PostWithoutJSONContentType(r) {
+		ct := r.Header.Get(common.HeaderContentType)
+		l.Warn("incoming event: unexpected content type", zap.String("content_type", ct))
 		common.HTTPError(w, http.StatusBadRequest)
 		return
 	}
+
+	// TODO(ENG-1081): Verify the HMAC signature in "X-Hub-Signature"
+	// (Confluence doesn't recognize secrets when creating webhooks).
 
 	// Parse some of the metadata in the Atlassian event's JSON content.
 	body, err := io.ReadAll(r.Body)
@@ -96,7 +90,7 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := extrazap.AttachLoggerToContext(l, r.Context())
-	cids, err := h.vars.FindConnectionIDs(ctx, integrationID, baseURL, atlassianURL)
+	cids, err := h.vars.FindActiveConnectionIDs(ctx, integrationID, baseURL, atlassianURL)
 	if err != nil {
 		l.Error("Failed to find connection IDs", zap.Error(err))
 		return
@@ -204,13 +198,18 @@ func constructEvent(l *zap.Logger, atlassianEvent map[string]any, eventType stri
 func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, cids []sdktypes.ConnectionID, e sdktypes.Event) {
 	l := extrazap.ExtractLoggerFromContext(ctx)
 	for _, cid := range cids {
-		eid, err := h.dispatch(ctx, e.WithConnectionDestinationID(cid), nil)
+		resp, err := h.dispatch(ctx, e.WithConnectionDestinationID(cid), nil)
 		l := l.With(
 			zap.String("connectionID", cid.String()),
-			zap.String("eventID", eid.String()),
+			zap.String("eventID", resp.EventID.String()),
 		)
 		if err != nil {
-			l.Error("Event dispatch failed", zap.Error(err))
+			if errors.Is(err, sdkerrors.ErrResourceExhausted) {
+				l.Info("Event dispatch failed due to resource exhaustion")
+			} else {
+				l.Error("Event dispatch failed", zap.Error(err))
+			}
+
 			return
 		}
 		l.Debug("Event dispatched")

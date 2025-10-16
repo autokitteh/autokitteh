@@ -1,0 +1,22 @@
+main start
+True
+main end
+-- main.py:main --
+from autokitteh import AutoKittehError, activity, next_event
+
+
+@activity
+def problem():
+    try:
+        next_event('event')
+        raise RuntimeError('should not get here')
+    except AutoKittehError as err:
+        text = str(err)
+    # We don't compare the exact message since it's brittle
+    print('next_event inside activity' in text)
+
+
+def main(event):
+    print('main start')
+    problem()
+    print('main end')

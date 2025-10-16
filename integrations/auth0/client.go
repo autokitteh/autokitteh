@@ -3,8 +3,6 @@ package auth0
 import (
 	"context"
 	"fmt"
-	"net/http"
-	"time"
 
 	"go.uber.org/zap"
 
@@ -19,11 +17,9 @@ import (
 var (
 	desc = common.Descriptor("auth0", "Auth0", "/static/images/auth0.svg")
 
-	authTypeVar         = sdktypes.NewSymbol("auth_type")
-	clientIDNameVar     = sdktypes.NewSymbol("client_id")
-	clientSecretNameVar = sdktypes.NewSymbol("client_secret")
-	domainNameVar       = sdktypes.NewSymbol("auth0_domain")
-	authTokenNameVar    = sdktypes.NewSymbol("oauth_AccessToken")
+	ClientIDVar     = sdktypes.NewSymbol("client_id")
+	ClientSecretVar = sdktypes.NewSymbol("client_secret")
+	DomainVar       = sdktypes.NewSymbol("auth0_domain")
 )
 
 type integration struct{ vars sdkservices.Vars }
@@ -51,7 +47,7 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 			return sdktypes.InvalidStatus, err
 		}
 
-		at := vs.Get(authTypeVar)
+		at := vs.Get(common.AuthTypeVar)
 		if !at.IsValid() || at.Value() == "" {
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 		}
@@ -78,29 +74,13 @@ func connTest(i *integration) sdkintegrations.OptFn {
 		}
 
 		// TODO(INT-124): Use the refresh token to get a new access token.
-		token := vs.Get(authTokenNameVar).Value()
-		domain := vs.Get(domainNameVar).Value()
+		token := vs.GetValue(common.LegacyOAuthAccessTokenVar)
+		domain := vs.GetValue(DomainVar)
 		// https://auth0.com/docs/api/management/v2/stats/get-active-users
 		url := fmt.Sprintf("https://%s/api/v2/stats/active-users", domain)
 
-		timeoutCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
-		defer cancel()
-
-		req, err := http.NewRequestWithContext(timeoutCtx, http.MethodGet, url, nil)
-		if err != nil {
+		if _, err := common.HTTPGet(ctx, url, "Bearer "+token); err != nil {
 			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
-		}
-		req.Header.Set("Authorization", "Bearer "+token)
-
-		client := &http.Client{}
-		resp, err := client.Do(req)
-		if err != nil {
-			return sdktypes.NewStatus(sdktypes.StatusCodeError, err.Error()), nil
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Invalid OAuth token"), nil
 		}
 
 		return sdktypes.NewStatus(sdktypes.StatusCodeOK, "OK"), nil

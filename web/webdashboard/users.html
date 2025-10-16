@@ -1,0 +1,14 @@
+{{ template "header_" . }}
+
+<h1>Users</h1>
+
+<form method="POST" action="/internal/dashboard/users">
+    <h2>Lookup user</h2>
+    <ul style="list-style-type: none; padding: 0;">
+        <li><input type="text" name="email" placeholder="user email"/></li>
+        <li><input type="text" name="id" placeholder="user id"/></li>
+    </ul>
+    <input type="submit" value="Lookup" />
+</form>
+
+{{ template "footer_" . }}

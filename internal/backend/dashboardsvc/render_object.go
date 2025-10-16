@@ -13,9 +13,10 @@ import (
 )
 
 var marshalOpts = protojson.MarshalOptions{
-	Multiline:     true,
-	Indent:        "  ",
-	UseProtoNames: true,
+	Multiline:       true,
+	Indent:          "  ",
+	UseProtoNames:   true,
+	EmitUnpopulated: true,
 }
 
 func marshalObject(x proto.Message) template.HTML {

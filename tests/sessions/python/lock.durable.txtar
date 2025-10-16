@@ -1,0 +1,23 @@
+error: error processing result - TypeError("cannot pickle '_thread.lock' object")
+=======================================================================================================
+The below error means you need to use the @autokitteh.activity decorator.
+See https://docs.autokitteh.com/develop/python/#function-arguments-and-return-values-must-be-pickleable
+for more details.
+=======================================================================================================
+
+error: TypeError("cannot pickle '_thread.lock' object")
+
+Traceback (most recent call last):
+   ak-runner
+    data = pickle.dumps(result)
+TypeError: cannot pickle '_thread.lock' object
+-- main.py:main --
+from threading import Lock
+
+def main(event):
+    lock = Lock()
+    with lock:
+        print('locked')
+    print('unlocked')
+
+# This should fail, which is OK since you can't pickle Lock objects

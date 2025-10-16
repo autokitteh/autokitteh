@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>AutoKitteh - AzureBot - New Connection</title>
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/static/apple-touch-icon.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/static/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/static/favicon-16x16.png"
+    />
+    <link rel="manifest" href="/static/site.webmanifest" />
+    <link rel="stylesheet" type="text/css" href="styles.css" />
+    <meta name="robots" content="noindex, nofollow" />
+  </head>
+
+  <body>
+    <a href="/" target="_self">
+      <img class="banner" src="/static/banner.svg" alt="AutoKitteh" />
+    </a>
+
+    <table class="title">
+      <td><img class="logo" src="/static/images/azure_bot.svg" alt="Logo" /></td>
+      <td>
+        <h1>Azure Bot - Create a New Connection</h1>
+      </td>
+    </table>
+
+    <form id="save-form" method="post" action="/azurebot/save">
+      <div class="form-group">
+        <label for="app_id">App ID</label>
+        <input
+          type="text"
+          name="app_id"
+          autocomplete="off"
+          spellcheck="false"
+          required
+        />
+
+        <label for="app_password">App Password</label>
+        <input
+          type="text"
+          id="app_password"
+          name="app_password"
+          autocomplete="off"
+          spellcheck="false"
+        />
+
+        <label for="tenant_id">Tenant ID</label>
+        <input
+          type="text"
+          id="tenant_id"
+          name="tenant_id"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </div>
+
+      <button type="submit" class="submit-btn">Save Connection</button>
+    </form>
+
+    <!-- TODO(ENG-799) -->
+    <script>
+      const queryString = window.location.search;
+      document
+        .getElementById("save-form")
+        .setAttribute("action", "/azurebot/save" + queryString);
+    </script>
+  </body>
+</html>

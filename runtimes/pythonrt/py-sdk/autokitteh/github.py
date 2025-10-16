@@ -28,7 +28,10 @@ def github_client(connection: str, **kwargs) -> Github:
     check_connection_name(connection)
 
     # Optional: GitHub Enterprise Server
-    base_url = os.getenv("GITHUB_ENTERPRISE_URL")
+    base_url = os.getenv(f"{connection}__enterprise_url") or os.getenv(
+        "GITHUB_ENTERPRISE_URL"
+    )
+
     if base_url:
         kwargs["base_url"] = urljoin(base_url, "api/v3")
         print("GitHub Enterprise base URL: " + kwargs["base_url"])
@@ -65,7 +68,7 @@ class AppAuth(Auth.AppAuth):
 
     def __init__(self, app_id: int, ak_connection_name: str):
         self._app_id = app_id
-        self._private_key = ak_connection_name
+        self._conn_name = ak_connection_name
         self._jwt_expiry = Consts.DEFAULT_JWT_EXPIRY
         self._jwt_issued_at = Consts.DEFAULT_JWT_ISSUED_AT
         self._jwt_algorithm = Consts.DEFAULT_JWT_ALGORITHM
@@ -79,4 +82,4 @@ class AppAuth(Auth.AppAuth):
         }
         # This is the only change from the original code: replace the call to jwt.encode().
         # We don't monkey-patch it because the jwt module is usable outside the GitHub client too.
-        return encode_jwt(payload, self.private_key, self._jwt_algorithm)
+        return encode_jwt(payload, self._conn_name, self._jwt_algorithm)

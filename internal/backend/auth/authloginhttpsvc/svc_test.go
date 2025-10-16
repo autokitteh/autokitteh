@@ -1,7 +1,6 @@
 package authloginhttpsvc
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -10,6 +9,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authsessions"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens/authjwttokens"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktest"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -44,7 +44,7 @@ func TestNewSuccessLoginHandlerImmediate(t *testing.T) {
 		DisplayName:  "test",
 	}
 
-	ctx := context.TODO()
+	ctx := t.Context()
 
 	// cannot login without email.
 	h := s.newSuccessLoginHandler(ctx, ld)
@@ -65,7 +65,7 @@ func TestNewSuccessLoginHandlerImmediate(t *testing.T) {
 
 	// new user.
 	users.Reset()
-	s.Deps.Cfg.RejectNewUsers = false
+	s.Cfg.RejectNewUsers = false
 
 	h = s.newSuccessLoginHandler(ctx, ld)
 	if assert.False(t, isErrHandler(h), h) {
@@ -75,7 +75,7 @@ func TestNewSuccessLoginHandlerImmediate(t *testing.T) {
 			users.Users[testUser.ID()],
 		)
 	}
-	assertCounts(1, 0, 1)
+	assertCounts(1, 0, 2)
 
 	// user already exists and is active.
 	users.Reset(testUser)
@@ -106,7 +106,7 @@ func TestNewSuccessLoginHandlerImmediate(t *testing.T) {
 	// invited user should work even if rejecting new users.
 	users.Reset(testUser.WithStatus(sdktypes.UserStatusInvited).WithDisplayName(""))
 
-	s.Deps.Cfg.RejectNewUsers = true
+	s.Cfg.RejectNewUsers = true
 
 	h = s.newSuccessLoginHandler(ctx, ld)
 	if assert.False(t, isErrHandler(h), h) {
@@ -132,7 +132,8 @@ func TestNewSuccessLoginHandlerSessions(t *testing.T) {
 		},
 	}
 
-	sessions := kittehs.Must1(authsessions.New(authsessions.Configs.Dev))
+	tokens, _ := authjwttokens.New(authjwttokens.Configs.Dev)
+	sessions := kittehs.Must1(authsessions.New(authsessions.Configs.Dev, tokens))
 
 	s := &svc{
 		Deps: Deps{
@@ -150,7 +151,7 @@ func TestNewSuccessLoginHandlerSessions(t *testing.T) {
 	}
 
 	// new user.
-	h := s.newSuccessLoginHandler(context.TODO(), ld)
+	h := s.newSuccessLoginHandler(t.Context(), ld)
 
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/?noredir=1", nil))
@@ -162,7 +163,7 @@ func TestNewSuccessLoginHandlerSessions(t *testing.T) {
 
 			sd, err := sessions.Get(r)
 			if assert.NoError(t, err) {
-				assert.Equal(t, testUser.ID(), sd.UserID)
+				assert.Equal(t, testUser.ID(), sd.ID())
 			}
 		}
 	}

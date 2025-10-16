@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
-	"strings"
 
 	"go.uber.org/zap"
 
@@ -23,12 +22,11 @@ import (
 func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, desc)
 
-	// Check the "Content-Type" header in POST requests.
-	contentType := r.Header.Get("Content-Type")
-	expected := "application/x-www-form-urlencoded"
-	if r.Method == http.MethodPost && !strings.HasPrefix(contentType, expected) {
-		l.Warn("save connection: unexpected POST content type", zap.String("content_type", contentType))
-		c.AbortBadRequest("unexpected request content type")
+	// Check the "Content-Type" header.
+	if common.PostWithoutFormContentType(r) {
+		ct := r.Header.Get(common.HeaderContentType)
+		l.Warn("save connection: unexpected POST content type", zap.String("content_type", ct))
+		c.AbortBadRequest("unexpected content type")
 		return
 	}
 
@@ -53,7 +51,12 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	l = l.With(zap.String("auth_type", authType))
 
 	switch authType {
-	// First save the user-provided details of a private Zoom OAuth 2.0 app,
+	// Use the AutoKitteh server's default Salesforce OAuth 2.0 app, i.e.
+	// immediately redirect to the 3-legged OAuth 2.0 flow's starting point.
+	// THIS IS ONLY USED ON PRIVATE INSTANCES.
+	case integrations.OAuthDefault:
+		startOAuth(w, r, c, l)
+	// First save the user-provided details of a private Salesforce OAuth 2.0 app,
 	// and only then redirect to the 3-legged OAuth 2.0 flow's starting point.
 	case integrations.OAuthPrivate:
 		if err := h.savePrivateOAuth(r, vsid); err != nil {

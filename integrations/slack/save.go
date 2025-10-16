@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
-	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -26,12 +25,11 @@ import (
 func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 	c, l := sdkintegrations.NewConnectionInit(h.logger, w, r, desc)
 
-	// Check the "Content-Type" header in POST requests.
-	contentType := r.Header.Get("Content-Type")
-	expected := "application/x-www-form-urlencoded"
-	if r.Method == http.MethodPost && !strings.HasPrefix(contentType, expected) {
-		l.Warn("save connection: unexpected POST content type", zap.String("content_type", contentType))
-		c.AbortBadRequest("unexpected request content type")
+	// Check the "Content-Type" header.
+	if common.PostWithoutFormContentType(r) {
+		ct := r.Header.Get(common.HeaderContentType)
+		l.Warn("save connection: unexpected POST content type", zap.String("content_type", ct))
+		c.AbortBadRequest("unexpected content type")
 		return
 	}
 
@@ -123,24 +121,24 @@ func (h handler) saveSocketModeApp(r *http.Request, vsid sdktypes.VarScopeID) er
 		return errors.New("missing private Socket Mode app details")
 	}
 
-	// Test the tokens' usability and get authoritative installation details.
+	// Test the tokens' usability and get authoritative connection details.
 	ctx := r.Context()
 	auth, err := api.AuthTest(ctx, app.BotToken)
 	if err != nil {
 		h.logger.Warn("Slack token auth test failed", zap.Error(err))
-		return errors.New("Slack token auth test failed")
+		return errors.New("slack token auth test failed")
 	}
 
 	bot, err := api.BotsInfo(ctx, app.BotToken, auth)
 	if err != nil {
 		h.logger.Warn("Slack bot info request failed", zap.Error(err))
-		return errors.New("Slack bot info request failed")
+		return errors.New("slack bot info request failed")
 	}
 
 	_, err = api.AppsConnectionsOpen(ctx, app.AppToken)
 	if err != nil {
 		h.logger.Warn("Slack WebSocket connection opening failed", zap.Error(err))
-		return errors.New("Slack WebSocket connection opening failed")
+		return errors.New("slack WebSocket connection opening failed")
 	}
 
 	// Open a new Socket Mode connection.

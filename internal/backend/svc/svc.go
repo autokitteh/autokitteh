@@ -17,6 +17,7 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/oauth"
 	"go.autokitteh.dev/autokitteh/internal/backend/applygrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authhttpmiddleware"
@@ -41,6 +42,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/dispatchergrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/events"
 	"go.autokitteh.dev/autokitteh/internal/backend/eventsgrpcsvc"
+	"go.autokitteh.dev/autokitteh/internal/backend/externalclient"
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/health/healthchecker"
 	"go.autokitteh.dev/autokitteh/internal/backend/health/healthreporter"
@@ -48,7 +50,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/integrationsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/logger"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
-	"go.autokitteh.dev/autokitteh/internal/backend/oauth"
 	"go.autokitteh.dev/autokitteh/internal/backend/orgs"
 	"go.autokitteh.dev/autokitteh/internal/backend/orgsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/policy/opapolicy"
@@ -58,10 +59,13 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/secrets"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessionsgrpcsvc"
+	"go.autokitteh.dev/autokitteh/internal/backend/store"
+	"go.autokitteh.dev/autokitteh/internal/backend/storegrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/backend/triggers"
 	"go.autokitteh.dev/autokitteh/internal/backend/triggersgrpcsvc"
+	"go.autokitteh.dev/autokitteh/internal/backend/usagereporter"
 	"go.autokitteh.dev/autokitteh/internal/backend/users"
 	"go.autokitteh.dev/autokitteh/internal/backend/usersgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/vars"
@@ -69,6 +73,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/webhookssvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/webplatform"
 	"go.autokitteh.dev/autokitteh/internal/backend/webtools"
+	"go.autokitteh.dev/autokitteh/internal/backend/workflowexecutor"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/version"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimessvc"
@@ -155,9 +160,24 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		SupplyConfig("svc", svcConfigs),
 
 		LoggerFxOpt(opts.Silent),
+		Component("workflowexecutor", workflowexecutor.Configs,
+			fx.Provide(fx.Annotate(workflowexecutor.New, fx.As(new(workflowexecutor.WorkflowExecutor))))),
+		Component("usagereporter",
+			usagereporter.Configs,
+			fx.Provide(func(z *zap.Logger, cfg *usagereporter.Config) (usagereporter.UsageReporter, error) {
+				return usagereporter.New(z, cfg, string(opts.Mode))
+			}),
+			fx.Invoke(func(lc fx.Lifecycle, r usagereporter.UsageReporter) {
+				HookOnStart(lc, r.StartReportLoop)
+				HookOnStop(lc, r.StopReportLoop)
+			})),
+		// must be right after logger.
+		Component("telemetry", telemetry.Configs, fx.Invoke(telemetry.Init)),
+
 		DBFxOpt(),
 
 		Component("auth", configset.Empty, fx.Provide(authsvc.New)),
+		Component("externalclient", externalclient.Configs, fx.Provide(externalclient.New)),
 		Component("authjwttokens", authjwttokens.Configs, fx.Provide(authjwttokens.New)),
 		Component("authsessions", authsessions.Configs, fx.Provide(authsessions.New)),
 		Component(
@@ -218,6 +238,17 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component("builds", configset.Empty, fx.Provide(builds.New)),
 		Component("connections", configset.Empty, fx.Provide(connections.New)),
 		Component("deployments", deployments.Configs, fx.Provide(deployments.New)),
+		Component(
+			"webhooks", // Koanf config prefix, reused by all integrations.
+			oauth.Configs,
+			fx.Provide(oauth.New),
+			fx.Invoke(func(lc fx.Lifecycle, o *oauth.OAuth, m *muxes.Muxes) {
+				HookOnStart(lc, func(ctx context.Context) error {
+					return o.Start(m)
+				})
+			}),
+		),
+		Component("store", configset.Empty, fx.Provide(store.New)),
 		Component("projects", configset.Empty, fx.Provide(projects.New)),
 		Component("projectsgrpcsvc", projectsgrpcsvc.Configs, fx.Provide(projectsgrpcsvc.New)),
 		Component(
@@ -230,7 +261,6 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		Component("secrets", secrets.Configs, fx.Provide(secrets.New)),
 		Component("events", configset.Empty, fx.Provide(events.New)),
 		Component("triggers", configset.Empty, fx.Provide(triggers.New)),
-		Component("oauth", configset.Empty, fx.Provide(oauth.New)),
 		runtimesFXOption(),
 		Component("healthcheck", configset.Empty, fx.Provide(healthchecker.New)),
 		Component(
@@ -250,7 +280,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			cron.Configs,
 			fx.Provide(cron.New),
 			fx.Invoke(
-				func(lc fx.Lifecycle, ct *cron.Cron, c sdkservices.Connections, v sdkservices.Vars, o sdkservices.OAuth) {
+				func(lc fx.Lifecycle, ct *cron.Cron, c sdkservices.Connections, v sdkservices.Vars, o *oauth.OAuth) {
 					HookOnStart(lc, func(ctx context.Context) error {
 						return ct.Start(ctx, c, v, o)
 					})
@@ -263,6 +293,9 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			fx.Provide(func(lc fx.Lifecycle, l *zap.Logger, cfg *dispatcher.Config, svcs dispatcher.Svcs) (sdkservices.Dispatcher, sdkservices.DispatchFunc) {
 				d := dispatcher.New(l, cfg, svcs)
 				HookOnStart(lc, d.Start)
+				if cfg.ExternalDispatching.Enabled {
+					return d, d.DispatchExternal
+				}
 				return d, d.Dispatch
 			}),
 		),
@@ -295,7 +328,6 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		fx.Invoke(usersgrpcsvc.Init),
 		fx.Invoke(orgsgrpcsvc.Init),
 		fx.Invoke(integrationsgrpcsvc.Init),
-		fx.Invoke(oauth.Init),
 		fx.Invoke(projectsgrpcsvc.Init),
 		fx.Invoke(func(z *zap.Logger, runtimes sdkservices.Runtimes, muxes *muxes.Muxes) {
 			sdkruntimessvc.Init(z, runtimes, muxes.Auth)
@@ -303,14 +335,14 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		fx.Invoke(sessionsgrpcsvc.Init),
 		fx.Invoke(triggersgrpcsvc.Init),
 		fx.Invoke(varsgrpcsvc.Init),
-		Component("telemetry", telemetry.Configs, fx.Provide(telemetry.New)),
+		fx.Invoke(storegrpcsvc.Init),
 		Component(
 			"http",
 			httpsvc.Configs,
 			fx.Provide(func(lc fx.Lifecycle, z *zap.Logger, cfg *httpsvc.Config,
 				authzCheckFunc authz.CheckFunc,
 				wrapAuth authhttpmiddleware.AuthMiddlewareDecorator,
-				authHdrExtractor authhttpmiddleware.AuthHeaderExtractor, telemetry *telemetry.Telemetry,
+				authHdrExtractor authhttpmiddleware.AuthHeaderExtractor,
 			) (svc httpsvc.Svc, all *muxes.Muxes, err error) {
 				svc, err = httpsvc.New(
 					lc, z, cfg,
@@ -327,7 +359,6 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 							return nil
 						},
 					},
-					telemetry,
 				)
 				if err != nil {
 					return
@@ -349,11 +380,10 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			muxes.NoAuth.Handle("GET /i/{$}", &h)
 		}),
 		fx.Invoke(dashboardsvc.Init),
-		fx.Invoke(oauth.InitWebhook),
 		fx.Invoke(connectionsinitsvc.Init),
 		Component(
 			"webhooks",
-			configset.Empty,
+			webhookssvc.Configs,
 			fx.Provide(webhookssvc.New),
 			fx.Invoke(func(lc fx.Lifecycle, w *webhookssvc.Service, muxes *muxes.Muxes) {
 				HookSimpleOnStart(lc, func() { w.Start(muxes) })
@@ -401,6 +431,10 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				w.Header().Set("Content-Type", "application/json")
 				kittehs.Must0(json.NewEncoder(w).Encode(version.Version))
 			})
+			muxes.NoAuth.HandleFunc("GET /version", func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				kittehs.Must0(json.NewEncoder(w).Encode(version.Version))
+			})
 			muxes.NoAuth.HandleFunc("GET /internal/uptime", func(w http.ResponseWriter, r *http.Request) {
 				uptime := fixtures.Uptime().Truncate(time.Second)
 
@@ -434,6 +468,10 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				})
 			}),
 		),
+		fx.Invoke(func(lc fx.Lifecycle, w workflowexecutor.WorkflowExecutor) {
+			HookOnStart(lc, w.Start)
+			HookOnStop(lc, w.Stop)
+		}),
 		fx.Invoke(func(z *zap.Logger, lc fx.Lifecycle, muxes *muxes.Muxes, h healthreporter.HealthReporter) {
 			var ready atomic.Bool
 

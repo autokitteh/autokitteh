@@ -5,7 +5,7 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Duration, Message, proto3, protoInt64, Timestamp } from "@bufbuild/protobuf";
-import { Session, SessionLog, SessionLogRecord, SessionLogRecord_Type, SessionStateType } from "./session_pb.js";
+import { Session, SessionLogRecord, SessionLogRecord_Type, SessionStateType } from "./session_pb.js";
 import { Value } from "../../values/v1/values_pb.js";
 
 /**
@@ -504,13 +504,6 @@ export class GetLogRequest extends Message<GetLogRequest> {
  */
 export class GetLogResponse extends Message<GetLogResponse> {
   /**
-   * deprecated, use records.
-   *
-   * @generated from field: autokitteh.sessions.v1.SessionLog log = 1;
-   */
-  log?: SessionLog;
-
-  /**
    * @generated from field: int64 count = 2;
    */
   count = protoInt64.zero;
@@ -533,7 +526,6 @@ export class GetLogResponse extends Message<GetLogResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "autokitteh.sessions.v1.GetLogResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "log", kind: "message", T: SessionLog },
     { no: 2, name: "count", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
     { no: 3, name: "records", kind: "message", T: SessionLogRecord, repeated: true },
     { no: 10, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -553,6 +545,80 @@ export class GetLogResponse extends Message<GetLogResponse> {
 
   static equals(a: GetLogResponse | PlainMessage<GetLogResponse> | undefined, b: GetLogResponse | PlainMessage<GetLogResponse> | undefined): boolean {
     return proto3.util.equals(GetLogResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.sessions.v1.DownloadLogsRequest
+ */
+export class DownloadLogsRequest extends Message<DownloadLogsRequest> {
+  /**
+   * @generated from field: string session_id = 1;
+   */
+  sessionId = "";
+
+  constructor(data?: PartialMessage<DownloadLogsRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.sessions.v1.DownloadLogsRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "session_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DownloadLogsRequest {
+    return new DownloadLogsRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DownloadLogsRequest {
+    return new DownloadLogsRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DownloadLogsRequest {
+    return new DownloadLogsRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DownloadLogsRequest | PlainMessage<DownloadLogsRequest> | undefined, b: DownloadLogsRequest | PlainMessage<DownloadLogsRequest> | undefined): boolean {
+    return proto3.util.equals(DownloadLogsRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.sessions.v1.DownloadLogsResponse
+ */
+export class DownloadLogsResponse extends Message<DownloadLogsResponse> {
+  /**
+   * @generated from field: bytes data = 1;
+   */
+  data = new Uint8Array(0);
+
+  constructor(data?: PartialMessage<DownloadLogsResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.sessions.v1.DownloadLogsResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "data", kind: "scalar", T: 12 /* ScalarType.BYTES */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DownloadLogsResponse {
+    return new DownloadLogsResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DownloadLogsResponse {
+    return new DownloadLogsResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DownloadLogsResponse {
+    return new DownloadLogsResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DownloadLogsResponse | PlainMessage<DownloadLogsResponse> | undefined, b: DownloadLogsResponse | PlainMessage<DownloadLogsResponse> | undefined): boolean {
+    return proto3.util.equals(DownloadLogsResponse, a, b);
   }
 }
 

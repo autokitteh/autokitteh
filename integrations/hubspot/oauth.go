@@ -1,11 +1,15 @@
 package hubspot
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/common"
+	"go.autokitteh.dev/autokitteh/integrations/oauth"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -14,12 +18,14 @@ import (
 // handler is an autokitteh webhook which implements [http.Handler]
 // to receive and dispatch asynchronous event notifications.
 type handler struct {
-	logger *zap.Logger
-	oauth  sdkservices.OAuth
+	logger   *zap.Logger
+	vars     sdkservices.Vars
+	oauth    *oauth.OAuth
+	dispatch sdkservices.DispatchFunc
 }
 
-func NewHTTPHandler(l *zap.Logger, o sdkservices.OAuth) http.Handler {
-	return handler{logger: l, oauth: o}
+func NewHTTPHandler(l *zap.Logger, v sdkservices.Vars, o *oauth.OAuth, d sdkservices.DispatchFunc) handler {
+	return handler{logger: l, oauth: o, vars: v, dispatch: d}
 }
 
 func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -48,29 +54,52 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Test the OAuth token's usability and get authoritative installation details.
-	req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, "https://api.hubapi.com/crm/v3/owners/", nil)
-	if err != nil {
-		l.Error("Failed to create HTTP request", zap.Error(err))
-		c.AbortServerError("request creation error")
+	// Test the OAuth token's usability and get authoritative connection details.
+	url := "https://api.hubapi.com/crm/v3/owners/"
+	auth := "Bearer " + oauthToken.AccessToken
+	if _, err := common.HTTPGet(r.Context(), url, auth); err != nil {
+		l.Warn("failed to test HubSpot OAuth token", zap.Error(err))
+		c.AbortServerError("failed to test OAuth token")
 		return
 	}
 
-	req.Header.Add("Authorization", "Bearer "+oauthToken.AccessToken)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	// Sanity check: the connection ID is valid.
+	cid, err := sdktypes.StrictParseConnectionID(c.ConnectionID)
 	if err != nil {
-		l.Error("Failed to execute HTTP request", zap.Error(err))
-		c.AbortBadRequest("execution error")
+		l.Warn("save connection: invalid connection ID", zap.Error(err))
+		c.AbortBadRequest("invalid connection ID")
 		return
 	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		l.Warn("Token is invalid or an error occurred", zap.Int("status_code", resp.StatusCode))
-		c.AbortBadRequest("invalid token or error occurred")
+	vsid := sdktypes.NewVarScopeID(cid)
+	common.SaveAuthType(r, h.vars, vsid)
+
+	// Get portal ID
+	accountURL := "https://api.hubapi.com/integrations/v1/me"
+	accountResp, err := common.HTTPGet(r.Context(), accountURL, auth)
+	if err != nil {
+		l.Warn("failed to get HubSpot account details", zap.Error(err))
+		c.AbortServerError("failed to get account details")
 		return
+	}
+
+	// Parse response and extract portal ID.
+	type HubSpotAccount struct {
+		PortalId int64 `json:"portalId"`
+	}
+
+	var account HubSpotAccount
+	if json.Unmarshal(accountResp, &account) == nil && account.PortalId != 0 {
+		portalID := strconv.FormatInt(account.PortalId, 10)
+
+		portal_id_var := sdktypes.NewVar(portalIDVar).SetValue(portalID)
+		if err := h.vars.Set(r.Context(), portal_id_var.WithScopeID(vsid)); err != nil {
+			l.Warn("failed to save portal ID", zap.Error(err))
+			c.AbortServerError("failed to save portal ID")
+			return
+		}
+
+		l.Info("saved HubSpot portal ID", zap.String("portalId", portalID))
 	}
 
 	c.Finalize(sdktypes.NewVars(data.ToVars()...))

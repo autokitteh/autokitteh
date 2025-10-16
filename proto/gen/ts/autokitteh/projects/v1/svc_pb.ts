@@ -394,6 +394,11 @@ export class BuildRequest extends Message<BuildRequest> {
    */
   projectId = "";
 
+  /**
+   * @generated from field: bool async = 2;
+   */
+  async = false;
+
   constructor(data?: PartialMessage<BuildRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -403,6 +408,7 @@ export class BuildRequest extends Message<BuildRequest> {
   static readonly typeName = "autokitteh.projects.v1.BuildRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "async", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BuildRequest {
@@ -622,6 +628,11 @@ export class ExportRequest extends Message<ExportRequest> {
    */
   projectId = "";
 
+  /**
+   * @generated from field: bool include_vars_contents = 2;
+   */
+  includeVarsContents = false;
+
   constructor(data?: PartialMessage<ExportRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -631,6 +642,7 @@ export class ExportRequest extends Message<ExportRequest> {
   static readonly typeName = "autokitteh.projects.v1.ExportRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "include_vars_contents", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ExportRequest {
@@ -699,12 +711,14 @@ export class LintRequest extends Message<LintRequest> {
   projectId = "";
 
   /**
+   * if project_id is not empty and resources are empty, resources are fetched from the project.
+   *
    * @generated from field: map<string, bytes> resources = 2;
    */
   resources: { [key: string]: Uint8Array } = {};
 
   /**
-   * name of manifest file
+   * name of manifest file, can be empty if project_id is not empty.
    *
    * @generated from field: string manifest_file = 3;
    */

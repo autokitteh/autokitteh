@@ -193,17 +193,67 @@ class PrintResponse(_message.Message):
     error: str
     def __init__(self, error: _Optional[str] = ...) -> None: ...
 
+class StoreListRequest(_message.Message):
+    __slots__ = ["runner_id"]
+    RUNNER_ID_FIELD_NUMBER: _ClassVar[int]
+    runner_id: str
+    def __init__(self, runner_id: _Optional[str] = ...) -> None: ...
+
+class StoreListResponse(_message.Message):
+    __slots__ = ["error", "keys"]
+    ERROR_FIELD_NUMBER: _ClassVar[int]
+    KEYS_FIELD_NUMBER: _ClassVar[int]
+    error: str
+    keys: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, error: _Optional[str] = ..., keys: _Optional[_Iterable[str]] = ...) -> None: ...
+
+class StoreMutateRequest(_message.Message):
+    __slots__ = ["runner_id", "key", "operation", "operands"]
+    RUNNER_ID_FIELD_NUMBER: _ClassVar[int]
+    KEY_FIELD_NUMBER: _ClassVar[int]
+    OPERATION_FIELD_NUMBER: _ClassVar[int]
+    OPERANDS_FIELD_NUMBER: _ClassVar[int]
+    runner_id: str
+    key: str
+    operation: str
+    operands: _containers.RepeatedCompositeFieldContainer[_values_pb2.Value]
+    def __init__(self, runner_id: _Optional[str] = ..., key: _Optional[str] = ..., operation: _Optional[str] = ..., operands: _Optional[_Iterable[_Union[_values_pb2.Value, _Mapping]]] = ...) -> None: ...
+
+class StoreMutateResponse(_message.Message):
+    __slots__ = ["error", "result"]
+    ERROR_FIELD_NUMBER: _ClassVar[int]
+    RESULT_FIELD_NUMBER: _ClassVar[int]
+    error: str
+    result: _values_pb2.Value
+    def __init__(self, error: _Optional[str] = ..., result: _Optional[_Union[_values_pb2.Value, _Mapping]] = ...) -> None: ...
+
+class OutcomeRequest(_message.Message):
+    __slots__ = ["runner_id", "value"]
+    RUNNER_ID_FIELD_NUMBER: _ClassVar[int]
+    VALUE_FIELD_NUMBER: _ClassVar[int]
+    runner_id: str
+    value: _values_pb2.Value
+    def __init__(self, runner_id: _Optional[str] = ..., value: _Optional[_Union[_values_pb2.Value, _Mapping]] = ...) -> None: ...
+
+class OutcomeResponse(_message.Message):
+    __slots__ = ["error"]
+    ERROR_FIELD_NUMBER: _ClassVar[int]
+    error: str
+    def __init__(self, error: _Optional[str] = ...) -> None: ...
+
 class StartSessionRequest(_message.Message):
-    __slots__ = ["runner_id", "loc", "data", "memo"]
+    __slots__ = ["runner_id", "loc", "data", "memo", "project"]
     RUNNER_ID_FIELD_NUMBER: _ClassVar[int]
     LOC_FIELD_NUMBER: _ClassVar[int]
     DATA_FIELD_NUMBER: _ClassVar[int]
     MEMO_FIELD_NUMBER: _ClassVar[int]
+    PROJECT_FIELD_NUMBER: _ClassVar[int]
     runner_id: str
     loc: str
     data: bytes
     memo: bytes
-    def __init__(self, runner_id: _Optional[str] = ..., loc: _Optional[str] = ..., data: _Optional[bytes] = ..., memo: _Optional[bytes] = ...) -> None: ...
+    project: str
+    def __init__(self, runner_id: _Optional[str] = ..., loc: _Optional[str] = ..., data: _Optional[bytes] = ..., memo: _Optional[bytes] = ..., project: _Optional[str] = ...) -> None: ...
 
 class StartSessionResponse(_message.Message):
     __slots__ = ["session_id", "error"]
@@ -279,6 +329,24 @@ class HandlerHealthRequest(_message.Message):
     def __init__(self) -> None: ...
 
 class HandlerHealthResponse(_message.Message):
+    __slots__ = ["error"]
+    ERROR_FIELD_NUMBER: _ClassVar[int]
+    error: str
+    def __init__(self, error: _Optional[str] = ...) -> None: ...
+
+class ExecuteReplyRequest(_message.Message):
+    __slots__ = ["runner_id", "result", "error", "traceback"]
+    RUNNER_ID_FIELD_NUMBER: _ClassVar[int]
+    RESULT_FIELD_NUMBER: _ClassVar[int]
+    ERROR_FIELD_NUMBER: _ClassVar[int]
+    TRACEBACK_FIELD_NUMBER: _ClassVar[int]
+    runner_id: str
+    result: _values_pb2.Value
+    error: str
+    traceback: _containers.RepeatedCompositeFieldContainer[_user_code_pb2.Frame]
+    def __init__(self, runner_id: _Optional[str] = ..., result: _Optional[_Union[_values_pb2.Value, _Mapping]] = ..., error: _Optional[str] = ..., traceback: _Optional[_Iterable[_Union[_user_code_pb2.Frame, _Mapping]]] = ...) -> None: ...
+
+class ExecuteReplyResponse(_message.Message):
     __slots__ = ["error"]
     ERROR_FIELD_NUMBER: _ClassVar[int]
     error: str

@@ -12,7 +12,9 @@ import (
 )
 
 var (
+	ApiKeyVar   = sdktypes.NewSymbol("api_key")
 	AuthTypeVar = sdktypes.NewSymbol("auth_type")
+	PATVar      = sdktypes.NewSymbol("pat")
 
 	OAuthAccessTokenVar  = sdktypes.NewSymbol("oauth_access_token")
 	OAuthExpiryVar       = sdktypes.NewSymbol("oauth_expiry")
@@ -20,18 +22,37 @@ var (
 	OAuthTokenTypeVar    = sdktypes.NewSymbol("oauth_token_type")
 
 	LegacyOAuthAccessTokenVar = sdktypes.NewSymbol("oauth_AccessToken")
+
+	PrivateClientIDVar     = sdktypes.NewSymbol("private_client_id")
+	PrivateClientSecretVar = sdktypes.NewSymbol("private_client_secret")
 )
 
 // OAuthData contains OAuth 2.0 token details.
 type OAuthData struct {
-	AccessToken  string `var:"oauth_access_token,secret"`
+	AccessToken  string `var:"oauth_access_token,secret" json:"access_token"`
 	Expiry       string `var:"oauth_expiry"`
-	RefreshToken string `var:"oauth_refresh_token,secret"`
+	RefreshToken string `var:"oauth_refresh_token,secret" json:"refresh_token"`
 	TokenType    string `var:"oauth_token_type"`
+}
+
+// ToToken converts OAuthData to an OAuth 2.0 token. If the expiry
+// is missing or invalid (not RFC-3339), we use the zero time.
+func (o OAuthData) ToToken() *oauth2.Token {
+	expiry, err := time.Parse(time.RFC3339, o.Expiry)
+	if err != nil {
+		expiry = time.Time{}
+	}
+	return &oauth2.Token{
+		AccessToken:  o.AccessToken,
+		Expiry:       expiry,
+		RefreshToken: o.RefreshToken,
+		TokenType:    o.TokenType,
+	}
 }
 
 // CheckOAuthToken returns a warning status if [OAuthAccessTokenVar] is missing in [sdktypes.Vars]; otherwise,
 // it returns OK. It depends on [sdktypes.Vars] being preloaded with [OAuthAccessTokenVar], which isn't validated.
+// This is reused in connection status and test functions of all integrations.
 func CheckOAuthToken(vs sdktypes.Vars) (sdktypes.Status, error) {
 	if vs.GetValue(OAuthAccessTokenVar) == "" {
 		return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
@@ -39,8 +60,9 @@ func CheckOAuthToken(vs sdktypes.Vars) (sdktypes.Status, error) {
 	return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using OAuth 2.0"), nil
 }
 
-// CheckLegacyOAuthToken returns a warning status if [LegacyOAuthAccessTokenVar] is missing in [sdktypes.Vars]; otherwise,
-// it returns OK. It depends on [sdktypes.Vars] being preloaded with [LegacyOAuthAccessTokenVar], which isn't validated.
+// CheckLegacyOAuthToken returns a warning status if [LegacyOAuthAccessTokenVar] is
+// missing in [sdktypes.Vars]; otherwise, it returns OK. It depends on [sdktypes.Vars]
+// being preloaded with [LegacyOAuthAccessTokenVar], which isn't validated.
 func CheckLegacyOAuthToken(vs sdktypes.Vars) (sdktypes.Status, error) {
 	if vs.GetValue(LegacyOAuthAccessTokenVar) == "" {
 		return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
@@ -58,9 +80,10 @@ func EncodeOAuthData(t *oauth2.Token) OAuthData {
 	}
 }
 
-// ReadConnectionVars returns the connection's variables, or
+// ReadVarsWithStatus returns the connection's variables, or
 // an error if the connection is not initialized or accessible.
-func ReadConnectionVars(ctx context.Context, vars sdkservices.Vars, cid sdktypes.ConnectionID) (sdktypes.Vars, sdktypes.Status, error) {
+// This is reused in connection status and test functions of all integrations.
+func ReadVarsWithStatus(ctx context.Context, vars sdkservices.Vars, cid sdktypes.ConnectionID) (sdktypes.Vars, sdktypes.Status, error) {
 	if !cid.IsValid() {
 		return nil, sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 	}

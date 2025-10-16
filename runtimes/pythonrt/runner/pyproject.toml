@@ -3,8 +3,10 @@ name = "runner"
 version = "0.1.2"
 dependencies = [
 	"grpcio ~= 1.68",
-	"autokitteh[all] ~= 0.4",
+	"autokitteh[all] ~= 0.8", # Must match the version in py-sdk/pyproject.toml.
+	"pytest>=8.4.2",
 ]
+requires-python = ">= 3.11"
 
 [project.optional-dependencies]
 all = [

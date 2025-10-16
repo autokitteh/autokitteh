@@ -1,21 +1,24 @@
 package pythonrt
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
-	"os"
 	"sync"
 	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/image"
+	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
-	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/docker/go-connections/nat"
+	"github.com/moby/go-archive"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapio"
 
@@ -29,31 +32,35 @@ const (
 )
 
 type dockerClient struct {
-	client          *client.Client
-	activeRunnerIDs map[string]struct{}
-	allRunnerIDs    map[string]struct{}
-	mu              *sync.Mutex
-	runnerLabels    map[string]string
-	logBuildProcess bool
-	logRunner       bool
-	logger          *zap.Logger
+	client                     *client.Client
+	activeRunnerIDs            map[string]struct{}
+	allRunnerIDs               map[string]struct{}
+	mu                         sync.Mutex
+	runnerLabels               map[string]string
+	logBuildProcess            bool
+	logRunner                  bool
+	logger                     *zap.Logger
+	maxMemoryBytesPerContainer int64
+	maxNanoCPUPerContainer     int64
 }
 
-func NewDockerClient(logger *zap.Logger, logRunner, logBuildProcess bool) (*dockerClient, error) {
+func NewDockerClient(logger *zap.Logger, cfg DockerRuntimeConfig) (*dockerClient, error) {
 	apiClient, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		return nil, err
 	}
 
 	dc := &dockerClient{
-		client:          apiClient,
-		mu:              new(sync.Mutex),
-		runnerLabels:    map[string]string{runnersLabel: ""},
-		activeRunnerIDs: map[string]struct{}{},
-		allRunnerIDs:    map[string]struct{}{},
-		logger:          logger,
-		logBuildProcess: logBuildProcess,
-		logRunner:       logRunner,
+		client:                     apiClient,
+		mu:                         sync.Mutex{},
+		runnerLabels:               map[string]string{runnersLabel: ""},
+		activeRunnerIDs:            map[string]struct{}{},
+		allRunnerIDs:               map[string]struct{}{},
+		logger:                     logger,
+		logBuildProcess:            cfg.LogBuildCode,
+		logRunner:                  cfg.LogRunnerCode,
+		maxMemoryBytesPerContainer: cfg.MaxMemoryPerWorkflowMB * 1024 * 1024,
+		maxNanoCPUPerContainer:     int64(cfg.MaxCPUsPerWorkflow * 1000000000),
 	}
 
 	if err := dc.SyncCurrentState(); err != nil {
@@ -89,7 +96,7 @@ func (d *dockerClient) ensureNetwork() (string, error) {
 	return inspectResult.ID, nil
 }
 
-func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, sessionID sdktypes.SessionID, cmd []string, vars map[string]string) (string, string, error) {
+func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, codePath string, sessionID sdktypes.SessionID, cmd []string, vars map[string]string) (string, string, error) {
 	envVars := make([]string, 0, len(vars))
 	for k, v := range vars {
 		envVars = append(envVars, k+"="+v)
@@ -107,11 +114,22 @@ func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, sess
 			WorkingDir: "/workflow",
 		},
 		&container.HostConfig{
+			AutoRemove:   true,
 			NetworkMode:  container.NetworkMode(networkName),
 			PortBindings: nat.PortMap{internalRunnerPort: []nat.PortBinding{{HostIP: "127.0.0.1"}}},
 			Tmpfs:        map[string]string{"/tmp": "size=64m"},
+			Mounts: []mount.Mount{
+				{
+					Type:   mount.TypeBind,
+					Source: codePath,
+					Target: "/workflow",
+				},
+			},
+			Resources: container.Resources{
+				Memory:   d.maxMemoryBytesPerContainer,
+				NanoCPUs: d.maxNanoCPUPerContainer,
+			},
 		}, nil, nil, "")
-
 	if err != nil {
 		return "", "", err
 	}
@@ -120,15 +138,12 @@ func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, sess
 		return "", "", err
 	}
 
-	d.mu.Lock()
-	d.allRunnerIDs[resp.ID] = struct{}{}
-	d.mu.Unlock()
-
-	d.setupContainerLogging(ctx, resp.ID, sessionID)
-	port, err := d.nextFreePort(ctx, resp.ID)
+	port, err := d.getContainerPort(ctx, resp.ID)
 	if err != nil {
 		return "", "", err
 	}
+
+	d.setupContainerLogging(ctx, resp.ID, sessionID)
 
 	d.mu.Lock()
 	d.activeRunnerIDs[resp.ID] = struct{}{}
@@ -137,12 +152,19 @@ func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, sess
 	return resp.ID, port, nil
 }
 
-func (d *dockerClient) nextFreePort(ctx context.Context, cid string) (string, error) {
+func (d *dockerClient) getContainerPort(ctx context.Context, cid string) (string, error) {
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
 
-	for range 10 {
+	retries := 10
+	for range ticker.C {
+		retries--
+		if retries <= 0 {
+			break
+		}
 		inspect, err := d.client.ContainerInspect(ctx, cid)
 		if err != nil {
-			return "", err
+			continue
 		}
 
 		ports, ok := inspect.NetworkSettings.Ports[nat.Port(internalRunnerPort)]
@@ -151,10 +173,54 @@ func (d *dockerClient) nextFreePort(ctx context.Context, cid string) (string, er
 			return port, nil
 		}
 
-		time.Sleep(time.Second)
+	}
+
+	inspect, err := d.client.ContainerInspect(ctx, cid)
+	if err != nil {
+		return "", err
+	}
+
+	if inspect.State.ExitCode != 0 {
+		logs, readErr := d.getContainerLogs(ctx, cid)
+		if readErr != nil {
+			logs = "container exit with status code != 0, but we could not read logs"
+		}
+		return "", errors.New(logs)
 	}
 
 	return "", errors.New("couldn't find port")
+}
+
+func (d *dockerClient) getContainerExitCode(ctx context.Context, cid string) (int, error) {
+	inspect, err := d.client.ContainerInspect(ctx, cid)
+	if err != nil {
+		return 0, err
+	}
+
+	if inspect.State.Error != "" {
+		return 0, errors.New(inspect.State.Error)
+	}
+
+	return inspect.State.ExitCode, nil
+}
+
+func (d *dockerClient) getContainerLogs(ctx context.Context, cid string) (string, error) {
+	reader, err := d.client.ContainerLogs(ctx, cid, container.LogsOptions{
+		ShowStdout: true,
+		ShowStderr: true,
+		Follow:     false,
+	})
+	if err != nil {
+		return "", err
+	}
+	defer reader.Close()
+	var buf bytes.Buffer
+	_, err = stdcopy.StdCopy(&buf, &buf, reader)
+	if err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
 }
 
 func (d *dockerClient) setupContainerLogging(ctx context.Context, cid string, sessionID sdktypes.SessionID) {
@@ -250,13 +316,19 @@ func (d *dockerClient) BuildImage(ctx context.Context, name, directory string) e
 	}
 	defer resp.Body.Close()
 
-	var dest io.Writer = io.Discard
-	if d.logBuildProcess {
-		dest = os.Stdout
-	}
-	if _, err := io.Copy(dest, resp.Body); err != nil {
+	parser := &logParser{}
+
+	if _, err := io.Copy(parser, resp.Body); err != nil {
 		d.logger.Error("Error printing build output", zap.Error(err))
 		return err
+	}
+
+	if parser.hasErrors {
+		d.logger.Debug(fmt.Sprintf("found errors when building image %s ", name), zap.Strings("errors", parser.errors))
+		if len(parser.errors) == 0 {
+			return errors.New("internal error, contact support")
+		}
+		return errors.New(parser.errors[0])
 	}
 
 	exists, err := d.ImageExists(ctx, name)
@@ -268,7 +340,7 @@ func (d *dockerClient) BuildImage(ctx context.Context, name, directory string) e
 		return errors.New("failed creating image")
 	}
 
-	d.logger.Info("Image built successfully")
+	d.logger.Debug("Image built successfully")
 	return nil
 }
 
@@ -291,7 +363,6 @@ func (d *dockerClient) IsRunning(runnerID string) (bool, error) {
 
 	_, ok := d.activeRunnerIDs[runnerID]
 	return ok, nil
-
 }
 
 func (d *dockerClient) StopRunner(ctx context.Context, id string) error {
@@ -327,4 +398,41 @@ func (d *dockerClient) StopRunner(ctx context.Context, id string) error {
 	}
 
 	return nil
+}
+
+type logParser struct {
+	hasErrors bool
+	errors    []string
+	logs      []string
+}
+
+func (p *logParser) Write(data []byte) (n int, err error) {
+	lines := bytes.Split(data, []byte("\r\n"))
+	for _, line := range lines {
+		if len(line) == 0 {
+			continue
+		}
+		var logEntry map[string]interface{}
+		if err := json.Unmarshal(line, &logEntry); err != nil {
+			continue
+		}
+		if log, ok := logEntry["stream"]; ok {
+			if logStr, ok := log.(string); ok {
+				p.logs = append(p.logs, logStr)
+			}
+		}
+
+		if err, ok := logEntry["error"]; ok {
+			p.hasErrors = true
+			if len(p.logs) == 0 {
+				if errStr, ok := err.(string); ok {
+					p.errors = append(p.errors, errStr)
+				}
+			} else {
+				p.errors = append(p.errors, p.logs[len(p.logs)-1])
+			}
+		}
+
+	}
+	return len(data), nil
 }

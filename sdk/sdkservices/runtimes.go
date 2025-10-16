@@ -23,6 +23,7 @@ type Runtimes interface {
 		path string,
 		build *sdkbuildfile.BuildFile,
 		globals map[string]sdktypes.Value,
+		durable bool,
 		cbs *RunCallbacks,
 	) (Run, error)
 }
@@ -41,6 +42,7 @@ type Runtime interface {
 		path string, // where to start running from.
 		compiled map[string][]byte,
 		values map[string]sdktypes.Value,
+		durable bool,
 		cbs *RunCallbacks,
 	) (Run, error)
 }
@@ -57,7 +59,7 @@ type RunCallbacks struct {
 	Now                func(ctx context.Context, rid sdktypes.RunID) (time.Time, error)
 	Print              func(ctx context.Context, rid sdktypes.RunID, text string) error
 	Sleep              func(ctx context.Context, rid sdktypes.RunID, d time.Duration) error
-	Start              func(ctx context.Context, rid sdktypes.RunID, loc sdktypes.CodeLocation, inputs map[string]sdktypes.Value, memo map[string]string) (sdktypes.SessionID, error)
+	Start              func(ctx context.Context, rid sdktypes.RunID, project sdktypes.Symbol, loc sdktypes.CodeLocation, inputs map[string]sdktypes.Value, memo map[string]string) (sdktypes.SessionID, error)
 
 	// Events
 	Subscribe   func(ctx context.Context, rid sdktypes.RunID, name, filter string) (string, error)
@@ -67,6 +69,13 @@ type RunCallbacks struct {
 	// Signals
 	Signal     func(ctx context.Context, rid sdktypes.RunID, sid sdktypes.SessionID, name string, payload sdktypes.Value) error
 	NextSignal func(ctx context.Context, rid sdktypes.RunID, names []string, timeout time.Duration) (*RunSignal, error)
+
+	// Store
+	ListStoreValues  func(ctx context.Context, rid sdktypes.RunID) ([]string, error)
+	MutateStoreValue func(ctx context.Context, rid sdktypes.RunID, key, op string, operands ...sdktypes.Value) (sdktypes.Value, error)
+
+	// Outcome
+	Outcome func(ctx context.Context, rid sdktypes.RunID, v sdktypes.Value) error
 }
 
 type Run interface {

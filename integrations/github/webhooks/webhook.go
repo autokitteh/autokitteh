@@ -1,7 +1,6 @@
 package webhooks
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,9 +13,8 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations/common"
-	"go.autokitteh.dev/autokitteh/integrations/github/internal/vars"
+	"go.autokitteh.dev/autokitteh/integrations/github/vars"
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -90,7 +88,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		l := l.With(zap.String("webhook_id", webhookID))
 
 		ctx := r.Context()
-		cids, err := h.vars.FindConnectionIDs(ctx, h.integrationID, vars.PATKey, webhookID)
+		cids, err := h.vars.FindActiveConnectionIDs(ctx, h.integrationID, vars.PATKey, webhookID)
 		if err != nil {
 			l.Error("failed to find connection IDs", zap.Error(err))
 			common.HTTPError(w, http.StatusInternalServerError)
@@ -165,20 +163,9 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Transform the received GitHub event into an AutoKitteh event.
-	data, err := transformEvent(l, w, jsonEvent)
+	// Transform the GitHub event into an AutoKitteh event.
+	akEvent, err := common.TransformEvent(l, jsonEvent, eventType)
 	if err != nil {
-		return
-	}
-	akEvent, err := sdktypes.EventFromProto(&sdktypes.EventPB{
-		EventType: eventType,
-		Data:      data,
-	})
-	if err != nil {
-		l.Error("failed to convert protocol buffer to SDK event",
-			zap.Any("data", data),
-			zap.Error(err),
-		)
 		common.HTTPError(w, http.StatusInternalServerError)
 		return
 	}
@@ -186,6 +173,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Retrieve all the relevant connections for this event.
 	var cids []sdktypes.ConnectionID
 	if userCID.IsValid() {
+		// TODO: What about other private OAuth connection with the same app?
 		cids = append(cids, userCID) // User-defined webhook.
 	}
 
@@ -193,7 +181,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if installID != "" {
 		// App webhook.
-		icids, err := h.vars.FindConnectionIDs(ctx, h.integrationID, vars.InstallKey(appID, installID), "")
+		icids, err := h.vars.FindActiveConnectionIDs(ctx, h.integrationID, vars.InstallKey(appID, installID), "")
 		if err != nil {
 			l.Error("failed to find connection IDs", zap.Error(err))
 			common.HTTPError(w, http.StatusInternalServerError)
@@ -203,10 +191,8 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		cids = append(cids, icids...)
 	}
 
-	// Dispatch the event to all of them, for asynchronous handling.
-	h.dispatchAsyncEventsToConnections(ctx, cids, akEvent)
-
-	// Returning immediately without an error = acknowledgement of receipt.
+	// Dispatch the event to all of them, for potential asynchronous handling.
+	common.DispatchEvent(ctx, l, h.dispatch, akEvent, cids)
 }
 
 // webhookSecret reads the webhook secret from the private connection's
@@ -218,7 +204,7 @@ func (h handler) webhookSecret(r *http.Request) (string, error) {
 	}
 
 	ctx := r.Context()
-	cids, err := h.vars.FindConnectionIDs(ctx, h.integrationID, vars.AppID, appID)
+	cids, err := h.vars.FindActiveConnectionIDs(ctx, h.integrationID, vars.AppID, appID)
 	if err != nil {
 		return "", fmt.Errorf("failed to find connection IDs: %w", err)
 	}
@@ -260,37 +246,4 @@ func extractInstallationID(event any) (inst string, err error) {
 
 	inst = strconv.FormatInt(*(pinst).ID, 10)
 	return
-}
-
-// transformEvent transforms a received GitHub event into an autokitteh event.
-func transformEvent(l *zap.Logger, w http.ResponseWriter, event any) (map[string]*sdktypes.ValuePB, error) {
-	wrapped, err := sdktypes.WrapValue(event)
-	if err != nil {
-		l.Error("failed to wrap GitHub event", zap.Any("event", event), zap.Error(err))
-		common.HTTPError(w, http.StatusInternalServerError)
-		return nil, err
-	}
-	data, err := wrapped.ToStringValuesMap()
-	if err != nil {
-		l.Error("failed to convert wrapped GitHub event", zap.Any("event", event), zap.Error(err))
-		common.HTTPError(w, http.StatusInternalServerError)
-		return nil, err
-	}
-	return kittehs.TransformMapValues(data, sdktypes.ToProto), nil
-}
-
-func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, cids []sdktypes.ConnectionID, e sdktypes.Event) {
-	l := extrazap.ExtractLoggerFromContext(ctx)
-	for _, cid := range cids {
-		eid, err := h.dispatch(ctx, e.WithConnectionDestinationID(cid), nil)
-		l := l.With(
-			zap.String("connection_id", cid.String()),
-			zap.String("event_id", eid.String()),
-		)
-		if err != nil {
-			l.Error("Event dispatch failed", zap.Error(err))
-			return
-		}
-		l.Debug("Event dispatched")
-	}
 }

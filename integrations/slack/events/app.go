@@ -11,11 +11,12 @@ import (
 type AppMentionEvent struct {
 	Type string `json:"type,omitempty"`
 
-	User    string `json:"user,omitempty"`
-	Team    string `json:"team,omitempty"`
-	Channel string `json:"channel,omitempty"`
-	TS      string `json:"ts,omitempty"`
-	EventTS string `json:"event_ts,omitempty"`
+	User     string `json:"user,omitempty"`
+	Team     string `json:"team,omitempty"`
+	Channel  string `json:"channel,omitempty"`
+	TS       string `json:"ts,omitempty"`
+	EventTS  string `json:"event_ts,omitempty"`
+	ThreadTS string `json:"thread_ts,omitempty"`
 
 	Text   string           `json:"text,omitempty"`
 	Blocks []map[string]any `json:"blocks,omitempty"`

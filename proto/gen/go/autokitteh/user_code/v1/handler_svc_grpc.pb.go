@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	HandlerService_Activity_FullMethodName          = "/autokitteh.user_code.v1.HandlerService/Activity"
+	HandlerService_ExecuteReply_FullMethodName      = "/autokitteh.user_code.v1.HandlerService/ExecuteReply"
 	HandlerService_Done_FullMethodName              = "/autokitteh.user_code.v1.HandlerService/Done"
 	HandlerService_Log_FullMethodName               = "/autokitteh.user_code.v1.HandlerService/Log"
 	HandlerService_Print_FullMethodName             = "/autokitteh.user_code.v1.HandlerService/Print"
@@ -30,6 +31,9 @@ const (
 	HandlerService_StartSession_FullMethodName      = "/autokitteh.user_code.v1.HandlerService/StartSession"
 	HandlerService_Signal_FullMethodName            = "/autokitteh.user_code.v1.HandlerService/Signal"
 	HandlerService_NextSignal_FullMethodName        = "/autokitteh.user_code.v1.HandlerService/NextSignal"
+	HandlerService_StoreList_FullMethodName         = "/autokitteh.user_code.v1.HandlerService/StoreList"
+	HandlerService_StoreMutate_FullMethodName       = "/autokitteh.user_code.v1.HandlerService/StoreMutate"
+	HandlerService_Outcome_FullMethodName           = "/autokitteh.user_code.v1.HandlerService/Outcome"
 	HandlerService_EncodeJWT_FullMethodName         = "/autokitteh.user_code.v1.HandlerService/EncodeJWT"
 	HandlerService_RefreshOAuthToken_FullMethodName = "/autokitteh.user_code.v1.HandlerService/RefreshOAuthToken"
 	HandlerService_Health_FullMethodName            = "/autokitteh.user_code.v1.HandlerService/Health"
@@ -42,6 +46,8 @@ const (
 type HandlerServiceClient interface {
 	// Runner starting activity
 	Activity(ctx context.Context, in *ActivityRequest, opts ...grpc.CallOption) (*ActivityResponse, error)
+	// Runner result from execute
+	ExecuteReply(ctx context.Context, in *ExecuteReplyRequest, opts ...grpc.CallOption) (*ExecuteReplyResponse, error)
 	// Runner done with activity
 	Done(ctx context.Context, in *DoneRequest, opts ...grpc.CallOption) (*DoneResponse, error)
 	// Session logs
@@ -56,6 +62,9 @@ type HandlerServiceClient interface {
 	StartSession(ctx context.Context, in *StartSessionRequest, opts ...grpc.CallOption) (*StartSessionResponse, error)
 	Signal(ctx context.Context, in *SignalRequest, opts ...grpc.CallOption) (*SignalResponse, error)
 	NextSignal(ctx context.Context, in *NextSignalRequest, opts ...grpc.CallOption) (*NextSignalResponse, error)
+	StoreList(ctx context.Context, in *StoreListRequest, opts ...grpc.CallOption) (*StoreListResponse, error)
+	StoreMutate(ctx context.Context, in *StoreMutateRequest, opts ...grpc.CallOption) (*StoreMutateResponse, error)
+	Outcome(ctx context.Context, in *OutcomeRequest, opts ...grpc.CallOption) (*OutcomeResponse, error)
 	// Utility functions
 	EncodeJWT(ctx context.Context, in *EncodeJWTRequest, opts ...grpc.CallOption) (*EncodeJWTResponse, error)
 	RefreshOAuthToken(ctx context.Context, in *RefreshRequest, opts ...grpc.CallOption) (*RefreshResponse, error)
@@ -75,6 +84,16 @@ func (c *handlerServiceClient) Activity(ctx context.Context, in *ActivityRequest
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ActivityResponse)
 	err := c.cc.Invoke(ctx, HandlerService_Activity_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *handlerServiceClient) ExecuteReply(ctx context.Context, in *ExecuteReplyRequest, opts ...grpc.CallOption) (*ExecuteReplyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ExecuteReplyResponse)
+	err := c.cc.Invoke(ctx, HandlerService_ExecuteReply_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -181,6 +200,36 @@ func (c *handlerServiceClient) NextSignal(ctx context.Context, in *NextSignalReq
 	return out, nil
 }
 
+func (c *handlerServiceClient) StoreList(ctx context.Context, in *StoreListRequest, opts ...grpc.CallOption) (*StoreListResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(StoreListResponse)
+	err := c.cc.Invoke(ctx, HandlerService_StoreList_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *handlerServiceClient) StoreMutate(ctx context.Context, in *StoreMutateRequest, opts ...grpc.CallOption) (*StoreMutateResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(StoreMutateResponse)
+	err := c.cc.Invoke(ctx, HandlerService_StoreMutate_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *handlerServiceClient) Outcome(ctx context.Context, in *OutcomeRequest, opts ...grpc.CallOption) (*OutcomeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(OutcomeResponse)
+	err := c.cc.Invoke(ctx, HandlerService_Outcome_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *handlerServiceClient) EncodeJWT(ctx context.Context, in *EncodeJWTRequest, opts ...grpc.CallOption) (*EncodeJWTResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(EncodeJWTResponse)
@@ -227,6 +276,8 @@ func (c *handlerServiceClient) IsActiveRunner(ctx context.Context, in *IsActiveR
 type HandlerServiceServer interface {
 	// Runner starting activity
 	Activity(context.Context, *ActivityRequest) (*ActivityResponse, error)
+	// Runner result from execute
+	ExecuteReply(context.Context, *ExecuteReplyRequest) (*ExecuteReplyResponse, error)
 	// Runner done with activity
 	Done(context.Context, *DoneRequest) (*DoneResponse, error)
 	// Session logs
@@ -241,6 +292,9 @@ type HandlerServiceServer interface {
 	StartSession(context.Context, *StartSessionRequest) (*StartSessionResponse, error)
 	Signal(context.Context, *SignalRequest) (*SignalResponse, error)
 	NextSignal(context.Context, *NextSignalRequest) (*NextSignalResponse, error)
+	StoreList(context.Context, *StoreListRequest) (*StoreListResponse, error)
+	StoreMutate(context.Context, *StoreMutateRequest) (*StoreMutateResponse, error)
+	Outcome(context.Context, *OutcomeRequest) (*OutcomeResponse, error)
 	// Utility functions
 	EncodeJWT(context.Context, *EncodeJWTRequest) (*EncodeJWTResponse, error)
 	RefreshOAuthToken(context.Context, *RefreshRequest) (*RefreshResponse, error)
@@ -258,6 +312,9 @@ type UnimplementedHandlerServiceServer struct{}
 
 func (UnimplementedHandlerServiceServer) Activity(context.Context, *ActivityRequest) (*ActivityResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Activity not implemented")
+}
+func (UnimplementedHandlerServiceServer) ExecuteReply(context.Context, *ExecuteReplyRequest) (*ExecuteReplyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ExecuteReply not implemented")
 }
 func (UnimplementedHandlerServiceServer) Done(context.Context, *DoneRequest) (*DoneResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Done not implemented")
@@ -288,6 +345,15 @@ func (UnimplementedHandlerServiceServer) Signal(context.Context, *SignalRequest)
 }
 func (UnimplementedHandlerServiceServer) NextSignal(context.Context, *NextSignalRequest) (*NextSignalResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method NextSignal not implemented")
+}
+func (UnimplementedHandlerServiceServer) StoreList(context.Context, *StoreListRequest) (*StoreListResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StoreList not implemented")
+}
+func (UnimplementedHandlerServiceServer) StoreMutate(context.Context, *StoreMutateRequest) (*StoreMutateResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StoreMutate not implemented")
+}
+func (UnimplementedHandlerServiceServer) Outcome(context.Context, *OutcomeRequest) (*OutcomeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Outcome not implemented")
 }
 func (UnimplementedHandlerServiceServer) EncodeJWT(context.Context, *EncodeJWTRequest) (*EncodeJWTResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method EncodeJWT not implemented")
@@ -336,6 +402,24 @@ func _HandlerService_Activity_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(HandlerServiceServer).Activity(ctx, req.(*ActivityRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HandlerService_ExecuteReply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ExecuteReplyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HandlerServiceServer).ExecuteReply(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HandlerService_ExecuteReply_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HandlerServiceServer).ExecuteReply(ctx, req.(*ExecuteReplyRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -520,6 +604,60 @@ func _HandlerService_NextSignal_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _HandlerService_StoreList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StoreListRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HandlerServiceServer).StoreList(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HandlerService_StoreList_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HandlerServiceServer).StoreList(ctx, req.(*StoreListRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HandlerService_StoreMutate_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StoreMutateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HandlerServiceServer).StoreMutate(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HandlerService_StoreMutate_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HandlerServiceServer).StoreMutate(ctx, req.(*StoreMutateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _HandlerService_Outcome_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(OutcomeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HandlerServiceServer).Outcome(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HandlerService_Outcome_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HandlerServiceServer).Outcome(ctx, req.(*OutcomeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _HandlerService_EncodeJWT_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(EncodeJWTRequest)
 	if err := dec(in); err != nil {
@@ -604,6 +742,10 @@ var HandlerService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _HandlerService_Activity_Handler,
 		},
 		{
+			MethodName: "ExecuteReply",
+			Handler:    _HandlerService_ExecuteReply_Handler,
+		},
+		{
 			MethodName: "Done",
 			Handler:    _HandlerService_Done_Handler,
 		},
@@ -642,6 +784,18 @@ var HandlerService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "NextSignal",
 			Handler:    _HandlerService_NextSignal_Handler,
+		},
+		{
+			MethodName: "StoreList",
+			Handler:    _HandlerService_StoreList_Handler,
+		},
+		{
+			MethodName: "StoreMutate",
+			Handler:    _HandlerService_StoreMutate_Handler,
+		},
+		{
+			MethodName: "Outcome",
+			Handler:    _HandlerService_Outcome_Handler,
 		},
 		{
 			MethodName: "EncodeJWT",

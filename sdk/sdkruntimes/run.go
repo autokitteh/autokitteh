@@ -19,6 +19,7 @@ type RunParams struct {
 	SessionID            sdktypes.SessionID
 	FallthroughCallbacks sdkservices.RunCallbacks
 	EntryPointPath       string
+	IsDurable            bool
 }
 
 // Run executes a build file and manages it across multiple runtimes.
@@ -93,8 +94,8 @@ func run(ctx context.Context, params RunParams, path string) (sdkservices.Run, e
 		return nil, fmt.Errorf("list runtimes: %w", err)
 	}
 
-	rtd, ok := MatchRuntimeByPath(ls, path)
-	if !ok {
+	rtd := MatchRuntimeByPath(ls, path)
+	if !rtd.IsValid() {
 		return nil, sdkerrors.ErrNotFound
 	}
 
@@ -125,6 +126,7 @@ func run(ctx context.Context, params RunParams, path string) (sdkservices.Run, e
 		path,
 		brt.Artifact.CompiledData(),
 		params.Globals,
+		params.IsDurable,
 		&params.FallthroughCallbacks,
 	)
 }

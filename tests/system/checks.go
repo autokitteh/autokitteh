@@ -13,9 +13,11 @@ import (
 	"github.com/hexops/gotextdiff/myers"
 	"github.com/hexops/gotextdiff/span"
 	jd "github.com/josephburnett/jd/lib"
+
+	"go.autokitteh.dev/autokitteh/tests"
 )
 
-func runCheck(t *testing.T, step string, ak *akResult, resp *httpResponse) error {
+func runCheck(t *testing.T, step string, ak *tests.AKResult, resp *httpResponse) error {
 	match := steps.FindStringSubmatch(step)
 	switch match[1] {
 	case "output":
@@ -28,6 +30,8 @@ func runCheck(t *testing.T, step string, ak *akResult, resp *httpResponse) error
 		return captureJQ(t, step, ak, resp)
 	case "capture_re":
 		return captureRE(t, step, ak, resp)
+	case "file":
+		return checkFileContent(t, step)
 	default:
 		return errors.New("unhandled check")
 	}
@@ -50,12 +54,12 @@ func nextField(text string) (string, string) {
 	return a, b
 }
 
-func checkAKOutput(t *testing.T, step string, ak *akResult) error {
+func checkAKOutput(t *testing.T, step string, ak *tests.AKResult) error {
 	match := akCheckOutput.FindStringSubmatch(step)
 	want := strings.TrimSpace(match[3])
 	want = strings.TrimPrefix(want, "'")
 	want = strings.TrimSuffix(want, "'")
-	got := ak.output
+	got := ak.Output
 
 	if strings.HasPrefix(match[2], "file") {
 		b, err := os.ReadFile(want)
@@ -105,7 +109,7 @@ func checkAKOutput(t *testing.T, step string, ak *akResult) error {
 	case "equals_jq":
 		q, expected := nextField(want)
 
-		got, err := jq(ak.output, q)
+		got, err := jq(ak.Output, q)
 		if err != nil {
 			return fmt.Errorf("failed to run jq: %w", err)
 		}
@@ -120,17 +124,56 @@ func checkAKOutput(t *testing.T, step string, ak *akResult) error {
 	return nil
 }
 
-func checkAKReturnCode(step string, ak *akResult) error {
+func checkFileContent(t *testing.T, step string) error {
+	match := fileChecks.FindStringSubmatch(step)
+	if match == nil {
+		return fmt.Errorf("invalid file check format: %s", step)
+	}
+
+	filename := match[1]
+	want := strings.TrimSpace(match[2])
+
+	want = strings.TrimPrefix(want, "'")
+	want = strings.TrimSuffix(want, "'")
+	want = strings.TrimPrefix(want, "\"")
+	want = strings.TrimSuffix(want, "\"")
+
+	if strings.HasPrefix(want, "file ") {
+		wantFilename := strings.TrimSpace(strings.TrimPrefix(want, "file "))
+		b, err := os.ReadFile(wantFilename)
+		if err != nil {
+			return fmt.Errorf("failed to read reference file %q: %w", wantFilename, err)
+		}
+		want = strings.TrimSpace(string(b))
+	}
+
+	fileContent, err := os.ReadFile(filename)
+	if err != nil {
+		return fmt.Errorf("failed to read file %q: %w", filename, err)
+	}
+	got := string(fileContent)
+
+	t.Logf("step: %q\nfile: %q\nwant: %q\ngot length: %d", step, filename, want, len(got))
+
+	// Check if the file contains the text
+	if !strings.Contains(got, want) {
+		return fmt.Errorf("file %q does not contain %q", filename, want)
+	}
+
+	return nil
+}
+
+func checkAKReturnCode(step string, ak *tests.AKResult) error {
 	match := akCheckReturn.FindStringSubmatch(step)
 	expected, err := strconv.Atoi(match[1])
 	if err != nil {
 		return fmt.Errorf("failed to parse expected return code: %w", err)
 	}
-	if expected != ak.returnCode {
-		msg := fmt.Sprintf("got return code %d, want %d", ak.returnCode, expected)
+	if expected != ak.ReturnCode {
+		msg := fmt.Sprintf("got return code %d, want %d", ak.ReturnCode, expected)
 		// Append the AK output for context, if there is any.
-		if ak.output != "" {
-			msg += "\n" + ak.output
+		if ak.Output != "" {
+			msg += "\n" + ak.Output
 		}
 		return errors.New(msg)
 	}

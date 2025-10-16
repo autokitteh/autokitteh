@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/projectsgrpcsvc"
@@ -13,7 +14,6 @@ import (
 )
 
 func initialManifest() *manifest.Manifest {
-	var wh struct{}
 	return &manifest.Manifest{
 		Version: "v1",
 		Project: &manifest.Project{
@@ -31,7 +31,7 @@ func initialManifest() *manifest.Manifest {
 					Name:      "events",
 					EventType: "post",
 					Call:      "program.py:on_event",
-					Webhook:   &wh,
+					Webhook:   &struct{}{},
 				},
 			},
 			Vars: []*manifest.Var{
@@ -84,13 +84,13 @@ func Test_checkSize(t *testing.T) {
 	require.Len(t, vs, 1)
 }
 
-func Test_checkConnectionNames(t *testing.T) {
+func Test_checkConnectionsNames(t *testing.T) {
 	m := initialManifest()
 	m.Project.Connections = []*manifest.Connection{
 		{Name: "A"},
 		{Name: "B"},
 	}
-	vs := checkConnectionNames(sdktypes.InvalidProjectID, m, nil)
+	vs := checkConnectionsNames(sdktypes.InvalidProjectID, m, nil)
 	require.Len(t, vs, 0)
 
 	m.Project.Connections = []*manifest.Connection{
@@ -100,17 +100,34 @@ func Test_checkConnectionNames(t *testing.T) {
 		{Name: "C"},
 		{Name: "A"},
 	}
-	vs = checkConnectionNames(sdktypes.InvalidProjectID, m, nil)
+	vs = checkConnectionsNames(sdktypes.InvalidProjectID, m, nil)
 	require.Len(t, vs, 2)
 }
 
-func Test_checkTriggerNames(t *testing.T) {
+func Test_checkIntegrationsNames(t *testing.T) {
+	m := initialManifest()
+	m.Project.Connections = []*manifest.Connection{
+		{IntegrationKey: "slack"},
+		{IntegrationKey: "twilio"},
+	}
+	vs := checkIntegrationsNames(sdktypes.InvalidProjectID, m, nil)
+	require.Len(t, vs, 0)
+
+	m.Project.Connections = []*manifest.Connection{
+		{IntegrationKey: "slack"},
+		{IntegrationKey: "telepathy"},
+	}
+	vs = checkIntegrationsNames(sdktypes.InvalidProjectID, m, nil)
+	require.Len(t, vs, 1)
+}
+
+func Test_checkTriggersNames(t *testing.T) {
 	m := initialManifest()
 	m.Project.Triggers = []*manifest.Trigger{
 		{Name: "A"},
 		{Name: "B"},
 	}
-	vs := checkTriggerNames(sdktypes.InvalidProjectID, m, nil)
+	vs := checkTriggersNames(sdktypes.InvalidProjectID, m, nil)
 	require.Len(t, vs, 0)
 
 	m.Project.Triggers = []*manifest.Trigger{
@@ -120,16 +137,16 @@ func Test_checkTriggerNames(t *testing.T) {
 		{Name: "C"},
 		{Name: "A"},
 	}
-	vs = checkTriggerNames(sdktypes.InvalidProjectID, m, nil)
+	vs = checkTriggersNames(sdktypes.InvalidProjectID, m, nil)
 	require.Len(t, vs, 2)
 }
 
-func createResources(fileName, fnName string) map[string][]byte {
+func createResources(fileName, funcName string) map[string][]byte {
 	codeTmpl := `
 def %s(event):
 	pass
 	`
-	code := []byte(fmt.Sprintf(codeTmpl, fnName))
+	code := fmt.Appendf(nil, codeTmpl, funcName)
 	m := map[string][]byte{
 		fileName: code,
 	}
@@ -140,15 +157,28 @@ def %s(event):
 func Test_checkHandlers(t *testing.T) {
 	m := initialManifest()
 
-	fileName, fnName, found := strings.Cut(m.Project.Triggers[0].Call, ":")
+	fileName, funcName, found := strings.Cut(m.Project.Triggers[0].Call, ":")
 	require.Truef(t, found, "bad call - %q", m.Project.Triggers[0].Call)
-	resources := createResources(fileName, fnName)
+	resources := createResources(fileName, funcName)
 	vs := checkHandlers(sdktypes.InvalidProjectID, m, resources)
 	require.Equal(t, 0, len(vs))
 
-	resources = createResources(fileName, fnName+"ZZZ")
+	m.Project.Triggers[0].Filter = "hiss"
 	vs = checkHandlers(sdktypes.InvalidProjectID, m, resources)
 	require.Equal(t, 1, len(vs))
+	require.Equal(t, sdktypes.InvalidEventFilterRuleID, vs[0].RuleId)
+
+	m.Project.Triggers[0].Filter = ""
+	resources = createResources(fileName, funcName+"ZZZ")
+	vs = checkHandlers(sdktypes.InvalidProjectID, m, resources)
+	require.Equal(t, 1, len(vs))
+	require.Equal(t, sdktypes.MissingHandlerRuleID, vs[0].RuleId)
+
+	m.Project.Triggers[0].Call = "README.md:meow"
+
+	vs = checkHandlers(sdktypes.InvalidProjectID, m, map[string][]byte{"README.md": []byte("meow")})
+	require.Equal(t, 1, len(vs))
+	require.Equal(t, sdktypes.FileCannotExportRuleID, vs[0].RuleId)
 }
 
 func Test_pyExports(t *testing.T) {
@@ -203,4 +233,21 @@ func Test_checkCodeConnections(t *testing.T) {
 	resources[fileName] = code
 	vs = checkCodeConnections(sdktypes.InvalidProjectID, m, resources)
 	require.Len(t, vs, 1)
+}
+
+func TestNilSafe(t *testing.T) {
+	Validate(sdktypes.InvalidProjectID, []byte("version: 1"), nil) // should not panic
+}
+
+func TestPyRequirements(t *testing.T) {
+	test := func(lines ...string) []*sdktypes.CheckViolation {
+		rs := map[string][]byte{"requirements.txt": []byte(strings.Join(lines, "\n"))}
+		return checkPyRequirements(sdktypes.InvalidProjectID, nil, rs)
+	}
+
+	assert.Len(t, test("flask", "numpy==1.23.4", "# meow"), 0)
+	assert.Len(t, test("1234"), 1)
+	assert.Len(t, test("!meow"), 1)
+	assert.Len(t, test("requests"), 1)
+	assert.Len(t, test("requests==1"), 1)
 }

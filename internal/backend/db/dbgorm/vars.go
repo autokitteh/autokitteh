@@ -73,17 +73,24 @@ func (gdb *gormdb) listVars(ctx context.Context, scopeID uuid.UUID, names ...str
 	return vars, nil
 }
 
-func (gdb *gormdb) findConnectionIDsByVar(ctx context.Context, integrationID uuid.UUID, name string, v string) ([]uuid.UUID, error) {
-	db := gdb.reader.WithContext(ctx).Where("integration_id = ? AND name = ?", integrationID, name)
+func (gdb *gormdb) findConnectionIDsWithActiveDeploymentByVar(ctx context.Context, integrationID uuid.UUID, name string, v string) ([]uuid.UUID, error) {
+	db := gdb.reader.WithContext(ctx).Where("vars.integration_id = ? AND vars.name = ?", integrationID, name)
 	if v != "" {
-		db = db.Where("value = ? AND is_secret is false", v)
+		db = db.Where("vars.value = ? AND vars.is_secret is false", v)
 	}
+
+	// Join with connections and deployments to filter by projects with active deployments only.
+	db = db.Model(&scheme.Var{}).
+		Joins("JOIN connections ON vars.var_id = connections.connection_id").
+		Joins("JOIN deployments ON connections.project_id = deployments.project_id").
+		Where("deployments.state = ? AND deployments.deleted_at IS NULL", int32(sdktypes.DeploymentStateActive.ToProto()))
 
 	// Note(s):
 	// - will skip not user owned vars
 	// - not checking if scope is deleted, since scope deletion will cascade deletion of relevant vars
+	// - only returns connections for projects with active deployments
 	var ids []uuid.UUID
-	if err := db.Model(&scheme.Var{}).Distinct("var_id").Find(&ids).Error; err != nil {
+	if err := db.Distinct("vars.var_id").Pluck("vars.var_id", &ids).Error; err != nil {
 		return nil, err
 	}
 	return ids, nil
@@ -134,6 +141,7 @@ func (db *gormdb) SetVars(ctx context.Context, vars []sdktypes.Var) error {
 			ScopeID:       sid.AsID().UUIDValue(), // scopeID is varID in DB
 			Name:          v.Name().String(),
 			Value:         v.Value(),
+			Description:   v.Description(),
 			IsSecret:      v.IsSecret(),
 			IntegrationID: iid.UUIDValue(),
 		}
@@ -173,17 +181,17 @@ func (db *gormdb) GetVars(ctx context.Context, sid sdktypes.VarScopeID, names []
 				return sdktypes.InvalidVar, err
 			}
 
-			return sdktypes.NewVar(n).SetValue(r.Value).SetSecret(r.IsSecret).WithScopeID(sid), nil
+			return sdktypes.NewVar(n).SetValue(r.Value).SetSecret(r.IsSecret).WithScopeID(sid).SetDescription(r.Description), nil
 		},
 	)
 }
 
-func (db *gormdb) FindConnectionIDsByVar(ctx context.Context, iid sdktypes.IntegrationID, n sdktypes.Symbol, v string) ([]sdktypes.ConnectionID, error) {
+func (db *gormdb) FindConnectionIDsWithActiveDeploymentByVar(ctx context.Context, iid sdktypes.IntegrationID, n sdktypes.Symbol, v string) ([]sdktypes.ConnectionID, error) {
 	if !iid.IsValid() {
 		return nil, sdkerrors.NewInvalidArgumentError("integration id is invalid")
 	}
 
-	ids, err := db.findConnectionIDsByVar(ctx, iid.UUIDValue(), n.String(), v)
+	ids, err := db.findConnectionIDsWithActiveDeploymentByVar(ctx, iid.UUIDValue(), n.String(), v)
 	if err != nil {
 		return nil, translateError(err)
 	}

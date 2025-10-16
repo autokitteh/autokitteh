@@ -3,6 +3,7 @@ package pythonrt
 import (
 	"archive/tar"
 	"bytes"
+	"context"
 	"embed"
 	"errors"
 	"fmt"
@@ -18,9 +19,11 @@ import (
 	"syscall"
 
 	"go.jetify.com/typeid"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapio"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -98,7 +101,10 @@ func freePort() (int, error) {
 	return conn.Addr().(*net.TCPAddr).Port, nil
 }
 
-func (r *LocalPython) Start(pyExe string, tarData []byte, env map[string]string, workerAddr string) error {
+func (r *LocalPython) Start(ctx context.Context, pyExe string, tarData []byte, env map[string]string, workerAddr string) error {
+	ctx, span := telemetry.T().Start(ctx, "LocalPython.Start")
+	defer span.End()
+
 	runOK := false
 
 	defer func() {
@@ -122,9 +128,12 @@ func (r *LocalPython) Start(pyExe string, tarData []byte, env map[string]string,
 	r.userDir = userDir
 	r.log.Info("user root dir", zap.String("path", r.userDir))
 
+	_, tarSpan := telemetry.T().Start(ctx, "LocalPython.Start.createTar")
 	if err := extractTar(r.userDir, tarData); err != nil {
+		tarSpan.End()
 		return fmt.Errorf("extract user tar - %w", err)
 	}
+	tarSpan.End()
 
 	runnerDir, err := os.MkdirTemp("", "ak-runner-")
 	if err != nil {
@@ -133,9 +142,14 @@ func (r *LocalPython) Start(pyExe string, tarData []byte, env map[string]string,
 	r.runnerDir = runnerDir
 	r.log.Info("python root dir", zap.String("path", r.runnerDir))
 
-	if err := copyFS(runnerPyCode, r.runnerDir); err != nil {
+	_, cpSpan := telemetry.T().Start(ctx, "LocalPython.Start.copyFS")
+	wr, err := copyFS(runnerPyCode, r.runnerDir)
+	cpSpan.SetAttributes(attribute.Int64("written", wr))
+	if err != nil {
+		cpSpan.End()
 		return fmt.Errorf("copy runner code - %w", err)
 	}
+	cpSpan.End()
 
 	id, err := typeid.WithPrefix("runner")
 	if err != nil {
@@ -166,9 +180,12 @@ func (r *LocalPython) Start(pyExe string, tarData []byte, env map[string]string,
 	// make sure runner is killed if ak is killed
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 
+	_, execSpan := telemetry.T().Start(ctx, "LocalPython.Start.Exec")
 	if err := cmd.Start(); err != nil {
+		execSpan.End()
 		return fmt.Errorf("start runner - %w", err)
 	}
+	execSpan.End()
 
 	runOK = true // signal we're good to cleanup
 	r.proc = cmd.Process
@@ -223,8 +240,8 @@ func createTar(fs fs.FS) ([]byte, error) {
 // Copy fs to file so Python can inspect
 // TODO: Once os.CopyFS makes it out we can remove this
 // https://github.com/golang/go/issues/62484
-func copyFS(fsys fs.FS, root string) error {
-	return fs.WalkDir(fsys, ".", func(name string, entry fs.DirEntry, err error) error {
+func copyFS(fsys fs.FS, root string) (acc int64, err error) {
+	err = fs.WalkDir(fsys, ".", func(name string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -251,12 +268,17 @@ func copyFS(fsys fs.FS, root string) error {
 		}
 		defer w.Close()
 
-		if _, err := io.Copy(w, r); err != nil {
+		written, err := io.Copy(w, r)
+		if err != nil {
 			return err
 		}
 
+		acc += written
+
 		return nil
 	})
+
+	return
 }
 
 type Version struct {
@@ -351,8 +373,21 @@ func overrideEnv(envMap map[string]string, runnerPath string) []string {
 	return adjustPythonPath(env, runnerPath)
 }
 
-func createVEnv(pyExe string, venvPath string) error {
-	cmd := exec.Command(pyExe, "-m", "venv", venvPath)
+func hasUV() bool {
+	_, err := exec.LookPath("uv")
+	return err == nil
+}
+
+func createVEnv(log *zap.Logger, pyExe string, venvPath string) error {
+	var args []string
+	if hasUV() {
+		args = []string{"uv", "venv", "--python", pyExe, venvPath}
+	} else {
+		log.Warn("uv not found, using python venv which might be slower")
+		args = []string{"python", "-m", "venv", venvPath}
+	}
+
+	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
@@ -377,22 +412,29 @@ func createVEnv(pyExe string, venvPath string) error {
 	}
 
 	venvPy := path.Join(venvPath, "bin", "python")
-	if err := install(venvPy, tmpDir, []string{"-m", "pip", "install", ".[all]"}); err != nil {
+	if err := install(venvPy, tmpDir, ".[all]"); err != nil {
 		return fmt.Errorf("install dependencies from %q: %w", file.Name(), err)
 	}
 
-	if err := copyFS(pysdk, tmpDir); err != nil {
+	if _, err := copyFS(pysdk, tmpDir); err != nil {
 		return err
 	}
 
-	if err = install(venvPy, path.Join(tmpDir, "/py-sdk"), []string{"-m", "pip", "install", "."}); err != nil {
+	if err = install(venvPy, path.Join(tmpDir, "py-sdk"), "."); err != nil {
 		return fmt.Errorf("install autokitteh py sdk %w", err)
 	}
 	return nil
 }
 
-func install(pyPath, cwd string, args []string) error {
-	cmd := exec.Command(pyPath, args...)
+func install(pyPath, cwd string, spec string) error {
+	var args []string
+	if hasUV() {
+		args = []string{"uv", "pip", "install", "--python", pyPath, spec}
+	} else {
+		args = []string{pyPath, "-m", "pip", "install", spec}
+	}
+
+	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Dir = cwd

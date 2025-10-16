@@ -1,7 +1,6 @@
 package jira
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,37 +10,29 @@ import (
 	"path"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
+	"go.autokitteh.dev/autokitteh/integrations/oauth"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-const (
-	headerContentType   = "Content-Type"
-	headerAuthorization = "Authorization"
-	contentTypeJSON     = "application/json"
-)
-
-// Default HTTP client with a timeout for short-lived HTTP requests.
-var httpClient = http.Client{Timeout: 3 * time.Second}
-
 // handler is an autokitteh webhook which implements [http.Handler]
 // to receive and dispatch asynchronous event notifications.
 type handler struct {
 	logger   *zap.Logger
-	oauth    sdkservices.OAuth
+	oauth    *oauth.OAuth
 	vars     sdkservices.Vars
 	dispatch sdkservices.DispatchFunc
 }
 
-func NewHTTPHandler(l *zap.Logger, o sdkservices.OAuth, v sdkservices.Vars, d sdkservices.DispatchFunc) handler {
+func NewHTTPHandler(l *zap.Logger, o *oauth.OAuth, v sdkservices.Vars, d sdkservices.DispatchFunc) handler {
+	l = l.With(zap.String("integration", desc.UniqueName().String()))
 	return handler{logger: l, oauth: o, vars: v, dispatch: d}
 }
 
@@ -52,21 +43,21 @@ func NewHTTPHandler(l *zap.Logger, o sdkservices.OAuth, v sdkservices.Vars, d sd
 // Note 2: The requests are sent by a service, so no need to respond
 // with user-friendly error web pages.
 func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
-	l := h.logger.With(zap.String("urlPath", r.URL.Path))
+	l := h.logger.With(zap.String("url_path", r.URL.Path))
 
-	// Verify the JWT in the event's "Authorization" header.
-	token := r.Header.Get(headerAuthorization)
-	if !verifyJWT(l, strings.TrimPrefix(token, "Bearer ")) {
-		l.Warn("Incoming Jira event with bad Authorization header")
-		common.HTTPError(w, http.StatusUnauthorized)
+	// Check the "Content-Type" header.
+	if common.PostWithoutJSONContentType(r) {
+		ct := r.Header.Get(common.HeaderContentType)
+		l.Warn("incoming event: unexpected content type", zap.String("content_type", ct))
+		common.HTTPError(w, http.StatusBadRequest)
 		return
 	}
 
-	// Check the "Content-Type" header.
-	contentType := r.Header.Get(headerContentType)
-	if !strings.HasPrefix(contentType, contentTypeJSON) {
-		l.Warn("Incoming Jira event with bad header", zap.String(headerContentType, contentType))
-		common.HTTPError(w, http.StatusBadRequest)
+	// Verify the JWT in the event's "Authorization" header.
+	token := r.Header.Get(common.HeaderAuthorization)
+	if !verifyJWT(l, strings.TrimPrefix(token, "Bearer ")) {
+		l.Warn("Incoming Jira event with bad Authorization header")
+		common.HTTPError(w, http.StatusUnauthorized)
 		return
 	}
 
@@ -82,6 +73,14 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 	if err := json.Unmarshal(body, &jiraEvent); err != nil {
 		l.Warn("Failed to unmarshal JSON in incoming Jira event", zap.Error(err))
 		common.HTTPError(w, http.StatusBadRequest)
+		return
+	}
+
+	// issue_property_set and issue_property_deleted events aren’t supported or relevant to AutoKitteh.
+	// They occur when custom fields are programmatically changed on an issue.
+	// We ignore them because our webhook only extends expiration and doesn't update subscriptions.
+	if jiraEvent["webhookEvent"] == "issue_property_set" || jiraEvent["webhookEvent"] == "issue_property_deleted" {
+		l.Debug("Jira issue property set/deleted event", zap.Any("event", jiraEvent))
 		return
 	}
 
@@ -114,18 +113,17 @@ func (h handler) handleEvent(w http.ResponseWriter, r *http.Request) {
 		u, err := transformIssueURL(jiraEvent, l)
 		if err != nil {
 			l.Error("Failed to transform Jira URL", zap.Error(err))
-			http.Error(w, "Bad Request", http.StatusBadRequest)
+			common.HTTPError(w, http.StatusBadRequest)
 			return
 		}
 		wk := webhookKey(u, strconv.Itoa(id))
-		cids, err := h.vars.FindConnectionIDs(ctx, IntegrationID, WebhookKeySymbol, wk)
+		cids, err := h.vars.FindActiveConnectionIDs(ctx, IntegrationID, WebhookKeySymbol, wk)
 		if err != nil {
 			l.Error("Failed to find connection IDs", zap.Error(err))
 			break
 		}
 
-		// Dispatch the event to all of them, for asynchronous handling.
-		h.dispatchAsyncEventsToConnections(ctx, cids, akEvent)
+		common.DispatchEvent(ctx, l, h.dispatch, akEvent, cids)
 	}
 
 	// Returning immediately without an error = acknowledgement of receipt.
@@ -224,20 +222,4 @@ func constructEvent(l *zap.Logger, jiraEvent map[string]any) (sdktypes.Event, er
 	}
 
 	return akEvent, nil
-}
-
-func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, cids []sdktypes.ConnectionID, e sdktypes.Event) {
-	l := extrazap.ExtractLoggerFromContext(ctx)
-	for _, cid := range cids {
-		eid, err := h.dispatch(ctx, e.WithConnectionDestinationID(cid), nil)
-		l := l.With(
-			zap.String("connectionID", cid.String()),
-			zap.String("eventID", eid.String()),
-		)
-		if err != nil {
-			l.Error("Event dispatch failed", zap.Error(err))
-			return
-		}
-		l.Debug("Event dispatched")
-	}
 }

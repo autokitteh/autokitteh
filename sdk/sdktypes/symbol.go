@@ -15,7 +15,10 @@ var InvalidSymbol Symbol
 
 type symbolTraits struct{}
 
-var symbolRE = regexp.MustCompile(`^[a-zA-Z_][\w]*$`)
+var (
+	SymbolREPattern = `^[a-zA-Z_][\w]*$`
+	symbolRE        = regexp.MustCompile(SymbolREPattern)
+)
 
 func (symbolTraits) Validate(s string) error {
 	if s != "" && !symbolRE.MatchString(s) {

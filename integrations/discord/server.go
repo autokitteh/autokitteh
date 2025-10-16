@@ -33,7 +33,7 @@ func Start(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, d sdkservices.Disp
 	m.Auth.Handle("POST "+savePath, wsh)
 
 	// Initialize WebSocket pool.
-	cids, err := v.FindConnectionIDs(context.Background(), integrationID, vars.BotToken, "")
+	cids, err := v.FindActiveConnectionIDs(context.Background(), integrationID, vars.BotToken, "")
 	if err != nil {
 		l.Error("Failed to list WebSocket-based connection IDs", zap.Error(err))
 		return

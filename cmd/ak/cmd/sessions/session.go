@@ -42,9 +42,11 @@ func AddSubcommands(parentCmd *cobra.Command) {
 func init() {
 	// Subcommands.
 	sessionCmd.AddCommand(deleteCmd)
+	sessionCmd.AddCommand(downloadLogsCmd)
 	sessionCmd.AddCommand(getCmd)
 	sessionCmd.AddCommand(listCmd)
 	sessionCmd.AddCommand(logCmd)
+	sessionCmd.AddCommand(printsCmd)
 	sessionCmd.AddCommand(restartCmd)
 	sessionCmd.AddCommand(startCmd)
 	sessionCmd.AddCommand(stopCmd)
@@ -52,9 +54,8 @@ func init() {
 	sessionCmd.AddCommand(watchCmd)
 }
 
-func sessions() sdkservices.Sessions {
-	return common.Client().Sessions()
-}
+func sessions() sdkservices.Sessions       { return common.Client().Sessions() }
+func deployments() sdkservices.Deployments { return common.Client().Deployments() }
 
 func acquireSessionID(arg string) (sdktypes.SessionID, error) {
 	sid, err := sdktypes.ParseSessionID(arg)

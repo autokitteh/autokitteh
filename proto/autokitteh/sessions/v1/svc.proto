@@ -117,11 +117,19 @@ message GetLogRequest {
 }
 
 message GetLogResponse {
-  SessionLog log = 1 [(buf.validate.field).required = true]; // deprecated, use records.
+  reserved 1; // deprecated.
   int64 count = 2;
   repeated SessionLogRecord records = 3 [(buf.validate.field).repeated.items.required = true];
 
   string next_page_token = 10;
+}
+
+message DownloadLogsRequest {
+  string session_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message DownloadLogsResponse {
+  bytes data = 1;
 }
 
 message GetPrintsRequest {
@@ -166,6 +174,7 @@ service SessionsService {
   rpc List(ListRequest) returns (ListResponse);
   rpc Get(GetRequest) returns (GetResponse);
   rpc GetLog(GetLogRequest) returns (GetLogResponse);
+  rpc DownloadLogs(DownloadLogsRequest) returns (DownloadLogsResponse);
   rpc GetPrints(GetPrintsRequest) returns (GetPrintsResponse);
   rpc Delete(DeleteRequest) returns (DeleteResponse);
 }

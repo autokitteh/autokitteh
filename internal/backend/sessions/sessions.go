@@ -1,9 +1,13 @@
 package sessions
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"strconv"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -14,7 +18,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncalls"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionsvcs"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows"
-	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -25,7 +28,9 @@ type Sessions interface {
 	sdkservices.Sessions
 
 	StartWorkers(context.Context) error
+	StartInternal(context.Context, sdktypes.Session) (sdktypes.SessionID, error)
 }
+
 type sessions struct {
 	config *Config
 	l      *zap.Logger
@@ -33,23 +38,21 @@ type sessions struct {
 
 	workflows sessionworkflows.Workflows
 	calls     sessioncalls.Calls
-	telemetry *telemetry.Telemetry
 }
 
 var _ Sessions = (*sessions)(nil)
 
-func New(l *zap.Logger, config *Config, db db.DB, svcs sessionsvcs.Svcs, telemetry *telemetry.Telemetry) (Sessions, error) {
+func New(l *zap.Logger, config *Config, db db.DB, svcs sessionsvcs.Svcs) (Sessions, error) {
 	return &sessions{
-		config:    config,
-		svcs:      &svcs,
-		l:         l,
-		telemetry: telemetry,
+		config: config,
+		svcs:   &svcs,
+		l:      l,
 	}, nil
 }
 
 func (s *sessions) StartWorkers(ctx context.Context) error {
 	s.calls = sessioncalls.New(s.l.Named("sessionworkflows"), s.config.Calls, s.svcs)
-	s.workflows = sessionworkflows.New(s.l.Named("sessionworkflows"), s.config.Workflows, s, s.svcs, s.calls, s.telemetry)
+	s.workflows = sessionworkflows.New(s.l.Named("sessionworkflows"), s.config.Workflows, s, s.svcs, s.calls)
 
 	if !s.config.EnableWorker {
 		s.l.Info("Session worker: disabled")
@@ -84,11 +87,9 @@ func (s *sessions) GetPrints(ctx context.Context, sid sdktypes.SessionID, pagina
 	}
 
 	prints := kittehs.Transform(lr.Records, func(r sdktypes.SessionLogRecord) *sdkservices.SessionPrint {
-		p, _ := r.GetPrint()
-
 		return &sdkservices.SessionPrint{
 			Timestamp: r.Timestamp(),
-			Value:     p,
+			Value:     r.GetPrint(),
 		}
 	})
 
@@ -121,6 +122,81 @@ func (s *sessions) GetLog(ctx context.Context, filter sdkservices.SessionLogReco
 	}
 
 	return rs, nil
+}
+
+func (s *sessions) DownloadLogs(ctx context.Context, sid sdktypes.SessionID) ([]byte, error) {
+	if err := authz.CheckContext(ctx, sid, "read:download-log"); err != nil {
+		return nil, err
+	}
+
+	var buf bytes.Buffer
+	pageSize := int32(200)
+	skip := int32(0)
+
+	for {
+		filter := sdkservices.SessionLogRecordsFilter{
+			SessionID: sid,
+			PaginationRequest: sdktypes.PaginationRequest{
+				PageSize: pageSize,
+				Skip:     skip,
+			},
+		}
+
+		logs, err := s.svcs.DB.GetSessionLog(ctx, filter)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, record := range logs.Records {
+			if err := writeFormattedSessionLog(&buf, record); err != nil {
+				return nil, err
+			}
+		}
+
+		if int32(len(logs.Records)) < pageSize {
+			break
+		}
+		skip += pageSize
+	}
+
+	return buf.Bytes(), nil
+}
+
+func writeFormattedSessionLog(buf io.StringWriter, record sdktypes.SessionLogRecord) error {
+	value := record.GetPrint()
+	if !value.IsValid() {
+		return nil
+	}
+
+	printStr, err := value.ToString()
+	if err != nil {
+		return fmt.Errorf("failed to convert value to string: %w", err)
+	}
+
+	// Decode escaped characters like \n and \".
+	if unquoted, err := strconv.Unquote(`"` + printStr + `"`); err == nil {
+		printStr = unquoted
+	}
+
+	lines := strings.Split(printStr, "\n")
+	if len(lines) == 0 {
+		return nil
+	}
+
+	// First line with timestamp.
+	firstLine := fmt.Sprintf("[%s]:  %s\n", record.Timestamp().Format("2006-01-02 15:04:05"), lines[0])
+	if _, err := buf.WriteString(firstLine); err != nil {
+		return fmt.Errorf("failed to write log line: %w", err)
+	}
+
+	// Indent subsequent lines.
+	for _, l := range lines[1:] {
+		if _, err := buf.WriteString("                        " + l + "\n"); err != nil {
+			return fmt.Errorf("failed to write indented line: %w", err)
+		}
+	}
+
+	return nil
 }
 
 func (s *sessions) Get(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.Session, error) {
@@ -191,7 +267,7 @@ func (s *sessions) Delete(ctx context.Context, sessionID sdktypes.SessionID) err
 	return nil
 }
 
-func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktypes.SessionID, error) {
+func (s *sessions) StartInternal(ctx context.Context, session sdktypes.Session) (sdktypes.SessionID, error) {
 	if err := authz.CheckContext(
 		ctx,
 		sdktypes.InvalidSessionID,
@@ -222,7 +298,7 @@ func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktype
 		return sdktypes.InvalidSessionID, fmt.Errorf("start session: %w", err)
 	}
 
-	if err := s.workflows.StartWorkflow(ctx, session, sessionworkflows.StartWorkflowOptions{UseTemporalForSessionLogs: !s.config.DBSessionLogs}); err != nil {
+	if err := s.workflows.StartWorkflow(ctx, session); err != nil {
 		err = fmt.Errorf("start workflow: %w", err)
 		if uerr := s.svcs.DB.UpdateSessionState(ctx, session.ID(), sdktypes.NewSessionStateError(err, nil)); uerr != nil {
 			l.Sugar().With("err", err).Error("update session state: %v")
@@ -231,4 +307,22 @@ func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktype
 	}
 
 	return session.ID(), nil
+}
+
+func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktypes.SessionID, error) {
+	if !s.config.ExternalStart.Enabled {
+		return s.StartInternal(authcontext.SetAuthnSystemUser(ctx), session)
+	}
+
+	orgID, err := s.svcs.DB.GetOrgIDOf(ctx, session.ProjectID())
+	if err != nil {
+		return sdktypes.InvalidSessionID, fmt.Errorf("get org id of project %v: %w", session.ProjectID(), err)
+	}
+
+	cli, err := s.svcs.ExternalClient.NewOrgImpersonator(orgID)
+	if err != nil {
+		return sdktypes.InvalidSessionID, fmt.Errorf("create internal client: %w", err)
+	}
+
+	return cli.Sessions().Start(ctx, session)
 }

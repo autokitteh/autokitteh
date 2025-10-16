@@ -1,0 +1,5 @@
+-- main.py:main --
+class X(Exception): pass
+
+def main(event):
+    raise X()

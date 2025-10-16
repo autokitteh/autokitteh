@@ -11,6 +11,7 @@ import google.generativeai as genai
 import google.oauth2.credentials as credentials
 import google.oauth2.service_account as service_account
 from googleapiclient.discovery import build
+import gspread
 
 from .connections import check_connection_name, refresh_oauth
 from .errors import ConnectionInitError, OAuthRefreshError
@@ -192,6 +193,61 @@ def google_sheets_client(connection: str, **kwargs):
     default_scopes = ["https://www.googleapis.com/auth/spreadsheets"]
     creds = google_creds("googlesheets", connection, default_scopes, **kwargs)
     return build("sheets", "v4", credentials=creds, **kwargs)
+
+
+def gspread_client(connection: str, **kwargs) -> gspread.Client:
+    """Initialize a gspread client, based on an AutoKitteh connection.
+
+    API documentation:
+    https://docs.gspread.org/en/latest/
+    https://github.com/burnash/gspread
+
+    Args:
+        connection: AutoKitteh connection name.
+
+    Returns:
+        gspread client.
+
+    Raises:
+        ValueError: AutoKitteh connection name is invalid.
+        ConnectionInitError: AutoKitteh connection was not initialized yet.
+        OAuthRefreshError: OAuth token refresh failed.
+    """
+
+    default_scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+    # TODO: INT-445 add drive scope "https://www.googleapis.com/auth/drive"
+    # After we add a unified OAuth connection for Google that have Drive and Sheets.
+
+    creds = google_creds("googlesheets", connection, default_scopes, **kwargs)
+    return gspread.authorize(creds)
+
+
+def youtube_client(connection: str, **kwargs):
+    """Initialize a YouTube Data API client, based on an AutoKitteh connection.
+
+
+    Code samples:
+    - https://github.com/youtube/api-samples/tree/master/python
+
+    Args:
+        connection: AutoKitteh connection name.
+
+    Returns:
+        YouTube Data API client.
+
+    Raises:
+        ValueError: AutoKitteh connection name is invalid.
+        ConnectionInitError: AutoKitteh connection was not initialized yet.
+        OAuthRefreshError: OAuth token refresh failed.
+    """
+    # https://developers.google.com/youtube/v3/guides/auth/installed-apps
+    default_scopes = [
+        "https://www.googleapis.com/auth/youtube.readonly",
+        "https://www.googleapis.com/auth/youtube.upload",
+        "https://www.googleapis.com/auth/youtube",
+    ]
+    creds = google_creds("youtube", connection, default_scopes, **kwargs)
+    return build("youtube", "v3", credentials=creds, **kwargs)
 
 
 def google_creds(integration: str, connection: str, scopes: list[str], **kwargs):

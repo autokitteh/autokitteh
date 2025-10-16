@@ -8,6 +8,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations/common"
+	"go.autokitteh.dev/autokitteh/integrations/oauth"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/web/static"
@@ -26,7 +27,7 @@ const (
 
 // Start initializes all the HTTP handlers of all the Google integrations.
 // This includes connection UIs, initialization webhooks, and event webhooks.
-func Start(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, o sdkservices.OAuth, d sdkservices.DispatchFunc) {
+func Start(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, o *oauth.OAuth, d sdkservices.DispatchFunc) {
 	common.ServeStaticUI(m, desc, static.GoogleWebContent)
 	uiPath := fmt.Sprintf("GET %s/", desc.ConnectionURL().Path)
 
@@ -47,6 +48,9 @@ func Start(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, o sdkservices.OAut
 
 	urlPath = strings.ReplaceAll(uiPath, "google", "googlesheets")
 	m.Auth.Handle(urlPath, http.FileServer(http.FS(static.GoogleSheetsWebContent)))
+
+	urlPath = strings.ReplaceAll(uiPath, "google", "youtube")
+	m.Auth.Handle(urlPath, http.FileServer(http.FS(static.YouTubeWebContent)))
 
 	h := NewHTTPHandler(l, o, v, d)
 	common.RegisterSaveHandler(m, desc, h.handleCreds)

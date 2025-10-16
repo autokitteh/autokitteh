@@ -1,6 +1,8 @@
 # yaml-language-server: $schema=https://goreleaser.com/static/schema.json
 # vim: set ts=2 sw=2 tw=0 fo=cnqoj
 
+version: 2
+
 builds:
   - id: ak
     binary: ak
@@ -19,8 +21,29 @@ builds:
       - amd64
       - arm64
 
+  - id: ak-ee
+    binary: ak-ee
+    main: ./cmd/ak
+    ldflags:
+      - -X 'go.autokitteh.dev/autokitteh/internal/version.Version={{ .Version }}'
+      - -X 'go.autokitteh.dev/autokitteh/internal/version.Time={{ .Date }}'
+      - -X 'go.autokitteh.dev/autokitteh/internal/version.Commit={{ .Commit }}'
+      - -X 'go.autokitteh.dev/autokitteh/internal/version.User=GoReleaser'
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    flags:
+      - -tags=enterprise
+
 brews:
   - name: autokitteh
+    ids:
+      - ak
     description: "Durable workflow automation in just a few lines of code"
     homepage: "https://autokitteh.com/"
     license: "Apache-2.0"
@@ -50,12 +73,27 @@ release:
   prerelease: auto
 
 archives:
-  - files:
+  - id: ak
+    ids: 
+      - ak
+    files:
       - none*
-    format: tar.gz
     # this name template makes the OS and Arch compatible with the results of `uname`.
     name_template: >-
       {{ tolower .ProjectName }}_{{ .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+
+  - id: ak-ee
+    ids: 
+      - ak-ee
+    files:
+      - none*
+    # this name template makes the OS and Arch compatible with the results of `uname`.
+    name_template: >-
+      {{ tolower .ProjectName }}_ee_{{ .Os }}_
       {{- if eq .Arch "amd64" }}x86_64
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}

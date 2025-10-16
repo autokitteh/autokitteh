@@ -2,6 +2,12 @@
 
 ![Top banner](/docs/images/banner.jpg)
 
+![GitHub License](https://img.shields.io/github/license/autokitteh/autokitteh)
+[![Go Reference](https://pkg.go.dev/badge/go.autokitteh.dev/autokitteh.svg)](https://pkg.go.dev/go.autokitteh.dev/autokitteh)
+[![Go Report Card](https://goreportcard.com/badge/go.autokitteh.dev/autokitteh)](https://goreportcard.com/report/go.autokitteh.dev/autokitteh)
+[![GitHub Commit Activity](https://img.shields.io/github/commit-activity/m/autokitteh/autokitteh)](https://github.com/autokitteh/autokitteh/commits/main)
+[![CI Status](https://github.com/autokitteh/autokitteh/actions/workflows/go.yml/badge.svg)](https://github.com/autokitteh/autokitteh/actions)
+
 AutoKitteh is a **developer** platform for workflow automation and
 orchestration. It is an easy-to-use, code-based alternative to no/low-code
 platforms (such as Zapier, Workato, Make.com, n8n) with unlimited flexibility.
@@ -18,15 +24,13 @@ Once installed, AutoKitteh is a scalable "serverless" platform (with batteries
 included) for DevOps, FinOps, MLOps, SOAR, productivity tasks, critical
 backend business processes, and more.
 
-<br/>
+**Try our [Cloud](https://autokitteh.cloud)!**
 
-![GitHub License](https://img.shields.io/github/license/autokitteh/autokitteh)
-[![Go Reference](https://pkg.go.dev/badge/go.autokitteh.dev/autokitteh.svg)](https://pkg.go.dev/go.autokitteh.dev/autokitteh)
-[![Go Report Card](https://goreportcard.com/badge/go.autokitteh.dev/autokitteh)](https://goreportcard.com/report/go.autokitteh.dev/autokitteh)
+Explore example automations at [kittehub](https://github.com/autokitteh/kittehub).
 
-[![GitHub Commit Activity](https://img.shields.io/github/commit-activity/m/autokitteh/autokitteh)](https://github.com/autokitteh/autokitteh/commits/main)
-[![CI Status](https://github.com/autokitteh/autokitteh/actions/workflows/ci-go.yml/badge.svg)](https://github.com/autokitteh/autokitteh/actions)
+Join our community:
 
+[![](https://dcbadge.limes.pink/api/server/VMYFq7Trcq?style=flat)](https://discord.gg/VMYFq7Trcq)
 [![YouTube Channel](https://img.shields.io/badge/autokitteh-ff0000?logo=youtube)](https://www.youtube.com/@autokitteh-mo5sb)
 [![LinkedIn](https://img.shields.io/badge/autokitteh-0e76a8?logo=linkedin)](https://www.linkedin.com/company/autokitteh/posts/?feedView=all)
 
@@ -62,7 +66,7 @@ and JavaScript (coming soon).
 
 - Web UI
 
-  ![Web UI screenshot](/docs/images/web_ui.jpg)
+  ![Web UI screenshot](/docs/images/web_ui.png)
 
 ## Why You Should Give AutoKitteh a Test Drive
 
@@ -95,7 +99,7 @@ us at meow@autokitteh.com.
 
 ## Build From Source
 
-The following requires [Go version 1.23](https://go.dev/dl/) or greater.
+The following requires [Go version 1.24](https://go.dev/dl/) or greater.
 
 ```shell
 $ git clone https://github.com/autokitteh/autokitteh.git
@@ -109,7 +113,7 @@ $ ak version
 
 - buf
 - docker
-- go >= 1.23
+- go >= 1.24
 - golangci-lint (auto-downloaded during builds if missing)
 - shellcheck (auto-pulled via docker during builds if missing)
 

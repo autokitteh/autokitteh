@@ -34,12 +34,14 @@ class ExportsResponse(_message.Message):
     def __init__(self, exports: _Optional[_Iterable[_Union[Export, _Mapping]]] = ..., error: _Optional[str] = ...) -> None: ...
 
 class StartRequest(_message.Message):
-    __slots__ = ["entry_point", "event"]
+    __slots__ = ["entry_point", "event", "is_durable"]
     ENTRY_POINT_FIELD_NUMBER: _ClassVar[int]
     EVENT_FIELD_NUMBER: _ClassVar[int]
+    IS_DURABLE_FIELD_NUMBER: _ClassVar[int]
     entry_point: str
     event: _user_code_pb2.Event
-    def __init__(self, entry_point: _Optional[str] = ..., event: _Optional[_Union[_user_code_pb2.Event, _Mapping]] = ...) -> None: ...
+    is_durable: bool
+    def __init__(self, entry_point: _Optional[str] = ..., event: _Optional[_Union[_user_code_pb2.Event, _Mapping]] = ..., is_durable: bool = ...) -> None: ...
 
 class ExecuteRequest(_message.Message):
     __slots__ = ["data"]
@@ -48,14 +50,10 @@ class ExecuteRequest(_message.Message):
     def __init__(self, data: _Optional[bytes] = ...) -> None: ...
 
 class ExecuteResponse(_message.Message):
-    __slots__ = ["result", "error", "traceback"]
-    RESULT_FIELD_NUMBER: _ClassVar[int]
+    __slots__ = ["error"]
     ERROR_FIELD_NUMBER: _ClassVar[int]
-    TRACEBACK_FIELD_NUMBER: _ClassVar[int]
-    result: _values_pb2.Value
     error: str
-    traceback: _containers.RepeatedCompositeFieldContainer[_user_code_pb2.Frame]
-    def __init__(self, result: _Optional[_Union[_values_pb2.Value, _Mapping]] = ..., error: _Optional[str] = ..., traceback: _Optional[_Iterable[_Union[_user_code_pb2.Frame, _Mapping]]] = ...) -> None: ...
+    def __init__(self, error: _Optional[str] = ...) -> None: ...
 
 class StartResponse(_message.Message):
     __slots__ = ["error", "traceback"]

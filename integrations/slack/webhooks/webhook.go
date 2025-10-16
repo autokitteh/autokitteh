@@ -18,8 +18,6 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations/common"
-	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
-	"go.autokitteh.dev/autokitteh/integrations/slack/api"
 	"go.autokitteh.dev/autokitteh/integrations/slack/events"
 	"go.autokitteh.dev/autokitteh/integrations/slack/vars"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -58,10 +56,10 @@ func NewHandler(l *zap.Logger, v sdkservices.Vars, d sdkservices.DispatchFunc, i
 // it returns nil, and sends an HTTP error to the Slack platform's client.
 func (h handler) checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Logger, wantContentType string) []byte {
 	// "Content-Type" header.
-	gotContentType := r.Header.Get(api.HeaderContentType)
+	gotContentType := r.Header.Get(common.HeaderContentType)
 	if gotContentType == "" || gotContentType != wantContentType {
-		l.Error("unexpected header value",
-			zap.String("header", api.HeaderContentType),
+		l.Warn("incoming event: unexpected header value",
+			zap.String("header", common.HeaderContentType),
 			zap.String("got", gotContentType),
 			zap.String("want", wantContentType),
 		)
@@ -143,7 +141,7 @@ func (h handler) checkRequest(w http.ResponseWriter, r *http.Request, l *zap.Log
 func verifySignature(signingSecret, ts, want string, body []byte) bool {
 	mac := hmac.New(sha256.New, []byte(signingSecret))
 
-	n, err := mac.Write([]byte(fmt.Sprintf("%s:%s:", slackSigVersion, ts)))
+	n, err := fmt.Fprintf(mac, "%s:%s:", slackSigVersion, ts)
 	if err != nil || n != len(ts)+4 {
 		return false
 	}
@@ -192,23 +190,7 @@ func transformEvent(l *zap.Logger, slackEvent any, eventType string) (sdktypes.E
 
 func (h handler) listConnectionIDs(ctx context.Context, appID, enterpriseID, teamID string) ([]sdktypes.ConnectionID, error) {
 	ids := vars.InstallIDs(appID, enterpriseID, teamID)
-	return h.vars.FindConnectionIDs(ctx, h.integrationID, vars.InstallIDsVar, ids)
-}
-
-func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, cids []sdktypes.ConnectionID, e sdktypes.Event) {
-	l := extrazap.ExtractLoggerFromContext(ctx)
-	for _, cid := range cids {
-		eid, err := h.dispatch(ctx, e.WithConnectionDestinationID(cid), nil)
-		l := l.With(
-			zap.String("connection_id", cid.String()),
-			zap.String("event_id", eid.String()),
-		)
-		if err != nil {
-			l.Error("event dispatch failed", zap.Error(err))
-			return
-		}
-		l.Debug("event dispatched")
-	}
+	return h.vars.FindActiveConnectionIDs(ctx, h.integrationID, vars.InstallIDsVar, ids)
 }
 
 // extractIDs extracts the app ID, team ID, and enterprise ID from the given request body.
@@ -251,7 +233,12 @@ func (h handler) extractIDs(l *zap.Logger, body []byte, wantContentType string) 
 		return "", "", "", err
 	}
 
-	return p.APIAppID, p.Enterprise.ID, p.Team.ID, nil
+	enterpriseID := ""
+	if p.Enterprise != nil {
+		enterpriseID = p.Enterprise.ID
+	}
+
+	return p.APIAppID, enterpriseID, p.Team.ID, nil
 }
 
 // signingSecret reads the signing secret from the private connection's
@@ -266,7 +253,7 @@ func (h handler) signingSecret(ctx context.Context, l *zap.Logger, body []byte, 
 
 	cids, err := h.listConnectionIDs(ctx, appID, enterpriseID, teamID)
 	if err != nil {
-		return "", nil, fmt.Errorf("failed to list connection IDs: %w", err)
+		return "", nil, fmt.Errorf("failed to find connection IDs: %w", err)
 	}
 	if len(cids) == 0 {
 		return "", nil, nil

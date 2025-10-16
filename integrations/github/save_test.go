@@ -7,6 +7,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/oauth"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -15,7 +16,7 @@ import (
 func TestSaveClientIDAndSecret(t *testing.T) {
 	type fields struct {
 		logger *zap.Logger
-		oauth  sdkservices.OAuth
+		oauth  *oauth.OAuth
 		vars   sdkservices.Vars
 	}
 	type args struct {
@@ -35,7 +36,7 @@ func TestSaveClientIDAndSecret(t *testing.T) {
 				vars: &mockVars{},
 			},
 			args: args{
-				ctx: context.Background(),
+				ctx: t.Context(),
 				c: sdkintegrations.ConnectionInit{
 					ConnectionID: "invalid",
 				},
@@ -49,7 +50,7 @@ func TestSaveClientIDAndSecret(t *testing.T) {
 				vars: &mockVars{},
 			},
 			args: args{
-				ctx: context.Background(),
+				ctx: t.Context(),
 				c: sdkintegrations.ConnectionInit{
 					ConnectionID: "con_01234567890123456789012345",
 				},
@@ -90,6 +91,6 @@ func (m *mockVars) Get(ctx context.Context, sid sdktypes.VarScopeID, names ...sd
 	return nil, nil
 }
 
-func (m *mockVars) FindConnectionIDs(ctx context.Context, iid sdktypes.IntegrationID, name sdktypes.Symbol, value string) ([]sdktypes.ConnectionID, error) {
+func (m *mockVars) FindActiveConnectionIDs(ctx context.Context, iid sdktypes.IntegrationID, name sdktypes.Symbol, value string) ([]sdktypes.ConnectionID, error) {
 	return nil, nil
 }

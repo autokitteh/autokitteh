@@ -7,12 +7,12 @@ return code == 0
 output equals_json file triggers.json
 
 wait 5s for session ses_00000000000000000000000007
-ak session log ses_00000000000000000000000007 --no-timestamps --prints-only
+ak session prints ses_00000000000000000000000007 --no-timestamps
 return code == 0
 output equals 'cron'
 
 wait 5s for session ses_0000000000000000000000000b
-ak session log ses_0000000000000000000000000b --no-timestamps --prints-only
+ak session prints ses_0000000000000000000000000b --no-timestamps
 return code == 0
 output equals 'cron'
 
@@ -61,5 +61,6 @@ def on_cron_trigger():
     "path": "cron.star",
     "name": "on_cron_trigger"
   },
+  "is_durable": true,
   "schedule": "*/1 * * * * * *"
 }

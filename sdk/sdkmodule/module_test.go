@@ -33,14 +33,14 @@ func TestModule(t *testing.T) {
 
 	require.NotNil(t, mod)
 
-	vs, err := mod.Configure(context.Background(), sdktypes.NewExecutorID(sdktypes.NewIntegrationID()), sdktypes.InvalidConnectionID)
+	vs, err := mod.Configure(t.Context(), sdktypes.NewExecutorID(sdktypes.NewIntegrationID()), sdktypes.InvalidConnectionID)
 	require.NoError(t, err)
 
 	require.Contains(t, vs, "say")
 
 	sayv := vs["say"]
 
-	v, err := mod.Call(context.Background(), sayv, nil, nil)
+	v, err := mod.Call(t.Context(), sayv, nil, nil)
 	require.NoError(t, err)
 	require.NotNil(t, v)
 
@@ -49,7 +49,7 @@ func TestModule(t *testing.T) {
 	dog := vs["dog"].GetStruct().Fields()
 	sayv = dog["say"]
 
-	v, err = mod.Call(context.Background(), sayv, nil, nil)
+	v, err = mod.Call(t.Context(), sayv, nil, nil)
 	require.NoError(t, err)
 	require.NotNil(t, v)
 

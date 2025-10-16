@@ -8,7 +8,9 @@ import (
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 func (f *dbFixture) createTriggersAndAssert(t *testing.T, triggers ...scheme.Trigger) {
@@ -108,7 +110,7 @@ func TestDeleteTriggerForeignKeys(t *testing.T) {
 	evt := f.newEvent(trg, p)
 	f.createEventsAndAssert(t, evt)
 
-	// trigger could be deleted, even if it refenced by non-deleted event
+	// trigger could be deleted, even if it referenced by non-deleted event
 	findAndAssertOne(t, f, evt, "trigger_id = ?", trg.TriggerID)    // non-deleted event
 	assert.NoError(t, f.gormdb.deleteTrigger(f.ctx, trg.TriggerID)) // deleted trigger
 }
@@ -165,4 +167,61 @@ func TestDuplicatedTrigger(t *testing.T) {
 	// could create the same named trigger for the different project
 	tr3 := f.newTrigger(p2, c, "trg")
 	f.createTriggersAndAssert(t, tr3)
+}
+
+func TestGetTriggerWithActiveDeploymentByID(t *testing.T) {
+	f := preTriggerTest(t)
+
+	// test non-existing trigger.
+	nonExistingID := sdktypes.NewTriggerID()
+	_, _, err := f.gormdb.GetTriggerWithActiveDeploymentByID(f.ctx, nonExistingID.UUIDValue())
+	assert.ErrorIs(t, err, sdkerrors.ErrNotFound)
+
+	p, c := f.createProjectConnection(t)
+	tr := f.newTrigger(p, c)
+	f.createTriggersAndAssert(t, tr)
+
+	// test without active deployment.
+	trigger, hasActiveDeployment, err := f.gormdb.GetTriggerWithActiveDeploymentByID(f.ctx, tr.TriggerID)
+	assert.NoError(t, err)
+	assert.False(t, hasActiveDeployment)
+	assert.NotEqual(t, sdktypes.InvalidTrigger, trigger)
+
+	// create active deployment.
+	b := f.newBuild(p)
+	f.saveBuildsAndAssert(t, b)
+	d := f.newDeployment(b, p)
+	d.State = int32(sdktypes.DeploymentStateActive.ToProto())
+	f.createDeploymentsAndAssert(t, d)
+
+	// test with active deployment.
+	trigger, hasActiveDeployment, err = f.gormdb.GetTriggerWithActiveDeploymentByID(f.ctx, tr.TriggerID)
+	assert.NoError(t, err)
+	assert.True(t, hasActiveDeployment)
+	assert.NotEqual(t, sdktypes.InvalidTrigger, trigger)
+}
+
+func TestGetTriggerWithActiveDeploymentByWebhookSlug(t *testing.T) {
+	f := preTriggerTest(t)
+
+	p, c := f.createProjectConnection(t)
+	tr := f.newTrigger(p, c)
+	tr.WebhookSlug = "test-webhook"
+	f.createTriggersAndAssert(t, tr)
+
+	// test without active deployment
+	_, err := f.gormdb.GetTriggerWithActiveDeploymentByWebhookSlug(f.ctx, "test-webhook")
+	assert.ErrorIs(t, err, sdkerrors.ErrNotFound)
+
+	// create active deployment
+	b := f.newBuild(p)
+	f.saveBuildsAndAssert(t, b)
+	d := f.newDeployment(b, p)
+	d.State = int32(sdktypes.DeploymentStateActive.ToProto())
+	f.createDeploymentsAndAssert(t, d)
+
+	// test with active deployment
+	trigger, err := f.gormdb.GetTriggerWithActiveDeploymentByWebhookSlug(f.ctx, "test-webhook")
+	assert.NoError(t, err)
+	assert.NotEqual(t, sdktypes.InvalidTrigger, trigger)
 }

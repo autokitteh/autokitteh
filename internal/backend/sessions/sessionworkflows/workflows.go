@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -17,7 +18,6 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessioncalls"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessiondata"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionsvcs"
-	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -26,37 +26,33 @@ import (
 )
 
 const (
-	taskQueueName       = "sessions"
-	sessionWorkflowName = "session"
-
 	terminateSessionWorkflowName        = "terminate_session"
 	delayedTerminateSessionWorkflowName = "delayed_terminate_session"
+	utilsWorkerQueue                    = "utils"
 )
 
-type StartWorkflowOptions struct {
-	UseTemporalForSessionLogs bool
-}
+type StartWorkflowOptions struct{}
 
 type Workflows interface {
 	StartWorkers(context.Context) error
-	StartWorkflow(ctx context.Context, session sdktypes.Session, opts StartWorkflowOptions) error
-	StartChildWorkflow(wctx workflow.Context, childSession sdktypes.Session, parentSessionData *sessiondata.Data) (workflow.ChildWorkflowFuture, error)
+	StartWorkflow(ctx context.Context, session sdktypes.Session) error
+	StartChildWorkflow(wctx workflow.Context, session sdktypes.Session) (sdktypes.SessionID, error)
 	GetWorkflowLog(ctx context.Context, filter sdkservices.SessionLogRecordsFilter) (*sdkservices.GetLogResults, error)
 	StopWorkflow(ctx context.Context, sessionID sdktypes.SessionID, reason string, force bool, cancelTimeout time.Duration) error
 }
 
 type sessionWorkflowParams struct {
-	Data *sessiondata.Data
-	Opts StartWorkflowOptions
+	Data sessiondata.Data
 }
 
 type workflows struct {
-	l        *zap.Logger
-	cfg      Config
-	worker   worker.Worker
-	svcs     *sessionsvcs.Svcs
-	sessions sdkservices.Sessions
-	calls    sessioncalls.Calls
+	l              *zap.Logger
+	cfg            Config
+	sessionsWorker worker.Worker
+	utilsWorker    worker.Worker
+	svcs           *sessionsvcs.Svcs
+	sessions       sdkservices.Sessions
+	calls          sessioncalls.Calls
 }
 
 func workflowID(sessionID sdktypes.SessionID) string { return sessionID.String() }
@@ -67,40 +63,46 @@ func New(
 	sessions sdkservices.Sessions,
 	svcs *sessionsvcs.Svcs,
 	calls sessioncalls.Calls,
-	telemetry *telemetry.Telemetry,
 ) Workflows {
-	initMetrics(telemetry)
+	initMetrics()
 	return &workflows{l: l, cfg: cfg, sessions: sessions, calls: calls, svcs: svcs}
 }
 
 func (ws *workflows) StartWorkers(ctx context.Context) error {
-	ws.worker = temporalclient.NewWorker(ws.l.Named("sessionworkflowsworker"), ws.svcs.Temporal.TemporalClient(), taskQueueName, ws.cfg.Worker)
-	if ws.worker == nil {
+	ws.sessionsWorker = temporalclient.NewWorker(ws.l.Named("sessionworkflowsworker"), ws.svcs.Temporal.TemporalClient(), ws.svcs.WorkflowExecutor.WorkflowQueue(), ws.cfg.Worker)
+	if ws.sessionsWorker == nil {
 		return nil
 	}
 
-	ws.worker.RegisterWorkflowWithOptions(
+	ws.sessionsWorker.RegisterWorkflowWithOptions(
 		ws.sessionWorkflow,
-		workflow.RegisterOptions{Name: sessionWorkflowName},
+		workflow.RegisterOptions{Name: ws.svcs.WorkflowExecutor.WorkflowSessionName()},
 	)
 
+	ws.utilsWorker = temporalclient.NewWorker(ws.l.Named("utilsworker"), ws.svcs.Temporal.TemporalClient(), utilsWorkerQueue, ws.cfg.Worker)
+
 	// Legacy termination workflow, using explicit parameters instead of a struct.
-	ws.worker.RegisterWorkflowWithOptions(
+	ws.utilsWorker.RegisterWorkflowWithOptions(
 		ws.legacyTerminateSessionWorkflow,
 		workflow.RegisterOptions{Name: terminateSessionWorkflowName},
 	)
 
-	ws.worker.RegisterWorkflowWithOptions(
+	ws.utilsWorker.RegisterWorkflowWithOptions(
 		ws.terminateSessionWorkflow,
 		workflow.RegisterOptions{Name: delayedTerminateSessionWorkflowName},
 	)
 
 	ws.registerActivities()
 
-	return ws.worker.Start()
+	if err := ws.sessionsWorker.Start(); err != nil {
+		return err
+	}
+	return ws.utilsWorker.Start()
 }
 
-func memo(session sdktypes.Session, data sessiondata.Data) map[string]string {
+func memo(data *sessiondata.Data) map[string]string {
+	session, oid := data.Session, data.OrgID
+
 	memo := map[string]string{
 		"process_id":      fixtures.ProcessID(),
 		"session_id":      session.ID().String(),
@@ -109,8 +111,9 @@ func memo(session sdktypes.Session, data sessiondata.Data) map[string]string {
 		"deployment_uuid": session.DeploymentID().UUIDValue().String(),
 		"project_id":      session.ProjectID().String(),
 		"project_uuid":    session.ProjectID().UUIDValue().String(),
-		"org_id":          data.OrgID.String(),
-		"org_uuid":        data.OrgID.UUIDValue().String(),
+		"org_id":          oid.String(),
+		"org_uuid":        oid.UUIDValue().String(),
+		"durable":         strconv.FormatBool(session.IsDurable()),
 	}
 
 	if session.ParentSessionID().IsValid() {
@@ -125,75 +128,39 @@ func memo(session sdktypes.Session, data sessiondata.Data) map[string]string {
 	return memo
 }
 
-func (ws *workflows) StartChildWorkflow(wctx workflow.Context, childSession sdktypes.Session, parentSessionData *sessiondata.Data) (workflow.ChildWorkflowFuture, error) {
-	childSessionID := childSession.ID()
-
-	l := ws.l.With(zap.Any("child_session_id", childSessionID))
-
-	data := *parentSessionData
-	data.Session = childSession
-
-	memo := memo(childSession, data)
-
-	f := workflow.ExecuteChildWorkflow(
-		workflow.WithChildOptions(
-			wctx,
-			ws.cfg.SessionWorkflow.ToChildWorkflowOptions(
-				taskQueueName,
-				workflowID(childSessionID),
-				fmt.Sprintf("session %v", childSessionID),
-				memo,
-			),
-		),
-		sessionWorkflowName,
-		&sessionWorkflowParams{Data: &data},
-	)
-
-	var r workflow.Execution
-	if err := f.GetChildWorkflowExecution().Get(wctx, &r); err != nil {
-		return nil, fmt.Errorf("child workflow execution: %w", err)
+func (ws *workflows) StartChildWorkflow(wctx workflow.Context, session sdktypes.Session) (sdktypes.SessionID, error) {
+	var sid sdktypes.SessionID
+	if err := workflow.ExecuteActivity(wctx, startChildSessionActivityName, session).Get(wctx, &sid); err != nil {
+		return sdktypes.InvalidSessionID, fmt.Errorf("start child session activity: %w", err)
 	}
 
-	l.With(zap.String("workflow_id", r.ID), zap.String("run_id", r.RunID), zap.Any("memo", memo)).Info("initiated child session workflow")
-
-	return f, nil
+	return sid, nil
 }
 
-func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session, opts StartWorkflowOptions) error {
+func (ws *workflows) StartWorkflow(ctx context.Context, session sdktypes.Session) error {
 	sessionID := session.ID()
-
-	l := ws.l.Sugar().With("session_id", sessionID)
 
 	data, err := sessiondata.Get(ctx, ws.svcs, session)
 	if err != nil {
 		return fmt.Errorf("get session data: %w", err)
 	}
 
-	memo := memo(session, *data)
+	memo := memo(data)
 
-	r, err := ws.svcs.Temporal.TemporalClient().ExecuteWorkflow(
-		ctx,
-		ws.cfg.SessionWorkflow.ToStartWorkflowOptions(
-			taskQueueName,
-			workflowID(sessionID),
-			fmt.Sprintf("session %v", sessionID),
-			memo,
-		),
-		sessionWorkflowName,
-		&sessionWorkflowParams{Data: data, Opts: opts},
-	)
-	if err != nil {
+	params := sessionWorkflowParams{
+		Data: *data,
+	}
+	if err = ws.svcs.WorkflowExecutor.Execute(ctx, sessionID, params, memo); err != nil {
 		return fmt.Errorf("execute session workflow: %w", err)
 	}
-
-	l.With("workflow_id", r.GetID(), "run_id", r.GetRunID(), "memo", memo).Infof("initiated session workflow %v", r.GetID())
 
 	return nil
 }
 
-func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkflowParams) error {
+func (ws *workflows) sessionWorkflow(wctx workflow.Context, params sessionWorkflowParams) error {
 	wi := workflow.GetInfo(wctx)
 	session := params.Data.Session
+	parentSessionID := session.ParentSessionID()
 	sid := session.ID()
 	isReplaying := workflow.IsReplaying(wctx)
 
@@ -203,7 +170,29 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 		zap.String("workflow_id", wi.WorkflowExecution.ID),
 		zap.String("run_id", wi.WorkflowExecution.RunID),
 		zap.Int32("attempt", wi.Attempt),
+		zap.String("parent_session_id", parentSessionID.String()),
+		zap.Bool("is_durable", session.IsDurable()),
 	)
+
+	didNotifyDone := false
+
+	defer func() {
+		if errors.Is(wctx.Err(), workflow.ErrCanceled) {
+			if didNotifyDone {
+				return
+			}
+
+			didNotifyDone = true
+
+			l.Info("session workflow canceled, notifying workflow ended", zap.String("session_id", sid.String()))
+			dwctx, done := workflow.NewDisconnectedContext(wctx)
+			defer done()
+			err := workflow.ExecuteActivity(dwctx, notifyWorkflowEndedActivity, session.ID()).Get(dwctx, nil)
+			if err != nil {
+				l.Info("notify workflow ended activity failed", zap.Error(err))
+			}
+		}
+	}()
 
 	eventTime := struct {
 		createdAt time.Time
@@ -224,7 +213,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 		}
 	}
 
-	wctx = temporalclient.WithActivityOptions(wctx, taskQueueName, ws.cfg.Activity)
+	wctx = temporalclient.WithActivityOptions(wctx, ws.svcs.WorkflowExecutor.WorkflowQueue(), ws.cfg.Activity)
 
 	// metrics is using context for the data contained, not for cancellations, as it stores in memory.
 	// if it will be stuck anyway for some reason, the workflow deadlock timeout would kick in.
@@ -261,8 +250,6 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 	// from this point on we should not be doing anything really that should be cancelled.
 	// the original wctx might have been cancelled, so we work with a disconnected context
 	// to avoid any belated non-timely cancellations.
-	dwctx, done := workflow.NewDisconnectedContext(wctx)
-	defer done()
 
 	sessionDurationHistogram.Record(metricsCtx, duration.Milliseconds(),
 		metric.WithAttributes(attribute.Bool("replay", isReplaying), attribute.Bool("success", err == nil)))
@@ -279,6 +266,9 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 	}
 
 	workflowErr := err
+
+	dwctx, done := workflow.NewDisconnectedContext(wctx)
+	defer done()
 
 	if err != nil {
 		l := l.With(zap.Error(err))
@@ -314,7 +304,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 	}
 
 	// Signal parent session on completion.
-	if pid := session.ParentSessionID(); pid.IsValid() {
+	if session.IsDurable() && parentSessionID.IsValid() {
 		payload := map[string]sdktypes.Value{
 			"completed": sdktypes.NewBooleanValue(err == nil),
 		}
@@ -325,7 +315,7 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 
 		if err := workflow.SignalExternalWorkflow(
 			dwctx,
-			pid.String(),
+			parentSessionID.String(),
 			"",
 			sessionSignalName(session.ID()),
 			sdktypes.NewDictValueFromStringMap(payload),
@@ -336,6 +326,11 @@ func (ws *workflows) sessionWorkflow(wctx workflow.Context, params *sessionWorkf
 
 	_ = workflow.ExecuteActivity(wctx, deactivateDrainedDeploymentActivityName, session.DeploymentID()).Get(wctx, nil)
 
+	err = workflow.ExecuteActivity(dwctx, notifyWorkflowEndedActivity, session.ID()).Get(dwctx, nil)
+	if err != nil {
+		ws.l.Info("notify workflow ended activity failed", zap.Error(err))
+	}
+	didNotifyDone = true
 	return workflowErr
 }
 
@@ -423,7 +418,7 @@ func (ws *workflows) StopWorkflow(ctx context.Context, sessionID sdktypes.Sessio
 	r, err := ws.svcs.Temporal.TemporalClient().ExecuteWorkflow(
 		ctx,
 		ws.cfg.TerminationWorkflow.ToStartWorkflowOptions(
-			taskQueueName,
+			utilsWorkerQueue,
 			"terminate_"+wid,
 			fmt.Sprintf("stop %v", sessionID),
 			map[string]string{

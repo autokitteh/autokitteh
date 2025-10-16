@@ -7,20 +7,21 @@ import (
 )
 
 type Config struct {
-	SameSite   http.SameSite
-	CookieKeys string `koanf:"cookie_keys"` // pairs of hash and block keys.
-	Domain     string `koanf:"ui_domain"`
-	Secure     bool
+	SameSite          http.SameSite
+	Domain            string `koanf:"ui_domain"`
+	Secure            bool   `koanf:"secure_cookie"`
+	ExpirationMinutes int    `koanf:"expiration_minutes"`
 }
 
 var Configs = configset.Set[Config]{
 	Default: &Config{
-		SameSite: http.SameSiteNoneMode,
-		Secure:   true,
+		SameSite:          http.SameSiteNoneMode,
+		Secure:            true,
+		ExpirationMinutes: 60 * 24 * 14, // 14 days
 	},
 	Dev: &Config{
-		Secure:     false,
-		SameSite:   http.SameSiteLaxMode,
-		CookieKeys: "0000000000000000000000000000000000000000000000000000000000000000,0000000000000000000000000000000000000000000000000000000000000000",
+		Secure:            false,
+		SameSite:          http.SameSiteLaxMode,
+		ExpirationMinutes: 60 * 24 * 14, // 14 days
 	},
 }

@@ -53,9 +53,17 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Sanity check: the connection ID is valid.
+	cid, err := sdktypes.StrictParseConnectionID(c.ConnectionID)
+	if err != nil {
+		l.Warn("Invalid connection ID", zap.Error(err))
+		c.AbortBadRequest("invalid connection ID")
+		return
+	}
+
 	// Test the OAuth token's usability and get authoritative installation details.
 	ctx := extrazap.AttachLoggerToContext(l, r.Context())
-	src := h.tokenSource(ctx, oauthToken)
+	src := h.tokenSource(ctx, oauthToken, cid)
 	svc, err := googleoauth2.NewService(ctx, option.WithTokenSource(src))
 	if err != nil {
 		l.Warn("OAuth user token error", zap.Error(err))
@@ -67,14 +75,6 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		l.Warn("OAuth user details error", zap.Error(err))
 		c.AbortBadRequest("Google user details error")
-		return
-	}
-
-	// Sanity check: the connection ID is valid.
-	cid, err := sdktypes.StrictParseConnectionID(c.ConnectionID)
-	if err != nil {
-		l.Warn("Invalid connection ID", zap.Error(err))
-		c.AbortBadRequest("invalid connection ID")
 		return
 	}
 
@@ -122,8 +122,8 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 	c.Finalize(vs)
 }
 
-func (h handler) tokenSource(ctx context.Context, t *oauth2.Token) oauth2.TokenSource {
-	cfg, _, err := h.oauth.Get(ctx, "google")
+func (h handler) tokenSource(ctx context.Context, t *oauth2.Token, cid sdktypes.ConnectionID) oauth2.TokenSource {
+	cfg, _, err := h.oauth.GetConfig(ctx, desc.UniqueName().String(), cid)
 	if err != nil {
 		return nil
 	}

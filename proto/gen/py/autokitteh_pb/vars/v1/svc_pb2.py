@@ -15,7 +15,7 @@ from autokitteh_pb.vars.v1 import var_pb2 as autokitteh_dot_vars_dot_v1_dot_var_
 from buf.validate import validate_pb2 as buf_dot_validate_dot_validate__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1c\x61utokitteh/vars/v1/svc.proto\x12\x12\x61utokitteh.vars.v1\x1a\x1c\x61utokitteh/vars/v1/var.proto\x1a\x1b\x62uf/validate/validate.proto\"G\n\nSetRequest\x12\x39\n\x04vars\x18\x01 \x03(\x0b\x32\x17.autokitteh.vars.v1.VarB\x0c\xfa\xf7\x18\x08\x92\x01\x05\"\x03\xc8\x01\x01R\x04vars\"\r\n\x0bSetResponse\"Y\n\rDeleteRequest\x12#\n\x08scope_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x07scopeId\x12#\n\x05names\x18\x02 \x03(\tB\r\xfa\xf7\x18\t\x92\x01\x06\"\x04r\x02\x10\x01R\x05names\"\x10\n\x0e\x44\x65leteResponse\"G\n\nGetRequest\x12#\n\x08scope_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x07scopeId\x12\x14\n\x05names\x18\x02 \x03(\tR\x05names\"H\n\x0bGetResponse\x12\x39\n\x04vars\x18\x01 \x03(\x0b\x32\x17.autokitteh.vars.v1.VarB\x0c\xfa\xf7\x18\x08\x92\x01\x05\"\x03\xc8\x01\x01R\x04vars\"u\n\x18\x46indConnectionIDsRequest\x12/\n\x0eintegration_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\rintegrationId\x12\x12\n\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n\x05value\x18\x03 \x01(\tR\x05value\"Q\n\x19\x46indConnectionIDsResponse\x12\x34\n\x0e\x63onnection_ids\x18\x01 \x03(\tB\r\xfa\xf7\x18\t\x92\x01\x06\"\x04r\x02\x10\x01R\rconnectionIds2\xe0\x02\n\x0bVarsService\x12\x46\n\x03Set\x12\x1e.autokitteh.vars.v1.SetRequest\x1a\x1f.autokitteh.vars.v1.SetResponse\x12\x46\n\x03Get\x12\x1e.autokitteh.vars.v1.GetRequest\x1a\x1f.autokitteh.vars.v1.GetResponse\x12O\n\x06\x44\x65lete\x12!.autokitteh.vars.v1.DeleteRequest\x1a\".autokitteh.vars.v1.DeleteResponse\x12p\n\x11\x46indConnectionIDs\x12,.autokitteh.vars.v1.FindConnectionIDsRequest\x1a-.autokitteh.vars.v1.FindConnectionIDsResponseB\xd1\x01\n\x16\x63om.autokitteh.vars.v1B\x08SvcProtoP\x01ZCgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/vars/v1;varsv1\xa2\x02\x03\x41VX\xaa\x02\x12\x41utokitteh.Vars.V1\xca\x02\x12\x41utokitteh\\Vars\\V1\xe2\x02\x1e\x41utokitteh\\Vars\\V1\\GPBMetadata\xea\x02\x14\x41utokitteh::Vars::V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1c\x61utokitteh/vars/v1/svc.proto\x12\x12\x61utokitteh.vars.v1\x1a\x1c\x61utokitteh/vars/v1/var.proto\x1a\x1b\x62uf/validate/validate.proto\"G\n\nSetRequest\x12\x39\n\x04vars\x18\x01 \x03(\x0b\x32\x17.autokitteh.vars.v1.VarB\x0c\xfa\xf7\x18\x08\x92\x01\x05\"\x03\xc8\x01\x01R\x04vars\"\r\n\x0bSetResponse\"Y\n\rDeleteRequest\x12#\n\x08scope_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x07scopeId\x12#\n\x05names\x18\x02 \x03(\tB\r\xfa\xf7\x18\t\x92\x01\x06\"\x04r\x02\x10\x01R\x05names\"\x10\n\x0e\x44\x65leteResponse\"G\n\nGetRequest\x12#\n\x08scope_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\x07scopeId\x12\x14\n\x05names\x18\x02 \x03(\tR\x05names\"H\n\x0bGetResponse\x12\x39\n\x04vars\x18\x01 \x03(\x0b\x32\x17.autokitteh.vars.v1.VarB\x0c\xfa\xf7\x18\x08\x92\x01\x05\"\x03\xc8\x01\x01R\x04vars\"{\n\x1e\x46indActiveConnectionIDsRequest\x12/\n\x0eintegration_id\x18\x01 \x01(\tB\x08\xfa\xf7\x18\x04r\x02\x10\x01R\rintegrationId\x12\x12\n\x04name\x18\x02 \x01(\tR\x04name\x12\x14\n\x05value\x18\x03 \x01(\tR\x05value\"W\n\x1f\x46indActiveConnectionIDsResponse\x12\x34\n\x0e\x63onnection_ids\x18\x01 \x03(\tB\r\xfa\xf7\x18\t\x92\x01\x06\"\x04r\x02\x10\x01R\rconnectionIds2\xf3\x02\n\x0bVarsService\x12\x46\n\x03Set\x12\x1e.autokitteh.vars.v1.SetRequest\x1a\x1f.autokitteh.vars.v1.SetResponse\x12\x46\n\x03Get\x12\x1e.autokitteh.vars.v1.GetRequest\x1a\x1f.autokitteh.vars.v1.GetResponse\x12O\n\x06\x44\x65lete\x12!.autokitteh.vars.v1.DeleteRequest\x1a\".autokitteh.vars.v1.DeleteResponse\x12\x82\x01\n\x17\x46indActiveConnectionIDs\x12\x32.autokitteh.vars.v1.FindActiveConnectionIDsRequest\x1a\x33.autokitteh.vars.v1.FindActiveConnectionIDsResponseB\xd1\x01\n\x16\x63om.autokitteh.vars.v1B\x08SvcProtoP\x01ZCgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/vars/v1;varsv1\xa2\x02\x03\x41VX\xaa\x02\x12\x41utokitteh.Vars.V1\xca\x02\x12\x41utokitteh\\Vars\\V1\xe2\x02\x1e\x41utokitteh\\Vars\\V1\\GPBMetadata\xea\x02\x14\x41utokitteh::Vars::V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -33,10 +33,10 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _GETREQUEST.fields_by_name['scope_id']._serialized_options = b'\372\367\030\004r\002\020\001'
   _GETRESPONSE.fields_by_name['vars']._options = None
   _GETRESPONSE.fields_by_name['vars']._serialized_options = b'\372\367\030\010\222\001\005\"\003\310\001\001'
-  _FINDCONNECTIONIDSREQUEST.fields_by_name['integration_id']._options = None
-  _FINDCONNECTIONIDSREQUEST.fields_by_name['integration_id']._serialized_options = b'\372\367\030\004r\002\020\001'
-  _FINDCONNECTIONIDSRESPONSE.fields_by_name['connection_ids']._options = None
-  _FINDCONNECTIONIDSRESPONSE.fields_by_name['connection_ids']._serialized_options = b'\372\367\030\t\222\001\006\"\004r\002\020\001'
+  _FINDACTIVECONNECTIONIDSREQUEST.fields_by_name['integration_id']._options = None
+  _FINDACTIVECONNECTIONIDSREQUEST.fields_by_name['integration_id']._serialized_options = b'\372\367\030\004r\002\020\001'
+  _FINDACTIVECONNECTIONIDSRESPONSE.fields_by_name['connection_ids']._options = None
+  _FINDACTIVECONNECTIONIDSRESPONSE.fields_by_name['connection_ids']._serialized_options = b'\372\367\030\t\222\001\006\"\004r\002\020\001'
   _globals['_SETREQUEST']._serialized_start=111
   _globals['_SETREQUEST']._serialized_end=182
   _globals['_SETRESPONSE']._serialized_start=184
@@ -49,10 +49,10 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _globals['_GETREQUEST']._serialized_end=379
   _globals['_GETRESPONSE']._serialized_start=381
   _globals['_GETRESPONSE']._serialized_end=453
-  _globals['_FINDCONNECTIONIDSREQUEST']._serialized_start=455
-  _globals['_FINDCONNECTIONIDSREQUEST']._serialized_end=572
-  _globals['_FINDCONNECTIONIDSRESPONSE']._serialized_start=574
-  _globals['_FINDCONNECTIONIDSRESPONSE']._serialized_end=655
-  _globals['_VARSSERVICE']._serialized_start=658
-  _globals['_VARSSERVICE']._serialized_end=1010
+  _globals['_FINDACTIVECONNECTIONIDSREQUEST']._serialized_start=455
+  _globals['_FINDACTIVECONNECTIONIDSREQUEST']._serialized_end=578
+  _globals['_FINDACTIVECONNECTIONIDSRESPONSE']._serialized_start=580
+  _globals['_FINDACTIVECONNECTIONIDSRESPONSE']._serialized_end=667
+  _globals['_VARSSERVICE']._serialized_start=670
+  _globals['_VARSSERVICE']._serialized_end=1041
 # @@protoc_insertion_point(module_scope)

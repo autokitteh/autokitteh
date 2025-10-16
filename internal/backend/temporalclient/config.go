@@ -4,11 +4,11 @@ import (
 	"path/filepath"
 	"time"
 
-	"go.temporal.io/sdk/testsuite"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
+	"go.autokitteh.dev/autokitteh/internal/backend/temporaldevsrv"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
 )
 
@@ -35,10 +35,19 @@ type Config struct {
 	Namespace             string `koanf:"namespace"`
 
 	// DevServer.ClientOptions is not used.
-	DevServer                   testsuite.DevServerOptions `koanf:"dev_server"`
-	DevServerStartMaxAttempts   int                        `koanf:"dev_server_start_max_attempts"`
-	DevServerStartRetryInterval time.Duration              `koanf:"dev_server_start_retry_interval"`
-	DevServerStartTimeout       time.Duration              `koanf:"dev_server_start_timeout"`
+	DevServer temporaldevsrv.DevServerOptions `koanf:"dev_server"`
+
+	// Max number of attempts to start the dev server.
+	DevServerStartMaxAttempts int `koanf:"dev_server_start_max_attempts"`
+
+	// Time to wait between dev server start attempts.
+	DevServerStartRetryInterval time.Duration `koanf:"dev_server_start_retry_interval"`
+
+	// Time to wait for dev server to start.
+	DevServerStartTimeout time.Duration `koanf:"dev_server_start_timeout"`
+
+	// Time to wait from dev server start until its namespace is up.
+	DevServerStartWaitTime time.Duration `koanf:"dev_server_start_wait_time"`
 
 	TLS tlsConfig `koanf:"tls"`
 
@@ -67,25 +76,35 @@ var (
 		Dev: &Config{
 			Monitor:               defaultMonitorConfig,
 			StartDevServerIfNotUp: true,
-			DevServer: testsuite.DevServerOptions{
+			DevServer: temporaldevsrv.DevServerOptions{
+				CachedDownload: temporaldevsrv.CachedDownload{
+					DestDir: xdg.CacheHomeDir(),
+				},
 				LogLevel:   zapcore.WarnLevel.String(),
 				EnableUI:   true,
 				DBFilename: filepath.Join(xdg.DataHomeDir(), "temporal_dev.sqlite"),
 			},
 			DevServerStartMaxAttempts: 1,
-			DevServerStartTimeout:     time.Second * 4,
+			DevServerStartTimeout:     time.Second * 10,
+			DevServerStartWaitTime:    time.Second,
 			EnableHelperRedirect:      true,
+			Namespace:                 "default",
 		},
 		Test: &Config{
 			Monitor:              defaultMonitorConfig,
 			AlwaysStartDevServer: true,
-			DevServer: testsuite.DevServerOptions{
+			DevServer: temporaldevsrv.DevServerOptions{
+				CachedDownload: temporaldevsrv.CachedDownload{
+					DestDir: xdg.CacheHomeDir(),
+				},
 				LogLevel: zapcore.WarnLevel.String(),
 				EnableUI: true,
 			},
 			DevServerStartMaxAttempts:   3,
 			DevServerStartRetryInterval: time.Second,
-			DevServerStartTimeout:       time.Second * 4,
+			DevServerStartTimeout:       time.Second * 10,
+			DevServerStartWaitTime:      time.Second,
+			Namespace:                   "default",
 		},
 	}
 )

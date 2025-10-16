@@ -20,6 +20,13 @@ export class Runtime extends Message<Runtime> {
    */
   fileExtensions: string[] = [];
 
+  /**
+   * if true, builds are done per file. if false, builds are done per directory.
+   *
+   * @generated from field: bool filewise_build = 3;
+   */
+  filewiseBuild = false;
+
   constructor(data?: PartialMessage<Runtime>) {
     super();
     proto3.util.initPartial(data, this);
@@ -30,6 +37,7 @@ export class Runtime extends Message<Runtime> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "file_extensions", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 3, name: "filewise_build", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Runtime {

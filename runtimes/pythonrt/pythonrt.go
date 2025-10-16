@@ -14,9 +14,11 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/internal/xdg"
 	pbModule "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/module/v1"
@@ -59,6 +61,7 @@ type comChannels struct {
 	done     chan *pbUserCode.DoneRequest
 	err      chan string
 	request  chan *pbUserCode.ActivityRequest
+	execute  chan *pbUserCode.ExecuteReplyRequest
 	print    chan *logMessage
 	log      chan *logMessage
 	callback chan *callbackMessage
@@ -75,19 +78,29 @@ type pySvc struct {
 	exports   map[string]sdktypes.Value
 	fileName  string // main user code file name (entry point)
 	envVars   map[string]string
-	// remote       *workerGRPCHandler
+	durable   bool
 
-	// runner       Runner
-	runner *RunnerClient
-	// runnerManager pb.RunnerManagerClient
+	runner   *RunnerClient
 	runnerID string
 
 	firstCall bool // first call is the trigger, other calls are activities
 
 	channels comChannels
+
+	didCleanup bool
+	printDone  chan struct{}
 }
 
 func (py *pySvc) cleanup(ctx context.Context) {
+	ctx, span := telemetry.T().Start(ctx, "pythonrt.cleanup")
+	defer span.End()
+
+	if py.didCleanup {
+		return
+	}
+
+	py.didCleanup = true
+
 	if err := runnerManager.Stop(ctx, py.runnerID); err != nil {
 		py.log.Warn("stop manager", zap.Error(err))
 	}
@@ -101,15 +114,21 @@ func (py *pySvc) cleanup(ctx context.Context) {
 	}
 }
 
-func New(cfg *Config, l *zap.Logger, getLocalAddr func() string) (*sdkruntimes.Runtime, error) {
+func New(
+	cfg *Config,
+	l *zap.Logger,
+	getLocalAddr func() string,
+) (*sdkruntimes.Runtime, error) {
 	switch cfg.RunnerType {
 	case "docker":
 		if cfg.WorkerAddress == "" {
 			return nil, errors.New("worker address is required for docker runner")
 		}
 		if err := configureDockerRunnerManager(l, DockerRuntimeConfig{
-			LogRunnerCode: cfg.LogRunnerCode,
-			LogBuildCode:  cfg.LogBuildCode,
+			LogRunnerCode:          cfg.LogRunnerCode,
+			LogBuildCode:           cfg.LogBuildCode,
+			MaxMemoryPerWorkflowMB: cfg.MaxMemoryPerWorkflowMB,
+			MaxCPUsPerWorkflow:     cfg.MaxCPUsPerWorkflow,
 			WorkerAddressProvider: func() string {
 				_, port, _ := net.SplitHostPort(getLocalAddr())
 				return fmt.Sprintf("%s:%s", cfg.WorkerAddress, port)
@@ -161,8 +180,9 @@ func newSvc(cfg *Config, l *zap.Logger) (sdkservices.Runtime, error) {
 			done:     make(chan *pbUserCode.DoneRequest, 1),
 			err:      make(chan string, 1),
 			request:  make(chan *pbUserCode.ActivityRequest, 1),
+			execute:  make(chan *pbUserCode.ExecuteReplyRequest, 1),
 			print:    make(chan *logMessage, 1024),
-			log:      make(chan *logMessage, 1),
+			log:      make(chan *logMessage, 1024),
 			callback: make(chan *callbackMessage, 1),
 		},
 	}
@@ -217,6 +237,31 @@ func entryPointFileName(entryPoint string) string {
 	return entryPoint
 }
 
+func (py *pySvc) handlePrint(ctx context.Context, msg *logMessage) {
+	if err := py.cbs.Print(ctx, py.runID, msg.message); err != nil {
+		py.log.Error("print error", zap.Error(err))
+	}
+
+	close(msg.doneChannel)
+}
+
+func (py *pySvc) printConsumer(ctx context.Context) {
+	for {
+		select {
+		case p, ok := <-py.channels.print:
+			if !ok {
+				py.log.Error("print consumer stopped by closing print channel")
+				return
+			}
+
+			py.handlePrint(ctx, p)
+		case <-py.printDone:
+			py.log.Info("print consumer stopped by closing printDone channel")
+			return
+		}
+	}
+}
+
 /*
 Run starts a Python workflow.
 
@@ -231,8 +276,12 @@ func (py *pySvc) Run(
 	mainPath string,
 	compiled map[string][]byte,
 	values map[string]sdktypes.Value,
+	durable bool,
 	cbs *sdkservices.RunCallbacks,
 ) (sdkservices.Run, error) {
+	ctx, runSpan := telemetry.T().Start(ctx, "pythonrt.Run")
+	defer runSpan.End()
+
 	runnerOK := false
 	py.ctx = ctx
 	py.runID = runID
@@ -245,6 +294,7 @@ func (py *pySvc) Run(
 	)
 
 	py.cbs = cbs
+	py.durable = durable
 
 	// Load environment defined by user in the `vars` section of the manifest,
 	// these are injected to the Python subprocess environment.
@@ -261,7 +311,21 @@ func (py *pySvc) Run(
 		return nil, fmt.Errorf("%q note found in compiled data", archiveKey)
 	}
 
+	startDone := make(chan struct{})
+
+	if t := py.cfg.DelayedStartPrintTimeout; t != 0 {
+		go func() {
+			select {
+			case <-startDone:
+				// nop
+			case <-time.After(t):
+				_ = cbs.Print(ctx, runID, "ᓚᘏᗢ Python runs might take a while to start when running for the first time on a new runner, hang on!")
+			}
+		}()
+	}
+
 	runnerID, runner, err := runnerManager.Start(ctx, sessionID, tarData, py.envVars)
+	close(startDone)
 	if err != nil {
 		return nil, fmt.Errorf("starting runner: %w", err)
 	}
@@ -305,6 +369,9 @@ func (py *pySvc) Run(
 
 	runnerOK = true // All is good, don't kill Python subprocess.
 
+	py.printDone = make(chan struct{})
+	go py.printConsumer(ctx)
+
 	py.log.Info("run created")
 	return py, nil
 }
@@ -343,9 +410,17 @@ func pyLevelToZap(level string) zapcore.Level {
 }
 
 func (py *pySvc) call(ctx context.Context, val sdktypes.Value, args []sdktypes.Value, kw map[string]sdktypes.Value) {
+	ctx, span := telemetry.T().Start(ctx, "pythonrt.call")
+	defer span.End()
+
 	var req pbUserCode.ActivityReplyRequest
 
-	out, err := py.cbs.Call(py.ctx, py.runID, val, args, kw)
+	ctx, callSpan := telemetry.T().Start(ctx, "pythonrt.call.cbs.call")
+
+	out, err := py.cbs.Call(ctx, py.runID, val, args, kw)
+
+	callSpan.End()
+
 	switch {
 	case err != nil:
 		py.log.Info("activity reply error", zap.Error(err))
@@ -361,13 +436,22 @@ func (py *pySvc) call(ctx context.Context, val sdktypes.Value, args []sdktypes.V
 	ctx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
 
+	ctx, replySpan := telemetry.T().Start(ctx, "pythonrt.call.ActivityReply")
+
 	if _, err = py.runner.ActivityReply(ctx, &req); err != nil {
+		replySpan.End()
+
 		py.log.Error("activity reply error", zap.Error(err))
-		py.sendDone(err)
+		py.sendDone(ctx, err)
+	} else {
+		replySpan.End()
 	}
 }
 
-func (py *pySvc) sendDone(err error) {
+func (py *pySvc) sendDone(ctx context.Context, err error) {
+	_, replySpan := telemetry.T().Start(ctx, "pythonrt.sendDone")
+	defer replySpan.End()
+
 	req := pbUserCode.DoneRequest{
 		RunnerId: py.runnerID,
 		Error:    err.Error(),
@@ -376,11 +460,15 @@ func (py *pySvc) sendDone(err error) {
 }
 
 func (py *pySvc) startRequest(ctx context.Context, funcName string, eventData []byte) error {
+	ctx, span := telemetry.T().Start(ctx, "pythonrt.startRequest")
+	defer span.End()
+
 	req := pbUserCode.StartRequest{
 		EntryPoint: fmt.Sprintf("%s:%s", py.fileName, funcName),
 		Event: &pbUserCode.Event{
 			Data: eventData,
 		},
+		IsDurable: py.durable,
 	}
 	if _, err := py.runner.Start(ctx, &req); err != nil {
 		// TODO: Handle traceback
@@ -423,136 +511,16 @@ func (py *pySvc) setupHealthcheck(ctx context.Context) chan (error) {
 	return runnerHealthChan
 }
 
-// initialCall handles initial call from autokitteh, it does the message loop with Python.
-// We split it from Call since Call is also used to execute activities.
-func (py *pySvc) initialCall(ctx context.Context, funcName string, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
-	if len(args) > 0 {
-		return sdktypes.InvalidValue, errors.New("initial call can't have positional args")
-	}
-
-	defer func() {
-		py.cleanup(ctx)
-		py.log.Info("Python subprocess cleanup after initial call is done")
-	}()
-
-	py.log.Info("initial call", zap.Any("func", funcName))
+func (py *pySvc) eventData(kwargs map[string]sdktypes.Value) ([]byte, error) {
 	event, err := py.kwToEvent(kwargs)
 	if err != nil {
-		py.log.Error("can't convert event", zap.Error(err))
-		return sdktypes.InvalidValue, fmt.Errorf("can't convert: %w", err)
+		return nil, fmt.Errorf("can't convert event: %w", err)
 	}
 
 	keys := slices.Collect(maps.Keys(event))
 	py.log.Info("event", zap.Any("keys", keys))
 
-	eventData, err := json.Marshal(event)
-	if err != nil {
-		return sdktypes.InvalidValue, fmt.Errorf("marshal event: %w", err)
-	}
-
-	cancellableCtx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	if err := py.startRequest(ctx, funcName, eventData); err != nil {
-		return sdktypes.InvalidValue, fmt.Errorf("start request: %w", err)
-	}
-
-	runnerHealthChan := py.setupHealthcheck(cancellableCtx)
-
-	// Wait for client Done message
-	// This *can't* run in an different goroutine since callbacks to temporal need to be in the same goroutine.
-	var done *pbUserCode.DoneRequest
-	for {
-		select {
-		case r := <-py.channels.log:
-			py.log.Log(pyLevelToZap(r.level), r.message)
-			close(r.doneChannel)
-		case p := <-py.channels.print:
-			py.log.Info("print", zap.String("message", p.message))
-			if err := py.cbs.Print(ctx, py.runID, p.message); err != nil {
-				py.log.Error("print error", zap.Error(err))
-			}
-			close(p.doneChannel)
-		case r := <-py.channels.request:
-			var (
-				fnName = "pyFunc"
-				args   []sdktypes.Value
-				kw     map[string]sdktypes.Value
-			)
-
-			if r.CallInfo != nil {
-				fnName = r.CallInfo.Function
-				args = kittehs.Transform(r.CallInfo.Args, func(v *pbValues.Value) sdktypes.Value {
-					// TODO(ENG-1838): What if there's an error?
-					val, _ := sdktypes.ValueFromProto(v)
-					return val
-				})
-				kw = kittehs.TransformMap(r.CallInfo.Kwargs, func(k string, v *pbValues.Value) (string, sdktypes.Value) {
-					// TODO(ENG-1838): What if there's an error?
-					val, _ := sdktypes.ValueFromProto(v)
-					return k, val
-				})
-			}
-
-			// it was already checked before we got here
-			fn, err := sdktypes.NewFunctionValue(py.xid, fnName, r.Data, nil, pyModuleFunc)
-			if err != nil {
-				return sdktypes.InvalidValue, err
-			}
-			py.call(ctx, fn, args, kw)
-		case cb := <-py.channels.callback:
-			py.log.Info("syscall", zap.String("name", cb.name))
-			val, err := cb.fn(ctx, py.cbs, py.runID)
-			cb.ch <- callbackResponse{value: val, err: err}
-		case healthErr := <-runnerHealthChan:
-			if healthErr != nil {
-				return sdktypes.InvalidValue, sdkerrors.NewRetryableErrorf("runner health: %w", healthErr)
-			}
-		case v := <-py.channels.done:
-			py.log.Info("done signal", zap.String("error", v.Error))
-			py.drainPrints(ctx)
-
-			done = v
-			if done.Error != "" {
-				py.log.Info("done error", zap.String("error", done.Error))
-				perr := sdktypes.NewProgramError(
-					sdktypes.NewStringValue(done.Error),
-					py.tracebackToLocation(done.Traceback),
-					map[string]string{"raw": done.Error},
-				)
-				return sdktypes.InvalidValue, perr.ToError()
-			}
-
-			if done.Result == nil {
-				py.log.Error("done: nil result")
-				return sdktypes.InvalidValue, errors.New("done result is nil")
-			}
-
-			done.Result.Custom.ExecutorId = py.xid.String()
-			return sdktypes.ValueFromProto(done.Result)
-		case <-ctx.Done():
-			py.drainPrints(ctx)
-			return sdktypes.InvalidValue, fmt.Errorf("context expired - %w", ctx.Err())
-		}
-	}
-}
-
-// drainPrints drains the print channel at the end of a run.
-func (py *pySvc) drainPrints(ctx context.Context) {
-	ctx, cancel := context.WithTimeout(ctx, time.Second)
-	defer cancel()
-	// flush the rest of the prints and logs.
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case r := <-py.channels.log:
-			py.log.Log(pyLevelToZap(r.level), r.message)
-		case r := <-py.channels.print:
-			_ = py.cbs.Print(ctx, py.runID, r.message)
-			close(r.doneChannel)
-		}
-	}
+	return json.Marshal(event)
 }
 
 func (py *pySvc) tracebackToLocation(traceback []*pbUserCode.Frame) []sdktypes.CallFrame {
@@ -579,6 +547,9 @@ func (py *pySvc) tracebackToLocation(traceback []*pbUserCode.Frame) []sdktypes.C
 // Call handles a function call from autokitteh.
 // First used of Call start a workflow, later invocations are activity calls.
 func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
+	ctx, span := telemetry.T().Start(ctx, "pythonrt.Call")
+	defer span.End()
+
 	fn := v.GetFunction()
 	if !fn.IsValid() {
 		py.log.Error("call - invalid function", zap.Any("function", v))
@@ -588,23 +559,163 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 	fnName := fn.Name().String()
 	py.log.Info("call", zap.String("func", fnName))
 
+	span.SetAttributes(attribute.String("function", fnName), attribute.Bool("first_call", py.firstCall))
+
+	var runnerHealthChan chan error
 	if py.firstCall {
 		py.firstCall = false
-		return py.initialCall(ctx, fnName, args, kwargs)
+
+		cancellableCtx, cancel := context.WithCancel(ctx)
+		defer cancel()
+		runnerHealthChan = py.setupHealthcheck(cancellableCtx)
+
+		eventData, err := py.eventData(kwargs)
+		if err != nil {
+			return sdktypes.InvalidValue, err
+		}
+
+		if err := py.startRequest(ctx, fnName, eventData); err != nil {
+			// We won't get print from python here, write the error to the session log.
+			if err := py.cbs.Print(ctx, py.runID, err.Error()); err != nil {
+				py.log.Error("cbs.Print error", zap.Error(err))
+			}
+			return sdktypes.InvalidValue, fmt.Errorf("start request: %w", err)
+		}
+
+		defer func() {
+			py.cleanup(context.Background())
+
+			time.Sleep(10 * time.Millisecond) // Give time to print consumer to finish
+			close(py.printDone)
+		}()
+
+	} else {
+		ctx, span := telemetry.T().Start(ctx, "pythonrt.Call.Execute")
+
+		// If we're here, it's an activity call
+		req := pbUserCode.ExecuteRequest{Data: fn.Data()}
+		resp, err := py.runner.Execute(ctx, &req)
+		switch {
+		case err != nil:
+			span.End()
+			return sdktypes.InvalidValue, err
+		case resp.Error != "":
+			py.log.Warn("activity error", zap.String("error", resp.Error))
+		}
+
+		span.End()
 	}
 
-	// If we're here, it's an activity call
-	req := pbUserCode.ExecuteRequest{Data: fn.Data()}
-	resp, err := py.runner.Execute(ctx, &req)
-	switch {
-	case err != nil:
-		return sdktypes.InvalidValue, err
-	case resp.Error != "":
-		py.log.Warn("activity error", zap.String("error", resp.Error))
-	}
+	// Wait for client Done or ActivityReplyRequest message
+	// This *can't* run in an different goroutine since callbacks to temporal need to be in the same goroutine.
+	for {
+		ctx, selSpan := telemetry.T().Start(ctx, "pythonrt.Call.select")
 
-	resp.Result.Custom.ExecutorId = py.xid.String()
-	return sdktypes.ValueFromProto(resp.Result)
+		select {
+		case r := <-py.channels.log:
+			selSpan.End()
+			span.AddEvent("log")
+
+			py.log.Log(pyLevelToZap(r.level), r.message)
+			close(r.doneChannel)
+		case v := <-py.channels.execute:
+			selSpan.End()
+			span.AddEvent("execute")
+
+			py.log.Info("execute")
+
+			if v.Result == nil {
+				py.log.Error("execute: nil result")
+				return sdktypes.InvalidValue, errors.New("execute result is nil")
+			}
+
+			v.Result.Custom.ExecutorId = py.xid.String()
+			return sdktypes.ValueFromProto(v.Result)
+		case r := <-py.channels.request:
+			selSpan.End()
+			span.AddEvent("request")
+
+			var (
+				fnName = "pyFunc"
+				args   []sdktypes.Value
+				kw     map[string]sdktypes.Value
+			)
+
+			if r.CallInfo != nil {
+				fnName = r.CallInfo.Function
+				args = kittehs.Transform(r.CallInfo.Args, func(v *pbValues.Value) sdktypes.Value {
+					// TODO(ENG-1838): What if there's an error?
+					val, _ := sdktypes.ValueFromProto(v)
+					return val
+				})
+				kw = kittehs.TransformMap(r.CallInfo.Kwargs, func(k string, v *pbValues.Value) (string, sdktypes.Value) {
+					// TODO(ENG-1838): What if there's an error?
+					val, _ := sdktypes.ValueFromProto(v)
+					return k, val
+				})
+			}
+
+			// it was already checked before we got here
+			fn, err := sdktypes.NewFunctionValue(py.xid, fnName, r.Data, nil, pyModuleFunc)
+			if err != nil {
+				return sdktypes.InvalidValue, err
+			}
+
+			py.call(ctx, fn, args, kw)
+
+		case cb := <-py.channels.callback:
+			selSpan.End()
+			span.AddEvent("callback")
+
+			py.log.Info("syscall", zap.String("name", cb.name))
+
+			ctx, fnSpan := telemetry.T().Start(ctx, "pythonrt.Call.syscall")
+			span.SetAttributes(attribute.String("name", cb.name))
+			val, err := cb.fn(ctx, py.cbs, py.runID)
+			fnSpan.End()
+
+			_, sendSpan := telemetry.T().Start(ctx, "pythonrt.Call.callbackResponse")
+			cb.ch <- callbackResponse{value: val, err: err}
+			sendSpan.End()
+
+		case healthErr := <-runnerHealthChan:
+			selSpan.End()
+			span.AddEvent("health")
+
+			if healthErr != nil {
+				return sdktypes.InvalidValue, sdkerrors.NewRetryableErrorf("runner health: %w", healthErr)
+			}
+		case done := <-py.channels.done:
+			selSpan.End()
+			span.AddEvent("done")
+
+			py.log.Info("done signal")
+
+			if done.Error != "" {
+				py.log.Info("done error", zap.String("error", done.Error))
+				perr := sdktypes.NewProgramError(
+					sdktypes.NewStringValue(done.Error),
+					py.tracebackToLocation(done.Traceback),
+					map[string]string{"raw": done.Error},
+				)
+				return sdktypes.InvalidValue, perr.ToError()
+			}
+
+			if done.Result == nil {
+				py.log.Error("done: nil result")
+				return sdktypes.InvalidValue, errors.New("done result is nil")
+			}
+
+			done.Result.Custom.ExecutorId = py.xid.String()
+			return sdktypes.ValueFromProto(done.Result)
+		case <-ctx.Done():
+			selSpan.End()
+
+			span.AddEvent("ctx_done")
+
+			return sdktypes.InvalidValue, fmt.Errorf("context expired - %w", ctx.Err())
+		}
+	}
 }
 
 // safelyGo spins a goroutine and guards against panic in it.
@@ -622,7 +733,7 @@ func (py *pySvc) safelyGo(name string, fn func()) {
 				)
 
 				err := fmt.Errorf("%s: %s\n%s", name, err, cs)
-				py.sendDone(err)
+				py.sendDone(context.Background(), err)
 			}
 		}()
 

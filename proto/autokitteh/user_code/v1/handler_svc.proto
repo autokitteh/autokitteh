@@ -117,17 +117,49 @@ message PrintResponse {
   string error = 1;
 }
 
+message StoreListRequest {
+  string runner_id = 1;
+}
+
+message StoreListResponse {
+  string error = 1;
+  repeated string keys = 2;
+}
+
+message StoreMutateRequest {
+  string runner_id = 1;
+  string key = 2;
+  string operation = 3;
+  repeated autokitteh.values.v1.Value operands = 4;
+}
+
+message StoreMutateResponse {
+  string error = 1;
+  autokitteh.values.v1.Value result = 2;
+}
+
+message OutcomeRequest {
+  string runner_id = 1;
+  autokitteh.values.v1.Value value = 2;
+}
+
+message OutcomeResponse {
+  string error = 1;
+}
+
 message StartSessionRequest {
   string runner_id = 1;
   string loc = 2;
   bytes data = 3;
   bytes memo = 4;
+  string project = 5;
 }
 
 message StartSessionResponse {
   string session_id = 1;
   string error = 2;
 }
+
 message EncodeJWTRequest {
   string runner_id = 1;
   map<string, int64> payload = 2;
@@ -167,9 +199,24 @@ message HandlerHealthResponse {
   string error = 1;
 }
 
+message ExecuteReplyRequest {
+  string runner_id = 1;
+  autokitteh.values.v1.Value result = 2;
+  string error = 3;
+  repeated autokitteh.user_code.v1.Frame traceback = 4;
+}
+
+message ExecuteReplyResponse {
+  string error = 1;
+}
+
 service HandlerService {
   // Runner starting activity
   rpc Activity(ActivityRequest) returns (ActivityResponse) {}
+
+  // Runner result from execute
+  rpc ExecuteReply(ExecuteReplyRequest) returns (ExecuteReplyResponse) {}
+
   // Runner done with activity
   rpc Done(DoneRequest) returns (DoneResponse) {}
   // Session logs
@@ -185,6 +232,9 @@ service HandlerService {
   rpc StartSession(StartSessionRequest) returns (StartSessionResponse) {}
   rpc Signal(SignalRequest) returns (SignalResponse) {}
   rpc NextSignal(NextSignalRequest) returns (NextSignalResponse) {}
+  rpc StoreList(StoreListRequest) returns (StoreListResponse) {}
+  rpc StoreMutate(StoreMutateRequest) returns (StoreMutateResponse) {}
+  rpc Outcome(OutcomeRequest) returns (OutcomeResponse) {}
 
   // Utility functions
   rpc EncodeJWT(EncodeJWTRequest) returns (EncodeJWTResponse) {}

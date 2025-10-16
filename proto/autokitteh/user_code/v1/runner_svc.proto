@@ -24,6 +24,7 @@ message ExportsResponse {
 message StartRequest {
   string entry_point = 1; // "main.py:on_event"
   autokitteh.user_code.v1.Event event = 2;
+  bool is_durable = 3;
 }
 
 message ExecuteRequest {
@@ -31,9 +32,7 @@ message ExecuteRequest {
 }
 
 message ExecuteResponse {
-  autokitteh.values.v1.Value result = 1;
-  string error = 2;
-  repeated autokitteh.user_code.v1.Frame traceback = 3;
+  string error = 1;
 }
 
 message StartResponse {

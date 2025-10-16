@@ -17,6 +17,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authloginhttpsvc/web"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authsessions"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens"
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authtokens/authjwttokens"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authusers"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -52,7 +53,7 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 	var loginPaths []string
 
 	if a.Cfg.GoogleOAuth.Enabled {
-		if err := registerGoogleOAuthRoutes(muxes.NoAuth, a.Deps.Cfg.GoogleOAuth, a.newSuccessLoginHandler); err != nil {
+		if err := registerGoogleOAuthRoutes(muxes.NoAuth, a.Cfg.GoogleOAuth, a.newSuccessLoginHandler); err != nil {
 			return err
 		}
 
@@ -80,7 +81,7 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 	}
 
 	muxes.Auth.HandleFunc("/logout", func(w http.ResponseWriter, r *http.Request) {
-		a.Deps.Sessions.Delete(w)
+		a.Sessions.Delete(w)
 		http.Redirect(w, r, "/", http.StatusFound)
 	})
 
@@ -160,14 +161,42 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 	muxes.Auth.HandleFunc("/whoami", func(w http.ResponseWriter, r *http.Request) {
 		u := authcontext.GetAuthnUser(r.Context())
 		if !u.IsValid() {
+			w.WriteHeader(http.StatusUnauthorized)
+			// enforce logout
+			a.Sessions.Delete(w)
+
 			fmt.Fprint(w, "You are not logged in")
 			return
+		}
+
+		// renew cookie expiration time
+		if err := a.Sessions.Set(w, u); err != nil {
+			a.L.Warn("failed renewing session for user: "+u.ID().UUIDValue().String(), zap.Error(err), zap.String("user_id", u.ID().String()))
 		}
 
 		w.Header().Add("Content-Type", "application/json")
 
 		if err := json.NewEncoder(w).Encode(u); err != nil {
 			a.L.Error("failed writing response", zap.Error(err))
+		}
+	})
+
+	muxes.NoAuth.HandleFunc("/.well-known/jwks.json", func(w http.ResponseWriter, r *http.Request) {
+		rsaTokens, ok := a.Tokens.(authjwttokens.RSATokens)
+		if !ok {
+			http.Error(w, "RSA tokens not configured", http.StatusBadRequest)
+			return
+		}
+		jwks, err := rsaTokens.GetJWKS()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(jwks); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 	})
 
@@ -237,20 +266,27 @@ func (a *svc) newSuccessLoginHandler(ctx context.Context, ld *loginData) http.Ha
 			return newErrHandler("unregistered user", http.StatusForbidden)
 		}
 
-		u := sdktypes.NewUser().WithDisplayName(ld.DisplayName).WithEmail(ld.Email).WithStatus(sdktypes.UserStatusActive)
+		u = sdktypes.NewUser().WithDisplayName(ld.DisplayName).WithEmail(ld.Email).WithStatus(sdktypes.UserStatusActive)
 
 		if uid, err = a.Users.Create(authcontext.SetAuthnSystemUser(ctx), u); err != nil {
 			sl.With("err", err).Errorf("failed creating user: %v", err)
 			return newErrHandler("internal server error", http.StatusInternalServerError)
 		}
 
+		u, err = a.Users.Get(authcontext.SetAuthnSystemUser(ctx), uid, "")
+		if err != nil {
+			sl.With("err", err).Errorf("failed getting user after create: %v", err)
+			return newErrHandler("internal server error", http.StatusInternalServerError)
+		}
+
 		sl = sl.With("user_id", uid)
 
 		sl.Infof("created user %v for %q", uid, ld.Email)
+
 	}
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if err := a.Deps.Sessions.Set(w, authsessions.NewSessionData(uid)); err != nil {
+		if err := a.Sessions.Set(w, u); err != nil {
 			sl.With("err", err).Errorf("failed storing session: %v", err)
 			http.Error(w, "internal server error", http.StatusInternalServerError)
 			return

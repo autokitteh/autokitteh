@@ -10,23 +10,13 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/tar"
 )
 
-//go:embed dockerfilenodeps
-var dockerfileNoDeps string
+//go:embed Dockerfile
+var dockerfile string
 
-//go:embed dockerfilewithdeps
-var dockerfileWithDeps string
+//go:embed sitecustomize.py
+var siteCustomize []byte
 
-func prepareUserCode(code []byte, gzipped bool) (string, error) {
-	tf, err := tar.FromBytes(code, gzipped)
-	if err != nil {
-		return "", err
-	}
-
-	content, err := tf.Content()
-	if err != nil {
-		return "", err
-	}
-
+func prepareBaseImageCode(customReqFilePath string) (string, error) {
 	tmpDir, err := os.MkdirTemp("", "")
 	if err != nil {
 		return "", err
@@ -41,7 +31,7 @@ func prepareUserCode(code []byte, gzipped bool) (string, error) {
 		return "", err
 	}
 
-	if err := copyFS(pycode, runnerDir); err != nil {
+	if _, err := copyFS(pycode, runnerDir); err != nil {
 		return "", err
 	}
 
@@ -50,36 +40,23 @@ func prepareUserCode(code []byte, gzipped bool) (string, error) {
 	if err := os.Mkdir(workflowDir, 0o777); err != nil {
 		return "", err
 	}
-
-	hasRequirementsFile := false
-	for file, content := range content {
-		if strings.HasPrefix(file, ".") {
-			continue
-		}
-
-		dir := path.Dir(path.Join(workflowDir, file))
-		if err := os.MkdirAll(dir, 0o750); err != nil {
+	customReqBytes := []byte("")
+	if customReqFilePath != "" {
+		customReqBytes, err = os.ReadFile(customReqFilePath)
+		if err != nil {
 			return "", err
 		}
-
-		if file == "requirements.txt" {
-			hasRequirementsFile = true
-			if err := os.WriteFile(path.Join(workflowDir, "user_requirements.txt"), content, 0o777); err != nil {
-				return "", err
-			}
-		} else {
-			if err := os.WriteFile(path.Join(workflowDir, file), content, 0o777); err != nil {
-				return "", err
-			}
-		}
-
 	}
 
-	dockerfile := []byte(dockerfileNoDeps)
-	if hasRequirementsFile {
-		dockerfile = []byte(dockerfileWithDeps)
+	if err := os.WriteFile(path.Join(workflowDir, "user_requirements.txt"), customReqBytes, 0o777); err != nil {
+		return "", err
 	}
-	if err := os.WriteFile(path.Join(tmpDir, "Dockerfile"), dockerfile, 0o777); err != nil {
+
+	if err := os.WriteFile(path.Join(tmpDir, "sitecustomize.py"), siteCustomize, 0o777); err != nil {
+		return "", err
+	}
+
+	if err := os.WriteFile(path.Join(tmpDir, "Dockerfile"), []byte(dockerfile), 0o777); err != nil {
 		return "", err
 	}
 
@@ -87,9 +64,70 @@ func prepareUserCode(code []byte, gzipped bool) (string, error) {
 		return "", err
 	}
 
-	if err := copyFS(pysdk, tmpDir); err != nil {
+	if _, err := copyFS(pysdk, tmpDir); err != nil {
 		return "", err
 	}
 
 	return tmpDir, nil
+}
+
+type userCodeDetails struct {
+	codePath              string
+	hasCustomRequirements bool
+	requirementsFilePath  string
+}
+
+func writeUserCodeToFS(files map[string][]byte) (userCodeDetails, error) {
+	tmpDir, err := os.MkdirTemp("", "")
+	if err != nil {
+		return userCodeDetails{}, err
+	}
+
+	if err := os.Chmod(tmpDir, 0o777); err != nil {
+		return userCodeDetails{}, err
+	}
+
+	hasRequirementsFile := false
+	for file, content := range files {
+		if strings.HasPrefix(file, ".") || strings.HasSuffix(file, "/") {
+			continue
+		}
+
+		dir := path.Dir(path.Join(tmpDir, file))
+		if err := os.MkdirAll(dir, 0o777); err != nil {
+			return userCodeDetails{}, err
+		}
+
+		if file == "requirements.txt" {
+			hasRequirementsFile = true
+			if err := os.WriteFile(path.Join(tmpDir, "user_requirements.txt"), content, 0o644); err != nil {
+				return userCodeDetails{}, err
+			}
+		} else {
+			targetPath := path.Join(tmpDir, file)
+			if err := os.WriteFile(targetPath, content, 0o777); err != nil {
+				return userCodeDetails{}, err
+			}
+		}
+	}
+
+	return userCodeDetails{
+		codePath:              tmpDir,
+		hasCustomRequirements: hasRequirementsFile,
+		requirementsFilePath:  path.Join(tmpDir, "user_requirements.txt"),
+	}, nil
+}
+
+func prepareUserCode(code []byte, gzipped bool) (userCodeDetails, error) {
+	tf, err := tar.FromBytes(code, gzipped)
+	if err != nil {
+		return userCodeDetails{}, err
+	}
+
+	files, err := tf.Content()
+	if err != nil {
+		return userCodeDetails{}, err
+	}
+
+	return writeUserCodeToFS(files)
 }

@@ -3,12 +3,12 @@ package auth0
 import (
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations"
+	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -70,41 +70,15 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Tests OAuth0's Management API.
-	req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, fmt.Sprintf("https://%s/api/v2/roles", d), nil)
-	if err != nil {
-		l.Error("Failed to create HTTP request", zap.Error(err))
-		c.AbortServerError("request creation error")
-		return
-	}
-
-	req.Header.Set("Authorization", "Bearer "+oauthToken.AccessToken)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		l.Error("Failed to execute HTTP request", zap.Error(err))
-		c.AbortBadRequest("execution error")
-		return
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		l.Error("Failed to read response body", zap.Error(err))
-		c.AbortServerError("response reading error")
-		return
-	}
-
-	// Check response status code.
-	if resp.StatusCode != http.StatusOK {
-		l.Error("Auth0 API request failed",
-			zap.Int("status_code", resp.StatusCode),
-			zap.String("response", string(body)))
-		c.AbortBadRequest("Auth0 API request failed")
+	// Tests Auth0's Management API.
+	url := fmt.Sprintf("https://%s/api/v2/roles", d)
+	auth := "Bearer " + oauthToken.AccessToken
+	if _, err := common.HTTPGet(r.Context(), url, auth); err != nil {
+		l.Warn("failed to test Auth0 OAuth token", zap.Error(err))
+		c.AbortServerError("failed to get the OAuth token's roles")
 		return
 	}
 
 	c.Finalize(sdktypes.NewVars(data.ToVars()...).
-		Append(sdktypes.NewVar(authTypeVar).SetValue(integrations.OAuth)))
+		Append(sdktypes.NewVar(common.AuthTypeVar).SetValue(integrations.OAuth)))
 }

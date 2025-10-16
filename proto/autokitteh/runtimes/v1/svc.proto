@@ -42,6 +42,7 @@ message RunRequest {
     (buf.validate.field).map.keys.string.min_len = 1,
     (buf.validate.field).map.values.required = true
   ];
+  bool durable = 5;
 }
 
 message RunResponse {

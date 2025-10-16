@@ -19,7 +19,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"go.autokitteh.dev/autokitteh/internal/backend/oauth"
+	"go.autokitteh.dev/autokitteh/integrations/oauth"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	userCode "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/user_code/v1"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -34,6 +34,7 @@ type workerGRPCHandler struct {
 	runnerIDsToRuntime map[string]*pySvc
 	mu                 *sync.Mutex
 	log                *zap.Logger
+	oauth              *oauth.OAuth
 }
 
 var w = workerGRPCHandler{
@@ -41,8 +42,9 @@ var w = workerGRPCHandler{
 	mu:                 new(sync.Mutex),
 }
 
-func ConfigureWorkerGRPCHandler(l *zap.Logger, mux *http.ServeMux) {
+func ConfigureWorkerGRPCHandler(l *zap.Logger, mux *http.ServeMux, oauth *oauth.OAuth) {
 	w.log = l
+	w.oauth = oauth
 	srv := grpc.NewServer()
 	userCode.RegisterHandlerServiceServer(srv, &w)
 	path := fmt.Sprintf("/%s/", userCode.HandlerService_ServiceDesc.ServiceName)
@@ -95,16 +97,21 @@ func (s *workerGRPCHandler) IsActiveRunner(ctx context.Context, req *userCode.Is
 	return &userCode.IsActiveRunnerResponse{}, nil
 }
 
+func (s *workerGRPCHandler) runnerByID(rid string) *pySvc {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	return w.runnerIDsToRuntime[rid]
+}
+
 func (s *workerGRPCHandler) Log(ctx context.Context, req *userCode.LogRequest) (*userCode.LogResponse, error) {
 	if req.Level == "" {
 		w.log.Error("empty log level")
 		return nil, status.Error(codes.InvalidArgument, "empty level")
 	}
 
-	w.mu.Lock()
-	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
-	w.mu.Unlock()
-	if !ok {
+	runner := s.runnerByID(req.RunnerId)
+	if runner == nil {
 		w.log.Error("unknown runner ID", zap.String("id", req.RunnerId))
 		return &userCode.LogResponse{Error: "unknown runner ID"}, nil
 	}
@@ -124,14 +131,13 @@ func (s *workerGRPCHandler) Log(ctx context.Context, req *userCode.LogRequest) (
 }
 
 func (s *workerGRPCHandler) Print(ctx context.Context, req *userCode.PrintRequest) (*userCode.PrintResponse, error) {
-	w.mu.Lock()
-	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
-	w.mu.Unlock()
-	if !ok {
+	runner := s.runnerByID(req.RunnerId)
+	if runner == nil {
 		w.log.Error("unknown runner ID", zap.String("id", req.RunnerId))
 		return &userCode.PrintResponse{Error: "unknown runner ID"}, nil
 	}
 
+	s.log.Debug("Print request", zap.String("message", req.Message), zap.String("runner_id", req.RunnerId))
 	m := &logMessage{level: "info", message: req.Message, doneChannel: make(chan struct{})}
 
 	runner.channels.print <- m
@@ -140,18 +146,33 @@ func (s *workerGRPCHandler) Print(ctx context.Context, req *userCode.PrintReques
 	case <-m.doneChannel:
 		return &userCode.PrintResponse{}, nil
 	case <-time.After(runnerChResponseTimeout):
+		s.log.Warn("print timeout")
 		return &userCode.PrintResponse{
 			Error: "timeout",
 		}, nil
 	}
 }
 
+func (s *workerGRPCHandler) ExecuteReply(ctx context.Context, req *userCode.ExecuteReplyRequest) (*userCode.ExecuteReplyResponse, error) {
+	s.log.Info("ExecuteReply request", zap.String("error", req.Error))
+	runner := s.runnerByID(req.RunnerId)
+	if runner == nil {
+		w.log.Error("unknown runner ID", zap.String("id", req.RunnerId))
+		resp := userCode.ExecuteReplyResponse{
+			Error: "unknown runner ID: " + req.RunnerId,
+		}
+
+		return &resp, nil
+	}
+
+	runner.channels.execute <- req
+	return &userCode.ExecuteReplyResponse{}, nil
+}
+
 func (s *workerGRPCHandler) Done(ctx context.Context, req *userCode.DoneRequest) (*userCode.DoneResponse, error) {
 	s.log.Info("Done request", zap.String("error", req.Error))
-	w.mu.Lock()
-	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
-	w.mu.Unlock()
-	if !ok {
+	runner := s.runnerByID(req.RunnerId)
+	if runner == nil {
 		w.log.Error("unknown runner ID", zap.String("id", req.RunnerId))
 		return &userCode.DoneResponse{}, nil
 	}
@@ -163,10 +184,9 @@ func (s *workerGRPCHandler) Done(ctx context.Context, req *userCode.DoneRequest)
 
 // Runner starting activity
 func (s *workerGRPCHandler) Activity(ctx context.Context, req *userCode.ActivityRequest) (*userCode.ActivityResponse, error) {
-	w.mu.Lock()
-	runner, ok := w.runnerIDsToRuntime[req.RunnerId]
-	w.mu.Unlock()
-	if !ok {
+	s.log.Info("Activity request", zap.String("runner_id", req.RunnerId))
+	runner := s.runnerByID(req.RunnerId)
+	if runner == nil {
 		w.log.Error("unknown runner ID", zap.String("id", req.RunnerId))
 		return &userCode.ActivityResponse{Error: "unknown runner ID"}, nil
 	}
@@ -176,7 +196,7 @@ func (s *workerGRPCHandler) Activity(ctx context.Context, req *userCode.Activity
 	runner.log.Info("activity", zap.String("function", fnName))
 	_, err := sdktypes.NewFunctionValue(runner.xid, fnName, req.Data, nil, pyModuleFunc)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "new function value: %s", err)
+		return nil, status.Errorf(codes.Internal, "new function value: %v", err)
 	}
 
 	runner.channels.request <- req
@@ -190,10 +210,8 @@ func (w *workerGRPCHandler) callback(ctx context.Context, rid string, name strin
 
 	startedAt := time.Now()
 
-	w.mu.Lock()
-	runner, ok := w.runnerIDsToRuntime[rid]
-	w.mu.Unlock()
-	if !ok {
+	runner := w.runnerByID(rid)
+	if runner == nil {
 		l.Error("unknown runner ID", zap.String("id", rid))
 		return nil, errors.New("unknown runner ID")
 	}
@@ -245,19 +263,19 @@ func (s *workerGRPCHandler) StartSession(ctx context.Context, req *userCode.Star
 	var data map[string]any
 	if err := json.Unmarshal(req.Data, &data); err != nil {
 		s.log.Error("unmarshal Data", zap.Error(err))
-		return nil, status.Errorf(codes.InvalidArgument, "can't unmarshal data: %s", err)
+		return nil, status.Errorf(codes.InvalidArgument, "can't unmarshal data: %v", err)
 	}
 
 	var memo map[string]string
 	if err := json.Unmarshal(req.Memo, &memo); err != nil {
 		s.log.Error("marshal Memo", zap.Error(err))
-		return nil, status.Errorf(codes.InvalidArgument, "can't unmarshal memo: %s", err)
+		return nil, status.Errorf(codes.InvalidArgument, "can't unmarshal memo: %v", err)
 	}
 
 	vdata, err := kittehs.TransformMapValuesError(data, sdktypes.DefaultValueWrapper.Wrap)
 	if err != nil {
 		s.log.Error("wrapping values", zap.Error(err))
-		return nil, status.Errorf(codes.InvalidArgument, "can't wrap data: %s", err)
+		return nil, status.Errorf(codes.InvalidArgument, "can't wrap data: %v", err)
 	}
 
 	loc, err := sdktypes.ParseCodeLocation(req.Loc)
@@ -265,8 +283,13 @@ func (s *workerGRPCHandler) StartSession(ctx context.Context, req *userCode.Star
 		return nil, status.Errorf(codes.InvalidArgument, "can't parse code location: %v", err)
 	}
 
+	project, err := sdktypes.ParseSymbol(req.Project)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "can't parse project: %v", err)
+	}
+
 	fn := func(ctx context.Context, cbs *sdkservices.RunCallbacks, rid sdktypes.RunID) (any, error) {
-		return cbs.Start(ctx, rid, loc, vdata, memo)
+		return cbs.Start(ctx, rid, project, loc, vdata, memo)
 	}
 
 	resp, err := s.callback(ctx, req.RunnerId, "start", fn)
@@ -275,7 +298,7 @@ func (s *workerGRPCHandler) StartSession(ctx context.Context, req *userCode.Star
 	}
 
 	if resp.err != nil {
-		err = status.Errorf(codes.Internal, "start(%s) -> %s", req.Loc, err)
+		err = status.Errorf(codes.Internal, "start(%s) -> %v", req.Loc, err)
 		return &userCode.StartSessionResponse{Error: err.Error()}, nil
 	}
 
@@ -297,7 +320,7 @@ func (s *workerGRPCHandler) Subscribe(ctx context.Context, req *userCode.Subscri
 	}
 
 	if resp.err != nil {
-		err = status.Errorf(codes.Internal, "subscribe(%s, %s) -> %s", req.Connection, req.Filter, err)
+		err = status.Errorf(codes.Internal, "subscribe(%s, %s) -> %v", req.Connection, req.Filter, resp.err)
 		return &userCode.SubscribeResponse{Error: err.Error()}, nil
 	}
 
@@ -328,19 +351,19 @@ func (s *workerGRPCHandler) NextEvent(ctx context.Context, req *userCode.NextEve
 	}
 
 	if resp.err != nil {
-		err = status.Errorf(codes.Internal, "next_event(%s, %d) -> %s", req.SignalIds, req.TimeoutMs, err)
+		err = status.Errorf(codes.Internal, "next_event(%s, %d) -> %v", req.SignalIds, req.TimeoutMs, err)
 		return &userCode.NextEventResponse{Error: err.Error()}, nil
 	}
 
 	out, err := sdktypes.ValueWrapper{SafeForJSON: true}.Unwrap(resp.value.(sdktypes.Value))
 	if err != nil {
-		err = status.Errorf(codes.Internal, "can't unwrap %v - %s", resp.value, err)
+		err = status.Errorf(codes.Internal, "can't unwrap %v - %v", resp.value, err)
 		return &userCode.NextEventResponse{Error: err.Error()}, err
 	}
 
 	data, err := json.Marshal(out)
 	if err != nil {
-		err = status.Errorf(codes.Internal, "can't json.Marshal %v - %s", out, err)
+		err = status.Errorf(codes.Internal, "can't json.Marshal %v - %v", out, err)
 		return &userCode.NextEventResponse{Error: err.Error()}, err
 	}
 
@@ -362,7 +385,7 @@ func (s *workerGRPCHandler) Unsubscribe(ctx context.Context, req *userCode.Unsub
 	}
 
 	if resp.err != nil {
-		err = status.Errorf(codes.Internal, "unsubscribe(%s) -> %s", req.SignalId, err)
+		err = status.Errorf(codes.Internal, "unsubscribe(%s) -> %v", req.SignalId, err)
 		return &userCode.UnsubscribeResponse{Error: err.Error()}, nil
 	}
 
@@ -410,8 +433,18 @@ func (s *workerGRPCHandler) RefreshOAuthToken(ctx context.Context, req *userCode
 	}
 
 	// Get the integration's OAuth configuration.
-	// TODO(INT-46): pass vars service instead of nil
-	cfg, _, err := oauth.New(runner.log, nil).Get(ctx, req.Integration)
+	var cid sdktypes.ConnectionID
+	if cid_str := runner.envVars[req.Connection+"__connection_id"]; cid_str != "" {
+		var err error
+		if cid, err = sdktypes.ParseConnectionID(cid_str); err != nil {
+			runner.log.Warn("invalid connection ID",
+				zap.String("connection", req.Connection),
+				zap.String("connection_id", cid_str),
+				zap.Error(err))
+		}
+	}
+
+	cfg, _, err := s.oauth.GetConfig(ctx, req.Integration, cid)
 	if err != nil {
 		return &userCode.RefreshResponse{Error: err.Error()}, nil
 	}
@@ -419,7 +452,7 @@ func (s *workerGRPCHandler) RefreshOAuthToken(ctx context.Context, req *userCode
 	// Get a fresh access token.
 	refreshToken, ok := runner.envVars[req.Connection+"__oauth_RefreshToken"]
 	if !ok {
-		// New connection variable name, only in Microsoft integrations for now.
+		// New connection variable name.
 		refreshToken, ok = runner.envVars[req.Connection+"__oauth_refresh_token"]
 	}
 	if !ok {
@@ -461,7 +494,7 @@ func (s *workerGRPCHandler) Signal(ctx context.Context, req *userCode.SignalRequ
 	}
 
 	if resp.err != nil {
-		err = status.Errorf(codes.Internal, "signal(%s,%s) -> %s", pbsig.Name, sid.String(), err)
+		err = status.Errorf(codes.Internal, "signal(%s,%s) -> %v", pbsig.Name, sid.String(), err)
 		return &userCode.SignalResponse{Error: err.Error()}, nil
 	}
 
@@ -488,7 +521,7 @@ func (s *workerGRPCHandler) NextSignal(ctx context.Context, req *userCode.NextSi
 	}
 
 	if resp.err != nil {
-		err = status.Errorf(codes.Internal, "next_signal(%v, %d) -> %s", req.Names, req.TimeoutMs, err)
+		err = status.Errorf(codes.Internal, "next_signal(%v, %d) -> %v", req.Names, req.TimeoutMs, err)
 		return &userCode.NextSignalResponse{Error: err.Error()}, nil
 	}
 
@@ -503,4 +536,72 @@ func (s *workerGRPCHandler) NextSignal(ctx context.Context, req *userCode.NextSi
 			Payload: sig.Payload.ToProto(),
 		},
 	}, nil
+}
+
+func (s *workerGRPCHandler) StoreList(ctx context.Context, req *userCode.StoreListRequest) (*userCode.StoreListResponse, error) {
+	fn := func(ctx context.Context, cbs *sdkservices.RunCallbacks, rid sdktypes.RunID) (any, error) {
+		return cbs.ListStoreValues(ctx, rid)
+	}
+
+	resp, err := s.callback(ctx, req.RunnerId, "list_values", fn)
+	if err != nil {
+		return &userCode.StoreListResponse{Error: err.Error()}, nil
+	}
+
+	if resp.err != nil {
+		err = status.Errorf(codes.Internal, "list_values -> %v", err)
+		return &userCode.StoreListResponse{Error: err.Error()}, nil
+	}
+
+	return &userCode.StoreListResponse{
+		Keys: resp.value.([]string),
+	}, nil
+}
+
+func (s *workerGRPCHandler) StoreMutate(ctx context.Context, req *userCode.StoreMutateRequest) (*userCode.StoreMutateResponse, error) {
+	operands, err := kittehs.TransformError(req.Operands, sdktypes.ValueFromProto)
+	if err != nil {
+		return &userCode.StoreMutateResponse{Error: err.Error()}, nil
+	}
+
+	fn := func(ctx context.Context, cbs *sdkservices.RunCallbacks, rid sdktypes.RunID) (any, error) {
+		return cbs.MutateStoreValue(ctx, rid, req.Key, req.Operation, operands...)
+	}
+
+	resp, err := s.callback(ctx, req.RunnerId, "mutate_value", fn)
+	if err != nil {
+		return &userCode.StoreMutateResponse{Error: err.Error()}, nil
+	}
+
+	if resp.err != nil {
+		err = status.Errorf(codes.Internal, "mutate_value(%v, %v) -> %v", req.Key, req.Operation, err)
+		return &userCode.StoreMutateResponse{Error: err.Error()}, nil
+	}
+
+	return &userCode.StoreMutateResponse{
+		Result: resp.value.(sdktypes.Value).ToProto(),
+	}, nil
+}
+
+func (s *workerGRPCHandler) Outcome(ctx context.Context, req *userCode.OutcomeRequest) (*userCode.OutcomeResponse, error) {
+	v, err := sdktypes.ValueFromProto(req.Value)
+	if err != nil {
+		return &userCode.OutcomeResponse{Error: fmt.Sprintf("invalid value: %v", err)}, nil
+	}
+
+	fn := func(ctx context.Context, cbs *sdkservices.RunCallbacks, rid sdktypes.RunID) (any, error) {
+		return nil, cbs.Outcome(ctx, rid, v)
+	}
+
+	resp, err := s.callback(ctx, req.RunnerId, "outcome", fn)
+	if err != nil {
+		return &userCode.OutcomeResponse{Error: err.Error()}, nil
+	}
+
+	if resp.err != nil {
+		err = status.Errorf(codes.Internal, "outcome(%v) -> %v", v, resp.err)
+		return &userCode.OutcomeResponse{Error: err.Error()}, nil
+	}
+
+	return &userCode.OutcomeResponse{}, nil
 }

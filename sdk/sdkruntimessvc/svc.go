@@ -148,7 +148,7 @@ func (s *svc) Run(ctx context.Context, req *connect.Request[runtimesv1.RunReques
 		},
 	}
 
-	run, err := s.runtimes.Run(ctx, rid, sdktypes.InvalidSessionID, msg.Path, bf, gs, cbs)
+	run, err := s.runtimes.Run(ctx, rid, sdktypes.InvalidSessionID, msg.Path, bf, gs, req.Msg.Durable, cbs)
 	if err != nil {
 		if perr, ok := sdktypes.FromError(err); ok {
 			return stream.Send(&runtimesv1.RunResponse{Error: perr.ToProto()})

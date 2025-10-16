@@ -7,23 +7,24 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"path"
 	"strconv"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.temporal.io/api/serviceerror"
+	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/contrib/opentelemetry"
 	"go.temporal.io/sdk/converter"
-	"go.temporal.io/sdk/testsuite"
+	"go.temporal.io/sdk/interceptor"
 	"go.uber.org/zap"
 	zapadapter "logur.dev/adapter/zap"
 	"logur.dev/logur"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/health/healthreporter"
-	"go.autokitteh.dev/autokitteh/internal/xdg"
+	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
+	"go.autokitteh.dev/autokitteh/internal/backend/temporaldevsrv"
 )
 
 type (
@@ -42,7 +43,7 @@ type impl struct {
 	client  client.Client
 	l       *zap.Logger
 	cfg     *Config
-	srv     *testsuite.DevServer
+	srv     *temporaldevsrv.DevServer
 	logFile *os.File
 	done    chan struct{}
 	opts    client.Options
@@ -80,6 +81,19 @@ func New(cfg *Config, l *zap.Logger) (Client, error) {
 		return nil, fmt.Errorf("new data converter: %w", err)
 	}
 
+	var interceptors []interceptor.ClientInterceptor
+	tracingInterceptor, err := opentelemetry.NewTracingInterceptor(
+		opentelemetry.TracerOptions{
+			Tracer:         telemetry.T(),
+			SpanContextKey: spanContextKey,
+		},
+	)
+	if err != nil {
+		l.Warn("Unable to create interceptor", zap.Error(err))
+	} else {
+		interceptors = append(interceptors, tracingInterceptor)
+	}
+
 	impl := &impl{
 		l:    l,
 		cfg:  cfg,
@@ -91,7 +105,8 @@ func New(cfg *Config, l *zap.Logger) (Client, error) {
 			ConnectionOptions: client.ConnectionOptions{
 				TLS: tlsConfig,
 			},
-			Identity: fixtures.ProcessID(),
+			Identity:     fixtures.ProcessID(),
+			Interceptors: interceptors,
 			MetricsHandler: opentelemetry.NewMetricsHandler(
 				opentelemetry.MetricsHandlerOptions{
 					InitialAttributes: attribute.NewSet(
@@ -107,59 +122,6 @@ func New(cfg *Config, l *zap.Logger) (Client, error) {
 }
 
 func (c *impl) DataConverter() converter.DataConverter { return c.opts.DataConverter }
-
-func (c *impl) startDevServer(ctx context.Context) error {
-	var err error
-	logPath := path.Join(xdg.DataHomeDir(), "temporal_dev.log")
-	c.logFile, err = os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY, 0o644)
-	if err != nil {
-		return fmt.Errorf("open Temporal dev server log file: %w", err)
-	}
-
-	c.cfg.DevServer.ClientOptions = &c.opts
-	c.cfg.DevServer.Stderr = c.logFile
-	c.cfg.DevServer.Stdout = c.logFile
-
-	for i := 0; i < c.cfg.DevServerStartMaxAttempts && c.srv == nil; i++ {
-		c.l.Info("starting temporal dev server", zap.Int("attempt", i))
-
-		if i > 0 {
-			select {
-			case <-time.After(c.cfg.DevServerStartRetryInterval):
-				// nop
-			case <-ctx.Done():
-				return fmt.Errorf("context done: %w", ctx.Err())
-			}
-		}
-
-		startCtx := ctx
-
-		if c.cfg.DevServerStartTimeout != 0 {
-			var done func()
-			startCtx, done = context.WithTimeout(ctx, c.cfg.DevServerStartTimeout)
-			defer done()
-		}
-
-		c.srv, err = testsuite.StartDevServer(startCtx, c.cfg.DevServer)
-		if err != nil {
-			c.l.Error("failed to start temporal dev server", zap.Error(err), zap.Int("attempt", i))
-		}
-	}
-
-	if err != nil {
-		return fmt.Errorf("start Temporal dev server: %w", err)
-	}
-
-	c.l.Info("started temporal dev server", zap.String("address", c.srv.FrontendHostPort()))
-
-	if c.client != nil {
-		c.client.Close()
-	}
-
-	c.client = c.srv.Client()
-
-	return nil
-}
 
 func (c *impl) TemporalClient() client.Client { return c.client }
 
@@ -269,6 +231,16 @@ func (c *impl) Start(context.Context) error {
 			}
 		}
 	}
+
+	resp, err := c.client.WorkflowService().DescribeNamespace(ctx, &workflowservice.DescribeNamespaceRequest{
+		Namespace: c.cfg.Namespace,
+	})
+	if err != nil {
+		c.l.Error("namespace is not registered", zap.Error(err))
+		return err
+	}
+
+	c.l.Info("namespace is registered", zap.Any("info", resp.NamespaceInfo))
 
 	// Start health check monitor.
 

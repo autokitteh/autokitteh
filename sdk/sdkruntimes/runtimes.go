@@ -46,6 +46,7 @@ func (s runtimes) Run(
 	path string,
 	build *sdkbuildfile.BuildFile,
 	globals map[string]sdktypes.Value,
+	durable bool,
 	cbs *sdkservices.RunCallbacks,
 ) (sdkservices.Run, error) {
 	if cbs == nil {
@@ -59,6 +60,7 @@ func (s runtimes) Run(
 		EntryPointPath:       path,
 		BuildFile:            build,
 		Globals:              globals,
+		IsDurable:            durable,
 		FallthroughCallbacks: *cbs,
 	})
 }
@@ -84,7 +86,7 @@ func (s runtimes) New(ctx context.Context, n sdktypes.Symbol) (sdkservices.Runti
 	return nil, nil
 }
 
-func MatchRuntimeByPath(rts []sdktypes.Runtime, path string) (sdktypes.Runtime, bool) {
+func MatchRuntimeByPath(rts []sdktypes.Runtime, path string) sdktypes.Runtime {
 	// find longest match (the most specific) between all registered extensions.
 
 	var (
@@ -102,5 +104,5 @@ func MatchRuntimeByPath(rts []sdktypes.Runtime, path string) (sdktypes.Runtime, 
 		}
 	}
 
-	return lastRT, lastRT.IsValid()
+	return lastRT
 }

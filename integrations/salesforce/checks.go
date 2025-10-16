@@ -2,6 +2,8 @@ package salesforce
 
 import (
 	"context"
+	"encoding/json"
+	"net/url"
 
 	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/common"
@@ -15,7 +17,7 @@ import (
 // ensures that the connection is at least theoretically usable.
 func status(v sdkservices.Vars) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
-		vs, errStatus, err := common.ReadConnectionVars(ctx, v, cid)
+		vs, errStatus, err := common.ReadVarsWithStatus(ctx, v, cid)
 		if errStatus.IsValid() || err != nil {
 			return errStatus, err
 		}
@@ -35,7 +37,7 @@ func status(v sdkservices.Vars) sdkintegrations.OptFn {
 // authentication credentials are valid and can be used to make API calls.
 func test(v sdkservices.Vars) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
-		vs, errStatus, err := common.ReadConnectionVars(ctx, v, cid)
+		vs, errStatus, err := common.ReadVarsWithStatus(ctx, v, cid)
 		if errStatus.IsValid() || err != nil {
 			return errStatus, err
 		}
@@ -54,4 +56,24 @@ func test(v sdkservices.Vars) sdkintegrations.OptFn {
 		// TODO(INT-235): return sdktypes.NewStatus(sdktypes.StatusCodeOK, ""), nil
 		return sdktypes.NewStatus(sdktypes.StatusCodeError, "Not implemented"), nil
 	})
+}
+
+// https://help.salesforce.com/s/articleView?id=sf.remoteaccess_using_userinfo_endpoint.htm
+func getUserInfo(ctx context.Context, instanceURL, accessToken string) (map[string]any, error) {
+	u, err := url.JoinPath(instanceURL, "services/oauth2/userinfo")
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := common.HTTPGet(ctx, u, "Bearer "+accessToken)
+	if err != nil {
+		return nil, err
+	}
+
+	var userInfo map[string]any
+	if err := json.Unmarshal(resp, &userInfo); err != nil {
+		return nil, err
+	}
+
+	return userInfo, nil
 }

@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"go.uber.org/fx"
 	"go.uber.org/zap"
@@ -14,8 +15,8 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authz"
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
-	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/manifest"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -31,8 +32,9 @@ type Projects struct {
 	Integrations sdkservices.Integrations
 }
 
-func New(p Projects, telemetry *telemetry.Telemetry) sdkservices.Projects {
-	initMetrics(telemetry)
+func New(p Projects) sdkservices.Projects {
+	initMetrics()
+
 	return &p
 }
 
@@ -124,14 +126,26 @@ func (ps *Projects) List(ctx context.Context, oid sdktypes.OrgID) ([]sdktypes.Pr
 	return ps.DB.ListProjects(ctx, oid)
 }
 
-func (ps *Projects) Build(ctx context.Context, projectID sdktypes.ProjectID) (sdktypes.BuildID, error) {
+func (ps *Projects) Build(ctx context.Context, projectID sdktypes.ProjectID, async bool) (sdktypes.BuildID, error) {
 	// Permission is read since it's reading from the project data. A separate check will be done
 	// in the builds storage component for creation of a new build.
 	if err := authz.CheckContext(ctx, projectID, "write:build"); err != nil {
 		return sdktypes.InvalidBuildID, err
 	}
 
-	fs, err := ps.openProjectResourcesFS(ctx, projectID)
+	if async {
+		return ps.buildAsync(ctx, projectID)
+	}
+
+	return ps.buildSync(ctx, projectID)
+}
+
+func (ps *Projects) buildAsync(ctx context.Context, projectID sdktypes.ProjectID) (sdktypes.BuildID, error) {
+	return ps.Builds.Save(ctx, sdktypes.NewBuild().WithProjectID(projectID).WithStatus(sdktypes.BuildStatusPending), nil)
+}
+
+func (ps *Projects) buildSync(ctx context.Context, projectID sdktypes.ProjectID) (sdktypes.BuildID, error) {
+	fs, hash, err := ps.openProjectResourcesFS(ctx, projectID)
 	if err != nil {
 		return sdktypes.InvalidBuildID, err
 	}
@@ -145,7 +159,10 @@ func (ps *Projects) Build(ctx context.Context, projectID sdktypes.ProjectID) (sd
 		ps.Runtimes,
 		fs,
 		nil,
-		nil,
+		map[string]string{
+			"resources_hash": hash,
+			"timestamp":      time.Now().UTC().Format(time.RFC3339),
+		},
 	)
 	if err != nil {
 		return sdktypes.InvalidBuildID, err
@@ -157,7 +174,7 @@ func (ps *Projects) Build(ctx context.Context, projectID sdktypes.ProjectID) (sd
 		return sdktypes.InvalidBuildID, err
 	}
 
-	return ps.Builds.Save(ctx, sdktypes.NewBuild().WithProjectID(projectID), buf.Bytes())
+	return ps.Builds.Save(ctx, sdktypes.NewBuild().WithProjectID(projectID).WithStatus(sdktypes.BuildStatusSuccess), buf.Bytes())
 }
 
 func (ps *Projects) SetResources(ctx context.Context, projectID sdktypes.ProjectID, resources map[string][]byte) error {
@@ -181,8 +198,8 @@ var origHeader = []byte(`# This is the original autokitteh.yaml specific by the 
 
 `)
 
-func (ps *Projects) Export(ctx context.Context, projectID sdktypes.ProjectID) ([]byte, error) {
-	if err := authz.CheckContext(ctx, projectID, "read:export"); err != nil {
+func (ps *Projects) Export(ctx context.Context, projectID sdktypes.ProjectID, includeVarsContents bool) ([]byte, error) {
+	if err := authz.CheckContext(ctx, projectID, "read:export", authz.WithData("include_vars_contents", includeVarsContents)); err != nil {
 		return nil, err
 	}
 
@@ -218,7 +235,7 @@ func (ps *Projects) Export(ctx context.Context, projectID sdktypes.ProjectID) ([
 		}
 	}
 
-	manifest, err := ps.exportManifest(ctx, projectID)
+	manifest, err := ps.exportManifest(ctx, projectID, includeVarsContents)
 	if err != nil {
 		return nil, err
 	}
@@ -238,7 +255,7 @@ func (ps *Projects) Export(ctx context.Context, projectID sdktypes.ProjectID) ([
 	return buf.Bytes(), nil
 }
 
-func (ps *Projects) exportManifest(ctx context.Context, projectID sdktypes.ProjectID) ([]byte, error) {
+func (ps *Projects) exportManifest(ctx context.Context, projectID sdktypes.ProjectID, includeVarsContents bool) ([]byte, error) {
 	prj, err := ps.DB.GetProjectByID(ctx, projectID)
 	if err != nil {
 		return nil, err
@@ -273,9 +290,13 @@ func (ps *Projects) exportManifest(ctx context.Context, projectID sdktypes.Proje
 	}
 
 	for _, t := range triggers {
+		isDurable := t.IsDurable()
+
 		mt := manifest.Trigger{
-			Name: t.Name().String(),
-			Call: t.CodeLocation().CanonicalString(),
+			Name:      t.Name().String(),
+			Call:      t.CodeLocation().CanonicalString(),
+			IsSync:    t.IsSync(),
+			IsDurable: &isDurable,
 		}
 		if filter := t.Filter(); filter != "" {
 			mt.Filter = filter
@@ -286,8 +307,7 @@ func (ps *Projects) exportManifest(ctx context.Context, projectID sdktypes.Proje
 
 		switch t.SourceType() {
 		case sdktypes.TriggerSourceTypeWebhook:
-			var wh struct{}
-			mt.Webhook = &wh
+			mt.Webhook = &struct{}{}
 		case sdktypes.TriggerSourceTypeSchedule:
 			sched := t.Schedule()
 			mt.Schedule = &sched
@@ -313,11 +333,15 @@ func (ps *Projects) exportManifest(ctx context.Context, projectID sdktypes.Proje
 			Secret: v.IsSecret(),
 		}
 
+		if includeVarsContents {
+			mv.Value = v.Value()
+		}
+
 		p.Vars = append(p.Vars, &mv)
 	}
 
 	m := manifest.Manifest{
-		Version: manifest.Version,
+		Version: "v2",
 		Project: &p,
 	}
 
@@ -334,21 +358,32 @@ func findConnection(id sdktypes.ConnectionID, conns []sdktypes.Connection) (sdkt
 	return sdktypes.Connection{}, false
 }
 
-func (ps *Projects) Lint(ctx context.Context, projectID sdktypes.ProjectID, resources map[string][]byte, manifestFile string) ([]*sdktypes.CheckViolation, error) {
-	data, ok := resources[manifestFile]
+func (ps *Projects) Lint(ctx context.Context, projectID sdktypes.ProjectID, resources map[string][]byte, manifestPath string) ([]*sdktypes.CheckViolation, error) {
+	if projectID.IsValid() {
+		if err := authz.CheckContext(ctx, projectID, "read:lint"); err != nil {
+			return nil, err
+		}
+	}
+
+	if resources == nil {
+		if !projectID.IsValid() {
+			return nil, sdkerrors.NewInvalidArgumentError("project_id is required when resources are not provided")
+		}
+
+		var err error
+		if resources, err = ps.DB.GetProjectResources(ctx, projectID); err != nil {
+			return nil, err
+		}
+	}
+
+	manifestCode, ok := resources[manifestPath]
 	if !ok {
 		var err error
-		data, err = ps.exportManifest(ctx, projectID)
+		manifestCode, err = ps.exportManifest(ctx, projectID, true)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	m, err := manifest.Read(data, manifestFile)
-	if err != nil {
-		return nil, err
-	}
-
-	violations := Validate(projectID, m, resources)
-	return violations, nil
+	return Validate(projectID, manifestCode, resources), nil
 }

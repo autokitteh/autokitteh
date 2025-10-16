@@ -55,6 +55,10 @@ func (r SessionLogRecord) Describe(opts *SessionLogRecordDescribeOptions) string
 	}
 
 	switch {
+	case m.Outcome != nil:
+		fmt.Fprintln(b, "Outcome:")
+		w := opts.indent(b)
+		describeValue(opts, w, kittehs.Must1(ValueFromProto(m.Outcome.Value)))
 	case m.Print != nil:
 		fmt.Fprintf(b, "Print: %s\n", m.Print.Text)
 	case m.StopRequest != nil:

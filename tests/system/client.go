@@ -4,11 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
+	"testing"
 	"time"
+
+	"go.autokitteh.dev/autokitteh/tests"
 )
 
 const (
@@ -20,30 +22,7 @@ var (
 	sessionStateAll   = regexp.MustCompile(`state:SESSION_STATE_TYPE_`)
 )
 
-func runClient(akPath string, args []string) (*akResult, error) {
-	// Running in a subprocess, not a goroutine (like the
-	// server), to ensure state isolation between executions.
-	if token != "" {
-		args = append([]string{"--token", token}, args...)
-	}
-
-	cmd := exec.Command(akPath, args...)
-	output, err := cmd.CombinedOutput()
-
-	r := &akResult{
-		output:     strings.TrimSpace(string(output)),
-		returnCode: cmd.ProcessState.ExitCode(),
-	}
-
-	ee := new(exec.ExitError)
-	if errors.As(err, &ee) {
-		err = nil
-	}
-
-	return r, err
-}
-
-func waitForSession(akPath, akAddr, step string) (string, error) {
+func waitForSession(t *testing.T, akPath, akAddr, step string) (string, error) {
 	// Parse wait parameters.
 	match := waitAction.FindStringSubmatch(step)
 	if match == nil {
@@ -57,23 +36,23 @@ func waitForSession(akPath, akAddr, step string) (string, error) {
 	waitType := match[2]
 	id := match[3]
 
-	stateRegex := sessionStateAll // wait .. unless .. session, wait for eany session state
+	stateRegex := sessionStateAll // wait .. unless .. session, wait for any session state
 	isSessionExpected := waitType == "for"
 	if isSessionExpected {
 		stateRegex = sessionStateFinal // wait .. for .. session
 	}
 
 	// Check the session state with the AK client.
-	args := append(serviceUrlArg(akAddr), "session", "get", id)
+	args := []string{"session", "get", id}
 	startTime := time.Now()
 
 	sessionFound := false
 	for time.Since(startTime) < duration {
-		result, err := runClient(akPath, args)
+		result, err := tests.RunAKClient(t, akPath, akAddr, token, 0, args)
 		if err != nil {
 			return "", fmt.Errorf("failed to get session: %w", err)
 		}
-		if sessionFound = stateRegex.MatchString(result.output); sessionFound {
+		if sessionFound = stateRegex.MatchString(result.Output); sessionFound {
 			duration = time.Since(startTime).Round(time.Millisecond)
 			break
 		}
@@ -84,19 +63,19 @@ func waitForSession(akPath, akAddr, step string) (string, error) {
 		return fmt.Sprintf("waited %s %s session %s. Session was found: %t", duration, waitType, id, sessionFound), nil
 	}
 
-	// error handling
+	// Error handling.
 	text := fmt.Sprintf("session %s not done after %s", id, duration)
 
-	args = append(serviceUrlArg(akAddr), "event", "list", "--integration=http")
-	result, err := runClient(akPath, args)
+	args = []string{"event", "list", "--integration=http"}
+	result, err := tests.RunAKClient(t, akPath, akAddr, token, 0, args)
 	if err == nil {
-		text += "\nEvent list:\n" + result.output
+		text += "\nEvent list:\n" + result.Output
 	}
 
-	args = append(serviceUrlArg(akAddr), "session", "list", "-J")
-	result, err = runClient(akPath, args)
+	args = []string{"session", "list", "-J"}
+	result, err = tests.RunAKClient(t, akPath, akAddr, token, 0, args)
 	if err == nil {
-		text += "\n---\nSession list:\n" + result.output
+		text += "\n---\nSession list:\n" + result.Output
 	}
 	return "", errors.New(text)
 }
@@ -123,8 +102,4 @@ func setEnv(args string) error {
 	}
 
 	return nil
-}
-
-func serviceUrlArg(akAddr string) []string {
-	return []string{"--config", "http.service_url=http://" + akAddr}
 }

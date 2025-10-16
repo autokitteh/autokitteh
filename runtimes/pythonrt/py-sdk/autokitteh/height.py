@@ -21,4 +21,4 @@ def height_client(connection: str) -> Session:
         ValueError: AutoKitteh connection name is invalid.
         ConnectionInitError: AutoKitteh connection was not initialized yet.
     """
-    return OAuth2Session("height", connection)
+    return OAuth2Session("height", connection, base_url="https://api.height.app/")

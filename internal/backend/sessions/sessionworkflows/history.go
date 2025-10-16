@@ -57,6 +57,14 @@ func (ws *workflows) GetWorkflowLog(ctx context.Context, filter sdkservices.Sess
 		enumspb.HISTORY_EVENT_FILTER_TYPE_ALL_EVENT,
 	)
 
+	// Keep track of all the events and their ids in this map so we can easily
+	// correlated different history events together.
+	// Specifically when we're looking at activities, all the activity data is stored
+	// in the Scheduled Temporal event, and further activity events such as Started and
+	// completed contain no further data. We use this mapping to access the relevant event
+	// from the Started/Completed one.
+	events := make(map[int64]*historypb.HistoryEvent, min(16, filter.PageSize))
+
 	if !filter.Ascending {
 		// This is an ugly hack as it consumes all elements, but that's what we can do right now.
 
@@ -70,6 +78,10 @@ func (ws *workflows) GetWorkflowLog(ctx context.Context, filter sdkservices.Sess
 			}
 
 			riter.rs = append(riter.rs, event)
+
+			// On a query with descending order, we need to prepopulate the events so they'll be available when
+			// we bump into a a Started/Completed event. See comment on `events` allocation above for more info.
+			events[event.EventId] = event
 		}
 
 		slices.Reverse(riter.rs)
@@ -82,8 +94,6 @@ func (ws *workflows) GetWorkflowLog(ctx context.Context, filter sdkservices.Sess
 		nextPageToken string
 		reached       = filter.PageToken == ""
 	)
-
-	events := make(map[int64]*historypb.HistoryEvent, min(16, filter.PageSize))
 
 	for iter.HasNext() {
 		event, err := iter.Next()
@@ -252,24 +262,6 @@ func parseTemporalHistoryEvent(l *zap.Logger, t time.Time, event *historypb.Hist
 			}
 
 			return sdktypes.NewStateSessionLogRecord(t, state), nil
-
-		case addSessionPrintActivityName:
-			if types != 0 && types&sdktypes.PrintSessionLogRecordType == 0 {
-				return sdktypes.InvalidSessionLogRecord, nil
-			}
-
-			payloads := attrs.Input.GetPayloads()
-			if len(payloads) != 3 {
-				l.Error("unexpected number of payloads for activity task print event", zap.Int("payloads", len(payloads)))
-				return sdktypes.InvalidSessionLogRecord, nil
-			}
-
-			var v sdktypes.Value
-			if err := dc.FromPayload(payloads[1], &v); err != nil {
-				return sdktypes.InvalidSessionLogRecord, temporalclient.TranslateError(err, "unmarshal print text")
-			}
-
-			return sdktypes.NewPrintSessionLogRecord(t, v, 0), nil
 
 		default:
 			return sdktypes.InvalidSessionLogRecord, nil

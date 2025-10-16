@@ -12,10 +12,9 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-type DB interface {
+type Shared interface {
 	Connect(context.Context) error
 	Setup(context.Context) error
-	MigrationRequired(context.Context) (bool, int64, error)
 	Migrate(context.Context) error
 	Debug() DB
 
@@ -52,7 +51,7 @@ type DB interface {
 	GetVars(context.Context, sdktypes.VarScopeID, []sdktypes.Symbol) ([]sdktypes.Var, error)
 	CountVars(context.Context, sdktypes.VarScopeID) (int, error)
 	DeleteVars(context.Context, sdktypes.VarScopeID, []sdktypes.Symbol) error
-	FindConnectionIDsByVar(context.Context, sdktypes.IntegrationID, sdktypes.Symbol, string) ([]sdktypes.ConnectionID, error)
+	FindConnectionIDsWithActiveDeploymentByVar(context.Context, sdktypes.IntegrationID, sdktypes.Symbol, string) ([]sdktypes.ConnectionID, error)
 
 	// -----------------------------------------------------------------------
 	// This is idempotent.
@@ -65,9 +64,10 @@ type DB interface {
 	CreateTrigger(context.Context, sdktypes.Trigger) error
 	UpdateTrigger(context.Context, sdktypes.Trigger) error
 	GetTriggerByID(context.Context, sdktypes.TriggerID) (sdktypes.Trigger, error)
+	GetTriggerWithActiveDeploymentByID(context.Context, uuid.UUID) (sdktypes.Trigger, bool, error)
 	DeleteTrigger(context.Context, sdktypes.TriggerID) error
 	ListTriggers(context.Context, sdkservices.ListTriggersFilter) ([]sdktypes.Trigger, error)
-	GetTriggerByWebhookSlug(ctx context.Context, slug string) (sdktypes.Trigger, error)
+	GetTriggerWithActiveDeploymentByWebhookSlug(ctx context.Context, slug string) (sdktypes.Trigger, error)
 
 	// -----------------------------------------------------------------------
 	GetBuild(ctx context.Context, buildID sdktypes.BuildID) (sdktypes.Build, error)
@@ -105,16 +105,9 @@ type DB interface {
 	UpdateSessionState(ctx context.Context, sessionID sdktypes.SessionID, state sdktypes.SessionState) error
 	AddSessionPrint(ctx context.Context, sessionID sdktypes.SessionID, v sdktypes.Value, callSeq uint32) error
 	AddSessionStopRequest(ctx context.Context, sessionID sdktypes.SessionID, reason string) error
+	AddSessionOutcome(ctx context.Context, sessionID sdktypes.SessionID, v sdktypes.Value) error
 	ListSessions(ctx context.Context, f sdkservices.ListSessionsFilter) (*sdkservices.ListSessionResult, error)
 	DeleteSession(ctx context.Context, sessionID sdktypes.SessionID) error
-
-	// -----------------------------------------------------------------------
-	CreateSessionCall(ctx context.Context, sessionID sdktypes.SessionID, data sdktypes.SessionCallSpec) error
-	GetSessionCallSpec(ctx context.Context, sessionID sdktypes.SessionID, seq uint32) (sdktypes.SessionCallSpec, error)
-
-	StartSessionCallAttempt(ctx context.Context, sessionID sdktypes.SessionID, seq uint32) (uint32, error)
-	CompleteSessionCallAttempt(ctx context.Context, sessionID sdktypes.SessionID, seq, attempt uint32, complete sdktypes.SessionCallAttemptComplete) error
-	GetSessionCallAttemptResult(ctx context.Context, sessionID sdktypes.SessionID, seq uint32, attempt int64 /* <0 for last */) (sdktypes.SessionCallAttemptResult, error)
 
 	// -----------------------------------------------------------------------
 	// TODO(ENG-917): Do not expose scheme outside of DB.
@@ -145,9 +138,12 @@ type DB interface {
 	GetSecret(ctx context.Context, key string) (string, error)
 	DeleteSecret(ctx context.Context, key string) error
 
-	SetValue(ctx context.Context, pid sdktypes.ProjectID, key string, v sdktypes.Value) error
-	GetValue(ctx context.Context, pid sdktypes.ProjectID, key string) (sdktypes.Value, error)
-	ListValues(ctx context.Context, pid sdktypes.ProjectID) (map[string]sdktypes.Value, error)
+	SetStoreValue(ctx context.Context, pid sdktypes.ProjectID, key string, v sdktypes.Value) error
+	GetStoreValue(ctx context.Context, pid sdktypes.ProjectID, key string) (sdktypes.Value, error)
+
+	// If len(keys) == 0, it returns all keys.
+	// if getValues is true, it returns values for the keys. Otherwise, it returns only keys without values.
+	ListStoreValues(ctx context.Context, pid sdktypes.ProjectID, keys []string, getValues bool) (map[string]sdktypes.Value, error)
 
 	// -----------------------------------------------------------------------
 

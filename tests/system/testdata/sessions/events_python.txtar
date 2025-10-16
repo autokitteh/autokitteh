@@ -7,7 +7,7 @@ resp code == 202
 ak session watch ses_0000000000000000000000000b --end-state RUNNING --wait-created
 return code == 0
 
-ak session watch ses_0000000000000000000000000b -r "ready"
+ak session prints ses_0000000000000000000000000b -t -r "ready"
 return code == 0
 
 http post /webhooks/00000000000000000000000005 a
@@ -19,7 +19,7 @@ resp code == 202
 http post /webhooks/00000000000000000000000007 c
 resp code == 202
 
-ak session watch ses_0000000000000000000000000b -r "3 None"
+ak session prints ses_0000000000000000000000000b -t -r "3 None"
 return code == 0
 
 http post /webhooks/00000000000000000000000005 d
@@ -28,18 +28,17 @@ resp code == 202
 ak session watch ses_0000000000000000000000000b --end-state COMPLETED
 return code == 0
 
-ak session log --prints-only --no-timestamps -p myproject
-output equals file prints.txt
+ak session prints ses_0000000000000000000000000b --no-timestamps
+output contains 'webhooks/00000000000000000000000005'
+output contains 'webhooks/00000000000000000000000007'
+output contains 'ready'
+output contains '1 a'
+output contains '2 b'
+output contains '3 None'
+output contains '4 c'
+output contains '5 d'
+output contains 'done'
 
-
--- prints.txt --
-ready
-1 a
-2 b
-3 None
-4 c
-5 d
-done
 
 -- project.yaml --
 version: v1
@@ -56,15 +55,21 @@ project:
       type: webhook
 
 -- program.py --
-from autokitteh import subscribe, next_event
+from autokitteh import subscribe, next_event, get_webhook_url
 
 def on_http_start(_):
+  print(get_webhook_url("http1"))
+  print(get_webhook_url("http2"))
+
   s1 = subscribe("http2", "true")
   s2 = subscribe("http1", "true")
+
   print("ready")
+
   print(1, next_event([s2])['body']['text'])
   print(2, next_event([s1])['body']['text'])
   print(3, next_event([s2], timeout=1))
   print(4, next_event([s1, s2], timeout=2)['body']['text'])
   print(5, next_event([s1, s2], timeout=2)['body']['text'])
+  
   print("done")

@@ -20,10 +20,14 @@ var exportCmd = common.StandardCommand(&cobra.Command{
 	RunE: export,
 })
 
-var outputFileName string
+var (
+	outputFileName      string
+	includeVarsContents bool
+)
 
 func init() {
 	exportCmd.Flags().StringVarP(&outputFileName, "output", "o", "-", "output file name (stdout by default)")
+	exportCmd.Flags().BoolVarP(&includeVarsContents, "include-contents", "c", false, "include variable contents")
 }
 
 func export(cmd *cobra.Command, args []string) error {
@@ -41,7 +45,7 @@ func export(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("project %q not found", name)
 	}
 
-	zipData, err := r.Client.Projects().Export(ctx, pid)
+	zipData, err := r.Client.Projects().Export(ctx, pid, includeVarsContents)
 	if err != nil {
 		return err
 	}

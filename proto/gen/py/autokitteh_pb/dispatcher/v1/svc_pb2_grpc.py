@@ -6,10 +6,7 @@ from autokitteh_pb.dispatcher.v1 import svc_pb2 as autokitteh_dot_dispatcher_dot
 
 
 class DispatcherServiceStub(object):
-    """TODO: The dispatcher knows which connections it sent the event to. Add ability to query for this.
-    Consider interaction with the event services - maybe all listing need to be done in the dispatcher?
-
-    """
+    """Missing associated documentation comment in .proto file."""
 
     def __init__(self, channel):
         """Constructor.
@@ -30,10 +27,7 @@ class DispatcherServiceStub(object):
 
 
 class DispatcherServiceServicer(object):
-    """TODO: The dispatcher knows which connections it sent the event to. Add ability to query for this.
-    Consider interaction with the event services - maybe all listing need to be done in the dispatcher?
-
-    """
+    """Missing associated documentation comment in .proto file."""
 
     def Dispatch(self, request, context):
         """Missing associated documentation comment in .proto file."""
@@ -71,10 +65,7 @@ def add_DispatcherServiceServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class DispatcherService(object):
-    """TODO: The dispatcher knows which connections it sent the event to. Add ability to query for this.
-    Consider interaction with the event services - maybe all listing need to be done in the dispatcher?
-
-    """
+    """Missing associated documentation comment in .proto file."""
 
     @staticmethod
     def Dispatch(request,

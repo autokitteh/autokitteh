@@ -8,7 +8,10 @@ export PYTHONPATH=$(PWD)/py-sdk
 
 test: test-py test-go
 
-ci: deps test-py check-sdk-docs-requirements
+venv:
+	uv venv
+
+ci: venv deps test-py check-sdk-docs-requirements
 
 test-py:
 	cd runner && $(MAKE) test
@@ -30,7 +33,7 @@ run-simple:
 	go run ./testdata/trigger_webhook.go
 
 test-simple: deploy-simple run-simple
-	ak session log --prints-only --no-timestamps
+	ak session prints --no-timestamps
 	sleep 3
 	ak session list -j | jq .state
 

@@ -1,7 +1,6 @@
 package dbgorm
 
 import (
-	"context"
 	"testing"
 
 	"github.com/google/uuid"
@@ -20,6 +19,19 @@ func (f *dbFixture) createSessionsAndAssert(t *testing.T, sessions ...scheme.Ses
 	for _, session := range sessions {
 		assert.NoError(t, f.gormdb.createSession(f.ctx, &session))
 		findAndAssertOne(t, f, session, "session_id = ?", session.SessionID)
+
+		// Manually increment count for sessions created directly in completed state.
+		// Normal sessions go through running->completed transition and auto-increment count.
+		// Test sessions skip the running state, so we need to increment count here.
+		runningState := int(sdktypes.SessionStateTypeRunning.ToProto())
+		if session.CurrentStateType > runningState && session.DeploymentID != nil {
+			err := f.gormdb.incDeploymentStats(
+				&gormdb{writer: f.gormdb.writer},
+				*session.DeploymentID,
+				session.CurrentStateType,
+			)
+			assert.NoError(t, err)
+		}
 	}
 }
 
@@ -240,59 +252,6 @@ func TestDeleteSessionLogRecords(t *testing.T) {
 	f.assertSessionsLogRecordsDeleted(t, lr)
 }
 
-func TestDeleteSessionCallSpec(t *testing.T) {
-	f, p, b := preSessionTest(t)
-
-	// Create Session
-	s := f.newSession(sdktypes.SessionStateTypeCompleted, p, b)
-	f.createSessionsAndAssert(t, s)
-
-	// Create SessionCallSpec
-	cs := sdktypes.NewSessionCallSpec(sdktypes.InvalidValue, nil, nil, 1)
-	assert.NoError(t, f.gormdb.createSessionCall(f.ctx, s.SessionID, cs))
-	_, err := f.gormdb.getSessionCallSpec(f.ctx, s.SessionID, 1)
-	assert.NoError(t, err)
-
-	// Delete Session
-	assert.NoError(t, f.gormdb.deleteSession(f.ctx, s.SessionID))
-
-	f.assertSessionsDeleted(t, s)
-
-	// Ensure that SessionCallSpec is deleted
-	_, err = f.gormdb.getSessionCallSpec(f.ctx, s.SessionID, 1)
-	assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
-
-	// Session call implicitly create session log records
-	_, n, err := f.gormdb.getSessionLogRecords(f.ctx, sdkservices.SessionLogRecordsFilter{SessionID: sdktypes.NewIDFromUUID[sdktypes.SessionID](s.SessionID)})
-	assert.NoError(t, err)
-	assert.Equal(t, n, int64(0))
-}
-
-func TestDeleteSessionCallAttempt(t *testing.T) {
-	f, p, b := preSessionTest(t)
-
-	// Create Session
-	s := f.newSession(sdktypes.SessionStateTypeCompleted, p, b)
-	f.createSessionsAndAssert(t, s)
-
-	// Create SessionCallAttempt
-	attempt, err := f.gormdb.startSessionCallAttempt(f.ctx, s.SessionID, 1)
-	assert.NoError(t, err)
-
-	// Delete Session
-	assert.NoError(t, f.gormdb.deleteSession(f.ctx, s.SessionID))
-	f.assertSessionsDeleted(t, s)
-
-	// Ensure that session call attempt is deleted
-	_, err = f.gormdb.getSessionCallAttemptResult(f.ctx, s.SessionID, 1, int64(attempt))
-	assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
-
-	// Session call attempt create session log records
-	_, n, err := f.gormdb.getSessionLogRecords(f.ctx, sdkservices.SessionLogRecordsFilter{SessionID: sdktypes.NewIDFromUUID[sdktypes.SessionID](s.SessionID)})
-	assert.NoError(t, err)
-	assert.Equal(t, n, int64(0))
-}
-
 /*
 func TestDeleteSessionForeignKeys(t *testing.T) {
     // session is soft-deleted, so no need to check foreign keys meanwhile
@@ -450,7 +409,7 @@ func TestSessionLogRecordNextPageTokenEmpty(t *testing.T) {
 	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr, ""))
 
 	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](s.SessionID)
-	res, err := f.gormdb.GetSessionLog(context.Background(),
+	res, err := f.gormdb.GetSessionLog(t.Context(),
 		sdkservices.SessionLogRecordsFilter{
 			SessionID:         sid,
 			PaginationRequest: sdktypes.PaginationRequest{},
@@ -459,7 +418,7 @@ func TestSessionLogRecordNextPageTokenEmpty(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, len(res.Records), 2)
 	assert.Equal(t, res.TotalCount, int64(2))
-	assert.Equal(t, res.PaginationResult.NextPageToken, "")
+	assert.Equal(t, res.NextPageToken, "")
 }
 
 func TestSessionLogRecordNextPageTokenNotEmpty(t *testing.T) {
@@ -475,7 +434,7 @@ func TestSessionLogRecordNextPageTokenNotEmpty(t *testing.T) {
 	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr, ""))
 
 	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](s.SessionID)
-	res, err := f.gormdb.GetSessionLog(context.Background(),
+	res, err := f.gormdb.GetSessionLog(t.Context(),
 		sdkservices.SessionLogRecordsFilter{
 			SessionID:         sid,
 			PaginationRequest: sdktypes.PaginationRequest{PageSize: 2, Ascending: true},
@@ -487,14 +446,14 @@ func TestSessionLogRecordNextPageTokenNotEmpty(t *testing.T) {
 	assert.NotEmpty(t, res.NextPageToken)
 
 	// Get Next Batch to exhaust next page token
-	res, err = f.gormdb.GetSessionLog(context.Background(),
+	res, err = f.gormdb.GetSessionLog(t.Context(),
 		sdkservices.SessionLogRecordsFilter{
 			SessionID:         sid,
-			PaginationRequest: sdktypes.PaginationRequest{PageToken: res.PaginationResult.NextPageToken},
+			PaginationRequest: sdktypes.PaginationRequest{PageToken: res.NextPageToken},
 		})
 
 	assert.NoError(t, err)
 	assert.Equal(t, len(res.Records), 1)
 	assert.Equal(t, res.TotalCount, int64(3))
-	assert.Equal(t, res.PaginationResult.NextPageToken, "")
+	assert.Equal(t, res.NextPageToken, "")
 }

@@ -21,9 +21,11 @@ func Plan(
 	client sdkservices.Services,
 	optfns ...Option,
 ) (actions.Actions, error) {
-	if manifest.Version != Version {
-		return nil, fmt.Errorf("%w: got %v, expected %v", ErrUnsupportedManifestVersion, manifest.Version, Version)
+	if manifest.Version != "v1" && manifest.Version != "v2" {
+		return nil, fmt.Errorf("%w: got %v, expected v1 or v2", ErrUnsupportedManifestVersion, manifest.Version)
 	}
+
+	optfns = append(optfns, withVersion(manifest.Version))
 
 	var actions []actions.Action
 
@@ -71,8 +73,9 @@ func planProject(ctx context.Context, mproj *Project, client sdkservices.Service
 	)
 
 	desired, err := sdktypes.ProjectFromProto(&sdktypes.ProjectPB{
-		Name:  mproj.Name,
-		OrgId: opts.oid.String(),
+		Name:        mproj.Name,
+		OrgId:       opts.oid.String(),
+		DisplayName: mproj.DisplayName,
 	})
 	if err != nil {
 		return nil, err
@@ -153,7 +156,7 @@ func planProjectVars(ctx context.Context, mvars []*Var, client sdkservices.Servi
 			return nil, fmt.Errorf("invalid var name: %w", err)
 		}
 
-		desired := sdktypes.NewVar(n).SetValue(mvar.Value).SetSecret(mvar.Secret).WithScopeID(sid)
+		desired := sdktypes.NewVar(n).SetValue(mvar.Value).SetSecret(mvar.Secret).WithScopeID(sid).SetDescription(mvar.Description)
 
 		setAction := actions.SetVarAction{Key: mvar.GetKey(), Project: projName, Var: desired, OrgID: opts.oid}
 
@@ -390,6 +393,13 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 			return t.Name().String() == mtrigger.Name
 		})
 
+		// Durability for v1 is on by default.
+		// For later versions it's off by default.
+		isDurable := opts.version == "v1"
+		if mtrigger.IsDurable != nil {
+			isDurable = *mtrigger.IsDurable
+		}
+
 		loc, err := sdktypes.ParseCodeLocation(mtrigger.Call)
 		if err != nil {
 			return nil, fmt.Errorf("trigger %q: invalid entrypoint: %w", mtrigger.GetKey(), err)
@@ -397,21 +407,23 @@ func planTriggers(ctx context.Context, mtriggers []*Trigger, client sdkservices.
 
 		desired, err := sdktypes.TriggerFromProto(&sdktypes.TriggerPB{
 			Filter:       mtrigger.Filter,
+			IsDurable:    isDurable,
 			EventType:    mtrigger.EventType,
 			CodeLocation: loc.ToProto(),
 			Name:         mtrigger.Name,
 			ProjectId:    pid.String(),
+			IsSync:       mtrigger.IsSync,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("trigger %q: invalid: %w", mtrigger.GetKey(), err)
 		}
 
-		if mtrigger.Webhook != nil || mtrigger.Type == "webhook" {
+		if wh := mtrigger.Webhook; wh != nil || mtrigger.Type == "webhook" {
 			if mtrigger.Type != "" && mtrigger.Type != "webhook" {
 				return nil, fmt.Errorf("trigger %q: type %q is not supported for webhook", mtrigger.GetKey(), mtrigger.Type)
 			}
 
-			desired = desired.WithWebhook()
+			desired = desired.WithSourceType(sdktypes.TriggerSourceTypeWebhook)
 		}
 
 		if mtrigger.ConnectionKey != nil || mtrigger.Type == "connection" {

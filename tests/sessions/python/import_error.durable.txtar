@@ -1,0 +1,25 @@
+rpc error: code = InvalidArgument desc = can't load main from - 
+=======================================================================================================
+The below error means you need to add a package to the Python environment.
+Web platform: Create a requirements.txt file and add module to the requirements.txt file.
+Self hosted: add module to AutoKitteh virtual environment. 
+See https://docs.autokitteh.com/develop/python#installing-python-packages for more details.
+=======================================================================================================
+
+error: ModuleNotFoundError("No module named 'garfield_loves_pizza'")
+
+Traceback (most recent call last):
+   ak-runner
+    mod = loader.load_code(self.code_dir, ak_call, mod_name)
+   ak-runner
+    return __import__(module_name)
+   ak-runner
+    exec(code, module.__dict__)
+  File "main.py", line 1, in <module>
+    import garfield_loves_pizza
+ModuleNotFoundError: No module named 'garfield_loves_pizza'
+-- main.py:main --
+import garfield_loves_pizza
+
+def main(event):
+    raise X()

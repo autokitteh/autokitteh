@@ -9,12 +9,14 @@ import (
 	"github.com/stretchr/testify/mock"
 	"go.temporal.io/api/serviceerror"
 	"go.temporal.io/sdk/client"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 	"gotest.tools/v3/assert"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionsvcs"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
+	"go.autokitteh.dev/autokitteh/internal/backend/workflowexecutor"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
@@ -81,6 +83,10 @@ func setup(t *testing.T) (*workflows, *mockDB, *mockTemporalClient) {
 		svcs: &sessionsvcs.Svcs{
 			DB:       &db,
 			Temporal: fakeTemporalClient{t: &tc},
+			WorkflowExecutor: kittehs.Must1(workflowexecutor.New(workflowexecutor.Svcs{
+				DB:       &db,
+				Temporal: fakeTemporalClient{t: &tc},
+			}, zap.NewNop(), &workflowexecutor.Config{})),
 		},
 	}
 
@@ -97,7 +103,7 @@ func TestStopWorkflowNotFound(t *testing.T) {
 
 	db.On("GetSession", sid).Return(sdktypes.InvalidSession, sdkerrors.ErrNotFound).Once()
 
-	assert.ErrorIs(t, ws.StopWorkflow(context.Background(), sid, "test", false, 0), sdkerrors.ErrNotFound)
+	assert.ErrorIs(t, ws.StopWorkflow(t.Context(), sid, "test", false, 0), sdkerrors.ErrNotFound)
 
 	mock.AssertExpectationsForObjects(t, db)
 }
@@ -107,7 +113,7 @@ func TestStopWorkflowFinal(t *testing.T) {
 
 	db.On("GetSession", sid).Return(session.WithState(sdktypes.SessionStateTypeStopped), nil).Once()
 
-	assert.ErrorIs(t, ws.StopWorkflow(context.Background(), sid, "test", false, 0), sdkerrors.ErrConflict)
+	assert.ErrorIs(t, ws.StopWorkflow(t.Context(), sid, "test", false, 0), sdkerrors.ErrConflict)
 
 	mock.AssertExpectationsForObjects(t, db)
 }
@@ -119,7 +125,7 @@ func TestStopWorkflowSimple(t *testing.T) {
 	db.On("AddSessionStopRequest", sid, "test").Return(nil).Once()
 	tc.On("CancelWorkflow", sid.String(), "").Return(nil).Once()
 
-	assert.NilError(t, ws.StopWorkflow(context.Background(), sid, "test", false, 0))
+	assert.NilError(t, ws.StopWorkflow(t.Context(), sid, "test", false, 0))
 
 	mock.AssertExpectationsForObjects(t, db, tc)
 }
@@ -132,7 +138,7 @@ func TestStopWorkflowLost(t *testing.T) {
 	tc.On("CancelWorkflow", sid.String(), "").Return(&serviceerror.NotFound{}).Once()
 	db.On("UpdateSessionState", sid, sdktypes.NewSessionStateError(errors.New("workflow lost"), nil)).Return(nil).Once()
 
-	assert.NilError(t, ws.StopWorkflow(context.Background(), sid, "test", false, 0))
+	assert.NilError(t, ws.StopWorkflow(t.Context(), sid, "test", false, 0))
 
 	mock.AssertExpectationsForObjects(t, db, tc)
 }
@@ -145,7 +151,7 @@ func TestStopWorkflowQuick(t *testing.T) {
 	db.On("AddSessionStopRequest", sid, "test").Return(nil).Once()
 	tc.On("CancelWorkflow", sid.String(), "").Return(&serviceerror.NotFound{}).Once()
 
-	assert.NilError(t, ws.StopWorkflow(context.Background(), sid, "test", false, 0))
+	assert.NilError(t, ws.StopWorkflow(t.Context(), sid, "test", false, 0))
 
 	mock.AssertExpectationsForObjects(t, db, tc)
 }
@@ -166,7 +172,7 @@ func TestStopWorkflowForceImmediate(t *testing.T) {
 	tc.On("ExecuteWorkflow", mock.Anything, "delayed_terminate_session", []any{opts}).Return(mtwr, nil).Once()
 	mtwr.On("Get", mock.Anything).Return(nil).Once()
 
-	assert.NilError(t, ws.StopWorkflow(context.Background(), sid, "test", true, 0))
+	assert.NilError(t, ws.StopWorkflow(t.Context(), sid, "test", true, 0))
 
 	mock.AssertExpectationsForObjects(t, db, tc, mtwr)
 }
@@ -188,7 +194,7 @@ func TestStopWorkflowForceDelayed(t *testing.T) {
 	tc.On("ExecuteWorkflow", mock.Anything, "delayed_terminate_session", []any{opts}).Return(mtwr, nil).Once()
 	mtwr.AssertNotCalled(t, "Get", mock.Anything)
 
-	assert.NilError(t, ws.StopWorkflow(context.Background(), sid, "test", true, 100*time.Millisecond))
+	assert.NilError(t, ws.StopWorkflow(t.Context(), sid, "test", true, 100*time.Millisecond))
 
 	mock.AssertExpectationsForObjects(t, db, tc, mtwr)
 }

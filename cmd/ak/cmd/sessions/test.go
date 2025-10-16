@@ -25,7 +25,8 @@ import (
 
 var (
 	// /tmp/ak-user-2767870919/main.py:6.1,main
-	userRe = regexp.MustCompile(`\/.*\/ak-user-.*?\/`)
+	// can't load main from /tmp/ak-user-1368663929 - error: No module named 'garfield_loves_pizza'
+	userRe = regexp.MustCompile(`/.*/ak-user-.*?[/ ]`)
 	// runner/main.py:6.1,main, in _call
 	runnerRe = regexp.MustCompile(`.*runner.*/.*\.py.*`)
 
@@ -52,8 +53,30 @@ func normalizePath(p string) string {
 	return userRe.ReplaceAllString(p, "")
 }
 
+func normalizeOutput(ps string) (string, error) {
+	var buf strings.Builder
+
+	s := bufio.NewScanner(strings.NewReader(ps))
+	for s.Scan() {
+		line := normalizePath(s.Text())
+
+		if pyAnnoyingErrorLocationMarkerRe.MatchString(line) {
+			continue
+		}
+
+		buf.WriteString(line)
+		buf.WriteRune('\n')
+	}
+
+	if err := s.Err(); err != nil {
+		return "", fmt.Errorf("normalize: %w", err)
+	}
+
+	return strings.TrimSpace(buf.String()), nil
+}
+
 var testCmd = common.StandardCommand(&cobra.Command{
-	Use:   "test <txtar-file> [--build-id=...] [--project project] [--deployment-id=...] [--entrypoint=...] [--quiet] [--timeout DURATION] [--poll-interval DURATION] [--no-timestamps]",
+	Use:   "test <txtar-file> [--build-id=...] [--project project] [--deployment-id=...] [--entrypoint=...] [--quiet] [--timeout DURATION] [--poll-interval DURATION] [--no-timestamps] [--durable]",
 	Short: "Test a session run",
 	Args:  cobra.ExactArgs(1),
 
@@ -117,12 +140,38 @@ var testCmd = common.StandardCommand(&cobra.Command{
 			}
 		}
 
-		expectedCallsTxt, err := fs.ReadFile(txtarFS, "calls.txt")
-		if err != nil && !errors.Is(err, os.ErrNotExist) {
-			return fmt.Errorf("open calls.txt: %w", err)
+		var expectedCallsTxt []byte
+
+		if durable {
+			expectedCallsTxt, err = fs.ReadFile(txtarFS, "calls.txt")
+			if err != nil && !errors.Is(err, os.ErrNotExist) {
+				return fmt.Errorf("open calls.txt: %w", err)
+			}
 		}
 
-		s := sdktypes.NewSession(bid, ep, nil, nil).WithDeploymentID(did).WithProjectID(pid)
+		var (
+			expectedErrTxt []byte
+			errPath        string
+		)
+
+		if _, err := fs.Stat(txtarFS, "error.txt"); err == nil {
+			errPath = "error.txt"
+		} else if durable {
+			if _, err := fs.Stat(txtarFS, "error.durable.txt"); err == nil {
+				errPath = "error.durable.txt"
+			}
+		} else if _, err := fs.Stat(txtarFS, "error.nondurable.txt"); err == nil {
+			errPath = "error.nondurable.txt"
+		}
+
+		if errPath != "" {
+			expectedErrTxt, err = fs.ReadFile(txtarFS, errPath)
+			if err != nil && !errors.Is(err, os.ErrNotExist) {
+				return fmt.Errorf("open %s: %w", errPath, err)
+			}
+		}
+
+		s := sdktypes.NewSession(bid, ep, nil, nil).WithDeploymentID(did).WithProjectID(pid).SetDurable(durable)
 
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
@@ -138,44 +187,68 @@ var testCmd = common.StandardCommand(&cobra.Command{
 
 		rs, err := sessions().GetPrints(ctx, sid, sdktypes.PaginationRequest{
 			Ascending: true,
+			PageSize:  1024,
 		})
 		if err != nil {
 			return err
 		}
 
-		var prints strings.Builder
-
+		prints := make([]string, 0, len(rs.Prints))
 		for _, r := range rs.Prints {
 			ps, err := r.Value.ToString()
 			if err != nil {
 				ps = ""
 			}
 
-			s := bufio.NewScanner(strings.NewReader(ps))
-			for s.Scan() {
-				line := normalizePath(s.Text())
-
-				if pyAnnoyingErrorLocationMarkerRe.MatchString(line) {
-					continue
-				}
-
-				prints.WriteString(line)
-				prints.WriteRune('\n')
+			ps, err = normalizeOutput(ps)
+			if err != nil {
+				return err
 			}
-
-			if err := s.Err(); err != nil {
-				return fmt.Errorf("scan print: %w", err)
-			}
+			prints = append(prints, ps)
 		}
 
 		expected := strings.TrimSpace(string(a.Comment))
-		actual := strings.TrimSpace(prints.String())
+		actual := strings.TrimSpace(strings.Join(prints, "\n"))
 
 		var errs []error
 
 		if actual != expected {
 			edits := myers.ComputeEdits(span.URIFromPath("want"), expected, actual)
 			errs = append(errs, errors.New(fmt.Sprint("output:\n", gotextdiff.ToUnified("want", "got", expected, edits))))
+		}
+
+		if expectedErrTxt != nil {
+			results, err := sessions().GetLog(ctx, sdkservices.SessionLogRecordsFilter{
+				SessionID: sid,
+				Types:     sdktypes.StateSessionLogRecordType,
+				PaginationRequest: sdktypes.PaginationRequest{
+					PageSize: 1,
+				},
+			})
+			if err != nil {
+				return fmt.Errorf("get calls: %w", err)
+			}
+
+			var actual string
+
+			if len(results.Records) != 0 {
+				errState := results.Records[0].GetState().GetError()
+				if errState.IsValid() {
+					actual = strings.TrimSpace(errState.GetProgramError().Value().GetString().Value())
+				}
+			}
+
+			expectedErrTxt, err := normalizeOutput(string(expectedErrTxt))
+			if err != nil {
+				return err
+			}
+			actual, err = normalizeOutput(actual)
+			if err != nil {
+				return err
+			}
+			if err := testDiff("error", expectedErrTxt, actual); err != nil {
+				errs = append(errs, err)
+			}
 		}
 
 		if expectedCallsTxt != nil {
@@ -196,13 +269,8 @@ var testCmd = common.StandardCommand(&cobra.Command{
 				fmt.Fprintf(&callsTxt, "%s\n", f.GetFunction().Name())
 			}
 
-			expected := strings.TrimSpace(kittehs.StringWithoutComments(string(expectedCallsTxt)))
-			actual := strings.TrimSpace(callsTxt.String())
-
-			if expected != actual {
-				edits := myers.ComputeEdits(span.URIFromPath("want"), expected, actual)
-				diff := gotextdiff.ToUnified("want", "got", expected, edits)
-				errs = append(errs, errors.New(fmt.Sprint("calls:\n", diff)))
+			if err := testDiff("calls", kittehs.StringWithoutComments(string(expectedCallsTxt)), callsTxt.String()); err != nil {
+				errs = append(errs, err)
 			}
 		}
 
@@ -214,7 +282,21 @@ func init() {
 	testCmd.Flags().DurationVarP(&watchTimeout, "timeout", "t", 0, "watch timeout duration")
 	testCmd.Flags().BoolVar(&noTimestamps, "no-timestamps", false, "omit timestamps from watch output")
 	testCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "don't print anything, just wait to finish")
+	testCmd.Flags().BoolVarP(&durable, "durable", "D", false, "durable run")
 	testCmd.Flags().StringVarP(&project, "project", "p", "", "project name or ID")
 	testCmd.Flags().StringVarP(&deploymentID, "deployment-id", "d", "", "deployment ID")
 	testCmd.Flags().StringVarP(&buildID, "build-id", "b", "", "build ID, mutually exclusive with --deployment-id")
+}
+
+func testDiff(what, expected, actual string) error {
+	expected = strings.TrimSpace(expected)
+	actual = strings.TrimSpace(actual)
+
+	if expected == actual {
+		return nil
+	}
+
+	edits := myers.ComputeEdits(span.URIFromPath("want"), expected, actual)
+	diff := gotextdiff.ToUnified("want", "got", expected, edits)
+	return fmt.Errorf("%s:\n%s", what, diff)
 }

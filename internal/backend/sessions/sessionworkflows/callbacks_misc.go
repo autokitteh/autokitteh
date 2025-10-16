@@ -2,47 +2,98 @@ package sessionworkflows
 
 import (
 	"context"
+	"fmt"
 
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
+	"go.temporal.io/sdk/activity"
 	"go.temporal.io/sdk/workflow"
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-func (w *sessionWorkflow) start(wctx workflow.Context) func(context.Context, sdktypes.RunID, sdktypes.CodeLocation, map[string]sdktypes.Value, map[string]string) (sdktypes.SessionID, error) {
-	return func(ctx context.Context, rid sdktypes.RunID, loc sdktypes.CodeLocation, inputs map[string]sdktypes.Value, memo map[string]string) (sdktypes.SessionID, error) {
-		l := w.l.With(zap.Any("rid", rid), zap.Any("loc", loc), zap.Any("inputs", inputs), zap.Any("memo", memo))
+func (w *sessionWorkflow) startCallbackSpan(ctx context.Context, name string) (context.Context, trace.Span) {
+	return telemetry.T().Start(ctx, "sessionWorkflow.callbacks."+name)
+}
+
+func (w *sessionWorkflow) start(wctx workflow.Context) func(context.Context, sdktypes.RunID, sdktypes.Symbol, sdktypes.CodeLocation, map[string]sdktypes.Value, map[string]string) (sdktypes.SessionID, error) {
+	return func(ctx context.Context, rid sdktypes.RunID, project sdktypes.Symbol, loc sdktypes.CodeLocation, inputs map[string]sdktypes.Value, memo map[string]string) (sdktypes.SessionID, error) {
+		inActivity := activity.IsActivity(ctx)
+
+		_, span := w.startCallbackSpan(ctx, "start")
+		defer span.End()
+
+		span.SetAttributes(attribute.String("loc", loc.CanonicalString()))
+
+		l := w.l.With(zap.Any("rid", rid), zap.Any("loc", loc), zap.Any("inputs", inputs), zap.Any("memo", memo), zap.Any("project", project))
 
 		l.Info("child session start requested")
 
-		session := sdktypes.NewSession(w.data.Build.ID(), loc, inputs, memo).
-			WithParentSessionID(w.data.Session.ID()).
-			WithDeploymentID(w.data.Session.DeploymentID()).
-			WithProjectID(w.data.Session.ProjectID()).
-			WithNewID()
+		data := w.data
+		parentSessionID := data.Session.ID()
 
-		if err := workflow.ExecuteActivity(wctx, createSessionActivityName, session).Get(wctx, nil); err != nil {
-			return sdktypes.InvalidSessionID, err
+		data.Session = sdktypes.NewSession(data.Session.BuildID(), loc, inputs, memo).
+			WithParentSessionID(parentSessionID).
+			WithDeploymentID(data.Session.DeploymentID()).
+			WithProjectID(data.Session.ProjectID()).
+			SetDurable(data.Session.IsDurable())
+
+		if project.IsValid() {
+			params := getProjectIDAndActiveBuildIDParams{Project: project, OrgID: data.OrgID}
+
+			var (
+				resp *getProjectIDAndActiveBuildIDResponse
+				err  error
+			)
+
+			if inActivity {
+				resp, err = w.ws.getProjectIDAndActiveBuildIDActivity(ctx, params)
+			} else {
+				err = workflow.ExecuteActivity(wctx, getProjectIDAndActiveBuildIDActivityName, &params).Get(wctx, &resp)
+			}
+
+			if err != nil {
+				return sdktypes.InvalidSessionID, fmt.Errorf("could not get active build ID for project %s: %w", project, err)
+			}
+
+			data.Session = data.Session.
+				WithProjectID(resp.ProjectID).
+				WithBuildID(resp.BuildID)
+
+			l = l.With(zap.Any("child_project_id", resp.ProjectID), zap.Any("child_build_id", resp.BuildID))
 		}
 
-		f, err := w.ws.StartChildWorkflow(wctx, session, w.data)
+		var (
+			sid sdktypes.SessionID
+			err error
+		)
+
+		if inActivity {
+			sid, err = w.ws.startChildSessionActivity(ctx, data.Session)
+		} else {
+			sid, err = w.ws.StartChildWorkflow(wctx, data.Session)
+		}
+
 		if err != nil {
 			return sdktypes.InvalidSessionID, err
 		}
 
-		sid := session.ID()
+		data.Session = data.Session.WithID(sid)
 
-		w.children[sid] = f
-
-		w.l.Info("child session started", zap.Any("child", sid), zap.Any("parent", w.data.Session.ID()))
+		l.Info("child session "+sid.String()+" of "+parentSessionID.String()+" started", zap.Any("child_session", data.Session))
 
 		return sid, nil
 	}
 }
 
 func (w *sessionWorkflow) isDeploymentActive(wctx workflow.Context) func(context.Context) (bool, error) {
-	return func(context.Context) (bool, error) {
+	return func(ctx context.Context) (bool, error) {
+		_, span := w.startCallbackSpan(ctx, "start")
+		defer span.End()
+
 		if did := w.data.Session.DeploymentID(); did.IsValid() {
 			var state sdktypes.DeploymentState
 

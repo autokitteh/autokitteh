@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -112,27 +113,74 @@ func (gdb *gormdb) listDeploymentsCommonQuery(ctx context.Context, filter sdkser
 func (db *gormdb) listDeploymentsWithStats(ctx context.Context, filter sdkservices.ListDeploymentsFilter) ([]scheme.DeploymentWithStats, error) {
 	q := db.listDeploymentsCommonQuery(ctx, filter)
 
-	// explicitly set model, since DeploymentWithStats is Deployment
 	q = q.Model(scheme.Deployment{}).Select(`
-	deployments.*, 
-	COUNT(case when sessions.current_state_type = ? then 1 end) AS created,
-	COUNT(case when sessions.current_state_type = ? then 1 end) AS running,
-	COUNT(case when sessions.current_state_type = ? then 1 end) AS error,
-	COUNT(case when sessions.current_state_type = ? then 1 end) AS completed,
-	COUNT(case when sessions.current_state_type = ? then 1 end) AS stopped
-	`, int32(sdktypes.SessionStateTypeCreated.ToProto()), // Note:
-		int32(sdktypes.SessionStateTypeRunning.ToProto()),   // sdktypes.SessionStateTypeCreated.ToProto() is a sessionsv1.SessionStateType
-		int32(sdktypes.SessionStateTypeError.ToProto()),     // which is an type alias to int32. But since it's a different type then int32
-		int32(sdktypes.SessionStateTypeCompleted.ToProto()), // PostgreSQL won't allow it to be inserted to bigint column,
-		int32(sdktypes.SessionStateTypeStopped.ToProto())).  // therefore we need to cust it to int32
-		Joins(`LEFT JOIN sessions on deployments.deployment_id = sessions.deployment_id`).
-		Group("deployments.deployment_id")
+        deployments.*,
+        session_stats.created,
+        session_stats.running,
+        deployment_stats.completed,
+        deployment_stats.error,
+        deployment_stats.stopped
+    `).Joins(`
+        LEFT JOIN (
+            SELECT 
+                deployment_id,
+                COUNT(CASE WHEN current_state_type = ? THEN 1 END) AS created,
+                COUNT(CASE WHEN current_state_type = ? THEN 1 END) AS running
+            FROM sessions
+			WHERE current_state_type IN (?, ?)
+            GROUP BY deployment_id
+        ) AS session_stats ON session_stats.deployment_id = deployments.deployment_id
+    `, int32(sdktypes.SessionStateTypeCreated.ToProto()),
+		int32(sdktypes.SessionStateTypeRunning.ToProto()),
+		int32(sdktypes.SessionStateTypeCreated.ToProto()),
+		int32(sdktypes.SessionStateTypeRunning.ToProto())).
+		Joins(`
+        LEFT JOIN (
+            SELECT 
+                deployment_id,
+                SUM(CASE WHEN session_state = ? THEN count ELSE 0 END) AS completed,
+                SUM(CASE WHEN session_state = ? THEN count ELSE 0 END) AS error,
+                SUM(CASE WHEN session_state = ? THEN count ELSE 0 END) AS stopped
+            FROM deployment_session_stats
+            GROUP BY deployment_id
+        ) AS deployment_stats ON deployment_stats.deployment_id = deployments.deployment_id
+    `, int32(sdktypes.SessionStateTypeCompleted.ToProto()),
+			int32(sdktypes.SessionStateTypeError.ToProto()),
+			int32(sdktypes.SessionStateTypeStopped.ToProto()))
 
 	var ds []scheme.DeploymentWithStats
 	if err := q.Find(&ds).Error; err != nil {
 		return nil, err
 	}
 	return ds, nil
+}
+
+func (gdb *gormdb) incDeploymentStats(tx *gormdb, deploymentID uuid.UUID, stateType int) error {
+	stats := scheme.DeploymentSessionStats{
+		DeploymentID: deploymentID,
+		SessionState: stateType,
+		Count:        1,
+	}
+
+	return tx.writer.Clauses(clause.OnConflict{
+		Columns: []clause.Column{{Name: "deployment_id"}, {Name: "session_state"}},
+		DoUpdates: clause.Assignments(map[string]any{
+			"count": gorm.Expr("deployment_session_stats.count + ?", 1),
+		}),
+	}).Create(&stats).Error
+}
+
+func (tx *gormdb) decDeploymentStats(ctx context.Context, session scheme.Session) error {
+	runningState := int(sdktypes.SessionStateTypeRunning.ToProto())
+
+	// Only decrement count for finished sessions with deployment
+	if session.CurrentStateType > runningState && session.DeploymentID != nil {
+		return tx.writer.WithContext(ctx).Model(&scheme.DeploymentSessionStats{}).
+			Where("deployment_id = ? AND session_state = ?", *session.DeploymentID, session.CurrentStateType).
+			Update("count", gorm.Expr("deployment_session_stats.count - 1")).Error
+	}
+
+	return nil
 }
 
 func (db *gormdb) listDeployments(ctx context.Context, filter sdkservices.ListDeploymentsFilter) ([]scheme.Deployment, error) {

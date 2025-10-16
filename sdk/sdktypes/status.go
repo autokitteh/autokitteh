@@ -2,6 +2,7 @@ package sdktypes
 
 import (
 	"errors"
+	"fmt"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	commonv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/common/v1"
@@ -46,5 +47,12 @@ func NewStatus(code StatusCode, msg string) Status {
 	return kittehs.Must1(StatusFromProto(&StatusPB{
 		Code:    code.ToProto(),
 		Message: msg,
+	}))
+}
+
+func NewStatusf(code StatusCode, msg string, vs ...any) Status {
+	return kittehs.Must1(StatusFromProto(&StatusPB{
+		Code:    code.ToProto(),
+		Message: fmt.Sprintf(msg, vs...),
 	}))
 }

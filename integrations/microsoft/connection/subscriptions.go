@@ -8,12 +8,14 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"time"
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/common"
+	"go.autokitteh.dev/autokitteh/integrations/oauth"
+	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -28,10 +30,10 @@ const (
 type Services struct {
 	Logger *zap.Logger
 	Vars   sdkservices.Vars
-	OAuth  sdkservices.OAuth
+	OAuth  *oauth.OAuth
 }
 
-func NewServices(l *zap.Logger, v sdkservices.Vars, o sdkservices.OAuth) Services {
+func NewServices(l *zap.Logger, v sdkservices.Vars, o *oauth.OAuth) Services {
 	return Services{Logger: l, Vars: v, OAuth: o}
 }
 
@@ -134,7 +136,7 @@ func DeleteSubscription(ctx context.Context, svc Services, cid sdktypes.Connecti
 
 func webhookURLs() (changeURL, lifecycleURL string) {
 	var err error
-	changeURL, err = url.JoinPath("https://"+os.Getenv("WEBHOOK_ADDRESS"), ChangePath)
+	changeURL, err = url.JoinPath(fixtures.ServiceBaseURL(), ChangePath)
 	if err != nil {
 		changeURL = ""
 	}
@@ -192,9 +194,9 @@ func sendRequest(ctx context.Context, svc Services, cid sdktypes.ConnectionID, h
 		return nil, err
 	}
 
-	req.Header.Set("Authorization", bearerToken(ctx, l, svc, cid))
+	req.Header.Set(common.HeaderAuthorization, bearerToken(ctx, l, svc, cid))
 	if s != nil {
-		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set(common.HeaderContentType, common.ContentTypeJSON)
 	}
 
 	resp, err := http.DefaultClient.Do(req)
@@ -204,7 +206,8 @@ func sendRequest(ctx context.Context, svc Services, cid sdktypes.ConnectionID, h
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	// Read the response's body, up to 1 MiB.
+	body, err := io.ReadAll(http.MaxBytesReader(nil, resp.Body, 1<<20))
 	if err != nil {
 		l.Warn("failed to read MS Graph subscription response", zap.Error(err))
 		return nil, err

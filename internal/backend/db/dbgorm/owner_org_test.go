@@ -1,7 +1,6 @@
 package dbgorm_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,7 +23,7 @@ func TestGetOwnerOrgID(t *testing.T) {
 	db, err := dbgorm.New(zap.NewNop(), &dbgorm.Config{})
 	require.NoError(t, err)
 
-	ctx := context.Background()
+	ctx := t.Context()
 	require.NoError(t, db.Connect(ctx))
 	require.NoError(t, db.Setup(ctx))
 

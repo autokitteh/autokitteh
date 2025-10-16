@@ -19,6 +19,11 @@ class HandlerServiceStub(object):
                 request_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.ActivityRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.ActivityResponse.FromString,
                 _registered_method=True)
+        self.ExecuteReply = channel.unary_unary(
+                '/autokitteh.user_code.v1.HandlerService/ExecuteReply',
+                request_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.ExecuteReplyRequest.SerializeToString,
+                response_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.ExecuteReplyResponse.FromString,
+                _registered_method=True)
         self.Done = channel.unary_unary(
                 '/autokitteh.user_code.v1.HandlerService/Done',
                 request_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.DoneRequest.SerializeToString,
@@ -69,6 +74,21 @@ class HandlerServiceStub(object):
                 request_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.NextSignalRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.NextSignalResponse.FromString,
                 _registered_method=True)
+        self.StoreList = channel.unary_unary(
+                '/autokitteh.user_code.v1.HandlerService/StoreList',
+                request_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StoreListRequest.SerializeToString,
+                response_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StoreListResponse.FromString,
+                _registered_method=True)
+        self.StoreMutate = channel.unary_unary(
+                '/autokitteh.user_code.v1.HandlerService/StoreMutate',
+                request_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StoreMutateRequest.SerializeToString,
+                response_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StoreMutateResponse.FromString,
+                _registered_method=True)
+        self.Outcome = channel.unary_unary(
+                '/autokitteh.user_code.v1.HandlerService/Outcome',
+                request_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.OutcomeRequest.SerializeToString,
+                response_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.OutcomeResponse.FromString,
+                _registered_method=True)
         self.EncodeJWT = channel.unary_unary(
                 '/autokitteh.user_code.v1.HandlerService/EncodeJWT',
                 request_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.EncodeJWTRequest.SerializeToString,
@@ -96,6 +116,13 @@ class HandlerServiceServicer(object):
 
     def Activity(self, request, context):
         """Runner starting activity
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ExecuteReply(self, request, context):
+        """Runner result from execute
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -165,6 +192,24 @@ class HandlerServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def StoreList(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def StoreMutate(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Outcome(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def EncodeJWT(self, request, context):
         """Utility functions
         """
@@ -197,6 +242,11 @@ def add_HandlerServiceServicer_to_server(servicer, server):
                     servicer.Activity,
                     request_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.ActivityRequest.FromString,
                     response_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.ActivityResponse.SerializeToString,
+            ),
+            'ExecuteReply': grpc.unary_unary_rpc_method_handler(
+                    servicer.ExecuteReply,
+                    request_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.ExecuteReplyRequest.FromString,
+                    response_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.ExecuteReplyResponse.SerializeToString,
             ),
             'Done': grpc.unary_unary_rpc_method_handler(
                     servicer.Done,
@@ -248,6 +298,21 @@ def add_HandlerServiceServicer_to_server(servicer, server):
                     request_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.NextSignalRequest.FromString,
                     response_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.NextSignalResponse.SerializeToString,
             ),
+            'StoreList': grpc.unary_unary_rpc_method_handler(
+                    servicer.StoreList,
+                    request_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StoreListRequest.FromString,
+                    response_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StoreListResponse.SerializeToString,
+            ),
+            'StoreMutate': grpc.unary_unary_rpc_method_handler(
+                    servicer.StoreMutate,
+                    request_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StoreMutateRequest.FromString,
+                    response_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StoreMutateResponse.SerializeToString,
+            ),
+            'Outcome': grpc.unary_unary_rpc_method_handler(
+                    servicer.Outcome,
+                    request_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.OutcomeRequest.FromString,
+                    response_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.OutcomeResponse.SerializeToString,
+            ),
             'EncodeJWT': grpc.unary_unary_rpc_method_handler(
                     servicer.EncodeJWT,
                     request_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.EncodeJWTRequest.FromString,
@@ -296,6 +361,33 @@ class HandlerService(object):
             '/autokitteh.user_code.v1.HandlerService/Activity',
             autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.ActivityRequest.SerializeToString,
             autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.ActivityResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ExecuteReply(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/autokitteh.user_code.v1.HandlerService/ExecuteReply',
+            autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.ExecuteReplyRequest.SerializeToString,
+            autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.ExecuteReplyResponse.FromString,
             options,
             channel_credentials,
             insecure,
@@ -566,6 +658,87 @@ class HandlerService(object):
             '/autokitteh.user_code.v1.HandlerService/NextSignal',
             autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.NextSignalRequest.SerializeToString,
             autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.NextSignalResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def StoreList(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/autokitteh.user_code.v1.HandlerService/StoreList',
+            autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StoreListRequest.SerializeToString,
+            autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StoreListResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def StoreMutate(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/autokitteh.user_code.v1.HandlerService/StoreMutate',
+            autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StoreMutateRequest.SerializeToString,
+            autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StoreMutateResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def Outcome(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/autokitteh.user_code.v1.HandlerService/Outcome',
+            autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.OutcomeRequest.SerializeToString,
+            autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.OutcomeResponse.FromString,
             options,
             channel_credentials,
             insecure,

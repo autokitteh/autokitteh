@@ -2,6 +2,7 @@ package websockets
 
 import (
 	"context"
+	"errors"
 	"sync"
 
 	"github.com/slack-go/slack"
@@ -10,6 +11,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -137,13 +139,17 @@ func transformEvent(l *zap.Logger, slackEvent any, eventType string) (sdktypes.E
 func (h Handler) dispatchAsyncEventsToConnections(cids []sdktypes.ConnectionID, e sdktypes.Event) {
 	ctx := extrazap.AttachLoggerToContext(h.logger, context.Background())
 	for _, cid := range cids {
-		eid, err := h.dispatch(ctx, e.WithConnectionDestinationID(cid), nil)
+		resp, err := h.dispatch(ctx, e.WithConnectionDestinationID(cid), nil)
 		l := h.logger.With(
 			zap.String("connectionID", cid.String()),
-			zap.String("eventID", eid.String()),
+			zap.String("eventID", resp.EventID.String()),
 		)
 		if err != nil {
-			l.Error("Event dispatch failed", zap.Error(err))
+			if errors.Is(err, sdkerrors.ErrResourceExhausted) {
+				l.Info("Event dispatch failed due to resource exhaustion")
+			} else {
+				l.Error("Event dispatch failed", zap.Error(err))
+			}
 			return
 		}
 		l.Debug("Event dispatched")

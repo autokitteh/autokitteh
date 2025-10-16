@@ -2,7 +2,7 @@
 
 ################################################################################
 # Create a stage for building the application.
-ARG GO_VERSION=1.23
+ARG GO_VERSION=1.24
 FROM golang:${GO_VERSION} AS build
 WORKDIR /src
 
@@ -15,6 +15,7 @@ RUN --mount=type=cache,target=/go/pkg/mod/ \
     --mount=type=bind,source=go.mod,target=go.mod \
     go mod download -x
 
+ARG BUILD_TAGS=""
 # Build the application.
 # Leverage a cache mount to /go/pkg/mod/ to speed up subsequent builds.
 # Leverage a bind mount to the current directory to avoid having to copy the
@@ -26,7 +27,7 @@ RUN --mount=type=cache,target=/go/pkg/mod/ \
     export TIMESTAMP="$(date -u "+%Y-%m-%dT%H:%MZ")"
     export LDFLAGS="-X "${VERSION_PKG_PATH}.Version=$(cat .version || echo)" -X "${VERSION_PKG_PATH}.Time=${TIMESTAMP}" -X "${VERSION_PKG_PATH}.Commit=$(cat .commit || echo)""
     make webplatform
-    CGO_ENABLED=0 go build -o /bin/ak -ldflags="${LDFLAGS}" ./cmd/ak
+    CGO_ENABLED=0 go build -o /bin/ak -ldflags="${LDFLAGS}" -tags=${BUILD_TAGS} ./cmd/ak
 EOF
 
 
@@ -37,7 +38,7 @@ EOF
 # runtime dependencies for the application.
 FROM python:3.11-slim AS pydeps
 
-RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /runner
 
@@ -45,7 +46,7 @@ COPY ./runtimes/pythonrt/runner/pyproject.toml pyproject.toml
 RUN python -m pip install .[all]
 
 COPY ./runtimes/pythonrt/py-sdk py-sdk
-RUN cd py-sdk && python -m pip install .
+RUN cd py-sdk && python -m pip install .[all]
 
 FROM python:3.11-slim AS final
 
@@ -61,12 +62,13 @@ RUN adduser \
     appuser
 USER appuser
 
-COPY --chown=appuser:appuser --from=pydeps /usr/local/lib/python3.11/site-packages /usr/lib/python3.11/site-packages
+# Copy packages to user site-packages which is enabled in this image.
+RUN mkdir -p /home/appuser/.local/lib/python3.11/
+COPY --chown=appuser:appuser --from=pydeps /usr/local/lib/python3.11/site-packages /home/appuser/.local/lib/python3.11/site-packages
 
 # Copy the executable from the "build" stage.
 COPY --chown=appuser:appuser --from=build /bin/ak /bin/
 
-ENV PYTHONPATH=/usr/lib/python3.11/site-packages
 ENV AK_WORKER_PYTHON=/usr/local/bin/python
 # Expose the port that the application listens on.
 EXPOSE 9980

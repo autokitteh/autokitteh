@@ -1,0 +1,38 @@
+ak project create --name p1
+return code == 0
+
+ak project deploy p1 --file p1.py
+return code == 0
+
+ak project create --name p2
+return code == 0
+
+ak project deploy p2 --file p2.py
+return code == 0
+
+ak session start --project p1 --entrypoint p1.py:main -j --durable
+return code == 0
+capture_jq sid .session_id
+
+ak session get $sid -j
+return code == 0
+output contains '"is_durable":true'
+
+ak session watch $sid --timeout 20s
+return code == 0
+
+ak session prints $sid --no-timestamps
+return code == 0
+output contains '{'completed': True, 'value': 2}'
+
+-- p1.py --
+from autokitteh import start, next_signal
+
+def main(_):
+  sid = start("p2.py:foo", {"x": 1}, project="p2")
+  print(next_signal(sid).payload)
+
+-- p2.py --
+def foo(event):
+  return event.data.get("x") + 1
+

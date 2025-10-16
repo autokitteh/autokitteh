@@ -1,6 +1,5 @@
 GO=go
 
-# go install gotest.tools/gotestsum@latest
 ifeq ($(shell which gotestsum),)
 GOTEST=$(GO) test
 else
@@ -37,7 +36,6 @@ endif
 VERSION_PKG_PATH="go.autokitteh.dev/autokitteh/internal/version"
 LDFLAGS+=-X '${VERSION_PKG_PATH}.Version=${VERSION}' -X '${VERSION_PKG_PATH}.Time=${TIMESTAMP}' -X '${VERSION_PKG_PATH}.Commit=${COMMIT}' -X '${VERSION_PKG_PATH}.User=$(shell whoami)' -X '${VERSION_PKG_PATH}.Host=$(shell hostname)'
 
-export AK_SYSTEST_USE_PROC_SVC=1
 export PYTHONPATH=$(PWD)/runtimes/pythonrt/py-sdk
 
 .PHONY: ak
@@ -47,11 +45,10 @@ ak: webplatform bin/ak
 # 2. Run shellcheck (shell scripts linter)
 # 3. Download latest web platform
 # 4. Rebuild protocol buffer stubs
-# 5. Build the entire Go codebase
-# 6. Run golangci-lint (Go linters)
-# 7. Build AK binary with version and/or debug info
-# 8. Run all automated tests (unit + integration)
-all: gofmt-check shellcheck webplatform proto lint build bin/ak test
+# 5. Run golangci-lint (Go linters)
+# 6. Build AK binary with version and/or debug info
+# 7. Run all automated tests (unit + integration)
+all: gofmt-check shellcheck webplatform proto lint bin/ak test
 
 .PHONY: clean
 clean:
@@ -65,11 +62,6 @@ bin: bin/ak
 bin/ak:
 	$(GO) build --tags "${TAGS}" -o "$@" -ldflags="$(LDFLAGS)" $(GO_BUILD_OPTS) ./cmd/$(shell basename $@)
 
-.PHONY: build
-build:
-	mkdir -p $(OUTDIR)
-	$(GO) build $(GO_BUILD_OPTS) ./...
-
 .PHONY: debug
 debug:
 	DEBUG=1 make bin
@@ -78,22 +70,9 @@ debug:
 gofmt-check:
 	test -z $(shell gofmt -l .) || exit 1
 
-golangci_lint=$(shell which golangci-lint)
-
-# Based on: https://golangci-lint.run/welcome/install/#other-ci
-# Keep the same version in "/.github/workflows/go.yml"!
-# See: https://github.com/golangci/golangci-lint/releases
-$(OUTDIR)/tools/golangci-lint:
-	mkdir -p $(OUTDIR)/tools
-ifeq ($(golangci_lint),)
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b "$(OUTDIR)/tools" v1.64.5
-else
-	ln -fs $(golangci_lint) $(OUTDIR)/tools/golangci-lint
-endif
-
 .PHONY: lint
-lint: $(OUTDIR)/tools/golangci-lint
-	$(OUTDIR)/tools/golangci-lint run
+lint:
+	go tool golangci-lint run
 
 scripts=$(shell find . -name \*.sh -not -path "*/.venv/*")
 
@@ -116,19 +95,19 @@ test-unit:
 # and check for race conditions while running each of them.
 .PHONY: test-race
 test-race:
-	$(GOTEST) -race ./...
+	$(GOTEST) -timeout 0 -race ./...
 
 # Generate a coverage report for all Go tests
 # (including Python runtime and system tests).
 .PHONY: test-cover
 test-cover:
-	$(GOTEST) -covermode=atomic -coverprofile=tmp/cover.out ./...
+	$(GOTEST) -covermode=atomic -coverprofile=tmp/cover.out -timeout 0 ./...
 	go tool cover -html=tmp/cover.out
 
 # Long-running subset of "test-unit", for simplicity.
 .PHONY: test-system
 test-system: bin/ak
-	$(GOTEST) ./tests/system
+	AK_SYSTEST_USE_PROC_SVC=1 $(GOTEST) -timeout 0 ./tests/system
 
 .PHONY: test-db
 test-db:
@@ -147,11 +126,12 @@ test-opa:
 
 .PHONY: test-starlark
 test-starlark: bin/ak
-	./tests/starlark/run.sh
+	$(GOTEST) ./tests/starlark/...
 
 .PHONY: test-sessions
 test-sessions: bin/ak
-	./tests/sessions/run.sh
+	$(GOTEST) ./tests/sessions/...
+	$(GOTEST) ./tests/sessions/... --durable
 
 .PHONY: proto
 proto:
@@ -167,7 +147,9 @@ pythonrt:
 generate-migrations:
 	@read -p "Enter migration name: " migration_name; \
 	atlas migrate diff $$migration_name --env sqlite; \
-	atlas migrate diff $$migration_name --env postgres
+	atlas migrate diff $$migration_name --env postgres; \
+	atlas migrate diff $$migration_name --env postgres_enterprise;
+
 
 # Requires nodejs installed
 .PHONY: tailwindcss
