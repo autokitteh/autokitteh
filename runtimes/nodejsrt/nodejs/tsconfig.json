@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "composite": false
+  },
+  "include": ["."],
+  "exclude": [
+    "node_modules",
+    "build",
+    "dist",
+    "**/node_modules"
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "exclude": [
+    "dist"
+  ],
+  "compilerOptions": {
+    "target": "es2016",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "baseUrl": "..",
+    "rootDir": ".",
+    "resolveJsonModule": true,
+    "declaration": true,
+    "sourceMap": true,
+    "outDir": "dist",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "noImplicitReturns": false
+  },
+  "include": [
+    "**/*.ts"
+  ]
+}

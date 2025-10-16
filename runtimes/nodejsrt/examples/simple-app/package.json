@@ -1,0 +1,20 @@
+{
+  "name": "simple-test",
+  "version": "1.0.0",
+  "description": "A simple test project for autokitteh runner",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "ts-node test.ts"
+  },
+  "dependencies": {
+    "axios": "^1.6.8",
+    "get-json": "^1.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.28",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.2"
+  }
+}
