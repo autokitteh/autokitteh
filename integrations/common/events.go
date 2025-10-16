@@ -52,9 +52,9 @@ func DispatchEvent(ctx context.Context, l *zap.Logger, d sdkservices.DispatchFun
 			if errors.Is(err, sdkerrors.ErrResourceExhausted) {
 				l.Info("Event dispatch failed due to resource exhaustion for connection " + cid.String())
 				continue
-			} else {
-				l.Error("Event dispatch for connection "+cid.String()+" failed: "+err.Error(), zap.Error(err))
 			}
+
+			l.Error("Event dispatch for connection "+cid.String()+" failed: "+err.Error(), zap.Error(err))
 			return err
 		}
 		l.Debug("Event " + resp.EventID.String() + " dispatched for connection " + cid.String())
