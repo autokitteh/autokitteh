@@ -268,20 +268,16 @@ func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, cids []sd
 
 	for _, cid := range cids {
 		resp, err := h.dispatch(ctx, e.WithConnectionDestinationID(cid), nil)
-		l := l.With(
-			zap.String("connectionID", cid.String()),
-			zap.String("eventID", resp.EventID.String()),
-		)
 		if err != nil {
 			if errors.Is(err, sdkerrors.ErrResourceExhausted) {
-				l.Info("Event dispatch failed due to resource exhaustion")
+				l.Info("Event dispatch failed due to resource exhaustion for connection " + cid.String())
 				continue
 			} else {
-				l.Error("Event dispatch failed", zap.Error(err))
+				l.Error("Event dispatch for connection "+cid.String()+" failed: "+err.Error(), zap.Error(err))
 			}
 			return err
 		}
-		l.Debug("Event dispatched")
+		l.Debug("Event " + resp.EventID.String() + " dispatched for connection " + cid.String())
 	}
 
 	return nil
