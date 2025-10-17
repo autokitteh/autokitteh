@@ -28,12 +28,16 @@ type Config struct {
 	MinLogLevel        string `koanf:"log_level"`         // log level threshold to emit. if empty: "warn".
 	MinConsoleLogLevel string `koanf:"console_log_level"` // console log level threshold to emit. if empty: "warn".
 
+	LocalPolicyPath string `koanf:"local_policy_path"` // If ConfigPath is empty, and this is set, load local policies from this path.
+
 	// for testing only, to test alternate embedded policies.
 	fs fs.FS
 }
 
 var Configs = configset.Set[Config]{
-	Default: &Config{},
+	Default: &Config{
+		LocalPolicyPath: "/etc/ak/opa",
+	},
 }
 
 // Start an OPA bundle server with bundles configurations stored in bundleFS.
@@ -105,6 +109,11 @@ func New(cfg *Config, l *zap.Logger) (policy.DecideFunc, error) {
 
 	if cfg.ConfigPath == "" {
 		fs := cfg.fs
+
+		if fs == nil && cfg.LocalPolicyPath != "" {
+			fs = os.DirFS(cfg.LocalPolicyPath)
+		}
+
 		if fs == nil {
 			fs = opa_bundles.FS
 		}
