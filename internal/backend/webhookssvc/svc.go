@@ -99,7 +99,7 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	sl.With("trigger", t).Infof("webhook request: method=%s, trigger_event_type=%s", r.Method, t.EventType())
 
-	data, err := requestToData(r)
+	data, err := requestToData(r, slug)
 	if err != nil {
 		sl.Errorw("failed to convert request to data", "err", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -376,7 +376,7 @@ func (o httpOutcome) WriteBody(w io.Writer) error {
 	return nil
 }
 
-func requestToData(r *http.Request) (map[string]sdktypes.Value, error) {
+func requestToData(r *http.Request, slug string) (map[string]sdktypes.Value, error) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		return nil, fmt.Errorf("body read: %w", err)
@@ -398,7 +398,7 @@ func requestToData(r *http.Request) (map[string]sdktypes.Value, error) {
 			})),
 		"method":  sdktypes.NewStringValue(r.Method),
 		"raw_url": sdktypes.NewStringValue(r.RequestURI),
-		"url":     urlData(r.URL),
+		"url":     urlData(r.URL, slug),
 	}, nil
 }
 
@@ -446,19 +446,18 @@ func jsonData(body []byte) sdktypes.Value {
 	}
 }
 
-func urlData(u *url.URL) sdktypes.Value {
+func urlData(u *url.URL, slug string) sdktypes.Value {
+	pathSuffix := strings.TrimPrefix(u.Path, WebhooksPathPrefix+slug)
+
 	return sdktypes.NewDictValueFromStringMap(
 		map[string]sdktypes.Value{
-			"fragment": sdktypes.NewStringValue(u.Fragment),
-			"path":     sdktypes.NewStringValue(u.Path),
+			"path": sdktypes.NewStringValue(u.Path),
 			"query": sdktypes.NewDictValueFromStringMap(
 				kittehs.TransformMapValues(u.Query(), func(vs []string) sdktypes.Value {
 					return sdktypes.NewStringValue(strings.Join(vs, ", "))
 				}),
 			),
-			"raw_fragment": sdktypes.NewStringValue(u.RawFragment),
-			"raw_path":     sdktypes.NewStringValue(u.RawPath),
-			"raw_query":    sdktypes.NewStringValue(u.RawQuery),
+			"path_suffix": sdktypes.NewStringValue(pathSuffix),
 		},
 	)
 }
