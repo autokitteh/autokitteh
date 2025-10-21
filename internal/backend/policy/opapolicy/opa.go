@@ -111,7 +111,7 @@ func New(cfg *Config, l *zap.Logger) (policy.DecideFunc, error) {
 		fs := cfg.fs
 
 		if fs == nil && cfg.PolicyContentBase64 != "" {
-			decoded, err := base64.RawStdEncoding.DecodeString(cfg.PolicyContentBase64)
+			decoded, err := base64.StdEncoding.DecodeString(cfg.PolicyContentBase64)
 			if err != nil {
 				return nil, fmt.Errorf("decode local policy content: %w", err)
 			}
@@ -121,6 +121,8 @@ func New(cfg *Config, l *zap.Logger) (policy.DecideFunc, error) {
 			}); err != nil {
 				return nil, fmt.Errorf("local policy fs: %w", err)
 			}
+
+			l.Warn("using policy content from env var", zap.Int("size_bytes", len(decoded)))
 		}
 
 		if fs == nil {
