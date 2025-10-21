@@ -30,7 +30,7 @@ type Config struct {
 	MinLogLevel        string `koanf:"log_level"`         // log level threshold to emit. if empty: "warn".
 	MinConsoleLogLevel string `koanf:"console_log_level"` // console log level threshold to emit. if empty: "warn".
 
-	LocalPolicyContentBase64 string `koanf:"local_policy_content_base64"` // If ConfigPath is empty, and this is set, load local policies from this path.
+	PolicyContentBase64 string `koanf:"policy_content_base64"` // If ConfigPath is empty, and this is set, load policy content from this base64 string.
 
 	// for testing only, to test alternate embedded policies.
 	fs fs.FS
@@ -110,8 +110,8 @@ func New(cfg *Config, l *zap.Logger) (policy.DecideFunc, error) {
 	if cfg.ConfigPath == "" {
 		fs := cfg.fs
 
-		if fs == nil && cfg.LocalPolicyContentBase64 != "" {
-			decoded, err := base64.RawStdEncoding.DecodeString(cfg.LocalPolicyContentBase64)
+		if fs == nil && cfg.PolicyContentBase64 != "" {
+			decoded, err := base64.RawStdEncoding.DecodeString(cfg.PolicyContentBase64)
 			if err != nil {
 				return nil, fmt.Errorf("decode local policy content: %w", err)
 			}
