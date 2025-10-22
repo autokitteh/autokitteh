@@ -12,6 +12,16 @@ import (
 	valuev1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/values/v1"
 )
 
+func oneof[T comparable](name string, vs ...T) error {
+	for _, v := range vs {
+		if mandatory(name, v) == nil {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("%s: exactly one field must be set", name)
+}
+
 func mandatory[T comparable](name string, t T) error {
 	var zero T
 	if t == zero {
