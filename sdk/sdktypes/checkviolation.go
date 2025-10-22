@@ -26,24 +26,24 @@ func NewCheckViolationf(filename string, ruleID string, f string, vs ...any) *Ch
 }
 
 const (
-	ProjectSizeTooLargeRuleID                   = "E1"
-	DuplicateConnectionNameRuleID               = "E2"
-	DuplicateTriggerNameRuleID                  = "E3"
-	BadCallFormatRuleID                         = "E4"
-	FileNotFoundRuleID                          = "E5"
-	SyntaxErrorRuleID                           = "E6"
-	MissingHandlerRuleID                        = "E7"
-	NonexistingConnectionRuleID                 = "E8"
-	MalformedNameRuleID                         = "E9"
-	InvalidManifestRuleID                       = "E10"
-	FileCannotExportRuleID                      = "E11"
-	InvalidEventFilterRuleID                    = "E12"
-	InvalidPyRequirementsRuleID                 = "E13"
-	PyRequirementsPackageAlreadyInstalledRuleID = "E14"
-	UnknownIntegrationRuleID                    = "E15"
+	ProjectSizeTooLargeRuleID     = "E1"
+	DuplicateConnectionNameRuleID = "E2"
+	DuplicateTriggerNameRuleID    = "E3"
+	BadCallFormatRuleID           = "E4"
+	FileNotFoundRuleID            = "E5"
+	SyntaxErrorRuleID             = "E6"
+	MissingHandlerRuleID          = "E7"
+	NonexistingConnectionRuleID   = "E8"
+	MalformedNameRuleID           = "E9"
+	InvalidManifestRuleID         = "E10"
+	FileCannotExportRuleID        = "E11"
+	InvalidEventFilterRuleID      = "E12"
+	InvalidPyRequirementsRuleID   = "E13"
+	UnknownIntegrationRuleID      = "E14"
 
-	EmptyVariableRuleID     = "W1"
-	NoTriggersDefinedRuleID = "W2"
+	EmptyVariableRuleID                         = "W1"
+	NoTriggersDefinedRuleID                     = "W2"
+	PyRequirementsPackageAlreadyInstalledRuleID = "W3"
 )
 
 type CheckRule struct {

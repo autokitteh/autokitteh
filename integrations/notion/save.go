@@ -1,7 +1,7 @@
 package notion
 
 import (
-	"errors"
+	"context"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -57,27 +57,32 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 
 	// Check and save the provided API key, no 3-legged OAuth 2.0 flow is needed.
 	case integrations.APIKey:
-		if err := h.saveAPIKey(r, vsid); err != nil {
-			l.Warn("failed to save integration secret", zap.Error(err))
-			c.AbortServerError("failed to save integration secret")
+		apiKey := r.FormValue("api_key")
+		if apiKey == "" {
+			l.Info("save connection: missing API key for connection " + cid.String())
+			c.AbortBadRequest("missing API key")
+			return
 		}
 
-	// Unknown/unrecognized mode - an error.
+		// Validate API key before saving.
+		if err := validateAPIKey(r.Context(), apiKey); err != nil {
+			l.Debug("save connection: invalid API key for connection "+cid.String(), zap.Error(err))
+			c.AbortBadRequest("invalid API key, please try again or contact support")
+			return
+		}
+
+		v := sdktypes.NewVar(common.ApiKeyVar).SetValue(apiKey).SetSecret(true)
+		if err := h.vars.Set(r.Context(), v.WithScopeID(vsid)); err != nil {
+			l.Error("failed to save vars for connection "+cid.String()+": "+err.Error(), zap.Error(err))
+			c.AbortServerError("Internal error")
+			return
+		}
+
+	// Unrecognized mode - an error.
 	default:
 		l.Warn("save connection: unexpected auth type")
 		c.AbortBadRequest(fmt.Sprintf("unexpected auth type %q", authType))
 	}
-}
-
-// saveAPIKey checks and saves the user-provided Notion integration secret (API key).
-func (h handler) saveAPIKey(r *http.Request, vsid sdktypes.VarScopeID) error {
-	apiKey := r.FormValue("api_key")
-	if apiKey == "" {
-		return errors.New("missing API key")
-	}
-
-	v := sdktypes.NewVar(common.ApiKeyVar).SetValue(apiKey).SetSecret(true)
-	return h.vars.Set(r.Context(), v.WithScopeID(vsid))
 }
 
 // startOAuth redirects the user to the AutoKitteh server's
@@ -94,4 +99,32 @@ func startOAuth(w http.ResponseWriter, r *http.Request, c sdkintegrations.Connec
 
 	urlPath := fmt.Sprintf("/oauth/start/notion?cid=%s&origin=%s&owner=user&response_type=code", c.ConnectionID, c.Origin)
 	http.Redirect(w, r, urlPath, http.StatusFound)
+}
+
+// validateAPIKey validates the Notion API key by making a test API call.
+func validateAPIKey(ctx context.Context, apiKey string) error {
+	// Use the Notion API's /v1/users/me endpoint to validate the key.
+	url := "https://api.notion.com/v1/users/me"
+
+	// Create HTTP request with Notion-specific headers.
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Authorization", "Bearer "+apiKey)
+	req.Header.Set("Notion-Version", "2022-06-28")
+
+	// Send the request.
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("API key validation failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= http.StatusBadRequest {
+		return fmt.Errorf("API key validation failed: %d %s", resp.StatusCode, http.StatusText(resp.StatusCode))
+	}
+
+	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/integrations/common"
+	"go.autokitteh.dev/autokitteh/integrations/oauth"
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkmodule"
@@ -12,12 +13,12 @@ import (
 
 // New defines an AutoKitteh integration, which
 // is registered when the AutoKitteh server starts.
-func New(cvars sdkservices.Vars) sdkservices.Integration {
+func New(cvars sdkservices.Vars, o *oauth.OAuth) sdkservices.Integration {
 	return sdkintegrations.NewIntegration(
 		desc,
 		sdkmodule.New(),
 		connStatus(cvars),
-		connTest(cvars),
+		connTest(cvars, o),
 		sdkintegrations.WithConnectionConfigFromVars(cvars),
 	)
 }

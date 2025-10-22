@@ -45,23 +45,20 @@ func TransformEvent(l *zap.Logger, payload any, eventType string) (sdktypes.Even
 
 // DispatchEvent dispatches the given event to all the
 // given connections, for potential asynchronous handling.
-func DispatchEvent(ctx context.Context, l *zap.Logger, d sdkservices.DispatchFunc, e sdktypes.Event, cids []sdktypes.ConnectionID) {
+func DispatchEvent(ctx context.Context, l *zap.Logger, d sdkservices.DispatchFunc, e sdktypes.Event, cids []sdktypes.ConnectionID) error {
 	for _, cid := range cids {
 		resp, err := d(ctx, e.WithConnectionDestinationID(cid), nil)
-		l := l.With(
-			zap.String("connection_id", cid.String()),
-			zap.String("event_id", resp.EventID.String()),
-		)
 		if err != nil {
 			if errors.Is(err, sdkerrors.ErrResourceExhausted) {
-				l.Info("Event dispatch failed due to resource exhaustion")
+				l.Info("Event dispatch failed due to resource exhaustion for connection " + cid.String())
 				continue
-			} else {
-				l.Error("Event dispatch failed", zap.Error(err))
 			}
 
-			return
+			l.Error("Event dispatch for connection "+cid.String()+" failed: "+err.Error(), zap.Error(err))
+			return err
 		}
-		l.Debug("event dispatched")
+		l.Debug("Event " + resp.EventID.String() + " dispatched for connection " + cid.String())
 	}
+
+	return nil
 }

@@ -24,7 +24,6 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/google/vars"
 	"go.autokitteh.dev/autokitteh/integrations/internal/extrazap"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
-	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -65,7 +64,7 @@ func (h handler) handleCalNotification(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.dispatchAsyncEventsToConnections(ctx, cids, akEvent); err != nil {
+	if err := common.DispatchEvent(ctx, l, h.dispatch, akEvent, cids); err != nil {
 		common.HTTPError(w, http.StatusInternalServerError)
 		return
 	}
@@ -113,7 +112,7 @@ func (h handler) handleDriveNotification(w http.ResponseWriter, r *http.Request)
 	}
 
 	for _, event := range events {
-		if err := h.dispatchAsyncEventsToConnections(ctx, cids, event); err != nil {
+		if err := common.DispatchEvent(ctx, l, h.dispatch, event, cids); err != nil {
 			common.HTTPError(w, http.StatusInternalServerError)
 			return
 		}
@@ -171,7 +170,7 @@ func (h handler) handleFormsNotification(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if err := h.dispatchAsyncEventsToConnections(ctx, cids, akEvent); err != nil {
+	if err := common.DispatchEvent(ctx, l, h.dispatch, akEvent, cids); err != nil {
 		common.HTTPError(w, http.StatusInternalServerError)
 		return
 	}
@@ -254,37 +253,12 @@ func (h handler) handleGmailNotification(w http.ResponseWriter, r *http.Request)
 		common.HTTPError(w, http.StatusInternalServerError)
 		return
 	}
-
-	if err := h.dispatchAsyncEventsToConnections(ctx, cids, akEvent); err != nil {
+	if err := common.DispatchEvent(ctx, l, h.dispatch, akEvent, cids); err != nil {
 		common.HTTPError(w, http.StatusInternalServerError)
 		return
 	}
 
 	// Returning immediately without an error = acknowledgement of receipt.
-}
-
-func (h handler) dispatchAsyncEventsToConnections(ctx context.Context, cids []sdktypes.ConnectionID, e sdktypes.Event) error {
-	l := extrazap.ExtractLoggerFromContext(ctx)
-
-	for _, cid := range cids {
-		resp, err := h.dispatch(ctx, e.WithConnectionDestinationID(cid), nil)
-		l := l.With(
-			zap.String("connectionID", cid.String()),
-			zap.String("eventID", resp.EventID.String()),
-		)
-		if err != nil {
-			if errors.Is(err, sdkerrors.ErrResourceExhausted) {
-				l.Info("Event dispatch failed due to resource exhaustion")
-				continue
-			} else {
-				l.Error("Event dispatch failed", zap.Error(err))
-			}
-			return err
-		}
-		l.Debug("Event dispatched")
-	}
-
-	return nil
 }
 
 // checkRequest checks the authenticity of the given HTTP POST request.

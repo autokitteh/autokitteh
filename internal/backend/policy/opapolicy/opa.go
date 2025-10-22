@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	_ "embed"
+	"encoding/base64"
 	"fmt"
 	"io/fs"
 	"os"
@@ -18,6 +19,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
 	"go.autokitteh.dev/autokitteh/internal/backend/fixtures"
 	"go.autokitteh.dev/autokitteh/internal/backend/policy"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 )
 
 // Embedded config path in opa_bundles.FS.
@@ -27,6 +29,8 @@ type Config struct {
 	ConfigPath         string `koanf:"config_path"`       // if empty, use embedded default config.
 	MinLogLevel        string `koanf:"log_level"`         // log level threshold to emit. if empty: "warn".
 	MinConsoleLogLevel string `koanf:"console_log_level"` // console log level threshold to emit. if empty: "warn".
+
+	PolicyContentBase64 string `koanf:"policy_content_base64"` // If ConfigPath is empty, and this is set, load policy content from this base64 string.
 
 	// for testing only, to test alternate embedded policies.
 	fs fs.FS
@@ -105,6 +109,22 @@ func New(cfg *Config, l *zap.Logger) (policy.DecideFunc, error) {
 
 	if cfg.ConfigPath == "" {
 		fs := cfg.fs
+
+		if fs == nil && cfg.PolicyContentBase64 != "" {
+			decoded, err := base64.StdEncoding.DecodeString(cfg.PolicyContentBase64)
+			if err != nil {
+				return nil, fmt.Errorf("decode local policy content: %w", err)
+			}
+
+			if fs, err = kittehs.MapToMemFS(map[string][]byte{
+				"default/policy.rego": decoded,
+			}); err != nil {
+				return nil, fmt.Errorf("local policy fs: %w", err)
+			}
+
+			l.Warn("using policy content from env var", zap.Int("size_bytes", len(decoded)))
+		}
+
 		if fs == nil {
 			fs = opa_bundles.FS
 		}
