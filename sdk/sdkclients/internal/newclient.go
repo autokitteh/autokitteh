@@ -22,10 +22,10 @@ func New[
 				newClientAuthUnaryInterceptor(p.AuthToken),
 			),
 		)
+	}
 
-		if p.UseGRPC {
-			p.Options = append(p.Options, connect.WithGRPC())
-		}
+	if p.UseGRPC {
+		p.Options = append(p.Options, connect.WithGRPC())
 	}
 
 	return f(p.HTTPClient, p.URL, p.Options...)
