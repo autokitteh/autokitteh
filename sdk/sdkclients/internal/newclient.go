@@ -24,5 +24,9 @@ func New[
 		)
 	}
 
+	if p.UseGRPC {
+		p.Options = append(p.Options, connect.WithGRPC())
+	}
+
 	return f(p.HTTPClient, p.URL, p.Options...)
 }

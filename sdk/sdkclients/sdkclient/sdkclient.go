@@ -22,6 +22,7 @@ type Params struct {
 	URL        string
 	Options    []connect.ClientOption
 	AuthToken  string
+	UseGRPC    bool
 }
 
 func (p Params) Safe() Params {
