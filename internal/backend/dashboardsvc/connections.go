@@ -58,7 +58,15 @@ func (s *svc) listConnections(w http.ResponseWriter, r *http.Request, f sdkservi
 }
 
 func (s *svc) connections(w http.ResponseWriter, r *http.Request) {
-	l, err := s.listConnections(w, r, sdkservices.ListConnectionsFilter{})
+	pid, err := sdktypes.ParseProjectID(r.URL.Query().Get("pid"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	l, err := s.listConnections(w, r, sdkservices.ListConnectionsFilter{
+		ProjectID: pid,
+	})
 	if err != nil {
 		return
 	}

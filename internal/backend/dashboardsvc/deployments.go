@@ -48,7 +48,15 @@ func (s *svc) listDeployments(w http.ResponseWriter, r *http.Request, f sdkservi
 }
 
 func (s *svc) deployments(w http.ResponseWriter, r *http.Request) {
-	l, err := s.listDeployments(w, r, sdkservices.ListDeploymentsFilter{})
+	pid, err := sdktypes.ParseProjectID(r.URL.Query().Get("pid"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	l, err := s.listDeployments(w, r, sdkservices.ListDeploymentsFilter{
+		ProjectID: pid,
+	})
 	if err != nil {
 		return
 	}

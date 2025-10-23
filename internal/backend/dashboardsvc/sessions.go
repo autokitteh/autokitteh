@@ -57,12 +57,19 @@ func (s *svc) listSessions(w http.ResponseWriter, r *http.Request, f sdkservices
 }
 
 func (s *svc) sessions(w http.ResponseWriter, r *http.Request) {
+	pid, err := sdktypes.ParseProjectID(r.URL.Query().Get("pid"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	ts, err := s.listSessions(w, r, sdkservices.ListSessionsFilter{
 		PaginationRequest: sdktypes.PaginationRequest{
 			PageSize:  int32(getQueryNum(r, "sessions_page_size", 50)),
 			Skip:      int32(getQueryNum(r, "sessions_skip", 0)),
 			PageToken: r.URL.Query().Get("sessions_page_token"),
 		},
+		ProjectID: pid,
 	})
 	if err != nil {
 		return

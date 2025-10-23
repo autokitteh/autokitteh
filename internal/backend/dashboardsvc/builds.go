@@ -26,9 +26,7 @@ func (p build) ExtraFields() map[string]any { return nil }
 
 func toBuild(sdkP sdktypes.Build) build { return build{sdkP} }
 
-func (s *svc) listBuilds(w http.ResponseWriter, r *http.Request) (list, error) {
-	f := sdkservices.ListBuildsFilter{}
-
+func (s *svc) listBuilds(w http.ResponseWriter, r *http.Request, f sdkservices.ListBuildsFilter) (list, error) {
 	sdkCs, err := s.Builds().List(r.Context(), f)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -39,7 +37,13 @@ func (s *svc) listBuilds(w http.ResponseWriter, r *http.Request) (list, error) {
 }
 
 func (s *svc) builds(w http.ResponseWriter, r *http.Request) {
-	ts, err := s.listBuilds(w, r)
+	pid, err := sdktypes.ParseProjectID(r.URL.Query().Get("pid"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	ts, err := s.listBuilds(w, r, sdkservices.ListBuildsFilter{ProjectID: pid})
 	if err != nil {
 		return
 	}
