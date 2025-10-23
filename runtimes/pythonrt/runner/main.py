@@ -460,7 +460,7 @@ class Runner(pb.runner_rpc.RunnerService):
         )
 
         result = self._call(fn, args, kw)
-        if not is_pickleable(result.error):
+        if result.error and not is_pickleable(result.error):
             err = pickleable_exception(result.error)
             result = result._replace(error=err)
 
