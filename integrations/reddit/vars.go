@@ -7,6 +7,8 @@ import (
 
 var desc = common.Descriptor("reddit", "Reddit", "/static/images/reddit.svg")
 
+var redditTokenURL = "https://www.reddit.com/api/v1/access_token"
+
 var (
 	clientIDVar     = sdktypes.NewSymbol("client_id")
 	clientSecretVar = sdktypes.NewSymbol("client_secret")
