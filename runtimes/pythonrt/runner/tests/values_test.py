@@ -1,5 +1,6 @@
 from collections import namedtuple
 from datetime import UTC, datetime, timedelta
+from uuid import uuid4, UUID
 
 import google.protobuf.duration_pb2 as duration_pb2
 import google.protobuf.timestamp_pb2 as timestamp_pb2
@@ -13,6 +14,9 @@ from values import unwrap, wrap, safe_wrap, wrap_unhandled
 def intv(n):
     return pb.Value(integer=pb.Integer(v=n))
 
+
+# Create here so we can get the string value
+uid = uuid4()
 
 wrap_test_cases = [
     pytest.param(None, pb.Value(nothing=pb.Nothing()), id="None"),
@@ -72,6 +76,14 @@ wrap_test_cases = [
         ),
         id="datetime",
     ),
+    pytest.param(
+        uid,
+        pb.Value(
+            string=pb.String(
+                v=str(uid),
+            ),
+        ),
+    ),
 ]
 
 
@@ -79,7 +91,10 @@ wrap_test_cases = [
 def test_wrap(u, v):
     assert wrap(u) == v
     assert safe_wrap(u) == v
-    assert unwrap(v) == u
+    if isinstance(u, UUID):
+        assert UUID(v.string.v) == u
+    else:
+        assert unwrap(v) == u
 
 
 def test_special_wraps():
