@@ -269,7 +269,7 @@ def pickleable_exception(err):
 
     # Exception "args" is a descriptor
     if hasattr(perr, "args"):
-        perr.args = (v if is_pickleable(v) else None for v in err.args)
+        perr.args = tuple(v if is_pickleable(v) else None for v in err.args)
 
     return perr
 
