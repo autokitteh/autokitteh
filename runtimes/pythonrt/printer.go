@@ -59,7 +59,7 @@ type LogDispatcher struct {
 }
 
 func getRunnerLog(runnerID, msg string) map[string]any {
-	// Start from first { if it's not too far the start.
+	// Start from first { if it's not too far from the start.
 	i := strings.IndexByte(msg, '{')
 	if i < 0 || i > 20 {
 		i = 0
