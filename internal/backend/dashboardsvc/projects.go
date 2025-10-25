@@ -80,6 +80,27 @@ func (s *svc) project(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ds, err := s.listDeployments(w, r, sdkservices.ListDeploymentsFilter{
+		ProjectID: pid,
+		Limit:     16,
+	})
+	if err != nil {
+		return
+	}
+
+	sessions, err := s.listSessions(w, r, sdkservices.ListSessionsFilter{
+		ProjectID:         pid,
+		PaginationRequest: sdktypes.PaginationRequest{PageSize: 16},
+	})
+	if err != nil {
+		return
+	}
+
+	events, err := s.listEvents(w, r, sdkservices.ListEventsFilter{ProjectID: pid, Limit: 16})
+	if err != nil {
+		return
+	}
+
 	rscs, err := s.Projects().DownloadResources(r.Context(), pid)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -99,6 +120,8 @@ func (s *svc) project(w http.ResponseWriter, r *http.Request) {
 		Connections   list
 		Triggers      list
 		Sessions      list
+		Events        list
+		Deployments   list
 		ID            string
 		ResourcesHash string
 		Resources     template.HTML
@@ -111,6 +134,9 @@ func (s *svc) project(w http.ResponseWriter, r *http.Request) {
 		ID:            p.ID().String(),
 		ResourcesHash: kittehs.Must1(kittehs.SHA256HashMap(rscs)),
 		Resources:     template.HTML(txtar.Format(&a)),
+		Deployments:   ds,
+		Sessions:      sessions,
+		Events:        events,
 	}); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}

@@ -57,7 +57,13 @@ func (s *svc) listEvents(w http.ResponseWriter, r *http.Request, f sdkservices.L
 }
 
 func (s *svc) events(w http.ResponseWriter, r *http.Request) {
-	ts, err := s.listEvents(w, r, sdkservices.ListEventsFilter{})
+	pid, err := sdktypes.ParseProjectID(r.URL.Query().Get("pid"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	ts, err := s.listEvents(w, r, sdkservices.ListEventsFilter{ProjectID: pid})
 	if err != nil {
 		return
 	}

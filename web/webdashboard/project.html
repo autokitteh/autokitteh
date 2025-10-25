@@ -4,11 +4,20 @@
 <button onclick="deleteProject()">Delete</button>
 <pre>{{ .JSON }}</pre>
 
-<h2>{{ .Connections.N }} Connections</h2>
+<h2><a href="/internal/dashboard/connections?pid={{ .ID }}">Connections</a></h2>
 {{ template "list_table_" .Connections}}
 
-<h2>{{ .Triggers.N }} Triggers</h2>
+<h2><a href="/internal/dashboard/triggers?pid={{ .ID }}">Triggers</a></h2>
 {{ template "list_table_" .Triggers}}
+
+<h2><a href="/internal/dashboard/deployments?pid={{ .ID }}">Deployments</a></h2>
+{{ template "list_table_" .Deployments}}
+
+<h2><a href="/internal/dashboard/sessions?pid={{ .ID }}">Sessions</a></h2>
+{{ template "list_table_" .Sessions}}
+
+<h2><a href="/internal/dashboard/events?pid={{ .ID }}">Events</a></h2>
+{{ template "list_table_" .Events }}
 
 <h2>Resources</h2>
 Hash: <pre>{{ .ResourcesHash }}</pre>

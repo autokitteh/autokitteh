@@ -41,7 +41,15 @@ func (s *svc) listTriggers(w http.ResponseWriter, r *http.Request, f sdkservices
 }
 
 func (s *svc) triggers(w http.ResponseWriter, r *http.Request) {
-	ts, err := s.listTriggers(w, r, sdkservices.ListTriggersFilter{})
+	pid, err := sdktypes.ParseProjectID(r.URL.Query().Get("pid"))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	ts, err := s.listTriggers(w, r, sdkservices.ListTriggersFilter{
+		ProjectID: pid,
+	})
 	if err != nil {
 		return
 	}
