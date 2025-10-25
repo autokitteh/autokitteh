@@ -248,6 +248,36 @@ def format_size(size):
         return f"{size // (1024 * 1024)} MB"
 
 
+def pickleable_exception(err):
+    """Convert Exception to be pickleable by making un-pickled attribute None."""
+
+    # Make Err subclass to exception handling will work
+    class Err(err.__class__):
+        def __init__(self):
+            pass  # Override super __init__ with no arguments
+
+    perr = Err()
+    if hasattr(err, "__dict__"):
+        items = err.__dict__.items()
+    elif hasattr(err, "__slots__"):
+        items = ((k, getattr(err, k)) for k in err.__slots__)
+    else:
+        items = ()
+
+    for key, val in items:
+        try:
+            pickle.dumps(val)
+        except (pickle.PickleError, TypeError):
+            val = None  # TODO: Something else?
+        setattr(perr, key, val)
+
+    # Exception "args" is a descriptor
+    if hasattr(perr, "args"):
+        perr.args = tuple(v if is_pickleable(v) else None for v in err.args)
+
+    return perr
+
+
 class Runner(pb.runner_rpc.RunnerService):
     def __init__(
         self, id, worker, code_dir, server, start_timeout=DEFAULT_START_TIMEOUT
@@ -434,6 +464,10 @@ class Runner(pb.runner_rpc.RunnerService):
         )
 
         result = self._call(fn, args, kw)
+        if result.error and not is_pickleable(result.error):
+            err = pickleable_exception(result.error)
+            result = result._replace(error=err)
+
         try:
             data = pickle.dumps(result)
             req.result.custom.data = data
