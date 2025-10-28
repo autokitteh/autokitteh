@@ -235,6 +235,7 @@ type Trigger struct {
 	EventType    string
 	Filter       string
 	CodeLocation string
+	Timezone     string
 	IsDurable    *bool
 	IsSync       *bool
 
@@ -298,6 +299,7 @@ func ParseTrigger(e Trigger) (sdktypes.Trigger, error) {
 		Name:         e.Name,
 		WebhookSlug:  e.WebhookSlug,
 		Schedule:     e.Schedule,
+		Timezone:     e.Timezone,
 		IsDurable:    isDurable,
 		IsSync:       isSync,
 	})

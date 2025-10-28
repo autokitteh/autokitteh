@@ -56,7 +56,7 @@ func (TriggerTraits) StrictValidate(m *TriggerPB) error {
 }
 
 func (TriggerTraits) Mutables() []string {
-	return []string{"filter", "code_location", "name", "source_type", "sync", "is_durable"}
+	return []string{"filter", "code_location", "name", "source_type", "timezone", "sync", "is_durable"}
 }
 
 func TriggerFromProto(m *TriggerPB) (Trigger, error)       { return FromProto[Trigger](m) }
@@ -92,6 +92,11 @@ func (p Trigger) WithSchedule(expr string) Trigger {
 		m.Schedule = expr
 		m.SourceType = triggerv1.Trigger_SOURCE_TYPE_SCHEDULE
 	})}
+}
+
+func (p Trigger) Timezone() string { return p.read().Timezone }
+func (p Trigger) WithTimezone(tz string) Trigger {
+	return Trigger{p.forceUpdate(func(m *TriggerPB) { m.Timezone = tz })}
 }
 
 func (p Trigger) WebhookSlug() string { return p.read().WebhookSlug }

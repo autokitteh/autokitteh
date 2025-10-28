@@ -13,8 +13,8 @@ import (
 )
 
 var (
-	call, event, filter, name, project, schedule string
-	webhook                                      bool
+	call, event, filter, name, project, schedule, timezone string
+	webhook                                                 bool
 )
 
 var createCmd = common.StandardCommand(&cobra.Command{
@@ -68,6 +68,9 @@ var createCmd = common.StandardCommand(&cobra.Command{
 		} else if schedule != "" {
 			// TODO(ENG-1004): Verify validity of schedule expression.
 			t = t.WithSchedule(schedule)
+			if timezone != "" {
+				t = t.WithTimezone(timezone)
+			}
 		} else if webhook {
 			t = t.WithWebhook()
 		} else {
@@ -97,6 +100,7 @@ func init() {
 	createCmd.Flags().BoolVarP(&webhook, "webhook", "w", false, "trigger uses a webhook")
 
 	createCmd.Flags().VarP(common.NewNonEmptyString("", &schedule), "schedule", "s", "schedule expression (cron or extended)")
+	createCmd.Flags().StringVarP(&timezone, "timezone", "z", "", "timezone for schedule (e.g., America/New_York, Europe/London)")
 	createCmd.MarkFlagsOneRequired("connection", "schedule", "webhook")
 	createCmd.MarkFlagsMutuallyExclusive("connection", "schedule", "webhook")
 

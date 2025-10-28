@@ -67,7 +67,7 @@ func (sch *Scheduler) Start(ctx context.Context, dispatcher sdkservices.Dispatch
 	return nil
 }
 
-func (sch *Scheduler) Create(ctx context.Context, tid sdktypes.TriggerID, schedule string) error {
+func (sch *Scheduler) Create(ctx context.Context, tid sdktypes.TriggerID, schedule string, timezone string) error {
 	l := sch.sl.With("trigger_id", tid.String())
 
 	_, err := sch.temporal.TemporalClient().ScheduleClient().Create(
@@ -76,6 +76,7 @@ func (sch *Scheduler) Create(ctx context.Context, tid sdktypes.TriggerID, schedu
 			ID: tid.String(),
 			Spec: client.ScheduleSpec{
 				CronExpressions: []string{schedule},
+				TimeZoneName:    timezone,
 			},
 			Action: &client.ScheduleWorkflowAction{
 				ID:        tid.String(), // workflowID
@@ -111,13 +112,16 @@ func (sch *Scheduler) Delete(ctx context.Context, tid sdktypes.TriggerID) error 
 	return nil
 }
 
-func (sch *Scheduler) Update(ctx context.Context, tid sdktypes.TriggerID, schedule string) error {
+func (sch *Scheduler) Update(ctx context.Context, tid sdktypes.TriggerID, schedule string, timezone string) error {
 	sl := sch.sl.With("trigger_id", tid)
 
 	h := sch.temporal.TemporalClient().ScheduleClient().GetHandle(ctx, tid.String()) // validity of scheduleID is not checked by temporal
 	err := h.Update(ctx, client.ScheduleUpdateOptions{
 		DoUpdate: func(input client.ScheduleUpdateInput) (*client.ScheduleUpdate, error) {
-			input.Description.Schedule.Spec = &client.ScheduleSpec{CronExpressions: []string{schedule}}
+			input.Description.Schedule.Spec = &client.ScheduleSpec{
+				CronExpressions: []string{schedule},
+				TimeZoneName:    timezone,
+			}
 			return &client.ScheduleUpdate{Schedule: &input.Description.Schedule}, nil
 		},
 	})

@@ -92,6 +92,7 @@ func (db *gormdb) CreateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 		Name:         trigger.Name().String(),
 		UniqueName:   uniqueName,
 		WebhookSlug:  trigger.WebhookSlug(),
+		Timezone:     trigger.Timezone(),
 		Schedule:     trigger.Schedule(),
 		IsDurable:    &isDurable,
 		IsSync:       &isSync,
@@ -121,6 +122,7 @@ func (db *gormdb) UpdateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 	r.EventType = trigger.EventType()
 	r.Filter = trigger.Filter()
 	r.Schedule = trigger.Schedule()
+	r.Timezone = trigger.Timezone()
 	r.Name = trigger.Name().String()
 	r.UniqueName = triggerUniqueName(r.ProjectID.String(), trigger.Name())
 	r.UpdatedAt = kittehs.Now().UTC()

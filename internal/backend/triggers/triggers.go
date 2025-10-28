@@ -68,7 +68,7 @@ func (m *triggers) Create(ctx context.Context, trigger sdktypes.Trigger) (sdktyp
 		sl.With("slug", trigger.WebhookSlug()).Infof("created webhook trigger with slug %q", trigger.WebhookSlug())
 	case sdktypes.TriggerSourceTypeSchedule:
 		// TODO: If this fails, we need to remove the trigger.
-		if err := m.scheduler.Create(ctx, trigger.ID(), trigger.Schedule()); err != nil {
+		if err := m.scheduler.Create(ctx, trigger.ID(), trigger.Schedule(), trigger.Timezone()); err != nil {
 			return sdktypes.InvalidTriggerID, fmt.Errorf("create schedule: %w", err)
 		}
 		sl.With("schedule", trigger.Schedule()).Infof("created schedule trigger with spec %q", trigger.Schedule())
@@ -119,7 +119,7 @@ func (m *triggers) Update(ctx context.Context, trigger sdktypes.Trigger) error {
 
 	if trigger.SourceType() == sdktypes.TriggerSourceTypeSchedule {
 		// TODO: if this fails, we need to revert the trigger.
-		if err := m.scheduler.Update(ctx, triggerID, trigger.Schedule()); err != nil {
+		if err := m.scheduler.Update(ctx, triggerID, trigger.Schedule(), trigger.Timezone()); err != nil {
 			return fmt.Errorf("update schedule: %w", err)
 		}
 	}
