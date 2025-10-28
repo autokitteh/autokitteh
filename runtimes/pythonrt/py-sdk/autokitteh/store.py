@@ -1,6 +1,6 @@
 from collections.abc import MutableMapping
-from typing import Any
 from enum import StrEnum
+from typing import Any
 
 # Dummy implementation for local development.
 _local_dev_store = {}
@@ -66,6 +66,8 @@ def mutate_value(key: str, op: Op, *args: list[Any]) -> Any:
         "set": set_value,
         "get": get_value,
         "del": del_value,
+        "add": add_values,
+        "check_and_set": check_and_set_value,
     }[op](key, *args)
 
 
@@ -83,6 +85,29 @@ def get_value(key: str) -> Any:
 
     # Dummy implementation for local development.
     return _local_dev_store.get(key)
+
+
+def check_and_set_value(key: str, expected_value: Any, new_value: Any) -> bool:
+    """Check and set a stored value.
+
+    This operation is atomic.
+
+    Works both for durable and non-durable sessions.
+
+    Args:
+        key: Key of the value to set.
+        expected_value: Expected current value.
+        new_value: New value to store if the current value matches the expected value.
+    Returns:
+        bool: True if the value was set, False otherwise.
+    """
+
+    # Dummy implementation for local development, not atomic.
+    current_value = _local_dev_store.get(key)
+    if current_value == expected_value:
+        _local_dev_store[key] = new_value
+        return True
+    return False
 
 
 def set_value(key: str, value: Any) -> None:

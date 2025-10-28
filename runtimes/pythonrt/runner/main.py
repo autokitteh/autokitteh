@@ -19,14 +19,15 @@ from traceback import TracebackException, format_exception
 import autokitteh
 import autokitteh.store
 import grpc
-import loader
-import log
-import pb
-import values
 
 # from audit import make_audit_hook  # TODO(ENG-1893): uncomment this.
 from autokitteh import AttrDict, Event, connections
 from autokitteh.errors import AutoKittehError
+
+import loader
+import log
+import pb
+import values
 from call import AKCall, activity_marker, full_func_name
 from syscalls import SysCalls, mark_no_activity
 
@@ -375,6 +376,7 @@ class Runner(pb.runner_rpc.RunnerService):
         autokitteh.next_signal = self.syscalls.ak_next_signal
         autokitteh.set_value = self.syscalls.ak_set_value
         autokitteh.add_values = self.syscalls.ak_add_values
+        autokitteh.check_and_set_value = self.syscalls.ak_check_and_set_value
         autokitteh.signal = self.syscalls.ak_signal
         autokitteh.start = self.syscalls.ak_start
         autokitteh.subscribe = self.syscalls.ak_subscribe

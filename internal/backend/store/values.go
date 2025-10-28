@@ -37,6 +37,28 @@ var ops = map[string]op{
 		},
 		write: true,
 	},
+	"check_and_set": {
+		fn: func(curr sdktypes.Value, vs []sdktypes.Value) (sdktypes.Value, sdktypes.Value, error) {
+			if len(vs) < 2 {
+				return sdktypes.InvalidValue, sdktypes.InvalidValue, sdkerrors.NewInvalidArgumentError("expecting two operands: next_value, check_value")
+			} else if len(vs) > 2 {
+				return sdktypes.InvalidValue, sdktypes.InvalidValue, errTooManyOperands
+			}
+
+			if !curr.IsValid() {
+				curr = sdktypes.Nothing
+			}
+
+			if !curr.Equal(vs[1]) {
+				// Failed check, no change.
+				return curr, sdktypes.FalseValue, nil
+			}
+
+			return vs[0], sdktypes.TrueValue, nil
+		},
+		read:  true,
+		write: true,
+	},
 	"add": {
 		fn: func(curr sdktypes.Value, vs []sdktypes.Value) (sdktypes.Value, sdktypes.Value, error) {
 			if len(vs) == 0 {

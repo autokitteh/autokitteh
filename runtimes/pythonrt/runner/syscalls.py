@@ -10,11 +10,12 @@ from datetime import timedelta
 from typing import Any
 
 import grpc
+from autokitteh import AttrDict, AutoKittehError, Signal
+from autokitteh.activities import ACTIVITY_ATTR
+
 import log
 import pb.autokitteh.user_code.v1.handler_svc_pb2 as pb
 import values
-from autokitteh import AttrDict, AutoKittehError, Signal
-from autokitteh.activities import ACTIVITY_ATTR
 
 
 def mark_no_activity(fn):
@@ -208,6 +209,11 @@ class SysCalls:
 
     def ak_set_value(self, key: str, value: Any) -> None:
         self.ak_mutate_value(key, "set", value)
+
+    def ak_check_and_set_value(
+        self, key: str, expected_value: Any, new_value: Any
+    ) -> bool:
+        return self.ak_mutate_value(key, "check_and_set", new_value, expected_value)
 
     def ak_add_values(self, key: str, value: int | float) -> int | float:
         return self.ak_mutate_value(key, "add", value)
