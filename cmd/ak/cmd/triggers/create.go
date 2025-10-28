@@ -14,7 +14,7 @@ import (
 
 var (
 	call, event, filter, name, project, schedule, timezone string
-	webhook                                                 bool
+	webhook                                                bool
 )
 
 var createCmd = common.StandardCommand(&cobra.Command{
