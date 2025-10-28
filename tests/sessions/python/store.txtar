@@ -11,9 +11,13 @@ woof
 1
 42
 42
+True
+100
+False
+100
 
 -- main.py main --
-from autokitteh import mutate_value, get_value, set_value, list_values_keys, del_value, add_values
+from autokitteh import mutate_value, get_value, set_value, list_values_keys, del_value, add_values, check_and_set_value
 
 def main(_):
     print(mutate_value('cat', 'del'))
@@ -30,4 +34,8 @@ def main(_):
     print(add_values('x', 1))
     print(get_value('x'))
     print(add_values('x', 41))
+    print(get_value('x'))
+    print(check_and_set_value('x', 42, 100))
+    print(get_value('x'))
+    print(check_and_set_value('x', 42, 101))
     print(get_value('x'))

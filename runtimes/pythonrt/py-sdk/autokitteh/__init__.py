@@ -6,13 +6,14 @@
 from . import errors
 from .activities import activity, inhibit_activities, register_no_activity
 from .attr_dict import AttrDict
+from .errors import AutoKittehError
 from .event import Event
 from .events import next_event, start, subscribe, unsubscribe
-from .outcomes import outcome, http_outcome
+from .outcomes import http_outcome, outcome
 from .signals import Signal, next_signal, signal
-from .errors import AutoKittehError
 from .store import (
     add_values,
+    check_and_set_value,
     del_value,
     get_value,
     list_values_keys,
@@ -45,6 +46,7 @@ __all__ = [
     "Signal",
     # Values
     "add_values",
+    "check_and_set_value",
     "del_value",
     "get_value",
     "list_values_keys",

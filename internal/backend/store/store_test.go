@@ -179,6 +179,52 @@ func TestMutate(t *testing.T) {
 			pid: pids[1],
 			ret: ivs[3],
 		},
+		{
+			key:      "cas0",
+			op:       "check_and_set",
+			pid:      pids[0],
+			operands: []sdktypes.Value{ivs[0], ivs[1]},
+			ret:      sdktypes.FalseValue,
+		},
+		{
+			key: "cas0",
+			op:  "get",
+			pid: pids[0],
+			ret: sdktypes.Nothing,
+		},
+		{
+			key:      "cas1",
+			op:       "check_and_set",
+			pid:      pids[0],
+			operands: []sdktypes.Value{ivs[0], sdktypes.Nothing},
+			ret:      sdktypes.TrueValue,
+		},
+		{
+			key: "cas1",
+			op:  "get",
+			pid: pids[0],
+			ret: ivs[0],
+		},
+		{
+			key:      "cas1",
+			op:       "check_and_set",
+			pid:      pids[0],
+			operands: []sdktypes.Value{ivs[1], ivs[0]},
+			ret:      sdktypes.TrueValue,
+		},
+		{
+			key: "cas1",
+			op:  "get",
+			pid: pids[0],
+			ret: ivs[1],
+		},
+		{
+			key:      "cas1",
+			op:       "check_and_set",
+			pid:      pids[0],
+			operands: []sdktypes.Value{ivs[1], ivs[0]},
+			ret:      sdktypes.FalseValue,
+		},
 	}
 
 	for i, test := range tests {
