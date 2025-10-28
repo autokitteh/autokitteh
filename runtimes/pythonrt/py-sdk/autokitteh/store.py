@@ -67,6 +67,7 @@ def mutate_value(key: str, op: Op, *args: list[Any]) -> Any:
         "get": get_value,
         "del": del_value,
         "add": add_values,
+        "check_and_set": check_and_set_value,
     }[op](key, *args)
 
 

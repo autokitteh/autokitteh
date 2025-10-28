@@ -212,7 +212,7 @@ class SysCalls:
 
     def ak_check_and_set_value(
         self, key: str, expected_value: Any, new_value: Any
-    ) -> None:
+    ) -> bool:
         return self.ak_mutate_value(key, "check_and_set", new_value, expected_value)
 
     def ak_add_values(self, key: str, value: int | float) -> int | float:
