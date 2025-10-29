@@ -225,3 +225,42 @@ func TestGetTriggerWithActiveDeploymentByWebhookSlug(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEqual(t, sdktypes.InvalidTrigger, trigger)
 }
+
+func TestCreateTriggerWithTimezone(t *testing.T) {
+	f := preTriggerTest(t)
+
+	p, _ := f.createProjectConnection(t)
+	tr := f.newTrigger(p)
+	tr.SourceType = sdktypes.TriggerSourceTypeSchedule.String()
+	tr.Schedule = "0 9 * * *"
+	tr.Timezone = "Asia/Jerusalem"
+
+	// Create trigger with timezone.
+	f.createTriggersAndAssert(t, tr)
+
+	// Retrieve and verify timezone is stored.
+	retrieved, err := f.gormdb.getTriggerByID(f.ctx, tr.TriggerID)
+	assert.NoError(t, err)
+	assert.Equal(t, "Asia/Jerusalem", retrieved.Timezone)
+}
+
+func TestUpdateTriggerTimezone(t *testing.T) {
+	f := preTriggerTest(t)
+
+	p, _ := f.createProjectConnection(t)
+	tr := f.newTrigger(p)
+	tr.SourceType = sdktypes.TriggerSourceTypeSchedule.String()
+	tr.Schedule = "0 9 * * *"
+	tr.Timezone = "UTC"
+
+	f.createTriggersAndAssert(t, tr)
+
+	// Update timezone.
+	tr.Timezone = "Europe/London"
+	assert.NoError(t, f.gormdb.updateTrigger(f.ctx, &tr))
+
+	// Verify update.
+	retrieved, err := f.gormdb.getTriggerByID(f.ctx, tr.TriggerID)
+	assert.NoError(t, err)
+	assert.Equal(t, "Europe/London", retrieved.Timezone)
+}

@@ -1,4 +1,4 @@
-h1:qQn+Qemse4kUX+nzDG5BfHMh6627rZ6ZrzG1Dv4IC+U=
+h1:Y63M+0hvuFSOdMzCj7fUMm8udRqeQZRXn854eY7ukaw=
 20240704121927_baseline.sql h1:Urgmm304lCno+ou4WguUjFGiqu2PYoIOlswHpSL1lRg=
 20240714051159_no-db-user.sql h1:FRReTH5AzKrGU3qp0laWWzkgiBc5693KZIpgrjY81d8=
 20240727114913_project-not-nil-name.sql h1:tRZh+O1yx/QZuytlirQJA0f9Ga/m3FDNM9yE5eJDv1I=
@@ -36,3 +36,4 @@ h1:qQn+Qemse4kUX+nzDG5BfHMh6627rZ6ZrzG1Dv4IC+U=
 20250919055014_sync.sql h1:tg+77sM+2q1TCBfu467lFuk4AQbWGZXelAzbJ+k+iOw=
 20251001070614_triggers_no_default_false.sql h1:3kk8LzRzuawW4kfPrr6b5lwBtSxQlW3onZWhErADIt8=
 20251015062139_project_display_name.sql h1:dA8miYXYaydwprA5txURD1vUJ3aDIbkkU/2x7i2W3A8=
+20251028120656_add_timezone_to_trigger.sql h1:kwRA+DU6lTnKIRdz+H/Tsr+BjwaCyCk5+ukJR1XX0zQ=
