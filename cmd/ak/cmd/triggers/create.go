@@ -19,7 +19,7 @@ var (
 
 var createCmd = common.StandardCommand(&cobra.Command{
 	Use: `create -n name [--call file:func] [-p project] -c connection [-E event] [-f filter]
-             create -n name [--call file:func] [-p project] -s "schedule"
+             create -n name [--call file:func] [-p project] -s "schedule" [-z timezone]
              create -n name [--call file:func] [-p project] --webhook
 `,
 
