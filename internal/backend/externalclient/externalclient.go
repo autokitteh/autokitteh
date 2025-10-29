@@ -42,7 +42,7 @@ func (c *cli) NewOrgImpersonator(orgID sdktypes.OrgID) (sdkservices.Services, er
 	cli := sdkclients.New(sdkclient.Params{
 		URL:       c.externalEndpoint,
 		AuthToken: internalToken,
-		UseGRPC:   true,
+		UseGRPC:   false,
 	}.Safe())
 
 	c.l.Debug("created internal client for org: " + orgID.UUIDValue().String())
