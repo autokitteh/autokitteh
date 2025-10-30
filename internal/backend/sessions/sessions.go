@@ -324,11 +324,5 @@ func (s *sessions) Start(ctx context.Context, session sdktypes.Session) (sdktype
 		return sdktypes.InvalidSessionID, fmt.Errorf("create internal client: %w", err)
 	}
 
-	res, err := cli.Sessions().Start(ctx, session)
-	if err != nil {
-		if strings.Contains(err.Error(), "resource_exhausted") {
-			return sdktypes.InvalidSessionID, sdkerrors.ErrResourceExhausted
-		}
-	}
-	return res, err
+	return cli.Sessions().Start(ctx, session)
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	"go.temporal.io/sdk/workflow"
@@ -74,13 +73,7 @@ func (d *Dispatcher) DispatchExternal(ctx context.Context, event sdktypes.Event,
 		return nil, fmt.Errorf("create internal token: %w", err)
 	}
 
-	res, err := cli.Dispatcher().Dispatch(ctx, event, opts)
-	if err != nil {
-		if strings.Contains(err.Error(), "resource_exhausted") {
-			return nil, sdkerrors.ErrResourceExhausted
-		}
-	}
-	return res, err
+	return cli.Dispatcher().Dispatch(ctx, event, opts)
 }
 
 func (d *Dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) (*sdkservices.DispatchResponse, error) {

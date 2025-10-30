@@ -1,13 +1,32 @@
 package rpcerrors
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"connectrpc.com/connect"
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
+
+func parseResourceExhaustedError(err *connect.Error) (error, string) {
+	sdkErr := sdkerrors.ErrResourceExhausted
+	type connectError struct {
+		Code    string `json:"code"`
+		Message string `json:"message"`
+	}
+	var jsonError connectError
+	var errMsg string
+	if parseErr := json.Unmarshal([]byte(err.Message()), &jsonError); parseErr != nil {
+		errMsg = err.Message()
+	} else {
+		errMsg = jsonError.Message
+	}
+
+	return sdkErr, errMsg
+}
 
 func ToSDKError(err error) error {
 	if err == nil {
@@ -45,7 +64,11 @@ func ToSDKError(err error) error {
 	case connect.CodeUnknown: // returned as connect.Error, but unrelated to RPC, just unwrap underlying error
 		return connectErr.Unwrap()
 	default:
-		sdkErr = fmt.Errorf("unknown connect error: %w", connectErr)
+		if strings.Contains(err.Error(), "resource_exhausted") {
+			sdkErr, errMsg = parseResourceExhaustedError(connectErr)
+		} else {
+			sdkErr = fmt.Errorf("unknown connect error: %w", connectErr)
+		}
 	}
 
 	// err is a connect error (checked in connect.CodeOf), so we can safely cast it
