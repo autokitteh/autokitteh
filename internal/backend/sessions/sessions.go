@@ -229,7 +229,7 @@ func (s *sessions) List(ctx context.Context, filter sdkservices.ListSessionsFilt
 	if err := authz.CheckContext(
 		ctx,
 		sdktypes.InvalidSessionID,
-		"list",
+		"read:list",
 		authz.WithData("filter", filter),
 		authz.WithAssociationWithID("deployment", filter.DeploymentID),
 		authz.WithAssociationWithID("project", filter.ProjectID),
