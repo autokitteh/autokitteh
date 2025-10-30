@@ -17,7 +17,9 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var desc = common.Descriptor("azurebot", "Azure Bot Service", "/static/images/azure_bot.svg")
+const IntegrationName = "azurebot"
+
+var desc = common.Descriptor(IntegrationName, "Azure Bot Service", "/static/images/azure_bot.svg")
 
 type integration struct {
 	vars sdkservices.Vars

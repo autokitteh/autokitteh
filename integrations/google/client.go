@@ -8,7 +8,9 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
 
-var desc = common.Descriptor("google", "Google (All APIs)", "/static/images/google.svg")
+const IntegrationName = "google"
+
+var desc = common.Descriptor(IntegrationName, "Google (All APIs)", "/static/images/google.svg")
 
 func New(cvars sdkservices.Vars) sdkservices.Integration {
 	return sdkintegrations.NewIntegration(

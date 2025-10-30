@@ -15,7 +15,9 @@ import (
 	"go.autokitteh.dev/autokitteh/web/static"
 )
 
-var desc = common.Descriptor("microsoft", "Microsoft (All APIs)", "/static/images/microsoft.svg")
+const IntegrationName = "microsoft"
+
+var desc = common.Descriptor(IntegrationName, "Microsoft (All APIs)", "/static/images/microsoft.svg")
 
 // New defines an AutoKitteh integration, which
 // is registered when the AutoKitteh server starts.
