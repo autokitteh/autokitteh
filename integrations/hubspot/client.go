@@ -13,8 +13,10 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+const IntegrationName = "hubspot"
+
 var (
-	desc = common.Descriptor("hubspot", "HubSpot", "/static/images/hubspot.svg")
+	desc = common.Descriptor(IntegrationName, "HubSpot", "/static/images/hubspot.svg")
 
 	authTypeVar = sdktypes.NewSymbol("auth_type")
 )

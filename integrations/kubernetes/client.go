@@ -16,8 +16,10 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+const IntegrationName = "kubernetes"
+
 var (
-	desc          = common.Descriptor("kubernetes", "Kubernetes", "/static/images/k8s.svg")
+	desc          = common.Descriptor(IntegrationName, "Kubernetes", "/static/images/k8s.svg")
 	configFileVar = sdktypes.NewSymbol("config_file")
 	authTypeVar   = sdktypes.NewSymbol("auth_type")
 )

@@ -23,14 +23,12 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-const (
-	integrationName = "googledrive"
-)
+const IntegrationName = "googledrive"
 
 var (
-	IntegrationID = sdktypes.NewIntegrationIDFromName(integrationName)
+	IntegrationID = sdktypes.NewIntegrationIDFromName(IntegrationName)
 
-	desc = common.Descriptor(integrationName, "Google Drive", "/static/images/google_drive.svg")
+	desc = common.Descriptor(IntegrationName, "Google Drive", "/static/images/google_drive.svg")
 )
 
 type api struct {

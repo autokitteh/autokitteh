@@ -11,11 +11,9 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-const (
-	integrationName = "telegram"
-)
+const IntegrationName = "telegram"
 
-var desc = common.Descriptor(integrationName, "Telegram", "/static/images/telegram.svg")
+var desc = common.Descriptor(IntegrationName, "Telegram", "/static/images/telegram.svg")
 
 type integration struct{ vars sdkservices.Vars }
 

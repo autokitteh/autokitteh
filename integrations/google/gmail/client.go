@@ -20,14 +20,12 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-const (
-	integrationName = "gmail"
-)
+const IntegrationName = "gmail"
 
 var (
-	IntegrationID = sdktypes.NewIntegrationIDFromName(integrationName)
+	IntegrationID = sdktypes.NewIntegrationIDFromName(IntegrationName)
 
-	desc = common.Descriptor(integrationName, "Gmail", "/static/images/gmail.svg")
+	desc = common.Descriptor(IntegrationName, "Gmail", "/static/images/gmail.svg")
 )
 
 type api struct {

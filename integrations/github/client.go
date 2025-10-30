@@ -15,14 +15,12 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-const (
-	integrationName = "github"
-)
+const IntegrationName = "github"
 
 var (
-	integrationID = sdktypes.NewIntegrationIDFromName(integrationName)
+	integrationID = sdktypes.NewIntegrationIDFromName(IntegrationName)
 
-	desc = common.Descriptor(integrationName, "GitHub", "/static/images/github.svg")
+	desc = common.Descriptor(IntegrationName, "GitHub", "/static/images/github.svg")
 )
 
 type integration struct {

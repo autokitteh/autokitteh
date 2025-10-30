@@ -15,7 +15,9 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var desc = common.Descriptor("twilio", "Twilio", "/static/images/twilio.png")
+const IntegrationName = "twilio"
+
+var desc = common.Descriptor(IntegrationName, "Twilio", "/static/images/twilio.png")
 
 type integration struct{ vars sdkservices.Vars }
 

@@ -8,7 +8,9 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
 
-var desc = common.Descriptor("youtube", "YouTube", "/static/images/youtube.svg")
+const IntegrationName = "youtube"
+
+var desc = common.Descriptor(IntegrationName, "YouTube", "/static/images/youtube.svg")
 
 func New(cvars sdkservices.Vars) sdkservices.Integration {
 	return sdkintegrations.NewIntegration(
