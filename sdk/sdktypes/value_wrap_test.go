@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"maps"
+	"math/big"
 	"testing"
 	"time"
 
@@ -63,6 +64,11 @@ func TestValueWrapper(t *testing.T) {
 			in:  Wint(42),
 			w:   sdktypes.NewIntegerValue(42),
 			unw: int64(42),
+		},
+		{
+			in:  big.NewInt(42),
+			w:   sdktypes.NewBigIntegerValue(big.NewInt(42)),
+			unw: big.NewInt(42),
 		},
 		{
 			in:  "meow",
@@ -184,6 +190,19 @@ func TestUnwrapIntoScalars(t *testing.T) {
 	var i64 int
 	if assert.NoError(t, w.UnwrapInto(&i64, iv)) {
 		assert.Equal(t, 42, i64)
+	}
+
+	if assert.NoError(t, w.UnwrapInto(&i64, sdktypes.NewBigIntegerValue(big.NewInt(43)))) {
+		assert.Equal(t, 43, i64)
+	}
+
+	var bi *big.Int
+	if assert.NoError(t, w.UnwrapInto(&bi, iv)) {
+		assert.Equal(t, int64(42), bi.Int64())
+	}
+
+	if assert.NoError(t, w.UnwrapInto(&bi, sdktypes.NewBigIntegerValue(big.NewInt(43)))) {
+		assert.Equal(t, int64(43), bi.Int64())
 	}
 
 	var s string

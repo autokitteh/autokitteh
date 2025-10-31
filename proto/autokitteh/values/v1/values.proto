@@ -20,6 +20,10 @@ message Integer {
   int64 v = 1;
 }
 
+message BigInteger {
+  string v = 1;
+}
+
 message Float {
   double v = 1;
 }
@@ -125,4 +129,5 @@ message Value {
   Symbol symbol = 14;
   Function function = 15;
   Custom custom = 16;
+  BigInteger big_integer = 17;
 }

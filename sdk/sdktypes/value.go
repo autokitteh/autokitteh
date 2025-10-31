@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
+	"math/big"
 	"strconv"
 	"time"
 
@@ -43,6 +45,7 @@ func validateValue(m *ValuePB) error {
 		objectField[DurationValue]("duration", m.Duration),
 		objectField[TimeValue]("time", m.Time),
 		objectField[CustomValue]("custom", m.Custom),
+		objectField[BigIntegerValue]("big_integer", m.BigInteger),
 	)
 }
 
@@ -84,6 +87,8 @@ func NewValue(cv concreteValue) Value {
 		return kittehs.Must1(NewModuleValue(cv.Name(), cv.Members()))
 	case CustomValue:
 		return kittehs.Must1(NewCustomValue(cv.ExecutorID(), cv.Data(), cv.Value()))
+	case BigIntegerValue:
+		return NewBigIntegerValue(cv.Value())
 	default:
 		sdklogger.DPanic("unknown concrete value type")
 	}
@@ -153,6 +158,8 @@ func (v Value) Type() string {
 		return "module"
 	case CustomValue:
 		return "custom"
+	case BigIntegerValue:
+		return "big_integer"
 	default:
 		return "unknown"
 	}
@@ -168,8 +175,31 @@ func (v Value) ToInt64() (int64, error) {
 		return int64(vv.Value()), nil
 	case IntegerValue:
 		return vv.Value(), nil
+	case BigIntegerValue:
+		bi := vv.Value()
+		if !bi.IsInt64() {
+			return 0, sdkerrors.NewInvalidArgumentError("big integer value %s overflows int64", bi.String())
+		}
+		return bi.Int64(), nil
 	default:
 		return 0, errCannotConvert(v, "int64")
+	}
+}
+
+func (v Value) ToBigInteger() (*big.Int, error) {
+	switch vv := v.Concrete().(type) {
+	case CustomValue:
+		return vv.Value().ToBigInteger()
+	case DurationValue:
+		return big.NewInt(int64(vv.Value())), nil
+	case FloatValue:
+		return big.NewInt(int64(vv.Value())), nil
+	case IntegerValue:
+		return big.NewInt(vv.Value()), nil
+	case BigIntegerValue:
+		return vv.Value(), nil
+	default:
+		return nil, errCannotConvert(v, "big.Int")
 	}
 }
 
@@ -183,6 +213,13 @@ func (v Value) ToFloat64() (float64, error) {
 		return float64(vv.Value()), nil
 	case FloatValue:
 		return vv.Value(), nil
+	case BigIntegerValue:
+		bi := vv.Value()
+		f, _ := bi.Float64()
+		if math.IsInf(f, 0) || math.IsNaN(f) {
+			return 0, sdkerrors.NewInvalidArgumentError("big integer value %s overflows float64", bi.String())
+		}
+		return f, nil
 	default:
 		return 0, errCannotConvert(v, "float64")
 	}
@@ -198,6 +235,12 @@ func (v Value) ToDuration() (time.Duration, error) {
 		return time.Second * time.Duration(vv.Value()), nil
 	case FloatValue:
 		return time.Duration(float64(time.Second) * vv.Value()), nil
+	case BigIntegerValue:
+		bi := vv.Value()
+		if !bi.IsInt64() {
+			return 0, sdkerrors.NewInvalidArgumentError("big integer value %s overflows duration", bi.String())
+		}
+		return time.Duration(bi.Int64()) * time.Second, nil
 	case StringValue:
 		return time.ParseDuration(vv.Value())
 	default:
@@ -215,6 +258,12 @@ func (v Value) ToTime() (time.Time, error) {
 		return dateparse.ParseAny(vv.Value())
 	case IntegerValue:
 		return time.Unix(vv.Value(), 0), nil
+	case BigIntegerValue:
+		bi := vv.Value()
+		if !bi.IsInt64() {
+			return time.Time{}, sdkerrors.NewInvalidArgumentError("big integer value %s overflows time", bi.String())
+		}
+		return time.Unix(bi.Int64(), 0), nil
 	case FloatValue:
 		sec := int64(vv.Value())
 		nsec := int64((vv.Value() - float64(sec)) * float64(time.Second))
@@ -232,6 +281,8 @@ func (v Value) ToString() (string, error) {
 		return vv.Value(), nil
 	case IntegerValue:
 		return strconv.FormatInt(vv.Value(), 10), nil
+	case BigIntegerValue:
+		return vv.Value().String(), nil
 	case FloatValue:
 		return fmt.Sprintf("%f", vv.Value()), nil
 	case BooleanValue:

@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
+	"math/big"
 	"reflect"
 	"time"
 
@@ -51,6 +53,8 @@ func (w *ValueWrapper) unwrap(v Value) (any, error) {
 	case StringValue:
 		return v.Value(), nil
 	case IntegerValue:
+		return v.Value(), nil
+	case BigIntegerValue:
 		return v.Value(), nil
 	case FloatValue:
 		return v.Value(), nil
@@ -306,6 +310,29 @@ func (w ValueWrapper) unwrapScalarInto(path string, dstv reflect.Value, v Value)
 		dstv.Set(reflect.ValueOf(t))
 		return true, nil
 
+	case big.Int:
+		if v.IsInteger() {
+			i := v.GetInteger().Value()
+			bi := big.NewInt(i)
+			dstv.Set(reflect.ValueOf(*bi))
+			return true, nil
+		}
+
+		if v.IsBigInteger() {
+			bi := v.GetBigInteger().Value()
+			dstv.Set(reflect.ValueOf(*bi))
+			return true, nil
+		}
+
+		if v.IsFloat() {
+			f := v.GetFloat().Value()
+			bi := big.NewInt(int64(f))
+			dstv.Set(reflect.ValueOf(*bi))
+			return true, nil
+		}
+
+		return true, fmt.Errorf("%scannot convert to big.Int", path)
+
 	default:
 		u, err := w.unwrap(v)
 		if err != nil {
@@ -327,6 +354,30 @@ func (w ValueWrapper) unwrapScalarInto(path string, dstv reflect.Value, v Value)
 			v1 := uv.Convert(dstv.Type())
 			dstv.Set(v1)
 			return true, nil
+		}
+
+		if bi, ok := u.(*big.Int); ok {
+			switch dstv.Kind() {
+			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+				if !bi.IsInt64() {
+					return true, fmt.Errorf("%scannot convert big.Int to int: value out of range", path)
+				}
+				dstv.SetInt(bi.Int64())
+				return true, nil
+			case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+				if !bi.IsUint64() {
+					return true, fmt.Errorf("%scannot convert big.Int to uint: value out of range", path)
+				}
+				dstv.SetUint(bi.Uint64())
+				return true, nil
+			case reflect.Float32, reflect.Float64:
+				f64, _ := new(big.Float).SetInt(bi).Float64()
+				if math.IsInf(f64, 0) || math.IsNaN(f64) {
+					return true, fmt.Errorf("%scannot convert big.Int to float: value out of range", path)
+				}
+				dstv.SetFloat(f64)
+				return true, nil
+			}
 		}
 
 		return false, nil

@@ -25,6 +25,12 @@ class Integer(_message.Message):
     v: int
     def __init__(self, v: _Optional[int] = ...) -> None: ...
 
+class BigInteger(_message.Message):
+    __slots__ = ["v"]
+    V_FIELD_NUMBER: _ClassVar[int]
+    v: str
+    def __init__(self, v: _Optional[str] = ...) -> None: ...
+
 class Float(_message.Message):
     __slots__ = ["v"]
     V_FIELD_NUMBER: _ClassVar[int]
@@ -141,7 +147,7 @@ class Custom(_message.Message):
     def __init__(self, executor_id: _Optional[str] = ..., data: _Optional[bytes] = ..., value: _Optional[_Union[Value, _Mapping]] = ...) -> None: ...
 
 class Value(_message.Message):
-    __slots__ = ["nothing", "boolean", "string", "integer", "float", "list", "set", "dict", "bytes", "time", "duration", "struct", "module", "symbol", "function", "custom"]
+    __slots__ = ["nothing", "boolean", "string", "integer", "float", "list", "set", "dict", "bytes", "time", "duration", "struct", "module", "symbol", "function", "custom", "big_integer"]
     NOTHING_FIELD_NUMBER: _ClassVar[int]
     BOOLEAN_FIELD_NUMBER: _ClassVar[int]
     STRING_FIELD_NUMBER: _ClassVar[int]
@@ -158,6 +164,7 @@ class Value(_message.Message):
     SYMBOL_FIELD_NUMBER: _ClassVar[int]
     FUNCTION_FIELD_NUMBER: _ClassVar[int]
     CUSTOM_FIELD_NUMBER: _ClassVar[int]
+    BIG_INTEGER_FIELD_NUMBER: _ClassVar[int]
     nothing: Nothing
     boolean: Boolean
     string: String
@@ -174,4 +181,5 @@ class Value(_message.Message):
     symbol: Symbol
     function: Function
     custom: Custom
-    def __init__(self, nothing: _Optional[_Union[Nothing, _Mapping]] = ..., boolean: _Optional[_Union[Boolean, _Mapping]] = ..., string: _Optional[_Union[String, _Mapping]] = ..., integer: _Optional[_Union[Integer, _Mapping]] = ..., float: _Optional[_Union[Float, _Mapping]] = ..., list: _Optional[_Union[List, _Mapping]] = ..., set: _Optional[_Union[Set, _Mapping]] = ..., dict: _Optional[_Union[Dict, _Mapping]] = ..., bytes: _Optional[_Union[Bytes, _Mapping]] = ..., time: _Optional[_Union[Time, _Mapping]] = ..., duration: _Optional[_Union[Duration, _Mapping]] = ..., struct: _Optional[_Union[Struct, _Mapping]] = ..., module: _Optional[_Union[Module, _Mapping]] = ..., symbol: _Optional[_Union[Symbol, _Mapping]] = ..., function: _Optional[_Union[Function, _Mapping]] = ..., custom: _Optional[_Union[Custom, _Mapping]] = ...) -> None: ...
+    big_integer: BigInteger
+    def __init__(self, nothing: _Optional[_Union[Nothing, _Mapping]] = ..., boolean: _Optional[_Union[Boolean, _Mapping]] = ..., string: _Optional[_Union[String, _Mapping]] = ..., integer: _Optional[_Union[Integer, _Mapping]] = ..., float: _Optional[_Union[Float, _Mapping]] = ..., list: _Optional[_Union[List, _Mapping]] = ..., set: _Optional[_Union[Set, _Mapping]] = ..., dict: _Optional[_Union[Dict, _Mapping]] = ..., bytes: _Optional[_Union[Bytes, _Mapping]] = ..., time: _Optional[_Union[Time, _Mapping]] = ..., duration: _Optional[_Union[Duration, _Mapping]] = ..., struct: _Optional[_Union[Struct, _Mapping]] = ..., module: _Optional[_Union[Module, _Mapping]] = ..., symbol: _Optional[_Union[Symbol, _Mapping]] = ..., function: _Optional[_Union[Function, _Mapping]] = ..., custom: _Optional[_Union[Custom, _Mapping]] = ..., big_integer: _Optional[_Union[BigInteger, _Mapping]] = ...) -> None: ...

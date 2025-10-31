@@ -1,0 +1,23 @@
+<class 'uuid.UUID'>
+6
+<class 'uuid.UUID'>
+6
+True
+
+-- main.py:main --
+import autokitteh
+import uuid
+
+def main(_):
+    u = uuid.uuid4()
+    x = foo(u)
+    print(type(x))
+    print(len(x.fields))
+    print(x == u)
+
+@autokitteh.activity
+def foo(x):
+    print(type(x))
+    print(len(x.fields))
+    return x
+

@@ -30,6 +30,8 @@ func (vctx *Context) ToStarlarkValue(v sdktypes.Value) (starlark.Value, error) {
 		return starlark.String(vv.Value()), nil
 	case sdktypes.IntegerValue:
 		return starlark.MakeInt64(vv.Value()), nil
+	case sdktypes.BigIntegerValue:
+		return starlark.MakeBigInt(vv.Value()), nil
 	case sdktypes.BytesValue:
 		return starlark.Bytes(vv.Value()), nil
 	case sdktypes.FloatValue:
@@ -128,12 +130,19 @@ func (vctx *Context) FromStarlarkValue(v starlark.Value) (sdktypes.Value, error)
 	case starlark.String:
 		return sdktypes.NewStringValue(string(v)), nil
 	case starlark.Int:
-		i64, ok := v.Int64()
-		if !ok {
-			// TODO(ENG-61): support big int.
-			return sdktypes.InvalidValue, errors.New("convert from starlark int")
+		if i64, ok := v.Int64(); ok {
+			return sdktypes.NewIntegerValue(i64), nil
 		}
-		return sdktypes.NewIntegerValue(i64), nil
+
+		if ui64, ok := v.Uint64(); ok {
+			return sdktypes.NewIntegerValue(ui64), nil
+		}
+
+		if bi := v.BigInt(); bi != nil {
+			return sdktypes.NewBigIntegerValue(bi), nil
+		}
+
+		return sdktypes.InvalidValue, errors.New("convert from starlark int")
 	case starlark.Bytes:
 		// TODO: Not sure that starlark's assumption that string and bytes are the same in go.
 		return sdktypes.NewBytesValue([]byte(v)), nil
@@ -219,5 +228,5 @@ func (vctx *Context) fromSequence(seq starlark.Sequence, f func([]sdktypes.Value
 		}
 	}
 
-	return sdktypes.NewListValue(vs)
+	return f(vs), nil
 }
