@@ -5,6 +5,23 @@ import (
 )
 
 func AddValues(a, b Value) (Value, error) {
+	if a.IsBigInteger() || b.IsBigInteger() {
+		aa := a.GetBigInteger().Value()
+		bb := b.GetBigInteger().Value()
+
+		_ = aa.Add(aa, bb)
+
+		if aa.IsInt64() {
+			return NewIntegerValue(aa.Int64()), nil
+		}
+
+		if aa.IsUint64() {
+			return NewIntegerValue(aa.Uint64()), nil
+		}
+
+		return NewBigIntegerValue(aa), nil
+	}
+
 	if a.IsInteger() {
 		i, err := b.ToInt64()
 		if err != nil {

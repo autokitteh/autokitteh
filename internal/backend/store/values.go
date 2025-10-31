@@ -49,7 +49,26 @@ var ops = map[string]op{
 				curr = sdktypes.Nothing
 			}
 
-			if !curr.Equal(vs[1]) {
+			expected := vs[1]
+
+			// BigInteger and Integer cross-type equality check.
+			// Value may be a BigInteger but containing an int64 value, or vice versa.
+			if (curr.IsBigInteger() && expected.IsInteger()) || (curr.IsInteger() && expected.IsBigInteger()) {
+				aa, err := curr.ToBigInteger()
+				if err != nil {
+					return sdktypes.InvalidValue, sdktypes.InvalidValue, err
+				}
+
+				bb, err := expected.ToBigInteger()
+				if err != nil {
+					return sdktypes.InvalidValue, sdktypes.InvalidValue, err
+				}
+
+				if aa.Cmp(bb) != 0 {
+					// Failed check, no change.
+					return curr, sdktypes.FalseValue, nil
+				}
+			} else if !curr.Equal(vs[1]) {
 				// Failed check, no change.
 				return curr, sdktypes.FalseValue, nil
 			}

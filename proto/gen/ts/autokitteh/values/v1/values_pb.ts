@@ -113,6 +113,43 @@ export class Integer extends Message<Integer> {
 }
 
 /**
+ * @generated from message autokitteh.values.v1.BigInteger
+ */
+export class BigInteger extends Message<BigInteger> {
+  /**
+   * @generated from field: string v = 1;
+   */
+  v = "";
+
+  constructor(data?: PartialMessage<BigInteger>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.values.v1.BigInteger";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "v", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BigInteger {
+    return new BigInteger().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BigInteger {
+    return new BigInteger().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BigInteger {
+    return new BigInteger().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: BigInteger | PlainMessage<BigInteger> | undefined, b: BigInteger | PlainMessage<BigInteger> | undefined): boolean {
+    return proto3.util.equals(BigInteger, a, b);
+  }
+}
+
+/**
  * @generated from message autokitteh.values.v1.Float
  */
 export class Float extends Message<Float> {
@@ -786,6 +823,11 @@ export class Value extends Message<Value> {
    */
   custom?: Custom;
 
+  /**
+   * @generated from field: autokitteh.values.v1.BigInteger big_integer = 17;
+   */
+  bigInteger?: BigInteger;
+
   constructor(data?: PartialMessage<Value>) {
     super();
     proto3.util.initPartial(data, this);
@@ -810,6 +852,7 @@ export class Value extends Message<Value> {
     { no: 14, name: "symbol", kind: "message", T: Symbol },
     { no: 15, name: "function", kind: "message", T: Function },
     { no: 16, name: "custom", kind: "message", T: Custom },
+    { no: 17, name: "big_integer", kind: "message", T: BigInteger },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Value {
