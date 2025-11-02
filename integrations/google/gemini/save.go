@@ -48,14 +48,16 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Sanity check: the connection ID is valid.
 	cid, err := sdktypes.StrictParseConnectionID(c.ConnectionID)
 	if err != nil {
-		l.Warn("save connection: invalid connection ID", zap.Error(err))
+		l.Info("save connection: invalid connection ID", zap.Error(err))
 		c.AbortBadRequest("invalid connection ID")
 		return
 	}
 
 	api_key := r.Form.Get("key")
 	if api_key == "" {
-		l.Debug("API key is missing")
+		l.Debug("API key is missing from form submission for connection "+cid.String(),
+			zap.String("connection_id", cid.String()),
+			zap.String("form_field", "key"))
 		c.AbortBadRequest("API key is required")
 		return
 	}
@@ -78,15 +80,12 @@ func validateGeminiAPIKey(ctx context.Context, apiKey string) error {
 	}
 	defer client.Close()
 
+	// Get the first model to validate the key works.
 	iter := client.ListModels(ctx)
-	for {
-		_, err := iter.Next()
-		if err == iterator.Done {
-			break
-		}
-		if err != nil {
-			return err
-		}
+	_, err = iter.Next()
+	if err == iterator.Done {
+		// No models available, but key is valid.
+		return nil
 	}
-	return nil
+	return err
 }

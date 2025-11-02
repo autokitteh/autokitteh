@@ -17,19 +17,12 @@ const IntegrationName = "googlegemini"
 
 var desc = common.Descriptor(IntegrationName, "Google Gemini", "/static/images/google_gemini.svg")
 
-type integration struct {
-	cvars sdkservices.Vars
-	l     *zap.Logger
-}
-
 func New(cvars sdkservices.Vars, l *zap.Logger) sdkservices.Integration {
-	i := &integration{cvars: cvars, l: l}
-
 	return sdkintegrations.NewIntegration(
 		desc,
 		sdkmodule.New(),
-		i.connStatus(),
-		i.connTest(),
+		connStatus(cvars),
+		connTest(cvars),
 		sdkintegrations.WithConnectionConfigFromVars(cvars),
 	)
 }
@@ -37,13 +30,13 @@ func New(cvars sdkservices.Vars, l *zap.Logger) sdkservices.Integration {
 // connStatus is an optional connection status check provided by
 // the integration to AutoKitteh. The possible results are "Init
 // required" (the connection is not usable yet) and "Initialized".
-func (i integration) connStatus() sdkintegrations.OptFn {
+func connStatus(cvars sdkservices.Vars) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
 		if !cid.IsValid() {
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 		}
 
-		vs, err := i.cvars.Get(ctx, sdktypes.NewVarScopeID(cid))
+		vs, err := cvars.Get(ctx, sdktypes.NewVarScopeID(cid))
 		if err != nil {
 			return sdktypes.InvalidStatus, err
 		}
@@ -63,15 +56,15 @@ func (i integration) connStatus() sdkintegrations.OptFn {
 // connTest is an optional connection test provided by the integration
 // to AutoKitteh. It is used to verify that the connection is working
 // as expected. The possible results are "OK" and "error".
-func (i integration) connTest() sdkintegrations.OptFn {
+func connTest(cvars sdkservices.Vars) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
-		l := i.l.With(zap.String("connection_id", cid.String()))
+		l := zap.L().With(zap.String("connection_id", cid.String()))
 
 		if !cid.IsValid() {
 			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
 		}
 
-		vs, err := i.cvars.Get(ctx, sdktypes.NewVarScopeID(cid))
+		vs, err := cvars.Get(ctx, sdktypes.NewVarScopeID(cid))
 		if err != nil {
 			l.Error("failed to read connection "+cid.String()+" vars", zap.String("connection_id", cid.String()), zap.Error(err))
 			return sdktypes.InvalidStatus, err
