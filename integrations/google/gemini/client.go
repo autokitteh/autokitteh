@@ -17,7 +17,7 @@ const IntegrationName = "googlegemini"
 
 var desc = common.Descriptor(IntegrationName, "Google Gemini", "/static/images/google_gemini.svg")
 
-func New(cvars sdkservices.Vars, l *zap.Logger) sdkservices.Integration {
+func New(cvars sdkservices.Vars) sdkservices.Integration {
 	return sdkintegrations.NewIntegration(
 		desc,
 		sdkmodule.New(),
