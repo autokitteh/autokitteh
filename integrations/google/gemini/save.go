@@ -55,7 +55,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	api_key := r.Form.Get("key")
 	if api_key == "" {
-		l.Warn("API key is missing")
+		l.Debug("API key is missing")
 		c.AbortBadRequest("API key is required")
 		return
 	}
