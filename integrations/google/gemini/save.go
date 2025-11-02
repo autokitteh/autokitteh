@@ -69,7 +69,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c.Finalize(sdktypes.NewVars().Set(apiKeyVar, r.Form.Get("key"), true))
+	c.Finalize(sdktypes.NewVars().Set(apiKeyVar, api_key, true))
 }
 
 // validateGeminiAPIKey makes a test request to validate the provided API key.
