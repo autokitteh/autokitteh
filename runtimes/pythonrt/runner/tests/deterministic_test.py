@@ -6,7 +6,7 @@ import pytest
 
 import deterministic
 
-nonact_caes = [
+nonact_case = [
     # function, result
     (b64decode, True),
     (datetime.now, False),
@@ -16,7 +16,7 @@ nonact_caes = [
 ]
 
 
-@pytest.mark.parametrize("func, expected", nonact_caes)
+@pytest.mark.parametrize("func, expected", nonact_case)
 def test_is_deterministic(func, expected):
     out = deterministic.is_deterministic(func)
     assert out == expected, func.__qualname__
