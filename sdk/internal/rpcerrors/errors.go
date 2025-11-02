@@ -11,7 +11,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
 
-func parseResourceExhaustedError(err *connect.Error) (error, string) {
+func parseResourceExhaustedError(err *connect.Error) (string, error) {
 	sdkErr := sdkerrors.ErrResourceExhausted
 	type connectError struct {
 		Code    string `json:"code"`
@@ -25,7 +25,7 @@ func parseResourceExhaustedError(err *connect.Error) (error, string) {
 		errMsg = jsonError.Message
 	}
 
-	return sdkErr, errMsg
+	return errMsg, sdkErr
 }
 
 func ToSDKError(err error) error {
@@ -65,7 +65,7 @@ func ToSDKError(err error) error {
 		return connectErr.Unwrap()
 	default:
 		if strings.Contains(err.Error(), "resource_exhausted") {
-			sdkErr, errMsg = parseResourceExhaustedError(connectErr)
+			errMsg, sdkErr = parseResourceExhaustedError(connectErr)
 		} else {
 			sdkErr = fmt.Errorf("unknown connect error: %w", connectErr)
 		}
