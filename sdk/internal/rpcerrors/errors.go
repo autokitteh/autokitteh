@@ -13,24 +13,21 @@ import (
 
 // TODO: ENG-2306: fix connect parse when talkint to envoy
 // This is a temporary fix for this error
-func parseResourceExhaustedError(err *connect.Error) (string, error) {
-	sdkErr := sdkerrors.ErrResourceExhausted
+func parseResourceExhaustedError(err *connect.Error) string {
 	type connectError struct {
 		Code    string `json:"code"`
 		Message string `json:"message"`
 	}
 	var (
 		jsonError connectError
-		errMsg    string
+		errMsg    = err.Message()
 	)
 
-	if parseErr := json.Unmarshal([]byte(err.Message()), &jsonError); parseErr != nil {
-		errMsg = err.Message()
-	} else {
+	if parseErr := json.Unmarshal([]byte(err.Message()), &jsonError); parseErr == nil {
 		errMsg = jsonError.Message
 	}
 
-	return errMsg, sdkErr
+	return errMsg
 }
 
 func ToSDKError(err error) error {
@@ -70,7 +67,7 @@ func ToSDKError(err error) error {
 		return connectErr.Unwrap()
 	default:
 		if strings.Contains(err.Error(), "resource_exhausted") {
-			errMsg, sdkErr = parseResourceExhaustedError(connectErr)
+			errMsg, sdkErr = parseResourceExhaustedError(connectErr), sdkerrors.ErrResourceExhausted
 		} else {
 			sdkErr = fmt.Errorf("unknown connect error: %w", connectErr)
 		}
