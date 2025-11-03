@@ -1,13 +1,22 @@
 package sdktypes
 
 import (
+	"fmt"
+
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
 
 func AddValues(a, b Value) (Value, error) {
 	if a.IsBigInteger() || b.IsBigInteger() {
-		aa := a.GetBigInteger().Value()
-		bb := b.GetBigInteger().Value()
+		aa, err := a.ToBigInteger()
+		if err != nil {
+			return InvalidValue, fmt.Errorf("lhs: %w", err)
+		}
+
+		bb, err := b.ToBigInteger()
+		if err != nil {
+			return InvalidValue, fmt.Errorf("rhs: %w", err)
+		}
 
 		_ = aa.Add(aa, bb)
 
