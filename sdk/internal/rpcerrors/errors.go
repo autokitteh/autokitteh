@@ -11,14 +11,19 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
 
+// TODO: ENG-2306: fix connect parse when talkint to envoy
+// This is a temporary fix for this error
 func parseResourceExhaustedError(err *connect.Error) (string, error) {
 	sdkErr := sdkerrors.ErrResourceExhausted
 	type connectError struct {
 		Code    string `json:"code"`
 		Message string `json:"message"`
 	}
-	var jsonError connectError
-	var errMsg string
+	var (
+		jsonError connectError
+		errMsg    string
+	)
+
 	if parseErr := json.Unmarshal([]byte(err.Message()), &jsonError); parseErr != nil {
 		errMsg = err.Message()
 	} else {
