@@ -1,13 +1,34 @@
 package rpcerrors
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"connectrpc.com/connect"
 
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
+
+// TODO: ENG-2306: fix connect parse when talkint to envoy
+// This is a temporary fix for this error
+func parseResourceExhaustedError(err *connect.Error) string {
+	type connectError struct {
+		Code    string `json:"code"`
+		Message string `json:"message"`
+	}
+	var (
+		jsonError connectError
+		errMsg    = err.Message()
+	)
+
+	if parseErr := json.Unmarshal([]byte(err.Message()), &jsonError); parseErr == nil {
+		errMsg = jsonError.Message
+	}
+
+	return errMsg
+}
 
 func ToSDKError(err error) error {
 	if err == nil {
@@ -45,7 +66,11 @@ func ToSDKError(err error) error {
 	case connect.CodeUnknown: // returned as connect.Error, but unrelated to RPC, just unwrap underlying error
 		return connectErr.Unwrap()
 	default:
-		sdkErr = fmt.Errorf("unknown connect error: %w", connectErr)
+		if strings.Contains(err.Error(), "resource_exhausted") {
+			errMsg, sdkErr = parseResourceExhaustedError(connectErr), sdkerrors.ErrResourceExhausted
+		} else {
+			sdkErr = fmt.Errorf("unknown connect error: %w", connectErr)
+		}
 	}
 
 	// err is a connect error (checked in connect.CodeOf), so we can safely cast it
