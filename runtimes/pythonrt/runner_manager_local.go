@@ -34,6 +34,7 @@ type LocalRunnerManagerConfig struct {
 	LazyLoadVEnv          bool
 	WorkerAddressProvider func() string
 	LogCodeRunnerCode     bool
+	MultiVenv             bool
 }
 
 func configureLocalRunnerManager(log *zap.Logger, cfg LocalRunnerManagerConfig) error {
@@ -105,10 +106,16 @@ func (l *localRunnerManager) Start(ctx context.Context, sessionID sdktypes.Sessi
 
 		_, venvSpan := telemetry.T().Start(ctx, "localRunnerManager.ensureVEnv")
 
-		reqs, err := getRequirements(buildArtifacts)
-		if err != nil {
-			venvSpan.End()
-			return fmt.Errorf("get requirements : %w", err)
+		var (
+			reqs string
+			err  error
+		)
+
+		if l.cfg.MultiVenv {
+			if reqs, err = getRequirements(buildArtifacts); err != nil {
+				venvSpan.End()
+				return fmt.Errorf("get requirements : %w", err)
+			}
 		}
 
 		log.Info("ensuring venv", zap.String("reqs", reqs))

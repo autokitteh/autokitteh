@@ -167,6 +167,7 @@ func New(
 				LazyLoadVEnv:          cfg.LazyLoadLocalVEnv,
 				WorkerAddressProvider: getLocalAddr,
 				LogCodeRunnerCode:     cfg.LogRunnerCode,
+				MultiVenv:             cfg.LocalMultiVenv,
 			},
 		); err != nil {
 			return nil, fmt.Errorf("configure local runner manager: %w", err)
