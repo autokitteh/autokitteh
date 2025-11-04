@@ -15,6 +15,9 @@ True
 100
 False
 100
+276207420829580489860434918074107555899
+True
+42
 
 -- main.py main --
 from autokitteh import mutate_value, get_value, set_value, list_values_keys, del_value, add_values, check_and_set_value
@@ -38,4 +41,7 @@ def main(_):
     print(check_and_set_value('x', 42, 100))
     print(get_value('x'))
     print(check_and_set_value('x', 42, 101))
+    print(get_value('x'))
+    print(add_values('x', 276207420829580489860434918074107555799))
+    print(check_and_set_value('x', 276207420829580489860434918074107555899, 42))
     print(get_value('x'))

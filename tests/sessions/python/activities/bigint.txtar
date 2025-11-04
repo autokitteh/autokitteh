@@ -1,0 +1,14 @@
+276207420829580489860434918074107555799
+276207420829580489860434918074107555800
+
+-- main.py:main --
+import autokitteh
+
+def main(_):
+    print(foo(276207420829580489860434918074107555799))
+
+@autokitteh.activity
+def foo(x):
+    print(x)
+    return x + 1
+

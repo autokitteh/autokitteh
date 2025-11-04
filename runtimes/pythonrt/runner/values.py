@@ -73,6 +73,8 @@ def wrap(v: Any, unhandled: Callable[[Any], pb.Value] = None, history=None) -> p
     ):  # must be checked before int, as isinstance(True, int) == True.
         return pb.Value(boolean=pb.Boolean(v=v))
     if isinstance(v, int):
+        if v > 2**63 - 1 or v < -(2**63):
+            return pb.Value(big_integer=pb.BigInteger(v=str(v)))
         return pb.Value(integer=pb.Integer(v=v))
     if isinstance(v, float):
         return pb.Value(float=pb.Float(v=v))
@@ -181,6 +183,8 @@ def unwrap(v: pb.Value, custom: Callable[[pb.Value], Any] = None) -> Any:
         return None
     if v.HasField("integer"):
         return v.integer.v
+    if v.HasField("big_integer"):
+        return int(v.big_integer.v)
     if v.HasField("float"):
         return v.float.v
     if v.HasField("string"):

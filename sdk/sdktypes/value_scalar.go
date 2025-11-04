@@ -3,12 +3,14 @@ package sdktypes
 import (
 	"errors"
 	"fmt"
+	"math/big"
 	"time"
 
 	"golang.org/x/exp/constraints"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	valuev1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/values/v1"
 )
 
@@ -141,6 +143,49 @@ func init() {
 	registerValueGetter(func(v Value) concreteValue {
 		if v.IsInteger() {
 			return v.GetInteger()
+		}
+		return nil
+	})
+}
+
+// ---
+
+type BigIntegerValuePB = valuev1.BigInteger
+
+type BigIntegerValue struct {
+	object[*BigIntegerValuePB, nopObjectTraits[*BigIntegerValuePB]]
+}
+
+func init() { registerObject[IntegerValue]() }
+
+func (BigIntegerValue) isConcreteValue() {}
+
+func (s BigIntegerValue) Value() *big.Int {
+	v := s.read().V
+	var bi big.Int
+	kittehs.Must0(bi.UnmarshalText([]byte(v)))
+	return &bi
+}
+
+func NewBigIntegerValueFromInteger[T constraints.Integer](v T) Value {
+	bs := kittehs.Must1(big.NewInt(0).SetInt64(int64(v)).MarshalText())
+	return forceFromProto[Value](&ValuePB{BigInteger: &BigIntegerValuePB{V: string(bs)}})
+}
+
+func NewBigIntegerValue(v *big.Int) Value {
+	bs := kittehs.Must1(v.MarshalText())
+	return forceFromProto[Value](&ValuePB{BigInteger: &BigIntegerValuePB{V: string(bs)}})
+}
+
+func (v Value) IsBigInteger() bool { return v.read().BigInteger != nil }
+func (v Value) GetBigInteger() BigIntegerValue {
+	return forceFromProto[BigIntegerValue](v.read().BigInteger)
+}
+
+func init() {
+	registerValueGetter(func(v Value) concreteValue {
+		if v.IsBigInteger() {
+			return v.GetBigInteger()
 		}
 		return nil
 	})

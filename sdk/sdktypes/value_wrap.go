@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/big"
 	"reflect"
 	"time"
 
@@ -81,6 +82,10 @@ func (w ValueWrapper) Wrap(v any) (Value, error) {
 		return Nothing, nil
 
 	case reflect.Struct:
+		if bi, ok := v.(big.Int); ok {
+			return NewBigIntegerValue(&bi), nil
+		}
+
 		vt := reflect.TypeOf(v)
 
 		if vt.Size() == 0 {
@@ -172,6 +177,8 @@ func (w ValueWrapper) Wrap(v any) (Value, error) {
 				return NewIntegerValue(i64), nil
 			} else if f64, err := num.Float64(); err == nil {
 				return NewFloatValue(f64), nil
+			} else if bint, ok := new(big.Int).SetString(string(num), 0); ok {
+				return NewBigIntegerValue(bint), nil
 			} else {
 				return NewStringValue(string(num)), nil
 			}
