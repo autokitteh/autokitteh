@@ -43,5 +43,5 @@ def main(_):
     print(check_and_set_value('x', 42, 101))
     print(get_value('x'))
     print(add_values('x', 276207420829580489860434918074107555799))
-    print(check_and_set_value('x', 42, 276207420829580489860434918074107555899))
+    print(check_and_set_value('x', 276207420829580489860434918074107555899, 42))
     print(get_value('x'))
