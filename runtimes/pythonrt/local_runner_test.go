@@ -48,7 +48,7 @@ func Test_createVEnv(t *testing.T) {
 
 	venvPath := path.Join(t.TempDir(), "venv")
 	log := zap.NewNop()
-	err = createVEnv(log, info.Exe, venvPath)
+	err = createVEnv(log, info.Exe, venvPath, "")
 	require.NoError(t, err)
 }
 
