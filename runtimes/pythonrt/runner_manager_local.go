@@ -75,7 +75,7 @@ func configureLocalRunnerManager(log *zap.Logger, cfg LocalRunnerManagerConfig) 
 	if !isUserPy {
 		if !cfg.LazyLoadVEnv {
 			log.Info("ensuring default venv on start")
-			if lm.pyExe, err = ensureVEnv(log, "", pyExe); err != nil {
+			if lm.pyExe, err = ensureVEnv(context.Background(), log, "", pyExe); err != nil {
 				return fmt.Errorf("create venv: %w", err)
 			}
 		}
@@ -99,36 +99,24 @@ func (l *localRunnerManager) Start(ctx context.Context, sessionID sdktypes.Sessi
 		sessionID:     sessionID,
 	}
 
-	err := func() error {
-		// We don't need to condition this execution on LazyLoadVEnv being true,
-		// because if it's false, we would have already created the venv on manager
-		// initialization and this will be a no-op.
+	// We don't need to condition venv creation on LazyLoadVEnv being true,
+	// because if it's false, we would have already created the venv on manager
+	// initialization and this will be a no-op.
 
-		_, venvSpan := telemetry.T().Start(ctx, "localRunnerManager.ensureVEnv")
+	var (
+		reqs string
+		err  error
+	)
 
-		var (
-			reqs string
-			err  error
-		)
-
-		if l.cfg.MultiVenv {
-			if reqs, err = getRequirements(buildArtifacts); err != nil {
-				venvSpan.End()
-				return fmt.Errorf("get requirements : %w", err)
-			}
+	if l.cfg.MultiVenv {
+		if reqs, err = getRequirements(buildArtifacts); err != nil {
+			return "", nil, fmt.Errorf("get requirements : %w", err)
 		}
+	}
 
-		log.Info("ensuring venv", zap.String("reqs", reqs))
-		if l.pyExe, err = ensureVEnv(log, reqs, l.pyExe); err != nil {
-			venvSpan.End()
-			return fmt.Errorf("create venv: %w", err)
-		}
-		venvSpan.End()
-
-		return nil
-	}()
-	if err != nil {
-		return "", nil, err
+	log.Info("ensuring venv", zap.String("reqs", reqs), zap.Bool("multi_venv", l.cfg.MultiVenv))
+	if l.pyExe, err = ensureVEnv(ctx, log, reqs, l.pyExe); err != nil {
+		return "", nil, fmt.Errorf("create venv: %w", err)
 	}
 
 	if l.workerAddress == "" {
@@ -285,7 +273,10 @@ func dirExists(path string) bool {
 	return info.IsDir()
 }
 
-func ensureVEnv(log *zap.Logger, reqs, pyExe string) (pyExePath string, err error) {
+func ensureVEnv(ctx context.Context, log *zap.Logger, reqs, pyExe string) (pyExePath string, err error) {
+	ctx, venvSpan := telemetry.T().Start(ctx, "localRunnerManager.ensureVEnv")
+	defer venvSpan.End()
+
 	venvPath := venvPath(reqs)
 	pyExePath = path.Join(venvPath, "bin", "python")
 
@@ -310,7 +301,7 @@ func ensureVEnv(log *zap.Logger, reqs, pyExe string) (pyExePath string, err erro
 	}
 
 	log.Info("creating venv", zap.String("path", venvPath))
-	if err = createVEnv(log, pyExe, venvPath, reqs); err != nil {
+	if err = createVEnv(ctx, log, pyExe, venvPath, reqs); err != nil {
 		return "", fmt.Errorf("create venv: %w", err)
 	}
 

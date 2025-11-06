@@ -378,7 +378,10 @@ func hasUV() bool {
 	return err == nil
 }
 
-func createVEnv(log *zap.Logger, pyExe string, venvPath, reqs string) error {
+func createVEnv(ctx context.Context, log *zap.Logger, pyExe string, venvPath, reqs string) error {
+	_, venvSpan := telemetry.T().Start(ctx, "localRunnerManager.createVEnv")
+	defer venvSpan.End()
+
 	var args []string
 	if hasUV() {
 		args = []string{"uv", "venv", "--python", pyExe, venvPath}
@@ -387,7 +390,7 @@ func createVEnv(log *zap.Logger, pyExe string, venvPath, reqs string) error {
 		args = []string{"python", "-m", "venv", venvPath}
 	}
 
-	cmd := exec.Command(args[0], args[1:]...)
+	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
