@@ -503,8 +503,16 @@ func (py *pySvc) setupHealthcheck(ctx context.Context) chan (error) {
 				healthReq := pbUserCode.RunnerHealthRequest{}
 
 				resp, err := py.runner.Health(ctx, &healthReq)
-				if err != nil { // no network/lost packet.load? for sanity check the state locally via IPC/signals
-					err = runnerManager.RunnerHealth(ctx, py.runnerID)
+				if err != nil {
+					py.log.Error("health rpc error", zap.Error(err))
+
+					// no network/lost packet.load? for sanity check the state locally via IPC/signals
+					if mgrError := runnerManager.RunnerHealth(ctx, py.runnerID); mgrError != nil {
+						py.log.Error("runner manager health check error", zap.Error(mgrError))
+					} else {
+						py.log.Warn("runner manager health check passed, ignoring grpc error")
+						err = nil
+					}
 				} else if resp.Error != "" {
 					err = fmt.Errorf("grpc: %s", resp.Error)
 				}
