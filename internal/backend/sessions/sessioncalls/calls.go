@@ -148,7 +148,9 @@ func (cs *calls) Call(wctx workflow.Context, params *CallParams) (sdktypes.Sessi
 		}
 
 		for retry := true; retry; {
-			aopts := cs.config.activityConfig().ToOptions(generalTaskQueueName)
+			aopts := cs.config.activityConfig().
+				WithUnlimitedTimeToClose(). // Do not limit activities execution duration.
+				ToOptions(generalTaskQueueName)
 
 			if unique {
 				// When a local execution is required, it is scheduled on a unique worker. These local executions
@@ -159,7 +161,8 @@ func (cs *calls) Call(wctx workflow.Context, params *CallParams) (sdktypes.Sessi
 					return sdktypes.InvalidSessionCallAttemptResult, errors.New("local session worker for activities is not registered")
 				}
 
-				cfg := cs.config.uniqueActivityConfig()
+				cfg := cs.config.uniqueActivityConfig().
+					WithUnlimitedTimeToClose() // Do not limit activities execution duration.
 				if cfg.ScheduleToStartTimeout == 0 {
 					l.Warn("call activity schedule-to-start timeout is 0 and local exec is needed")
 				}
