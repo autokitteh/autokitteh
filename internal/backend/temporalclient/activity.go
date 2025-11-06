@@ -7,9 +7,7 @@ import (
 	"go.temporal.io/sdk/workflow"
 )
 
-var defaultActivityConfig = ActivityConfig{
-	StartToCloseTimeout: 10 * time.Minute,
-}
+const defaultStartToCloseTimeout = 10 * time.Minute
 
 // Common way to define configuration that can be used in multiple modules,
 // saving the need to repeat the same configuration in each module.
@@ -25,13 +23,23 @@ func (ac ActivityConfig) With(other ActivityConfig) ActivityConfig {
 	return ActivityConfig{
 		StartToCloseTimeout:    cmp.Or(other.StartToCloseTimeout, ac.StartToCloseTimeout),
 		ScheduleToCloseTimeout: cmp.Or(other.ScheduleToCloseTimeout, ac.ScheduleToCloseTimeout),
-		HeartbeatTimeout:       cmp.Or(other.HeartbeatTimeout, ac.HeartbeatTimeout, defaultActivityConfig.HeartbeatTimeout),
+		HeartbeatTimeout:       cmp.Or(other.HeartbeatTimeout, ac.HeartbeatTimeout),
 		ScheduleToStartTimeout: cmp.Or(other.ScheduleToStartTimeout, ac.ScheduleToStartTimeout),
 	}
 }
 
+func (ac ActivityConfig) WithUnlimitedTimeToClose() ActivityConfig {
+	ac.ScheduleToCloseTimeout = 0
+	ac.StartToCloseTimeout = 1<<63 - 1 // Effectively unlimited.
+	return ac
+}
+
 func (ac ActivityConfig) ToOptions(qname string) workflow.ActivityOptions {
-	ac = defaultActivityConfig.With(ac)
+	if ac.ScheduleToCloseTimeout == 0 && ac.StartToCloseTimeout == 0 {
+		// If no specific timeout specified, use default start-to-close timeout.
+		ac.StartToCloseTimeout = defaultStartToCloseTimeout
+	}
+
 	return workflow.ActivityOptions{
 		TaskQueue:              qname,
 		ScheduleToCloseTimeout: ac.ScheduleToCloseTimeout,
