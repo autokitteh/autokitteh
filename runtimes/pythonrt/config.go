@@ -22,6 +22,9 @@ type Config struct {
 
 	MaxMemoryPerWorkflowMB int64   `koanf:"max_memory_per_workflow_mb"`
 	MaxCPUsPerWorkflow     float32 `koanf:"max_cpus_per_workflow"`
+
+	// Support simultaneous multiple venvs for local runner.
+	LocalMultiVenv bool `koanf:"local_multi_venv"`
 }
 
 var Configs = configset.Set[Config]{
@@ -31,13 +34,15 @@ var Configs = configset.Set[Config]{
 		MaxMemoryPerWorkflowMB:   512, // 512MB
 		MaxCPUsPerWorkflow:       1,
 	},
-	Test: &Config{
-		LazyLoadLocalVEnv:        true,
-		DelayedStartPrintTimeout: 0,
-	},
 	Dev: &Config{
 		LogRunnerCode:            true,
 		LogBuildCode:             true,
 		DelayedStartPrintTimeout: 10 * time.Second,
+		// This is experimental, so enable by default only in dev.
+		LocalMultiVenv: true,
+	},
+	Test: &Config{
+		LazyLoadLocalVEnv:        true,
+		DelayedStartPrintTimeout: 0,
 	},
 }

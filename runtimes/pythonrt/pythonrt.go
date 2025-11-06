@@ -3,6 +3,8 @@ package pythonrt
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -36,9 +38,19 @@ var (
 		FileExtensions: []string{"py"},
 	}))
 
-	venvPath = path.Join(xdg.DataHomeDir(), "venv")
-	venvPy   = path.Join(venvPath, "bin", "python")
+	venvBasePath = path.Join(xdg.DataHomeDir(), "venvs")
 )
+
+func venvPath(reqs string) string {
+	name := "default"
+
+	if reqs != "" {
+		sha := sha256.Sum256([]byte(reqs))
+		name = hex.EncodeToString(sha[:])
+	}
+
+	return path.Join(venvBasePath, name)
+}
 
 type callbackResponse struct {
 	value any
@@ -155,6 +167,7 @@ func New(
 				LazyLoadVEnv:          cfg.LazyLoadLocalVEnv,
 				WorkerAddressProvider: getLocalAddr,
 				LogCodeRunnerCode:     cfg.LogRunnerCode,
+				MultiVenv:             cfg.LocalMultiVenv,
 			},
 		); err != nil {
 			return nil, fmt.Errorf("configure local runner manager: %w", err)

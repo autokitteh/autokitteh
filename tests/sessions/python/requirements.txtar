@@ -1,0 +1,10 @@
+9.8.5
+
+-- main.py:main --
+import twilio
+
+def main(_):
+	print(twilio.__version__)
+
+-- requirements.txt --
+twilio==9.8.5

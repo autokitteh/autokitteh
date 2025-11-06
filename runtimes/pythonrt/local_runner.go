@@ -378,7 +378,10 @@ func hasUV() bool {
 	return err == nil
 }
 
-func createVEnv(log *zap.Logger, pyExe string, venvPath string) error {
+func createVEnv(ctx context.Context, log *zap.Logger, pyExe string, venvPath, reqs string) error {
+	_, venvSpan := telemetry.T().Start(ctx, "localRunnerManager.createVEnv")
+	defer venvSpan.End()
+
 	var args []string
 	if hasUV() {
 		args = []string{"uv", "venv", "--python", pyExe, venvPath}
@@ -387,7 +390,7 @@ func createVEnv(log *zap.Logger, pyExe string, venvPath string) error {
 		args = []string{"python", "-m", "venv", venvPath}
 	}
 
-	cmd := exec.Command(args[0], args[1:]...)
+	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
@@ -412,7 +415,7 @@ func createVEnv(log *zap.Logger, pyExe string, venvPath string) error {
 	}
 
 	venvPy := path.Join(venvPath, "bin", "python")
-	if err := install(venvPy, tmpDir, ".[all]"); err != nil {
+	if err := install(log, venvPy, tmpDir, ".[all]"); err != nil {
 		return fmt.Errorf("install dependencies from %q: %w", file.Name(), err)
 	}
 
@@ -420,26 +423,48 @@ func createVEnv(log *zap.Logger, pyExe string, venvPath string) error {
 		return err
 	}
 
-	if err = install(venvPy, path.Join(tmpDir, "py-sdk"), "."); err != nil {
+	if err = install(log, venvPy, path.Join(tmpDir, "py-sdk"), "."); err != nil {
 		return fmt.Errorf("install autokitteh py sdk %w", err)
 	}
+
+	if reqs != "" {
+		// TODO: Not sure if file already there?
+		if err := os.WriteFile(path.Join(tmpDir, "requirements.txt"), []byte(reqs), 0o644); err != nil {
+			return fmt.Errorf("write user requirements to %q: %w", reqs, err)
+		}
+
+		if err := install(log, venvPy, tmpDir, "-r", "requirements.txt"); err != nil {
+			return fmt.Errorf("install user requirements from %q: %w", reqs, err)
+		}
+	}
+
+	if err := os.WriteFile(path.Join(venvPath, ".complete"), []byte("meow"), 0o644); err != nil {
+		return fmt.Errorf("mark venv complete: %w", err)
+	}
+
 	return nil
 }
 
-func install(pyPath, cwd string, spec string) error {
+func install(log *zap.Logger, pyPath, cwd string, rest ...string) error {
 	var args []string
 	if hasUV() {
-		args = []string{"uv", "pip", "install", "--python", pyPath, spec}
+		args = []string{"uv", "pip", "install", "--python", pyPath}
 	} else {
-		args = []string{pyPath, "-m", "pip", "install", spec}
+		args = []string{pyPath, "-m", "pip", "install"}
 	}
 
+	args = append(args, rest...)
+
+	log.Info("uv pip install", zap.Strings("args", args))
+
 	cmd := exec.Command(args[0], args[1:]...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
 	cmd.Dir = cwd
 
-	if err := cmd.Run(); err != nil {
+	if stdout, err := cmd.Output(); err != nil {
+		if ee := (&exec.ExitError{}); errors.As(err, &ee) {
+			log.Info("pip install stderr", zap.ByteString("stdout", stdout), zap.ByteString("stderr", ee.Stderr), zap.Int("exit_code", ee.ExitCode()))
+		}
+
 		return err
 	}
 

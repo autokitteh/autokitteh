@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
 	"strings"
 	"sync"
 	"time"
@@ -16,6 +17,8 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
+
+var venvMutex sync.Mutex
 
 type localRunnerManager struct {
 	logger           *zap.Logger
@@ -31,6 +34,7 @@ type LocalRunnerManagerConfig struct {
 	LazyLoadVEnv          bool
 	WorkerAddressProvider func() string
 	LogCodeRunnerCode     bool
+	MultiVenv             bool
 }
 
 func configureLocalRunnerManager(log *zap.Logger, cfg LocalRunnerManagerConfig) error {
@@ -70,11 +74,10 @@ func configureLocalRunnerManager(log *zap.Logger, cfg LocalRunnerManagerConfig) 
 	// If user supplies which Python to use, we use it "as-is" without creating venv
 	if !isUserPy {
 		if !cfg.LazyLoadVEnv {
-			log.Info("ensuring venv on start")
-			if err := ensureVEnv(log, pyExe); err != nil {
+			log.Info("ensuring default venv on start")
+			if lm.pyExe, err = ensureVEnv(context.Background(), log, "", pyExe); err != nil {
 				return fmt.Errorf("create venv: %w", err)
 			}
-			lm.pyExe = venvPy
 		}
 	}
 
@@ -96,16 +99,24 @@ func (l *localRunnerManager) Start(ctx context.Context, sessionID sdktypes.Sessi
 		sessionID:     sessionID,
 	}
 
-	if l.cfg.LazyLoadVEnv {
-		_, venvSpan := telemetry.T().Start(ctx, "localRunnerManager.ehnsureVEnv")
+	// We don't need to condition venv creation on LazyLoadVEnv being true,
+	// because if it's false, we would have already created the venv on manager
+	// initialization and this will be a no-op.
 
-		log.Info("ensuring venv lazy")
-		if err := ensureVEnv(log, l.pyExe); err != nil {
-			venvSpan.End()
-			return "", nil, fmt.Errorf("create venv: %w", err)
+	var (
+		reqs string
+		err  error
+	)
+
+	if l.cfg.MultiVenv {
+		if reqs, err = getRequirements(buildArtifacts); err != nil {
+			return "", nil, fmt.Errorf("get requirements : %w", err)
 		}
-		venvSpan.End()
-		l.pyExe = venvPy
+	}
+
+	log.Info("ensuring venv", zap.String("reqs", reqs), zap.Bool("multi_venv", l.cfg.MultiVenv))
+	if l.pyExe, err = ensureVEnv(ctx, log, reqs, l.pyExe); err != nil {
+		return "", nil, fmt.Errorf("create venv: %w", err)
 	}
 
 	if l.workerAddress == "" {
@@ -262,11 +273,37 @@ func dirExists(path string) bool {
 	return info.IsDir()
 }
 
-func ensureVEnv(log *zap.Logger, pyExe string) error {
+func ensureVEnv(ctx context.Context, log *zap.Logger, reqs, pyExe string) (pyExePath string, err error) {
+	ctx, venvSpan := telemetry.T().Start(ctx, "localRunnerManager.ensureVEnv")
+	defer venvSpan.End()
+
+	venvPath := venvPath(reqs)
+	pyExePath = path.Join(venvPath, "bin", "python")
+
+	// This locks the env creation so two concurrent runners don't try to
+	// create the same venv at the same time.
+	// Since this is a local runner manager, this is sufficient.
+	venvMutex.Lock()
+	defer venvMutex.Unlock()
+
 	if dirExists(venvPath) {
-		return nil
+		if _, err = os.Stat(path.Join(venvPath, ".complete")); err == nil {
+			log.Info("using existing venv", zap.String("path", venvPath))
+			return
+		}
+
+		log.Info("venv incomplete, recreating", zap.String("path", venvPath))
+
+		if err = os.RemoveAll(venvPath); err != nil {
+			err = fmt.Errorf("clean user dir %q - %w", venvPath, err)
+			return
+		}
 	}
 
 	log.Info("creating venv", zap.String("path", venvPath))
-	return createVEnv(log, pyExe, venvPath)
+	if err = createVEnv(ctx, log, pyExe, venvPath, reqs); err != nil {
+		return "", fmt.Errorf("create venv: %w", err)
+	}
+
+	return
 }
