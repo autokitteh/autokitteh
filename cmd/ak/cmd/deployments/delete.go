@@ -5,10 +5,11 @@ import (
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
 	"go.autokitteh.dev/autokitteh/internal/resolver"
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
 
 var deleteCmd = common.StandardCommand(&cobra.Command{
-	Use:     "delete <deployment ID> [--fail]",
+	Use:     "delete <deployment ID>",
 	Short:   "Delete inactive deployment",
 	Aliases: []string{"del"},
 	Args:    cobra.ExactArgs(1),
@@ -18,16 +19,15 @@ var deleteCmd = common.StandardCommand(&cobra.Command{
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		d, did, err := r.DeploymentID(ctx, args[0])
-		if err = common.AddNotFoundErrIfCond(err, d.IsValid()); err != nil {
-			return common.ToExitCodeWithSkipNotFoundFlag(cmd, err, "deployment")
+		_, did, err := r.DeploymentID(ctx, args[0])
+		if err != nil {
+			return common.WrapError(err)
 		}
 
-		return common.ToExitCodeWithSkipNotFoundFlag(cmd, deployments().Delete(ctx, did), "delete deployment")
+		if !did.IsValid() {
+			return common.WrapError(sdkerrors.ErrNotFound, "deployment")
+		}
+
+		return common.WrapError(deployments().Delete(ctx, did))
 	},
 })
-
-func init() {
-	// Command-specific flags.
-	common.AddFailIfError(deleteCmd)
-}
