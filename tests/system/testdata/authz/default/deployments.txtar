@@ -22,7 +22,7 @@ return code == 0
 capture_jq cdid .[].deployment_id | select (.)
 
 ak deployment deactivate $zdid
-return code == $RC_UNAUTHZ
+return code == $RC_NOT_FOUND
 
 ak deployment deactivate $cdid
 return code == 0
@@ -46,7 +46,7 @@ ak deployment list --project $cpid
 return code == 0
 
 ak deployment delete $zdid
-return code == $RC_UNAUTHZ
+return code == $RC_NOT_FOUND
 
 ak deployment delete $cdid
 return code == 0

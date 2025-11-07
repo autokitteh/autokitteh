@@ -225,6 +225,40 @@ func TestBuildInputUser(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:   "trigger_not_found",
+			authn:  gizmo,
+			id:     nonexistentTriggerID,
+			action: "action_type:action",
+
+			expected: map[string]any{
+				"action": map[string]any{
+					"name": "action",
+					"type": "action_type",
+					"full": "action_type:action",
+				},
+				"associations": map[string]map[string]any{
+					"subject": {
+						"kind": "trg",
+						"id":   nonexistentTriggerID.String(),
+						// No org and project ids.
+					},
+				},
+				"subject": map[string]any{
+					"kind": "trg",
+					"id":   nonexistentTriggerID.String(),
+					// No org and project ids.
+				},
+				"data": map[string]any{},
+				"authn_user": map[string]any{
+					"id":              gizmo.ID().String(),
+					"kind":            "usr",
+					"email":           "gizmo@cats",
+					"org_memberships": map[string]any{},
+					"status":          "ACTIVE",
+				},
+			},
+		},
 	}
 
 	for _, test := range tests {

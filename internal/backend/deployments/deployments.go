@@ -247,7 +247,7 @@ func (d *deployments) List(ctx context.Context, filter sdkservices.ListDeploymen
 }
 
 func (d *deployments) Get(ctx context.Context, id sdktypes.DeploymentID) (sdktypes.Deployment, error) {
-	if err := authz.CheckContext(ctx, id, "read:get"); err != nil {
+	if err := authz.CheckContext(ctx, id, "read:get", authz.WithConvertForbiddenToNotFound); err != nil {
 		return sdktypes.InvalidDeployment, err
 	}
 

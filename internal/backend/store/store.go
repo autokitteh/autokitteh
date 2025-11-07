@@ -84,6 +84,7 @@ func (s *store) Get(ctx context.Context, pid sdktypes.ProjectID, keys []string) 
 		pid,
 		"read:get",
 		authz.WithData("keys", keys),
+		authz.WithConvertForbiddenToNotFound,
 	); err != nil {
 		return nil, err
 	}
