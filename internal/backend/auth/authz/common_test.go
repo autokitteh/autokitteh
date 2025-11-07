@@ -9,15 +9,16 @@ import (
 )
 
 var (
-	zumi       = sdktypes.NewUser().WithStatus(sdktypes.UserStatusActive).WithEmail("zumi@cats").WithNewID()
-	gizmo      = sdktypes.NewUser().WithStatus(sdktypes.UserStatusActive).WithEmail("gizmo@cats").WithNewID()
-	sufi       = sdktypes.NewUser().WithStatus(sdktypes.UserStatusActive).WithEmail("sufi@cats").WithNewID()
-	shoogy     = sdktypes.NewUser().WithStatus(sdktypes.UserStatusActive).WithEmail("shoogy@dogs").WithNewID()
-	cats       = sdktypes.NewOrg().WithNewID()
-	zumiInCats = sdktypes.NewOrgMember(cats.ID(), zumi.ID()).WithStatus(sdktypes.OrgMemberStatusActive).WithRoles(sdktypes.NewSymbol("admin"))
-	sufiInCats = sdktypes.NewOrgMember(cats.ID(), sufi.ID()).WithStatus(sdktypes.OrgMemberStatusInvited)
-	p          = sdktypes.NewProject().WithNewID().WithName(sdktypes.NewSymbol("project")).WithOrgID(cats.ID())
-	tr         = sdktypes.NewTrigger(sdktypes.NewSymbol("trigger")).WithWebhook().WithNewID().WithProjectID(p.ID())
+	zumi                 = sdktypes.NewUser().WithStatus(sdktypes.UserStatusActive).WithEmail("zumi@cats").WithNewID()
+	gizmo                = sdktypes.NewUser().WithStatus(sdktypes.UserStatusActive).WithEmail("gizmo@cats").WithNewID()
+	sufi                 = sdktypes.NewUser().WithStatus(sdktypes.UserStatusActive).WithEmail("sufi@cats").WithNewID()
+	shoogy               = sdktypes.NewUser().WithStatus(sdktypes.UserStatusActive).WithEmail("shoogy@dogs").WithNewID()
+	cats                 = sdktypes.NewOrg().WithNewID()
+	zumiInCats           = sdktypes.NewOrgMember(cats.ID(), zumi.ID()).WithStatus(sdktypes.OrgMemberStatusActive).WithRoles(sdktypes.NewSymbol("admin"))
+	sufiInCats           = sdktypes.NewOrgMember(cats.ID(), sufi.ID()).WithStatus(sdktypes.OrgMemberStatusInvited)
+	p                    = sdktypes.NewProject().WithNewID().WithName(sdktypes.NewSymbol("project")).WithOrgID(cats.ID())
+	tr                   = sdktypes.NewTrigger(sdktypes.NewSymbol("trigger")).WithWebhook().WithNewID().WithProjectID(p.ID())
+	nonexistentTriggerID = sdktypes.NewTriggerID()
 )
 
 func setupDB(t *testing.T) db.DB {

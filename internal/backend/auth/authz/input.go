@@ -63,21 +63,21 @@ func hydrate(ctx context.Context, db db.DB, id sdktypes.ID, obj sdktypes.Object)
 
 	default:
 		oid, err := db.GetOrgIDOf(ctx, id)
-		if err != nil {
+		if err != nil && !errors.Is(err, sdkerrors.ErrNotFound) {
 			return nil, fmt.Errorf("get org: %w", err)
 		}
 
+		if oid.IsValid() {
+			m["org_id"] = oid.String()
+		}
+
 		pid, err := db.GetProjectIDOf(ctx, id)
-		if err != nil {
+		if err != nil && !errors.Is(err, sdkerrors.ErrNotFound) {
 			return nil, fmt.Errorf("get project: %w", err)
 		}
 
 		if pid.IsValid() {
 			m["project_id"] = pid.String()
-		}
-
-		if oid.IsValid() {
-			m["org_id"] = oid.String()
 		}
 	}
 
