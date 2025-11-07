@@ -23,7 +23,7 @@ func New(z *zap.Logger, db db.DB) sdkservices.Events {
 }
 
 func (e *events) Get(ctx context.Context, id sdktypes.EventID) (sdktypes.Event, error) {
-	if err := authz.CheckContext(ctx, id, "read:get"); err != nil {
+	if err := authz.CheckContext(ctx, id, "read:get", authz.WithConvertForbiddenToNotFound); err != nil {
 		return sdktypes.InvalidEvent, err
 	}
 
