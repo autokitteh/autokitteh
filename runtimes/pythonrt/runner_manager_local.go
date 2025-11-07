@@ -15,10 +15,18 @@ import (
 	"go.uber.org/zap"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var venvMutex sync.Mutex
+// These lock the env creation so two concurrent runners don't try to
+// create the same venv at the same time.
+//
+// Since this is a local runner manager, this is sufficient.
+//
+// This is a sharded mutex array to reduce contention when creating
+// multiple different venvs concurrently.
+var venvMutexes [64]sync.Mutex
 
 type localRunnerManager struct {
 	logger           *zap.Logger
@@ -280,11 +288,9 @@ func ensureVEnv(ctx context.Context, log *zap.Logger, reqs, pyExe string) (pyExe
 	venvPath := venvPath(reqs)
 	pyExePath = path.Join(venvPath, "bin", "python")
 
-	// This locks the env creation so two concurrent runners don't try to
-	// create the same venv at the same time.
-	// Since this is a local runner manager, this is sufficient.
-	venvMutex.Lock()
-	defer venvMutex.Unlock()
+	mu := &venvMutexes[kittehs.FNV1aHashString(venvPath)%uint64(len(venvMutexes))]
+	mu.Lock()
+	defer mu.Unlock()
 
 	if dirExists(venvPath) {
 		if _, err = os.Stat(path.Join(venvPath, ".complete")); err == nil {

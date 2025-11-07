@@ -7,6 +7,7 @@ import (
 	"encoding/gob"
 	"encoding/hex"
 	"fmt"
+	"hash/fnv"
 	"slices"
 )
 
@@ -40,4 +41,10 @@ func SHA256HashMap[K cmp.Ordered, V any](m map[K]V) (string, error) {
 	})
 
 	return SHA256Hash(l)
+}
+
+func FNV1aHashString(what string) uint64 {
+	h := fnv.New64a()
+	h.Write([]byte(what))
+	return h.Sum64()
 }
