@@ -362,11 +362,14 @@ class Runner(pb.runner_rpc.RunnerService):
         connections.encode_jwt = self.syscalls.ak_encode_jwt
         connections.refresh_oauth = self.syscalls.ak_refresh_oauth
 
+        autokitteh.check_and_set_value = self.syscalls.ak_check_and_set_value
         autokitteh.del_value = self.syscalls.ak_del_value
         autokitteh.get_value = self.syscalls.ak_get_value
         autokitteh.list_values_keys = self.syscalls.ak_list_values_keys
         autokitteh.mutate_value = self.syscalls.ak_mutate_value
+
         # Need to patch autokitteh.store as well for the Store API
+        autokitteh.store.check_and_set_value = self.syscalls.ak_check_and_set_value
         autokitteh.store.del_value = self.syscalls.ak_del_value
         autokitteh.store.get_value = self.syscalls.ak_get_value
         autokitteh.store.list_values_keys = self.syscalls.ak_list_values_keys
@@ -376,7 +379,6 @@ class Runner(pb.runner_rpc.RunnerService):
         autokitteh.next_signal = self.syscalls.ak_next_signal
         autokitteh.set_value = self.syscalls.ak_set_value
         autokitteh.add_values = self.syscalls.ak_add_values
-        autokitteh.check_and_set_value = self.syscalls.ak_check_and_set_value
         autokitteh.signal = self.syscalls.ak_signal
         autokitteh.start = self.syscalls.ak_start
         autokitteh.subscribe = self.syscalls.ak_subscribe
