@@ -32,7 +32,7 @@ var unwrapper = sdktypes.ValueWrapper{
 	UnwrapStructsAsJSON: true,
 }
 
-const WebhooksPathPrefix = "/webhooks/"
+const WebhooksPathPrefix = "webhooks/"
 
 type Config struct {
 	SessionOutcomePollInterval time.Duration `koanf:"session_outcome_poll_interval"`
@@ -58,8 +58,8 @@ func New(l *zap.Logger, cfg *Config, db db.DB, dispatch sdkservices.DispatchFunc
 }
 
 func (s *Service) Start(muxes *muxes.Muxes) {
-	muxes.NoAuth.Handle(WebhooksPathPrefix+"{slug}", s)
-	muxes.NoAuth.Handle(WebhooksPathPrefix+"{slug}/", s)
+	muxes.NoAuth.Handle("/"+WebhooksPathPrefix+"{slug}", s)
+	muxes.NoAuth.Handle("/"+WebhooksPathPrefix+"{slug}/", s)
 }
 
 func InitTrigger(trigger sdktypes.Trigger) sdktypes.Trigger {
@@ -447,8 +447,6 @@ func jsonData(body []byte) sdktypes.Value {
 }
 
 func urlData(u *url.URL, slug string) sdktypes.Value {
-	pathSuffix := strings.TrimPrefix(u.Path, WebhooksPathPrefix+slug)
-
 	return sdktypes.NewDictValueFromStringMap(
 		map[string]sdktypes.Value{
 			"path": sdktypes.NewStringValue(u.Path),
@@ -457,7 +455,19 @@ func urlData(u *url.URL, slug string) sdktypes.Value {
 					return sdktypes.NewStringValue(strings.Join(vs, ", "))
 				}),
 			),
-			"path_suffix": sdktypes.NewStringValue(pathSuffix),
+			"path_suffix": sdktypes.NewStringValue(getPathSuffix(u, slug)),
 		},
 	)
+}
+
+func getPathSuffix(u *url.URL, slug string) string {
+	path := strings.TrimPrefix(u.Path, "/")
+
+	slugified := WebhooksPathPrefix + slug
+
+	if path == slugified {
+		return ""
+	}
+
+	return strings.TrimPrefix(path, slugified+"/")
 }
