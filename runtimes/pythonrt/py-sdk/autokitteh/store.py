@@ -43,6 +43,7 @@ class Op(StrEnum):
     GET = "get"
     DEL = "del"
     ADD = "add"
+    CHECK_AND_SET = "check_and_set"
 
 
 def mutate_value(key: str, op: Op, *args: list[Any]) -> Any:
@@ -63,11 +64,11 @@ def mutate_value(key: str, op: Op, *args: list[Any]) -> Any:
     """
     # Dummy implementation for local development.
     return {
-        "set": set_value,
-        "get": get_value,
-        "del": del_value,
-        "add": add_values,
-        "check_and_set": check_and_set_value,
+        Op.SET: set_value,
+        Op.GET: get_value,
+        Op.DEL: del_value,
+        Op.ADD: add_values,
+        Op.CHECK_AND_SET: check_and_set_value,
     }[op](key, *args)
 
 
