@@ -114,7 +114,6 @@ func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, code
 			WorkingDir: "/workflow",
 		},
 		&container.HostConfig{
-			AutoRemove:   true,
 			NetworkMode:  container.NetworkMode(networkName),
 			PortBindings: nat.PortMap{internalRunnerPort: []nat.PortBinding{{HostIP: "127.0.0.1"}}},
 			Tmpfs:        map[string]string{"/tmp": "size=64m"},

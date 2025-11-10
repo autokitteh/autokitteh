@@ -202,7 +202,20 @@ func (rm *dockerRunnerManager) RunnerHealth(ctx context.Context, runnerID string
 		return err
 	}
 	if !isRunning {
-		return errors.New("runner not running")
+		exitCode, err := rm.client.getContainerExitCode(ctx, cid)
+		if err != nil {
+			return err
+		}
+
+		if exitCode == 137 {
+			return errors.New("Out of memory")
+		}
+		logs, err := rm.client.getContainerLogs(ctx, cid)
+
+		if err != nil {
+			return errors.New("container exit code != 0, but we could not read logs")
+		}
+		return errors.New(logs)
 	}
 
 	return nil
