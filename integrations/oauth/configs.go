@@ -261,7 +261,7 @@ func (o *OAuth) initConfigs() {
 		},
 
 		// https://developers.google.com/youtube/v3/guides/authentication
-		"googleyoutube": {
+		"youtube": {
 			Config: googleConfig([]string{
 				// Non-sensitive.
 				googleoauth2.OpenIDScope,
