@@ -207,6 +207,10 @@ func (rm *dockerRunnerManager) RunnerHealth(ctx context.Context, runnerID string
 			return err
 		}
 
+		if exitCode == 0 {
+			return nil
+		}
+
 		if exitCode == 137 {
 			return errors.New("out of memory")
 		}

@@ -705,7 +705,7 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 			span.AddEvent("health")
 
 			if healthErr != nil {
-				py.cbs.Print(ctx, py.runID, "Out of memory")
+				py.cbs.Print(ctx, py.runID, healthErr.Error())
 				return sdktypes.InvalidValue, sdkerrors.NewRetryableErrorf("runner health: %w", healthErr)
 			}
 		case done := <-py.channels.done:
