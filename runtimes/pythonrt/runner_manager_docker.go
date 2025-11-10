@@ -208,7 +208,7 @@ func (rm *dockerRunnerManager) RunnerHealth(ctx context.Context, runnerID string
 		}
 
 		if exitCode == 137 {
-			return errors.New("Out of memory")
+			return errors.New("out of memory")
 		}
 		logs, err := rm.client.getContainerLogs(ctx, cid)
 
