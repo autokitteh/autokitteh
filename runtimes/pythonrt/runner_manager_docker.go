@@ -208,7 +208,7 @@ func (rm *dockerRunnerManager) RunnerHealth(ctx context.Context, runnerID string
 		}
 
 		if exitCode == 0 {
-			return nil
+			return errors.New("exited with status code 0")
 		}
 
 		if exitCode == 137 {
