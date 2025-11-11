@@ -2,6 +2,7 @@ package webhookssvc
 
 import (
 	"bytes"
+	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -316,4 +317,66 @@ func TestHTTPOutcome_BodyBytes_Integration(t *testing.T) {
 	assert.Equal(t, "text/plain", outcome.Headers["Content-Type"])
 	assert.Equal(t, "13", outcome.Headers["Content-Length"])
 	assert.False(t, outcome.More)
+}
+
+func TestPathSuffix(t *testing.T) {
+	tests := []struct {
+		name     string
+		path     string
+		slug     string
+		expected string
+	}{
+		{
+			name:     "empty path suffix",
+			path:     "/webhooks/test-slug-123/",
+			slug:     "test-slug-123",
+			expected: "",
+		},
+		{
+			name:     "simple path suffix",
+			path:     "/webhooks/test-slug-123/callback",
+			slug:     "test-slug-123",
+			expected: "callback",
+		},
+		{
+			name:     "nested path suffix",
+			path:     "/webhooks/test-slug-123/api/v1/callback",
+			slug:     "test-slug-123",
+			expected: "api/v1/callback",
+		},
+		{
+			name:     "path without trailing slash",
+			path:     "/webhooks/test-slug-123",
+			slug:     "test-slug-123",
+			expected: "",
+		},
+		{
+			name:     "path with query parameters (path only)",
+			path:     "/webhooks/test-slug-123/endpoint",
+			slug:     "test-slug-123",
+			expected: "endpoint",
+		},
+		{
+			name:     "different slug",
+			path:     "/webhooks/another-slug/action",
+			slug:     "another-slug",
+			expected: "action",
+		},
+		{
+			name:     "complex slug with special characters",
+			path:     "/webhooks/slug_with-chars.123/data/upload",
+			slug:     "slug_with-chars.123",
+			expected: "data/upload",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			u, err := url.Parse(tt.path)
+			require.NoError(t, err)
+
+			result := getPathSuffix(u, tt.slug)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
 }
