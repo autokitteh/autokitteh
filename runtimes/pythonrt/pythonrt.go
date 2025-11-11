@@ -505,17 +505,18 @@ func (py *pySvc) setupHealthcheck(ctx context.Context) chan (error) {
 				resp, err := py.runner.Health(ctx, &healthReq)
 				if err != nil {
 					py.log.Error("health rpc error", zap.Error(err))
-
 					// no network/lost packet.load? for sanity check the state locally via IPC/signals
 					if mgrError := runnerManager.RunnerHealth(ctx, py.runnerID); mgrError != nil {
 						py.log.Error("runner manager health check error", zap.Error(mgrError))
+						err = mgrError
 					} else {
 						py.log.Warn("runner manager health check passed, ignoring grpc error")
 						err = nil
 					}
 				} else if resp.Error != "" {
-					err = fmt.Errorf("grpc: %s", resp.Error)
+					err = fmt.Errorf("health: %s", resp.Error)
 				}
+
 				if err != nil {
 					py.log.Error("runner health failed", zap.Error(err))
 
@@ -704,6 +705,7 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 			span.AddEvent("health")
 
 			if healthErr != nil {
+				py.cbs.Print(ctx, py.runID, healthErr.Error())
 				return sdktypes.InvalidValue, sdkerrors.NewRetryableErrorf("runner health: %w", healthErr)
 			}
 		case done := <-py.channels.done:
