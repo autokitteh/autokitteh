@@ -275,24 +275,6 @@ func (o *OAuth) initConfigs() {
 			Opts: offlineOpts(withConsent()),
 		},
 
-		// https://height.notion.site/OAuth-Apps-on-Height-a8ebeab3f3f047e3857bd8ce60c2f640
-		"height": {
-			Config: &oauth2.Config{
-				ClientID:     os.Getenv("HEIGHT_CLIENT_ID"),
-				ClientSecret: os.Getenv("HEIGHT_CLIENT_SECRET"),
-				Endpoint: oauth2.Endpoint{
-					AuthURL:  "https://height.app/oauth/authorization",
-					TokenURL: "https://api.height.app/oauth/tokens",
-				},
-				Scopes: []string{"api"},
-			},
-			Opts: map[string]string{
-				// This is a workaround for Height's non-standard OAuth 2.0 flow
-				// which expects the scopes string in the exchange request as well.
-				"scope": "api",
-			},
-		},
-
 		// https://developers.hubspot.com/beta-docs/guides/apps/authentication/working-with-oauth
 		"hubspot": {
 			Config: &oauth2.Config{

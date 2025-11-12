@@ -52,9 +52,6 @@ var GoogleGeminiWebContent embed.FS
 //go:embed googlesheets
 var GoogleSheetsWebContent embed.FS
 
-//go:embed height
-var HeightWebContent embed.FS
-
 //go:embed hubspot
 var HubSpotWebContent embed.FS
 

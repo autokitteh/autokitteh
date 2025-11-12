@@ -80,13 +80,7 @@ autokitteh.zoom module
    :undoc-members:
    :show-inheritance:
 
-autokitteh.height module
-------------------------
 
-.. automodule:: autokitteh.height
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 autokitteh.asana module
 -----------------------
