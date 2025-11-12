@@ -88,32 +88,29 @@ func (gdb *gormdb) getConnection(ctx context.Context, id uuid.UUID) (*scheme.Con
 	return getOne[scheme.Connection](gdb.reader.WithContext(ctx), "connection_id = ?", id)
 }
 
-func findConnections(query *gorm.DB) ([]scheme.Connection, error) {
+func (gdb *gormdb) getConnections(ctx context.Context, ids ...uuid.UUID) ([]scheme.Connection, error) {
 	var cs []scheme.Connection
-	if err := query.Group("connection_id").Find(&cs).Error; err != nil {
+	if err := gdb.reader.WithContext(ctx).Where("connection_id IN (?)", ids).Find(&cs).Error; err != nil {
 		return nil, err
 	}
 	return cs, nil
 }
 
-func (gdb *gormdb) getConnections(ctx context.Context, ids ...uuid.UUID) ([]scheme.Connection, error) {
-	q := gdb.reader.WithContext(ctx).Where("connection_id IN (?)", ids)
-	return findConnections(q)
-}
-
 func (gdb *gormdb) listConnections(ctx context.Context, filter sdkservices.ListConnectionsFilter, idsOnly bool) ([]scheme.Connection, error) {
 	q := gdb.reader.WithContext(ctx)
 
-	q = withProjectID(q, "connections", filter.ProjectID)
-
-	q = withProjectOrgID(q, filter.OrgID, "connections")
+	if filter.OrgID.IsValid() {
+		x := q.Where("org_id = ? AND project_id IS NULL", filter.OrgID.UUIDValue())
+		if filter.ProjectID.IsValid() {
+			x = x.Or(q.Where("org_id = ? AND project_id = ?", filter.OrgID.UUIDValue(), filter.ProjectID.UUIDValue()))
+		}
+		q = x
+	} else if filter.ProjectID.IsValid() {
+		q = q.Where("project_id = ?", filter.ProjectID.UUIDValue())
+	}
 
 	if filter.IntegrationID.IsValid() {
 		q = q.Where("integration_id = ?", filter.IntegrationID.UUIDValue())
-	}
-
-	if filter.ProjectID.IsValid() {
-		q = q.Where("connections.project_id = ?", filter.ProjectID.UUIDValue())
 	}
 
 	if filter.StatusCode != sdktypes.StatusCodeUnspecified {
@@ -124,7 +121,11 @@ func (gdb *gormdb) listConnections(ctx context.Context, filter sdkservices.ListC
 		q = q.Select("connection_id")
 	}
 
-	return findConnections(q)
+	var cs []scheme.Connection
+	if err := q.Find(&cs).Error; err != nil {
+		return nil, err
+	}
+	return cs, nil
 }
 
 func (db *gormdb) CreateConnection(ctx context.Context, conn sdktypes.Connection) error {
@@ -132,9 +133,14 @@ func (db *gormdb) CreateConnection(ctx context.Context, conn sdktypes.Connection
 		return err
 	}
 
+	if !conn.OrgID().IsValid() {
+		return errors.New("org ID is required")
+	}
+
 	c := scheme.Connection{
 		Base:          based(ctx),
-		ProjectID:     conn.ProjectID().UUIDValue(),
+		ProjectID:     conn.ProjectID().UUIDValuePtr(),
+		OrgID:         conn.OrgID().UUIDValue(),
 		ConnectionID:  conn.ID().UUIDValue(),
 		IntegrationID: uuidPtrOrNil(conn.IntegrationID()),
 		Name:          conn.Name().String(),

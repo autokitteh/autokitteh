@@ -27,6 +27,18 @@ type Connections struct {
 func New(c Connections) sdkservices.Connections { return &c }
 
 func (c *Connections) Create(ctx context.Context, conn sdktypes.Connection) (sdktypes.ConnectionID, error) {
+	// TODO: This is for backwards compatibility.
+	// We should remove it once the UI is updated to always pass org_id
+	if !conn.OrgID().IsValid() {
+		// If OrgID is not set and there is a project ID, infer the OrgID from the project.
+		p, err := c.DB.GetProjectByID(ctx, conn.ProjectID())
+		if err != nil {
+			return sdktypes.InvalidConnectionID, err
+		}
+
+		conn = conn.WithOrgID(p.OrgID())
+	}
+
 	if err := authz.CheckContext(
 		ctx,
 		sdktypes.InvalidConnectionID,
@@ -34,6 +46,7 @@ func (c *Connections) Create(ctx context.Context, conn sdktypes.Connection) (sdk
 		authz.WithData("connection", conn),
 		authz.WithAssociationWithID("integration", conn.IntegrationID()),
 		authz.WithAssociationWithID("project", conn.ProjectID()),
+		authz.WithAssociationWithID("org", conn.OrgID()),
 	); err != nil {
 		return sdktypes.InvalidConnectionID, err
 	}
@@ -90,8 +103,19 @@ func (c *Connections) Delete(ctx context.Context, id sdktypes.ConnectionID) erro
 }
 
 func (c *Connections) List(ctx context.Context, filter sdkservices.ListConnectionsFilter) ([]sdktypes.Connection, error) {
-	if !filter.AnyIDSpecified() {
-		filter.OrgID = authcontext.GetAuthnInferredOrgID(ctx)
+	if !filter.OrgID.IsValid() {
+		if !filter.ProjectID.IsValid() {
+			// No explicit OrgID and not filtering by ProjectID, infer OrgID as user's default org.
+			filter.OrgID = authcontext.GetAuthnInferredOrgID(ctx)
+		} else {
+			// If OrgID is not set and there is a project ID, infer the OrgID from the project.
+			p, err := c.DB.GetProjectByID(ctx, filter.ProjectID)
+			if err != nil {
+				return nil, err
+			}
+
+			filter.OrgID = p.OrgID()
+		}
 	}
 
 	if err := authz.CheckContext(

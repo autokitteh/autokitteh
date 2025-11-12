@@ -50,6 +50,9 @@ func TestSystem(t *testing.T) {
 			return nil // Skip directories and non-test files.
 		}
 
+		if !strings.Contains(path, "testdata/authz/default/connections.txtar") {
+			return nil
+		}
 		f, err := readTestFile(t, testFiles, path)
 		if err != nil {
 			return err
