@@ -15,7 +15,7 @@ from autokitteh_pb.values.v1 import values_pb2 as autokitteh_dot_values_dot_v1_d
 from google.protobuf import timestamp_pb2 as google_dot_protobuf_dot_timestamp__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n autokitteh/events/v1/event.proto\x12\x14\x61utokitteh.events.v1\x1a!autokitteh/values/v1/values.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xba\x03\n\x05\x45vent\x12\x19\n\x08\x65vent_id\x18\x01 \x01(\tR\x07\x65ventId\x12%\n\x0e\x64\x65stination_id\x18\x02 \x01(\tR\rdestinationId\x12\x1d\n\nevent_type\x18\x03 \x01(\tR\teventType\x12\x39\n\x04\x64\x61ta\x18\x04 \x03(\x0b\x32%.autokitteh.events.v1.Event.DataEntryR\x04\x64\x61ta\x12\x39\n\x04memo\x18\x05 \x03(\x0b\x32%.autokitteh.events.v1.Event.MemoEntryR\x04memo\x12\x39\n\ncreated_at\x18\x06 \x01(\x0b\x32\x1a.google.protobuf.TimestampR\tcreatedAt\x12\x10\n\x03seq\x18\x07 \x01(\x04R\x03seq\x1aT\n\tDataEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12\x31\n\x05value\x18\x02 \x01(\x0b\x32\x1b.autokitteh.values.v1.ValueR\x05value:\x02\x38\x01\x1a\x37\n\tMemoEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n\x05value\x18\x02 \x01(\tR\x05value:\x02\x38\x01\x42\xe1\x01\n\x18\x63om.autokitteh.events.v1B\nEventProtoP\x01ZGgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/events/v1;eventsv1\xa2\x02\x03\x41\x45X\xaa\x02\x14\x41utokitteh.Events.V1\xca\x02\x14\x41utokitteh\\Events\\V1\xe2\x02 Autokitteh\\Events\\V1\\GPBMetadata\xea\x02\x16\x41utokitteh::Events::V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n autokitteh/events/v1/event.proto\x12\x14\x61utokitteh.events.v1\x1a!autokitteh/values/v1/values.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\xe7\x03\n\x05\x45vent\x12\x19\n\x08\x65vent_id\x18\x01 \x01(\tR\x07\x65ventId\x12%\n\x0e\x64\x65stination_id\x18\x02 \x01(\tR\rdestinationId\x12\x1d\n\nevent_type\x18\x03 \x01(\tR\teventType\x12\x39\n\x04\x64\x61ta\x18\x04 \x03(\x0b\x32%.autokitteh.events.v1.Event.DataEntryR\x04\x64\x61ta\x12\x39\n\x04memo\x18\x05 \x03(\x0b\x32%.autokitteh.events.v1.Event.MemoEntryR\x04memo\x12\x39\n\ncreated_at\x18\x06 \x01(\x0b\x32\x1a.google.protobuf.TimestampR\tcreatedAt\x12\x10\n\x03seq\x18\x07 \x01(\x04R\x03seq\x12+\n\x11\x64\x65\x64uplication_key\x18\x08 \x01(\tR\x10\x64\x65\x64uplicationKey\x1aT\n\tDataEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12\x31\n\x05value\x18\x02 \x01(\x0b\x32\x1b.autokitteh.values.v1.ValueR\x05value:\x02\x38\x01\x1a\x37\n\tMemoEntry\x12\x10\n\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n\x05value\x18\x02 \x01(\tR\x05value:\x02\x38\x01\x42\xe1\x01\n\x18\x63om.autokitteh.events.v1B\nEventProtoP\x01ZGgo.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/events/v1;eventsv1\xa2\x02\x03\x41\x45X\xaa\x02\x14\x41utokitteh.Events.V1\xca\x02\x14\x41utokitteh\\Events\\V1\xe2\x02 Autokitteh\\Events\\V1\\GPBMetadata\xea\x02\x16\x41utokitteh::Events::V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -28,9 +28,9 @@ if _descriptor._USE_C_DESCRIPTORS == False:
   _EVENT_MEMOENTRY._options = None
   _EVENT_MEMOENTRY._serialized_options = b'8\001'
   _globals['_EVENT']._serialized_start=127
-  _globals['_EVENT']._serialized_end=569
-  _globals['_EVENT_DATAENTRY']._serialized_start=428
-  _globals['_EVENT_DATAENTRY']._serialized_end=512
-  _globals['_EVENT_MEMOENTRY']._serialized_start=514
-  _globals['_EVENT_MEMOENTRY']._serialized_end=569
+  _globals['_EVENT']._serialized_end=614
+  _globals['_EVENT_DATAENTRY']._serialized_start=473
+  _globals['_EVENT_DATAENTRY']._serialized_end=557
+  _globals['_EVENT_MEMOENTRY']._serialized_start=559
+  _globals['_EVENT_MEMOENTRY']._serialized_end=614
 # @@protoc_insertion_point(module_scope)

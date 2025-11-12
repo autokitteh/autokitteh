@@ -20,6 +20,7 @@ type DispatchResponse struct {
 	// Returned only if Wait was true.
 	SessionIDs []sdktypes.SessionID
 }
+
 type Dispatcher interface {
 	Dispatch(ctx context.Context, event sdktypes.Event, opts *DispatchOptions) (*DispatchResponse, error)
 	Redispatch(ctx context.Context, eventID sdktypes.EventID, opts *DispatchOptions) (*DispatchResponse, error)

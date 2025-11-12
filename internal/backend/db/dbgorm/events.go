@@ -36,15 +36,19 @@ func (gdb *gormdb) listEvents(ctx context.Context, filter sdkservices.ListEvents
 	if filter.ProjectID.IsValid() {
 		q = q.Where("project_id = ?", filter.ProjectID.UUIDValue())
 	}
+
 	if filter.IntegrationID.IsValid() {
 		q = q.Where("integration_id = ?", filter.IntegrationID.UUIDValue())
 	}
+
 	if filter.DestinationID.IsValid() {
 		q = q.Where("destination_id = ?", filter.DestinationID.UUIDValue())
 	}
+
 	if filter.EventType != "" {
 		q = q.Where("event_type = ?", filter.EventType)
 	}
+
 	if filter.CreatedAfter != nil {
 		q = q.Where("created_at > ?", filter.CreatedAfter)
 	}
@@ -85,17 +89,23 @@ func (db *gormdb) SaveEvent(ctx context.Context, event sdktypes.Event) error {
 		return fmt.Errorf("get org id: %w", err)
 	}
 
+	var dedupKey *string
+	if k := event.DeduplicationKey(); k != "" {
+		dedupKey = &k
+	}
+
 	e := scheme.Event{
-		Base:          based(ctx),
-		ProjectID:     pid.UUIDValue(),
-		OrgID:         oid.UUIDValuePtr(),
-		EventID:       event.ID().UUIDValue(),
-		DestinationID: event.DestinationID().UUIDValue(),
-		ConnectionID:  uuidPtrOrNil(connectionID),
-		TriggerID:     uuidPtrOrNil(event.DestinationID().ToTriggerID()),
-		EventType:     event.Type(),
-		Data:          kittehs.Must1(json.Marshal(event.Data())),
-		Memo:          kittehs.Must1(json.Marshal(event.Memo())),
+		Base:             based(ctx),
+		ProjectID:        pid.UUIDValue(),
+		OrgID:            oid.UUIDValuePtr(),
+		EventID:          event.ID().UUIDValue(),
+		DestinationID:    event.DestinationID().UUIDValue(),
+		ConnectionID:     uuidPtrOrNil(connectionID),
+		TriggerID:        uuidPtrOrNil(event.DestinationID().ToTriggerID()),
+		EventType:        event.Type(),
+		Data:             kittehs.Must1(json.Marshal(event.Data())),
+		Memo:             kittehs.Must1(json.Marshal(event.Memo())),
+		DeduplicationKey: dedupKey,
 	}
 
 	if connectionID.IsValid() { // only if exists

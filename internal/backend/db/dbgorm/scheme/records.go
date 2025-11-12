@@ -167,12 +167,14 @@ type Event struct {
 	ProjectID     uuid.UUID  `gorm:"index;type:uuid"`                      // TODO(authz-migration): not null.
 	OrgID         *uuid.UUID `gorm:"index;index:idx_org_id_seq;type:uuid"` // use only for list.
 	EventID       uuid.UUID  `gorm:"uniqueIndex;type:uuid;not null"`
-	DestinationID uuid.UUID  `gorm:"index;type:uuid;not null"`
+	DestinationID uuid.UUID  `gorm:"index;type:uuid;not null;index:idx_ddk"`
 	IntegrationID *uuid.UUID `gorm:"index;type:uuid"`
 	ConnectionID  *uuid.UUID `gorm:"index;type:uuid"`
 	TriggerID     *uuid.UUID `gorm:"index;type:uuid"`
 
-	EventType string `gorm:"index:idx_event_type_seq,priority:1;index:idx_event_type"`
+	DeduplicationKey *string `gorm:"uniqueIndex:idx_ddk,where:deduplication_key IS NOT NULL"`
+
+	EventType string `gorm:"index:idx_event_type_seq,priority:1;index:idx_event_type;index:idx_ddk"`
 	Data      datatypes.JSON
 	Memo      datatypes.JSON
 	Seq       uint64 `gorm:"primaryKey;autoIncrement:true;index:idx_event_type_seq,priority:2;index:idx_org_id_seq"`
@@ -213,14 +215,20 @@ func ParseEvent(e Event) (sdktypes.Event, error) {
 		return sdktypes.InvalidEvent, sdkerrors.NewInvalidArgumentError("event must have a connection or trigger")
 	}
 
+	var dedupKey string
+	if e.DeduplicationKey != nil {
+		dedupKey = *e.DeduplicationKey
+	}
+
 	return sdktypes.StrictEventFromProto(&sdktypes.EventPB{
-		EventId:       sdktypes.NewIDFromUUID[sdktypes.EventID](e.EventID).String(),
-		EventType:     e.EventType,
-		Data:          kittehs.TransformMapValues(data, sdktypes.ToProto),
-		Memo:          memo,
-		CreatedAt:     timestamppb.New(e.CreatedAt),
-		Seq:           e.Seq,
-		DestinationId: did.String(),
+		EventId:          sdktypes.NewIDFromUUID[sdktypes.EventID](e.EventID).String(),
+		EventType:        e.EventType,
+		Data:             kittehs.TransformMapValues(data, sdktypes.ToProto),
+		Memo:             memo,
+		CreatedAt:        timestamppb.New(e.CreatedAt),
+		Seq:              e.Seq,
+		DestinationId:    did.String(),
+		DeduplicationKey: dedupKey,
 	})
 }
 

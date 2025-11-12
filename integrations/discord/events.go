@@ -2,6 +2,7 @@ package discord
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/bwmarrin/discordgo"
 	"go.uber.org/zap"
@@ -13,32 +14,49 @@ import (
 func (h *handler) handleEvent(event any, eventType string) {
 	l := h.logger.With(zap.String("event_type", eventType))
 
-	var initiatorID string
+	var initiatorID, dedupID string
 	switch e := event.(type) {
 	case *discordgo.MessageCreate:
 		initiatorID = e.Author.ID
+		dedupID = fmt.Sprintf("%s/create", e.ID)
 	case *discordgo.MessageUpdate:
 		initiatorID = e.Author.ID
+		var ts string
+		if e.EditedTimestamp != nil {
+			ts = e.EditedTimestamp.String()
+		}
+		dedupID = fmt.Sprintf("%s/%s/update", e.ID, ts)
 	case *discordgo.MessageDelete:
 		initiatorID = "" // Deleted messages don't have an author
-	case *discordgo.MessageReactionAdd:
-		initiatorID = e.UserID
-	case *discordgo.MessageReactionRemove:
-		initiatorID = e.UserID
+		dedupID = fmt.Sprintf("%s/delete", e.ID)
 	case *discordgo.PresenceUpdate:
 		initiatorID = e.User.ID
+		dedupID = fmt.Sprintf("%s/%v/presence_update", e.User.ID, e.Since)
 	case *discordgo.ThreadCreate:
 		initiatorID = e.OwnerID
-	case *discordgo.ThreadUpdate:
-		initiatorID = e.OwnerID
+		dedupID = fmt.Sprintf("%s/create", e.ID)
 	case *discordgo.ThreadDelete:
 		initiatorID = e.OwnerID
+		dedupID = fmt.Sprintf("%s/delete", e.ID)
+
+	// NON-UNIQUE EVENTS for deduplication purposes.
+	case *discordgo.ThreadUpdate:
+		// No way to uniquely identify the event, no deduping.
+		initiatorID = e.OwnerID
+	case *discordgo.MessageReactionAdd:
+		initiatorID = e.UserID
+		dedupID = fmt.Sprintf("%s/%s/%s/add", e.UserID, e.MessageID, e.Emoji.ID)
+	case *discordgo.MessageReactionRemove:
+		initiatorID = e.UserID
+		// No way to uniquely identify the event - identify on the first.
+		dedupID = fmt.Sprintf("%s/%s/%s/remove", e.UserID, e.MessageID, e.Emoji.ID)
+
 	default:
 		l.Error("Unsupported event type")
 		return
 	}
 
-	akEvent, err := h.transformEvent(event, eventType)
+	akEvent, err := h.transformEvent(dedupID, event, eventType)
 	if err != nil {
 		return
 	}

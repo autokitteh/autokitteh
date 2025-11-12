@@ -115,6 +115,14 @@ func (e Event) WithData(data map[string]Value) Event {
 	return Event{e.forceUpdate(func(m *EventPB) { m.Data = kittehs.TransformMapValues(data, func(v Value) *ValuePB { return v.m }) })}
 }
 
+func (e Event) DeduplicationKey() string {
+	return e.read().DeduplicationKey
+}
+
+func (e Event) WithDeduplicationKey(key string) Event {
+	return Event{e.forceUpdate(func(m *EventPB) { m.DeduplicationKey = key })}
+}
+
 var eventFilterEnv = kittehs.Must1(cel.NewEnv(
 	cel.Variable("data", cel.MapType(cel.StringType, cel.AnyType)),
 	cel.Variable("event_type", cel.StringType),

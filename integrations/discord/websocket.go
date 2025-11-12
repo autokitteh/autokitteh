@@ -73,28 +73,31 @@ func (h handler) dispatchAsyncEventsToConnections(cids []sdktypes.ConnectionID, 
 	ctx := extrazap.AttachLoggerToContext(h.logger, context.Background())
 	for _, cid := range cids {
 		resp, err := h.dispatch(ctx, e.WithConnectionDestinationID(cid), nil)
+
 		l := h.logger.With(
 			zap.String("connectionID", cid.String()),
 			zap.String("eventID", resp.EventID.String()),
 		)
-		if err != nil {
-			if errors.Is(err, sdkerrors.ErrResourceExhausted) {
-				l.Info("Event dispatch failed due to resource exhaustion")
-			} else {
-				l.Error("Event dispatch failed", zap.Error(err))
-			}
 
-			return
+		switch {
+		case err == nil:
+			l.Debug("Event dispatched")
+		case errors.Is(err, sdkerrors.ErrAlreadyExists):
+			l.Debug("Event already dispatched")
+		case errors.Is(err, sdkerrors.ErrResourceExhausted):
+			l.Info("Event dispatch failed due to resource exhaustion")
+		default:
+			l.Error("Event dispatch failed", zap.Error(err))
 		}
-		l.Debug("Event dispatched")
 	}
 }
 
 // transformEvent transforms the received Discord event into an AutoKitteh event.
-func (h handler) transformEvent(discordEvent any, eventType string) (sdktypes.Event, error) {
+func (h handler) transformEvent(dedupID string, discordEvent any, eventType string) (sdktypes.Event, error) {
 	l := h.logger.With(
-		zap.String("eventType", eventType),
+		zap.String("event_type", eventType),
 		zap.Any("event", discordEvent),
+		zap.String("dedup_id", dedupID),
 	)
 
 	wrapped, err := sdktypes.WrapValue(discordEvent)
@@ -110,8 +113,9 @@ func (h handler) transformEvent(discordEvent any, eventType string) (sdktypes.Ev
 	}
 
 	akEvent, err := sdktypes.EventFromProto(&sdktypes.EventPB{
-		EventType: eventType,
-		Data:      kittehs.TransformMapValues(data, sdktypes.ToProto),
+		EventType:        eventType,
+		Data:             kittehs.TransformMapValues(data, sdktypes.ToProto),
+		DeduplicationKey: dedupID,
 	})
 	if err != nil {
 		l.Error("Failed to convert protocol buffer to SDK event",

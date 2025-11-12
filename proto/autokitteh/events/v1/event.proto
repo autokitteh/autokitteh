@@ -19,4 +19,10 @@ message Event {
   google.protobuf.Timestamp created_at = 6;
 
   uint64 seq = 7;
+
+  // A unique string for deduplication purposes.
+  // If provided, the event will be considered a duplicate
+  // if another event with the same deduplication_key, destination_id and event_type
+  // is received.
+  string deduplication_key = 8;
 }
