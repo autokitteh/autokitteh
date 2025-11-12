@@ -22,7 +22,6 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/google/gmail"
 	"go.autokitteh.dev/autokitteh/integrations/google/sheets"
 	"go.autokitteh.dev/autokitteh/integrations/google/youtube"
-	"go.autokitteh.dev/autokitteh/integrations/height"
 	"go.autokitteh.dev/autokitteh/integrations/hubspot"
 	"go.autokitteh.dev/autokitteh/integrations/kubernetes"
 	"go.autokitteh.dev/autokitteh/integrations/linear"
@@ -81,7 +80,6 @@ var all = []Integration{
 	{github.IntegrationName, github.New, github.Start},
 	{gmail.IntegrationName, gmail.New, nil},
 	{google.IntegrationName, google.New, google.Start},
-	{height.IntegrationName, height.New, height.Start},
 	{hubspot.IntegrationName, hubspot.New, hubspot.Start},
 	{jira.IntegrationName, jira.New, jira.Start},
 	{kubernetes.IntegrationName, kubernetes.New, func(l *zap.Logger, m *muxes.Muxes, _ sdkservices.Vars, _ *oauth.OAuth, _ sdkservices.DispatchFunc) {
