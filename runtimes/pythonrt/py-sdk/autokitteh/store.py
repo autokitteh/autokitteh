@@ -183,3 +183,14 @@ def list_values_keys() -> list[str]:
 
     # Dummy implementation for local development.
     return sorted(list(_local_dev_store.keys()))
+
+
+def publish_value(key: str) -> None:
+    """Publish a stored value.
+
+    Works both for durable and non-durable sessions.
+
+    Args:
+        key: Key of the value to publish.
+    """
+    pass

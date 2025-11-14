@@ -32,6 +32,7 @@ const (
 	mutateStoreValueActivityName             = "mutate_store_value"
 	notifyWorkflowEndedActivity              = "notify_workflow_ended"
 	outcomeActivityName                      = "outcome"
+	publishStoreValueActivityName            = "publish_store_value"
 	removeSignalActivityName                 = "remove_signal"
 	saveSignalActivityName                   = "save_signal"
 	startChildSessionActivityName            = "start_child_session"
@@ -111,6 +112,11 @@ func (ws *workflows) registerActivities() {
 	)
 
 	ws.sessionsWorker.RegisterActivityWithOptions(
+		ws.publishStoreValueActivity,
+		activity.RegisterOptions{Name: publishStoreValueActivityName},
+	)
+
+	ws.sessionsWorker.RegisterActivityWithOptions(
 		ws.getProjectIDAndActiveBuildIDActivity,
 		activity.RegisterOptions{Name: getProjectIDAndActiveBuildIDActivityName},
 	)
@@ -182,6 +188,10 @@ func (ws *workflows) listStoreValuesActivity(ctx context.Context, pid sdktypes.P
 
 func (ws *workflows) mutateStoreValueActivity(ctx context.Context, pid sdktypes.ProjectID, key, op string, operands []sdktypes.Value) (sdktypes.Value, error) {
 	return ws.svcs.Store.Mutate(authcontext.SetAuthnSystemUser(ctx), pid, key, op, operands...)
+}
+
+func (ws *workflows) publishStoreValueActivity(ctx context.Context, pid sdktypes.ProjectID, key string) error {
+	return ws.svcs.Store.Publish(authcontext.SetAuthnSystemUser(ctx), pid, key)
 }
 
 func (ws *workflows) createSessionActivity(ctx context.Context, session sdktypes.Session) error {

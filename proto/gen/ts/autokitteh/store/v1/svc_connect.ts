@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { GetRequest, GetResponse, ListRequest, ListResponse, MutateRequest, MutateResponse } from "./svc_pb.js";
+import { GetRequest, GetResponse, ListRequest, ListResponse, MutateRequest, MutateResponse, PublishRequest, PublishResponse } from "./svc_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -28,6 +28,15 @@ export const StoreService = {
       name: "Get",
       I: GetRequest,
       O: GetResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc autokitteh.store.v1.StoreService.Publish
+     */
+    publish: {
+      name: "Publish",
+      I: PublishRequest,
+      O: PublishResponse,
       kind: MethodKind.Unary,
     },
     /**
