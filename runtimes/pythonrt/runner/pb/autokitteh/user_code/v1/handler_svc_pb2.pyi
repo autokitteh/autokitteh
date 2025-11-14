@@ -227,6 +227,20 @@ class StoreMutateResponse(_message.Message):
     result: _values_pb2.Value
     def __init__(self, error: _Optional[str] = ..., result: _Optional[_Union[_values_pb2.Value, _Mapping]] = ...) -> None: ...
 
+class StorePublishRequest(_message.Message):
+    __slots__ = ["runner_id", "key"]
+    RUNNER_ID_FIELD_NUMBER: _ClassVar[int]
+    KEY_FIELD_NUMBER: _ClassVar[int]
+    runner_id: str
+    key: str
+    def __init__(self, runner_id: _Optional[str] = ..., key: _Optional[str] = ...) -> None: ...
+
+class StorePublishResponse(_message.Message):
+    __slots__ = ["error"]
+    ERROR_FIELD_NUMBER: _ClassVar[int]
+    error: str
+    def __init__(self, error: _Optional[str] = ...) -> None: ...
+
 class OutcomeRequest(_message.Message):
     __slots__ = ["runner_id", "value"]
     RUNNER_ID_FIELD_NUMBER: _ClassVar[int]

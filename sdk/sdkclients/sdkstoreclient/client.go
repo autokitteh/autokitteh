@@ -71,3 +71,19 @@ func (c *client) Mutate(ctx context.Context, pid sdktypes.ProjectID, key, op str
 
 	return sdktypes.StrictValueFromProto(resp.Msg.Value)
 }
+
+func (c *client) Publish(ctx context.Context, pid sdktypes.ProjectID, key string) error {
+	resp, err := c.client.Publish(ctx, connect.NewRequest(&storev1.PublishRequest{
+		ProjectId: pid.String(),
+		Key:       key,
+	}))
+	if err != nil {
+		return rpcerrors.ToSDKError(err)
+	}
+
+	if err := internal.Validate(resp.Msg); err != nil {
+		return err
+	}
+
+	return nil
+}

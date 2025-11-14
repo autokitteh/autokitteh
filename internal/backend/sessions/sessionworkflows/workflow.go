@@ -433,6 +433,7 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (_ []sdkserv
 		NextSignal:         w.nextSignal(wctx),
 		ListStoreValues:    w.listStoreValues(wctx),
 		MutateStoreValue:   w.mutateStoreValue(wctx),
+		PublishStoreValue:  w.publishStoreValue(wctx),
 	}
 
 	runID, err := newRunID()

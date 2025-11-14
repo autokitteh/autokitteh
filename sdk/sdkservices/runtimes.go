@@ -71,8 +71,9 @@ type RunCallbacks struct {
 	NextSignal func(ctx context.Context, rid sdktypes.RunID, names []string, timeout time.Duration) (*RunSignal, error)
 
 	// Store
-	ListStoreValues  func(ctx context.Context, rid sdktypes.RunID) ([]string, error)
-	MutateStoreValue func(ctx context.Context, rid sdktypes.RunID, key, op string, operands ...sdktypes.Value) (sdktypes.Value, error)
+	ListStoreValues   func(ctx context.Context, rid sdktypes.RunID) ([]string, error)
+	MutateStoreValue  func(ctx context.Context, rid sdktypes.RunID, key, op string, operands ...sdktypes.Value) (sdktypes.Value, error)
+	PublishStoreValue func(ctx context.Context, rid sdktypes.RunID, key string) error
 
 	// Outcome
 	Outcome func(ctx context.Context, rid sdktypes.RunID, v sdktypes.Value) error

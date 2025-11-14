@@ -61,6 +61,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/sessionsgrpcsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/store"
 	"go.autokitteh.dev/autokitteh/internal/backend/storegrpcsvc"
+	"go.autokitteh.dev/autokitteh/internal/backend/storehttpsvc"
 	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
 	"go.autokitteh.dev/autokitteh/internal/backend/triggers"
@@ -336,6 +337,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		fx.Invoke(triggersgrpcsvc.Init),
 		fx.Invoke(varsgrpcsvc.Init),
 		fx.Invoke(storegrpcsvc.Init),
+		fx.Invoke(storehttpsvc.Init),
 		Component(
 			"http",
 			httpsvc.Configs,

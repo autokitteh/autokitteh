@@ -1,6 +1,7 @@
 # Preconditions: create & build project.
-ak project create --name my_project
+ak project create --name my_project -j
 return code == 0
+capture_jq pid .project_id
 
 ak project build my_project --file main.py -j
 return code == 0
@@ -26,11 +27,17 @@ ak session prints $sid --no-timestamps
 return code == 0
 output equals meow
 
+# HTTP
+http get /store/$pid/cat
+output equals meow
+
+
 -- main.py --
-from autokitteh import set_value, get_value
+from autokitteh import set_value, get_value, publish_value
 
 def set(_):
     set_value("cat", "meow")
+    publish_value("cat")
 
 def get(_):
     print(get_value("cat"))

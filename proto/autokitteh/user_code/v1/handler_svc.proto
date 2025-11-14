@@ -138,6 +138,15 @@ message StoreMutateResponse {
   autokitteh.values.v1.Value result = 2;
 }
 
+message StorePublishRequest {
+  string runner_id = 1;
+  string key = 2;
+}
+
+message StorePublishResponse {
+  string error = 1;
+}
+
 message OutcomeRequest {
   string runner_id = 1;
   autokitteh.values.v1.Value value = 2;
@@ -234,6 +243,7 @@ service HandlerService {
   rpc NextSignal(NextSignalRequest) returns (NextSignalResponse) {}
   rpc StoreList(StoreListRequest) returns (StoreListResponse) {}
   rpc StoreMutate(StoreMutateRequest) returns (StoreMutateResponse) {}
+  rpc StorePublish(StorePublishRequest) returns (StorePublishResponse) {}
   rpc Outcome(OutcomeRequest) returns (OutcomeResponse) {}
 
   // Utility functions

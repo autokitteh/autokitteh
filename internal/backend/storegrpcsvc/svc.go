@@ -91,3 +91,23 @@ func (s *server) Mutate(ctx context.Context, req *connect.Request[storev1.Mutate
 
 	return connect.NewResponse(&storev1.MutateResponse{Value: v.ToProto()}), nil
 }
+
+func (s *server) Publish(ctx context.Context, req *connect.Request[storev1.PublishRequest]) (*connect.Response[storev1.PublishResponse], error) {
+	msg := req.Msg
+
+	if err := proto.Validate(msg); err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	pid, err := sdktypes.ParseProjectID(msg.ProjectId)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	err = s.store.Publish(ctx, pid, msg.Key)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	return connect.NewResponse(&storev1.PublishResponse{}), nil
+}

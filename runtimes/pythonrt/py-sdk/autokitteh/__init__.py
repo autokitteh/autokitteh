@@ -18,6 +18,7 @@ from .store import (
     get_value,
     list_values_keys,
     mutate_value,
+    publish_value,
     set_value,
     store,
 )
@@ -51,6 +52,7 @@ __all__ = [
     "get_value",
     "list_values_keys",
     "mutate_value",
+    "publish_value",
     "set_value",
     "store",
 ]
