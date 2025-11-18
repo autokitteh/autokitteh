@@ -15,8 +15,7 @@ import (
 
 // An unwrapper that is always safe to serialize to string afterwards.
 var unwrapper = sdktypes.ValueWrapper{
-	SafeForJSON:         true,
-	UnwrapStructsAsJSON: true,
+	SafeForJSON: true,
 }
 
 const storePathPrefix = "store/"
