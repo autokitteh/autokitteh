@@ -18,7 +18,7 @@ func (h *handler) handleEvent(event any, eventType string) {
 	switch e := event.(type) {
 	case *discordgo.MessageCreate:
 		initiatorID = e.Author.ID
-		dedupID = fmt.Sprintf("%s/create", e.ID)
+		dedupID = e.ID + "/create"
 	case *discordgo.MessageUpdate:
 		initiatorID = e.Author.ID
 		var ts string
@@ -28,16 +28,16 @@ func (h *handler) handleEvent(event any, eventType string) {
 		dedupID = fmt.Sprintf("%s/%s/update", e.ID, ts)
 	case *discordgo.MessageDelete:
 		initiatorID = "" // Deleted messages don't have an author
-		dedupID = fmt.Sprintf("%s/delete", e.ID)
+		dedupID = e.ID + "/delete"
 	case *discordgo.PresenceUpdate:
 		initiatorID = e.User.ID
 		dedupID = fmt.Sprintf("%s/%v/presence_update", e.User.ID, e.Since)
 	case *discordgo.ThreadCreate:
 		initiatorID = e.OwnerID
-		dedupID = fmt.Sprintf("%s/create", e.ID)
+		dedupID = e.ID + "/create"
 	case *discordgo.ThreadDelete:
 		initiatorID = e.OwnerID
-		dedupID = fmt.Sprintf("%s/delete", e.ID)
+		dedupID = e.ID + "/delete"
 
 	// NON-UNIQUE EVENTS for deduplication purposes.
 	case *discordgo.ThreadUpdate:
