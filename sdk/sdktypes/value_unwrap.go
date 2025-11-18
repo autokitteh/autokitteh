@@ -77,11 +77,6 @@ func (w *ValueWrapper) unwrap(v Value) (any, error) {
 	case SetValue:
 		return kittehs.TransformError(v.Values(), w.Unwrap)
 	case StructValue:
-		if w.UnwrapStructsAsJSON {
-			// nop - will marshal to JSON below.
-			break
-		}
-
 		ctor, fields := v.Ctor(), v.Fields()
 		m := make(map[string]any, len(fields)+1)
 		var err error

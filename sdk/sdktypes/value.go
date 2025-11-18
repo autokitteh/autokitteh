@@ -320,8 +320,7 @@ func (v Value) UnwrapInto(dst any) error { return UnwrapValueInto(dst, v) }
 
 // An unwrapper that is always safe to serialize to string afterwards.
 var valueStringUnwrapper = ValueWrapper{
-	SafeForJSON:         true,
-	UnwrapStructsAsJSON: true,
+	SafeForJSON: true,
 	Preunwrap: func(v Value) (Value, error) {
 		if v.IsFunction() {
 			return NewStringValuef("|function: %v|", v.GetFunction().Name()), nil
