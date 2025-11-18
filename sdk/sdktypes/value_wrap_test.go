@@ -138,6 +138,14 @@ func TestValueWrapper(t *testing.T) {
 			})),
 			unw: map[any]any{"meow": int64(1), "woof": int64(2)},
 		},
+		{
+			in: struct{ X, Y int }{X: 1, Y: 2},
+			w: kittehs.Must1(sdktypes.NewStructValue(sdktypes.NewSymbolValue(sdktypes.NewSymbol("struct")), map[string]sdktypes.Value{
+				"x": sdktypes.NewIntegerValue(1),
+				"y": sdktypes.NewIntegerValue(2),
+			})),
+			unw: map[string]any{"x": int64(1), "y": int64(2)},
+		},
 	}
 
 	for _, test := range tests {
