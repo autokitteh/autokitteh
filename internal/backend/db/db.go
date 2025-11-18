@@ -54,7 +54,7 @@ type Shared interface {
 	FindConnectionIDsWithActiveDeploymentByVar(context.Context, sdktypes.IntegrationID, sdktypes.Symbol, string) ([]sdktypes.ConnectionID, error)
 
 	// -----------------------------------------------------------------------
-	// This is idempotent.
+	// Will return ErrAlreadyExists if event already exists with the same deduplication key.
 	SaveEvent(context.Context, sdktypes.Event) error
 	GetEventByID(context.Context, sdktypes.EventID) (sdktypes.Event, error)
 	ListEvents(context.Context, sdkservices.ListEventsFilter) ([]sdktypes.Event, error)

@@ -8,7 +8,7 @@ from typing import ClassVar as _ClassVar, Mapping as _Mapping, Optional as _Opti
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class Event(_message.Message):
-    __slots__ = ["event_id", "destination_id", "event_type", "data", "memo", "created_at", "seq"]
+    __slots__ = ["event_id", "destination_id", "event_type", "data", "memo", "created_at", "seq", "deduplication_key"]
     class DataEntry(_message.Message):
         __slots__ = ["key", "value"]
         KEY_FIELD_NUMBER: _ClassVar[int]
@@ -30,6 +30,7 @@ class Event(_message.Message):
     MEMO_FIELD_NUMBER: _ClassVar[int]
     CREATED_AT_FIELD_NUMBER: _ClassVar[int]
     SEQ_FIELD_NUMBER: _ClassVar[int]
+    DEDUPLICATION_KEY_FIELD_NUMBER: _ClassVar[int]
     event_id: str
     destination_id: str
     event_type: str
@@ -37,4 +38,5 @@ class Event(_message.Message):
     memo: _containers.ScalarMap[str, str]
     created_at: _timestamp_pb2.Timestamp
     seq: int
-    def __init__(self, event_id: _Optional[str] = ..., destination_id: _Optional[str] = ..., event_type: _Optional[str] = ..., data: _Optional[_Mapping[str, _values_pb2.Value]] = ..., memo: _Optional[_Mapping[str, str]] = ..., created_at: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., seq: _Optional[int] = ...) -> None: ...
+    deduplication_key: str
+    def __init__(self, event_id: _Optional[str] = ..., destination_id: _Optional[str] = ..., event_type: _Optional[str] = ..., data: _Optional[_Mapping[str, _values_pb2.Value]] = ..., memo: _Optional[_Mapping[str, str]] = ..., created_at: _Optional[_Union[_timestamp_pb2.Timestamp, _Mapping]] = ..., seq: _Optional[int] = ..., deduplication_key: _Optional[str] = ...) -> None: ...
