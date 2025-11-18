@@ -367,6 +367,7 @@ class Runner(pb.runner_rpc.RunnerService):
         autokitteh.get_value = self.syscalls.ak_get_value
         autokitteh.list_values_keys = self.syscalls.ak_list_values_keys
         autokitteh.mutate_value = self.syscalls.ak_mutate_value
+        autokitteh.publish_value = self.syscalls.ak_publish_value
 
         # Need to patch autokitteh.store as well for the Store API
         autokitteh.store.check_and_set_value = self.syscalls.ak_check_and_set_value
@@ -374,6 +375,7 @@ class Runner(pb.runner_rpc.RunnerService):
         autokitteh.store.get_value = self.syscalls.ak_get_value
         autokitteh.store.list_values_keys = self.syscalls.ak_list_values_keys
         autokitteh.store.mutate_value = self.syscalls.ak_mutate_value
+        autokitteh.store.publish_value = self.syscalls.ak_publish_value
 
         autokitteh.next_event = self.syscalls.ak_next_event
         autokitteh.next_signal = self.syscalls.ak_next_signal

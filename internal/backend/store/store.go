@@ -104,3 +104,16 @@ func (s *store) List(ctx context.Context, pid sdktypes.ProjectID) ([]string, err
 
 	return slices.Sorted(maps.Keys(vs)), nil
 }
+
+func (s *store) Publish(ctx context.Context, pid sdktypes.ProjectID, key string) error {
+	if err := authz.CheckContext(
+		ctx,
+		pid,
+		"write:publish",
+		authz.WithData("key", key),
+	); err != nil {
+		return err
+	}
+
+	return s.db.PublishStoreValue(ctx, pid, key)
+}

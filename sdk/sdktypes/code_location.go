@@ -25,7 +25,8 @@ type CodeLocationPB = programv1.CodeLocation
 
 type CodeLocationTraits struct{ immutableObjectTrait }
 
-func (CodeLocationTraits) Validate(m *CodeLocationPB) error         { return nil }
+func (CodeLocationTraits) Validate(m *CodeLocationPB) error { return nil }
+
 func (t CodeLocationTraits) StrictValidate(m *CodeLocationPB) error { return nonzeroMessage(m) }
 
 func (l CodeLocation) Path() string { return l.read().Path }

@@ -5,7 +5,9 @@ import (
 	"errors"
 
 	"google.golang.org/protobuf/proto"
+	"gorm.io/gorm/clause"
 
+	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
@@ -36,16 +38,23 @@ func (db *gormdb) SetStoreValue(ctx context.Context, pid sdktypes.ProjectID, key
 		return err
 	}
 
-	err = q.Save(&scheme.StoreValue{
-		// This does not take into account if value was also previously set,
-		// so `created_by` and `updated_by` would always point to the last user
-		// that updated the user.
-		// Getting `created_by` correctly would neccessitate another query, not
-		// worth it currently.
+	by := authcontext.GetAuthnUserID(ctx).UUIDValue()
+
+	err = q.Clauses(clause.OnConflict{
+		Columns: []clause.Column{{Name: "project_id"}, {Name: "key"}},
+		DoUpdates: clause.Assignments(map[string]any{
+			"value":      bs,
+			"updated_by": by,
+			"updated_at": kittehs.Now(),
+			// DO NOT reset "published" flag on update.
+		}),
+	}).Create(&scheme.StoreValue{
 		Base:      based(ctx),
 		ProjectID: pid.UUIDValue(),
 		Key:       key,
 		Value:     bs,
+		UpdatedBy: by,
+		UpdatedAt: kittehs.Now(),
 	}).Error
 
 	return translateError(err)
@@ -66,6 +75,33 @@ func (db *gormdb) GetStoreValue(ctx context.Context, pid sdktypes.ProjectID, key
 	}
 
 	return v, nil
+}
+
+func (db *gormdb) PublishStoreValue(ctx context.Context, pid sdktypes.ProjectID, key string) error {
+	if !pid.IsValid() {
+		return sdkerrors.NewInvalidArgumentError("invalid project id")
+	}
+
+	q := db.writer.WithContext(ctx).Model(&scheme.StoreValue{}).Where("project_id = ? AND key = ?", pid.UUIDValue(), key).Update("published", true)
+	if err := q.Error; err != nil {
+		return translateError(err)
+	}
+
+	if q.RowsAffected == 0 {
+		return sdkerrors.ErrNotFound
+	}
+
+	return nil
+}
+
+func (db *gormdb) IsStoreValuePublished(ctx context.Context, pid sdktypes.ProjectID, key string) (bool, error) {
+	var sv scheme.StoreValue
+	err := db.reader.WithContext(ctx).Select("published").Where("project_id = ? AND key = ?", pid.UUIDValue(), key).First(&sv).Error
+	if err != nil {
+		return false, translateError(err)
+	}
+
+	return sv.Published, nil
 }
 
 func (db *gormdb) ListStoreValues(ctx context.Context, pid sdktypes.ProjectID, keys []string, getValues bool) (map[string]sdktypes.Value, error) {

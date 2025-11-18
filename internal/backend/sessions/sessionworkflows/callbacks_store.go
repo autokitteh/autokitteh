@@ -40,3 +40,17 @@ func (w *sessionWorkflow) mutateStoreValue(wctx workflow.Context) func(context.C
 		return v, nil
 	}
 }
+
+func (w *sessionWorkflow) publishStoreValue(wctx workflow.Context) func(context.Context, sdktypes.RunID, string) error {
+	return func(ctx context.Context, _ sdktypes.RunID, key string) error {
+		if activity.IsActivity(ctx) {
+			return w.ws.publishStoreValueActivity(ctx, w.data.Session.ProjectID(), key)
+		}
+
+		if err := workflow.ExecuteActivity(wctx, publishStoreValueActivityName, w.data.Session.ProjectID(), key).Get(wctx, nil); err != nil {
+			return err
+		}
+
+		return nil
+	}
+}

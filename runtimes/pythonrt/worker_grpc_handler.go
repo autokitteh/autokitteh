@@ -583,6 +583,24 @@ func (s *workerGRPCHandler) StoreMutate(ctx context.Context, req *userCode.Store
 	}, nil
 }
 
+func (s *workerGRPCHandler) StorePublish(ctx context.Context, req *userCode.StorePublishRequest) (*userCode.StorePublishResponse, error) {
+	fn := func(ctx context.Context, cbs *sdkservices.RunCallbacks, rid sdktypes.RunID) (any, error) {
+		return nil, cbs.PublishStoreValue(ctx, rid, req.Key)
+	}
+
+	resp, err := s.callback(ctx, req.RunnerId, "publish_value", fn)
+	if err != nil {
+		return &userCode.StorePublishResponse{Error: err.Error()}, nil
+	}
+
+	if resp.err != nil {
+		err = status.Errorf(codes.Internal, "publish_value(%v) -> %v", req.Key, err)
+		return &userCode.StorePublishResponse{Error: err.Error()}, nil
+	}
+
+	return &userCode.StorePublishResponse{}, nil
+}
+
 func (s *workerGRPCHandler) Outcome(ctx context.Context, req *userCode.OutcomeRequest) (*userCode.OutcomeResponse, error) {
 	v, err := sdktypes.ValueFromProto(req.Value)
 	if err != nil {

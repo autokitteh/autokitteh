@@ -559,6 +559,7 @@ type StoreValue struct {
 	ProjectID uuid.UUID `gorm:"primaryKey;type:uuid;not null"`
 	Key       string    `gorm:"primaryKey;not null"`
 	Value     []byte
+	Published bool
 
 	UpdatedBy uuid.UUID `gorm:"type:uuid"`
 	UpdatedAt time.Time
