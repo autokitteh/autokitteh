@@ -14,7 +14,7 @@ permissions:
 jobs:
   go-unit-tests:
     name: Go build + unit tests (${{matrix.name}})
-    runs-on: large
+    runs-on: large1
     timeout-minutes: 10
     strategy:
       matrix:
