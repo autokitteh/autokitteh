@@ -42,3 +42,6 @@ archives:
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
+
+checksum:
+  name_template: "{{ .ProjectName }}_ee_checksums.txt"
