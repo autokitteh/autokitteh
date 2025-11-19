@@ -22,7 +22,7 @@ permissions:
 jobs:
     goreleaser-opensource:
         name: GoReleaser (Open Source)
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-latest-4-cores
         timeout-minutes: 30
         permissions:
             contents: write
@@ -50,7 +50,7 @@ jobs:
 
     goreleaser-ee:
         name: GoReleaser (Enterprise)
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-latest-4-cores
         timeout-minutes: 30
         permissions:
             contents: write
