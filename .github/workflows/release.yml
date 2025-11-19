@@ -20,8 +20,8 @@ permissions:
     id-token: write
 
 jobs:
-    goreleaser:
-        name: GoReleaser
+    goreleaser-opensource:
+        name: GoReleaser (Open Source)
         runs-on: ubuntu-latest
         timeout-minutes: 30
         permissions:
@@ -32,27 +32,33 @@ jobs:
               with:
                   fetch-depth: 0
 
-            - name: Free up space
-              run: |
-                  echo "=============================================================================="
-                  echo "Freeing up disk space on CI system"
-                  echo "=============================================================================="
+            - name: Set up Go
+              uses: actions/setup-go@v5
+              with:
+                  go-version-file: go.mod
 
-                  echo "Listing 100 largest packages"
-                  dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n | tail -n 100
-                  df -h
-                  echo "Removing large packages"
-                  sudo apt-get remove -y '^ghc-8.*' || true
-                  sudo apt-get remove -y '^dotnet-.*' || true
-                  sudo apt-get remove -y '^llvm-.*' || true
-                  sudo apt-get remove -y 'php.*' || true
-                  sudo apt-get remove -y azure-cli google-cloud-sdk hhvm google-chrome-stable firefox powershell mono-devel || true
-                  sudo apt-get autoremove -y
-                  sudo apt-get clean
-                  df -h
-                  echo "Removing large directories"
-                  rm -rf /usr/share/dotnet/
-                  df -h
+            - name: Fetch web platform
+              run: make webplatform
+
+            - name: Run GoReleaser (Open Source)
+              uses: goreleaser/goreleaser-action@v6
+              with:
+                  version: latest
+                  args: release --clean --config .goreleaser-opensource.yaml
+              env:
+                  GITHUB_TOKEN: ${{secrets.HOMEBREW_TAP_TOKEN}}
+
+    goreleaser-ee:
+        name: GoReleaser (Enterprise)
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
+        permissions:
+            contents: write
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
 
             - name: Set up Go
               uses: actions/setup-go@v5
@@ -62,13 +68,13 @@ jobs:
             - name: Fetch web platform
               run: make webplatform
 
-            - name: Run GoReleaser
+            - name: Run GoReleaser (Enterprise)
               uses: goreleaser/goreleaser-action@v6
               with:
                   version: latest
-                  args: release --clean
+                  args: release --clean --config .goreleaser-ee.yaml
               env:
-                  GITHUB_TOKEN: ${{secrets.HOMEBREW_TAP_TOKEN}}
+                  GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
     build-standard:
         uses: ./.github/workflows/docker.yml
@@ -76,6 +82,7 @@ jobs:
             push: true
             image: server
         secrets: inherit
+
     build-ee:
         uses: ./.github/workflows/docker.yml
         with:
