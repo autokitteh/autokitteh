@@ -73,7 +73,12 @@ func startAKServer(t *testing.T, ctx context.Context, akPath string, userCfg map
 	if subproc, _ := strconv.ParseBool(os.Getenv("AK_SYSTEST_USE_PROC_SVC")); subproc {
 		server, err = svcproc.NewSvcProc(akPath, cfgMap, runOpts)
 	} else {
-		server, err = svc.New(kittehs.Must1(svc.LoadConfig("", cfgMap, "")), runOpts)
+		var cfg *svc.Config
+		cfg, err = svc.LoadConfig("", cfgMap, "")
+		if err != nil {
+			return nil, "", fmt.Errorf("load config: %w", err)
+		}
+		server, err = svc.New(cfg, runOpts)
 	}
 	if err != nil {
 		return nil, "", fmt.Errorf("new AK server: %w", err)

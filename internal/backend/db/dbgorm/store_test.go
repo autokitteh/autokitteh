@@ -94,4 +94,30 @@ func TestValues(t *testing.T) {
 	v, err = db.GetStoreValue(ctx, pids[2], "key")
 	assert.NoError(t, err)
 	assert.Equal(t, sdktypes.Nothing, v)
+
+	pub, err := db.IsStoreValuePublished(ctx, pids[1], "key")
+	if assert.NoError(t, err) {
+		assert.False(t, pub)
+	}
+
+	err = db.PublishStoreValue(ctx, pids[1], "key")
+	assert.NoError(t, err)
+
+	pub, err = db.IsStoreValuePublished(ctx, pids[1], "key")
+	if assert.NoError(t, err) {
+		assert.True(t, pub)
+	}
+
+	require.NoError(t, db.SetStoreValue(ctx, pids[1], "key", sdktypes.NewIntegerValue(3)))
+
+	// Check that the published flag is still true after update.
+	pub, err = db.IsStoreValuePublished(ctx, pids[1], "key")
+	if assert.NoError(t, err) {
+		assert.True(t, pub)
+	}
+
+	v, err = db.GetStoreValue(ctx, pids[1], "key")
+	if assert.NoError(t, err) {
+		assert.Equal(t, sdktypes.NewIntegerValue(3), v)
+	}
 }

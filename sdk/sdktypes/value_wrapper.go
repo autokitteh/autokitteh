@@ -24,9 +24,6 @@ type ValueWrapper struct {
 	FromStructFieldNameCaser func(string) string
 	ToStructFieldNameCaser   func(string) string
 
-	// Unwrap: if a struct, marshal it to JSON directly, do not convert to map.
-	UnwrapStructsAsJSON bool
-
 	// Error out when trying to unwrap into a struct and the struct has fields that do not exist in the value.
 	UnwrapErrorOnNonexistentStructFields bool
 

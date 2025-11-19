@@ -224,6 +224,13 @@ class SysCalls:
     def ak_del_value(self, key: str) -> Any:
         return self.ak_mutate_value(key, "del")
 
+    def ak_publish_value(self, key: str) -> None:
+        req = pb.StorePublishRequest(
+            runner_id=self.runner_id,
+            key=key,
+        )
+        call_grpc("store_publish", self.worker.StorePublish, req)
+
     def ak_list_values_keys(self) -> list[str]:
         log.debug("ak_list_values")
         req = pb.StoreListRequest(runner_id=self.runner_id)
