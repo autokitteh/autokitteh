@@ -12,6 +12,37 @@ permissions:
   contents: read
 
 jobs:
+  test-release-works:
+    name: GoReleaser (Open Source)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Fetch web platform
+        run: make webplatform
+
+      - name: Run GoReleaser (Open Source)
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: latest
+          args: build --clean --snapshot --config .goreleaser-opensource.yaml
+        env:
+          GITHUB_TOKEN: ${{secrets.HOMEBREW_TAP_TOKEN}}
+
   go-unit-tests:
     name: Go build + unit tests (${{matrix.name}})
     runs-on: ubuntu-latest
