@@ -85,10 +85,14 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	sl.Infof("webhook request: %s %s", r.Method, r.URL.Path)
 
-	if s.cfg.MaxBodySize > 0 && uint64(r.ContentLength) > s.cfg.MaxBodySize {
-		sl.Warnf("request body too large: %d bytes (max: %d bytes)", r.ContentLength, s.cfg.MaxBodySize)
-		http.Error(w, fmt.Sprintf("Request Entity Too Large (%d>%d bytes)", r.ContentLength, s.cfg.MaxBodySize), http.StatusRequestEntityTooLarge)
-		return
+	if s.cfg.MaxBodySize > 0 {
+		if r.ContentLength > 0 && uint64(r.ContentLength) > s.cfg.MaxBodySize {
+			sl.Warnf("request body too large: %d bytes (max: %d bytes)", r.ContentLength, s.cfg.MaxBodySize)
+			http.Error(w, fmt.Sprintf("Request Entity Too Large (%d>%d bytes)", r.ContentLength, s.cfg.MaxBodySize), http.StatusRequestEntityTooLarge)
+			return
+		}
+
+		r.Body = http.MaxBytesReader(w, r.Body, int64(s.cfg.MaxBodySize))
 	}
 
 	ctx := r.Context()
