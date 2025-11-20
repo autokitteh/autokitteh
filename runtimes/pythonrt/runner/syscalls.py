@@ -231,6 +231,13 @@ class SysCalls:
         )
         call_grpc("store_publish", self.worker.StorePublish, req)
 
+    def ak_unpublish_value(self, key: str) -> None:
+        req = pb.StoreUnpublishRequest(
+            runner_id=self.runner_id,
+            key=key,
+        )
+        call_grpc("store_unpublish", self.worker.StoreUnpublish, req)
+
     def ak_list_values_keys(self) -> list[str]:
         log.debug("ak_list_values")
         req = pb.StoreListRequest(runner_id=self.runner_id)

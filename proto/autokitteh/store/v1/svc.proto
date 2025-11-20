@@ -9,6 +9,7 @@ service StoreService {
   rpc Mutate(MutateRequest) returns (MutateResponse);
   rpc Get(GetRequest) returns (GetResponse);
   rpc Publish(PublishRequest) returns (PublishResponse);
+  rpc Unpublish(UnpublishRequest) returns (UnpublishResponse);
   rpc List(ListRequest) returns (ListResponse);
 }
 
@@ -51,3 +52,10 @@ message PublishRequest {
 }
 
 message PublishResponse {}
+
+message UnpublishRequest {
+  string project_id = 1;
+  string key = 2 [(buf.validate.field).string.min_len = 1];
+}
+
+message UnpublishResponse {}

@@ -147,6 +147,15 @@ message StorePublishResponse {
   string error = 1;
 }
 
+message StoreUnpublishRequest {
+  string runner_id = 1;
+  string key = 2;
+}
+
+message StoreUnpublishResponse {
+  string error = 1;
+}
+
 message OutcomeRequest {
   string runner_id = 1;
   autokitteh.values.v1.Value value = 2;
@@ -244,6 +253,7 @@ service HandlerService {
   rpc StoreList(StoreListRequest) returns (StoreListResponse) {}
   rpc StoreMutate(StoreMutateRequest) returns (StoreMutateResponse) {}
   rpc StorePublish(StorePublishRequest) returns (StorePublishResponse) {}
+  rpc StoreUnpublish(StoreUnpublishRequest) returns (StoreUnpublishResponse) {}
   rpc Outcome(OutcomeRequest) returns (OutcomeResponse) {}
 
   // Utility functions

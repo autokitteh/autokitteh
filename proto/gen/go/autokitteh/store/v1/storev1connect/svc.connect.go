@@ -39,6 +39,8 @@ const (
 	StoreServiceGetProcedure = "/autokitteh.store.v1.StoreService/Get"
 	// StoreServicePublishProcedure is the fully-qualified name of the StoreService's Publish RPC.
 	StoreServicePublishProcedure = "/autokitteh.store.v1.StoreService/Publish"
+	// StoreServiceUnpublishProcedure is the fully-qualified name of the StoreService's Unpublish RPC.
+	StoreServiceUnpublishProcedure = "/autokitteh.store.v1.StoreService/Unpublish"
 	// StoreServiceListProcedure is the fully-qualified name of the StoreService's List RPC.
 	StoreServiceListProcedure = "/autokitteh.store.v1.StoreService/List"
 )
@@ -48,6 +50,7 @@ type StoreServiceClient interface {
 	Mutate(context.Context, *connect.Request[v1.MutateRequest]) (*connect.Response[v1.MutateResponse], error)
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
 	Publish(context.Context, *connect.Request[v1.PublishRequest]) (*connect.Response[v1.PublishResponse], error)
+	Unpublish(context.Context, *connect.Request[v1.UnpublishRequest]) (*connect.Response[v1.UnpublishResponse], error)
 	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
 }
 
@@ -76,6 +79,11 @@ func NewStoreServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			baseURL+StoreServicePublishProcedure,
 			opts...,
 		),
+		unpublish: connect.NewClient[v1.UnpublishRequest, v1.UnpublishResponse](
+			httpClient,
+			baseURL+StoreServiceUnpublishProcedure,
+			opts...,
+		),
 		list: connect.NewClient[v1.ListRequest, v1.ListResponse](
 			httpClient,
 			baseURL+StoreServiceListProcedure,
@@ -86,10 +94,11 @@ func NewStoreServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 
 // storeServiceClient implements StoreServiceClient.
 type storeServiceClient struct {
-	mutate  *connect.Client[v1.MutateRequest, v1.MutateResponse]
-	get     *connect.Client[v1.GetRequest, v1.GetResponse]
-	publish *connect.Client[v1.PublishRequest, v1.PublishResponse]
-	list    *connect.Client[v1.ListRequest, v1.ListResponse]
+	mutate    *connect.Client[v1.MutateRequest, v1.MutateResponse]
+	get       *connect.Client[v1.GetRequest, v1.GetResponse]
+	publish   *connect.Client[v1.PublishRequest, v1.PublishResponse]
+	unpublish *connect.Client[v1.UnpublishRequest, v1.UnpublishResponse]
+	list      *connect.Client[v1.ListRequest, v1.ListResponse]
 }
 
 // Mutate calls autokitteh.store.v1.StoreService.Mutate.
@@ -107,6 +116,11 @@ func (c *storeServiceClient) Publish(ctx context.Context, req *connect.Request[v
 	return c.publish.CallUnary(ctx, req)
 }
 
+// Unpublish calls autokitteh.store.v1.StoreService.Unpublish.
+func (c *storeServiceClient) Unpublish(ctx context.Context, req *connect.Request[v1.UnpublishRequest]) (*connect.Response[v1.UnpublishResponse], error) {
+	return c.unpublish.CallUnary(ctx, req)
+}
+
 // List calls autokitteh.store.v1.StoreService.List.
 func (c *storeServiceClient) List(ctx context.Context, req *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error) {
 	return c.list.CallUnary(ctx, req)
@@ -117,6 +131,7 @@ type StoreServiceHandler interface {
 	Mutate(context.Context, *connect.Request[v1.MutateRequest]) (*connect.Response[v1.MutateResponse], error)
 	Get(context.Context, *connect.Request[v1.GetRequest]) (*connect.Response[v1.GetResponse], error)
 	Publish(context.Context, *connect.Request[v1.PublishRequest]) (*connect.Response[v1.PublishResponse], error)
+	Unpublish(context.Context, *connect.Request[v1.UnpublishRequest]) (*connect.Response[v1.UnpublishResponse], error)
 	List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error)
 }
 
@@ -141,6 +156,11 @@ func NewStoreServiceHandler(svc StoreServiceHandler, opts ...connect.HandlerOpti
 		svc.Publish,
 		opts...,
 	)
+	storeServiceUnpublishHandler := connect.NewUnaryHandler(
+		StoreServiceUnpublishProcedure,
+		svc.Unpublish,
+		opts...,
+	)
 	storeServiceListHandler := connect.NewUnaryHandler(
 		StoreServiceListProcedure,
 		svc.List,
@@ -154,6 +174,8 @@ func NewStoreServiceHandler(svc StoreServiceHandler, opts ...connect.HandlerOpti
 			storeServiceGetHandler.ServeHTTP(w, r)
 		case StoreServicePublishProcedure:
 			storeServicePublishHandler.ServeHTTP(w, r)
+		case StoreServiceUnpublishProcedure:
+			storeServiceUnpublishHandler.ServeHTTP(w, r)
 		case StoreServiceListProcedure:
 			storeServiceListHandler.ServeHTTP(w, r)
 		default:
@@ -175,6 +197,10 @@ func (UnimplementedStoreServiceHandler) Get(context.Context, *connect.Request[v1
 
 func (UnimplementedStoreServiceHandler) Publish(context.Context, *connect.Request[v1.PublishRequest]) (*connect.Response[v1.PublishResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.store.v1.StoreService.Publish is not implemented"))
+}
+
+func (UnimplementedStoreServiceHandler) Unpublish(context.Context, *connect.Request[v1.UnpublishRequest]) (*connect.Response[v1.UnpublishResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.store.v1.StoreService.Unpublish is not implemented"))
 }
 
 func (UnimplementedStoreServiceHandler) List(context.Context, *connect.Request[v1.ListRequest]) (*connect.Response[v1.ListResponse], error) {

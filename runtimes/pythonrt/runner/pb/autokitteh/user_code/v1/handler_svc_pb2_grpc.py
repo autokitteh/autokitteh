@@ -89,6 +89,11 @@ class HandlerServiceStub(object):
                 request_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StorePublishRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StorePublishResponse.FromString,
                 _registered_method=True)
+        self.StoreUnpublish = channel.unary_unary(
+                '/autokitteh.user_code.v1.HandlerService/StoreUnpublish',
+                request_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StoreUnpublishRequest.SerializeToString,
+                response_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StoreUnpublishResponse.FromString,
+                _registered_method=True)
         self.Outcome = channel.unary_unary(
                 '/autokitteh.user_code.v1.HandlerService/Outcome',
                 request_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.OutcomeRequest.SerializeToString,
@@ -215,6 +220,12 @@ class HandlerServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def StoreUnpublish(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def Outcome(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -323,6 +334,11 @@ def add_HandlerServiceServicer_to_server(servicer, server):
                     servicer.StorePublish,
                     request_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StorePublishRequest.FromString,
                     response_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StorePublishResponse.SerializeToString,
+            ),
+            'StoreUnpublish': grpc.unary_unary_rpc_method_handler(
+                    servicer.StoreUnpublish,
+                    request_deserializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StoreUnpublishRequest.FromString,
+                    response_serializer=autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StoreUnpublishResponse.SerializeToString,
             ),
             'Outcome': grpc.unary_unary_rpc_method_handler(
                     servicer.Outcome,
@@ -755,6 +771,33 @@ class HandlerService(object):
             '/autokitteh.user_code.v1.HandlerService/StorePublish',
             autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StorePublishRequest.SerializeToString,
             autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StorePublishResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def StoreUnpublish(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/autokitteh.user_code.v1.HandlerService/StoreUnpublish',
+            autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StoreUnpublishRequest.SerializeToString,
+            autokitteh_dot_user__code_dot_v1_dot_handler__svc__pb2.StoreUnpublishResponse.FromString,
             options,
             channel_credentials,
             insecure,

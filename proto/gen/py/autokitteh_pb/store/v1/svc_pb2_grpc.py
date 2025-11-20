@@ -29,6 +29,11 @@ class StoreServiceStub(object):
                 request_serializer=autokitteh_dot_store_dot_v1_dot_svc__pb2.PublishRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_store_dot_v1_dot_svc__pb2.PublishResponse.FromString,
                 )
+        self.Unpublish = channel.unary_unary(
+                '/autokitteh.store.v1.StoreService/Unpublish',
+                request_serializer=autokitteh_dot_store_dot_v1_dot_svc__pb2.UnpublishRequest.SerializeToString,
+                response_deserializer=autokitteh_dot_store_dot_v1_dot_svc__pb2.UnpublishResponse.FromString,
+                )
         self.List = channel.unary_unary(
                 '/autokitteh.store.v1.StoreService/List',
                 request_serializer=autokitteh_dot_store_dot_v1_dot_svc__pb2.ListRequest.SerializeToString,
@@ -57,6 +62,12 @@ class StoreServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def Unpublish(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def List(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -80,6 +91,11 @@ def add_StoreServiceServicer_to_server(servicer, server):
                     servicer.Publish,
                     request_deserializer=autokitteh_dot_store_dot_v1_dot_svc__pb2.PublishRequest.FromString,
                     response_serializer=autokitteh_dot_store_dot_v1_dot_svc__pb2.PublishResponse.SerializeToString,
+            ),
+            'Unpublish': grpc.unary_unary_rpc_method_handler(
+                    servicer.Unpublish,
+                    request_deserializer=autokitteh_dot_store_dot_v1_dot_svc__pb2.UnpublishRequest.FromString,
+                    response_serializer=autokitteh_dot_store_dot_v1_dot_svc__pb2.UnpublishResponse.SerializeToString,
             ),
             'List': grpc.unary_unary_rpc_method_handler(
                     servicer.List,
@@ -144,6 +160,23 @@ class StoreService(object):
         return grpc.experimental.unary_unary(request, target, '/autokitteh.store.v1.StoreService/Publish',
             autokitteh_dot_store_dot_v1_dot_svc__pb2.PublishRequest.SerializeToString,
             autokitteh_dot_store_dot_v1_dot_svc__pb2.PublishResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def Unpublish(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/autokitteh.store.v1.StoreService/Unpublish',
+            autokitteh_dot_store_dot_v1_dot_svc__pb2.UnpublishRequest.SerializeToString,
+            autokitteh_dot_store_dot_v1_dot_svc__pb2.UnpublishResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
