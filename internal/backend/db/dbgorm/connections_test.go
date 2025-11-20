@@ -59,7 +59,7 @@ func TestCreateConnectionForeignKeys(t *testing.T) {
 	// assert.ErrorIs(t, f.gormdb.createConnection(f.ctx, &c), gorm.ErrForeignKeyViolated)
 	// c.IntegrationID = nil
 
-	c.ProjectID = b.BuildID // no such projectID, since it's a buildID
+	c.ProjectID = &b.BuildID // no such projectID, since it's a buildID
 	assert.ErrorIs(t, f.gormdb.createConnection(f.ctx, &c), gorm.ErrForeignKeyViolated)
 
 	// test with existing assets

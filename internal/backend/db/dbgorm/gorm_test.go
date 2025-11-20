@@ -450,7 +450,7 @@ func (f *dbFixture) newConnection(args ...any) scheme.Connection {
 	for _, a := range args {
 		switch a := a.(type) {
 		case scheme.Project:
-			c.ProjectID = a.ProjectID
+			c.ProjectID = &a.ProjectID
 		case string:
 			c.Name = a
 		}

@@ -32,7 +32,7 @@ func TestGetOwnerOrgID(t *testing.T) {
 
 	require.NoError(t, db.CreateProject(ctx, sdktypes.NewProject().WithName(sdktypes.NewSymbol("test")).WithID(pid).WithOrgID(oid)))
 	require.NoError(t, db.SaveBuild(ctx, sdktypes.NewBuild().WithProjectID(pid).WithID(bid), []byte("meow")))
-	require.NoError(t, db.CreateConnection(ctx, sdktypes.NewConnection(cid).WithName(sdktypes.NewSymbol("test")).WithIntegrationID(sdktypes.NewIntegrationID()).WithProjectID(pid)))
+	require.NoError(t, db.CreateConnection(ctx, sdktypes.NewConnection(cid).WithName(sdktypes.NewSymbol("test")).WithIntegrationID(sdktypes.NewIntegrationID()).WithProjectID(pid).WithOrgID(oid)))
 	require.NoError(t, db.CreateTrigger(ctx, sdktypes.NewTrigger(sdktypes.NewSymbol("test")).WithProjectID(pid).WithID(tid).WithConnectionID(cid)))
 	require.NoError(t, db.CreateDeployment(ctx, sdktypes.NewDeployment(did, pid, bid)))
 

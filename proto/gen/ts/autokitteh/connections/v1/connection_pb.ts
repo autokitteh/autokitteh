@@ -59,6 +59,11 @@ export class Connection extends Message<Connection> {
    */
   links: { [key: string]: string } = {};
 
+  /**
+   * @generated from field: string org_id = 8;
+   */
+  orgId = "";
+
   constructor(data?: PartialMessage<Connection>) {
     super();
     proto3.util.initPartial(data, this);
@@ -74,6 +79,7 @@ export class Connection extends Message<Connection> {
     { no: 5, name: "status", kind: "message", T: Status },
     { no: 6, name: "capabilities", kind: "message", T: Capabilities },
     { no: 7, name: "links", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 8, name: "org_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Connection {

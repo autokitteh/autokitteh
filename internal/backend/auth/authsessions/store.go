@@ -36,6 +36,10 @@ func New(cfg *Config, tokens authtokens.Tokens) (Store, error) {
 		domain = "." + cfg.Domain
 	}
 
+	if strings.HasPrefix(cfg.Domain, "localhost") {
+		domain = "localhost"
+	}
+
 	return &store{
 		domain:     domain,
 		secure:     cfg.Secure,
