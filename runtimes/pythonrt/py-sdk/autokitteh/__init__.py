@@ -21,6 +21,7 @@ from .store import (
     publish_value,
     set_value,
     store,
+    unpublish_value,
 )
 from .triggers import get_webhook_url
 
@@ -55,4 +56,5 @@ __all__ = [
     "publish_value",
     "set_value",
     "store",
+    "unpublish_value",
 ]

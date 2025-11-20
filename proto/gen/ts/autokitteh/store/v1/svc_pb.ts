@@ -327,3 +327,77 @@ export class PublishResponse extends Message<PublishResponse> {
   }
 }
 
+/**
+ * @generated from message autokitteh.store.v1.UnpublishRequest
+ */
+export class UnpublishRequest extends Message<UnpublishRequest> {
+  /**
+   * @generated from field: string project_id = 1;
+   */
+  projectId = "";
+
+  /**
+   * @generated from field: string key = 2;
+   */
+  key = "";
+
+  constructor(data?: PartialMessage<UnpublishRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.store.v1.UnpublishRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UnpublishRequest {
+    return new UnpublishRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UnpublishRequest {
+    return new UnpublishRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UnpublishRequest {
+    return new UnpublishRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UnpublishRequest | PlainMessage<UnpublishRequest> | undefined, b: UnpublishRequest | PlainMessage<UnpublishRequest> | undefined): boolean {
+    return proto3.util.equals(UnpublishRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.store.v1.UnpublishResponse
+ */
+export class UnpublishResponse extends Message<UnpublishResponse> {
+  constructor(data?: PartialMessage<UnpublishResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.store.v1.UnpublishResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UnpublishResponse {
+    return new UnpublishResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UnpublishResponse {
+    return new UnpublishResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UnpublishResponse {
+    return new UnpublishResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UnpublishResponse | PlainMessage<UnpublishResponse> | undefined, b: UnpublishResponse | PlainMessage<UnpublishResponse> | undefined): boolean {
+    return proto3.util.equals(UnpublishResponse, a, b);
+  }
+}
+

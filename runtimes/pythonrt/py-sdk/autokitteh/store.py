@@ -194,3 +194,14 @@ def publish_value(key: str) -> None:
         key: Key of the value to publish.
     """
     pass
+
+
+def unpublish_value(key: str) -> None:
+    """Unpublish a stored value.
+
+    Works both for durable and non-durable sessions.
+
+    Args:
+        key: Key of the value to unpublish.
+    """
+    pass
