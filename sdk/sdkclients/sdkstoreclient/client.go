@@ -87,3 +87,19 @@ func (c *client) Publish(ctx context.Context, pid sdktypes.ProjectID, key string
 
 	return nil
 }
+
+func (c *client) Unpublish(ctx context.Context, pid sdktypes.ProjectID, key string) error {
+	resp, err := c.client.Unpublish(ctx, connect.NewRequest(&storev1.UnpublishRequest{
+		ProjectId: pid.String(),
+		Key:       key,
+	}))
+	if err != nil {
+		return rpcerrors.ToSDKError(err)
+	}
+
+	if err := internal.Validate(resp.Msg); err != nil {
+		return err
+	}
+
+	return nil
+}

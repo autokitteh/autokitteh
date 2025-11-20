@@ -241,6 +241,20 @@ class StorePublishResponse(_message.Message):
     error: str
     def __init__(self, error: _Optional[str] = ...) -> None: ...
 
+class StoreUnpublishRequest(_message.Message):
+    __slots__ = ["runner_id", "key"]
+    RUNNER_ID_FIELD_NUMBER: _ClassVar[int]
+    KEY_FIELD_NUMBER: _ClassVar[int]
+    runner_id: str
+    key: str
+    def __init__(self, runner_id: _Optional[str] = ..., key: _Optional[str] = ...) -> None: ...
+
+class StoreUnpublishResponse(_message.Message):
+    __slots__ = ["error"]
+    ERROR_FIELD_NUMBER: _ClassVar[int]
+    error: str
+    def __init__(self, error: _Optional[str] = ...) -> None: ...
+
 class OutcomeRequest(_message.Message):
     __slots__ = ["runner_id", "value"]
     RUNNER_ID_FIELD_NUMBER: _ClassVar[int]

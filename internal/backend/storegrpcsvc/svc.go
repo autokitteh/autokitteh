@@ -111,3 +111,23 @@ func (s *server) Publish(ctx context.Context, req *connect.Request[storev1.Publi
 
 	return connect.NewResponse(&storev1.PublishResponse{}), nil
 }
+
+func (s *server) Unpublish(ctx context.Context, req *connect.Request[storev1.UnpublishRequest]) (*connect.Response[storev1.UnpublishResponse], error) {
+	msg := req.Msg
+
+	if err := proto.Validate(msg); err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	pid, err := sdktypes.ParseProjectID(msg.ProjectId)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	err = s.store.Unpublish(ctx, pid, msg.Key)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	return connect.NewResponse(&storev1.UnpublishResponse{}), nil
+}
