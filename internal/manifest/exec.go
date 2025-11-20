@@ -69,8 +69,7 @@ func executeAction(ctx context.Context, action actions.Action, execContext *exec
 			return nil, fmt.Errorf("integration %q not found", action.IntegrationKey)
 		}
 
-		conn := action.Connection.WithProjectID(pid).WithIntegrationID(iid)
-
+		conn := action.Connection.WithProjectID(pid).WithIntegrationID(iid).WithOrgID(action.OrgID)
 		cid, err := execContext.client.Connections().Create(ctx, conn)
 		if err != nil {
 			return nil, err
