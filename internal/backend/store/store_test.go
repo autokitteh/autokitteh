@@ -40,7 +40,10 @@ func TestMain(m *testing.M) {
 func TestMutate(t *testing.T) {
 	db := dbtest.NewTestDB(t, o, ps[0], ps[1])
 
-	store := New(db, zap.NewNop())
+	store := New(db, zap.NewNop(), &Config{
+		MaxValueSizeBytes:   64 * 1024, // 64 KiB
+		MaxValuesPerProject: 3,
+	})
 
 	// Each test is not independent - it relies on the previous state.
 	tests := []struct {
@@ -225,6 +228,24 @@ func TestMutate(t *testing.T) {
 			operands: []sdktypes.Value{ivs[1], ivs[0]},
 			ret:      sdktypes.FalseValue,
 		},
+		{
+			key: "big",
+			op:  "set",
+			pid: pids[0],
+			operands: []sdktypes.Value{
+				sdktypes.NewBytesValue(make([]byte, 128*1024)),
+			},
+			err: "value size (131080 bytes) exceeds maximum allowed (65536 bytes)",
+		},
+		{
+			key: "too_many",
+			op:  "set",
+			pid: pids[1],
+			operands: []sdktypes.Value{
+				ivs[0],
+			},
+			err: "number of stored values (4) exceeds maximum allowed (3)",
+		},
 	}
 
 	for i, test := range tests {
@@ -238,7 +259,7 @@ func TestMutate(t *testing.T) {
 			)
 
 			if test.err != "" {
-				assert.Equal(t, test.err, err.Error())
+				assert.EqualError(t, err, test.err)
 			} else if assert.NoError(t, err) {
 				assert.True(t, test.ret.Equal(ret), "expected %s, got %s", test.ret, ret)
 			}
