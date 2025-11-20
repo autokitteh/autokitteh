@@ -5,7 +5,7 @@ package authz
 
 const (
 	// Store operations
-	OpStoreWriteDo        = "write:do"
+	OpStoreWriteSet       = "write:set"
 	OpStoreReadGet        = "read:get"
 	OpStoreReadList       = "read:list"
 	OpStoreWritePublish   = "write:publish"
