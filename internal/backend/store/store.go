@@ -84,7 +84,7 @@ func (s *store) Mutate(ctx context.Context, pid sdktypes.ProjectID, key, op stri
 				return sdkerrors.NewInvalidArgumentError("value size (%d bytes) exceeds maximum allowed (%d bytes)", next.ProtoSize(), s.cfg.MaxValueSizeBytes)
 			}
 
-			if !curr.IsValid() {
+			if (!curr.IsValid() || curr.IsNothing()) && next.IsValid() {
 				count, err := tx.CountStoreValues(ctx, pid)
 				if err != nil {
 					return err
