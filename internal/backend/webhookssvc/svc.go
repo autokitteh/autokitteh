@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"go.jetify.com/typeid"
 	"go.uber.org/zap"
@@ -36,12 +37,14 @@ const WebhooksPathPrefix = "webhooks/"
 type Config struct {
 	SessionOutcomePollInterval time.Duration `koanf:"session_outcome_poll_interval"`
 	WebhookResponseTimeout     time.Duration `koanf:"webhook_response_timeout"`
+	MaxBodySize                uint64        `koanf:"max_body_size"`
 }
 
 var Configs = configset.Set[Config]{
 	Default: &Config{
 		WebhookResponseTimeout:     30 * time.Second,
 		SessionOutcomePollInterval: 100 * time.Millisecond,
+		MaxBodySize:                512 * 1024, // 512KB
 	},
 }
 
@@ -77,9 +80,20 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		zap.String("method", r.Method),
 		zap.String("url", r.URL.String()),
 		zap.String("slug", slug),
+		zap.Int64("content_length", r.ContentLength),
 	).Sugar()
 
 	sl.Infof("webhook request: %s %s", r.Method, r.URL.Path)
+
+	if s.cfg.MaxBodySize > 0 {
+		if r.ContentLength > 0 && uint64(r.ContentLength) > s.cfg.MaxBodySize {
+			sl.Warnf("request body too large: %d bytes (max: %d bytes)", r.ContentLength, s.cfg.MaxBodySize)
+			http.Error(w, fmt.Sprintf("Request Entity Too Large (%d>%d bytes)", r.ContentLength, s.cfg.MaxBodySize), http.StatusRequestEntityTooLarge)
+			return
+		}
+
+		r.Body = http.MaxBytesReader(w, r.Body, int64(s.cfg.MaxBodySize))
+	}
 
 	ctx := r.Context()
 
@@ -406,7 +420,10 @@ func bodyData(body []byte, form url.Values) sdktypes.Value {
 
 	if len(body) > 0 {
 		bytes = sdktypes.NewBytesValue(body)
-		text = sdktypes.NewStringValue(string(body))
+
+		if utf8.Valid(body) {
+			text = sdktypes.NewStringValue(string(body))
+		}
 	}
 
 	return sdktypes.NewDictValueFromStringMap(
