@@ -56,12 +56,12 @@ func ParseBuild(b Build) (sdktypes.Build, error) {
 type Connection struct {
 	Base
 
-	ProjectID     *uuid.UUID `gorm:"uniqueIndex:idx_connection_org_id_project_id,priority:2;index;type:uuid;"`
-	OrgID         uuid.UUID  `gorm:"uniqueIndex:idx_connection_org_id_project_id,priority:1;type:uuid;not null"`
+	ProjectID     *uuid.UUID `gorm:"uniqueIndex:idx_connection_org_id_project_id_name,priority:2,where:project_id is not null and deleted_at is null;index;type:uuid;"`
+	OrgID         uuid.UUID  `gorm:"uniqueIndex:idx_connection_org_id_name,priority:1,where:project_id is null and deleted_at is null;uniqueIndex:idx_connection_org_id_project_id_name,priority:1,where:project_id is not null and deleted_at is null;type:uuid;not null"`
 	ConnectionID  uuid.UUID  `gorm:"primaryKey;type:uuid;not null"`
 	IntegrationID *uuid.UUID `gorm:"index;type:uuid"`
-	Name          string
-	StatusCode    int32 `gorm:"index"`
+	Name          string     `gorm:"uniqueIndex:idx_connection_org_id_name,priority:2,where:project_id is null and deleted_at is null;not null;uniqueIndex:idx_connection_org_id_project_id_name,priority:3,where:project_id is not null and deleted_at is null"`
+	StatusCode    int32      `gorm:"index"`
 	StatusMessage string
 
 	UpdatedBy uuid.UUID `gorm:"type:uuid"`

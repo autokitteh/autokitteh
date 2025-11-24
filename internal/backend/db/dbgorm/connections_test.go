@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
@@ -12,7 +13,7 @@ import (
 
 func (f *dbFixture) createConnectionsAndAssert(t *testing.T, connections ...scheme.Connection) {
 	for _, conn := range connections {
-		assert.NoError(t, f.gormdb.createConnection(f.ctx, &conn))
+		require.NoError(t, f.gormdb.createConnection(f.ctx, &conn))
 		findAndAssertOne(t, f, conn, "connection_id = ?", conn.ConnectionID)
 	}
 }

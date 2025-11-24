@@ -26,6 +26,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/internal/backend/gormkitteh"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -254,6 +255,10 @@ func NoDebug() func(*gorm.DB) *gorm.DB {
 func findAndAssertCount[T any](t *testing.T, f *dbFixture, expected int, where string, args ...any) []T {
 	var objs []T
 	res := f.gormdb.reader.Where(where, args...).Find(&objs)
+
+	cs, _ := f.gormdb.listConnections(t.Context(), sdkservices.ListConnectionsFilter{}, false)
+	fmt.Println(cs)
+
 	require.NoError(t, res.Error)
 	require.Equal(t, expected, len(objs))
 	require.Equal(t, int64(expected), res.RowsAffected)

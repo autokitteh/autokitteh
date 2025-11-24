@@ -9,7 +9,7 @@ CREATE TABLE `new_connections` (
   `org_id` uuid NOT NULL,
   `connection_id` uuid NOT NULL,
   `integration_id` uuid NULL,
-  `name` text NULL,
+  `name` text NOT NULL,
   `status_code` integer NULL,
   `status_message` text NULL,
   `updated_by` uuid NULL,
@@ -30,18 +30,22 @@ CREATE INDEX `idx_connections_deleted_at` ON `connections` (`deleted_at`);
 CREATE INDEX `idx_connections_status_code` ON `connections` (`status_code`);
 -- create index "idx_connections_integration_id" to table: "connections"
 CREATE INDEX `idx_connections_integration_id` ON `connections` (`integration_id`);
+-- create index "idx_connection_org_id_name" to table: "connections"
+CREATE UNIQUE INDEX `idx_connection_org_id_name` ON `connections` (`org_id`, `name`) WHERE project_id is null and deleted_at is null;
 -- create index "idx_connections_project_id" to table: "connections"
 CREATE INDEX `idx_connections_project_id` ON `connections` (`project_id`);
--- create index "idx_connection_org_id_project_id" to table: "connections"
-CREATE UNIQUE INDEX `idx_connection_org_id_project_id` ON `connections` (`org_id`, `project_id`);
+-- create index "idx_connection_org_id_project_id_name" to table: "connections"
+CREATE UNIQUE INDEX `idx_connection_org_id_project_id_name` ON `connections` (`org_id`, `project_id`, `name`) WHERE project_id is not null and deleted_at is null;
 -- enable back the enforcement of foreign-keys constraints
 PRAGMA foreign_keys = on;
 
 -- +goose Down
--- reverse: create index "idx_connection_org_id_project_id" to table: "connections"
-DROP INDEX `idx_connection_org_id_project_id`;
+-- reverse: create index "idx_connection_org_id_project_id_name" to table: "connections"
+DROP INDEX `idx_connection_org_id_project_id_name`;
 -- reverse: create index "idx_connections_project_id" to table: "connections"
 DROP INDEX `idx_connections_project_id`;
+-- reverse: create index "idx_connection_org_id_name" to table: "connections"
+DROP INDEX `idx_connection_org_id_name`;
 -- reverse: create index "idx_connections_integration_id" to table: "connections"
 DROP INDEX `idx_connections_integration_id`;
 -- reverse: create index "idx_connections_status_code" to table: "connections"

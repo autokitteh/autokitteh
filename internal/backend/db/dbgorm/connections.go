@@ -7,7 +7,6 @@ import (
 	"maps"
 
 	"github.com/google/uuid"
-	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
@@ -18,16 +17,6 @@ import (
 
 func (gdb *gormdb) createConnection(ctx context.Context, conn *scheme.Connection) error {
 	return gdb.writeTransaction(ctx, func(tx *gormdb) error {
-		// ensure there is no connection with the same name for the same project
-		var count int64
-		if err := tx.writer.
-			Model(&scheme.Connection{}).
-			Where("name = ?", conn.Name).Where("project_id = ?", conn.ProjectID).Count(&count).Error; err != nil {
-			return err
-		}
-		if count > 0 {
-			return gorm.ErrDuplicatedKey // active/non-deleted connection was found.
-		}
 		return tx.writer.Create(conn).Error
 	})
 }

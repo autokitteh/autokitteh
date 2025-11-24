@@ -1,4 +1,4 @@
-h1:ZrHHgzZIQU79rzUlrnlHeuaYsJ9PDqfz1I3QAu4fBOs=
+h1:UbYvBAYoqWRapBIPj3lHqEXa2vvLzvNiJXB3BL/d1Sc=
 20240704121932_baseline.sql h1:1JS9FYe08Ef0wTpJIeeL4wIqHc8E/RXhuqmTI/FwkzY=
 20240714051207_no-db-user.sql h1:tx0AwepNeeL/XWD74sLRGwisrkNs4lyH/H4BG/663FQ=
 20240727114921_project-not-nil-name.sql h1:ZG3tDLzQSxd81S4BDe/IOMktltkurwyuFwu5gkqQvrA=
@@ -41,4 +41,4 @@ h1:ZrHHgzZIQU79rzUlrnlHeuaYsJ9PDqfz1I3QAu4fBOs=
 20251123160314_add-target-and-org-id-to-connections.sql h1:6RQMYAPlNuKE5MHXRsdhYszfDdfHj6ZdoeKbK2lrT1c=
 20251123160315_backfill-connection-org-id-and-target.sql h1:5RntiSeptbFA0h2t7GgP6iw3IZ0+qmPb9FI9Mkx3iFY=
 20251123160316_connection-project-id-nullable.sql h1:Ntrh9qmQ7g7/SAhF+B4PYgfjoiJ+sqRuBP7s5PNecPI=
-20251123160317_unique-org-id-project-id.sql h1:4ICi9aFs9Y95skjxR1UY6vKxtfcBeHv5xigZgci9nXE=
+20251124090946_connection-unique-index.sql h1:WuT6rvULctSmDpQkYxffNG5Zl4yOYcLy5C/FRpuE13Q=
