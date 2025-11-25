@@ -154,24 +154,30 @@ class LintRequest(_message.Message):
     def __init__(self, project_id: _Optional[str] = ..., resources: _Optional[_Mapping[str, bytes]] = ..., manifest_file: _Optional[str] = ...) -> None: ...
 
 class CheckViolation(_message.Message):
-    __slots__ = ["location", "level", "message", "rule_id"]
+    __slots__ = ["location", "level", "message", "rule_id", "short_message", "subject"]
     class Level(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
         __slots__ = []
         LEVEL_UNSPECIFIED: _ClassVar[CheckViolation.Level]
         LEVEL_WARNING: _ClassVar[CheckViolation.Level]
         LEVEL_ERROR: _ClassVar[CheckViolation.Level]
+        LEVEL_INFO: _ClassVar[CheckViolation.Level]
     LEVEL_UNSPECIFIED: CheckViolation.Level
     LEVEL_WARNING: CheckViolation.Level
     LEVEL_ERROR: CheckViolation.Level
+    LEVEL_INFO: CheckViolation.Level
     LOCATION_FIELD_NUMBER: _ClassVar[int]
     LEVEL_FIELD_NUMBER: _ClassVar[int]
     MESSAGE_FIELD_NUMBER: _ClassVar[int]
     RULE_ID_FIELD_NUMBER: _ClassVar[int]
+    SHORT_MESSAGE_FIELD_NUMBER: _ClassVar[int]
+    SUBJECT_FIELD_NUMBER: _ClassVar[int]
     location: _program_pb2.CodeLocation
     level: CheckViolation.Level
     message: str
     rule_id: str
-    def __init__(self, location: _Optional[_Union[_program_pb2.CodeLocation, _Mapping]] = ..., level: _Optional[_Union[CheckViolation.Level, str]] = ..., message: _Optional[str] = ..., rule_id: _Optional[str] = ...) -> None: ...
+    short_message: str
+    subject: str
+    def __init__(self, location: _Optional[_Union[_program_pb2.CodeLocation, _Mapping]] = ..., level: _Optional[_Union[CheckViolation.Level, str]] = ..., message: _Optional[str] = ..., rule_id: _Optional[str] = ..., short_message: _Optional[str] = ..., subject: _Optional[str] = ...) -> None: ...
 
 class LintResponse(_message.Message):
     __slots__ = ["violations"]

@@ -120,12 +120,15 @@ message CheckViolation {
     LEVEL_UNSPECIFIED = 0;
     LEVEL_WARNING = 1;
     LEVEL_ERROR = 2;
+    LEVEL_INFO = 3;
   }
 
   program.v1.CodeLocation location = 1;
   Level level = 2;
   string message = 3;
   string rule_id = 4;
+  string short_message = 5;
+  string subject = 6;
 }
 
 message LintResponse {

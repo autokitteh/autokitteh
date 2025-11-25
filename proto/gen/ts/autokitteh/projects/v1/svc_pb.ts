@@ -778,6 +778,16 @@ export class CheckViolation extends Message<CheckViolation> {
    */
   ruleId = "";
 
+  /**
+   * @generated from field: string short_message = 5;
+   */
+  shortMessage = "";
+
+  /**
+   * @generated from field: string subject = 6;
+   */
+  subject = "";
+
   constructor(data?: PartialMessage<CheckViolation>) {
     super();
     proto3.util.initPartial(data, this);
@@ -790,6 +800,8 @@ export class CheckViolation extends Message<CheckViolation> {
     { no: 2, name: "level", kind: "enum", T: proto3.getEnumType(CheckViolation_Level) },
     { no: 3, name: "message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "rule_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "short_message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "subject", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CheckViolation {
@@ -827,12 +839,18 @@ export enum CheckViolation_Level {
    * @generated from enum value: LEVEL_ERROR = 2;
    */
   ERROR = 2,
+
+  /**
+   * @generated from enum value: LEVEL_INFO = 3;
+   */
+  INFO = 3,
 }
 // Retrieve enum metadata with: proto3.getEnumType(CheckViolation_Level)
 proto3.util.setEnumType(CheckViolation_Level, "autokitteh.projects.v1.CheckViolation.Level", [
   { no: 0, name: "LEVEL_UNSPECIFIED" },
   { no: 1, name: "LEVEL_WARNING" },
   { no: 2, name: "LEVEL_ERROR" },
+  { no: 3, name: "LEVEL_INFO" },
 ]);
 
 /**

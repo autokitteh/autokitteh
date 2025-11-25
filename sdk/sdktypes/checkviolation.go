@@ -3,15 +3,18 @@ package sdktypes
 import (
 	"fmt"
 
+	"google.golang.org/protobuf/proto"
+
 	projectv1 "go.autokitteh.dev/autokitteh/proto/gen/go/autokitteh/projects/v1"
 )
 
 type (
-	CheckViolation = projectv1.CheckViolation
+	CheckViolation projectv1.CheckViolation
 	ViolationLevel = projectv1.CheckViolation_Level
 )
 
 const (
+	ViolationInfo    ViolationLevel = projectv1.CheckViolation_LEVEL_INFO
 	ViolationError   ViolationLevel = projectv1.CheckViolation_LEVEL_ERROR
 	ViolationWarning ViolationLevel = projectv1.CheckViolation_LEVEL_WARNING
 )
@@ -23,6 +26,26 @@ func NewCheckViolationf(filename string, ruleID string, f string, vs ...any) *Ch
 		Message:  fmt.Sprintf(f, vs...),
 		RuleId:   ruleID,
 	}
+}
+
+func (cv *CheckViolation) clone() *CheckViolation {
+	return (*CheckViolation)(proto.CloneOf((*projectv1.CheckViolation)(cv)))
+}
+
+func (cv *CheckViolation) SetShortMessage(shortMsg string) *CheckViolation {
+	cv = cv.clone()
+	cv.ShortMessage = shortMsg
+	return cv
+}
+
+func (cv *CheckViolation) SetSubject(subj string) *CheckViolation {
+	cv = cv.clone()
+	cv.Subject = subj
+	return cv
+}
+
+func (cv *CheckViolation) SetSubjectf(format string, args ...any) *CheckViolation {
+	return cv.SetSubject(fmt.Sprintf(format, args...))
 }
 
 const (
@@ -41,9 +64,10 @@ const (
 	InvalidPyRequirementsRuleID   = "E13"
 	UnknownIntegrationRuleID      = "E14"
 
-	EmptyVariableRuleID                         = "W1"
-	NoTriggersDefinedRuleID                     = "W2"
-	PyRequirementsPackageAlreadyInstalledRuleID = "W3"
+	NoTriggersDefinedRuleID                     = "W1"
+	PyRequirementsPackageAlreadyInstalledRuleID = "W2"
+
+	EmptyVariableRuleID = "I1"
 )
 
 type CheckRule struct {

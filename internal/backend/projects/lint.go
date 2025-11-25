@@ -56,9 +56,11 @@ func Validate(projectID sdktypes.ProjectID, manifestData []byte, resources map[s
 			sdktypes.NewCheckViolationf(
 				manifestFilePath,
 				sdktypes.InvalidManifestRuleID,
-				"bad manifest - %s",
+				"invalid manifest - %s",
 				err,
-			),
+			).
+				SetShortMessage("invalid").
+				SetSubject("manifest"),
 		}
 	}
 
@@ -77,7 +79,9 @@ func checkNoTriggers(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string][]
 				manifestFilePath,
 				sdktypes.NoTriggersDefinedRuleID,
 				"no triggers defined",
-			),
+			).
+				SetShortMessage("no triggers").
+				SetSubject("project"),
 		}
 	}
 
@@ -92,25 +96,35 @@ func checkEmptyVars(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string][]b
 	var vs []*sdktypes.CheckViolation
 	for _, v := range m.Project.Vars {
 		if v.Value == "" {
-			vs = append(vs, sdktypes.NewCheckViolationf(
-				manifestFilePath,
-				sdktypes.EmptyVariableRuleID,
-				"project variable %q is empty",
-				v.Name,
-			))
+			vs = append(
+				vs,
+				sdktypes.NewCheckViolationf(
+					manifestFilePath,
+					sdktypes.EmptyVariableRuleID,
+					"project variable %q is empty",
+					v.Name,
+				).
+					SetShortMessage("empty").
+					SetSubject("var:"+v.Name),
+			)
 		}
 	}
 
 	for _, conn := range m.Project.Connections {
 		for _, v := range conn.Vars {
 			if v.Value == "" {
-				vs = append(vs, sdktypes.NewCheckViolationf(
-					manifestFilePath,
-					sdktypes.EmptyVariableRuleID,
-					"connection %q variable %q is empty",
-					conn.Name,
-					v.Name,
-				))
+				vs = append(
+					vs,
+					sdktypes.NewCheckViolationf(
+						manifestFilePath,
+						sdktypes.EmptyVariableRuleID,
+						"connection %q variable %q is empty",
+						conn.Name,
+						v.Name,
+					).
+						SetShortMessage("empty").
+						SetSubjectf("conn:%s/var:%s", conn.Name, v.Name),
+				)
 			}
 		}
 	}
@@ -139,7 +153,9 @@ func checkSize(_ sdktypes.ProjectID, _ *manifest.Manifest, resources map[string]
 				"project size (%.2fMB) exceeds limit of %dMB",
 				sizeMB,
 				maxProjectSize/mb,
-			),
+			).
+				SetShortMessage("too large").
+				SetSubject("project"),
 		}
 	}
 
@@ -159,23 +175,33 @@ func checkConnectionsNames(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[str
 	var vs []*sdktypes.CheckViolation
 	for name, count := range names {
 		if _, err := sdktypes.ParseSymbol(name); err != nil {
-			vs = append(vs, sdktypes.NewCheckViolationf(
-				manifestFilePath,
-				sdktypes.MalformedNameRuleID,
-				"%q - malformed name (%s)",
-				name,
-				err,
-			))
+			vs = append(
+				vs,
+				sdktypes.NewCheckViolationf(
+					manifestFilePath,
+					sdktypes.MalformedNameRuleID,
+					"%q - malformed name (%s)",
+					name,
+					err,
+				).
+					SetShortMessage("malformed name").
+					SetSubjectf("conn:%s", name),
+			)
 		}
 
 		if count > 1 {
-			vs = append(vs, sdktypes.NewCheckViolationf(
-				manifestFilePath,
-				sdktypes.DuplicateConnectionNameRuleID,
-				"%d connections are named %q",
-				count,
-				name,
-			))
+			vs = append(
+				vs,
+				sdktypes.NewCheckViolationf(
+					manifestFilePath,
+					sdktypes.DuplicateConnectionNameRuleID,
+					"%d connections are named %q",
+					count,
+					name,
+				).
+					SetShortMessage("duplicate").
+					SetSubjectf("conn:%s", name),
+			)
 		}
 	}
 
@@ -201,7 +227,11 @@ func checkIntegrationsNames(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[st
 					"%q - malformed name (%s)",
 					name,
 					err,
-				))
+				).
+					SetShortMessage("malformed name").
+					SetSubjectf("conn:%s", name),
+			)
+			continue
 		}
 
 		if !hasIntegration(name) {
@@ -212,7 +242,10 @@ func checkIntegrationsNames(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[st
 					sdktypes.UnknownIntegrationRuleID,
 					"%q - unknown integration",
 					name,
-				))
+				).
+					SetShortMessage("unknown integration").
+					SetSubjectf("conn:%s", name),
+			)
 		}
 	}
 
@@ -232,23 +265,33 @@ func checkTriggersNames(_ sdktypes.ProjectID, m *manifest.Manifest, _ map[string
 	var vs []*sdktypes.CheckViolation
 	for name, count := range names {
 		if _, err := sdktypes.ParseSymbol(name); err != nil {
-			vs = append(vs, sdktypes.NewCheckViolationf(
-				manifestFilePath,
-				sdktypes.MalformedNameRuleID,
-				"%q - malformed name (%s)",
-				name,
-				err,
-			))
+			vs = append(
+				vs,
+				sdktypes.NewCheckViolationf(
+					manifestFilePath,
+					sdktypes.MalformedNameRuleID,
+					"%q - malformed name (%s)",
+					name,
+					err,
+				).
+					SetShortMessage("malformed name").
+					SetSubjectf("trigger:%s", name),
+			)
 		}
 
 		if count > 1 {
-			vs = append(vs, sdktypes.NewCheckViolationf(
-				manifestFilePath,
-				sdktypes.DuplicateTriggerNameRuleID,
-				"%d triggers are named %q",
-				count,
-				name,
-			))
+			vs = append(
+				vs,
+				sdktypes.NewCheckViolationf(
+					manifestFilePath,
+					sdktypes.DuplicateTriggerNameRuleID,
+					"%d triggers are named %q",
+					count,
+					name,
+				).
+					SetShortMessage("duplicate").
+					SetSubjectf("trigger:%s", name),
+			)
 		}
 	}
 
@@ -264,13 +307,18 @@ func checkHandlers(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[str
 
 	for _, t := range m.Project.Triggers {
 		if err := sdktypes.ValidateEventFilterField(t.Filter); err != nil {
-			vs = append(vs, sdktypes.NewCheckViolationf(
-				manifestFilePath,
-				sdktypes.InvalidEventFilterRuleID,
-				"invalid event filter %q - %s",
-				t.Filter,
-				err,
-			))
+			vs = append(
+				vs,
+				sdktypes.NewCheckViolationf(
+					manifestFilePath,
+					sdktypes.InvalidEventFilterRuleID,
+					"invalid event filter %q - %s",
+					t.Filter,
+					err,
+				).
+					SetShortMessage("invalid filter").
+					SetSubjectf("trigger:%s", t.Name),
+			)
 
 			continue
 		}
@@ -282,12 +330,18 @@ func checkHandlers(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[str
 
 		loc, err := sdktypes.StrictParseCodeLocation(t.Call)
 		if err != nil {
-			vs = append(vs, sdktypes.NewCheckViolationf(
-				manifestFilePath,
-				sdktypes.BadCallFormatRuleID,
-				`%q - bad call definition (should be something like "handler.py:on_event")`,
-				t.Call,
-			))
+			vs = append(
+				vs,
+				sdktypes.NewCheckViolationf(
+					manifestFilePath,
+					sdktypes.BadCallFormatRuleID,
+					"bad call definition",
+					`%q - bad call definition (should be something like "handler.py:on_event")`,
+					t.Call,
+				).
+					SetShortMessage("bad call").
+					SetSubjectf("trigger:%s", t.Name),
+			)
 
 			continue
 		}
@@ -295,12 +349,17 @@ func checkHandlers(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[str
 		fileName := loc.Path()
 		data, ok := resources[fileName]
 		if !ok {
-			vs = append(vs, sdktypes.NewCheckViolationf(
-				manifestFilePath,
-				sdktypes.FileNotFoundRuleID,
-				"file %q not found",
-				fileName,
-			))
+			vs = append(
+				vs,
+				sdktypes.NewCheckViolationf(
+					manifestFilePath,
+					sdktypes.FileNotFoundRuleID,
+					"file %q not found",
+					fileName,
+				).
+					SetShortMessage("not found").
+					SetSubject("file:"+fileName),
+			)
 			continue
 		}
 
@@ -312,7 +371,7 @@ func checkHandlers(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[str
 					sdktypes.FileCannotExportRuleID,
 					"file %q cannot export",
 					fileName,
-				))
+				).SetShortMessage("cannot export").SetSubject("file:"+fileName))
 				continue
 			}
 
@@ -322,7 +381,7 @@ func checkHandlers(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[str
 				"can't parse %q - %s",
 				fileName,
 				err,
-			))
+			).SetShortMessage("malformed").SetSubject("file:"+fileName))
 			continue
 		}
 
@@ -334,7 +393,7 @@ func checkHandlers(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[str
 				"%q not found in %q",
 				handler,
 				fileName,
-			))
+			).SetShortMessage("missing").SetSubject("file:"+fileName))
 			continue
 		}
 	}
@@ -366,7 +425,7 @@ func checkCodeConnections(_ sdktypes.ProjectID, m *manifest.Manifest, resources 
 					sdktypes.NonexistingConnectionRuleID,
 					"%q - non existing connection",
 					conn.Name,
-				))
+				).SetShortMessage("missing").SetSubjectf("conn:"+conn.Name))
 			}
 		}
 	}
@@ -381,7 +440,7 @@ func checkProjectName(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[
 				manifestFilePath,
 				sdktypes.InvalidManifestRuleID,
 				"bad project name",
-			),
+			).SetShortMessage("malformed name").SetSubject("project"),
 		}
 	}
 
@@ -393,7 +452,7 @@ func checkProjectName(_ sdktypes.ProjectID, m *manifest.Manifest, resources map[
 				"%q - bad project name (%s)",
 				m.Project.Name,
 				err,
-			),
+			).SetShortMessage("malformed name").SetSubject("project"),
 		}
 	}
 

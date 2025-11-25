@@ -84,13 +84,13 @@ func findProjectNameOrID(projectNameOrID string, projectDir string, m *manifest.
 }
 
 // We can't use common.Render since it's a different text representation
-func printViolationText(w io.Writer, v *projectsv1.CheckViolation) {
+func printViolationText(w io.Writer, v *sdktypes.CheckViolation) {
 	level := levelName(v.Level)
 	// FIXME (ENG-1867): RuleId arrives as empty string.
 	fmt.Fprintf(w, "%s:%d - %s - %s\n", v.Location.Path, v.Location.Row, level, v.Message)
 }
 
-func violation2map(v *projectsv1.CheckViolation) map[string]any {
+func violation2map(v *sdktypes.CheckViolation) map[string]any {
 	return map[string]any{
 		"file":    v.Location.Path,
 		"line":    v.Location.Row,
@@ -99,12 +99,12 @@ func violation2map(v *projectsv1.CheckViolation) map[string]any {
 	}
 }
 
-func printViolationJSON(w io.Writer, v *projectsv1.CheckViolation) {
+func printViolationJSON(w io.Writer, v *sdktypes.CheckViolation) {
 	m := violation2map(v)
 	json.NewEncoder(w).Encode(m) //nolint:errcheck
 }
 
-func printViolationJSONPretty(w io.Writer, v *projectsv1.CheckViolation) {
+func printViolationJSONPretty(w io.Writer, v *sdktypes.CheckViolation) {
 	m := violation2map(v)
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
@@ -133,7 +133,7 @@ func runLint(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(resources) > maxFiles {
-		v := projectsv1.CheckViolation{
+		v := sdktypes.CheckViolation{
 			Location: &sdktypes.CodeLocationPB{
 				Path: manifestPath,
 			},
@@ -166,7 +166,7 @@ func runLint(cmd *cobra.Command, args []string) error {
 				return err
 			}
 			if len(actions) > 0 {
-				v := projectsv1.CheckViolation{
+				v := sdktypes.CheckViolation{
 					Location: &sdktypes.CodeLocationPB{
 						Path: manifestPath,
 					},

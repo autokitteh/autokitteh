@@ -288,7 +288,9 @@ func (s *Server) Lint(ctx context.Context, req *connect.Request[projectsv1.LintR
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	resp := projectsv1.LintResponse{Violations: vs}
+	resp := projectsv1.LintResponse{Violations: kittehs.Transform(vs, func(v *sdktypes.CheckViolation) *projectsv1.CheckViolation {
+		return (*projectsv1.CheckViolation)(v)
+	})}
 
 	return connect.NewResponse(&resp), nil
 }
