@@ -612,7 +612,7 @@ func (s *workerGRPCHandler) StoreUnpublish(ctx context.Context, req *userCode.St
 	}
 
 	if resp.err != nil {
-		err = status.Errorf(codes.Internal, "unpublish_value(%v) -> %v", req.Key, err)
+		err = status.Errorf(codes.Internal, "unpublish_value(%v) -> %v", req.Key, resp.err)
 		return &userCode.StoreUnpublishResponse{Error: err.Error()}, nil
 	}
 
