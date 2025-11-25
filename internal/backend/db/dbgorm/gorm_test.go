@@ -456,6 +456,7 @@ func (f *dbFixture) newConnection(args ...any) scheme.Connection {
 		switch a := a.(type) {
 		case scheme.Project:
 			c.ProjectID = &a.ProjectID
+			c.OrgID = a.OrgID // Set org_id from project
 		case string:
 			c.Name = a
 		}

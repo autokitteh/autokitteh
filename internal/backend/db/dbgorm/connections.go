@@ -89,11 +89,12 @@ func (gdb *gormdb) listConnections(ctx context.Context, filter sdkservices.ListC
 	q := gdb.reader.WithContext(ctx)
 
 	if filter.OrgID.IsValid() {
-		x := q.Where("org_id = ? AND project_id IS NULL", filter.OrgID.UUIDValue())
+		q = q.Where("org_id = ?", filter.OrgID.UUIDValue())
 		if filter.ProjectID.IsValid() {
-			x = x.Or(q.Where("org_id = ? AND project_id = ?", filter.OrgID.UUIDValue(), filter.ProjectID.UUIDValue()))
+			// When project_id is specified, return only connections for that specific project
+			q = q.Where("project_id = ?", filter.ProjectID.UUIDValue())
 		}
-		q = x
+		// If no project_id is specified, return all connections for the org (both org-level and project-level)
 	} else if filter.ProjectID.IsValid() {
 		q = q.Where("project_id = ?", filter.ProjectID.UUIDValue())
 	}

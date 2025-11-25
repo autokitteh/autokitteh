@@ -9,6 +9,7 @@ import (
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
+	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
 func (f *dbFixture) createConnectionsAndAssert(t *testing.T, connections ...scheme.Connection) {
@@ -219,4 +220,236 @@ func TestDoesConnectionHaveTriggers(t *testing.T) {
 	hasTriggers, err = f.gormdb.doesConnectionHaveTriggers(f.ctx, c.ConnectionID)
 	assert.NoError(t, err)
 	assert.False(t, hasTriggers)
+}
+
+// TestCreateOrgLevelConnection tests creating a connection at the org level (without project_id)
+func TestCreateOrgLevelConnection(t *testing.T) {
+	f := newDBFixture()
+	findAndAssertCount[scheme.Connection](t, f, 0, "") // no connections
+
+	orgID := f.newOrg()
+
+	// Create an org-level connection (no project_id)
+	c := f.newConnection()
+	c.ProjectID = nil // explicitly set to nil for org-level connection
+	c.OrgID = orgID
+	c.Name = "org_level_connection"
+
+	f.createConnectionsAndAssert(t, c)
+
+	// Verify the connection was created at org level
+	retrieved, err := f.gormdb.getConnection(f.ctx, c.ConnectionID)
+	assert.NoError(t, err)
+	assert.Nil(t, retrieved.ProjectID, "org-level connection should have nil project_id")
+	assert.Equal(t, orgID, retrieved.OrgID)
+	assert.Equal(t, "org_level_connection", retrieved.Name)
+}
+
+// TestCreateProjectLevelConnection tests creating a connection at the project level
+func TestCreateProjectLevelConnection(t *testing.T) {
+	f, p := preConnectionTest(t)
+
+	// Create a project-level connection
+	c := f.newConnection(p)
+	c.Name = "project_level_connection"
+
+	f.createConnectionsAndAssert(t, c)
+
+	// Verify the connection was created at project level
+	retrieved, err := f.gormdb.getConnection(f.ctx, c.ConnectionID)
+	assert.NoError(t, err)
+	assert.NotNil(t, retrieved.ProjectID, "project-level connection should have a project_id")
+	assert.Equal(t, p.ProjectID, *retrieved.ProjectID)
+	assert.Equal(t, p.OrgID, retrieved.OrgID)
+	assert.Equal(t, "project_level_connection", retrieved.Name)
+}
+
+// TestOrgLevelAndProjectLevelConnectionsWithSameName tests that org-level and project-level
+// connections can have the same name within the same org
+func TestOrgLevelAndProjectLevelConnectionsWithSameName(t *testing.T) {
+	f := newDBFixture()
+	orgID := f.newOrg()
+
+	// Create a project in the org
+	p := f.newProject(orgID)
+	f.createProjectsAndAssert(t, p)
+
+	connName := "shared_connection_name"
+
+	// Create an org-level connection
+	orgConn := f.newConnection()
+	orgConn.ProjectID = nil
+	orgConn.OrgID = orgID
+	orgConn.Name = connName
+	f.createConnectionsAndAssert(t, orgConn)
+
+	// Create a project-level connection with the same name - should succeed
+	projectConn := f.newConnection(p)
+	projectConn.Name = connName
+	f.createConnectionsAndAssert(t, projectConn)
+
+	// Verify both exist
+	orgRetrieved, err := f.gormdb.getConnection(f.ctx, orgConn.ConnectionID)
+	assert.NoError(t, err)
+	assert.Nil(t, orgRetrieved.ProjectID)
+	assert.Equal(t, connName, orgRetrieved.Name)
+
+	projectRetrieved, err := f.gormdb.getConnection(f.ctx, projectConn.ConnectionID)
+	assert.NoError(t, err)
+	assert.NotNil(t, projectRetrieved.ProjectID)
+	assert.Equal(t, connName, projectRetrieved.Name)
+}
+
+// TestUniqueConstraintOrgLevelConnections tests that org-level connections
+// must have unique names within an org
+func TestUniqueConstraintOrgLevelConnections(t *testing.T) {
+	f := newDBFixture()
+	orgID := f.newOrg()
+
+	connName := "unique_org_connection"
+
+	// Create first org-level connection
+	c1 := f.newConnection()
+	c1.ProjectID = nil
+	c1.OrgID = orgID
+	c1.Name = connName
+	f.createConnectionsAndAssert(t, c1)
+
+	// Try to create another org-level connection with the same name - should fail
+	c2 := f.newConnection()
+	c2.ProjectID = nil
+	c2.OrgID = orgID
+	c2.Name = connName
+	assert.ErrorIs(t, f.gormdb.createConnection(f.ctx, &c2), gorm.ErrDuplicatedKey)
+
+	// After deletion, we can create a new connection with the same name
+	assert.NoError(t, f.gormdb.deleteConnection(f.ctx, c1.ConnectionID))
+	f.createConnectionsAndAssert(t, c2)
+}
+
+// TestUniqueConstraintProjectLevelConnections tests that project-level connections
+// must have unique names within an org+project combination
+func TestUniqueConstraintProjectLevelConnections(t *testing.T) {
+	f, p := preConnectionTest(t)
+
+	connName := "unique_project_connection"
+
+	// Create first project-level connection
+	c1 := f.newConnection(p)
+	c1.Name = connName
+	f.createConnectionsAndAssert(t, c1)
+
+	// Try to create another project-level connection in the same project with the same name - should fail
+	c2 := f.newConnection(p)
+	c2.Name = connName
+	assert.ErrorIs(t, f.gormdb.createConnection(f.ctx, &c2), gorm.ErrDuplicatedKey)
+
+	// After deletion, we can create a new connection with the same name
+	assert.NoError(t, f.gormdb.deleteConnection(f.ctx, c1.ConnectionID))
+	f.createConnectionsAndAssert(t, c2)
+}
+
+// TestListConnectionsByOrg tests listing connections filtered by org
+func TestListConnectionsByOrg(t *testing.T) {
+	f := newDBFixture()
+	org1 := f.newOrg()
+	org2 := f.newOrg()
+
+	// Create org-level connection for org1
+	c1 := f.newConnection()
+	c1.ProjectID = nil
+	c1.OrgID = org1
+	c1.Name = "org1_connection"
+	f.createConnectionsAndAssert(t, c1)
+
+	// Create project in org1 with project-level connection
+	p1 := f.newProject(org1)
+	f.createProjectsAndAssert(t, p1)
+	c2 := f.newConnection(p1)
+	c2.Name = "org1_project_connection"
+	f.createConnectionsAndAssert(t, c2)
+
+	// Create org-level connection for org2
+	c3 := f.newConnection()
+	c3.ProjectID = nil
+	c3.OrgID = org2
+	c3.Name = "org2_connection"
+	f.createConnectionsAndAssert(t, c3)
+
+	// List connections for org1
+	connections, err := f.gormdb.listConnections(f.ctx, sdkservices.ListConnectionsFilter{
+		OrgID: sdktypes.NewIDFromUUID[sdktypes.OrgID](org1),
+	}, false)
+	assert.NoError(t, err)
+	assert.Len(t, connections, 2, "org1 should have 2 connections (1 org-level, 1 project-level)")
+
+	// List connections for org2
+	connections, err = f.gormdb.listConnections(f.ctx, sdkservices.ListConnectionsFilter{
+		OrgID: sdktypes.NewIDFromUUID[sdktypes.OrgID](org2),
+	}, false)
+	assert.NoError(t, err)
+	assert.Len(t, connections, 1, "org2 should have 1 connection")
+}
+
+// TestListConnectionsByProject tests listing connections filtered by project
+func TestListConnectionsByProject(t *testing.T) {
+	f := newDBFixture()
+	org := f.newOrg()
+
+	// Create org-level connection
+	orgConn := f.newConnection()
+	orgConn.ProjectID = nil
+	orgConn.OrgID = org
+	orgConn.Name = "org_connection"
+	f.createConnectionsAndAssert(t, orgConn)
+
+	// Create two projects
+	p1 := f.newProject(org)
+	f.createProjectsAndAssert(t, p1)
+	p2 := f.newProject(org)
+	f.createProjectsAndAssert(t, p2)
+
+	// Create project-level connections
+	c1 := f.newConnection(p1)
+	c1.Name = "project1_connection"
+	f.createConnectionsAndAssert(t, c1)
+
+	c2 := f.newConnection(p2)
+	c2.Name = "project2_connection"
+	f.createConnectionsAndAssert(t, c2)
+
+	// List connections for project1
+	connections, err := f.gormdb.listConnections(f.ctx, sdkservices.ListConnectionsFilter{
+		ProjectID: sdktypes.NewIDFromUUID[sdktypes.ProjectID](p1.ProjectID),
+	}, false)
+	assert.NoError(t, err)
+	assert.Len(t, connections, 1, "project1 should have 1 connection")
+	assert.Equal(t, "project1_connection", connections[0].Name)
+
+	// List connections for project2
+	connections, err = f.gormdb.listConnections(f.ctx, sdkservices.ListConnectionsFilter{
+		ProjectID: sdktypes.NewIDFromUUID[sdktypes.ProjectID](p2.ProjectID),
+	}, false)
+	assert.NoError(t, err)
+	assert.Len(t, connections, 1, "project2 should have 1 connection")
+	assert.Equal(t, "project2_connection", connections[0].Name)
+}
+
+// TestConnectionOrgIDRequired tests that org_id is required for all connections at the SDK level
+func TestConnectionOrgIDRequired(t *testing.T) {
+	f, p := preConnectionTest(t)
+
+	// Create a valid connection first
+	c := f.newConnection(p)
+	f.createConnectionsAndAssert(t, c)
+
+	// Parse it to SDK type
+	conn, err := scheme.ParseConnection(c)
+	require.NoError(t, err)
+
+	// Try to create a connection with invalid org_id via the SDK method
+	invalidConn := conn.WithOrgID(sdktypes.InvalidOrgID)
+	err = f.gormdb.CreateConnection(f.ctx, invalidConn)
+	assert.Error(t, err, "connection without valid org_id should fail at SDK level")
+	assert.Contains(t, err.Error(), "org ID is required")
 }
