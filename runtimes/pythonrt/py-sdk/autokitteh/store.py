@@ -1,3 +1,4 @@
+import os
 from collections.abc import MutableMapping
 from enum import StrEnum
 from typing import Any
@@ -34,6 +35,14 @@ class Store(MutableMapping):
 
 
 store = Store()
+
+
+def get_store_public_url() -> str:
+    """Get the public URL of the cross-sessions published values store."""
+    url = os.getenv("store_public_url")
+    if not url:
+        raise ValueError("Store public URL not found")
+    return url
 
 
 class Op(StrEnum):

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"net/url"
 	"strings"
 	"time"
 
@@ -208,6 +209,12 @@ func (w *sessionWorkflow) initEnvModule(cinfos map[string]connInfo) error {
 		name := t.Name().String()
 		vs[name+"__webhook_url"] = sdktypes.NewStringValue(webhookURL)
 	}
+
+	storePublicURL, err := url.JoinPath(fixtures.ServiceBaseURL(), "store", w.data.Session.ProjectID().String())
+	if err != nil {
+		return fmt.Errorf("construct store public url: %w", err)
+	}
+	vs["store_public_url"] = sdktypes.NewStringValue(storePublicURL)
 
 	mod := sdkexecutor.NewExecutor(
 		nil, // no calls will be ever made to env.
