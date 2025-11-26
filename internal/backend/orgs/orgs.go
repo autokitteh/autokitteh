@@ -40,7 +40,7 @@ func Create(ctx context.Context, db db.DB, org sdktypes.Org) (sdktypes.OrgID, er
 		org = org.WithName(sdktypes.NewSymbol(n))
 	}
 
-	if err := authz.CheckContext(ctx, sdktypes.InvalidOrgID, "create:create", authz.WithData("org", org)); err != nil {
+	if err := authz.CheckContext(ctx, sdktypes.InvalidOrgID, authz.OpOrgCreateCreate, authz.WithData("org", org)); err != nil {
 		return sdktypes.InvalidOrgID, err
 	}
 
@@ -71,7 +71,7 @@ func (o *orgs) Create(ctx context.Context, org sdktypes.Org) (sdktypes.OrgID, er
 }
 
 func (o *orgs) GetByID(ctx context.Context, id sdktypes.OrgID) (sdktypes.Org, error) {
-	if err := authz.CheckContext(ctx, id, "read:get", authz.WithConvertForbiddenToNotFound); err != nil {
+	if err := authz.CheckContext(ctx, id, authz.OpOrgReadGet, authz.WithConvertForbiddenToNotFound); err != nil {
 		return sdktypes.InvalidOrg, err
 	}
 
@@ -84,7 +84,7 @@ func (o *orgs) GetByName(ctx context.Context, n sdktypes.Symbol) (sdktypes.Org, 
 		return sdktypes.InvalidOrg, err
 	}
 
-	if err := authz.CheckContext(ctx, org.ID(), "read:get", authz.WithConvertForbiddenToNotFound); err != nil {
+	if err := authz.CheckContext(ctx, org.ID(), authz.OpOrgReadGet, authz.WithConvertForbiddenToNotFound); err != nil {
 		return sdktypes.InvalidOrg, err
 	}
 
@@ -92,7 +92,7 @@ func (o *orgs) GetByName(ctx context.Context, n sdktypes.Symbol) (sdktypes.Org, 
 }
 
 func (o *orgs) Delete(ctx context.Context, id sdktypes.OrgID) error {
-	if err := authz.CheckContext(ctx, id, "delete:delete", authz.WithConvertForbiddenToNotFound); err != nil {
+	if err := authz.CheckContext(ctx, id, authz.OpOrgDeleteDelete, authz.WithConvertForbiddenToNotFound); err != nil {
 		return err
 	}
 
@@ -108,7 +108,7 @@ func (o *orgs) Update(ctx context.Context, org sdktypes.Org, fieldMask *sdktypes
 		return err
 	}
 
-	if err := authz.CheckContext(ctx, org.ID(), "update:update", authz.WithData("org", org), authz.WithFieldMask(fieldMask)); err != nil {
+	if err := authz.CheckContext(ctx, org.ID(), authz.OpOrgUpdateUpdate, authz.WithData("org", org), authz.WithFieldMask(fieldMask)); err != nil {
 		return err
 	}
 
@@ -116,7 +116,7 @@ func (o *orgs) Update(ctx context.Context, org sdktypes.Org, fieldMask *sdktypes
 }
 
 func (o *orgs) ListMembers(ctx context.Context, id sdktypes.OrgID) ([]sdktypes.OrgMember, []sdktypes.User, error) {
-	if err := authz.CheckContext(ctx, id, "read:list-members"); err != nil {
+	if err := authz.CheckContext(ctx, id, authz.OpOrgReadListMembers); err != nil {
 		return nil, nil, err
 	}
 
@@ -141,7 +141,7 @@ func (o *orgs) AddMember(ctx context.Context, m sdktypes.OrgMember) error {
 	if err := authz.CheckContext(
 		ctx,
 		m.OrgID(),
-		"write:add-member",
+		authz.OpOrgWriteAddMember,
 		authz.WithData("org_member", m),
 		authz.WithAssociationWithID("user", m.UserID()),
 	); err != nil {
@@ -156,7 +156,7 @@ func (o *orgs) RemoveMember(ctx context.Context, oid sdktypes.OrgID, uid sdktype
 		uid = authcontext.GetAuthnUserID(ctx)
 	}
 
-	if err := authz.CheckContext(ctx, oid, "delete:remove-member", authz.WithAssociationWithID("user", uid)); err != nil {
+	if err := authz.CheckContext(ctx, oid, authz.OpOrgDeleteRemoveMember, authz.WithAssociationWithID("user", uid)); err != nil {
 		return err
 	}
 
@@ -176,7 +176,7 @@ func (o *orgs) GetMember(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.U
 	if err := authz.CheckContext(
 		ctx,
 		oid,
-		"read:get-member",
+		authz.OpOrgReadGetMember,
 		authz.WithAssociationWithID("user", uid),
 		authz.WithData("member_status", m.Status().String()),
 		authz.WithConvertForbiddenToNotFound,
@@ -192,7 +192,7 @@ func (o *orgs) GetOrgsForUser(ctx context.Context, uid sdktypes.UserID) ([]sdkty
 		uid = authcontext.GetAuthnUserID(ctx)
 	}
 
-	if err := authz.CheckContext(ctx, uid, "read:get-orgs", authz.WithConvertForbiddenToNotFound); err != nil {
+	if err := authz.CheckContext(ctx, uid, authz.OpOrgReadGetOrgs, authz.WithConvertForbiddenToNotFound); err != nil {
 		return nil, nil, err
 	}
 
@@ -215,7 +215,7 @@ func (o *orgs) UpdateMember(ctx context.Context, m sdktypes.OrgMember, fm *sdkty
 		if err := authz.CheckContext(
 			ctx,
 			oid,
-			"write:update-member",
+			authz.OpOrgWriteUpdateMember,
 			authz.WithAssociationWithID("user", uid),
 			authz.WithData("new_roles", m.Roles()),
 			authz.WithData("new_status", m.Status().String()),

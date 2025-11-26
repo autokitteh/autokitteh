@@ -30,7 +30,7 @@ func (c *Connections) Create(ctx context.Context, conn sdktypes.Connection) (sdk
 	if err := authz.CheckContext(
 		ctx,
 		sdktypes.InvalidConnectionID,
-		"write:create",
+		authz.OpConnectionWriteCreate,
 		authz.WithData("connection", conn),
 		authz.WithAssociationWithID("integration", conn.IntegrationID()),
 		authz.WithAssociationWithID("project", conn.ProjectID()),
@@ -70,7 +70,7 @@ func (c *Connections) Create(ctx context.Context, conn sdktypes.Connection) (sdk
 }
 
 func (c *Connections) Update(ctx context.Context, conn sdktypes.Connection) error {
-	if err := authz.CheckContext(ctx, conn.ID(), "update:update", authz.WithData("connection", conn)); err != nil {
+	if err := authz.CheckContext(ctx, conn.ID(), authz.OpConnectionUpdateUpdate, authz.WithData("connection", conn)); err != nil {
 		return err
 	}
 
@@ -82,7 +82,7 @@ func (c *Connections) Update(ctx context.Context, conn sdktypes.Connection) erro
 }
 
 func (c *Connections) Delete(ctx context.Context, id sdktypes.ConnectionID) error {
-	if err := authz.CheckContext(ctx, id, "delete:delete", authz.WithConvertForbiddenToNotFound); err != nil {
+	if err := authz.CheckContext(ctx, id, authz.OpConnectionDeleteDelete, authz.WithConvertForbiddenToNotFound); err != nil {
 		return err
 	}
 
@@ -97,7 +97,7 @@ func (c *Connections) List(ctx context.Context, filter sdkservices.ListConnectio
 	if err := authz.CheckContext(
 		ctx,
 		sdktypes.InvalidConnectionID,
-		"read:list",
+		authz.OpConnectionReadList,
 		authz.WithData("filter", filter),
 		authz.WithAssociationWithID("org", filter.OrgID),
 		authz.WithAssociationWithID("project", filter.ProjectID),
@@ -126,7 +126,7 @@ func (c *Connections) attachIntegration(ctx context.Context, id sdktypes.Connect
 }
 
 func (c *Connections) Test(ctx context.Context, id sdktypes.ConnectionID) (sdktypes.Status, error) {
-	if err := authz.CheckContext(ctx, id, "test"); err != nil {
+	if err := authz.CheckContext(ctx, id, authz.OpConnectionTest); err != nil {
 		return sdktypes.InvalidStatus, err
 	}
 
@@ -143,7 +143,7 @@ func (c *Connections) Test(ctx context.Context, id sdktypes.ConnectionID) (sdkty
 }
 
 func (c *Connections) RefreshStatus(ctx context.Context, id sdktypes.ConnectionID) (sdktypes.Status, error) {
-	if err := authz.CheckContext(ctx, id, "refresh"); err != nil {
+	if err := authz.CheckContext(ctx, id, authz.OpConnectionRefresh); err != nil {
 		return sdktypes.InvalidStatus, err
 	}
 
@@ -165,7 +165,7 @@ func (c *Connections) RefreshStatus(ctx context.Context, id sdktypes.ConnectionI
 }
 
 func (c *Connections) Get(ctx context.Context, id sdktypes.ConnectionID) (sdktypes.Connection, error) {
-	if err := authz.CheckContext(ctx, id, "read:get", authz.WithConvertForbiddenToNotFound); err != nil {
+	if err := authz.CheckContext(ctx, id, authz.OpConnectionReadGet, authz.WithConvertForbiddenToNotFound); err != nil {
 		return sdktypes.InvalidConnection, err
 	}
 

@@ -28,7 +28,7 @@ func (s *store) Mutate(ctx context.Context, pid sdktypes.ProjectID, key, op stri
 	if err := authz.CheckContext(
 		ctx,
 		pid,
-		"write:do",
+		authz.OpStoreWriteDo,
 		authz.WithData("op", op),
 	); err != nil {
 		return sdktypes.InvalidValue, err
@@ -82,7 +82,7 @@ func (s *store) Get(ctx context.Context, pid sdktypes.ProjectID, keys []string) 
 	if err := authz.CheckContext(
 		ctx,
 		pid,
-		"read:get",
+		authz.OpStoreReadGet,
 		authz.WithData("keys", keys),
 		authz.WithConvertForbiddenToNotFound,
 	); err != nil {
@@ -93,7 +93,7 @@ func (s *store) Get(ctx context.Context, pid sdktypes.ProjectID, keys []string) 
 }
 
 func (s *store) List(ctx context.Context, pid sdktypes.ProjectID) ([]string, error) {
-	if err := authz.CheckContext(ctx, pid, "read:list"); err != nil {
+	if err := authz.CheckContext(ctx, pid, authz.OpStoreReadList); err != nil {
 		return nil, err
 	}
 
@@ -109,7 +109,7 @@ func (s *store) Publish(ctx context.Context, pid sdktypes.ProjectID, key string)
 	if err := authz.CheckContext(
 		ctx,
 		pid,
-		"write:publish",
+		authz.OpStoreWritePublish,
 		authz.WithData("key", key),
 	); err != nil {
 		return err
@@ -122,7 +122,7 @@ func (s *store) Unpublish(ctx context.Context, pid sdktypes.ProjectID, key strin
 	if err := authz.CheckContext(
 		ctx,
 		pid,
-		"write:unpublish",
+		authz.OpStoreWriteUnpublish,
 		authz.WithData("key", key),
 	); err != nil {
 		return err
