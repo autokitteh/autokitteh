@@ -35,7 +35,7 @@ func (gdb *gormdb) GetOrg(ctx context.Context, oid sdktypes.OrgID, n sdktypes.Sy
 	var r scheme.Org
 	err := q.First(&r).Error
 	if err != nil {
-		return sdktypes.InvalidOrg, translateError(err)
+		return sdktypes.InvalidOrg, translateError(gdb.z, "get_org", err)
 	}
 
 	return scheme.ParseOrg(r)
@@ -46,7 +46,7 @@ func (gdb *gormdb) DeleteOrg(ctx context.Context, oid sdktypes.OrgID) error {
 		return sdkerrors.NewInvalidArgumentError("missing id")
 	}
 
-	return translateError(gdb.writeTransaction(ctx, func(tx *gormdb) error {
+	return translateError(gdb.z, "delete_org", gdb.writeTransaction(ctx, func(tx *gormdb) error {
 		var org scheme.Org
 		err := tx.writer.Clauses(clause.Locking{Strength: "UPDATE"}).
 			Model(&scheme.Org{}).
@@ -64,7 +64,7 @@ func (gdb *gormdb) DeleteOrg(ctx context.Context, oid sdktypes.OrgID) error {
 				"deleted_at": time.Now(),
 			})
 		if result.Error != nil {
-			return translateError(result.Error)
+			return translateError(tx.z, "delete_org_update", result.Error)
 		}
 
 		if result.RowsAffected == 0 {
@@ -73,7 +73,7 @@ func (gdb *gormdb) DeleteOrg(ctx context.Context, oid sdktypes.OrgID) error {
 
 		err = tx.writer.Where("org_id = ?", oid.UUIDValue()).Delete(&scheme.OrgMember{}).Error
 		if err != nil {
-			return translateError(err)
+			return translateError(tx.z, "delete_org_members", err)
 		}
 
 		return tx.writer.Where("org_id = ?", oid.UUIDValue()).Delete(&scheme.Org{}).Error
@@ -107,7 +107,7 @@ func (gdb *gormdb) CreateOrg(ctx context.Context, o sdktypes.Org) (sdktypes.OrgI
 		return tx.writer.Create(&org).Error
 	})
 	if err != nil {
-		return sdktypes.InvalidOrgID, translateError(err)
+		return sdktypes.InvalidOrgID, translateError(gdb.z, "create_org", err)
 	}
 
 	return oid, nil
@@ -135,7 +135,7 @@ func (gdb *gormdb) UpdateOrg(ctx context.Context, o sdktypes.Org, fm *sdktypes.F
 			Error
 	})
 
-	return translateError(err)
+	return translateError(gdb.z, "update_org", err)
 }
 
 func (gdb *gormdb) ListOrgMembers(ctx context.Context, oid sdktypes.OrgID, includeUsers bool) ([]sdktypes.OrgMember, []sdktypes.User, error) {
@@ -145,7 +145,7 @@ func (gdb *gormdb) ListOrgMembers(ctx context.Context, oid sdktypes.OrgID, inclu
 		Order("created_at ASC").Find(&mrs).
 		Error
 	if err != nil {
-		return nil, nil, translateError(err)
+		return nil, nil, translateError(gdb.z, "list_org_members", err)
 	}
 
 	var urs []scheme.User
@@ -156,7 +156,7 @@ func (gdb *gormdb) ListOrgMembers(ctx context.Context, oid sdktypes.OrgID, inclu
 			Find(&urs).
 			Error
 		if err != nil {
-			return nil, nil, translateError(err)
+			return nil, nil, translateError(gdb.z, "list_org_members_users", err)
 		}
 	}
 
@@ -186,7 +186,7 @@ func (gdb *gormdb) AddOrgMember(ctx context.Context, m sdktypes.OrgMember) error
 		Roles:  roles,
 	}
 
-	return translateError(gdb.writer.WithContext(ctx).Create(&ou).Error)
+	return translateError(gdb.z, "add_org_member", gdb.writer.WithContext(ctx).Create(&ou).Error)
 }
 
 func (gdb *gormdb) UpdateOrgMember(ctx context.Context, m sdktypes.OrgMember, fm *sdktypes.FieldMask) error {
@@ -202,6 +202,8 @@ func (gdb *gormdb) UpdateOrgMember(ctx context.Context, m sdktypes.OrgMember, fm
 	}
 
 	return translateError(
+		gdb.z,
+		"update_org_member",
 		gdb.writer.WithContext(ctx).
 			Model(&scheme.OrgMember{}).
 			Where("org_id = ? AND user_id = ?", m.OrgID().UUIDValue(), m.UserID().UUIDValue()).
@@ -212,6 +214,8 @@ func (gdb *gormdb) UpdateOrgMember(ctx context.Context, m sdktypes.OrgMember, fm
 
 func (gdb *gormdb) RemoveOrgMember(ctx context.Context, oid sdktypes.OrgID, uid sdktypes.UserID) error {
 	return translateError(
+		gdb.z,
+		"remove_org_member",
 		gdb.writer.WithContext(ctx).
 			Where("org_id = ? AND user_id = ?", oid.UUIDValue(), uid.UUIDValue()).
 			Delete(&scheme.OrgMember{}).
@@ -228,7 +232,7 @@ func (gdb *gormdb) GetOrgMember(ctx context.Context, oid sdktypes.OrgID, uid sdk
 		First(&om).
 		Error
 	if err != nil {
-		return sdktypes.InvalidOrgMember, translateError(err)
+		return sdktypes.InvalidOrgMember, translateError(gdb.z, "get_org_member", err)
 	}
 
 	// Backward compatibility from prior to having a status.
@@ -247,7 +251,7 @@ func (gdb *gormdb) GetOrgsForUser(ctx context.Context, uid sdktypes.UserID, incl
 		Find(&rms).
 		Error
 	if err != nil {
-		return nil, nil, translateError(err)
+		return nil, nil, translateError(gdb.z, "get_orgs_for_user", err)
 	}
 
 	var ors []scheme.Org
@@ -258,7 +262,7 @@ func (gdb *gormdb) GetOrgsForUser(ctx context.Context, uid sdktypes.UserID, incl
 			Find(&ors).
 			Error
 		if err != nil {
-			return nil, nil, translateError(err)
+			return nil, nil, translateError(gdb.z, "get_orgs_for_user_orgs", err)
 		}
 	}
 

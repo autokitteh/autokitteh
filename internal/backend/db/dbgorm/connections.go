@@ -37,7 +37,7 @@ func (gdb *gormdb) deleteConnectionsAndVars(ctx context.Context, what string, id
 	if what == "connection_id" {
 		hasTriggers, err := gdb.doesConnectionHaveTriggers(ctx, id)
 		if err != nil {
-			return translateError(err)
+			return translateError(gdb.z, "check_connection_has_triggers", err)
 		}
 		if hasTriggers {
 			return errors.New("cannot delete a connection that has associated triggers")
@@ -142,11 +142,11 @@ func (db *gormdb) CreateConnection(ctx context.Context, conn sdktypes.Connection
 		StatusMessage: conn.Status().Message(),
 	}
 
-	return translateError(db.createConnection(ctx, &c))
+	return translateError(db.z, "create_connection", db.createConnection(ctx, &c))
 }
 
 func (db *gormdb) DeleteConnection(ctx context.Context, id sdktypes.ConnectionID) error {
-	return translateError(db.deleteConnection(ctx, id.UUIDValue()))
+	return translateError(db.z, "delete_connection", db.deleteConnection(ctx, id.UUIDValue()))
 }
 
 func (db *gormdb) UpdateConnection(ctx context.Context, conn sdktypes.Connection) error {
@@ -168,13 +168,13 @@ func (db *gormdb) UpdateConnection(ctx context.Context, conn sdktypes.Connection
 	if len(data) == 0 {
 		return nil
 	}
-	return translateError(db.updateConnection(ctx, conn.ID().UUIDValue(), data))
+	return translateError(db.z, "update_connection", db.updateConnection(ctx, conn.ID().UUIDValue(), data))
 }
 
 func (db *gormdb) GetConnection(ctx context.Context, connectionID sdktypes.ConnectionID) (sdktypes.Connection, error) {
 	c, err := db.getConnection(ctx, connectionID.UUIDValue())
 	if c == nil || err != nil {
-		return sdktypes.InvalidConnection, translateError(err)
+		return sdktypes.InvalidConnection, translateError(db.z, "get_connection", err)
 	}
 	return scheme.ParseConnection(*c)
 }
@@ -183,7 +183,7 @@ func (db *gormdb) GetConnections(ctx context.Context, connectionIDs []sdktypes.C
 	ids := kittehs.Transform(connectionIDs, func(id sdktypes.ConnectionID) uuid.UUID { return id.UUIDValue() })
 	cs, err := db.getConnections(ctx, ids...)
 	if err != nil {
-		return nil, translateError(err)
+		return nil, translateError(db.z, "get_connections", err)
 	}
 	return kittehs.TransformError(cs, scheme.ParseConnection)
 }
@@ -191,7 +191,7 @@ func (db *gormdb) GetConnections(ctx context.Context, connectionIDs []sdktypes.C
 func (db *gormdb) ListConnections(ctx context.Context, filter sdkservices.ListConnectionsFilter, idsOnly bool) ([]sdktypes.Connection, error) {
 	cs, err := db.listConnections(ctx, filter, idsOnly)
 	if err != nil {
-		return nil, translateError(err)
+		return nil, translateError(db.z, "list_connections", err)
 	}
 	return kittehs.TransformError(cs, scheme.ParseConnection)
 }

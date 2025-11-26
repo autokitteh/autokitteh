@@ -25,6 +25,8 @@ func (db *gormdb) SetStoreValue(ctx context.Context, pid sdktypes.ProjectID, key
 
 	if !v.IsValid() {
 		return translateError(
+			db.z,
+			"delete_store_value",
 			q.Where("project_id = ? AND key = ?", pid.UUIDValue(), key).Delete(&scheme.StoreValue{}).Error,
 		)
 	}
@@ -57,13 +59,13 @@ func (db *gormdb) SetStoreValue(ctx context.Context, pid sdktypes.ProjectID, key
 		UpdatedAt: kittehs.Now(),
 	}).Error
 
-	return translateError(err)
+	return translateError(db.z, "set_store_value", err)
 }
 
 func (db *gormdb) GetStoreValue(ctx context.Context, pid sdktypes.ProjectID, key string) (sdktypes.Value, error) {
 	kvs, err := db.ListStoreValues((ctx), pid, []string{key}, true)
 	if err != nil {
-		return sdktypes.InvalidValue, translateError(err)
+		return sdktypes.InvalidValue, translateError(db.z, "get_store_value", err)
 	}
 	if len(kvs) == 0 {
 		return sdktypes.Nothing, nil
@@ -84,7 +86,7 @@ func (db *gormdb) PublishStoreValue(ctx context.Context, pid sdktypes.ProjectID,
 
 	q := db.writer.WithContext(ctx).Model(&scheme.StoreValue{}).Where("project_id = ? AND key = ?", pid.UUIDValue(), key).Update("published", true)
 	if err := q.Error; err != nil {
-		return translateError(err)
+		return translateError(db.z, "publish_store_value", err)
 	}
 
 	if q.RowsAffected == 0 {
@@ -101,7 +103,7 @@ func (db *gormdb) UnpublishStoreValue(ctx context.Context, pid sdktypes.ProjectI
 
 	q := db.writer.WithContext(ctx).Model(&scheme.StoreValue{}).Where("project_id = ? AND key = ?", pid.UUIDValue(), key).Update("published", false)
 	if err := q.Error; err != nil {
-		return translateError(err)
+		return translateError(db.z, "unpublish_store_value", err)
 	}
 
 	if q.RowsAffected == 0 {
@@ -115,7 +117,7 @@ func (db *gormdb) IsStoreValuePublished(ctx context.Context, pid sdktypes.Projec
 	var sv scheme.StoreValue
 	err := db.reader.WithContext(ctx).Select("published").Where("project_id = ? AND key = ?", pid.UUIDValue(), key).First(&sv).Error
 	if err != nil {
-		return false, translateError(err)
+		return false, translateError(db.z, "is_store_value_published", err)
 	}
 
 	return sv.Published, nil
@@ -134,7 +136,7 @@ func (db *gormdb) ListStoreValues(ctx context.Context, pid sdktypes.ProjectID, k
 	}
 
 	if err := q.Find(&rs).Error; err != nil {
-		return nil, translateError(err)
+		return nil, translateError(db.z, "list_store_values", err)
 	}
 
 	return kittehs.ListToMapError(rs, func(r *scheme.StoreValue) (string, sdktypes.Value, error) {

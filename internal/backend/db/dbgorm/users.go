@@ -27,7 +27,7 @@ func (gdb *gormdb) GetUser(ctx context.Context, id sdktypes.UserID, email string
 	var r scheme.User
 	err := q.First(&r).Error
 	if err != nil {
-		return sdktypes.InvalidUser, translateError(err)
+		return sdktypes.InvalidUser, translateError(gdb.z, "get_user", err)
 	}
 
 	return scheme.ParseUser(r)
@@ -57,7 +57,7 @@ func (gdb *gormdb) CreateUser(ctx context.Context, u sdktypes.User) (sdktypes.Us
 
 	err := gdb.writer.WithContext(ctx).Create(&user).Error
 	if err != nil {
-		return sdktypes.InvalidUserID, translateError(err)
+		return sdktypes.InvalidUserID, translateError(gdb.z, "create_user", err)
 	}
 
 	return uid, nil
@@ -78,6 +78,8 @@ func (gdb *gormdb) UpdateUser(ctx context.Context, u sdktypes.User, fm *sdktypes
 	}
 
 	return translateError(
+		gdb.z,
+		"update_user",
 		gdb.writer.WithContext(ctx).
 			Model(&scheme.User{}).
 			Where("user_id = ?", u.ID().UUIDValue()).

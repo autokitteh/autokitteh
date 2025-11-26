@@ -98,17 +98,17 @@ func (db *gormdb) CreateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 		IsSync:       &isSync,
 	}
 
-	return translateError(db.createTrigger(ctx, t))
+	return translateError(db.z, "create_trigger", db.createTrigger(ctx, t))
 }
 
 func (db *gormdb) DeleteTrigger(ctx context.Context, id sdktypes.TriggerID) error {
-	return translateError(db.deleteTrigger(ctx, id.UUIDValue()))
+	return translateError(db.z, "delete_trigger", db.deleteTrigger(ctx, id.UUIDValue()))
 }
 
 func (db *gormdb) UpdateTrigger(ctx context.Context, trigger sdktypes.Trigger) error {
 	r, err := db.getTriggerByID(ctx, trigger.ID().UUIDValue())
 	if r == nil || err != nil {
-		return translateError(err)
+		return translateError(db.z, "get_trigger_for_update", err)
 	}
 
 	// We're not checking anything else here and modifying only the following fields.
@@ -130,13 +130,13 @@ func (db *gormdb) UpdateTrigger(ctx context.Context, trigger sdktypes.Trigger) e
 	r.IsSync = &isSync
 	r.IsDurable = &isDurable
 
-	return translateError(db.updateTrigger(ctx, r))
+	return translateError(db.z, "update_trigger", db.updateTrigger(ctx, r))
 }
 
 func (db *gormdb) GetTriggerByID(ctx context.Context, triggerID sdktypes.TriggerID) (sdktypes.Trigger, error) {
 	r, err := db.getTriggerByID(ctx, triggerID.UUIDValue())
 	if r == nil || err != nil {
-		return sdktypes.InvalidTrigger, translateError(err)
+		return sdktypes.InvalidTrigger, translateError(db.z, "get_trigger_by_id", err)
 	}
 
 	return scheme.ParseTrigger(*r)
@@ -159,7 +159,7 @@ func (db *gormdb) GetTriggerWithActiveDeploymentByID(ctx context.Context, trigge
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return sdktypes.InvalidTrigger, false, sdkerrors.ErrNotFound // Trigger doesn't exist.
 		}
-		return sdktypes.InvalidTrigger, false, translateError(err)
+		return sdktypes.InvalidTrigger, false, translateError(db.z, "get_trigger_with_active_deployment", err)
 	}
 
 	trigger, err := scheme.ParseTrigger(triggerAndDeployment.Trigger)
@@ -169,7 +169,7 @@ func (db *gormdb) GetTriggerWithActiveDeploymentByID(ctx context.Context, trigge
 func (db *gormdb) ListTriggers(ctx context.Context, filter sdkservices.ListTriggersFilter) ([]sdktypes.Trigger, error) {
 	ts, err := db.listTriggers(ctx, filter)
 	if ts == nil || err != nil {
-		return nil, translateError(err)
+		return nil, translateError(db.z, "list_triggers", err)
 	}
 	return kittehs.TransformError(ts, scheme.ParseTrigger)
 }
@@ -184,7 +184,7 @@ func (db *gormdb) GetTriggerWithActiveDeploymentByWebhookSlug(ctx context.Contex
 			int32(sdktypes.DeploymentStateActive.ToProto())).
 		First(&trigger).Error
 	if err != nil {
-		return sdktypes.InvalidTrigger, translateError(err)
+		return sdktypes.InvalidTrigger, translateError(db.z, "get_trigger_with_active_deployment_by_webhook_slug", err)
 	}
 
 	return scheme.ParseTrigger(trigger)
