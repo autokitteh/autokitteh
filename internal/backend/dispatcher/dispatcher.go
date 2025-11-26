@@ -88,7 +88,7 @@ func (d *Dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *s
 
 	sl.Infof("event saved: %v", eid)
 
-	if err := authz.CheckContext(ctx, event.ID(), "dispatch", authz.WithData("event", event), authz.WithData("opts", opts)); err != nil {
+	if err := authz.CheckContext(ctx, event.ID(), authz.OpDispatch, authz.WithData("event", event), authz.WithData("opts", opts)); err != nil {
 		return nil, err
 	}
 
@@ -144,7 +144,7 @@ func (d *Dispatcher) Redispatch(ctx context.Context, eventID sdktypes.EventID, o
 		return nil, sdkerrors.ErrNotFound
 	}
 
-	if err := authz.CheckContext(ctx, eventID, "redispatch", authz.WithData("event", event), authz.WithData("opts", opts)); err != nil {
+	if err := authz.CheckContext(ctx, eventID, authz.OpRedispatch, authz.WithData("event", event), authz.WithData("opts", opts)); err != nil {
 		return nil, err
 	}
 

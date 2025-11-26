@@ -54,7 +54,7 @@ func (ps *Projects) Create(ctx context.Context, project sdktypes.Project) (sdkty
 	if err := authz.CheckContext(
 		ctx,
 		sdktypes.InvalidProjectID,
-		"create:create",
+		authz.OpProjectCreateCreate,
 		authz.WithData("project", project),
 	); err != nil {
 		return sdktypes.InvalidProjectID, err
@@ -69,7 +69,7 @@ func (ps *Projects) Create(ctx context.Context, project sdktypes.Project) (sdkty
 }
 
 func (ps *Projects) Delete(ctx context.Context, pid sdktypes.ProjectID) error {
-	if err := authz.CheckContext(ctx, pid, "delete:delete"); err != nil {
+	if err := authz.CheckContext(ctx, pid, authz.OpProjectDeleteDelete); err != nil {
 		return err
 	}
 
@@ -77,7 +77,7 @@ func (ps *Projects) Delete(ctx context.Context, pid sdktypes.ProjectID) error {
 }
 
 func (ps *Projects) Update(ctx context.Context, project sdktypes.Project) error {
-	if err := authz.CheckContext(ctx, project.ID(), "update:update", authz.WithData("project", project)); err != nil {
+	if err := authz.CheckContext(ctx, project.ID(), authz.OpProjectUpdateUpdate, authz.WithData("project", project)); err != nil {
 		return err
 	}
 
@@ -85,7 +85,7 @@ func (ps *Projects) Update(ctx context.Context, project sdktypes.Project) error 
 }
 
 func (ps *Projects) GetByID(ctx context.Context, pid sdktypes.ProjectID) (sdktypes.Project, error) {
-	if err := authz.CheckContext(ctx, pid, "read:get", authz.WithConvertForbiddenToNotFound); err != nil {
+	if err := authz.CheckContext(ctx, pid, authz.OpProjectReadGet, authz.WithConvertForbiddenToNotFound); err != nil {
 		return sdktypes.InvalidProject, err
 	}
 
@@ -102,7 +102,7 @@ func (ps *Projects) GetByName(ctx context.Context, oid sdktypes.OrgID, n sdktype
 		return sdktypes.InvalidProject, err
 	}
 
-	if err := authz.CheckContext(ctx, p.ID(), "read:get", authz.WithConvertForbiddenToNotFound); err != nil {
+	if err := authz.CheckContext(ctx, p.ID(), authz.OpProjectReadGet, authz.WithConvertForbiddenToNotFound); err != nil {
 		return sdktypes.InvalidProject, err
 	}
 
@@ -117,7 +117,7 @@ func (ps *Projects) List(ctx context.Context, oid sdktypes.OrgID) ([]sdktypes.Pr
 	if err := authz.CheckContext(
 		ctx,
 		sdktypes.InvalidProjectID,
-		"read:list",
+		authz.OpProjectReadList,
 		authz.WithData("filter", map[string]string{"org_id": oid.String()}),
 	); err != nil {
 		return nil, err
@@ -129,7 +129,7 @@ func (ps *Projects) List(ctx context.Context, oid sdktypes.OrgID) ([]sdktypes.Pr
 func (ps *Projects) Build(ctx context.Context, projectID sdktypes.ProjectID, async bool) (sdktypes.BuildID, error) {
 	// Permission is read since it's reading from the project data. A separate check will be done
 	// in the builds storage component for creation of a new build.
-	if err := authz.CheckContext(ctx, projectID, "write:build"); err != nil {
+	if err := authz.CheckContext(ctx, projectID, authz.OpProjectWriteBuild); err != nil {
 		return sdktypes.InvalidBuildID, err
 	}
 
@@ -178,7 +178,7 @@ func (ps *Projects) buildSync(ctx context.Context, projectID sdktypes.ProjectID)
 }
 
 func (ps *Projects) SetResources(ctx context.Context, projectID sdktypes.ProjectID, resources map[string][]byte) error {
-	if err := authz.CheckContext(ctx, projectID, "write:set-resources"); err != nil {
+	if err := authz.CheckContext(ctx, projectID, authz.OpProjectWriteSetResources); err != nil {
 		return err
 	}
 
@@ -186,7 +186,7 @@ func (ps *Projects) SetResources(ctx context.Context, projectID sdktypes.Project
 }
 
 func (ps *Projects) DownloadResources(ctx context.Context, projectID sdktypes.ProjectID) (map[string][]byte, error) {
-	if err := authz.CheckContext(ctx, projectID, "read:download-resources"); err != nil {
+	if err := authz.CheckContext(ctx, projectID, authz.OpProjectReadDownloadResources); err != nil {
 		return nil, err
 	}
 
@@ -199,7 +199,7 @@ var origHeader = []byte(`# This is the original autokitteh.yaml specific by the 
 `)
 
 func (ps *Projects) Export(ctx context.Context, projectID sdktypes.ProjectID, includeVarsContents bool) ([]byte, error) {
-	if err := authz.CheckContext(ctx, projectID, "read:export", authz.WithData("include_vars_contents", includeVarsContents)); err != nil {
+	if err := authz.CheckContext(ctx, projectID, authz.OpProjectReadExport, authz.WithData("include_vars_contents", includeVarsContents)); err != nil {
 		return nil, err
 	}
 
@@ -360,7 +360,7 @@ func findConnection(id sdktypes.ConnectionID, conns []sdktypes.Connection) (sdkt
 
 func (ps *Projects) Lint(ctx context.Context, projectID sdktypes.ProjectID, resources map[string][]byte, manifestPath string) ([]*sdktypes.CheckViolation, error) {
 	if projectID.IsValid() {
-		if err := authz.CheckContext(ctx, projectID, "read:lint"); err != nil {
+		if err := authz.CheckContext(ctx, projectID, authz.OpProjectReadLint); err != nil {
 			return nil, err
 		}
 	}

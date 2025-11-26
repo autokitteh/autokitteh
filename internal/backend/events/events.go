@@ -23,7 +23,7 @@ func New(z *zap.Logger, db db.DB) sdkservices.Events {
 }
 
 func (e *events) Get(ctx context.Context, id sdktypes.EventID) (sdktypes.Event, error) {
-	if err := authz.CheckContext(ctx, id, "read:get", authz.WithConvertForbiddenToNotFound); err != nil {
+	if err := authz.CheckContext(ctx, id, authz.OpEventReadGet, authz.WithConvertForbiddenToNotFound); err != nil {
 		return sdktypes.InvalidEvent, err
 	}
 
@@ -38,7 +38,7 @@ func (e *events) List(ctx context.Context, filter sdkservices.ListEventsFilter) 
 	if err := authz.CheckContext(
 		ctx,
 		sdktypes.InvalidEventID,
-		"read:list",
+		authz.OpEventReadList,
 		authz.WithData("filter", filter),
 		authz.WithAssociationWithID("destination", filter.DestinationID),
 		authz.WithAssociationWithID("project", filter.ProjectID),
@@ -54,7 +54,7 @@ func (e *events) Save(ctx context.Context, event sdktypes.Event) (sdktypes.Event
 	if err := authz.CheckContext(
 		ctx,
 		sdktypes.InvalidEventID,
-		"create:save",
+		authz.OpEventCreateSave,
 		authz.WithData("event", event),
 		authz.WithAssociationWithID("destination", event.DestinationID().AsID()),
 	); err != nil {

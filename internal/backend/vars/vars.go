@@ -56,7 +56,7 @@ func (v *Vars) Set(ctx context.Context, vs ...sdktypes.Var) error {
 		if err := authz.CheckContext(
 			ctx,
 			va.ScopeID(),
-			"write:set-var",
+			authz.OpVarWriteSetVar,
 			authz.WithData("var", va.SetValue("")),
 		); err != nil {
 			return err
@@ -117,12 +117,12 @@ func (v *Vars) Set(ctx context.Context, vs ...sdktypes.Var) error {
 
 func (v *Vars) Delete(ctx context.Context, sid sdktypes.VarScopeID, names ...sdktypes.Symbol) error {
 	if len(names) == 0 {
-		if err := authz.CheckContext(ctx, sid, "write:delete-all-vars"); err != nil {
+		if err := authz.CheckContext(ctx, sid, authz.OpVarWriteDeleteAllVars); err != nil {
 			return err
 		}
 	} else {
 		for _, name := range names {
-			if err := authz.CheckContext(ctx, sid, "write:delete-var", authz.WithData("name", name)); err != nil {
+			if err := authz.CheckContext(ctx, sid, authz.OpVarWriteDeleteVar, authz.WithData("name", name)); err != nil {
 				return err
 			}
 		}
@@ -158,12 +158,12 @@ func (v *Vars) Delete(ctx context.Context, sid sdktypes.VarScopeID, names ...sdk
 
 func (v *Vars) Get(ctx context.Context, sid sdktypes.VarScopeID, names ...sdktypes.Symbol) (sdktypes.Vars, error) {
 	if len(names) == 0 {
-		if err := authz.CheckContext(ctx, sid, "read:get-all-vars", authz.WithConvertForbiddenToNotFound); err != nil {
+		if err := authz.CheckContext(ctx, sid, authz.OpVarReadGetAllVars, authz.WithConvertForbiddenToNotFound); err != nil {
 			return nil, err
 		}
 	} else {
 		for _, name := range names {
-			if err := authz.CheckContext(ctx, sid, "read:get-var", authz.WithData("name", name), authz.WithConvertForbiddenToNotFound); err != nil {
+			if err := authz.CheckContext(ctx, sid, authz.OpVarReadGetVar, authz.WithData("name", name), authz.WithConvertForbiddenToNotFound); err != nil {
 				return nil, err
 			}
 		}
@@ -190,7 +190,7 @@ func (v *Vars) Get(ctx context.Context, sid sdktypes.VarScopeID, names ...sdktyp
 }
 
 func (v *Vars) FindActiveConnectionIDs(ctx context.Context, iid sdktypes.IntegrationID, name sdktypes.Symbol, value string) ([]sdktypes.ConnectionID, error) {
-	if err := authz.CheckContext(ctx, sdktypes.InvalidIntegrationID, "read:find-var-connections-ids", authz.WithData("integration_id", iid), authz.WithData("name", name)); err != nil {
+	if err := authz.CheckContext(ctx, sdktypes.InvalidIntegrationID, authz.OpVarReadFindVarConnectionIDs, authz.WithData("integration_id", iid), authz.WithData("name", name)); err != nil {
 		return nil, err
 	}
 
