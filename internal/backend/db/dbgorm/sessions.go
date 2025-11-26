@@ -31,7 +31,7 @@ func (gdb *gormdb) createSession(ctx context.Context, session *scheme.Session) e
 		return err
 	}
 
-	return translateError(gdb.writeTransaction(ctx, func(tx *gormdb) error {
+	return translateError(gdb.z, "create_session", gdb.writeTransaction(ctx, func(tx *gormdb) error {
 		if err := tx.writer.Create(session).Error; err != nil {
 			return err
 		}
@@ -228,21 +228,21 @@ func (db *gormdb) CreateSession(ctx context.Context, session sdktypes.Session) e
 		Memo:             kittehs.Must1(json.Marshal(session.Memo())),
 		IsDurable:        session.IsDurable(),
 	}
-	return translateError(db.createSession(ctx, &s))
+	return translateError(db.z, "create_session", db.createSession(ctx, &s))
 }
 
 func (db *gormdb) DeleteSession(ctx context.Context, sessionID sdktypes.SessionID) error {
-	return translateError(db.deleteSession(ctx, sessionID.UUIDValue()))
+	return translateError(db.z, "delete_session", db.deleteSession(ctx, sessionID.UUIDValue()))
 }
 
 func (db *gormdb) UpdateSessionState(ctx context.Context, sessionID sdktypes.SessionID, state sdktypes.SessionState) error {
-	return translateError(db.updateSessionState(ctx, sessionID.UUIDValue(), state))
+	return translateError(db.z, "update_session_state", db.updateSessionState(ctx, sessionID.UUIDValue(), state))
 }
 
 func (db *gormdb) GetSession(ctx context.Context, id sdktypes.SessionID) (sdktypes.Session, error) {
 	s, err := db.getSession(ctx, id.UUIDValue())
 	if s == nil || err != nil {
-		return sdktypes.InvalidSession, translateError(err)
+		return sdktypes.InvalidSession, translateError(db.z, "get_session", err)
 	}
 	return scheme.ParseSession(*s)
 }
@@ -250,7 +250,7 @@ func (db *gormdb) GetSession(ctx context.Context, id sdktypes.SessionID) (sdktyp
 func (db *gormdb) ListSessions(ctx context.Context, f sdkservices.ListSessionsFilter) (*sdkservices.ListSessionResult, error) {
 	rs, cnt, err := db.listSessions(ctx, f)
 	if err != nil {
-		return nil, translateError(err)
+		return nil, translateError(db.z, "list_sessions", err)
 	}
 
 	sessions, err := kittehs.TransformError(rs, scheme.ParseSession)
@@ -286,7 +286,7 @@ func (db *gormdb) AddSessionPrint(ctx context.Context, sessionID sdktypes.Sessio
 	if err != nil {
 		return err
 	}
-	return translateError(db.addSessionLogRecord(ctx, logr, printSessionLogRecordType))
+	return translateError(db.z, "add_session_print", db.addSessionLogRecord(ctx, logr, printSessionLogRecordType))
 }
 
 func (db *gormdb) AddSessionStopRequest(ctx context.Context, sessionID sdktypes.SessionID, reason string) error {
@@ -294,7 +294,7 @@ func (db *gormdb) AddSessionStopRequest(ctx context.Context, sessionID sdktypes.
 	if err != nil {
 		return err
 	}
-	return translateError(db.addSessionLogRecord(ctx, logr, stopSessionLogRecordType))
+	return translateError(db.z, "add_session_stop_request", db.addSessionLogRecord(ctx, logr, stopSessionLogRecordType))
 }
 
 func (db *gormdb) AddSessionOutcome(ctx context.Context, sessionID sdktypes.SessionID, v sdktypes.Value) error {
@@ -302,13 +302,13 @@ func (db *gormdb) AddSessionOutcome(ctx context.Context, sessionID sdktypes.Sess
 	if err != nil {
 		return err
 	}
-	return translateError(db.addSessionLogRecord(ctx, logr, outcomeSessionLogRecordType))
+	return translateError(db.z, "add_session_outcome", db.addSessionLogRecord(ctx, logr, outcomeSessionLogRecordType))
 }
 
 func (db *gormdb) GetSessionLog(ctx context.Context, filter sdkservices.SessionLogRecordsFilter) (*sdkservices.GetLogResults, error) {
 	rs, n, err := db.getSessionLogRecords(ctx, filter)
 	if err != nil {
-		return nil, translateError(err)
+		return nil, translateError(db.z, "get_session_log", err)
 	}
 
 	prs, err := kittehs.TransformError(rs, scheme.ParseSessionLogRecord)

@@ -112,13 +112,13 @@ func (db *gormdb) SaveEvent(ctx context.Context, event sdktypes.Event) error {
 		e.IntegrationID = &integrationID
 	}
 
-	return translateError(db.saveEvent(ctx, &e))
+	return translateError(db.z, "save_event", db.saveEvent(ctx, &e))
 }
 
 func (db *gormdb) GetEventByID(ctx context.Context, eventID sdktypes.EventID) (sdktypes.Event, error) {
 	e, err := db.getEvent(ctx, eventID.UUIDValue())
 	if e == nil || err != nil {
-		return sdktypes.InvalidEvent, translateError(err)
+		return sdktypes.InvalidEvent, translateError(db.z, "get_event_by_id", err)
 	}
 	return scheme.ParseEvent(*e)
 }
@@ -126,7 +126,7 @@ func (db *gormdb) GetEventByID(ctx context.Context, eventID sdktypes.EventID) (s
 func (db *gormdb) ListEvents(ctx context.Context, filter sdkservices.ListEventsFilter) ([]sdktypes.Event, error) {
 	events, err := db.listEvents(ctx, filter)
 	if events == nil || err != nil {
-		return nil, translateError(err)
+		return nil, translateError(db.z, "list_events", err)
 	}
 	return kittehs.TransformError(events, scheme.ParseEvent)
 }
@@ -135,7 +135,7 @@ func (db *gormdb) GetLatestEventSequence(ctx context.Context) (uint64, error) {
 	// NOTE: called from workflow, not protected by user context
 	var s scheme.Event
 	if err := db.reader.WithContext(ctx).Last(&s).Error; err != nil {
-		return 0, translateError(err)
+		return 0, translateError(db.z, "get_latest_event_sequence", err)
 	}
 	return s.Seq, nil
 }

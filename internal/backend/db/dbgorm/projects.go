@@ -24,7 +24,7 @@ func (gdb *gormdb) createProject(ctx context.Context, project *scheme.Project) e
 			Model(&scheme.Org{}).
 			Where("org_id = ? AND deleted_at IS NULL", project.OrgID).
 			First(&org).Error; err != nil {
-			return translateError(err)
+			return translateError(tx.z, "create_project_lock_org", err)
 		}
 
 		// ensure there is no active project with the same name (but allow deleted ones)
@@ -176,11 +176,11 @@ func (db *gormdb) CreateProject(ctx context.Context, p sdktypes.Project) error {
 		DisplayName: p.DisplayName(),
 	}
 
-	return translateError(db.createProject(ctx, &project))
+	return translateError(db.z, "create_project", db.createProject(ctx, &project))
 }
 
 func (gdb *gormdb) DeleteProject(ctx context.Context, projectID sdktypes.ProjectID) error {
-	return translateError(gdb.deleteProject(ctx, projectID.UUIDValue()))
+	return translateError(gdb.z, "delete_project", gdb.deleteProject(ctx, projectID.UUIDValue()))
 }
 
 func (gdb *gormdb) UpdateProject(ctx context.Context, p sdktypes.Project) error {
@@ -194,28 +194,30 @@ func (gdb *gormdb) UpdateProject(ctx context.Context, p sdktypes.Project) error 
 		DisplayName: p.DisplayName(),
 	}
 
-	return translateError(gdb.updateProject(ctx, &project))
+	return translateError(gdb.z, "update_project", gdb.updateProject(ctx, &project))
 }
 
-func schemaToProject(p *scheme.Project, err error) (sdktypes.Project, error) {
+func schemaToProject(db *gormdb, operation string, p *scheme.Project, err error) (sdktypes.Project, error) {
 	if p == nil || err != nil {
-		return sdktypes.InvalidProject, translateError(err)
+		return sdktypes.InvalidProject, translateError(db.z, operation, err)
 	}
 	return scheme.ParseProject(*p)
 }
 
 func (db *gormdb) GetProjectByID(ctx context.Context, pid sdktypes.ProjectID) (sdktypes.Project, error) {
-	return schemaToProject(db.getProject(ctx, pid.UUIDValue()))
+	p, err := db.getProject(ctx, pid.UUIDValue())
+	return schemaToProject(db, "get_project_by_id", p, err)
 }
 
 func (db *gormdb) GetProjectByName(ctx context.Context, oid sdktypes.OrgID, ph sdktypes.Symbol) (sdktypes.Project, error) {
-	return schemaToProject(db.getProjectByName(ctx, oid, ph.String()))
+	p, err := db.getProjectByName(ctx, oid, ph.String())
+	return schemaToProject(db, "get_project_by_name", p, err)
 }
 
 func (db *gormdb) ListProjects(ctx context.Context, oid sdktypes.OrgID) ([]sdktypes.Project, error) {
 	ps, err := db.listProjects(ctx, oid)
 	if ps == nil || err != nil {
-		return nil, translateError(err)
+		return nil, translateError(db.z, "list_projects", err)
 	}
 	return kittehs.TransformError(ps, scheme.ParseProject)
 }
@@ -237,7 +239,7 @@ func (db *gormdb) GetProjectResources(ctx context.Context, pid sdktypes.ProjectI
 	res := db.reader.WithContext(ctx).Model(&scheme.Project{}).Where("project_id = ?", pid.UUIDValue()).Select("resources").Row()
 	var resources []byte
 	if err := res.Scan(&resources); err != nil {
-		return nil, translateError(err)
+		return nil, translateError(db.z, "get_project_resources", err)
 	}
 
 	if len(resources) == 0 {
@@ -264,7 +266,7 @@ func (db *gormdb) SetProjectResources(ctx context.Context, pid sdktypes.ProjectI
 
 	res := db.writer.WithContext(ctx).Model(&scheme.Project{}).Where("project_id = ?", pid.UUIDValue()).Update("resources", resourcesBytes)
 	if res.Error != nil {
-		return translateError(res.Error)
+		return translateError(db.z, "set_project_resources", res.Error)
 	}
 
 	if res.RowsAffected == 0 {
