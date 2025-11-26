@@ -94,6 +94,23 @@ func (db *gormdb) PublishStoreValue(ctx context.Context, pid sdktypes.ProjectID,
 	return nil
 }
 
+func (db *gormdb) UnpublishStoreValue(ctx context.Context, pid sdktypes.ProjectID, key string) error {
+	if !pid.IsValid() {
+		return sdkerrors.NewInvalidArgumentError("invalid project id")
+	}
+
+	q := db.writer.WithContext(ctx).Model(&scheme.StoreValue{}).Where("project_id = ? AND key = ?", pid.UUIDValue(), key).Update("published", false)
+	if err := q.Error; err != nil {
+		return translateError(err)
+	}
+
+	if q.RowsAffected == 0 {
+		return sdkerrors.ErrNotFound
+	}
+
+	return nil
+}
+
 func (db *gormdb) IsStoreValuePublished(ctx context.Context, pid sdktypes.ProjectID, key string) (bool, error) {
 	var sv scheme.StoreValue
 	err := db.reader.WithContext(ctx).Select("published").Where("project_id = ? AND key = ?", pid.UUIDValue(), key).First(&sv).Error

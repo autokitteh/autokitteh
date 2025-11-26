@@ -34,6 +34,7 @@ const (
 	HandlerService_StoreList_FullMethodName         = "/autokitteh.user_code.v1.HandlerService/StoreList"
 	HandlerService_StoreMutate_FullMethodName       = "/autokitteh.user_code.v1.HandlerService/StoreMutate"
 	HandlerService_StorePublish_FullMethodName      = "/autokitteh.user_code.v1.HandlerService/StorePublish"
+	HandlerService_StoreUnpublish_FullMethodName    = "/autokitteh.user_code.v1.HandlerService/StoreUnpublish"
 	HandlerService_Outcome_FullMethodName           = "/autokitteh.user_code.v1.HandlerService/Outcome"
 	HandlerService_EncodeJWT_FullMethodName         = "/autokitteh.user_code.v1.HandlerService/EncodeJWT"
 	HandlerService_RefreshOAuthToken_FullMethodName = "/autokitteh.user_code.v1.HandlerService/RefreshOAuthToken"
@@ -66,6 +67,7 @@ type HandlerServiceClient interface {
 	StoreList(ctx context.Context, in *StoreListRequest, opts ...grpc.CallOption) (*StoreListResponse, error)
 	StoreMutate(ctx context.Context, in *StoreMutateRequest, opts ...grpc.CallOption) (*StoreMutateResponse, error)
 	StorePublish(ctx context.Context, in *StorePublishRequest, opts ...grpc.CallOption) (*StorePublishResponse, error)
+	StoreUnpublish(ctx context.Context, in *StoreUnpublishRequest, opts ...grpc.CallOption) (*StoreUnpublishResponse, error)
 	Outcome(ctx context.Context, in *OutcomeRequest, opts ...grpc.CallOption) (*OutcomeResponse, error)
 	// Utility functions
 	EncodeJWT(ctx context.Context, in *EncodeJWTRequest, opts ...grpc.CallOption) (*EncodeJWTResponse, error)
@@ -232,6 +234,16 @@ func (c *handlerServiceClient) StorePublish(ctx context.Context, in *StorePublis
 	return out, nil
 }
 
+func (c *handlerServiceClient) StoreUnpublish(ctx context.Context, in *StoreUnpublishRequest, opts ...grpc.CallOption) (*StoreUnpublishResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(StoreUnpublishResponse)
+	err := c.cc.Invoke(ctx, HandlerService_StoreUnpublish_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *handlerServiceClient) Outcome(ctx context.Context, in *OutcomeRequest, opts ...grpc.CallOption) (*OutcomeResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(OutcomeResponse)
@@ -307,6 +319,7 @@ type HandlerServiceServer interface {
 	StoreList(context.Context, *StoreListRequest) (*StoreListResponse, error)
 	StoreMutate(context.Context, *StoreMutateRequest) (*StoreMutateResponse, error)
 	StorePublish(context.Context, *StorePublishRequest) (*StorePublishResponse, error)
+	StoreUnpublish(context.Context, *StoreUnpublishRequest) (*StoreUnpublishResponse, error)
 	Outcome(context.Context, *OutcomeRequest) (*OutcomeResponse, error)
 	// Utility functions
 	EncodeJWT(context.Context, *EncodeJWTRequest) (*EncodeJWTResponse, error)
@@ -367,6 +380,9 @@ func (UnimplementedHandlerServiceServer) StoreMutate(context.Context, *StoreMuta
 }
 func (UnimplementedHandlerServiceServer) StorePublish(context.Context, *StorePublishRequest) (*StorePublishResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method StorePublish not implemented")
+}
+func (UnimplementedHandlerServiceServer) StoreUnpublish(context.Context, *StoreUnpublishRequest) (*StoreUnpublishResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method StoreUnpublish not implemented")
 }
 func (UnimplementedHandlerServiceServer) Outcome(context.Context, *OutcomeRequest) (*OutcomeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Outcome not implemented")
@@ -674,6 +690,24 @@ func _HandlerService_StorePublish_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _HandlerService_StoreUnpublish_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StoreUnpublishRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HandlerServiceServer).StoreUnpublish(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HandlerService_StoreUnpublish_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HandlerServiceServer).StoreUnpublish(ctx, req.(*StoreUnpublishRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _HandlerService_Outcome_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(OutcomeRequest)
 	if err := dec(in); err != nil {
@@ -830,6 +864,10 @@ var HandlerService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "StorePublish",
 			Handler:    _HandlerService_StorePublish_Handler,
+		},
+		{
+			MethodName: "StoreUnpublish",
+			Handler:    _HandlerService_StoreUnpublish_Handler,
 		},
 		{
 			MethodName: "Outcome",

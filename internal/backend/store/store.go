@@ -117,3 +117,16 @@ func (s *store) Publish(ctx context.Context, pid sdktypes.ProjectID, key string)
 
 	return s.db.PublishStoreValue(ctx, pid, key)
 }
+
+func (s *store) Unpublish(ctx context.Context, pid sdktypes.ProjectID, key string) error {
+	if err := authz.CheckContext(
+		ctx,
+		pid,
+		"write:unpublish",
+		authz.WithData("key", key),
+	); err != nil {
+		return err
+	}
+
+	return s.db.UnpublishStoreValue(ctx, pid, key)
+}

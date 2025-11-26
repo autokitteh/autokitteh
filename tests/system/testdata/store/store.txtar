@@ -31,9 +31,8 @@ output equals meow
 http get /store/$pid/cat
 output equals meow
 
-
 -- main.py --
-from autokitteh import set_value, get_value, publish_value
+from autokitteh import set_value, get_value, publish_value, unpublish_value
 
 def set(_):
     set_value("cat", "meow")
@@ -41,3 +40,6 @@ def set(_):
 
 def get(_):
     print(get_value("cat"))
+
+def shhh(_):
+    unpublish_value("cat")

@@ -69,3 +69,15 @@ class PublishRequest(_message.Message):
 class PublishResponse(_message.Message):
     __slots__ = []
     def __init__(self) -> None: ...
+
+class UnpublishRequest(_message.Message):
+    __slots__ = ["project_id", "key"]
+    PROJECT_ID_FIELD_NUMBER: _ClassVar[int]
+    KEY_FIELD_NUMBER: _ClassVar[int]
+    project_id: str
+    key: str
+    def __init__(self, project_id: _Optional[str] = ..., key: _Optional[str] = ...) -> None: ...
+
+class UnpublishResponse(_message.Message):
+    __slots__ = []
+    def __init__(self) -> None: ...

@@ -601,6 +601,24 @@ func (s *workerGRPCHandler) StorePublish(ctx context.Context, req *userCode.Stor
 	return &userCode.StorePublishResponse{}, nil
 }
 
+func (s *workerGRPCHandler) StoreUnpublish(ctx context.Context, req *userCode.StoreUnpublishRequest) (*userCode.StoreUnpublishResponse, error) {
+	fn := func(ctx context.Context, cbs *sdkservices.RunCallbacks, rid sdktypes.RunID) (any, error) {
+		return nil, cbs.UnpublishStoreValue(ctx, rid, req.Key)
+	}
+
+	resp, err := s.callback(ctx, req.RunnerId, "unpublish_value", fn)
+	if err != nil {
+		return &userCode.StoreUnpublishResponse{Error: err.Error()}, nil
+	}
+
+	if resp.err != nil {
+		err = status.Errorf(codes.Internal, "unpublish_value(%v) -> %v", req.Key, resp.err)
+		return &userCode.StoreUnpublishResponse{Error: err.Error()}, nil
+	}
+
+	return &userCode.StoreUnpublishResponse{}, nil
+}
+
 func (s *workerGRPCHandler) Outcome(ctx context.Context, req *userCode.OutcomeRequest) (*userCode.OutcomeResponse, error) {
 	v, err := sdktypes.ValueFromProto(req.Value)
 	if err != nil {
