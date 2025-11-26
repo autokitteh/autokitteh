@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/cel-go/cel"
+	"github.com/google/cel-go/ext"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
@@ -116,6 +117,12 @@ func (e Event) WithData(data map[string]Value) Event {
 }
 
 var eventFilterEnv = kittehs.Must1(cel.NewEnv(
+	ext.Strings(),  // String manipulation functions
+	ext.Encoders(), // Base64 encoding/decoding
+	ext.Math(),     // Math functions
+	ext.Lists(),    // List functions
+	ext.Sets(),     // Set operations
+	ext.Bindings(), // cel.bind() function
 	cel.Variable("data", cel.MapType(cel.StringType, cel.AnyType)),
 	cel.Variable("event_type", cel.StringType),
 ))
