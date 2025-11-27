@@ -29,7 +29,7 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 func connStatus(cvars sdkservices.Vars) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
 		if !cid.IsValid() {
-			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required").WithFixAction("Init"), nil
 		}
 
 		vs, err := cvars.Get(ctx, sdktypes.NewVarScopeID(cid))
@@ -39,7 +39,7 @@ func connStatus(cvars sdkservices.Vars) sdkintegrations.OptFn {
 
 		at := vs.Get(common.AuthTypeVar)
 		if !at.IsValid() || at.Value() == "" {
-			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required").WithFixAction("Init"), nil
 		}
 
 		if at.Value() == integrations.APIKey {
@@ -58,7 +58,7 @@ func connTest(cvars sdkservices.Vars) sdkintegrations.OptFn {
 
 		if !cid.IsValid() {
 			l.Debug("connection test: invalid connection ID" + cid.String())
-			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required").WithFixAction("Init"), nil
 		}
 
 		vs, err := cvars.Get(ctx, sdktypes.NewVarScopeID(cid))

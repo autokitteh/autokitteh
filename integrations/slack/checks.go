@@ -24,7 +24,7 @@ func status(v sdkservices.Vars) sdkintegrations.OptFn {
 
 		switch common.ReadAuthType(vs) {
 		case "":
-			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required").WithFixAction("Init"), nil
 		// TODO(INT-267): Remove [integrations.OAuth] once the web UI is migrated too.
 		case integrations.OAuth, integrations.OAuthDefault, integrations.OAuthPrivate:
 			return common.CheckOAuthToken(vs)
@@ -48,7 +48,7 @@ func test(v sdkservices.Vars) sdkintegrations.OptFn {
 		var token string
 		switch common.ReadAuthType(vs) {
 		case "":
-			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required").WithFixAction("Init"), nil
 		// TODO(INT-267): Remove [integrations.OAuth] once the web UI is migrated too.
 		case integrations.OAuth, integrations.OAuthDefault, integrations.OAuthPrivate:
 			token = vs.GetValue(common.OAuthAccessTokenVar)

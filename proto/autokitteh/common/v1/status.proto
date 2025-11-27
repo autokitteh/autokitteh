@@ -12,4 +12,5 @@ message Status {
 
   Code code = 1;
   string message = 2;
+  string fix_action = 3;
 }

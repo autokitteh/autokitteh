@@ -23,7 +23,7 @@ import (
 func ConnStatus(cvars sdkservices.Vars) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
 		if !cid.IsValid() {
-			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required").WithFixAction("Init"), nil
 		}
 
 		vs, err := cvars.Get(ctx, sdktypes.NewVarScopeID(cid))
@@ -34,13 +34,13 @@ func ConnStatus(cvars sdkservices.Vars) sdkintegrations.OptFn {
 
 		at := vs.Get(vars.AuthType)
 		if !at.IsValid() || at.Value() == "" {
-			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required").WithFixAction("Init"), nil
 		}
 
 		switch at.Value() {
 		case integrations.JSONKey:
 			if vs.GetValue(vars.JSON) == "" {
-				return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+				return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required").WithFixAction("Init"), nil
 			}
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using JSON key"), nil
 		case integrations.OAuth:
@@ -57,7 +57,7 @@ func ConnStatus(cvars sdkservices.Vars) sdkintegrations.OptFn {
 func ConnTest(cvars sdkservices.Vars) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionTest(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
 		if !cid.IsValid() {
-			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Init required"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Init required").WithFixAction("Init"), nil
 		}
 
 		vs, err := cvars.Get(ctx, sdktypes.NewVarScopeID(cid))
@@ -68,7 +68,7 @@ func ConnTest(cvars sdkservices.Vars) sdkintegrations.OptFn {
 
 		at := vs.Get(vars.AuthType)
 		if !at.IsValid() || at.Value() == "" {
-			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required").WithFixAction("Init"), nil
 		}
 
 		var client *http.Client

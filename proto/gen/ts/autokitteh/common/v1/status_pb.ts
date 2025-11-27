@@ -20,6 +20,11 @@ export class Status extends Message<Status> {
    */
   message = "";
 
+  /**
+   * @generated from field: string fix_action = 3;
+   */
+  fixAction = "";
+
   constructor(data?: PartialMessage<Status>) {
     super();
     proto3.util.initPartial(data, this);
@@ -30,6 +35,7 @@ export class Status extends Message<Status> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "code", kind: "enum", T: proto3.getEnumType(Status_Code) },
     { no: 2, name: "message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "fix_action", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Status {
