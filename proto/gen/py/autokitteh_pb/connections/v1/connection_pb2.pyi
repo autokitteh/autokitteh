@@ -7,7 +7,7 @@ from typing import ClassVar as _ClassVar, Mapping as _Mapping, Optional as _Opti
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class Connection(_message.Message):
-    __slots__ = ["connection_id", "integration_id", "project_id", "name", "status", "capabilities", "links"]
+    __slots__ = ["connection_id", "integration_id", "project_id", "name", "status", "capabilities", "links", "org_id"]
     class LinksEntry(_message.Message):
         __slots__ = ["key", "value"]
         KEY_FIELD_NUMBER: _ClassVar[int]
@@ -22,6 +22,7 @@ class Connection(_message.Message):
     STATUS_FIELD_NUMBER: _ClassVar[int]
     CAPABILITIES_FIELD_NUMBER: _ClassVar[int]
     LINKS_FIELD_NUMBER: _ClassVar[int]
+    ORG_ID_FIELD_NUMBER: _ClassVar[int]
     connection_id: str
     integration_id: str
     project_id: str
@@ -29,7 +30,8 @@ class Connection(_message.Message):
     status: _status_pb2.Status
     capabilities: Capabilities
     links: _containers.ScalarMap[str, str]
-    def __init__(self, connection_id: _Optional[str] = ..., integration_id: _Optional[str] = ..., project_id: _Optional[str] = ..., name: _Optional[str] = ..., status: _Optional[_Union[_status_pb2.Status, _Mapping]] = ..., capabilities: _Optional[_Union[Capabilities, _Mapping]] = ..., links: _Optional[_Mapping[str, str]] = ...) -> None: ...
+    org_id: str
+    def __init__(self, connection_id: _Optional[str] = ..., integration_id: _Optional[str] = ..., project_id: _Optional[str] = ..., name: _Optional[str] = ..., status: _Optional[_Union[_status_pb2.Status, _Mapping]] = ..., capabilities: _Optional[_Union[Capabilities, _Mapping]] = ..., links: _Optional[_Mapping[str, str]] = ..., org_id: _Optional[str] = ...) -> None: ...
 
 class Capabilities(_message.Message):
     __slots__ = ["supports_connection_test", "supports_connection_init", "requires_connection_init"]
