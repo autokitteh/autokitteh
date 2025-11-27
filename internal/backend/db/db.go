@@ -143,6 +143,7 @@ type Shared interface {
 	PublishStoreValue(ctx context.Context, pid sdktypes.ProjectID, key string) error
 	UnpublishStoreValue(ctx context.Context, pid sdktypes.ProjectID, key string) error
 	IsStoreValuePublished(ctx context.Context, pid sdktypes.ProjectID, key string) (bool, error)
+	CountStoreValues(ctx context.Context, pid sdktypes.ProjectID) (int64, error)
 
 	// If len(keys) == 0, it returns all keys.
 	// if getValues is true, it returns values for the keys. Otherwise, it returns only keys without values.
