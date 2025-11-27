@@ -43,7 +43,7 @@ func (i *integration) connStatus() sdkintegrations.OptFn {
 		l := i.l.With(zap.String("connection_id", cid.String()))
 
 		if !cid.IsValid() {
-			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Init required"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Init required").WithFixAction("Init"), nil
 		}
 
 		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
@@ -68,7 +68,7 @@ func (i *integration) connTest() sdkintegrations.OptFn {
 		l := i.l.With(zap.String("connection_id", cid.String()))
 
 		if !cid.IsValid() {
-			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Init required"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeError, "Init required").WithFixAction("Init"), nil
 		}
 
 		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))

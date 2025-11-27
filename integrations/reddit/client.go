@@ -29,7 +29,7 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 func connStatus(cvars sdkservices.Vars) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
 		if !cid.IsValid() {
-			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required").WithFixAction("Init"), nil
 		}
 
 		vs, err := cvars.Get(ctx, sdktypes.NewVarScopeID(cid))
@@ -39,7 +39,7 @@ func connStatus(cvars sdkservices.Vars) sdkintegrations.OptFn {
 
 		at := vs.Get(vars.AuthType)
 		if !at.IsValid() || at.Value() == "" {
-			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required").WithFixAction("Init"), nil
 		}
 
 		if at.Value() == integrations.OAuthPrivate {
@@ -57,7 +57,7 @@ func connTest(cvars sdkservices.Vars) sdkintegrations.OptFn {
 		l := zap.L().With(zap.String("connection_id", cid.String()))
 
 		if !cid.IsValid() {
-			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required").WithFixAction("Init"), nil
 		}
 
 		// Retrieve connection variables.
@@ -77,7 +77,7 @@ func connTest(cvars sdkservices.Vars) sdkintegrations.OptFn {
 		// Check if required credentials are present
 		if clientID == "" || clientSecret == "" || userAgent == "" {
 			l.Debug("Missing required credentials")
-			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required").WithFixAction("Init"), nil
 		}
 
 		// Validate credentials by attempting to authenticate with Reddit API

@@ -27,7 +27,7 @@ func status(v sdkservices.Vars) sdkintegrations.OptFn {
 
 		switch common.ReadAuthType(vs) {
 		case "":
-			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required").WithFixAction("Init"), nil
 		case integrations.OAuthDefault, integrations.OAuthPrivate:
 			return common.CheckOAuthToken(vs)
 		case integrations.APIKey:
@@ -50,7 +50,7 @@ func test(v sdkservices.Vars, o *oauth.OAuth) sdkintegrations.OptFn {
 		body := `{ "query": "{ viewer { id  } }" }`
 		switch common.ReadAuthType(vs) {
 		case "":
-			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required").WithFixAction("Init"), nil
 
 		case integrations.OAuthDefault, integrations.OAuthPrivate:
 			token := o.FreshToken(ctx, zap.L(), desc, vs)

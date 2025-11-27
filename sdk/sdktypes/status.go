@@ -56,3 +56,7 @@ func NewStatusf(code StatusCode, msg string, vs ...any) Status {
 		Message: fmt.Sprintf(msg, vs...),
 	}))
 }
+
+func (p Status) WithFixAction(action string) Status {
+	return Status{p.forceUpdate(func(pb *StatusPB) { pb.FixAction = action })}
+}

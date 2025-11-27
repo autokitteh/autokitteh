@@ -6,7 +6,7 @@ from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 DESCRIPTOR: _descriptor.FileDescriptor
 
 class Status(_message.Message):
-    __slots__ = ["code", "message"]
+    __slots__ = ["code", "message", "fix_action"]
     class Code(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
         __slots__ = []
         CODE_UNSPECIFIED: _ClassVar[Status.Code]
@@ -19,6 +19,8 @@ class Status(_message.Message):
     CODE_ERROR: Status.Code
     CODE_FIELD_NUMBER: _ClassVar[int]
     MESSAGE_FIELD_NUMBER: _ClassVar[int]
+    FIX_ACTION_FIELD_NUMBER: _ClassVar[int]
     code: Status.Code
     message: str
-    def __init__(self, code: _Optional[_Union[Status.Code, str]] = ..., message: _Optional[str] = ...) -> None: ...
+    fix_action: str
+    def __init__(self, code: _Optional[_Union[Status.Code, str]] = ..., message: _Optional[str] = ..., fix_action: _Optional[str] = ...) -> None: ...

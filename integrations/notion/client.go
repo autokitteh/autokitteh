@@ -29,7 +29,7 @@ func connStatus(cvars sdkservices.Vars) sdkintegrations.OptFn {
 
 		switch common.ReadAuthType(vs) {
 		case "":
-			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required").WithFixAction("Init"), nil
 		case integrations.OAuthDefault, integrations.OAuthPrivate:
 			return common.CheckOAuthToken(vs)
 		case integrations.APIKey:
@@ -48,7 +48,7 @@ func connTest(cvars sdkservices.Vars, o *oauth.OAuth) sdkintegrations.OptFn {
 		l := zap.L().With(zap.String("connection_id", cid.String()))
 
 		if !cid.IsValid() {
-			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required").WithFixAction("Init"), nil
 		}
 
 		vs, err := cvars.Get(ctx, sdktypes.NewVarScopeID(cid))
@@ -60,7 +60,7 @@ func connTest(cvars sdkservices.Vars, o *oauth.OAuth) sdkintegrations.OptFn {
 		authType := common.ReadAuthType(vs)
 		switch authType {
 		case "":
-			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required").WithFixAction("Init"), nil
 		case integrations.OAuthDefault, integrations.OAuthPrivate:
 			token := o.FreshToken(ctx, l, desc, vs)
 			if token == nil {

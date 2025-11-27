@@ -23,7 +23,7 @@ type integration struct{ vars sdkservices.Vars }
 func connStatus(i *integration) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
 		if !cid.IsValid() {
-			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required").WithFixAction("Init"), nil
 		}
 
 		vs, err := i.vars.Get(ctx, sdktypes.NewVarScopeID(cid))
@@ -39,7 +39,7 @@ func connStatus(i *integration) sdkintegrations.OptFn {
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Initialized"), nil
 		}
 
-		return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+		return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required").WithFixAction("Init"), nil
 	})
 }
 
