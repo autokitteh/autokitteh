@@ -2,6 +2,8 @@ package svc
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"go.uber.org/fx"
 	"go.uber.org/zap"
@@ -18,7 +20,8 @@ import (
 )
 
 type integrationsConfig struct {
-	Test bool `koanf:"test"`
+	Test      bool   `koanf:"test"`
+	StartOnly string `koanf:"start_only"`
 }
 
 var integrationConfigs = configset.Set[integrationsConfig]{
@@ -45,7 +48,9 @@ func (vs sysVars) FindActiveConnectionIDs(ctx context.Context, iid sdktypes.Inte
 }
 
 func integrationsFXOption() fx.Option {
-	inits := fx.Options(kittehs.Transform(integrations.All(), func(i integrations.Integration) fx.Option {
+	all := integrations.All()
+
+	inits := fx.Options(kittehs.Transform(all, func(i integrations.Integration) fx.Option {
 		return Component(i.Name, configset.Empty, fx.Provide(
 			fx.Annotate(i.Init, fx.ResultTags(`group:"integrations"`)),
 		))
@@ -63,21 +68,39 @@ func integrationsFXOption() fx.Option {
 
 		inits,
 
-		fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, muxes *muxes.Muxes, vars sdkservices.Vars, oauth *oauth.OAuth, dispatch sdkservices.DispatchFunc) {
+		fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, muxes *muxes.Muxes, vars sdkservices.Vars, oauth *oauth.OAuth, dispatch sdkservices.DispatchFunc) error {
 			l.Info("supported integrations", zap.Strings("integrations", integrations.Names()))
 
-			HookOnStart(lc, func(ctx context.Context) error {
-				for _, i := range integrations.All() {
-					if i.Start != nil {
-						l.Debug("starting integration", zap.String("integration", i.Name))
+			cfg, err := chooseConfig(integrationConfigs)
+			if err != nil {
+				return fmt.Errorf("integrations: %w", err)
+			}
 
+			shouldStart := func(string) bool { return true }
+
+			if cfg.StartOnly != "" {
+				shouldStart = kittehs.ContainedIn(strings.Split(cfg.StartOnly, ",")...)
+			}
+
+			HookOnStart(lc, func(ctx context.Context) error {
+				for _, i := range all {
+					if i.Start != nil {
+						if !shouldStart(i.Name) {
+							l.Info("skipping integration startup", zap.String("integration", i.Name))
+							continue
+						}
+
+						l.Debug("starting integration", zap.String("integration", i.Name))
 						i.Start(l, muxes, vars, oauth, dispatch)
 					}
 				}
 
 				return nil
 			})
+
+			return nil
 		}),
+
 		Component(
 			"integrations",
 			integrationConfigs,
