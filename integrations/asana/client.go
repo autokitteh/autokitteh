@@ -19,7 +19,7 @@ var (
 	desc = common.Descriptor(IntegrationName, "Asana", "/static/images/asana.svg")
 
 	patVar      = sdktypes.NewSymbol("pat")
-	authTypeVar = sdktypes.NewSymbol("authType")
+	authTypeVar = sdktypes.NewSymbol("auth_type")
 )
 
 type integration struct{ vars sdkservices.Vars }

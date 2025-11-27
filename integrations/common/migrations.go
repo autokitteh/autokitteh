@@ -30,9 +30,9 @@ func RenameVar(ctx context.Context, v sdkservices.Vars, vsid sdktypes.VarScopeID
 	return v.Delete(ctx, vsid, old)
 }
 
-// MigrateAuthType migrates a connection's "auth_type" variable from the
+// MigrateOAuthAuthType migrates a connection's "auth_type" variable from the
 // old "oauth" value to the new "oauthDefault". Otherwise, it has no effect.
-func MigrateAuthType(ctx context.Context, v sdkservices.Vars, vsid sdktypes.VarScopeID) error {
+func MigrateOAuthAuthType(ctx context.Context, v sdkservices.Vars, vsid sdktypes.VarScopeID) error {
 	vs, err := v.Get(ctx, vsid, AuthTypeVar)
 	if err != nil {
 		return err
@@ -49,6 +49,12 @@ func MigrateAuthType(ctx context.Context, v sdkservices.Vars, vsid sdktypes.VarS
 	}
 
 	return nil
+}
+
+// MigrateAuthType migrates a connection's "authType" variable name to "auth_type".
+// This is needed for integrations that are standardizing on snake_case variable names.
+func MigrateAuthType(ctx context.Context, v sdkservices.Vars, vsid sdktypes.VarScopeID) error {
+	return RenameVar(ctx, v, vsid, LegacyAuthTypeVar, AuthTypeVar)
 }
 
 // MigrateDateTimeToRFC3339 migrates a connection's timestamp variable

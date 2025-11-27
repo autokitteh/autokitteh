@@ -21,6 +21,7 @@ var (
 	OAuthRefreshTokenVar = sdktypes.NewSymbol("oauth_refresh_token")
 	OAuthTokenTypeVar    = sdktypes.NewSymbol("oauth_token_type")
 
+	LegacyAuthTypeVar         = sdktypes.NewSymbol("authType")
 	LegacyOAuthAccessTokenVar = sdktypes.NewSymbol("oauth_AccessToken")
 
 	PrivateClientIDVar     = sdktypes.NewSymbol("private_client_id")

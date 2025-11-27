@@ -20,7 +20,7 @@ var (
 	desc = common.Descriptor(IntegrationName, "OpenAI ChatGPT", "/static/images/chatgpt.svg")
 
 	apiKeyVar   = sdktypes.NewSymbol("apiKey")
-	authTypeVar = sdktypes.NewSymbol("authType")
+	authTypeVar = sdktypes.NewSymbol("auth_type")
 )
 
 type integration struct{ vars sdkservices.Vars }
