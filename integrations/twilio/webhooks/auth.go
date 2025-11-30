@@ -11,7 +11,7 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-var AuthType = sdktypes.NewSymbol("authType")
+var AuthType = sdktypes.NewSymbol("auth_type")
 
 const (
 	// AuthPath is the URL path for our webhook to save a new autokitteh

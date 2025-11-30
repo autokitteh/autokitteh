@@ -5,7 +5,7 @@ import (
 )
 
 var (
-	authType = sdktypes.NewSymbol("authType")
+	authType = sdktypes.NewSymbol("auth_type")
 
 	baseURL = sdktypes.NewSymbol("BaseURL")
 	token   = sdktypes.NewSymbol("Token")
