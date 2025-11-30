@@ -77,7 +77,8 @@ func (h handler) handleCreds(w http.ResponseWriter, r *http.Request) {
 
 	switch r.FormValue("auth_type") {
 	// GCP service-account JSON-key connection? Save the JSON key.
-	case "", "json":
+	// Expected value from frontend is "jsonKey"; "" and "json" are for backward compatibility.
+	case "", "json", "jsonKey":
 		ctx := extrazap.AttachLoggerToContext(l, r.Context())
 		vs := sdktypes.EncodeVars(&vars.Vars{
 			JSON:       r.PostFormValue("json"),
