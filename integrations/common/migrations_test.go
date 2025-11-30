@@ -59,7 +59,7 @@ func TestMigrateAuthType(t *testing.T) {
 			v := sdktypes.NewVar(AuthTypeVar).SetValue(tt.initial)
 			require.NoError(t, vars.Set(ctx, v.WithScopeID(vsid)))
 
-			require.NoError(t, MigrateOAuthAuthType(ctx, vars, vsid))
+			require.NoError(t, MigrateAuthType(ctx, vars, vsid))
 
 			assert.Equal(t, tt.want, vars.data[vsid][AuthTypeVar].Value())
 		})
