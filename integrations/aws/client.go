@@ -22,7 +22,7 @@ var desc = common.Descriptor(IntegrationName, "AWS (All APIs)", "/static/images/
 
 type integration struct{ vars sdkservices.Vars }
 
-var authType = sdktypes.NewSymbol("authType")
+var authType = sdktypes.NewSymbol("auth_type")
 
 func New(cvars sdkservices.Vars) sdkservices.Integration {
 	i := &integration{vars: cvars}
