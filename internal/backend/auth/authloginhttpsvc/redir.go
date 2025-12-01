@@ -5,14 +5,28 @@ import (
 	"net/url"
 )
 
-const redirCookieName = "redir"
+const (
+	redirCookieName = "redir"
+	cookieMaxAge    = 5 * 60 // Short-lived cookie for OAuth flow
+)
 
-func RedirectToLogin(w http.ResponseWriter, r *http.Request, src *url.URL) {
+type redirectConfig struct {
+	domain   string
+	secure   bool
+	sameSite http.SameSite
+}
+
+func RedirectToLogin(w http.ResponseWriter, r *http.Request, src *url.URL, cfg redirectConfig) {
 	if src != nil {
 		http.SetCookie(w, &http.Cookie{
-			Name:  redirCookieName,
-			Value: src.String(),
-			Path:  "/",
+			Name:     redirCookieName,
+			Value:    src.String(),
+			Path:     "/",
+			Domain:   cfg.domain,
+			Secure:   cfg.secure,
+			SameSite: cfg.sameSite,
+			HttpOnly: true,
+			MaxAge:   cookieMaxAge,
 		})
 	}
 
