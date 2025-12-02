@@ -7,8 +7,8 @@ import autokitteh
 from autokitteh import activities
 
 import log
+import prof
 from deterministic import is_deterministic, is_no_activity
-
 
 ak_mod_name = autokitteh.__name__
 
@@ -131,9 +131,12 @@ class AKCall:
             if (n := len(args)) != 1:
                 raise TypeError(f"time.sleep takes exactly one argument ({n} given)")
 
+            prof.sample()
+
             seconds = args[0]
             fn = time.sleep if self.in_activity else self.runner.syscalls.ak_sleep
-            return fn(seconds)
+            fn(seconds)
+            prof.sample()
 
         inhibit = getattr(func, activities.INHIBIT_ACTIVITIES_ATTR, False)
         if inhibit:
@@ -152,6 +155,7 @@ class AKCall:
                 if inhibit:
                     log.info(f"uninhibiting activities: {self.activities_inhibitions}")
                     self.activities_inhibitions -= 1
+                prof.sample()
 
         log.info("ACTION: activity call %s", full_name)
         self.in_activity = True
@@ -159,6 +163,7 @@ class AKCall:
             return self.runner.call_in_activity(func, args, kw)
         finally:
             self.in_activity = False
+            prof.sample()
 
     async def async_call(self, func, *args, **kw):
         return await self(func, *args, **kw)

@@ -5,6 +5,7 @@ dependencies = [
 	"grpcio ~= 1.68",
 	"autokitteh[all] ~= 0.8", # Must match the version in py-sdk/pyproject.toml.
 	"pytest>=8.4.2",
+	"psutil ~= 7.1",
 ]
 requires-python = ">= 3.11"
 
