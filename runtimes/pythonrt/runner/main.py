@@ -27,6 +27,7 @@ from autokitteh.errors import AutoKittehError
 import loader
 import log
 import pb
+import prof
 import values
 from call import AKCall, activity_marker, full_func_name
 from syscalls import SysCalls, mark_no_activity
@@ -586,6 +587,7 @@ class Runner(pb.runner_rpc.RunnerService):
         request: pb.runner.RunnerHealthRequest,
         context: grpc.ServicerContext,
     ):
+        prof.sample()
         duration = monotonic() - start_time
         log.info("health check (duration = %.2fsec)", duration)
 
@@ -835,4 +837,6 @@ if __name__ == "__main__":
     except Exception as e:
         log.error("server terminated with error: %s", e)
     finally:
+        prof.sample()
+        prof.report()
         force_close(server)
