@@ -13,10 +13,12 @@ class Status(_message.Message):
         CODE_OK: _ClassVar[Status.Code]
         CODE_WARNING: _ClassVar[Status.Code]
         CODE_ERROR: _ClassVar[Status.Code]
+        CODE_INIT_REQUIRED: _ClassVar[Status.Code]
     CODE_UNSPECIFIED: Status.Code
     CODE_OK: Status.Code
     CODE_WARNING: Status.Code
     CODE_ERROR: Status.Code
+    CODE_INIT_REQUIRED: Status.Code
     CODE_FIELD_NUMBER: _ClassVar[int]
     MESSAGE_FIELD_NUMBER: _ClassVar[int]
     code: Status.Code

@@ -34,7 +34,7 @@ func New(cvars sdkservices.Vars) sdkservices.Integration {
 func connStatus(cvars sdkservices.Vars) sdkintegrations.OptFn {
 	return sdkintegrations.WithConnectionStatus(func(ctx context.Context, cid sdktypes.ConnectionID) (sdktypes.Status, error) {
 		if !cid.IsValid() {
-			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeInitRequired, "Init required"), nil
 		}
 
 		vs, err := cvars.Get(ctx, sdktypes.NewVarScopeID(cid))
@@ -44,7 +44,7 @@ func connStatus(cvars sdkservices.Vars) sdkintegrations.OptFn {
 
 		at := vs.Get(vars.AuthType)
 		if !at.IsValid() || at.Value() == "" {
-			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeInitRequired, "Init required"), nil
 		}
 
 		if at.Value() == integrations.APIKey {
@@ -62,7 +62,7 @@ func connTest(cvars sdkservices.Vars) sdkintegrations.OptFn {
 		l := zap.L().With(zap.String("connection_id", cid.String()))
 
 		if !cid.IsValid() {
-			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeInitRequired, "Init required"), nil
 		}
 
 		vs, err := cvars.Get(ctx, sdktypes.NewVarScopeID(cid))
@@ -74,7 +74,7 @@ func connTest(cvars sdkservices.Vars) sdkintegrations.OptFn {
 		apiKey := vs.Get(apiKeyVar)
 		if !apiKey.IsValid() || apiKey.Value() == "" {
 			l.Debug("Google Gemini API key is not set for connection "+cid.String(), zap.String("connection_id", cid.String()))
-			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeInitRequired, "Init required"), nil
 		}
 
 		err = validateGeminiAPIKey(ctx, apiKey.Value())
