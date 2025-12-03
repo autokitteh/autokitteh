@@ -39,9 +39,9 @@ type Config struct {
 	RejectNewUsers bool `koanf:"reject_new_users"`
 
 	// Session cookie settings (should match authsessions config)
-	CookieDomain   string            `koanf:"cookie_domain"`
-	SecureCookie   bool              `koanf:"secure_cookie"`
-	CookieSameSite http.SameSite     `koanf:"cookie_samesite"`
+	CookieDomain   string        `koanf:"ui_domain"`
+	SecureCookie   bool          `koanf:"secure_cookie"`
+	CookieSameSite http.SameSite `koanf:"cookie_samesite"`
 }
 
 var Configs = configset.Set[Config]{
