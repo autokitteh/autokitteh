@@ -28,12 +28,13 @@ import (
 type Deps struct {
 	fx.In
 
-	Muxes    *muxes.Muxes
-	L        *zap.Logger
-	Cfg      *Config
-	Sessions authsessions.Store
-	Tokens   authtokens.Tokens
-	Users    sdkservices.Users
+	Muxes      *muxes.Muxes
+	L          *zap.Logger
+	Cfg        *Config
+	Sessions   authsessions.Store
+	Tokens     authtokens.Tokens
+	Users      sdkservices.Users
+	ServiceURL string `optional:"true"`
 }
 
 type svc struct {
@@ -91,7 +92,13 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 			return errors.New("cannot enable descope with other providers enabled")
 		}
 
-		if err := registerDescopeRoutes(muxes.NoAuth, a.Cfg.Descope, a.newSuccessLoginHandler); err != nil {
+		serviceURL := a.ServiceURL
+		if serviceURL == "" {
+			// Fallback: use request host if service URL not configured
+			serviceURL = ""
+		}
+
+		if err := registerDescopeRoutes(muxes.NoAuth, a.Cfg.Descope, a.newSuccessLoginHandler, serviceURL); err != nil {
 			return err
 		}
 
