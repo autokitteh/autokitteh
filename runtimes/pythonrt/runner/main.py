@@ -594,7 +594,7 @@ class Runner(pb.runner_rpc.RunnerService):
                 abort_with_exception(
                     context,
                     grpc.StatusCode.INTERNAL,
-                    "larget object result nod found in cache",
+                    "large object result not found",
                     show_pickle_help=True,
                 )
             try:
