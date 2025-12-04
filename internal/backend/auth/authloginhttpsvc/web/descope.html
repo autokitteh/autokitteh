@@ -14,7 +14,12 @@
 
   <script>
     const onSuccess = async (e) => {
-      window.location.replace(`/auth/descope/login?jwt=${e.detail.sessionJwt}`);
+      // Use service URL if configured, otherwise use current origin (for backward compatibility)
+      const serviceURL = "{{ .ServiceURL }}";
+      const baseURL = serviceURL || window.location.origin;
+      const url = new URL('/auth/descope/login', baseURL);
+      url.searchParams.set('jwt', e.detail.sessionJwt);
+      window.location.replace(url.toString());
     }
 
     const onError = (err) => console.error(err);

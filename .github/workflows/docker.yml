@@ -84,13 +84,21 @@ jobs:
                       type=sha
                       type=edge
                       type=raw,value=latest,enable={{is_default_branch}}
+            - name: Determine tags
+              id: tags
+              run: |
+                  if [ -n "${{ inputs.version }}" ]; then
+                    echo "value=${{ steps.login-ecr.outputs.registry }}/autokitteh/${{ inputs.image }}:${{ inputs.version }}" >> $GITHUB_OUTPUT
+                  else
+                    echo "value=${{ steps.meta.outputs.tags }}" >> $GITHUB_OUTPUT
+                  fi
             - name: Build and push
               uses: docker/build-push-action@v6
               with:
                   context: .
                   platforms: linux/amd64
                   labels: ${{ steps.meta.outputs.labels }}
-                  tags: ${{ inputs.version != '' && inputs.version || steps.meta.outputs.tags }}
+                  tags: ${{ steps.tags.outputs.value }}
                   push: true
                   provenance: false
                   build-args: "BUILD_TAGS=${{inputs.buildTags}}"

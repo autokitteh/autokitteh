@@ -18,7 +18,7 @@ const (
 	descopeLoginPath     = descopeRootPath + "/login"
 )
 
-func registerDescopeRoutes(mux *http.ServeMux, cfg descopeConfig, onSuccess func(context.Context, *loginData) http.Handler) error {
+func registerDescopeRoutes(mux *http.ServeMux, cfg descopeConfig, onSuccess func(context.Context, *loginData) http.Handler, serviceURL string) error {
 	if cfg.ProjectID == "" {
 		return errors.New("descope login is enabled, but missing DESCOPE_PROJECT_ID")
 	}
@@ -37,7 +37,13 @@ func registerDescopeRoutes(mux *http.ServeMux, cfg descopeConfig, onSuccess func
 		jwt := r.URL.Query().Get("jwt")
 
 		if jwt == "" {
-			if err := web.DescopeLoginTemplate.Execute(w, struct{ ProjectID string }{ProjectID: cfg.ProjectID}); err != nil {
+			if err := web.DescopeLoginTemplate.Execute(w, struct {
+				ProjectID  string
+				ServiceURL string
+			}{
+				ProjectID:  cfg.ProjectID,
+				ServiceURL: serviceURL,
+			}); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 			}
 

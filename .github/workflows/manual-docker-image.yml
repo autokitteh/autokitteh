@@ -24,6 +24,10 @@ on:
                 default: false
                 description: build enterprise image
 
+permissions:
+    id-token: write
+    contents: read
+
 jobs:
     build-standard:
         if: ${{ !inputs.enterprise }}
