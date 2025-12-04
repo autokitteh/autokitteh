@@ -35,6 +35,7 @@ def new_test_runner(code_dir, worker=None, server=None):
         worker=worker,
         code_dir=code_dir,
         server=server,
+        large_objects_manager=main.LargeObjectsManger(),
     )
     runner._inactivity_timer.cancel()
     return runner
