@@ -10,7 +10,7 @@ def get_digest(data):
 
 
 class LargeObjectsManger:
-    def __init__(self, path, enabled=False):
+    def __init__(self, path=".", enabled=False):
         self.cache = {}
         self.path = path
         self.enabled = enabled
