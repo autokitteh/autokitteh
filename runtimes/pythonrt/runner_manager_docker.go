@@ -91,6 +91,8 @@ func createStartCommand(entrypoint, workerAddress, runnerID string) []string {
 		"--code-dir", "/workflow",
 		"--worker-address", workerAddress,
 		"--runner-id", runnerID,
+		"--enable-large-objects",
+		"--large-objects-path", "/activity_data",
 	}
 }
 

@@ -101,6 +101,19 @@ func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, code
 	for k, v := range vars {
 		envVars = append(envVars, k+"="+v)
 	}
+
+	mounts := []mount.Mount{
+		{
+			Type:   mount.TypeBind,
+			Source: codePath,
+			Target: "/workflow",
+		},
+		{
+			Type:   mount.TypeVolume,
+			Source: sessionID.String(),
+			Target: "/activity_data",
+		},
+	}
 	resp, err := d.client.ContainerCreate(ctx,
 		&container.Config{
 			Image: runnerImage,
@@ -117,13 +130,7 @@ func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, code
 			NetworkMode:  container.NetworkMode(networkName),
 			PortBindings: nat.PortMap{internalRunnerPort: []nat.PortBinding{{HostIP: "127.0.0.1"}}},
 			Tmpfs:        map[string]string{"/tmp": "size=64m"},
-			Mounts: []mount.Mount{
-				{
-					Type:   mount.TypeBind,
-					Source: codePath,
-					Target: "/workflow",
-				},
-			},
+			Mounts:       mounts,
 			Resources: container.Resources{
 				Memory:   d.maxMemoryBytesPerContainer,
 				NanoCPUs: d.maxNanoCPUPerContainer,
