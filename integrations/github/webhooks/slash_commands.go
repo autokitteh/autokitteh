@@ -2,9 +2,8 @@ package webhooks
 
 import (
 	"strings"
+	"unicode"
 
-	"github.com/gomarkdown/markdown/ast"
-	"github.com/gomarkdown/markdown/parser"
 	"github.com/google/go-github/v52/github"
 )
 
@@ -38,54 +37,30 @@ func extractSlashCommands(event any) []slashCommand {
 		return nil
 	}
 
-	text := extractMDText(md)
-
-	return parseSlashCommands(text)
+	return extractSlashCommandsFromMD(md)
 }
 
-func parseSlashCommands(md string) []slashCommand {
-	var commands []slashCommand
+func extractSlashCommandsFromMD(md string) (commands []slashCommand) {
 	for line := range strings.SplitSeq(md, "\n") {
-		line = strings.TrimSpace(line)
-		if strings.HasPrefix(line, "/") {
-			parts := strings.Fields(line)
-			if len(parts) > 0 {
-				cmd := slashCommand{
-					Name: strings.TrimPrefix(parts[0], "/"),
-					Args: parts[1:],
-					Raw:  line,
-				}
-				commands = append(commands, cmd)
+		if !strings.HasPrefix(line, "/") {
+			continue
+		}
+
+		line = strings.TrimRightFunc(line, unicode.IsSpace)
+
+		if parts := strings.Fields(line); len(parts) > 0 {
+			if parts[0] == "/" {
+				continue
 			}
+
+			cmd := slashCommand{
+				Name: parts[0][1:],
+				Args: parts[1:],
+				Raw:  line,
+			}
+			commands = append(commands, cmd)
 		}
 	}
-	return commands
-}
 
-func extractMDText(md string) string {
-	p := parser.NewWithExtensions(parser.CommonExtensions | parser.AutoHeadingIDs | parser.FencedCode)
-
-	doc := p.Parse([]byte(md))
-
-	var text strings.Builder
-
-	// Walk the AST and extract only text nodes (not code)
-	ast.WalkFunc(doc, func(node ast.Node, entering bool) ast.WalkStatus {
-		if !entering {
-			return ast.GoToNext
-		}
-
-		switch n := node.(type) {
-		case *ast.Text:
-			text.Write(n.Literal)
-		case *ast.Softbreak, *ast.Hardbreak:
-			text.WriteString("\n")
-		case *ast.Code, *ast.CodeBlock:
-			return ast.SkipChildren
-		}
-
-		return ast.GoToNext
-	})
-
-	return text.String()
+	return
 }
