@@ -7,6 +7,8 @@ import (
 	"github.com/google/go-github/v60/github"
 )
 
+const maxSlackCommands = 16
+
 type slashCommand struct {
 	Name string   `json:"name"`
 	Args []string `json:"args"`
@@ -40,9 +42,10 @@ func extractSlashCommands(event any) []slashCommand {
 	return extractSlashCommandsFromMD(md)
 }
 
-func extractSlashCommandsFromMD(md string) (commands []slashCommand) {
-	inCodeBlock := false
+func extractSlashCommandsFromMD(md string) []slashCommand {
+	var commands []slashCommand
 
+	inCodeBlock := false
 	for line := range strings.SplitSeq(md, "\n") {
 		// Check for code block delimiters (``` or ~~~)
 		trimmedLine := strings.TrimSpace(line)
@@ -72,9 +75,15 @@ func extractSlashCommandsFromMD(md string) (commands []slashCommand) {
 				Args: parts[1:],
 				Raw:  line,
 			}
+
 			commands = append(commands, cmd)
+
+			if len(commands) >= maxSlackCommands {
+				// ignore any commands beyond the maximum allowed.
+				break
+			}
 		}
 	}
 
-	return
+	return commands
 }

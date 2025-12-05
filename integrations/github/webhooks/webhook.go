@@ -163,6 +163,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	slashCommands := extractSlashCommands(ghEvent)
+
 	jsonEvent["slash_commands"] = slashCommands
 
 	// Transform the GitHub event into an AutoKitteh event.
