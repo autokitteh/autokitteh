@@ -4,7 +4,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/google/go-github/v52/github"
+	"github.com/google/go-github/v60/github"
 )
 
 type slashCommand struct {
