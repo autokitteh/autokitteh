@@ -99,13 +99,6 @@ func TestExtractSlashCommandsFromMD(t *testing.T) {
 			expected: nil,
 		},
 		{
-			name: "command in code block should still be extracted",
-			md:   "```\n/deploy\n```",
-			expected: []slashCommand{
-				{Name: "deploy", Args: []string{}, Raw: "/deploy"},
-			},
-		},
-		{
 			name: "multiple args with various spacing",
 			md:   "/run  arg1   arg2    arg3",
 			expected: []slashCommand{
@@ -161,6 +154,36 @@ LGTM! Let's deploy this.
 				{Name: "test", Args: []string{"integration"}, Raw: "/test integration"},
 				{Name: "approve", Args: []string{}, Raw: "/approve"},
 				{Name: "deploy", Args: []string{"staging"}, Raw: "/deploy staging"},
+			},
+		},
+		{
+			name:     "command in code block should be ignored",
+			md:       "```\n/deploy\n```",
+			expected: nil,
+		},
+		{
+			name:     "command in code block with language",
+			md:       "```bash\n/deploy production\n```",
+			expected: nil,
+		},
+		{
+			name: "commands before and after code block",
+			md:   "/before\n```\n/inside\n```\n/after",
+			expected: []slashCommand{
+				{Name: "before", Args: []string{}, Raw: "/before"},
+				{Name: "after", Args: []string{}, Raw: "/after"},
+			},
+		},
+		{
+			name:     "command in tilde code block",
+			md:       "~~~\n/deploy\n~~~",
+			expected: nil,
+		},
+		{
+			name: "nested code blocks not supported - toggles on each delimiter",
+			md:   "```\n/first\n```\n/middle\n```\n/second\n```",
+			expected: []slashCommand{
+				{Name: "middle", Args: []string{}, Raw: "/middle"},
 			},
 		},
 	}

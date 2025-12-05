@@ -41,7 +41,21 @@ func extractSlashCommands(event any) []slashCommand {
 }
 
 func extractSlashCommandsFromMD(md string) (commands []slashCommand) {
+	inCodeBlock := false
+
 	for line := range strings.SplitSeq(md, "\n") {
+		// Check for code block delimiters (``` or ~~~)
+		trimmedLine := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmedLine, "```") || strings.HasPrefix(trimmedLine, "~~~") {
+			inCodeBlock = !inCodeBlock
+			continue
+		}
+
+		// Skip lines inside code blocks
+		if inCodeBlock {
+			continue
+		}
+
 		if !strings.HasPrefix(line, "/") {
 			continue
 		}
