@@ -156,12 +156,13 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// To preserve the original event format instead of using the go-github event format,
 	// we unmarshal the payload into a map and use that map to transform the event.
 	var jsonEvent map[string]any
-	err = json.Unmarshal(payload, &jsonEvent)
-	if err != nil {
+	if err := json.Unmarshal(payload, &jsonEvent); err != nil {
 		l.Error("failed to unmarshal payload to map", zap.Error(err))
 		common.HTTPError(w, http.StatusInternalServerError)
 		return
 	}
+
+	jsonEvent["slash_commands"] = extractSlashCommands(ghEvent)
 
 	// Transform the GitHub event into an AutoKitteh event.
 	akEvent, err := common.TransformEvent(l, jsonEvent, eventType)

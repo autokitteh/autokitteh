@@ -252,6 +252,7 @@ require (
 	github.com/golangci/plugin-module-register v0.1.1 // indirect
 	github.com/golangci/revgrep v0.8.0 // indirect
 	github.com/golangci/unconvert v0.0.0-20250410112200-a129a6e6413e // indirect
+	github.com/gomarkdown/markdown v0.0.0-20250810172220-2e2c11897d1a // indirect
 	github.com/google/gnostic-models v0.6.9 // indirect
 	github.com/google/go-github/v52 v52.0.0 // indirect
 	github.com/google/go-github/v71 v71.0.0 // indirect
