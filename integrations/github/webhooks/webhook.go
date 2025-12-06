@@ -199,8 +199,9 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	for _, cmd := range slashCommands {
 		m := map[string]any{
-			"command": cmd,
-			"actual":  jsonEvent,
+			"command":           cmd,
+			"actual_data":       jsonEvent,
+			"actual_event_type": eventType,
 		}
 
 		akEvent, err := common.TransformEvent(l, m, "slash_command")
