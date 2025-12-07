@@ -14,9 +14,21 @@
 
   <script>
     const onSuccess = async (e) => {
-      // Use service URL if configured, otherwise use current origin (for backward compatibility)
-      const serviceURL = "{{ .ServiceURL }}";
-      const baseURL = serviceURL || window.location.origin;
+      // Check if we're on the API domain or frontend domain
+      // If Descope redirected us to staging.autokitteh.cloud but we need to be on staging-api.autokitteh.cloud
+      const currentHost = window.location.host;
+      const isOnFrontend = !currentHost.includes('-api.');
+
+      let baseURL = window.location.origin;
+
+      // If we're on the frontend but this is a CLI/VS Code login flow,
+      // redirect to the API server instead
+      if (isOnFrontend && currentHost.includes('autokitteh.cloud')) {
+        // Convert staging.autokitteh.cloud -> staging-api.autokitteh.cloud
+        baseURL = window.location.origin.replace('://', '://' + currentHost.split('.')[0] + '-api.');
+      }
+
+      // Build the callback URL with the JWT
       const url = new URL('/auth/descope/login', baseURL);
       url.searchParams.set('jwt', e.detail.sessionJwt);
       window.location.replace(url.toString());
