@@ -278,8 +278,7 @@ def google_creds(integration: str, connection: str, scopes: list[str], **kwargs)
     """
     check_connection_name(connection)
 
-    auth_type = os.getenv(connection + "__auth_type")
-    if auth_type == "oauth":  # User (OAuth 2.0)
+    if os.getenv(connection + "__auth_type") == "oauth": # User (OAuth 2.0)
         return _google_creds_oauth2(integration, connection, scopes)
 
     json_key = os.getenv(connection + "__JSON")  # Service Account (JSON key)
