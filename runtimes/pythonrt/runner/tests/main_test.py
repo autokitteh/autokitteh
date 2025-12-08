@@ -107,7 +107,7 @@ def test_activity_reply():
     runner = new_test_runner(workflows.simple)
     fut = Future()
     runner.activity_call = main.Call(print, (), {}, fut)
-    result = main.Result(42, None, None)
+    result = main.Result(42, None, None, False)
     req = runner_pb.ActivityReplyRequest(
         result=pb_values.Value(
             custom=pb_values.Custom(
