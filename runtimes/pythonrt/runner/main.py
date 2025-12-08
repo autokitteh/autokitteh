@@ -31,7 +31,7 @@ import values
 from call import AKCall, activity_marker, full_func_name
 from syscalls import SysCalls, mark_no_activity
 
-from largeobjects import LargeObjectsManger
+from largeobjects import LargeObjectsManager
 
 # Timeouts are in seconds
 SERVER_GRACE_TIMEOUT = 3
@@ -239,7 +239,7 @@ def force_close(server):
     os._exit(1)
 
 
-MAX_SIZE_OF_REQUEST = 1 * 1024 * 1024
+MIN_LARGE_OBJECT_SIZE = 1 * 1024 * 1024
 
 
 def format_size(size):
@@ -288,7 +288,7 @@ class Runner(pb.runner_rpc.RunnerService):
         worker,
         code_dir,
         server,
-        large_objects_manager: LargeObjectsManger,
+        large_objects_manager: LargeObjectsManager,
         start_timeout=DEFAULT_START_TIMEOUT,
     ):
         self.id = id
@@ -493,30 +493,25 @@ class Runner(pb.runner_rpc.RunnerService):
             req.result.custom.data = data
             req.result.custom.value.CopyFrom(values.safe_wrap(result.value))
             size_of_request = req.ByteSize()
-            if size_of_request > MAX_SIZE_OF_REQUEST:
+            if size_of_request > MIN_LARGE_OBJECT_SIZE:
                 log.info(f"req size large {format_size(size_of_request)}")
                 if not self.large_objects_mngr.enabled:
-                    log.info("manager not enabled")
+                    log.info("large objects not enabled")
                     # reset the req.result and use error only
                     req = pb.handler.ExecuteReplyRequest(
                         runner_id=self.id,
                     )
                     req.error = "response size too large"
                     print(
-                        f"response size {format_size(size_of_request)} is too large, max allowed is {format_size(MAX_SIZE_OF_REQUEST)}"
+                        f"response size {format_size(size_of_request)} is too large, max allowed is {format_size(MIN_LARGE_OBJECT_SIZE)}"
                     )
                 else:
-                    log.info("wrapping large object")
-                    try:
-                        ref = self.large_objects_mngr.set(data)
-                    except Exception as err:
-                        log.error(f"err {err}")
-                    log.info("after set")
+                    ref = self.large_objects_mngr.set(data)
                     large_object_result = Result(ref, None, None, True)
-                    log.info("after result")
                     req.result.custom.data = pickle.dumps(large_object_result)
-                    log.info("after dump")
-                    req.result.custom.value.CopyFrom(values.safe_wrap(None))
+                    req.result.custom.value.CopyFrom(
+                        values.safe_wrap(f"large object {size_of_request}")
+                    )
                     log.info(f"new req size {format_size(req.ByteSize())}")
 
         except Exception as err:
@@ -676,13 +671,11 @@ class Runner(pb.runner_rpc.RunnerService):
                 kwargs={k: values.safe_wrap(v) for k, v in kw.items()},
             ),
         )
-        log.info("activity request prepared")
         req_size = req.ByteSize()
-        if req_size > MAX_SIZE_OF_REQUEST:
+        if req_size > MIN_LARGE_OBJECT_SIZE:
             raise ActivityError(
-                f"Request payload size {format_size(req_size)} is larger than maximum supported ({format_size(MAX_SIZE_OF_REQUEST)})."
+                f"Request payload size {format_size(req_size)} is larger than maximum supported ({format_size(MIN_LARGE_OBJECT_SIZE)})."
             )
-        log.info("activity: sending")
         resp = self.worker.Activity(req)
         if resp.error:
             raise ActivityError(resp.error)
@@ -890,7 +883,7 @@ if __name__ == "__main__":
         interceptors=[LoggingInterceptor(args.runner_id)],
     )
 
-    lom = LargeObjectsManger(
+    lom = LargeObjectsManager(
         path=args.large_objects_path, enabled=args.enable_large_objects
     )
 

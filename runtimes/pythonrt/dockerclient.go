@@ -109,8 +109,9 @@ func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, code
 			Target: "/workflow",
 		},
 		{
-			Type:   mount.TypeVolume,
-			Source: sessionID.String(),
+			Type: mount.TypeVolume,
+			//sad == session activity data
+			Source: "sad_" + sessionID.String(),
 			Target: "/activity_data",
 		},
 	}

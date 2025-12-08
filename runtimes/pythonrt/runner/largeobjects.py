@@ -9,7 +9,7 @@ def get_digest(data):
     return s.hexdigest()
 
 
-class LargeObjectsManger:
+class LargeObjectsManager:
     def __init__(self, path=".", enabled=False):
         self.cache = {}
         self.path = path
