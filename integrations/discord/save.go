@@ -42,12 +42,13 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.OpenWebSocketConnection(token)
-
 	c.Finalize(sdktypes.NewVars().
 		Set(vars.BotID, bot.ID, false).
 		Set(vars.BotToken, token, true).
 		Set(vars.AuthType, integrations.Init, false))
+
+	// The background polling mechanism (in server.go) will detect this new connection
+	// and open the WebSocket within the next poll interval.
 }
 
 func infoWithToken(botToken string) (*discordgo.User, error) {
