@@ -3,8 +3,6 @@ package discord
 import (
 	"context"
 	"fmt"
-	"os"
-	"strconv"
 	"time"
 
 	"go.uber.org/zap"
@@ -21,15 +19,26 @@ const (
 	// savePath is the URL path for our handler to save new
 	// connections, after users submit them via a web form.
 	savePath = "/discord/save"
-
-	// pollInterval is the interval at which we poll the database
-	// for active connections and ensure WebSockets are open.
-	pollInterval = 5 * time.Minute
 )
 
-// Start initializes all the HTTP handlers of the Discord integration.
+// Config holds Discord-specific configuration.
+type Config struct {
+	EnableWebsockets bool `koanf:"enable_websockets"`
+	PollInterval     int  `koanf:"poll_interval"` // in seconds
+}
+
+// StartWithConfig initializes all the HTTP handlers of the Discord integration.
 // This includes connection UIs, initialization webhooks, and event webhooks.
-func Start(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, d sdkservices.DispatchFunc) {
+func StartWithConfig(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, d sdkservices.DispatchFunc, cfg any) {
+	// Extract config values
+	enableWebsockets := false
+	pollInterval := time.Duration(0)
+	// Type assert to extract Discord config (comes from integrations registry)
+	if discordCfg, ok := cfg.(Config); ok {
+		enableWebsockets = discordCfg.EnableWebsockets
+		pollInterval = time.Duration(discordCfg.PollInterval) * time.Second
+	}
+
 	common.ServeStaticUI(m, desc, static.DiscordWebContent)
 
 	// Init webhooks save connection vars (via "c.Finalize" calls), so they need
@@ -40,7 +49,12 @@ func Start(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, d sdkservices.Disp
 
 	m.Auth.Handle("POST "+savePath, wsh)
 
-	// Initialize WebSocket pool.
+	// Initialize WebSocket pool if enabled.
+	if !enableWebsockets {
+		l.Info("Discord WebSockets are disabled")
+		return
+	}
+
 	cids, err := v.FindActiveConnectionIDs(context.Background(), integrationID, vars.BotToken, "")
 	if err != nil {
 		l.Error("Failed to list WebSocket-based connection IDs", zap.Error(err))
@@ -57,33 +71,27 @@ func Start(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, d sdkservices.Disp
 		wsh.OpenWebSocketConnection(data.GetValue(vars.BotToken))
 	}
 
-	// Start background polling to ensure WebSocket connections exist.
-	go pollAndSyncWebSockets(context.Background(), l, v, wsh)
+	go pollAndSyncWebSockets(l, v, wsh, pollInterval)
 }
 
 // pollAndSyncWebSockets runs a periodic check to ensure all active connections
 // have WebSocket connections open.
-func pollAndSyncWebSockets(ctx context.Context, l *zap.Logger, v sdkservices.Vars, wsh handler) {
-	interval := getPollingInterval(l)
+func pollAndSyncWebSockets(l *zap.Logger, v sdkservices.Vars, wsh handler, interval time.Duration) {
+	l.Info("Starting Discord WebSocket polling", zap.Duration("interval", interval))
 
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
 	for {
-		select {
-		case <-ctx.Done():
-			l.Info("Stopping Discord WebSocket polling due to context cancellation")
-			return
-		case <-ticker.C:
-			syncWebSocketConnections(ctx, l, v, wsh)
-		}
+		<-ticker.C
+		syncWebSocketConnections(l, v, wsh)
 	}
 }
 
 // syncWebSocketConnections queries the database for all active connections
 // and ensures WebSocket connections are open for them.
-func syncWebSocketConnections(ctx context.Context, l *zap.Logger, v sdkservices.Vars, wsh handler) {
-	cids, err := v.FindActiveConnectionIDs(ctx, integrationID, vars.BotToken, "")
+func syncWebSocketConnections(l *zap.Logger, v sdkservices.Vars, wsh handler) {
+	cids, err := v.FindActiveConnectionIDs(context.Background(), integrationID, vars.BotToken, "")
 	if err != nil {
 		l.Error("Failed to list active Discord connection IDs during sync "+err.Error(), zap.Error(err))
 		return
@@ -92,7 +100,7 @@ func syncWebSocketConnections(ctx context.Context, l *zap.Logger, v sdkservices.
 	l.Debug("Syncing Discord WebSocket connections", zap.Int("connection_count", len(cids)))
 
 	for _, cid := range cids {
-		data, err := v.Get(ctx, sdktypes.NewVarScopeID(cid))
+		data, err := v.Get(context.Background(), sdktypes.NewVarScopeID(cid))
 		if err != nil {
 			l.Error("Failed to get connection data during WebSocket sync "+err.Error(),
 				zap.String("connection_id", cid.String()),
@@ -110,19 +118,4 @@ func syncWebSocketConnections(ctx context.Context, l *zap.Logger, v sdkservices.
 		// map and won't create a duplicate if one already exists for this bot token.
 		wsh.OpenWebSocketConnection(botToken)
 	}
-}
-
-func getPollingInterval(l *zap.Logger) time.Duration {
-	interval := pollInterval
-
-	if envInterval := os.Getenv("DISCORD_POLL_INTERVAL_MINUTES"); envInterval != "" {
-		if minutes, err := strconv.Atoi(envInterval); err == nil && minutes > 0 {
-			interval = time.Duration(minutes) * time.Minute
-			l.Info("Using custom Discord WebSocket poll interval", zap.Duration("interval", interval))
-		} else {
-			l.Warn("Invalid DISCORD_POLL_INTERVAL_MINUTES, using default", zap.String("value", envInterval))
-		}
-	}
-
-	return interval
 }

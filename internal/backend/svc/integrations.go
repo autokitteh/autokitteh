@@ -6,6 +6,7 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations/discord"
 	"go.autokitteh.dev/autokitteh/integrations/oauth"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
@@ -18,7 +19,8 @@ import (
 )
 
 type integrationsConfig struct {
-	Test bool `koanf:"test"`
+	Test    bool          `koanf:"test"`
+	Discord discord.Config `koanf:"discord"`
 }
 
 var integrationConfigs = configset.Set[integrationsConfig]{
@@ -63,21 +65,6 @@ func integrationsFXOption() fx.Option {
 
 		inits,
 
-		fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, muxes *muxes.Muxes, vars sdkservices.Vars, oauth *oauth.OAuth, dispatch sdkservices.DispatchFunc) {
-			l.Info("supported integrations", zap.Strings("integrations", integrations.Names()))
-
-			HookOnStart(lc, func(ctx context.Context) error {
-				for _, i := range integrations.All() {
-					if i.Start != nil {
-						l.Debug("starting integration", zap.String("integration", i.Name))
-
-						i.Start(l, muxes, vars, oauth, dispatch)
-					}
-				}
-
-				return nil
-			})
-		}),
 		Component(
 			"integrations",
 			integrationConfigs,
@@ -93,6 +80,28 @@ func integrationsFXOption() fx.Option {
 					fx.ParamTags(`group:"integrations"`),
 				),
 			),
+			fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, muxes *muxes.Muxes, vars sdkservices.Vars, oauth *oauth.OAuth, dispatch sdkservices.DispatchFunc, cfg *integrationsConfig) {
+				l.Info("supported integrations", zap.Strings("integrations", integrations.Names()))
+
+				HookOnStart(lc, func(ctx context.Context) error {
+					for _, i := range integrations.All() {
+						l.Debug("starting integration", zap.String("integration", i.Name))
+
+						// Check if integration has StartWithConfig, otherwise use regular Start
+						if i.StartWithConfig != nil {
+							if i.Name == "discord" {
+								i.StartWithConfig(l, muxes, vars, oauth, dispatch, cfg.Discord)
+							} else {
+								i.StartWithConfig(l, muxes, vars, oauth, dispatch, cfg)
+							}
+						} else if i.Start != nil {
+							i.Start(l, muxes, vars, oauth, dispatch)
+						}
+					}
+
+					return nil
+				})
+			}),
 		),
 	)
 }
