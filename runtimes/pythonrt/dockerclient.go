@@ -110,7 +110,7 @@ func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, code
 		},
 		{
 			Type: mount.TypeVolume,
-			//sad == session activity data
+			// sad == session activity data
 			Source: "sad_" + sessionID.String(),
 			Target: "/activity_data",
 		},
