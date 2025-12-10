@@ -43,6 +43,18 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 
 		}
 
+		// If no project or manifest provided, look for autokitteh.yaml in cwd.
+		// If exists - apply that.
+		if project == "" && manifestPath == "" {
+			if f, err := os.Open("autokitteh.yaml"); err == nil {
+				f.Close()
+
+				manifestPath = "autokitteh.yaml"
+			} else {
+				return errors.New("no project or manifest provided")
+			}
+		}
+
 		// Step 1: apply the manifest file, if provided
 		// (see also the "manifest" parent command).
 		if manifestPath != "" {
@@ -117,7 +129,6 @@ func init() {
 	deployCmd.Flags().StringVarP(&projectName, "project-name", "n", "", "project name to use for manifest")
 	deployCmd.Flags().StringVarP(&org, "org", "o", "", "org to use for manifest")
 	deployCmd.Flags().StringVarP(&project, "project", "p", "", "existing project name or ID")
-	deployCmd.MarkFlagsOneRequired("manifest", "project")
 	deployCmd.MarkFlagsMutuallyExclusive("manifest", "project")
 	deployCmd.MarkFlagsMutuallyExclusive("project-name", "project")
 
