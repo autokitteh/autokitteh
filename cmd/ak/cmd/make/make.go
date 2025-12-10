@@ -1,36 +1,71 @@
 package make
 
 import (
-	"maps"
+	_ "embed"
+	"fmt"
 	"os"
 	"os/exec"
-	"slices"
-	"strings"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 
 	"go.autokitteh.dev/autokitteh/cmd/ak/common"
-	"go.autokitteh.dev/autokitteh/internal/kittehs"
+	"go.autokitteh.dev/autokitteh/internal/xdg"
 )
+
+//go:embed Makefile
+var makefileData string
 
 var (
-	lint      = []string{"ruff", "check"}
-	format    = []string{"ruff", "format", "--check", "."}
-	typecheck = []string{"mypy", "--follow-untyped-imports", "."}
+	show bool
 
-	cmds = map[string][][]string{
-		"lint":      {lint},
-		"format":    {format},
-		"typecheck": {typecheck},
-		"all":       {lint, format, typecheck},
-	}
+	makeCmd = common.StandardCommand(&cobra.Command{
+		Use:   "make",
+		Short: "Invoke the builtin standard makefile",
+		Args:  cobra.ArbitraryArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			// Read Makefile from config dir if exists.
+			configMakefile := filepath.Join(xdg.ConfigHomeDir(), "Makefile")
+			if _, err := os.Stat(configMakefile); err == nil {
+				cfgMakefile, err := os.ReadFile(configMakefile)
+				if err != nil {
+					return err
+				}
+				makefileData = fmt.Sprintf("# Taken from %s\n\n%s", configMakefile, string(cfgMakefile))
+			} else {
+				makefileData = fmt.Sprintf("# Using built-in Makefile; create %s to override.\n\n%s", configMakefile, makefileData)
+			}
+
+			if show {
+				_, err := cmd.OutOrStdout().Write([]byte(makefileData))
+				return err
+			}
+
+			makefile, err := os.CreateTemp("", "ak-makefile-*.mk")
+			if err != nil {
+				return err
+			}
+
+			defer os.Remove(makefile.Name())
+			defer makefile.Close()
+
+			if _, err := makefile.Write([]byte(makefileData)); err != nil {
+				return err
+			}
+
+			makeArgs := []string{"-f", makefile.Name()}
+			makeArgs = append(makeArgs, args...)
+
+			make := exec.Command("make", makeArgs...)
+
+			make.Stdout = cmd.OutOrStdout()
+			make.Stderr = cmd.ErrOrStderr()
+			make.Stdin = cmd.InOrStdin()
+
+			return make.Run()
+		},
+	})
 )
-
-var makeCmd = common.StandardCommand(&cobra.Command{
-	Use:   "make",
-	Short: "Make: " + strings.Join(slices.Collect(maps.Keys(cmds)), ", "),
-	Args:  cobra.NoArgs,
-})
 
 // AddSubcommands adds this command, and its own subcommands, to the calling parent.
 func AddSubcommands(parentCmd *cobra.Command) {
@@ -38,45 +73,5 @@ func AddSubcommands(parentCmd *cobra.Command) {
 }
 
 func init() {
-	// Subcommands.
-	for name, scripts := range cmds {
-		makeCmd.AddCommand(newUVXCmd(name, scripts))
-	}
-}
-
-func newUVXCmd(name string, script [][]string) *cobra.Command {
-	return common.StandardCommand(&cobra.Command{
-		Use: name,
-		Short: strings.Join(kittehs.Transform(script, func(tool []string) string {
-			return strings.Join(tool, " ")
-		}), " && "),
-		Args: cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			for _, tool := range script {
-				args := []string{
-					"--with", "autokitteh",
-				}
-
-				if f, err := os.Open("requirements.txt"); err == nil {
-					f.Close()
-					args = append(args, "--with-requirements", "requirements.txt")
-				}
-
-				args = append(args, tool...)
-
-				uvx := exec.Command("uvx", args...)
-
-				cmd.Println(uvx.String())
-
-				uvx.Stdout = cmd.OutOrStdout()
-				uvx.Stderr = cmd.ErrOrStderr()
-
-				if err := uvx.Run(); err != nil {
-					return err
-				}
-			}
-
-			return nil
-		},
-	})
+	makeCmd.Flags().BoolVarP(&show, "show", "s", false, "Show the makefile instead of executing it")
 }
