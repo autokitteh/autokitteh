@@ -6,7 +6,6 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
-	"go.autokitteh.dev/autokitteh/integrations/discord"
 	"go.autokitteh.dev/autokitteh/integrations/oauth"
 	"go.autokitteh.dev/autokitteh/internal/backend/auth/authcontext"
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
@@ -18,14 +17,9 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-type integrationsConfig struct {
-	Test    bool          `koanf:"test"`
-	Discord discord.Config `koanf:"discord"`
-}
-
-var integrationConfigs = configset.Set[integrationsConfig]{
-	Default: &integrationsConfig{},
-	Dev:     &integrationsConfig{Test: true},
+var integrationConfigs = configset.Set[integrations.IntegrationsConfig]{
+	Default: &integrations.IntegrationsConfig{},
+	Dev:     &integrations.IntegrationsConfig{Test: true},
 }
 
 type sysVars struct{ vs sdkservices.Vars }
@@ -70,7 +64,7 @@ func integrationsFXOption() fx.Option {
 			integrationConfigs,
 			fx.Provide(
 				fx.Annotate(
-					func(is []sdkservices.Integration, cfg *integrationsConfig, vars sdkservices.Vars) sdkservices.Integrations {
+					func(is []sdkservices.Integration, cfg *integrations.IntegrationsConfig, vars sdkservices.Vars) sdkservices.Integrations {
 						if cfg.Test {
 							is = append(is, integrations.NewTestIntegration(vars))
 						}
@@ -80,7 +74,7 @@ func integrationsFXOption() fx.Option {
 					fx.ParamTags(`group:"integrations"`),
 				),
 			),
-			fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, muxes *muxes.Muxes, vars sdkservices.Vars, oauth *oauth.OAuth, dispatch sdkservices.DispatchFunc, cfg *integrationsConfig) {
+			fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, muxes *muxes.Muxes, vars sdkservices.Vars, oauth *oauth.OAuth, dispatch sdkservices.DispatchFunc, cfg *integrations.IntegrationsConfig) {
 				l.Info("supported integrations", zap.Strings("integrations", integrations.Names()))
 
 				HookOnStart(lc, func(ctx context.Context) error {
@@ -89,11 +83,7 @@ func integrationsFXOption() fx.Option {
 
 						// Check if integration has StartWithConfig, otherwise use regular Start
 						if i.StartWithConfig != nil {
-							if i.Name == "discord" {
-								i.StartWithConfig(l, muxes, vars, oauth, dispatch, cfg.Discord)
-							} else {
-								i.StartWithConfig(l, muxes, vars, oauth, dispatch, cfg)
-							}
+							i.StartWithConfig(l, muxes, vars, oauth, dispatch, cfg)
 						} else if i.Start != nil {
 							i.Start(l, muxes, vars, oauth, dispatch)
 						}
