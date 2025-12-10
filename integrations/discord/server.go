@@ -29,10 +29,15 @@ type Config struct {
 
 // StartWithConfig initializes all the HTTP handlers of the Discord integration.
 // This includes connection UIs, initialization webhooks, and event webhooks.
-func StartWithConfig(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, d sdkservices.DispatchFunc, cfg *Config) {
-	// Extract config values from integrations config
-	enableWebsockets := cfg.EnableWebsockets
-	pollInterval := time.Duration(cfg.PollInterval) * time.Second
+func StartWithConfig(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, d sdkservices.DispatchFunc, cfg any) {
+	// Extract config values
+	enableWebsockets := false
+	pollInterval := time.Duration(0)
+	// Type assert to extract Discord config (comes from integrations registry)
+	if discordCfg, ok := cfg.(Config); ok {
+		enableWebsockets = discordCfg.EnableWebsockets
+		pollInterval = time.Duration(discordCfg.PollInterval) * time.Second
+	}
 
 	common.ServeStaticUI(m, desc, static.DiscordWebContent)
 

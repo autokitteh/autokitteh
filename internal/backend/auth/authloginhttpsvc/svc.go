@@ -101,7 +101,7 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 		}
 	})
 
-	muxes.NoAuth.HandleFunc("/auth/cli-login", func(w http.ResponseWriter, r *http.Request) { // start cli login
+	muxes.NoAuth.HandleFunc("/auth/cli-login", func(w http.ResponseWriter, r *http.Request) {
 		p := r.URL.Query().Get("p")
 		if _, err := strconv.ParseUint(p, 10, 16); err != nil {
 			http.Error(w, "invalid port", http.StatusBadRequest)
@@ -210,7 +210,7 @@ type errorHandler struct {
 
 func (e errorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) { http.Error(w, e.err, e.code) }
 
-func (a *svc) newSuccessLoginHandler(ctx context.Context, ld *loginData) http.Handler { // after descope login
+func (a *svc) newSuccessLoginHandler(ctx context.Context, ld *loginData) http.Handler {
 	sl := a.L.Sugar().With("login_data", ld)
 
 	newErrHandler := func(err string, code int) http.Handler { return errorHandler{err: err, code: code} }

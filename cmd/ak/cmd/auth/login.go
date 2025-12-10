@@ -17,7 +17,7 @@ var loginCmd = common.StandardCommand(&cobra.Command{
 	Short: "Login",
 	Args:  cobra.NoArgs,
 
-	RunE: func(cmd *cobra.Command, _ []string) error { // start
+	RunE: func(cmd *cobra.Command, _ []string) error {
 		port, wait, done, err := initServer()
 		defer done()
 

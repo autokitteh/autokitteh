@@ -41,17 +41,11 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 )
 
-// IntegrationsConfig holds configuration for all integrations
-type IntegrationsConfig struct {
-	Test    bool           `koanf:"test"`
-	Discord discord.Config `koanf:"discord"`
-}
-
 type Integration struct {
 	Name            string
 	Init            any
 	Start           func(*zap.Logger, *muxes.Muxes, sdkservices.Vars, *oauth.OAuth, sdkservices.DispatchFunc)
-	StartWithConfig func(*zap.Logger, *muxes.Muxes, sdkservices.Vars, *oauth.OAuth, sdkservices.DispatchFunc, *IntegrationsConfig)
+	StartWithConfig func(*zap.Logger, *muxes.Muxes, sdkservices.Vars, *oauth.OAuth, sdkservices.DispatchFunc, any)
 }
 
 var all = []Integration{
@@ -80,8 +74,8 @@ var all = []Integration{
 	{confluence.IntegrationName, confluence.New, func(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, o *oauth.OAuth, d sdkservices.DispatchFunc) {
 		confluence.Start(l, m, v, o, d)
 	}, nil},
-	{discord.IntegrationName, discord.New, nil, func(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, _ *oauth.OAuth, d sdkservices.DispatchFunc, cfg *IntegrationsConfig) {
-		discord.StartWithConfig(l, m, v, d, &cfg.Discord)
+	{discord.IntegrationName, discord.New, nil, func(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, _ *oauth.OAuth, d sdkservices.DispatchFunc, cfg any) {
+		discord.StartWithConfig(l, m, v, d, cfg)
 	}},
 	{drive.IntegrationName, drive.New, nil, nil},
 	{forms.IntegrationName, forms.New, nil, nil},
