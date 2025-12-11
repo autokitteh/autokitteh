@@ -32,7 +32,6 @@ type Config struct {
 func StartWithConfig(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, d sdkservices.DispatchFunc, cfg *Config) {
 	// Extract config values from integrations config
 	enableWebsockets := cfg.EnableWebsockets
-	pollInterval := time.Duration(cfg.PollInterval) * time.Second
 
 	common.ServeStaticUI(m, desc, static.DiscordWebContent)
 
@@ -46,26 +45,11 @@ func StartWithConfig(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, d sdkser
 
 	// Initialize WebSocket pool if enabled.
 	if !enableWebsockets {
-		l.Info("Discord WebSockets are disabled")
 		return
 	}
 
-	cids, err := v.FindActiveConnectionIDs(context.Background(), integrationID, vars.BotToken, "")
-	if err != nil {
-		l.Error("Failed to list WebSocket-based connection IDs", zap.Error(err))
-		return
-	}
-
-	for _, cid := range cids {
-		data, err := v.Get(context.Background(), sdktypes.NewVarScopeID(cid))
-		if err != nil {
-			l.Error("Missing data for Discord WebSocket connection", zap.Error(err))
-			continue
-		}
-
-		wsh.OpenWebSocketConnection(data.GetValue(vars.BotToken))
-	}
-
+	pollInterval := time.Duration(cfg.PollInterval) * time.Second
+	l.Info("Discord WebSocket polling enabled", zap.Duration("poll_interval", pollInterval))
 	go pollAndSyncWebSockets(l, v, wsh, pollInterval)
 }
 
@@ -74,12 +58,13 @@ func StartWithConfig(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, d sdkser
 func pollAndSyncWebSockets(l *zap.Logger, v sdkservices.Vars, wsh handler, interval time.Duration) {
 	l.Info("Starting Discord WebSocket polling", zap.Duration("interval", interval))
 
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
+	timer := time.NewTimer(interval)
+	defer timer.Stop()
 
 	for {
-		<-ticker.C
+		<-timer.C
 		syncWebSocketConnections(l, v, wsh)
+		timer.Reset(interval)
 	}
 }
 
