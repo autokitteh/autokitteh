@@ -38,7 +38,7 @@ project:
 -- second.txt --
 [plan] project "my_project": found, id="prj_00000000000000000000000001"
 [plan] project "my_project": no changes needed
-[plan] var "my_project/shhh": value differs but one of them is secret is false, skipping
+[plan] var "my_project/shhh": value differs but one of them is secret, skipping
 [plan] project "my_project": found 0 connections
 [plan] project "my_project": found 0 triggers
 

@@ -170,7 +170,7 @@ func planProjectVars(ctx context.Context, mvars []*Var, client sdkservices.Servi
 
 			if currVal != mvar.Value {
 				if !opts.overwriteSecrets && (v.IsSecret() || mvar.Secret) {
-					log.Printf("value differs but one of them is secret is false, skipping")
+					log.Printf("value differs but one of them is secret, skipping")
 					continue
 				}
 
