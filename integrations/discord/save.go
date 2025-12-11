@@ -47,8 +47,15 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		Set(vars.BotToken, token, true).
 		Set(vars.AuthType, integrations.Init, false))
 
-	// The background polling mechanism (in server.go) will detect this new connection
-	// and open the WebSocket within the next poll interval.
+	// NOTE: We do NOT open the WebSocket connection here directly.
+	//
+	// The Discord WebSocket connection MUST be opened by only ONE server instance (singleton).
+	// If multiple AutoKitteh server replicas each open a WebSocket with the same bot token,
+	// Discord will send the same event to ALL WebSocket connections, resulting in duplicate
+	// event processing.
+	//
+	// Instead, the background polling mechanism (in server.go) running on a single designated
+	// instance will detect this new connection and open the WebSocket within the next poll interval.
 }
 
 func infoWithToken(botToken string) (*discordgo.User, error) {
