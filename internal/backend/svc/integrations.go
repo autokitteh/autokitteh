@@ -17,13 +17,9 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-type integrationsConfig struct {
-	Test bool `koanf:"test"`
-}
-
-var integrationConfigs = configset.Set[integrationsConfig]{
-	Default: &integrationsConfig{},
-	Dev:     &integrationsConfig{Test: true},
+var integrationConfigs = configset.Set[integrations.IntegrationsConfig]{
+	Default: &integrations.IntegrationsConfig{},
+	Dev:     &integrations.IntegrationsConfig{Test: true},
 }
 
 type sysVars struct{ vs sdkservices.Vars }
@@ -63,27 +59,12 @@ func integrationsFXOption() fx.Option {
 
 		inits,
 
-		fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, muxes *muxes.Muxes, vars sdkservices.Vars, oauth *oauth.OAuth, dispatch sdkservices.DispatchFunc) {
-			l.Info("supported integrations", zap.Strings("integrations", integrations.Names()))
-
-			HookOnStart(lc, func(ctx context.Context) error {
-				for _, i := range integrations.All() {
-					if i.Start != nil {
-						l.Debug("starting integration", zap.String("integration", i.Name))
-
-						i.Start(l, muxes, vars, oauth, dispatch)
-					}
-				}
-
-				return nil
-			})
-		}),
 		Component(
 			"integrations",
 			integrationConfigs,
 			fx.Provide(
 				fx.Annotate(
-					func(is []sdkservices.Integration, cfg *integrationsConfig, vars sdkservices.Vars) sdkservices.Integrations {
+					func(is []sdkservices.Integration, cfg *integrations.IntegrationsConfig, vars sdkservices.Vars) sdkservices.Integrations {
 						if cfg.Test {
 							is = append(is, integrations.NewTestIntegration(vars))
 						}
@@ -93,6 +74,24 @@ func integrationsFXOption() fx.Option {
 					fx.ParamTags(`group:"integrations"`),
 				),
 			),
+			fx.Invoke(func(lc fx.Lifecycle, l *zap.Logger, muxes *muxes.Muxes, vars sdkservices.Vars, oauth *oauth.OAuth, dispatch sdkservices.DispatchFunc, cfg *integrations.IntegrationsConfig) {
+				l.Info("supported integrations", zap.Strings("integrations", integrations.Names()))
+
+				HookOnStart(lc, func(ctx context.Context) error {
+					for _, i := range integrations.All() {
+						l.Debug("starting integration", zap.String("integration", i.Name))
+
+						// Check if integration has StartWithConfig, otherwise use regular Start
+						if i.StartWithConfig != nil {
+							i.StartWithConfig(l, muxes, vars, oauth, dispatch, cfg)
+						} else if i.Start != nil {
+							i.Start(l, muxes, vars, oauth, dispatch)
+						}
+					}
+
+					return nil
+				})
+			}),
 		),
 	)
 }
