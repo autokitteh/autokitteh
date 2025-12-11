@@ -169,7 +169,7 @@ func (l *localRunnerManager) RunnerHealth(ctx context.Context, runnerID string) 
 	return runner.Health()
 }
 
-func (l *localRunnerManager) Stop(ctx context.Context, runnerID string) error {
+func (l *localRunnerManager) Stop(ctx context.Context, runnerID string, sessionID sdktypes.SessionID) error {
 	l.mu.Lock()
 	runner, ok := l.runnerIDToRunner[runnerID]
 	l.mu.Unlock()

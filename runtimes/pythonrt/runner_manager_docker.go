@@ -227,7 +227,7 @@ func (rm *dockerRunnerManager) RunnerHealth(ctx context.Context, runnerID string
 	return nil
 }
 
-func (rm *dockerRunnerManager) Stop(ctx context.Context, runnerID string) error {
+func (rm *dockerRunnerManager) Stop(ctx context.Context, runnerID string, sessionID sdktypes.SessionID) error {
 	rm.mu.Lock()
 	cid, ok := rm.runnerIDToContainerID[runnerID]
 	rm.mu.Unlock()
@@ -236,6 +236,16 @@ func (rm *dockerRunnerManager) Stop(ctx context.Context, runnerID string) error 
 		return errors.New("runner not found")
 	}
 
-	return rm.client.StopRunner(ctx, cid)
+	if err := rm.client.StopRunner(ctx, cid); err != nil {
+		return err
+	}
+
+	// stop is called only from the cleanup
+	// so it is either completed successfully or not retryable error
+	if err := rm.client.RemoveVolume(ctx, sessionID); err != nil {
+		rm.logger.Warn("remove volume", zap.String("session_id", sessionID.String()), zap.Error(err))
+	}
+
+	return nil
 }
 func (*dockerRunnerManager) Health(ctx context.Context) error { return nil }

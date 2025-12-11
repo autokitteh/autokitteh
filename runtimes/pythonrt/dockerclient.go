@@ -96,6 +96,14 @@ func (d *dockerClient) ensureNetwork() (string, error) {
 	return inspectResult.ID, nil
 }
 
+func (d *dockerClient) sessionVolumeName(sessionID sdktypes.SessionID) string {
+	return "sad_" + sessionID.String()
+}
+
+func (d *dockerClient) RemoveVolume(ctx context.Context, sessionID sdktypes.SessionID) error {
+	return d.client.VolumeRemove(ctx, d.sessionVolumeName(sessionID), true)
+}
+
 func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, codePath string, sessionID sdktypes.SessionID, cmd []string, vars map[string]string) (string, string, error) {
 	envVars := make([]string, 0, len(vars))
 	for k, v := range vars {
@@ -111,7 +119,7 @@ func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, code
 		{
 			Type: mount.TypeVolume,
 			// sad == session activity data
-			Source: "sad_" + sessionID.String(),
+			Source: d.sessionVolumeName(sessionID),
 			Target: "/activity_data",
 		},
 	}
@@ -153,6 +161,7 @@ func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, code
 	d.setupContainerLogging(ctx, resp.ID, sessionID)
 
 	d.mu.Lock()
+	d.allRunnerIDs[resp.ID] = struct{}{}
 	d.activeRunnerIDs[resp.ID] = struct{}{}
 	d.mu.Unlock()
 
