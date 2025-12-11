@@ -21,10 +21,12 @@ var (
 	manifestPath, project, projectName, org string
 
 	filePaths, dirPaths []string
+
+	overwriteSecrets bool
 )
 
 var deployCmd = common.StandardCommand(&cobra.Command{
-	Use:   "deploy {--manifest <file> [--project-name <name>]|--project <name or ID>} [--org org] [--dir <path> [...]] [--file <path> [...]] ",
+	Use:   "deploy {--manifest <file> [--project-name <name>]|--project <name or ID>} [--org org] [--dir <path> [...]] [--file <path> [...]] [--overwrite-secrets]",
 	Short: "Create, configure, build, deploy, and activate project",
 	Long:  `Create, configure, build, deploy, and activate project - see also the "manifest", "build", "deployment", and "project" parent commands`,
 	Args:  cobra.NoArgs,
@@ -120,6 +122,7 @@ func init() {
 	deployCmd.MarkFlagsOneRequired("manifest", "project")
 	deployCmd.MarkFlagsMutuallyExclusive("manifest", "project")
 	deployCmd.MarkFlagsMutuallyExclusive("project-name", "project")
+	deployCmd.Flags().BoolVar(&overwriteSecrets, "overwrite-secrets", false, "overwrite secret variables when values differ")
 
 	deployCmd.Flags().StringArrayVarP(&dirPaths, "dir", "d", []string{}, "0 or more directory paths (default = manifest directory)")
 	deployCmd.Flags().StringArrayVarP(&filePaths, "file", "f", []string{}, "0 or more file paths")
@@ -151,6 +154,7 @@ func applyManifest(cmd *cobra.Command, manifestPath, projectName string, oid sdk
 		manifest.WithLogger(logFunc(cmd, "plan")),
 		manifest.WithProjectName(projectName),
 		manifest.WithOrgID(oid),
+		manifest.WithOverwriteSecrets(overwriteSecrets),
 	)
 	if err != nil {
 		return "", err

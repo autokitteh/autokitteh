@@ -24,7 +24,7 @@ var (
 // Allow no dir/file - use manifest dir by default
 
 var deployCmd = common.StandardCommand(&cobra.Command{
-	Use:   "deploy <manifest file> [--project-name <name>] [--org org] [--dir <path> [...]] [--file <path> [...]] [--env <name or ID>] [--quiet]",
+	Use:   "deploy <manifest file> [--project-name <name>] [--org org] [--dir <path> [...]] [--file <path> [...]] [--env <name or ID>] [--quiet] [--overwrite-secrets]",
 	Short: "Create, configure, build, deploy, and activate project",
 	Long:  `Create, configure, build, deploy, and activate project - see also the "build", "deployment", and "project" parent commands`,
 	Args:  cobra.ExactArgs(1),
@@ -102,6 +102,7 @@ func init() {
 	deployCmd.Flags().StringVarP(&env, "env", "e", "", "environment name or ID")
 	deployCmd.Flags().StringVarP(&projectName, "project-name", "n", "", "project name")
 	deployCmd.Flags().StringVarP(&org, "org", "o", "", "org name or id")
+	deployCmd.Flags().BoolVar(&overwriteSecrets, "overwrite-secrets", false, "overwrite secret variables when values differ")
 }
 
 func applyManifest(ctx context.Context, cmd *cobra.Command, args []string, oid sdktypes.OrgID) (manifest.Effects, string, error) {

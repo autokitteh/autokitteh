@@ -10,12 +10,12 @@ import (
 )
 
 var (
-	noValidate, fromScratch bool
-	org                     string
+	noValidate, fromScratch, overwriteSecrets bool
+	org                                       string
 )
 
 var planCmd = common.StandardCommand(&cobra.Command{
-	Use:     "plan [file] [--project-name <name>] [--org org] [--no-validate] [--from-scratch] [--quiet] [--rm-unused-cvars]",
+	Use:     "plan [file] [--project-name <name>] [--org org] [--no-validate] [--from-scratch] [--quiet] [--rm-unused-cvars] [--overwrite-secrets]",
 	Short:   "Dry-run for applying a YAML manifest, from a file or stdin",
 	Aliases: []string{"p"},
 	Args:    cobra.MaximumNArgs(1),
@@ -53,6 +53,7 @@ func init() {
 	planCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "only show errors, if any")
 	planCmd.Flags().StringVarP(&projectName, "project-name", "n", "", "project name")
 	planCmd.Flags().StringVarP(&org, "org", "o", "", "org name or id")
+	planCmd.Flags().BoolVar(&overwriteSecrets, "overwrite-secrets", false, "overwrite secret variables when values differ")
 }
 
 func plan(cmd *cobra.Command, data []byte, projectName string, oid sdktypes.OrgID) (manifest.Actions, error) {
@@ -71,5 +72,6 @@ func plan(cmd *cobra.Command, data []byte, projectName string, oid sdktypes.OrgI
 		manifest.WithProjectName(projectName),
 		manifest.WithRemoveUnusedConnFlags(rmUnusedConnVars),
 		manifest.WithOrgID(oid),
+		manifest.WithOverwriteSecrets(overwriteSecrets),
 	)
 }

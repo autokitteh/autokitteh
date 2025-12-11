@@ -11,7 +11,7 @@ import (
 var projectName string
 
 var applyCmd = common.StandardCommand(&cobra.Command{
-	Use:     "apply [file] [--project-name <name>] [--org org] [--no-validate] [--from-scratch] [--quiet] [--rm-unused-cvars]",
+	Use:     "apply [file] [--project-name <name>] [--org org] [--no-validate] [--from-scratch] [--quiet] [--rm-unused-cvars] [--overwrite-secrets]",
 	Short:   "Apply project configuration from file or stdin",
 	Aliases: []string{"a"},
 	Args:    cobra.MaximumNArgs(1),
@@ -52,4 +52,5 @@ func init() {
 	applyCmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "only show errors, if any")
 	applyCmd.Flags().StringVarP(&projectName, "project-name", "n", "", "project name")
 	applyCmd.Flags().StringVarP(&org, "org", "o", "", "org name or id")
+	applyCmd.Flags().BoolVar(&overwriteSecrets, "overwrite-secrets", false, "overwrite secret variables when values differ")
 }
