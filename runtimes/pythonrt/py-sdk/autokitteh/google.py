@@ -1,17 +1,18 @@
 """Initialize Google API clients, based on AutoKitteh connections."""
 
-from datetime import UTC, datetime
 import json
 import os
 import re
+from datetime import UTC, datetime
 
-from google.auth.exceptions import RefreshError
-from google.auth.transport.requests import Request
 import google.generativeai as genai
 import google.oauth2.credentials as credentials
 import google.oauth2.service_account as service_account
-from googleapiclient.discovery import build
 import gspread
+from google.auth.exceptions import RefreshError
+from google.auth.transport.requests import Request
+from googleapiclient.discovery import build
+from pydantic_ai.providers.google import GoogleProvider
 
 from .connections import check_connection_name, refresh_oauth
 from .errors import ConnectionInitError, OAuthRefreshError
@@ -166,6 +167,32 @@ def gemini_client(connection: str, **kwargs) -> genai.GenerativeModel:
 
     genai.configure(api_key=api_key)
     return genai.GenerativeModel(**kwargs)
+
+
+def google_pydantic_ai_provider(connection: str, **kwargs) -> GoogleProvider:
+    """Initialize an Gemini Pydantic AI provider, based on an AutoKitteh connection.
+
+    API reference:
+        https://ai.pydantic.dev/models/openai
+
+    Args:
+        connection: AutoKitteh connection name.
+
+    Returns:
+        Google Pydantic AI provider.
+
+    Raises:
+        ValueError: AutoKitteh connection name is invalid.
+        ConnectionInitError: AutoKitteh connection was not initialized yet.
+    """
+    check_connection_name(connection)
+
+    api_key = os.getenv(connection + "__api_key")
+
+    if not api_key:
+        raise ConnectionInitError(connection)
+
+    return GoogleProvider(api_key=api_key, **kwargs)
 
 
 def google_sheets_client(connection: str, **kwargs):
