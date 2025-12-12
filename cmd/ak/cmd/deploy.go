@@ -17,6 +17,8 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+const defaultManifestFile = "autokitteh.yaml"
+
 var (
 	manifestPath, project, projectName, org string
 
@@ -43,15 +45,15 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 
 		}
 
-		// If no project or manifest provided, look for autokitteh.yaml in cwd.
+		// If no project or manifest provided, look for defaultManifestFile in cwd.
 		// If exists - apply that.
 		if project == "" && manifestPath == "" {
-			if f, err := os.Open("autokitteh.yaml"); err == nil {
+			if f, err := os.Open(defaultManifestFile); err == nil {
 				f.Close()
 
-				manifestPath = "autokitteh.yaml"
+				manifestPath = defaultManifestFile
 			} else {
-				return errors.New("no project or manifest provided")
+				return errors.New("no project or manifest provided, and default 'autokitteh.yaml' not found in current directory")
 			}
 		}
 
