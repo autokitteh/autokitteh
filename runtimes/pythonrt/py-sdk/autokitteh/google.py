@@ -170,10 +170,10 @@ def gemini_client(connection: str, **kwargs) -> genai.GenerativeModel:
 
 
 def google_pydantic_ai_provider(connection: str, **kwargs) -> GoogleProvider:
-    """Initialize an Gemini Pydantic AI provider, based on an AutoKitteh connection.
+    """Initialize a Gemini Pydantic AI provider, based on an AutoKitteh connection.
 
     API reference:
-        https://ai.pydantic.dev/models/openai
+        https://ai.pydantic.dev/models/gemini
 
     Args:
         connection: AutoKitteh connection name.

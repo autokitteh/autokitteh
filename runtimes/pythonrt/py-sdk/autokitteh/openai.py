@@ -56,7 +56,7 @@ def openai_pydantic_ai_provider(connection: str, **kwargs) -> OpenAIProvider:
     """
     check_connection_name(connection)
 
-    api_key = os.getenv(connection + "__api_key")
+    api_key = os.getenv(connection + "__apiKey")
 
     if not api_key:
         raise ConnectionInitError(connection)
