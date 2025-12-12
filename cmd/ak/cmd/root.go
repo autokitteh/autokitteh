@@ -19,7 +19,7 @@ import (
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/events"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/experimental"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/integrations"
-	makeCmd "go.autokitteh.dev/autokitteh/cmd/ak/cmd/make"
+	makecmd "go.autokitteh.dev/autokitteh/cmd/ak/cmd/make"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/manifest"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/mcp"
 	"go.autokitteh.dev/autokitteh/cmd/ak/cmd/orgs"
@@ -124,6 +124,7 @@ func init() {
 	events.AddSubcommands(RootCmd)
 	experimental.AddSubcommands(RootCmd)
 	integrations.AddSubcommands(RootCmd)
+	makecmd.AddSubcommands(RootCmd)
 	manifest.AddSubcommands(RootCmd)
 	mcp.AddSubcommands(RootCmd)
 	orgs.AddSubcommands(RootCmd)
@@ -135,7 +136,6 @@ func init() {
 	triggers.AddSubcommands(RootCmd)
 	users.AddSubcommands(RootCmd)
 	vars.AddSubcommands(RootCmd)
-	makeCmd.AddSubcommands(RootCmd)
 }
 
 func parseConfigs(pairs []string) (map[string]any, error) {

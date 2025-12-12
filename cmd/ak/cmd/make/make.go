@@ -1,4 +1,4 @@
-package make
+package makecmd
 
 import (
 	_ "embed"
@@ -24,6 +24,8 @@ var (
 		Short: "Invoke the builtin standard makefile",
 		Args:  cobra.ArbitraryArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			modifiedMakefileData := makefileData
+
 			// Read Makefile from config dir if exists.
 			configMakefile := filepath.Join(xdg.ConfigHomeDir(), "Makefile")
 			if _, err := os.Stat(configMakefile); err == nil {
@@ -31,13 +33,13 @@ var (
 				if err != nil {
 					return err
 				}
-				makefileData = fmt.Sprintf("# Taken from %s\n\n%s", configMakefile, string(cfgMakefile))
+				modifiedMakefileData = fmt.Sprintf("# Taken from %s\n\n%s", configMakefile, string(cfgMakefile))
 			} else {
-				makefileData = fmt.Sprintf("# Using built-in Makefile; create %s to override.\n\n%s", configMakefile, makefileData)
+				modifiedMakefileData = fmt.Sprintf("# Using built-in Makefile; create %s to override.\n\n%s", configMakefile, modifiedMakefileData)
 			}
 
 			if show {
-				_, err := cmd.OutOrStdout().Write([]byte(makefileData))
+				_, err := cmd.OutOrStdout().Write([]byte(modifiedMakefileData))
 				return err
 			}
 
@@ -47,9 +49,17 @@ var (
 			}
 
 			defer os.Remove(makefile.Name())
-			defer makefile.Close()
 
-			if _, err := makefile.Write([]byte(makefileData)); err != nil {
+			if _, err := makefile.Write([]byte(modifiedMakefileData)); err != nil {
+				return err
+			}
+
+			if err := makefile.Sync(); err != nil {
+				_ = makefile.Close()
+				return err
+			}
+
+			if err := makefile.Close(); err != nil {
 				return err
 			}
 
@@ -62,7 +72,10 @@ var (
 			make.Stderr = cmd.ErrOrStderr()
 			make.Stdin = cmd.InOrStdin()
 
-			return make.Run()
+			if err := make.Run(); err != nil {
+				return fmt.Errorf("failed to execute make command (ensure 'make' is installed and in your PATH): %w", err)
+			}
+			return nil
 		},
 	})
 )
