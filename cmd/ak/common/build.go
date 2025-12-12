@@ -98,7 +98,7 @@ func walk(basePath string, uploads map[string][]byte) fs.WalkDirFunc {
 			return err // Abort the entire walk.
 		}
 
-		if fn := filepath.Base(path); fn != "." && (fn[0] == '.' || fn[0] == '_') {
+		if fn := filepath.Base(path); fn != "." && (fn[0] == '.' || fn[0] == '_') || fn == "autokitteh.yaml" {
 			if d.IsDir() {
 				return fs.SkipDir
 			}
