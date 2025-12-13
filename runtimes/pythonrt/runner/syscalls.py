@@ -119,9 +119,11 @@ class SysCalls:
             raise AutoKittehError(f"next_event inside activity: {err}") from err
 
         try:
-            data = json.loads(resp.event.data)
+            event = json.loads(resp.event.data)
         except (ValueError, TypeError, AttributeError) as err:
             raise AutoKittehError(f"next_event: invalid event: {err}")
+
+        data = event.get("data")
 
         return AttrDict(data) if isinstance(data, dict) else data
 

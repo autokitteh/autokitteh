@@ -140,8 +140,8 @@ If no event found, wait on first signal in signals list
 Get the next event on this signal (has to exists since we got a signal on it)
 return this event
 */
-func (w *sessionWorkflow) nextEvent(wctx workflow.Context) func(context.Context, sdktypes.RunID, []string, time.Duration) (sdktypes.Value, error) {
-	return func(ctx context.Context, _ sdktypes.RunID, signals []string, timeout time.Duration) (sdktypes.Value, error) {
+func (w *sessionWorkflow) nextEvent(wctx workflow.Context) func(context.Context, sdktypes.RunID, []string, time.Duration) (sdktypes.Event, error) {
+	return func(ctx context.Context, _ sdktypes.RunID, signals []string, timeout time.Duration) (sdktypes.Event, error) {
 		if activity.IsActivity(ctx) {
 			return w.nextEventInActivity(ctx, signals, timeout)
 		}
@@ -150,22 +150,22 @@ func (w *sessionWorkflow) nextEvent(wctx workflow.Context) func(context.Context,
 		defer span.End()
 
 		if len(signals) == 0 {
-			return sdktypes.Nothing, nil
+			return sdktypes.InvalidEvent, nil
 		}
 
 		signalUUIDs, err := kittehs.TransformError(signals, uuid.Parse)
 		if err != nil {
-			return sdktypes.InvalidValue, err
+			return sdktypes.InvalidEvent, err
 		}
 
 		// check if there is an event already in one of the signals
 		for _, signalID := range signalUUIDs {
 			event, err := w.getNextEvent(wctx, signalID)
 			if err != nil {
-				return sdktypes.InvalidValue, err
+				return sdktypes.InvalidEvent, err
 			}
-			if event != nil {
-				return sdktypes.WrapValue(event)
+			if event.IsValid() {
+				return event, nil
 			}
 		}
 
@@ -178,37 +178,37 @@ func (w *sessionWorkflow) nextEvent(wctx workflow.Context) func(context.Context,
 			// no event, wait for first signal
 			signalID, err := w.waitOnFirstSignal(wctx, signalUUIDs, timeoutFuture)
 			if err != nil {
-				return sdktypes.InvalidValue, err
+				return sdktypes.InvalidEvent, err
 			}
 
 			if signalID == uuid.Nil {
-				return sdktypes.Nothing, nil
+				return sdktypes.InvalidEvent, nil
 			}
 
 			// get next event on this signal
 			event, err := w.getNextEvent(wctx, signalID)
 			if err != nil {
-				return sdktypes.InvalidValue, err
+				return sdktypes.InvalidEvent, err
 			}
 
-			if event != nil {
-				return sdktypes.WrapValue(event)
+			if event.IsValid() {
+				return event, nil
 			}
 		}
 	}
 }
 
-func (w *sessionWorkflow) nextEventInActivity(ctx context.Context, signals []string, timeout time.Duration) (sdktypes.Value, error) {
+func (w *sessionWorkflow) nextEventInActivity(ctx context.Context, signals []string, timeout time.Duration) (sdktypes.Event, error) {
 	_, span := w.startCallbackSpan(ctx, "next_event_in_activity")
 	defer span.End()
 
 	if len(signals) == 0 {
-		return sdktypes.Nothing, nil
+		return sdktypes.InvalidEvent, nil
 	}
 
 	signalUUIDs, err := kittehs.TransformError(signals, uuid.Parse)
 	if err != nil {
-		return sdktypes.InvalidValue, err
+		return sdktypes.InvalidEvent, err
 	}
 
 	var tmoCh <-chan time.Time
@@ -221,10 +221,11 @@ func (w *sessionWorkflow) nextEventInActivity(ctx context.Context, signals []str
 		for _, signalID := range signalUUIDs {
 			event, err := w.getNextEventInActivity(ctx, signalID)
 			if err != nil {
-				return sdktypes.InvalidValue, err
+				return sdktypes.InvalidEvent, err
 			}
-			if event != nil {
-				return sdktypes.WrapValue(event)
+
+			if event.IsValid() {
+				return event, nil
 			}
 		}
 
@@ -233,11 +234,11 @@ func (w *sessionWorkflow) nextEventInActivity(ctx context.Context, signals []str
 			w.l.Debug("next_event_in_activity: poll timeout reached")
 
 		case <-ctx.Done():
-			return sdktypes.InvalidValue, ctx.Err()
+			return sdktypes.InvalidEvent, ctx.Err()
 
 		case <-tmoCh:
 			w.l.Debug("next_event_in_activity: user timeout reached")
-			return sdktypes.Nothing, nil
+			return sdktypes.InvalidEvent, nil
 		}
 	}
 }

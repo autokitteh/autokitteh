@@ -64,7 +64,7 @@ type RunCallbacks struct {
 	// Events
 	Subscribe   func(ctx context.Context, rid sdktypes.RunID, name, filter string) (string, error)
 	Unsubscribe func(ctx context.Context, rid sdktypes.RunID, signalID string) error
-	NextEvent   func(ctx context.Context, rid sdktypes.RunID, signalIDs []string, timeout time.Duration) (sdktypes.Value, error)
+	NextEvent   func(ctx context.Context, rid sdktypes.RunID, signalIDs []string, timeout time.Duration) (sdktypes.Event, error)
 
 	// Signals
 	Signal     func(ctx context.Context, rid sdktypes.RunID, sid sdktypes.SessionID, name string, payload sdktypes.Value) error
