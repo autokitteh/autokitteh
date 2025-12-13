@@ -1,20 +1,26 @@
-UVX=uvx --with autokitteh $(if $(wildcard requirements.txt),--with-requirements requirements.txt)
+UVX_DEV=uvx --with pytest --with autokitteh[all] $(if $(wildcard requirements.txt),--with-requirements requirements.txt)
 
 .PHONY: all
-all: lint typecheck format
+all: lint typecheck format test
 
 .PHONY: lint
 lint:
-	$(UVX) ruff check
+	uvx ruff check
 
 .PHONY: format
 format:
-	$(UVX) ruff format --check
+	uvx ruff format --check
 
 .PHONY: typecheck
 typecheck:
-	$(UVX) mypy --follow-untyped-imports  .
+	$(UVX_DEV) mypy --follow-untyped-imports  .
 
-.PHONY: deploy
-deploy:
-	ak deploy --manifest autokitteh.yaml
+.PHONY: test
+test:
+	@if find . -name 'test_*.py' -o -name '*_test.py' | grep -q .; then \
+		$(UVX_DEV) pytest; \
+	else \
+		echo "No Python test files found, skipping tests"; \
+	fi
+
+-include Makefile
