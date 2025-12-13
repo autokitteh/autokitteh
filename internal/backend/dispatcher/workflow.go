@@ -146,12 +146,12 @@ func (d *Dispatcher) signalWorkflows(wctx workflow.Context, event sdktypes.Event
 			// Check the trigger's filter.
 			match, err := event.Matches(t.Filter())
 			if err != nil {
-				sl.Infof("invalid signal filter: %v", err)
+				sl.Infof("invalid trigger filter: %v", err)
 				continue
 			}
 
 			if !match {
-				sl.Info("signal filter not matching event, skipping")
+				sl.Info("trigger filter not matching event, skipping")
 				continue
 			}
 		}
