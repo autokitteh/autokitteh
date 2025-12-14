@@ -33,9 +33,9 @@ project:
       call: program.py:on_http
 
 -- program.py --
-def on_http(event):
+def on_http(event, session_id):
     print(event.data["method"])
-    print(event.session_id)
+    print(session_id)
 
 -- expected_without_path.json --
 {

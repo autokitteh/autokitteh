@@ -409,9 +409,12 @@ class Runner(pb.runner_rpc.RunnerService):
 
         fix_http_body(inputs)
 
+        session_id = inputs.get("session_id")
+
         event = Event(
             data=AttrDict(inputs.get("data", {})),
-            session_id=inputs.get("session_id"),
+            event_type=inputs.get("event_type"),
+            event_id=inputs.get("event_id"),
         )
 
         # Must be before we load user code
@@ -460,7 +463,7 @@ class Runner(pb.runner_rpc.RunnerService):
                 update_wrapper(handler, orig_fn)
                 fn = handler
 
-        self.executor.submit(self.on_event, fn, event)
+        self.executor.submit(self.on_event, fn, event, session_id)
 
         return pb.runner.StartResponse()
 
@@ -627,10 +630,15 @@ class Runner(pb.runner_rpc.RunnerService):
         log.info("activity request ended")
         return call.fut
 
-    def _call(self, fn, args, kw):
+    def _call(self, fn, args, kw, opts={}):
         func_name = full_func_name(fn)
         log.info("calling %s", func_name)
         value = error = stack = None
+
+        # Add optional arguments as kwargs only if specified as function args.
+        sig = inspect.signature(fn)
+        kw.update({k: v for k, v in opts.items() if k in sig.parameters})
+
         try:
             value = fn(*args, **kw)
             if asyncio.iscoroutine(value):
@@ -654,11 +662,11 @@ class Runner(pb.runner_rpc.RunnerService):
 
         return Result(value, error, stack)
 
-    def on_event(self, fn, event):
+    def on_event(self, fn, event, session_id):
         func_name = full_func_name(fn)
         log.info("start event: %s", func_name)
 
-        result = self._call(fn, [event], {})
+        result = self._call(fn, [event], {}, opts={"session_id": session_id})
 
         log.info("event end: error=%r", result.error)
         self._stopped = True
