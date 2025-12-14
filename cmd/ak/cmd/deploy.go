@@ -17,6 +17,8 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+const defaultManifestFile = "autokitteh.yaml"
+
 var (
 	manifestPath, project, projectName, org string
 
@@ -41,6 +43,18 @@ var deployCmd = common.StandardCommand(&cobra.Command{
 				return fmt.Errorf("org: %w", err)
 			}
 
+		}
+
+		// If no project or manifest provided, look for defaultManifestFile in cwd.
+		// If exists - apply that.
+		if project == "" && manifestPath == "" {
+			if f, err := os.Open(defaultManifestFile); err == nil {
+				f.Close()
+
+				manifestPath = defaultManifestFile
+			} else {
+				return errors.New("no project or manifest provided, and default 'autokitteh.yaml' not found in current directory")
+			}
 		}
 
 		// Step 1: apply the manifest file, if provided
@@ -117,7 +131,6 @@ func init() {
 	deployCmd.Flags().StringVarP(&projectName, "project-name", "n", "", "project name to use for manifest")
 	deployCmd.Flags().StringVarP(&org, "org", "o", "", "org to use for manifest")
 	deployCmd.Flags().StringVarP(&project, "project", "p", "", "existing project name or ID")
-	deployCmd.MarkFlagsOneRequired("manifest", "project")
 	deployCmd.MarkFlagsMutuallyExclusive("manifest", "project")
 	deployCmd.MarkFlagsMutuallyExclusive("project-name", "project")
 
