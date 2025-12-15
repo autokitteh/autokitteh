@@ -12,8 +12,8 @@
 -- main.py player1 --
 from autokitteh import start, signal, next_signal
 
-def player1(event):
-    p2 = start("main.py:player2", {"p1": event.session_id})
+def player1(event, session_id):
+    p2 = start("main.py:player2", {"p1": session_id})
 
     x = 0
     while True:

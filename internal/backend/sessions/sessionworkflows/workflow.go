@@ -511,6 +511,13 @@ func (w *sessionWorkflow) run(wctx workflow.Context, l *zap.Logger) (_ []sdkserv
 		inputs := map[string]sdktypes.Value{
 			"data":       sdktypes.NewDictValueFromStringMap(session.Inputs()),
 			"session_id": sdktypes.NewStringValue(session.ID().String()),
+			"event_id":   sdktypes.Nothing,
+			"event_type": sdktypes.Nothing,
+		}
+
+		if eid := session.EventID(); eid.IsValid() {
+			inputs["event_id"] = sdktypes.NewStringValue(eid.String())
+			inputs["event_type"] = sdktypes.NewStringValue(w.data.Event.Type())
 		}
 
 		callCtx, callSpan := startTrace(ctx, "session.call")

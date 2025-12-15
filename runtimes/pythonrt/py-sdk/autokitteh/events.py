@@ -4,6 +4,7 @@ from datetime import timedelta
 from uuid import uuid4
 
 from .attr_dict import AttrDict
+from .event import Event
 
 
 def subscribe(source: str, filter: str = "") -> str:
@@ -25,17 +26,22 @@ def unsubscribe(subscription_id: str) -> None:
 
 
 def next_event(
-    subscription_id: str | list[str], *, timeout: timedelta | int | float = None
-) -> AttrDict:
+    subscription_id: str | list[str],
+    *,
+    timeout: timedelta | int | float = None,
+    full: bool = False,
+) -> AttrDict | Event | None:
     """Get the next event from the subscription(s).
 
     If timeout is not None and there are no new events after timeout, this function will
     return None.
 
+    If full is True, returns the full Event object, otherwise returns only the event data.
+
     Works both in durable and nondurable sessions.
     """
     # Dummy implementation for local development.
-    return AttrDict()
+    return None
 
 
 def start(

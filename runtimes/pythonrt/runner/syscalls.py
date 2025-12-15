@@ -10,7 +10,7 @@ from datetime import timedelta
 from typing import Any
 
 import grpc
-from autokitteh import AttrDict, AutoKittehError, Signal
+from autokitteh import AttrDict, AutoKittehError, Event, Signal
 from autokitteh.activities import ACTIVITY_ATTR
 
 import log
@@ -98,7 +98,7 @@ class SysCalls:
         resp = call_grpc("subscribe", self.worker.Subscribe, req)
         return resp.signal_id
 
-    def ak_next_event(self, subscription_id, *, timeout=None):
+    def ak_next_event(self, subscription_id, *, timeout=None, full=False):
         log.debug("ak_next_event: %r %r", subscription_id, timeout)
 
         ids = subscription_id
@@ -119,11 +119,24 @@ class SysCalls:
             raise AutoKittehError(f"next_event inside activity: {err}") from err
 
         try:
-            data = json.loads(resp.event.data)
+            event = json.loads(resp.event.data)
         except (ValueError, TypeError, AttributeError) as err:
             raise AutoKittehError(f"next_event: invalid event: {err}")
 
-        return AttrDict(data) if isinstance(data, dict) else data
+        if not event:
+            return None
+
+        data = event.get("data")
+        only_data = AttrDict(data) if isinstance(data, dict) else data
+
+        if not full:
+            return only_data
+
+        return Event(
+            data=only_data,
+            event_type=event.get("event_type"),
+            event_id=event.get("event_id"),
+        )
 
     def ak_unsubscribe(self, subscription_id):
         log.debug("ak_unsubscribe: %r", subscription_id)
