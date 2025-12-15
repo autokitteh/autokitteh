@@ -481,7 +481,6 @@ class Runner(pb.runner_rpc.RunnerService):
 
         result = self._call(fn, args, kw)
 
-        # key = self.large_objects_mngr.set(result)
         if result.error and not is_pickleable(result.error):
             log.info("not pickable")
             err = pickleable_exception(result.error)
@@ -489,7 +488,6 @@ class Runner(pb.runner_rpc.RunnerService):
 
         try:
             data = pickle.dumps(result)
-            log.info("pickeled")
             req.result.custom.data = data
             req.result.custom.value.CopyFrom(values.safe_wrap(result.value))
             size_of_request = req.ByteSize()
@@ -573,7 +571,7 @@ class Runner(pb.runner_rpc.RunnerService):
                 context, grpc.StatusCode.INTERNAL, err, show_pickle_help=True
             )
 
-        if result.large_object:
+        if getattr(result, "large_object", False):
             log.info("result is large object")
             if not self.large_objects_mngr.enabled:
                 abort_with_exception(
