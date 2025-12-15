@@ -18,14 +18,14 @@ class LargeObjectsManager:
     def set(self, val: bytes) -> str:
         digest = get_digest(val)
         self.cache[digest] = val
-        self.persist(digest, val)
+        self._persist(digest, val)
         return digest
 
     def get(self, key: str) -> bytes | None:
         log.info(f"try fetch {key}")
         if key not in self.cache:
             log.info("not found in cache")
-            data = self.load(key)
+            data = self._load(key)
             log.info("loaded")
             self.cache[key] = data
         log.info("returning from cache")
@@ -34,13 +34,13 @@ class LargeObjectsManager:
     def local_path(self, key: str) -> str:
         return os.path.join(self.path, key)
 
-    def persist(self, key: str, val: bytes) -> None:
+    def _persist(self, key: str, val: bytes) -> None:
         file_name = self.local_path(key)
         log.info(f"writing to {file_name}")
         with open(file_name, "wb") as file_object:
             file_object.write(val)
 
-    def load(self, key: str) -> bytes:
+    def _load(self, key: str) -> bytes:
         file_name = self.local_path(key)
         log.info(f"reading from {file_name}")
         with open(file_name, "rb") as file_object:
