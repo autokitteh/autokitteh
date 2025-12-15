@@ -86,24 +86,27 @@ func (d *Dispatcher) eventsWorkflow(wctx workflow.Context, input eventsWorkflowI
 
 	sl.Infof("found %d dispatch destinations for %v", len(sds), eid)
 
+	var errs []error
+
 	if len(sds) != 0 {
 		var err error
 		if started, err = d.startSessions(wctx, event, sds); err != nil {
 			sl.With("err", err).Errorf("could not start sessions for %v: %v", eid, err)
-			return nil, err
+			errs = append(errs, fmt.Errorf("start sessions: %w", err))
 		}
 	}
 
 	// execute waiting signals
-	wids, err := d.signalWorkflows(wctx, event)
+	signaled, err := d.signalWorkflows(wctx, event)
 	if err != nil {
 		sl.With("err", err).Errorf("signalling error: %v", err)
+		errs = append(errs, fmt.Errorf("signal workflows: %w", err))
 	}
 
 	return &eventsWorkflowOutput{
 		Started:  started,
-		Signaled: wids,
-	}, nil
+		Signaled: signaled,
+	}, errors.Join(errs...)
 }
 
 func (d *Dispatcher) signalWorkflows(wctx workflow.Context, event sdktypes.Event) ([]sdktypes.SessionID, error) {
@@ -122,9 +125,38 @@ func (d *Dispatcher) signalWorkflows(wctx workflow.Context, event sdktypes.Event
 
 	var wids []sdktypes.SessionID
 
+	triggers := make(map[sdktypes.TriggerID]sdktypes.Trigger)
+
 	for _, signal := range signals {
 		sl := sl.With("signal_id", signal.ID.String(), "workflow_id", signal.WorkflowID, "filter", signal.Filter)
 
+		if event.DestinationID().IsTriggerID() {
+			tid := event.DestinationID().ToTriggerID()
+
+			t, ok := triggers[tid]
+			if !ok {
+				if err := workflow.ExecuteActivity(wctx, getTriggerActivityName, tid).Get(wctx, &t); err != nil {
+					sl.With("err", err).Errorf("could not get trigger %v: %v", tid, err)
+					continue
+				}
+
+				triggers[tid] = t
+			}
+
+			// Check the trigger's filter.
+			match, err := event.Matches(t.Filter())
+			if err != nil {
+				sl.Infof("invalid trigger filter: %v", err)
+				continue
+			}
+
+			if !match {
+				sl.Info("trigger filter not matching event, skipping")
+				continue
+			}
+		}
+
+		// Check the subscription's filter.
 		match, err := event.Matches(signal.Filter)
 		if err != nil {
 			sl.Infof("invalid signal filter: %v", err)
