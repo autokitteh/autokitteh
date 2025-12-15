@@ -381,7 +381,15 @@ func TestListConnectionsByOrg(t *testing.T) {
 		OrgID: sdktypes.NewIDFromUUID[sdktypes.OrgID](org1),
 	}, false)
 	assert.NoError(t, err)
-	assert.Len(t, connections, 2, "org1 should have 2 connections (1 org-level, 1 project-level)")
+	assert.Len(t, connections, 1, "org1 should have 1 connections (1 org-level)")
+
+	// List connections for org1
+	connections, err = f.gormdb.listConnections(f.ctx, sdkservices.ListConnectionsFilter{
+		OrgID:     sdktypes.NewIDFromUUID[sdktypes.OrgID](org1),
+		ProjectID: sdktypes.NewIDFromUUID[sdktypes.ProjectID](p1.ProjectID),
+	}, false)
+	assert.NoError(t, err)
+	assert.Len(t, connections, 2, "p1 should have 2 connections (1 org-level, 1 project level)")
 
 	// List connections for org2
 	connections, err = f.gormdb.listConnections(f.ctx, sdkservices.ListConnectionsFilter{
