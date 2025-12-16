@@ -91,7 +91,7 @@ func (gdb *gormdb) listConnections(ctx context.Context, filter sdkservices.ListC
 	if filter.OrgID.IsValid() {
 		x := q.Where("org_id = ? AND project_id IS NULL", filter.OrgID.UUIDValue())
 		if filter.ProjectID.IsValid() {
-			x = x.Or(q.Where("org_id = ? AND project_id = ?", filter.OrgID.UUIDValue(), filter.ProjectID.UUIDValue()))
+			x = x.Or(x.Where("org_id = ? AND project_id = ?", filter.OrgID.UUIDValue(), filter.ProjectID.UUIDValue()))
 		}
 		q = x
 	} else if filter.ProjectID.IsValid() {
