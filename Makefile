@@ -83,7 +83,7 @@ ifneq ($(scripts),)
 endif
 
 .PHONY: test
-test: test-race test-db test-opa test-starkark test-sessions
+test: test-race test-db test-opa test-starlark test-sessions
 
 # Run only Go unit-tests, without checking for race conditions,
 # and without running long-running Python runtime and system tests.

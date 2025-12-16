@@ -68,5 +68,7 @@ func (rrm *remoteRunnerManager) Start(ctx context.Context, sessionID sdktypes.Se
 	return "", nil, nil
 }
 func (*remoteRunnerManager) RunnerHealth(ctx context.Context, runnerID string) error { return nil }
-func (*remoteRunnerManager) Stop(ctx context.Context, runnerID string) error         { return nil }
-func (*remoteRunnerManager) Health(ctx context.Context) error                        { return nil }
+func (*remoteRunnerManager) Stop(ctx context.Context, runnerID string, sessionID sdktypes.SessionID) error {
+	return nil
+}
+func (*remoteRunnerManager) Health(ctx context.Context) error { return nil }

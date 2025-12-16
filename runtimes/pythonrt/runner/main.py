@@ -31,6 +31,8 @@ import values
 from call import AKCall, activity_marker, full_func_name
 from syscalls import SysCalls, mark_no_activity
 
+from largeobjects import LargeObjectsManager
+
 # Timeouts are in seconds
 SERVER_GRACE_TIMEOUT = 3
 DEFAULT_START_TIMEOUT = 10
@@ -177,7 +179,7 @@ def set_exception_args(err):
 
 
 Call = namedtuple("Call", "fn args kw fut")
-Result = namedtuple("Result", "value error traceback")
+Result = namedtuple("Result", "value error traceback large_object")
 
 
 def is_pickleable(err):
@@ -237,7 +239,7 @@ def force_close(server):
     os._exit(1)
 
 
-MAX_SIZE_OF_REQUEST = 1 * 1024 * 1024
+MIN_LARGE_OBJECT_SIZE = 1 * 1024 * 1024
 
 
 def format_size(size):
@@ -281,7 +283,13 @@ def pickleable_exception(err):
 
 class Runner(pb.runner_rpc.RunnerService):
     def __init__(
-        self, id, worker, code_dir, server, start_timeout=DEFAULT_START_TIMEOUT
+        self,
+        id,
+        worker,
+        code_dir,
+        server,
+        large_objects_manager: LargeObjectsManager,
+        start_timeout=DEFAULT_START_TIMEOUT,
     ):
         self.id = id
         self.worker: pb.handler_rpc.HandlerServiceStub = worker
@@ -299,6 +307,8 @@ class Runner(pb.runner_rpc.RunnerService):
         )
         self._inactivity_timer.start()
         self._stopped = False
+
+        self.large_objects_mngr = large_objects_manager
 
     def result_error(self, err):
         io = StringIO()
@@ -409,9 +419,12 @@ class Runner(pb.runner_rpc.RunnerService):
 
         fix_http_body(inputs)
 
+        session_id = inputs.get("session_id")
+
         event = Event(
             data=AttrDict(inputs.get("data", {})),
-            session_id=inputs.get("session_id"),
+            event_type=inputs.get("event_type"),
+            event_id=inputs.get("event_id"),
         )
 
         # Must be before we load user code
@@ -460,7 +473,7 @@ class Runner(pb.runner_rpc.RunnerService):
                 update_wrapper(handler, orig_fn)
                 fn = handler
 
-        self.executor.submit(self.on_event, fn, event)
+        self.executor.submit(self.on_event, fn, event, session_id)
 
         return pb.runner.StartResponse()
 
@@ -470,7 +483,9 @@ class Runner(pb.runner_rpc.RunnerService):
         )
 
         result = self._call(fn, args, kw)
+
         if result.error and not is_pickleable(result.error):
+            log.info("not pickable")
             err = pickleable_exception(result.error)
             result = result._replace(error=err)
 
@@ -479,15 +494,27 @@ class Runner(pb.runner_rpc.RunnerService):
             req.result.custom.data = data
             req.result.custom.value.CopyFrom(values.safe_wrap(result.value))
             size_of_request = req.ByteSize()
-            if size_of_request > MAX_SIZE_OF_REQUEST:
-                # reset the req.result and use error only
-                req = pb.handler.ExecuteReplyRequest(
-                    runner_id=self.id,
-                )
-                req.error = "response size too large"
-                print(
-                    f"response size {format_size(size_of_request)} is too large, max allowed is {format_size(MAX_SIZE_OF_REQUEST)}"
-                )
+            if size_of_request > MIN_LARGE_OBJECT_SIZE:
+                log.info(f"req size large {format_size(size_of_request)}")
+                if not self.large_objects_mngr.enabled:
+                    log.info("large objects not enabled")
+                    # reset the req.result and use error only
+                    req = pb.handler.ExecuteReplyRequest(
+                        runner_id=self.id,
+                    )
+                    req.error = "response size too large"
+                    print(
+                        f"response size {format_size(size_of_request)} is too large, max allowed is {format_size(MIN_LARGE_OBJECT_SIZE)}"
+                    )
+                else:
+                    ref = self.large_objects_mngr.set(data)
+                    large_object_result = Result(ref, None, None, True)
+                    req.result.custom.data = pickle.dumps(large_object_result)
+                    req.result.custom.value.CopyFrom(
+                        values.safe_wrap(f"large object {size_of_request}")
+                    )
+                    log.info(f"new req size {format_size(req.ByteSize())}")
+
         except Exception as err:
             # Print so it'll get to session log
             msg = f"error processing result - {err!r}"
@@ -523,6 +550,7 @@ class Runner(pb.runner_rpc.RunnerService):
     def ActivityReply(
         self, request: pb.runner.ActivityReplyRequest, context: grpc.ServicerContext
     ):
+        log.info("activity reply called")
         if request.error or not request.result.custom.data:
             error = request.error or "activity reply not a Custom value"
             req = pb.handler.DoneRequest(
@@ -537,7 +565,7 @@ class Runner(pb.runner_rpc.RunnerService):
 
             return pb.runner.ActivityReplyResponse(error=request.error)
 
-        result = None
+        result: Result = None
         try:
             result = pickle.loads(request.result.custom.data)
         except Exception as err:
@@ -545,6 +573,33 @@ class Runner(pb.runner_rpc.RunnerService):
             abort_with_exception(
                 context, grpc.StatusCode.INTERNAL, err, show_pickle_help=True
             )
+
+        if getattr(result, "large_object", False):
+            log.info("result is large object")
+            if not self.large_objects_mngr.enabled:
+                abort_with_exception(
+                    context,
+                    grpc.StatusCode.INTERNAL,
+                    "large object manager disabled",
+                    show_pickle_help=True,
+                )
+
+            result = self.large_objects_mngr.get(result.value)
+
+            if result is None:
+                abort_with_exception(
+                    context,
+                    grpc.StatusCode.INTERNAL,
+                    "large object result not found",
+                    show_pickle_help=True,
+                )
+            try:
+                result = pickle.loads(result)
+            except Exception as err:
+                log.exception(f"can't decode large object: pickle: {err}")
+                abort_with_exception(
+                    context, grpc.StatusCode.INTERNAL, err, show_pickle_help=True
+                )
 
         if not isinstance(result, Result):
             context.abort(
@@ -594,7 +649,9 @@ class Runner(pb.runner_rpc.RunnerService):
     def call_in_activity(self, fn, args, kw):
         log.info("call_in_activity: %s", full_func_name(fn))
         fut = self.start_activity(fn, args, kw)
-        return fut.result()
+        resp = fut.result()
+        log.info("returned from future")
+        return resp
 
     def start_activity(self, fn, args, kw) -> Future:
         fn_name = full_func_name(fn)
@@ -616,21 +673,25 @@ class Runner(pb.runner_rpc.RunnerService):
             ),
         )
         req_size = req.ByteSize()
-        if req_size > MAX_SIZE_OF_REQUEST:
+        if req_size > MIN_LARGE_OBJECT_SIZE:
             raise ActivityError(
-                f"Request payload size {format_size(req_size)} is larger than maximum supported ({format_size(MAX_SIZE_OF_REQUEST)})."
+                f"Request payload size {format_size(req_size)} is larger than maximum supported ({format_size(MIN_LARGE_OBJECT_SIZE)})."
             )
-        log.info("activity: sending")
         resp = self.worker.Activity(req)
         if resp.error:
             raise ActivityError(resp.error)
         log.info("activity request ended")
         return call.fut
 
-    def _call(self, fn, args, kw):
+    def _call(self, fn, args, kw, opts={}):
         func_name = full_func_name(fn)
         log.info("calling %s", func_name)
         value = error = stack = None
+
+        # Add optional arguments as kwargs only if specified as function args.
+        sig = inspect.signature(fn)
+        kw.update({k: v for k, v in opts.items() if k in sig.parameters})
+
         try:
             value = fn(*args, **kw)
             if asyncio.iscoroutine(value):
@@ -652,13 +713,13 @@ class Runner(pb.runner_rpc.RunnerService):
             log.warning("non pickleable: %r", error)
             error = error.__reduce__()
 
-        return Result(value, error, stack)
+        return Result(value, error, stack, large_object=False)
 
-    def on_event(self, fn, event):
+    def on_event(self, fn, event, session_id):
         func_name = full_func_name(fn)
         log.info("start event: %s", func_name)
 
-        result = self._call(fn, [event], {})
+        result = self._call(fn, [event], {}, opts={"session_id": session_id})
 
         log.info("event end: error=%r", result.error)
         self._stopped = True
@@ -790,6 +851,15 @@ if __name__ == "__main__":
         default=DEFAULT_START_TIMEOUT,
         type=int,
     )
+    parser.add_argument(
+        "--enable-large-objects",
+        help="enable large objects",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--large-objects-path", help="where to store large objects", default="/tmp"
+    )
+
     args = parser.parse_args()
 
     try:
@@ -818,7 +888,19 @@ if __name__ == "__main__":
         thread_pool=ThreadPoolExecutor(max_workers=cpu_count() * 8),
         interceptors=[LoggingInterceptor(args.runner_id)],
     )
-    runner = Runner(args.runner_id, worker, args.code_dir, server, args.start_timeout)
+
+    lom = LargeObjectsManager(
+        path=args.large_objects_path, enabled=args.enable_large_objects
+    )
+
+    runner = Runner(
+        args.runner_id,
+        worker,
+        args.code_dir,
+        server,
+        lom,
+        args.start_timeout,
+    )
     pb.runner_rpc.add_RunnerServiceServicer_to_server(runner, server)
 
     server.add_insecure_port(f"[::]:{args.port}")

@@ -329,11 +329,7 @@ func (s *workerGRPCHandler) Subscribe(ctx context.Context, req *userCode.Subscri
 
 func (s *workerGRPCHandler) NextEvent(ctx context.Context, req *userCode.NextEventRequest) (*userCode.NextEventResponse, error) {
 	if len(req.SignalIds) == 0 {
-		return &userCode.NextEventResponse{
-			Event: &userCode.Event{
-				Data: []byte("null"),
-			},
-		}, nil
+		return &userCode.NextEventResponse{}, nil
 	}
 
 	if req.TimeoutMs < 0 {
@@ -355,9 +351,13 @@ func (s *workerGRPCHandler) NextEvent(ctx context.Context, req *userCode.NextEve
 		return &userCode.NextEventResponse{Error: err.Error()}, nil
 	}
 
-	out, err := sdktypes.ValueWrapper{SafeForJSON: true}.Unwrap(resp.value.(sdktypes.Value))
+	event := resp.value.(sdktypes.Event)
+
+	eventValue := sdktypes.NewDictValueFromStringMap(event.ToValues())
+
+	out, err := sdktypes.ValueWrapper{SafeForJSON: true}.Unwrap(eventValue)
 	if err != nil {
-		err = status.Errorf(codes.Internal, "can't unwrap %v - %v", resp.value, err)
+		err = status.Errorf(codes.Internal, "can't unwrap %v - %v", eventValue, err)
 		return &userCode.NextEventResponse{Error: err.Error()}, err
 	}
 

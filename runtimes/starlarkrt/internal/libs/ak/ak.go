@@ -15,6 +15,8 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
+var eventStructCtor = sdktypes.NewSymbolValue(sdktypes.NewSymbol("event"))
+
 func LoadModule() starlark.StringDict {
 	return starlark.StringDict{
 		"is_deployment_active": starlark.NewBuiltin("is_deployment_active", IsDeploymentActive),
@@ -186,12 +188,21 @@ func nextEvent(th *starlark.Thread, bi *starlark.Builtin, args starlark.Tuple, k
 		return nil, errors.New("not supported")
 	}
 
-	v, err := nextEvent(tls.GoCtx, tls.RunID, sids, duration)
+	event, err := nextEvent(tls.GoCtx, tls.RunID, sids, duration)
 	if err != nil {
 		return nil, err
 	}
 
-	return values.FromTLS(th).ToStarlarkValue(v)
+	if !event.IsValid() {
+		return starlark.None, nil
+	}
+
+	data, err := sdktypes.NewStructValue(eventStructCtor, event.ToValues())
+	if err != nil {
+		return nil, err
+	}
+
+	return values.FromTLS(th).ToStarlarkValue(data)
 }
 
 func IsDeploymentActive(th *starlark.Thread, bi *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {

@@ -113,12 +113,12 @@ func (py *pySvc) cleanup(ctx context.Context) {
 
 	py.didCleanup = true
 
-	if err := runnerManager.Stop(ctx, py.runnerID); err != nil {
-		py.log.Warn("stop manager", zap.Error(err))
-	}
-
 	if err := py.runner.Close(); err != nil {
 		py.log.Warn("close runner", zap.Error(err))
+	}
+
+	if err := runnerManager.Stop(ctx, py.runnerID, py.sessionID); err != nil {
+		py.log.Warn("stop manager", zap.Error(err))
 	}
 
 	if err := removeRunnerFromServer(py.runnerID); err != nil {
