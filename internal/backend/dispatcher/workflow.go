@@ -198,8 +198,11 @@ func (d *Dispatcher) signalWorkflow(wctx workflow.Context, wid string, sigid uui
 		return
 	}
 
-	var nferr *serviceerror.NotFound
-	if errors.As(err, &nferr) {
+	var (
+		nferr      *serviceerror.NotFound
+		unknownErr *temporal.UnknownExternalWorkflowExecutionError
+	)
+	if errors.As(err, &nferr) || errors.As(err, &unknownErr) {
 		sl.Warnf("workflow %v not found for %v - removing signal", wid, sigid)
 
 		wctx := temporalclient.WithActivityOptions(wctx, taskQueueName, d.cfg.Activity)
