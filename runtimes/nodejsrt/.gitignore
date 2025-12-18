@@ -1,0 +1,7 @@
+.ruff_cache/
+**/*.env
+.venv
+build/
+node_modules/
+.cursor/
+testdata/

@@ -1,0 +1,10 @@
+version: v1
+
+project:
+  name: invoice_app
+  # Define the functions we want to expose
+  triggers:
+    - name: invoice_message_processor
+      event_type: post
+      call: main.ts:on_event
+      webhook: { }
