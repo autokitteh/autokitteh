@@ -79,7 +79,6 @@ func ParseConnection(c Connection) (sdktypes.Connection, error) {
 	projectID := ""
 	if c.ProjectID != nil {
 		projectID = sdktypes.NewIDFromUUID[sdktypes.ProjectID](*c.ProjectID).String()
-
 	}
 
 	conn, err := sdktypes.StrictConnectionFromProto(&sdktypes.ConnectionPB{
@@ -317,6 +316,9 @@ type SessionLogRecord struct {
 	Seq       uint64    `gorm:"primaryKey;not null"`
 	Data      datatypes.JSON
 	Type      string `gorm:"index"`
+
+	// For outcomes, what event id they refer to.
+	OutcomeEventID *uuid.UUID `gorm:"index:idx_outcome_event_id,where:outcome_event_id is not null;type:uuid"`
 
 	// enforce foreign keys
 	Session *Session `gorm:"constraint:OnDelete:CASCADE"`

@@ -161,7 +161,7 @@ func (gdb *gormdb) addSessionLogRecord(ctx context.Context, logr *scheme.Session
 func (gdb *gormdb) getSessionLogRecords(ctx context.Context, filter sdkservices.SessionLogRecordsFilter) (logs []scheme.SessionLogRecord, n int64, err error) {
 	sessionID := filter.SessionID.UUIDValue()
 
-	if err := gdb.writeTransaction(ctx, func(tx *gormdb) error {
+	if err := gdb.readTransaction(ctx, func(tx *gormdb) error {
 		q := tx.reader.Where("session_id = ?", sessionID)
 
 		if err := q.Model(&scheme.SessionLogRecord{}).Count(&n).Error; err != nil {
@@ -297,11 +297,14 @@ func (db *gormdb) AddSessionStopRequest(ctx context.Context, sessionID sdktypes.
 	return translateError(db.addSessionLogRecord(ctx, logr, stopSessionLogRecordType))
 }
 
-func (db *gormdb) AddSessionOutcome(ctx context.Context, sessionID sdktypes.SessionID, v sdktypes.Value) error {
-	logr, err := toSessionLogRecord(sessionID.UUIDValue(), sdktypes.NewOutcomeSessionLogRecord(kittehs.Now(), v))
+func (db *gormdb) AddSessionOutcome(ctx context.Context, sessionID sdktypes.SessionID, v sdktypes.Value, eid sdktypes.EventID) error {
+	logr, err := toSessionLogRecord(sessionID.UUIDValue(), sdktypes.NewOutcomeSessionLogRecord(kittehs.Now(), v, eid))
 	if err != nil {
 		return err
 	}
+
+	logr.OutcomeEventID = eid.UUIDValuePtr()
+
 	return translateError(db.addSessionLogRecord(ctx, logr, outcomeSessionLogRecordType))
 }
 
@@ -322,4 +325,34 @@ func (db *gormdb) GetSessionLog(ctx context.Context, filter sdkservices.SessionL
 	}
 
 	return &sdkservices.GetLogResults{Records: prs, PaginationResult: sdktypes.PaginationResult{TotalCount: n, NextPageToken: nextPageToken}}, err
+}
+
+func (db *gormdb) GetNextSessionOutcomeForEvent(ctx context.Context, eventID sdktypes.EventID, lastSeq uint64) (sdktypes.Value, sdktypes.SessionID, uint64, error) {
+	var lrs []scheme.SessionLogRecord
+
+	r := db.reader.
+		Where("outcome_event_id = ? AND type = ? AND seq > ?", eventID.UUIDValue(), outcomeSessionLogRecordType, lastSeq).
+		Order(clause.OrderByColumn{Column: clause.Column{Name: "seq"}}).
+		Select("session_id", "data", "seq").
+		Limit(1).
+		Find(&lrs)
+
+	if err := r.Error; err != nil {
+		return sdktypes.InvalidValue, sdktypes.InvalidSessionID, 0, translateError(err)
+	}
+
+	if len(lrs) == 0 {
+		return sdktypes.InvalidValue, sdktypes.InvalidSessionID, 0, nil
+	}
+
+	lr := lrs[0]
+
+	logr, err := scheme.ParseSessionLogRecord(lr)
+	if err != nil {
+		return sdktypes.InvalidValue, sdktypes.InvalidSessionID, 0, err
+	}
+
+	out, _ := logr.GetOutcome()
+	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](lr.SessionID)
+	return out, sid, lr.Seq, nil
 }

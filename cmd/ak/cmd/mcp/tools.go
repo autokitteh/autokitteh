@@ -1019,7 +1019,7 @@ var tools = []server.ServerTool{
 				return toolResultErrorf("%v", err)
 			}
 
-			return toolResultTextf("Event redispatched as event id %q, session ids: %q", resp.EventID, resp.SessionIDs)
+			return toolResultTextf("Event redispatched as event id %q, started session ids: %q, signaled session ids: %q", resp.EventID, resp.StartedSessionIDs, resp.SignaledSessionIDs)
 		},
 	},
 }

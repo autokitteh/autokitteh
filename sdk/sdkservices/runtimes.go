@@ -77,7 +77,7 @@ type RunCallbacks struct {
 	UnpublishStoreValue func(ctx context.Context, rid sdktypes.RunID, key string) error
 
 	// Outcome
-	Outcome func(ctx context.Context, rid sdktypes.RunID, v sdktypes.Value) error
+	Outcome func(ctx context.Context, rid sdktypes.RunID, v sdktypes.Value, eid sdktypes.EventID) error
 }
 
 type Run interface {

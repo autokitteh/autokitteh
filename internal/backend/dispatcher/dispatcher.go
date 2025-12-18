@@ -129,7 +129,7 @@ func (d *Dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *s
 		return nil, fmt.Errorf("waiting for workflow completion: %w", err)
 	}
 
-	return &sdkservices.DispatchResponse{EventID: eid, SessionIDs: out.Started}, nil
+	return &sdkservices.DispatchResponse{EventID: eid, StartedSessionIDs: out.Started, SignaledSessionIDs: out.Signaled}, nil
 }
 
 func (d *Dispatcher) Redispatch(ctx context.Context, eventID sdktypes.EventID, opts *sdkservices.DispatchOptions) (*sdkservices.DispatchResponse, error) {
