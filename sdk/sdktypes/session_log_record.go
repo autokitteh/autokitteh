@@ -67,12 +67,12 @@ func (s SessionLogRecord) GetState() SessionState {
 	return forceFromProto[SessionState](s.read().State)
 }
 
-func (s SessionLogRecord) GetOutcome() Value {
-	if m := s.read(); m.Outcome != nil && m.Outcome.Value != nil {
-		return kittehs.Must1(ValueFromProto(m.Outcome.Value))
+func (s SessionLogRecord) GetOutcome() (Value, EventID) {
+	if o := s.read().Outcome; o != nil {
+		return kittehs.Must1(ValueFromProto(o.Value)), kittehs.Must1(ParseEventID(o.EventId))
 	}
 
-	return InvalidValue
+	return InvalidValue, InvalidEventID
 }
 
 func (s SessionLogRecord) GetStopRequest() (string, bool) {
@@ -83,11 +83,12 @@ func (s SessionLogRecord) GetStopRequest() (string, bool) {
 	return "", false
 }
 
-func NewOutcomeSessionLogRecord(t time.Time, v Value) SessionLogRecord {
+func NewOutcomeSessionLogRecord(t time.Time, v Value, eid EventID) SessionLogRecord {
 	return forceFromProto[SessionLogRecord](&SessionLogRecordPB{
 		T: timestamppb.New(t),
 		Outcome: &sessionv1.SessionLogRecord_Outcome{
-			Value: v.ToProto(),
+			Value:   v.ToProto(),
+			EventId: eid.String(),
 		},
 	})
 }

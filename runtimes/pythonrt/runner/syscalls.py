@@ -127,15 +127,16 @@ class SysCalls:
             return None
 
         data = event.get("data")
-        only_data = AttrDict(data) if isinstance(data, dict) else data
+        data = AttrDict(data) if isinstance(data, dict) else data
 
-        if not full:
-            return only_data
-
-        return Event(
-            data=only_data,
-            event_type=event.get("event_type"),
-            event_id=event.get("event_id"),
+        return (
+            Event(
+                data=data,
+                event_type=event.get("type"),
+                event_id=event.get("id"),
+            )
+            if full
+            else data
         )
 
     def ak_unsubscribe(self, subscription_id):
@@ -260,10 +261,12 @@ class SysCalls:
     def ak_http_outcome(
         self,
         status_code: int = 200,
+        *,
         body: Any = None,
         json: Any = None,
         headers: dict[str, str] = {},
         more: bool = False,
+        event_id: str | None = None,
     ) -> None:
         out = {
             "status_code": status_code,
@@ -280,13 +283,14 @@ class SysCalls:
         if json is not None:
             out["json"] = json
 
-        self.ak_outcome(out)
+        self.ak_outcome(out, event_id=event_id)
 
-    def ak_outcome(self, v: Any) -> None:
+    def ak_outcome(self, v: Any, *, event_id: str | None = None) -> None:
         log.debug("ak_outcome: %r", v)
         req = pb.OutcomeRequest(
             runner_id=self.runner_id,
             value=values.wrap(v),
+            event_id=event_id or "",
         )
         call_grpc("outcome", self.worker.Outcome, req)
 

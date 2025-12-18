@@ -256,12 +256,14 @@ class StoreUnpublishResponse(_message.Message):
     def __init__(self, error: _Optional[str] = ...) -> None: ...
 
 class OutcomeRequest(_message.Message):
-    __slots__ = ["runner_id", "value"]
+    __slots__ = ["runner_id", "value", "event_id"]
     RUNNER_ID_FIELD_NUMBER: _ClassVar[int]
     VALUE_FIELD_NUMBER: _ClassVar[int]
+    EVENT_ID_FIELD_NUMBER: _ClassVar[int]
     runner_id: str
     value: _values_pb2.Value
-    def __init__(self, runner_id: _Optional[str] = ..., value: _Optional[_Union[_values_pb2.Value, _Mapping]] = ...) -> None: ...
+    event_id: str
+    def __init__(self, runner_id: _Optional[str] = ..., value: _Optional[_Union[_values_pb2.Value, _Mapping]] = ..., event_id: _Optional[str] = ...) -> None: ...
 
 class OutcomeResponse(_message.Message):
     __slots__ = ["error"]

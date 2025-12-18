@@ -105,9 +105,10 @@ type Shared interface {
 	UpdateSessionState(ctx context.Context, sessionID sdktypes.SessionID, state sdktypes.SessionState) error
 	AddSessionPrint(ctx context.Context, sessionID sdktypes.SessionID, v sdktypes.Value, callSeq uint32) error
 	AddSessionStopRequest(ctx context.Context, sessionID sdktypes.SessionID, reason string) error
-	AddSessionOutcome(ctx context.Context, sessionID sdktypes.SessionID, v sdktypes.Value) error
+	AddSessionOutcome(ctx context.Context, sessionID sdktypes.SessionID, v sdktypes.Value, eid sdktypes.EventID) error
 	ListSessions(ctx context.Context, f sdkservices.ListSessionsFilter) (*sdkservices.ListSessionResult, error)
 	DeleteSession(ctx context.Context, sessionID sdktypes.SessionID) error
+	GetNextSessionOutcomeForEvent(ctx context.Context, eventID sdktypes.EventID, lastSeq uint64) (sdktypes.Value, sdktypes.SessionID, uint64, error)
 
 	// -----------------------------------------------------------------------
 	// TODO(ENG-917): Do not expose scheme outside of DB.

@@ -78,9 +78,16 @@ export class DispatchResponse extends Message<DispatchResponse> {
   /**
    * only if wait
    *
-   * @generated from field: repeated string session_ids = 2;
+   * @generated from field: repeated string started_session_ids = 2;
    */
-  sessionIds: string[] = [];
+  startedSessionIds: string[] = [];
+
+  /**
+   * only if wait
+   *
+   * @generated from field: repeated string signaled_session_ids = 3;
+   */
+  signaledSessionIds: string[] = [];
 
   constructor(data?: PartialMessage<DispatchResponse>) {
     super();
@@ -91,7 +98,8 @@ export class DispatchResponse extends Message<DispatchResponse> {
   static readonly typeName = "autokitteh.dispatcher.v1.DispatchResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "event_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "session_ids", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 2, name: "started_session_ids", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 3, name: "signaled_session_ids", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DispatchResponse {
@@ -174,9 +182,16 @@ export class RedispatchResponse extends Message<RedispatchResponse> {
   /**
    * only if wait
    *
-   * @generated from field: repeated string session_ids = 2;
+   * @generated from field: repeated string started_session_ids = 2;
    */
-  sessionIds: string[] = [];
+  startedSessionIds: string[] = [];
+
+  /**
+   * only if wait
+   *
+   * @generated from field: repeated string signaled_session_ids = 3;
+   */
+  signaledSessionIds: string[] = [];
 
   constructor(data?: PartialMessage<RedispatchResponse>) {
     super();
@@ -187,7 +202,8 @@ export class RedispatchResponse extends Message<RedispatchResponse> {
   static readonly typeName = "autokitteh.dispatcher.v1.RedispatchResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "event_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "session_ids", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 2, name: "started_session_ids", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 3, name: "signaled_session_ids", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RedispatchResponse {

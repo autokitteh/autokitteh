@@ -155,7 +155,9 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("AutoKitteh-Event-ID", resp.EventID.String())
+	eventID := resp.EventID
+
+	w.Header().Set("AutoKitteh-Event-ID", eventID.String())
 	w.Header().Set("Cache-Control", "no-cache")
 
 	if !isSync {
@@ -163,33 +165,18 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.handleSyncResponse(ctx, w, resp.SessionIDs, sl)
-}
+	if len(resp.StartedSessionIDs)+len(resp.SignaledSessionIDs) == 0 {
+		sl.Warnw("no sessions were started or signaled for sync webhook", "event_id", eventID)
+		http.Error(w, "No sessions were started or signaled for sync webhook", http.StatusBadGateway)
+		return
+	}
 
-func (s *Service) handleSyncResponse(ctx context.Context, w http.ResponseWriter, sids []sdktypes.SessionID, sl *zap.SugaredLogger) {
 	w.Header().Set("Connection", "keep-alive")
 
-	if len(sids) == 0 {
-		sl.Warnw("no session was created for event")
-		http.Error(w, "No session was created for event", http.StatusBadGateway)
-		return
-	}
+	s.handleSyncResponse(ctx, sl, w, resp.EventID)
+}
 
-	if len(sids) > 1 {
-		sl.Warnw("multiple sessions were created for event", "session_ids", sids)
-		http.Error(w, "Multiple sessions were created for event", http.StatusBadGateway)
-		return
-	}
-
-	session, err := s.db.GetSession(ctx, sids[0])
-	if err != nil {
-		sl.Errorw("get session failed", "session_id", sids[0], "err", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("AutoKitteh-Session-ID", session.ID().String())
-
+func (s *Service) handleSyncResponse(ctx context.Context, sl *zap.SugaredLogger, w http.ResponseWriter, eventID sdktypes.EventID) {
 	if tmo := s.cfg.WebhookResponseTimeout; tmo != 0 {
 		var done context.CancelFunc
 		ctx, done = context.WithTimeout(ctx, tmo)
@@ -198,11 +185,13 @@ func (s *Service) handleSyncResponse(ctx context.Context, w http.ResponseWriter,
 
 	var (
 		firstOutcomeHandled bool
-		skip                int32 // no need to reprocess records we've already seen.
+		lastSeq             uint64
 	)
 
 	for {
-		if skip > 0 {
+		sl := sl.With("last_seq", lastSeq, "event_id", eventID)
+
+		if lastSeq > 0 {
 			// delay poll only after first iteration.
 
 			select {
@@ -222,69 +211,44 @@ func (s *Service) handleSyncResponse(ctx context.Context, w http.ResponseWriter,
 			}
 		}
 
-		log, err := s.db.GetSessionLog(
-			ctx,
-			sdkservices.SessionLogRecordsFilter{
-				SessionID: session.ID(),
-				Types:     sdktypes.OutcomeSessionLogRecordType | sdktypes.StateSessionLogRecordType,
-				PaginationRequest: sdktypes.PaginationRequest{
-					Ascending: true,
-					Skip:      skip,
-				},
-			},
+		var (
+			sid sdktypes.SessionID
+			err error
+			v   sdktypes.Value
 		)
-		if err != nil {
-			sl.Errorw("get session log failed", "err", err)
+
+		if v, sid, lastSeq, err = s.db.GetNextSessionOutcomeForEvent(ctx, eventID, lastSeq); err != nil {
+			sl.Errorw("failed to get next session outcome for event", "last_seq", lastSeq, "err", err)
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
 
-		for _, r := range log.Records {
-			skip++
-
-			if state := r.GetState(); state.IsValid() {
-				switch state.Type() {
-				case sdktypes.SessionStateTypeError:
-					sl.Warnw("session ended in error", "state", state)
-					w.WriteHeader(http.StatusBadGateway)
-
-				case sdktypes.SessionStateTypeStopped:
-					sl.Warnw("session was stopped before producing an outcome", "state", state)
-					w.WriteHeader(http.StatusBadGateway)
-
-				case sdktypes.SessionStateTypeCompleted:
-					w.WriteHeader(http.StatusOK)
-
-				default:
-					// not final
-					continue
-				}
-
-				return
-			}
-
-			if v := r.GetOutcome(); v.IsValid() {
-				outcome, err := parseOutcomeValue(v)
-				if err != nil {
-					sl.Errorw("failed to parse outcome value", "err", err)
-					http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-					return
-				}
-
-				more, err := s.writeOutcome(w, outcome, firstOutcomeHandled)
-				if err != nil {
-					sl.Errorw("failed to handle outcome", "err", err)
-					http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-					return
-				}
-
-				if !more {
-					return
-				}
-
-				firstOutcomeHandled = true
-			}
+		if !v.IsValid() {
+			continue
 		}
+
+		sl.Debugw("got session outcome for event", "session_id", sid)
+
+		outcome, err := parseOutcomeValue(v)
+		if err != nil {
+			sl.Errorw("failed to parse outcome value", "err", err)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+
+		more, err := s.writeOutcome(w, outcome, firstOutcomeHandled)
+		if err != nil {
+			sl.Errorw("failed to handle outcome", "err", err)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+
+		if !more {
+			sl.Debugw("all outcomes handled for event", "event_id", eventID)
+			return
+		}
+
+		firstOutcomeHandled = true
 	}
 }
 

@@ -21,7 +21,8 @@ message DispatchRequest {
 
 message DispatchResponse {
   string event_id = 1 [(buf.validate.field).string.min_len = 1];
-  repeated string session_ids = 2 [(buf.validate.field).repeated.items.string.min_len = 1]; // only if wait
+  repeated string started_session_ids = 2 [(buf.validate.field).repeated.items.string.min_len = 1]; // only if wait
+  repeated string signaled_session_ids = 3 [(buf.validate.field).repeated.items.string.min_len = 1]; // only if wait
 }
 
 message RedispatchRequest {
@@ -32,7 +33,8 @@ message RedispatchRequest {
 
 message RedispatchResponse {
   string event_id = 1 [(buf.validate.field).string.min_len = 1];
-  repeated string session_ids = 2 [(buf.validate.field).repeated.items.string.min_len = 1]; // only if wait
+  repeated string started_session_ids = 2 [(buf.validate.field).repeated.items.string.min_len = 1]; // only if wait
+  repeated string signaled_session_ids = 3 [(buf.validate.field).repeated.items.string.min_len = 1]; // only if wait
 }
 
 service DispatcherService {

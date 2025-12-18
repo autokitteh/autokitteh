@@ -171,10 +171,12 @@ class SessionLogRecord(_message.Message):
         reason: str
         def __init__(self, reason: _Optional[str] = ...) -> None: ...
     class Outcome(_message.Message):
-        __slots__ = ["value"]
+        __slots__ = ["value", "event_id"]
         VALUE_FIELD_NUMBER: _ClassVar[int]
+        EVENT_ID_FIELD_NUMBER: _ClassVar[int]
         value: _values_pb2.Value
-        def __init__(self, value: _Optional[_Union[_values_pb2.Value, _Mapping]] = ...) -> None: ...
+        event_id: str
+        def __init__(self, value: _Optional[_Union[_values_pb2.Value, _Mapping]] = ..., event_id: _Optional[str] = ...) -> None: ...
     T_FIELD_NUMBER: _ClassVar[int]
     PROCESS_ID_FIELD_NUMBER: _ClassVar[int]
     PRINT_FIELD_NUMBER: _ClassVar[int]

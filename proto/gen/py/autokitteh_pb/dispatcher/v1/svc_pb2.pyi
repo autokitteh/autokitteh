@@ -20,12 +20,14 @@ class DispatchRequest(_message.Message):
     def __init__(self, event: _Optional[_Union[_event_pb2.Event, _Mapping]] = ..., deployment_id: _Optional[str] = ..., project: _Optional[str] = ..., wait: bool = ...) -> None: ...
 
 class DispatchResponse(_message.Message):
-    __slots__ = ["event_id", "session_ids"]
+    __slots__ = ["event_id", "started_session_ids", "signaled_session_ids"]
     EVENT_ID_FIELD_NUMBER: _ClassVar[int]
-    SESSION_IDS_FIELD_NUMBER: _ClassVar[int]
+    STARTED_SESSION_IDS_FIELD_NUMBER: _ClassVar[int]
+    SIGNALED_SESSION_IDS_FIELD_NUMBER: _ClassVar[int]
     event_id: str
-    session_ids: _containers.RepeatedScalarFieldContainer[str]
-    def __init__(self, event_id: _Optional[str] = ..., session_ids: _Optional[_Iterable[str]] = ...) -> None: ...
+    started_session_ids: _containers.RepeatedScalarFieldContainer[str]
+    signaled_session_ids: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, event_id: _Optional[str] = ..., started_session_ids: _Optional[_Iterable[str]] = ..., signaled_session_ids: _Optional[_Iterable[str]] = ...) -> None: ...
 
 class RedispatchRequest(_message.Message):
     __slots__ = ["event_id", "deployment_id", "wait"]
@@ -38,9 +40,11 @@ class RedispatchRequest(_message.Message):
     def __init__(self, event_id: _Optional[str] = ..., deployment_id: _Optional[str] = ..., wait: bool = ...) -> None: ...
 
 class RedispatchResponse(_message.Message):
-    __slots__ = ["event_id", "session_ids"]
+    __slots__ = ["event_id", "started_session_ids", "signaled_session_ids"]
     EVENT_ID_FIELD_NUMBER: _ClassVar[int]
-    SESSION_IDS_FIELD_NUMBER: _ClassVar[int]
+    STARTED_SESSION_IDS_FIELD_NUMBER: _ClassVar[int]
+    SIGNALED_SESSION_IDS_FIELD_NUMBER: _ClassVar[int]
     event_id: str
-    session_ids: _containers.RepeatedScalarFieldContainer[str]
-    def __init__(self, event_id: _Optional[str] = ..., session_ids: _Optional[_Iterable[str]] = ...) -> None: ...
+    started_session_ids: _containers.RepeatedScalarFieldContainer[str]
+    signaled_session_ids: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, event_id: _Optional[str] = ..., started_session_ids: _Optional[_Iterable[str]] = ..., signaled_session_ids: _Optional[_Iterable[str]] = ...) -> None: ...

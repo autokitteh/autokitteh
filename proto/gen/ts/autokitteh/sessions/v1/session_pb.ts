@@ -854,6 +854,13 @@ export class SessionLogRecord_Outcome extends Message<SessionLogRecord_Outcome> 
    */
   value?: Value;
 
+  /**
+   * which event caused this outcome to be recorded.
+   *
+   * @generated from field: string event_id = 2;
+   */
+  eventId = "";
+
   constructor(data?: PartialMessage<SessionLogRecord_Outcome>) {
     super();
     proto3.util.initPartial(data, this);
@@ -863,6 +870,7 @@ export class SessionLogRecord_Outcome extends Message<SessionLogRecord_Outcome> 
   static readonly typeName = "autokitteh.sessions.v1.SessionLogRecord.Outcome";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "value", kind: "message", T: Value },
+    { no: 2, name: "event_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SessionLogRecord_Outcome {

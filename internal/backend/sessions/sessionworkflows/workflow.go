@@ -149,19 +149,23 @@ func (w *sessionWorkflow) load(ctx context.Context, _ sdktypes.RunID, path strin
 	return vs, nil
 }
 
-func (w *sessionWorkflow) outcome(wctx workflow.Context) func(ctx context.Context, runID sdktypes.RunID, v sdktypes.Value) error {
-	return func(ctx context.Context, runID sdktypes.RunID, v sdktypes.Value) error {
+func (w *sessionWorkflow) outcome(wctx workflow.Context) func(ctx context.Context, runID sdktypes.RunID, v sdktypes.Value, eid sdktypes.EventID) error {
+	return func(ctx context.Context, runID sdktypes.RunID, v sdktypes.Value, eid sdktypes.EventID) error {
 		ctx, span := w.startCallbackSpan(ctx, "http_response")
 		defer span.End()
 
 		isActivity := activity.IsActivity(ctx)
 
-		w.l.Debug("http_response", zap.Any("run_id", runID), zap.Bool("is_activity", isActivity))
+		w.l.Debug("http_response", zap.Any("run_id", runID), zap.Bool("is_activity", isActivity), zap.Any("event_id", eid))
+
+		if !eid.IsValid() {
+			eid = w.data.Event.ID()
+		}
 
 		if isActivity {
-			return w.ws.outcomeActivity(ctx, w.data.Session.ID(), v)
+			return w.ws.outcomeActivity(ctx, w.data.Session.ID(), v, eid)
 		} else {
-			return workflow.ExecuteActivity(wctx, outcomeActivityName, w.data.Session.ID(), v).Get(wctx, nil)
+			return workflow.ExecuteActivity(wctx, outcomeActivityName, w.data.Session.ID(), v, eid).Get(wctx, nil)
 		}
 	}
 }
