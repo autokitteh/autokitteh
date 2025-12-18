@@ -30,7 +30,8 @@ var (
 
 	DefaultOrg = sdktypes.NewOrg().
 			WithID(oid("org_30rg0000000000000000000002")).
-			WithDisplayName("Default Org")
+			WithDisplayName("Default Org").
+			WithName(sdktypes.NewSymbol("default"))
 )
 
 func IsSystemUserID(id sdktypes.UserID) bool { return id == SystemUser.ID() }
