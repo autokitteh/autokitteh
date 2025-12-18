@@ -24,7 +24,7 @@ func (gdb *gormdb) getProjectOrg(ctx context.Context, id uuidValuer) (sdktypes.O
 		First(&p).
 		Error
 	if err != nil {
-		return sdktypes.InvalidOrgID, translateError(err)
+		return sdktypes.InvalidOrgID, translateError(gdb.z, "get_project_org", err)
 	}
 
 	return sdktypes.NewIDFromUUID[sdktypes.OrgID](p.OrgID), nil
@@ -48,7 +48,7 @@ func (gdb *gormdb) getRecordProjectOwner(
 		First(&p).
 		Error
 	if err != nil {
-		return sdktypes.InvalidOrgID, translateError(err)
+		return sdktypes.InvalidOrgID, translateError(gdb.z, "get_record_project_owner", err)
 	}
 
 	return sdktypes.NewIDFromUUID[sdktypes.OrgID](p.Project.OrgID), nil
@@ -136,7 +136,7 @@ func (gdb *gormdb) GetProjectIDOf(ctx context.Context, id sdktypes.ID) (sdktypes
 		First(&p).
 		Error
 	if err != nil {
-		return sdktypes.InvalidProjectID, translateError(err)
+		return sdktypes.InvalidProjectID, translateError(gdb.z, "get_project_id_of", err)
 	}
 
 	return sdktypes.NewIDFromUUID[sdktypes.ProjectID](p.ProjectID), nil

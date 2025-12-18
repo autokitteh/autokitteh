@@ -53,17 +53,17 @@ func (db *gormdb) SaveBuild(ctx context.Context, build sdktypes.Build, data []by
 		Status:    int32(build.Status().ToProto()),
 	}
 
-	return translateError(db.saveBuild(ctx, &b))
+	return translateError(db.z, "save_build", db.saveBuild(ctx, &b))
 }
 
 func (db *gormdb) DeleteBuild(ctx context.Context, buildID sdktypes.BuildID) error {
-	return translateError(db.deleteBuild(ctx, buildID.UUIDValue()))
+	return translateError(db.z, "delete_build", db.deleteBuild(ctx, buildID.UUIDValue()))
 }
 
 func (db *gormdb) GetBuild(ctx context.Context, buildID sdktypes.BuildID) (sdktypes.Build, error) {
 	b, err := db.getBuild(ctx, buildID.UUIDValue())
 	if b == nil || err != nil {
-		return sdktypes.InvalidBuild, translateError(err)
+		return sdktypes.InvalidBuild, translateError(db.z, "get_build", err)
 	}
 	return scheme.ParseBuild(*b) // TODO: get and list returns different errors due to transform
 }
@@ -71,7 +71,7 @@ func (db *gormdb) GetBuild(ctx context.Context, buildID sdktypes.BuildID) (sdkty
 func (db *gormdb) GetBuildData(ctx context.Context, buildID sdktypes.BuildID) ([]byte, error) {
 	b, err := db.getBuild(ctx, buildID.UUIDValue())
 	if b == nil || err != nil {
-		return nil, translateError(err)
+		return nil, translateError(db.z, "get_build_data", err)
 	}
 	return b.Data, nil
 }
@@ -79,7 +79,7 @@ func (db *gormdb) GetBuildData(ctx context.Context, buildID sdktypes.BuildID) ([
 func (db *gormdb) ListBuilds(ctx context.Context, filter sdkservices.ListBuildsFilter) ([]sdktypes.Build, error) {
 	builds, err := db.listBuilds(ctx, filter)
 	if builds == nil || err != nil {
-		return nil, translateError(err)
+		return nil, translateError(db.z, "list_builds", err)
 	}
 
 	slices.Reverse(builds)
