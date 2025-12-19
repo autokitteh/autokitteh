@@ -203,6 +203,12 @@ func planConnections(ctx context.Context, mconns []*Connection, client sdkservic
 			return nil, fmt.Errorf("list connections: %w", err)
 		}
 
+		// Filter to only include connections that belong specifically to this project.
+		// Exclude global connections (project_id IS NULL) that may be returned by the List API.
+		conns = kittehs.Filter(conns, func(c sdktypes.Connection) bool {
+			return c.ProjectID().IsValid() && c.ProjectID() == pid
+		})
+
 		log.Printf("found %d connections", len(conns))
 	}
 
