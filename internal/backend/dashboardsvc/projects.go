@@ -124,7 +124,7 @@ func (s *svc) project(w http.ResponseWriter, r *http.Request) {
 		Deployments   list
 		ID            string
 		ResourcesHash string
-		Resources     template.HTML
+		Resources     string
 	}{
 		Title:         "Project: " + p.Name().String(),
 		Name:          p.Name().String(),
@@ -133,7 +133,7 @@ func (s *svc) project(w http.ResponseWriter, r *http.Request) {
 		Triggers:      ts,
 		ID:            p.ID().String(),
 		ResourcesHash: kittehs.Must1(kittehs.SHA256HashMap(rscs)),
-		Resources:     template.HTML(txtar.Format(&a)),
+		Resources:     string(txtar.Format(&a)),
 		Deployments:   ds,
 		Sessions:      sessions,
 		Events:        events,
