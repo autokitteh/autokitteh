@@ -342,7 +342,8 @@ func (db *gormdb) GetNextSessionOutcomeForEvent(ctx context.Context, eventID sdk
 	}
 
 	if len(lrs) == 0 {
-		return sdktypes.InvalidValue, sdktypes.InvalidSessionID, 0, nil
+		// Return lastSeq to make using more ergonomic.
+		return sdktypes.InvalidValue, sdktypes.InvalidSessionID, lastSeq, nil
 	}
 
 	lr := lrs[0]
