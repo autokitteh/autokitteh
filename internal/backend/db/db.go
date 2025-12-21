@@ -108,6 +108,8 @@ type Shared interface {
 	AddSessionOutcome(ctx context.Context, sessionID sdktypes.SessionID, v sdktypes.Value, eid sdktypes.EventID) error
 	ListSessions(ctx context.Context, f sdkservices.ListSessionsFilter) (*sdkservices.ListSessionResult, error)
 	DeleteSession(ctx context.Context, sessionID sdktypes.SessionID) error
+
+	// If no new outcome is available, returns (InvalidValue, InvalidSessionID, lastSeq, nil).
 	GetNextSessionOutcomeForEvent(ctx context.Context, eventID sdktypes.EventID, lastSeq uint64) (sdktypes.Value, sdktypes.SessionID, uint64, error)
 
 	// -----------------------------------------------------------------------
