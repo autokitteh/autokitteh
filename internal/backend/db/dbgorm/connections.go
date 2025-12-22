@@ -8,6 +8,7 @@ import (
 	"maps"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/db/dbgorm/scheme"
@@ -37,15 +38,18 @@ func (gdb *gormdb) createConnection(ctx context.Context, conn *scheme.Connection
 
 		if conn.ProjectID == nil {
 			if len(conflicts) > 0 {
-				return errors.New("connection name already in use in this organization")
+				gdb.z.Debug("duplicate org level connection name " + conn.Name + " for org_id: " + conn.OrgID.String())
+				return gorm.ErrDuplicatedKey
 			}
 		} else {
 			for _, conflict := range conflicts {
 				if conflict.ProjectID == nil {
-					return errors.New("connection name already used at organization level")
+					gdb.z.Debug("duplicate org/project level connection name " + conn.Name + " for org_id: " + conn.OrgID.String())
+					return gorm.ErrDuplicatedKey
 				}
 				if *conflict.ProjectID == *conn.ProjectID {
-					return errors.New("connection name already exists in this project")
+					gdb.z.Debug("duplicate project level connection name " + conn.Name + " for org_id: " + conn.OrgID.String() + " project_id: " + conn.ProjectID.String())
+					return gorm.ErrDuplicatedKey
 				}
 			}
 		}
@@ -142,13 +146,15 @@ func (gdb *gormdb) updateConnection(ctx context.Context, id uuid.UUID, data map[
 		if conn.ProjectID == nil {
 			// this connection is org connection, can't have any other conflict
 			if len(connectionsWithSameName) > 0 {
-				return errors.New("duplicate name")
+				gdb.z.Debug("duplicate org level connection name " + conn.Name + " for org_id: " + conn.OrgID.String())
+				return gorm.ErrDuplicatedKey
 			}
 		} else {
 			// project level connection
 			for _, otherConnectionWithSamename := range connectionsWithSameName {
 				if *otherConnectionWithSamename.ProjectID == *conn.ProjectID {
-					return errors.New("duplicate name in same project")
+					gdb.z.Debug("duplicate project level connection name " + conn.Name + " for org_id: " + conn.OrgID.String() + " project_id: " + conn.ProjectID.String())
+					return gorm.ErrDuplicatedKey
 				}
 			}
 		}
