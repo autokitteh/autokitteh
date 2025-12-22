@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"maps"
 
 	"github.com/google/uuid"
@@ -17,6 +18,37 @@ import (
 
 func (gdb *gormdb) createConnection(ctx context.Context, conn *scheme.Connection) error {
 	return gdb.writeTransaction(ctx, func(tx *gormdb) error {
+		if gdb.cfg.Type == "postgres" {
+			h := fnv.New64a()
+			h.Write(conn.OrgID[:])
+			h.Write([]byte(conn.Name))
+			lockID := int64(h.Sum64())
+
+			if err := tx.writer.Exec("SELECT pg_advisory_xact_lock(?)", lockID).Error; err != nil {
+				return err
+			}
+
+			var conflicts []scheme.Connection
+			query := tx.writer.Where("org_id = ? AND name = ? AND deleted_at IS NULL", conn.OrgID, conn.Name)
+			if err := query.Find(&conflicts).Error; err != nil {
+				return err
+			}
+
+			if conn.ProjectID == nil {
+				if len(conflicts) > 0 {
+					return errors.New("connection name already in use in this organization")
+				}
+			} else {
+				for _, conflict := range conflicts {
+					if conflict.ProjectID == nil {
+						return errors.New("connection name already used at organization level")
+					}
+					if *conflict.ProjectID == *conn.ProjectID {
+						return errors.New("connection name already exists in this project")
+					}
+				}
+			}
+		}
 		return tx.writer.Create(conn).Error
 	})
 }
@@ -70,7 +102,48 @@ func (gdb *gormdb) deleteConnection(ctx context.Context, id uuid.UUID) error {
 }
 
 func (gdb *gormdb) updateConnection(ctx context.Context, id uuid.UUID, data map[string]any) error {
-	return gdb.writer.WithContext(ctx).Model(&scheme.Connection{ConnectionID: id}).Updates(data).Error
+	if _, exists := data["name"]; !exists {
+		return gdb.writer.WithContext(ctx).Model(&scheme.Connection{ConnectionID: id}).Updates(data).Error
+	}
+
+	return gdb.writeTransaction(ctx, func(tx *gormdb) error {
+		if gdb.cfg.Type == "postgres" {
+			conn, err := gdb.getConnection(ctx, id)
+			if err != nil {
+				return err
+			}
+
+			h := fnv.New64a()
+			h.Write(conn.OrgID[:])
+			h.Write([]byte(conn.Name))
+			lockID := int64(h.Sum64())
+
+			if err := tx.writer.Exec("SELECT pg_advisory_xact_lock(?)", lockID).Error; err != nil {
+				return err
+			}
+
+			var connectionsWithSameName []scheme.Connection
+			query := tx.writer.Where("org_id = ? AND name = ? AND deleted_at IS NULL", conn.OrgID, data["name"])
+			if err := query.Find(&connectionsWithSameName).Error; err != nil {
+				return err
+			}
+
+			if conn.ProjectID == nil {
+				// this connection is org connection, can't have any other conflict
+				if len(connectionsWithSameName) > 0 {
+					return errors.New("duplicate name")
+				}
+			} else {
+				// project level connection
+				for _, otherConnectionWithSamename := range connectionsWithSameName {
+					if otherConnectionWithSamename.ProjectID == conn.ProjectID {
+						return errors.New("duplicate name in same project")
+					}
+				}
+			}
+		}
+		return gdb.writer.WithContext(ctx).Model(&scheme.Connection{ConnectionID: id}).Updates(data).Error
+	})
 }
 
 func (gdb *gormdb) getConnection(ctx context.Context, id uuid.UUID) (*scheme.Connection, error) {
