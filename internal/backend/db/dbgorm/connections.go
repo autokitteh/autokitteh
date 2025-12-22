@@ -147,7 +147,7 @@ func (gdb *gormdb) updateConnection(ctx context.Context, id uuid.UUID, data map[
 		} else {
 			// project level connection
 			for _, otherConnectionWithSamename := range connectionsWithSameName {
-				if otherConnectionWithSamename.ProjectID == conn.ProjectID {
+				if *otherConnectionWithSamename.ProjectID == *conn.ProjectID {
 					return errors.New("duplicate name in same project")
 				}
 			}
