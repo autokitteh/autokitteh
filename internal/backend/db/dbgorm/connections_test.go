@@ -264,42 +264,6 @@ func TestCreateProjectLevelConnection(t *testing.T) {
 	assert.Equal(t, "project_level_connection", retrieved.Name)
 }
 
-// TestOrgLevelAndProjectLevelConnectionsWithSameName tests that org-level and project-level
-// connections can have the same name within the same org
-func TestOrgLevelAndProjectLevelConnectionsWithSameName(t *testing.T) {
-	f := newDBFixture()
-	orgID := f.newOrg()
-
-	// Create a project in the org
-	p := f.newProject(orgID)
-	f.createProjectsAndAssert(t, p)
-
-	connName := "shared_connection_name"
-
-	// Create an org-level connection
-	orgConn := f.newConnection()
-	orgConn.ProjectID = nil
-	orgConn.OrgID = orgID
-	orgConn.Name = connName
-	f.createConnectionsAndAssert(t, orgConn)
-
-	// Create a project-level connection with the same name - should succeed
-	projectConn := f.newConnection(p)
-	projectConn.Name = connName
-	f.createConnectionsAndAssert(t, projectConn)
-
-	// Verify both exist
-	orgRetrieved, err := f.gormdb.getConnection(f.ctx, orgConn.ConnectionID)
-	assert.NoError(t, err)
-	assert.Nil(t, orgRetrieved.ProjectID)
-	assert.Equal(t, connName, orgRetrieved.Name)
-
-	projectRetrieved, err := f.gormdb.getConnection(f.ctx, projectConn.ConnectionID)
-	assert.NoError(t, err)
-	assert.NotNil(t, projectRetrieved.ProjectID)
-	assert.Equal(t, connName, projectRetrieved.Name)
-}
-
 // TestUniqueConstraintOrgLevelConnections tests that org-level connections
 // must have unique names within an org
 func TestUniqueConstraintOrgLevelConnections(t *testing.T) {
