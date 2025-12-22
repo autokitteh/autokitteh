@@ -25,7 +25,7 @@ func RedirectToLogin(w http.ResponseWriter, r *http.Request, src *url.URL, cfg r
 			Domain:   cfg.domain,
 			Secure:   cfg.secure,
 			SameSite: cfg.sameSite,
-			HttpOnly: true,
+			HttpOnly: false,
 			MaxAge:   cookieMaxAge,
 		})
 	}
