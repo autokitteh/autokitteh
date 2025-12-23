@@ -9,6 +9,9 @@ ak manifest apply manifest.yaml
 return code == 0
 output equals file second.txt
 
+ak var set shhh hiss -p my_project --secret
+return code == 0
+
 ak manifest apply manifest.yaml --skip-existing-secrets
 return code == 0
 output equals file third.txt
@@ -38,14 +41,14 @@ project:
 -- second.txt --
 [plan] project "my_project": found, id="prj_00000000000000000000000001"
 [plan] project "my_project": no changes needed
-[plan] var "my_project/shhh": value differs but one of them is secret, skipping
-[plan] project "my_project": found 0 connections
-[plan] project "my_project": found 0 triggers
-
--- third.txt --
-[plan] project "my_project": found, id="prj_00000000000000000000000001"
-[plan] project "my_project": no changes needed
 [plan] var "my_project/shhh": differs, will set
 [plan] project "my_project": found 0 connections
 [plan] project "my_project": found 0 triggers
 [exec] set_var "my_project/shhh": prj_00000000000000000000000001 updated
+
+-- third.txt --
+[plan] project "my_project": found, id="prj_00000000000000000000000001"
+[plan] project "my_project": no changes needed
+[plan] var "my_project/shhh": value differs but one of them is secret, skipping
+[plan] project "my_project": found 0 connections
+[plan] project "my_project": found 0 triggers
