@@ -4,7 +4,9 @@ import (
 	"archive/tar"
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"embed"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -14,16 +16,17 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"syscall"
 
 	"go.jetify.com/typeid"
-	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapio"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/telemetry"
+	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -36,7 +39,48 @@ var (
 
 	//go:embed runner/pyproject.toml
 	pyProjectTOML []byte
+
+	// Used to verify if installed venv matches current SDK.
+	baseVenvInstallHash []byte
 )
+
+func init() {
+	m := kittehs.Must1(kittehs.FSToMap(pysdk))
+
+	h := sha256.New()
+
+	keys := []string{"py-sdk/pyproject.toml"}
+
+	for k := range m {
+		if !strings.HasPrefix(k, "py-sdk/autokitteh") || !strings.HasSuffix(k, ".py") {
+			continue
+		}
+
+		keys = append(keys, k)
+	}
+
+	// Make iteration order stable.
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		h.Write([]byte(k))
+		h.Write([]byte{1})
+		h.Write(m[k])
+		h.Write([]byte{2})
+	}
+
+	baseVenvInstallHash = h.Sum(nil)
+
+	fmt.Println("base venv install hash:", hex.EncodeToString(baseVenvInstallHash))
+}
+
+func venvInstallHash(reqs string) string {
+	h := sha256.New()
+	h.Write(baseVenvInstallHash)
+	h.Write([]byte{3})
+	h.Write([]byte(reqs))
+	return hex.EncodeToString(h.Sum(nil))
+}
 
 type LocalPython struct {
 	log                *zap.Logger
@@ -143,9 +187,7 @@ func (r *LocalPython) Start(ctx context.Context, pyExe string, tarData []byte, e
 	r.log.Info("python root dir", zap.String("path", r.runnerDir))
 
 	_, cpSpan := telemetry.T().Start(ctx, "LocalPython.Start.copyFS")
-	wr, err := copyFS(runnerPyCode, r.runnerDir)
-	cpSpan.SetAttributes(attribute.Int64("written", wr))
-	if err != nil {
+	if err := os.CopyFS(r.runnerDir, runnerPyCode); err != nil {
 		cpSpan.End()
 		return fmt.Errorf("copy runner code - %w", err)
 	}
@@ -235,50 +277,6 @@ func createTar(fs fs.FS) ([]byte, error) {
 
 	w.Close()
 	return buf.Bytes(), nil
-}
-
-// Copy fs to file so Python can inspect
-// TODO: Once os.CopyFS makes it out we can remove this
-// https://github.com/golang/go/issues/62484
-func copyFS(fsys fs.FS, root string) (acc int64, err error) {
-	err = fs.WalkDir(fsys, ".", func(name string, entry fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if !entry.Type().IsRegular() {
-			return nil
-		}
-
-		dest := path.Join(root, name)
-		dirName := path.Dir(dest)
-		if err := os.MkdirAll(dirName, 0o755); err != nil {
-			return err
-		}
-
-		r, err := fsys.Open(name)
-		if err != nil {
-			return err
-		}
-		defer r.Close()
-
-		w, err := os.Create(dest)
-		if err != nil {
-			return err
-		}
-		defer w.Close()
-
-		written, err := io.Copy(w, r)
-		if err != nil {
-			return err
-		}
-
-		acc += written
-
-		return nil
-	})
-
-	return
 }
 
 type Version struct {
@@ -419,7 +417,7 @@ func createVEnv(ctx context.Context, log *zap.Logger, pyExe string, venvPath, re
 		return fmt.Errorf("install dependencies from %q: %w", file.Name(), err)
 	}
 
-	if _, err := copyFS(pysdk, tmpDir); err != nil {
+	if err := os.CopyFS(tmpDir, pysdk); err != nil {
 		return err
 	}
 
@@ -438,9 +436,13 @@ func createVEnv(ctx context.Context, log *zap.Logger, pyExe string, venvPath, re
 		}
 	}
 
-	if err := os.WriteFile(path.Join(venvPath, ".complete"), []byte("meow"), 0o644); err != nil {
+	hash := venvInstallHash(reqs)
+
+	if err := os.WriteFile(path.Join(venvPath, ".complete"), []byte(hash), 0o644); err != nil {
 		return fmt.Errorf("mark venv complete: %w", err)
 	}
+
+	log.Debug("venv install hash", zap.String("hash", hash))
 
 	return nil
 }
