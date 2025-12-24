@@ -3,12 +3,13 @@ package manifest
 import "go.autokitteh.dev/autokitteh/sdk/sdktypes"
 
 type opts struct {
-	fromScratch      bool
-	log              Log
-	projectName      string
-	oid              sdktypes.OrgID
-	rmUnusedConnVars bool
-	version          string
+	fromScratch         bool
+	log                 Log
+	projectName         string
+	oid                 sdktypes.OrgID
+	rmUnusedConnVars    bool
+	version             string
+	skipExistingSecrets bool
 }
 
 func applyOptions(optfns []Option) (opts opts) {
@@ -25,5 +26,6 @@ func WithRemoveUnusedConnFlags(s bool) Option { return func(o *opts) { o.rmUnuse
 func WithLogger(l Log) Option                 { return func(o *opts) { o.log = l } }
 func WithProjectName(n string) Option         { return func(o *opts) { o.projectName = n } }
 func WithOrgID(id sdktypes.OrgID) Option      { return func(o *opts) { o.oid = id } }
+func WithSkipExistingSecrets(b bool) Option   { return func(o *opts) { o.skipExistingSecrets = b } }
 
 func withVersion(v string) Option { return func(o *opts) { o.version = v } }
