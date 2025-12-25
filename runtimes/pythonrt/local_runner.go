@@ -70,8 +70,6 @@ func init() {
 	}
 
 	baseVenvInstallHash = h.Sum(nil)
-
-	fmt.Println("base venv install hash:", hex.EncodeToString(baseVenvInstallHash))
 }
 
 func venvInstallHash(reqs string) string {
