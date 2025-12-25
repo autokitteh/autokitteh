@@ -28,18 +28,37 @@ import (
 type Deps struct {
 	fx.In
 
-	Muxes    *muxes.Muxes
-	L        *zap.Logger
-	Cfg      *Config
-	Sessions authsessions.Store
-	Tokens   authtokens.Tokens
-	Users    sdkservices.Users
+	Muxes      *muxes.Muxes
+	L          *zap.Logger
+	Cfg        *Config
+	Sessions   authsessions.Store
+	Tokens     authtokens.Tokens
+	Users      sdkservices.Users
+	ServiceURL string `optional:"true"`
 }
 
-type svc struct{ Deps }
+type svc struct {
+	Deps
+	redirectCfg redirectConfig
+}
 
 func Init(deps Deps) error {
-	svc := &svc{Deps: deps}
+	// Create redirect cookie config from login config to ensure cookies
+	// survive OAuth redirects. Without proper SameSite settings, the redirect
+	// cookie can be lost during third-party OAuth flows.
+	domain := deps.Cfg.CookieDomain
+	if len(domain) > 0 && domain[0] != '.' {
+		domain = "." + domain
+	}
+
+	svc := &svc{
+		Deps: deps,
+		redirectCfg: redirectConfig{
+			domain:   domain,
+			secure:   deps.Cfg.SecureCookie,
+			sameSite: deps.Cfg.CookieSameSite,
+		},
+	}
 	return svc.registerRoutes(deps.Muxes)
 }
 
@@ -73,7 +92,13 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 			return errors.New("cannot enable descope with other providers enabled")
 		}
 
-		if err := registerDescopeRoutes(muxes.NoAuth, a.Cfg.Descope, a.newSuccessLoginHandler); err != nil {
+		serviceURL := a.ServiceURL
+		if serviceURL == "" {
+			// Fallback: use request host if service URL not configured
+			serviceURL = ""
+		}
+
+		if err := registerDescopeRoutes(muxes.NoAuth, a.Cfg.Descope, a.newSuccessLoginHandler, serviceURL); err != nil {
 			return err
 		}
 
@@ -113,7 +138,7 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 			RawQuery: "p=" + p,
 		}
 
-		RedirectToLogin(w, r, url)
+		RedirectToLogin(w, r, url, a.redirectCfg)
 	})
 
 	muxes.Auth.HandleFunc("/auth/finish-cli-login", func(w http.ResponseWriter, r *http.Request) {
@@ -139,7 +164,7 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 	})
 
 	muxes.NoAuth.HandleFunc("/auth/vscode-login", func(w http.ResponseWriter, r *http.Request) {
-		RedirectToLogin(w, r, &url.URL{Path: "/auth/finish-vscode-login"})
+		RedirectToLogin(w, r, &url.URL{Path: "/auth/finish-vscode-login"}, a.redirectCfg)
 	})
 
 	muxes.Auth.HandleFunc("/auth/finish-vscode-login", func(w http.ResponseWriter, r *http.Request) {
