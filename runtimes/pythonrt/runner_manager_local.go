@@ -316,13 +316,13 @@ func ensureVEnv(ctx context.Context, log *zap.Logger, reqs, pyExe string) (pyExe
 				return
 			}
 
-			log.Warn("venv .complete hash mismatch", zap.String("have", hash), zap.String("want", want))
+			log.Warn("venv .complete hash mismatch", zap.String("want", want))
 		}
 
 		log.Info("removing existing venv to recreate")
 
 		if err = os.RemoveAll(venvPath); err != nil {
-			err = fmt.Errorf("clean user dir %q - %w", venvPath, err)
+			err = fmt.Errorf("clean venv dir %q - %w", venvPath, err)
 			return
 		}
 	} else {

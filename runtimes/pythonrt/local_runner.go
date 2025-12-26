@@ -63,9 +63,14 @@ func init() {
 	sort.Strings(keys)
 
 	for _, k := range keys {
+		v, ok := m[k]
+		if !ok {
+			panic("missing key in pysdk map: " + k)
+		}
+
 		h.Write([]byte(k))
 		h.Write([]byte{1})
-		h.Write(m[k])
+		h.Write(v)
 		h.Write([]byte{2})
 	}
 
