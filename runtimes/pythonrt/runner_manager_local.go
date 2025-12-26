@@ -82,7 +82,7 @@ func configureLocalRunnerManager(log *zap.Logger, cfg LocalRunnerManagerConfig) 
 	// If user supplies which Python to use, we use it "as-is" without creating venv
 	if !isUserPy {
 		if !cfg.LazyLoadVEnv {
-			log.Info("ensuring default venv on start")
+			log.Debug("ensuring default venv on start")
 			if lm.pyExe, err = ensureVEnv(context.Background(), log, "", pyExe); err != nil {
 				return fmt.Errorf("create venv: %w", err)
 			}
