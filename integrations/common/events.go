@@ -43,8 +43,6 @@ func TransformEvent(l *zap.Logger, payload any, eventType string) (sdktypes.Even
 	return e, nil
 }
 
-// DispatchEvent dispatches the given event to all the
-// given connections, for potential asynchronous handling.
 func DispatchEvent(ctx context.Context, l *zap.Logger, d sdkservices.DispatchFunc, e sdktypes.Event, cids []sdktypes.ConnectionID) error {
 	for _, cid := range cids {
 		resp, err := d(ctx, e.WithConnectionDestinationID(cid), nil)
