@@ -82,7 +82,7 @@ func configureLocalRunnerManager(log *zap.Logger, cfg LocalRunnerManagerConfig) 
 	// If user supplies which Python to use, we use it "as-is" without creating venv
 	if !isUserPy {
 		if !cfg.LazyLoadVEnv {
-			log.Info("ensuring default venv on start")
+			log.Debug("ensuring default venv on start")
 			if lm.pyExe, err = ensureVEnv(context.Background(), log, "", pyExe); err != nil {
 				return fmt.Errorf("create venv: %w", err)
 			}
@@ -292,21 +292,43 @@ func ensureVEnv(ctx context.Context, log *zap.Logger, reqs, pyExe string) (pyExe
 	mu.Lock()
 	defer mu.Unlock()
 
+	log = log.With(zap.String("venv_path", venvPath))
+
 	if dirExists(venvPath) {
-		if _, err = os.Stat(path.Join(venvPath, ".complete")); err == nil {
-			log.Info("using existing venv", zap.String("path", venvPath))
-			return
+
+		var bs []byte
+		bs, err = os.ReadFile(path.Join(venvPath, ".complete"))
+		if err != nil {
+			log.Warn("cannot read existing .complete file", zap.Error(err))
+		} else {
+			hash := strings.TrimSpace(string(bs))
+
+			want := venvInstallHash(reqs)
+
+			complete := hash == want
+
+			log = log.With(zap.String("hash", hash))
+
+			log.Debug("venv .complete info", zap.Bool("complete", complete))
+
+			if complete {
+				log.Info("existing venv is up to date, reusing")
+				return
+			}
+
+			log.Warn("venv .complete hash mismatch", zap.String("want", want))
 		}
 
-		log.Info("venv incomplete, recreating", zap.String("path", venvPath))
+		log.Info("removing existing venv to recreate")
 
 		if err = os.RemoveAll(venvPath); err != nil {
-			err = fmt.Errorf("clean user dir %q - %w", venvPath, err)
+			err = fmt.Errorf("clean venv dir %q - %w", venvPath, err)
 			return
 		}
+	} else {
+		log.Info("venv does not exist, creating")
 	}
 
-	log.Info("creating venv", zap.String("path", venvPath))
 	if err = createVEnv(ctx, log, pyExe, venvPath, reqs); err != nil {
 		return "", fmt.Errorf("create venv: %w", err)
 	}

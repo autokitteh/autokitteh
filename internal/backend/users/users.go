@@ -65,7 +65,7 @@ func (u *users) Setup(ctx context.Context) error {
 
 		if _, err := u.db.GetUser(ctx, authusers.DefaultUser.ID(), ""); err == nil {
 			// user exists - nothing to do.
-			u.l.Info("default user exist in db")
+			u.l.Debug("default user exist in db")
 			return nil
 		} else if !errors.Is(err, sdkerrors.ErrNotFound) {
 			return fmt.Errorf("get default user: %w", err)

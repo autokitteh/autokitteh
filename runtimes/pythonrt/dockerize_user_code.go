@@ -31,7 +31,7 @@ func prepareBaseImageCode(customReqFilePath string) (string, error) {
 		return "", err
 	}
 
-	if _, err := copyFS(pycode, runnerDir); err != nil {
+	if err := os.CopyFS(runnerDir, pycode); err != nil {
 		return "", err
 	}
 
@@ -64,7 +64,7 @@ func prepareBaseImageCode(customReqFilePath string) (string, error) {
 		return "", err
 	}
 
-	if _, err := copyFS(pysdk, tmpDir); err != nil {
+	if err := os.CopyFS(tmpDir, pysdk); err != nil {
 		return "", err
 	}
 
