@@ -39,25 +39,11 @@ type Deps struct {
 
 type svc struct {
 	Deps
-	redirectCfg redirectConfig
 }
 
 func Init(deps Deps) error {
-	// Create redirect cookie config from login config to ensure cookies
-	// survive OAuth redirects. Without proper SameSite settings, the redirect
-	// cookie can be lost during third-party OAuth flows.
-	domain := deps.Cfg.CookieDomain
-	if len(domain) > 0 && domain[0] != '.' {
-		domain = "." + domain
-	}
-
 	svc := &svc{
 		Deps: deps,
-		redirectCfg: redirectConfig{
-			domain:   domain,
-			secure:   deps.Cfg.SecureCookie,
-			sameSite: deps.Cfg.CookieSameSite,
-		},
 	}
 	return svc.registerRoutes(deps.Muxes)
 }
@@ -66,6 +52,16 @@ type loginData struct {
 	Email        string
 	DisplayName  string
 	ProviderName string
+}
+
+// getRedirectCookieDomain returns the domain for redirect cookies.
+// Ensures cookies survive OAuth redirects by adding a "." prefix if needed.
+func (a *svc) getRedirectCookieDomain() string {
+	domain := a.Cfg.CookieDomain
+	if len(domain) > 0 && domain[0] != '.' {
+		domain = "." + domain
+	}
+	return domain
 }
 
 func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
@@ -138,7 +134,7 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 			RawQuery: "p=" + p,
 		}
 
-		RedirectToLogin(w, r, url, a.redirectCfg)
+		RedirectToLogin(w, r, url, a.getRedirectCookieDomain(), a.Cfg.SecureCookie, a.Cfg.CookieSameSite)
 	})
 
 	muxes.Auth.HandleFunc("/auth/finish-cli-login", func(w http.ResponseWriter, r *http.Request) {
@@ -164,7 +160,7 @@ func (a *svc) registerRoutes(muxes *muxes.Muxes) error {
 	})
 
 	muxes.NoAuth.HandleFunc("/auth/vscode-login", func(w http.ResponseWriter, r *http.Request) {
-		RedirectToLogin(w, r, &url.URL{Path: "/auth/finish-vscode-login"}, a.redirectCfg)
+		RedirectToLogin(w, r, &url.URL{Path: "/auth/finish-vscode-login"}, a.getRedirectCookieDomain(), a.Cfg.SecureCookie, a.Cfg.CookieSameSite)
 	})
 
 	muxes.Auth.HandleFunc("/auth/finish-vscode-login", func(w http.ResponseWriter, r *http.Request) {

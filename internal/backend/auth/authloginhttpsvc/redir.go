@@ -10,21 +10,15 @@ const (
 	cookieMaxAge    = 5 * 60 // Short-lived cookie for OAuth flow
 )
 
-type redirectConfig struct {
-	domain   string
-	secure   bool
-	sameSite http.SameSite
-}
-
-func RedirectToLogin(w http.ResponseWriter, r *http.Request, src *url.URL, cfg redirectConfig) {
+func RedirectToLogin(w http.ResponseWriter, r *http.Request, src *url.URL, domain string, secure bool, sameSite http.SameSite) {
 	if src != nil {
 		http.SetCookie(w, &http.Cookie{
 			Name:     redirCookieName,
 			Value:    src.String(),
 			Path:     "/",
-			Domain:   cfg.domain,
-			Secure:   cfg.secure,
-			SameSite: cfg.sameSite,
+			Domain:   domain,
+			Secure:   secure,
+			SameSite: sameSite,
 			HttpOnly: false,
 			MaxAge:   cookieMaxAge,
 		})
