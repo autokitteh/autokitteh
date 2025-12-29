@@ -73,8 +73,6 @@ func (db *gormdb) SaveEvent(ctx context.Context, event sdktypes.Event) error {
 		return err
 	}
 
-	connectionID := event.DestinationID().ToConnectionID()
-
 	pid, err := db.GetProjectIDOf(ctx, event.DestinationID())
 	if err != nil {
 		return fmt.Errorf("get project id: %w", err)
@@ -85,21 +83,36 @@ func (db *gormdb) SaveEvent(ctx context.Context, event sdktypes.Event) error {
 		return fmt.Errorf("get org id: %w", err)
 	}
 
+	did := event.DestinationID()
+	var cid sdktypes.ConnectionID
+	if did.IsConnectionID() {
+		cid = did.ToConnectionID()
+	}
+
+	if did.IsTriggerID() {
+		trigger, err := db.GetTriggerByID(ctx, did.ToTriggerID())
+		if err != nil {
+			return err
+		}
+
+		cid = trigger.ConnectionID()
+	}
+
 	e := scheme.Event{
 		Base:          based(ctx),
 		ProjectID:     pid.UUIDValue(),
 		OrgID:         oid.UUIDValuePtr(),
 		EventID:       event.ID().UUIDValue(),
 		DestinationID: event.DestinationID().UUIDValue(),
-		ConnectionID:  uuidPtrOrNil(connectionID),
+		ConnectionID:  uuidPtrOrNil(cid),
 		TriggerID:     uuidPtrOrNil(event.DestinationID().ToTriggerID()),
 		EventType:     event.Type(),
 		Data:          kittehs.Must1(json.Marshal(event.Data())),
 		Memo:          kittehs.Must1(json.Marshal(event.Memo())),
 	}
 
-	if connectionID.IsValid() { // only if exists
-		conn, err := db.GetConnection(ctx, connectionID)
+	if cid.IsValid() { // only if exists
+		conn, err := db.GetConnection(ctx, cid)
 		if err != nil {
 			return fmt.Errorf("get connection: %w", err)
 		}

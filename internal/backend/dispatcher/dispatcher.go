@@ -56,17 +56,18 @@ func New(l *zap.Logger, cfg *Config, svcs Svcs) *Dispatcher {
 }
 
 func (d *Dispatcher) DispatchExternal(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) (*sdkservices.DispatchResponse, error) {
-	pid, err := d.svcs.DB.GetProjectIDOf(ctx, event.DestinationID())
+	// pid, err := d.svcs.DB.GetProjectIDOf(ctx, event.DestinationID())
+	// if err != nil {
+	// 	return nil, fmt.Errorf("get project id of destination %v: %w", event.DestinationID(), err)
+	// }
+
+	did := event.DestinationID()
+	orgID, err := d.svcs.DB.GetOrgIDOf(ctx, did)
 	if err != nil {
-		return nil, fmt.Errorf("get project id of destination %v: %w", event.DestinationID(), err)
+		return nil, fmt.Errorf("get org id of project %v: %w", did, err)
 	}
 
-	orgID, err := d.svcs.DB.GetOrgIDOf(ctx, pid)
-	if err != nil {
-		return nil, fmt.Errorf("get org id of project %v: %w", pid, err)
-	}
-
-	d.sl.Info("external dispatch found pid", pid.String(), "and orgID", orgID.String(), "for eventID", event.ID().String(), "and destinationID", event.DestinationID().String())
+	d.sl.Info("external dispatch found orgID", orgID.String(), "for eventID", event.ID().String(), "and destinationID", event.DestinationID().String())
 
 	cli, err := d.svcs.ExternalClient.NewOrgImpersonator(orgID)
 	if err != nil {
@@ -78,6 +79,41 @@ func (d *Dispatcher) DispatchExternal(ctx context.Context, event sdktypes.Event,
 
 func (d *Dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) (*sdkservices.DispatchResponse, error) {
 	event = event.WithCreatedAt(time.Now())
+
+	did := event.DestinationID()
+
+	if !did.IsConnectionID() {
+		return d.dispatchOneEvent(ctx, event, opts)
+	}
+
+	c, err := d.svcs.DB.GetConnection(ctx, did.ToConnectionID())
+	if err != nil {
+		return nil, err
+	}
+
+	if c.ProjectID().IsValid() {
+		// project connection, no need to split
+		return d.dispatchOneEvent(ctx, event, opts)
+	}
+
+	triggers, err := d.svcs.DB.ListTriggers(ctx, sdkservices.ListTriggersFilter{ConnectionID: did.ToConnectionID()})
+	if err != nil {
+		return nil, err
+	}
+
+	var resp *sdkservices.DispatchResponse
+	for _, trigger := range triggers {
+		resp, err = d.dispatchOneEvent(ctx, event.WithTriggerDestinationID(trigger.ID()), opts)
+		if err != nil {
+			d.sl.Error("failed dispatch", err)
+			continue
+		}
+	}
+
+	return resp, err
+}
+
+func (d *Dispatcher) dispatchOneEvent(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) (*sdkservices.DispatchResponse, error) {
 	eid, err := d.svcs.Events.Save(ctx, event)
 	if err != nil {
 		return nil, fmt.Errorf("save event: %w", err)
