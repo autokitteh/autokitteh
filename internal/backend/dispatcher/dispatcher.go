@@ -60,7 +60,7 @@ func (d *Dispatcher) DispatchExternal(ctx context.Context, event sdktypes.Event,
 	did := event.DestinationID()
 	orgID, err := d.svcs.DB.GetOrgIDOf(ctx, did)
 	if err != nil {
-		return nil, fmt.Errorf("get org id of desitnationID %v: %w", did, err)
+		return nil, fmt.Errorf("get org id of destinationID %v: %w", did, err)
 	}
 
 	d.sl.Info("external dispatch found orgID", orgID.String(), "for eventID", event.ID().String(), "and destinationID", event.DestinationID().String())
