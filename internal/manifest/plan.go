@@ -351,7 +351,8 @@ func planConnection(mconn *Connection, curr sdktypes.Connection, optfns ...Optio
 	desired = desired.
 		WithID(curr.ID()).
 		WithIntegrationID(curr.IntegrationID()).
-		WithProjectID(curr.ProjectID())
+		WithProjectID(curr.ProjectID()).
+		WithOrgID(curr.OrgID())
 
 	if curr.WithoutGeneratedFields().Equal(desired) {
 		log.Printf("no changes needed")
