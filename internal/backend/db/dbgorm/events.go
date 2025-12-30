@@ -87,9 +87,7 @@ func (db *gormdb) SaveEvent(ctx context.Context, event sdktypes.Event) error {
 	var cid sdktypes.ConnectionID
 	if did.IsConnectionID() {
 		cid = did.ToConnectionID()
-	}
-
-	if did.IsTriggerID() {
+	} else if did.IsTriggerID() {
 		trigger, err := db.GetTriggerByID(ctx, did.ToTriggerID())
 		if err != nil {
 			return err

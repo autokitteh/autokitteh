@@ -2,6 +2,7 @@ package dispatcher
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -56,15 +57,10 @@ func New(l *zap.Logger, cfg *Config, svcs Svcs) *Dispatcher {
 }
 
 func (d *Dispatcher) DispatchExternal(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) (*sdkservices.DispatchResponse, error) {
-	// pid, err := d.svcs.DB.GetProjectIDOf(ctx, event.DestinationID())
-	// if err != nil {
-	// 	return nil, fmt.Errorf("get project id of destination %v: %w", event.DestinationID(), err)
-	// }
-
 	did := event.DestinationID()
 	orgID, err := d.svcs.DB.GetOrgIDOf(ctx, did)
 	if err != nil {
-		return nil, fmt.Errorf("get org id of project %v: %w", did, err)
+		return nil, fmt.Errorf("get org id of desitnationID %v: %w", did, err)
 	}
 
 	d.sl.Info("external dispatch found orgID", orgID.String(), "for eventID", event.ID().String(), "and destinationID", event.DestinationID().String())
@@ -101,16 +97,25 @@ func (d *Dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *s
 		return nil, err
 	}
 
-	var resp *sdkservices.DispatchResponse
-	for _, trigger := range triggers {
-		resp, err = d.dispatchOneEvent(ctx, event.WithTriggerDestinationID(trigger.ID()), opts)
-		if err != nil {
-			d.sl.Error("failed dispatch", err)
-			continue
-		}
+	var resp sdkservices.DispatchResponse
+	if len(triggers) == 0 {
+		return &resp, nil
 	}
 
-	return resp, err
+	var dispatchErrors []error
+	for _, trigger := range triggers {
+		r, err := d.dispatchOneEvent(ctx, event.WithTriggerDestinationID(trigger.ID()), opts)
+		if err != nil {
+			d.sl.Error("dispatch for triggerID: "+trigger.ID().String(), err)
+			dispatchErrors = append(dispatchErrors, err)
+			continue
+		}
+
+		resp.SignaledSessionIDs = append(resp.SignaledSessionIDs, r.SignaledSessionIDs...)
+		resp.StartedSessionIDs = append(resp.StartedSessionIDs, r.StartedSessionIDs...)
+	}
+
+	return &resp, errors.Join(dispatchErrors...)
 }
 
 func (d *Dispatcher) dispatchOneEvent(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) (*sdkservices.DispatchResponse, error) {
