@@ -175,3 +175,15 @@ class DeleteRequest(_message.Message):
 class DeleteResponse(_message.Message):
     __slots__ = []
     def __init__(self) -> None: ...
+
+class GetPrintsCountRequest(_message.Message):
+    __slots__ = ["session_id"]
+    SESSION_ID_FIELD_NUMBER: _ClassVar[int]
+    session_id: str
+    def __init__(self, session_id: _Optional[str] = ...) -> None: ...
+
+class GetPrintsCountResponse(_message.Message):
+    __slots__ = ["count"]
+    COUNT_FIELD_NUMBER: _ClassVar[int]
+    count: int
+    def __init__(self, count: _Optional[int] = ...) -> None: ...

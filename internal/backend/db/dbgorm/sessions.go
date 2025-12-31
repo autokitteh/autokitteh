@@ -168,6 +168,10 @@ func (gdb *gormdb) getSessionLogRecords(ctx context.Context, filter sdkservices.
 			return err
 		}
 
+		if filter.CountOnly {
+			return nil
+		}
+
 		if filter.PageSize != 0 {
 			q = q.Limit(int(filter.PageSize))
 		}

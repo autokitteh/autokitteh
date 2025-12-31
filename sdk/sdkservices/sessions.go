@@ -31,6 +31,7 @@ type ListSessionResult struct {
 type SessionLogRecordsFilter struct {
 	SessionID sdktypes.SessionID
 	Types     sdktypes.SessionLogRecordType // bitmask
+	CountOnly bool
 	sdktypes.PaginationRequest
 }
 
@@ -60,5 +61,6 @@ type Sessions interface {
 	GetLog(ctx context.Context, filter SessionLogRecordsFilter) (*GetLogResults, error)
 	DownloadLogs(ctx context.Context, sessionID sdktypes.SessionID) ([]byte, error)
 	GetPrints(ctx context.Context, sid sdktypes.SessionID, pagination sdktypes.PaginationRequest) (*GetPrintsResults, error)
+	GetPrintsCount(ctx context.Context, sid sdktypes.SessionID) (int64, error)
 	Delete(ctx context.Context, sessionID sdktypes.SessionID) error
 }

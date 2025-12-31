@@ -176,5 +176,14 @@ service SessionsService {
   rpc GetLog(GetLogRequest) returns (GetLogResponse);
   rpc DownloadLogs(DownloadLogsRequest) returns (DownloadLogsResponse);
   rpc GetPrints(GetPrintsRequest) returns (GetPrintsResponse);
+  rpc GetPrintsCount(GetPrintsCountRequest) returns (GetPrintsCountResponse);
   rpc Delete(DeleteRequest) returns (DeleteResponse);
+}
+
+message GetPrintsCountRequest {
+  string session_id = 1 [(buf.validate.field).string.min_len = 1];
+}
+
+message GetPrintsCountResponse {
+  int64 count = 1;
 }

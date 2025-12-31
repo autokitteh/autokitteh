@@ -49,6 +49,9 @@ const (
 	// SessionsServiceGetPrintsProcedure is the fully-qualified name of the SessionsService's GetPrints
 	// RPC.
 	SessionsServiceGetPrintsProcedure = "/autokitteh.sessions.v1.SessionsService/GetPrints"
+	// SessionsServiceGetPrintsCountProcedure is the fully-qualified name of the SessionsService's
+	// GetPrintsCount RPC.
+	SessionsServiceGetPrintsCountProcedure = "/autokitteh.sessions.v1.SessionsService/GetPrintsCount"
 	// SessionsServiceDeleteProcedure is the fully-qualified name of the SessionsService's Delete RPC.
 	SessionsServiceDeleteProcedure = "/autokitteh.sessions.v1.SessionsService/Delete"
 )
@@ -65,6 +68,7 @@ type SessionsServiceClient interface {
 	GetLog(context.Context, *connect.Request[v1.GetLogRequest]) (*connect.Response[v1.GetLogResponse], error)
 	DownloadLogs(context.Context, *connect.Request[v1.DownloadLogsRequest]) (*connect.Response[v1.DownloadLogsResponse], error)
 	GetPrints(context.Context, *connect.Request[v1.GetPrintsRequest]) (*connect.Response[v1.GetPrintsResponse], error)
+	GetPrintsCount(context.Context, *connect.Request[v1.GetPrintsCountRequest]) (*connect.Response[v1.GetPrintsCountResponse], error)
 	Delete(context.Context, *connect.Request[v1.DeleteRequest]) (*connect.Response[v1.DeleteResponse], error)
 }
 
@@ -113,6 +117,11 @@ func NewSessionsServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			baseURL+SessionsServiceGetPrintsProcedure,
 			opts...,
 		),
+		getPrintsCount: connect.NewClient[v1.GetPrintsCountRequest, v1.GetPrintsCountResponse](
+			httpClient,
+			baseURL+SessionsServiceGetPrintsCountProcedure,
+			opts...,
+		),
 		delete: connect.NewClient[v1.DeleteRequest, v1.DeleteResponse](
 			httpClient,
 			baseURL+SessionsServiceDeleteProcedure,
@@ -123,14 +132,15 @@ func NewSessionsServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 
 // sessionsServiceClient implements SessionsServiceClient.
 type sessionsServiceClient struct {
-	start        *connect.Client[v1.StartRequest, v1.StartResponse]
-	stop         *connect.Client[v1.StopRequest, v1.StopResponse]
-	list         *connect.Client[v1.ListRequest, v1.ListResponse]
-	get          *connect.Client[v1.GetRequest, v1.GetResponse]
-	getLog       *connect.Client[v1.GetLogRequest, v1.GetLogResponse]
-	downloadLogs *connect.Client[v1.DownloadLogsRequest, v1.DownloadLogsResponse]
-	getPrints    *connect.Client[v1.GetPrintsRequest, v1.GetPrintsResponse]
-	delete       *connect.Client[v1.DeleteRequest, v1.DeleteResponse]
+	start          *connect.Client[v1.StartRequest, v1.StartResponse]
+	stop           *connect.Client[v1.StopRequest, v1.StopResponse]
+	list           *connect.Client[v1.ListRequest, v1.ListResponse]
+	get            *connect.Client[v1.GetRequest, v1.GetResponse]
+	getLog         *connect.Client[v1.GetLogRequest, v1.GetLogResponse]
+	downloadLogs   *connect.Client[v1.DownloadLogsRequest, v1.DownloadLogsResponse]
+	getPrints      *connect.Client[v1.GetPrintsRequest, v1.GetPrintsResponse]
+	getPrintsCount *connect.Client[v1.GetPrintsCountRequest, v1.GetPrintsCountResponse]
+	delete         *connect.Client[v1.DeleteRequest, v1.DeleteResponse]
 }
 
 // Start calls autokitteh.sessions.v1.SessionsService.Start.
@@ -168,6 +178,11 @@ func (c *sessionsServiceClient) GetPrints(ctx context.Context, req *connect.Requ
 	return c.getPrints.CallUnary(ctx, req)
 }
 
+// GetPrintsCount calls autokitteh.sessions.v1.SessionsService.GetPrintsCount.
+func (c *sessionsServiceClient) GetPrintsCount(ctx context.Context, req *connect.Request[v1.GetPrintsCountRequest]) (*connect.Response[v1.GetPrintsCountResponse], error) {
+	return c.getPrintsCount.CallUnary(ctx, req)
+}
+
 // Delete calls autokitteh.sessions.v1.SessionsService.Delete.
 func (c *sessionsServiceClient) Delete(ctx context.Context, req *connect.Request[v1.DeleteRequest]) (*connect.Response[v1.DeleteResponse], error) {
 	return c.delete.CallUnary(ctx, req)
@@ -186,6 +201,7 @@ type SessionsServiceHandler interface {
 	GetLog(context.Context, *connect.Request[v1.GetLogRequest]) (*connect.Response[v1.GetLogResponse], error)
 	DownloadLogs(context.Context, *connect.Request[v1.DownloadLogsRequest]) (*connect.Response[v1.DownloadLogsResponse], error)
 	GetPrints(context.Context, *connect.Request[v1.GetPrintsRequest]) (*connect.Response[v1.GetPrintsResponse], error)
+	GetPrintsCount(context.Context, *connect.Request[v1.GetPrintsCountRequest]) (*connect.Response[v1.GetPrintsCountResponse], error)
 	Delete(context.Context, *connect.Request[v1.DeleteRequest]) (*connect.Response[v1.DeleteResponse], error)
 }
 
@@ -230,6 +246,11 @@ func NewSessionsServiceHandler(svc SessionsServiceHandler, opts ...connect.Handl
 		svc.GetPrints,
 		opts...,
 	)
+	sessionsServiceGetPrintsCountHandler := connect.NewUnaryHandler(
+		SessionsServiceGetPrintsCountProcedure,
+		svc.GetPrintsCount,
+		opts...,
+	)
 	sessionsServiceDeleteHandler := connect.NewUnaryHandler(
 		SessionsServiceDeleteProcedure,
 		svc.Delete,
@@ -251,6 +272,8 @@ func NewSessionsServiceHandler(svc SessionsServiceHandler, opts ...connect.Handl
 			sessionsServiceDownloadLogsHandler.ServeHTTP(w, r)
 		case SessionsServiceGetPrintsProcedure:
 			sessionsServiceGetPrintsHandler.ServeHTTP(w, r)
+		case SessionsServiceGetPrintsCountProcedure:
+			sessionsServiceGetPrintsCountHandler.ServeHTTP(w, r)
 		case SessionsServiceDeleteProcedure:
 			sessionsServiceDeleteHandler.ServeHTTP(w, r)
 		default:
@@ -288,6 +311,10 @@ func (UnimplementedSessionsServiceHandler) DownloadLogs(context.Context, *connec
 
 func (UnimplementedSessionsServiceHandler) GetPrints(context.Context, *connect.Request[v1.GetPrintsRequest]) (*connect.Response[v1.GetPrintsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.sessions.v1.SessionsService.GetPrints is not implemented"))
+}
+
+func (UnimplementedSessionsServiceHandler) GetPrintsCount(context.Context, *connect.Request[v1.GetPrintsCountRequest]) (*connect.Response[v1.GetPrintsCountResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("autokitteh.sessions.v1.SessionsService.GetPrintsCount is not implemented"))
 }
 
 func (UnimplementedSessionsServiceHandler) Delete(context.Context, *connect.Request[v1.DeleteRequest]) (*connect.Response[v1.DeleteResponse], error) {

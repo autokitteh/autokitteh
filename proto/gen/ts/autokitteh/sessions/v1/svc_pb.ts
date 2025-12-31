@@ -837,3 +837,77 @@ export class DeleteResponse extends Message<DeleteResponse> {
   }
 }
 
+/**
+ * @generated from message autokitteh.sessions.v1.GetPrintsCountRequest
+ */
+export class GetPrintsCountRequest extends Message<GetPrintsCountRequest> {
+  /**
+   * @generated from field: string session_id = 1;
+   */
+  sessionId = "";
+
+  constructor(data?: PartialMessage<GetPrintsCountRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.sessions.v1.GetPrintsCountRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "session_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetPrintsCountRequest {
+    return new GetPrintsCountRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetPrintsCountRequest {
+    return new GetPrintsCountRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetPrintsCountRequest {
+    return new GetPrintsCountRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetPrintsCountRequest | PlainMessage<GetPrintsCountRequest> | undefined, b: GetPrintsCountRequest | PlainMessage<GetPrintsCountRequest> | undefined): boolean {
+    return proto3.util.equals(GetPrintsCountRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message autokitteh.sessions.v1.GetPrintsCountResponse
+ */
+export class GetPrintsCountResponse extends Message<GetPrintsCountResponse> {
+  /**
+   * @generated from field: int64 count = 1;
+   */
+  count = protoInt64.zero;
+
+  constructor(data?: PartialMessage<GetPrintsCountResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "autokitteh.sessions.v1.GetPrintsCountResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "count", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetPrintsCountResponse {
+    return new GetPrintsCountResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetPrintsCountResponse {
+    return new GetPrintsCountResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetPrintsCountResponse {
+    return new GetPrintsCountResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetPrintsCountResponse | PlainMessage<GetPrintsCountResponse> | undefined, b: GetPrintsCountResponse | PlainMessage<GetPrintsCountResponse> | undefined): boolean {
+    return proto3.util.equals(GetPrintsCountResponse, a, b);
+  }
+}
+

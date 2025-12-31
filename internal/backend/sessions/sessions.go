@@ -99,6 +99,23 @@ func (s *sessions) GetPrints(ctx context.Context, sid sdktypes.SessionID, pagina
 	}, nil
 }
 
+func (s *sessions) GetPrintsCount(ctx context.Context, sid sdktypes.SessionID) (int64, error) {
+	if err := authz.CheckContext(ctx, sid, authz.OpSessionReadGetPrints, authz.WithConvertForbiddenToNotFound); err != nil {
+		return 0, err
+	}
+
+	lr, err := s.svcs.DB.GetSessionLog(ctx, sdkservices.SessionLogRecordsFilter{
+		SessionID: sid,
+		Types:     sdktypes.PrintSessionLogRecordType,
+		CountOnly: true,
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	return lr.TotalCount, nil
+}
+
 func (s *sessions) GetLog(ctx context.Context, filter sdkservices.SessionLogRecordsFilter) (*sdkservices.GetLogResults, error) {
 	if err := authz.CheckContext(
 		ctx,

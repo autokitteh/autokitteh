@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { DeleteRequest, DeleteResponse, DownloadLogsRequest, DownloadLogsResponse, GetLogRequest, GetLogResponse, GetPrintsRequest, GetPrintsResponse, GetRequest, GetResponse, ListRequest, ListResponse, StartRequest, StartResponse, StopRequest, StopResponse } from "./svc_pb.js";
+import { DeleteRequest, DeleteResponse, DownloadLogsRequest, DownloadLogsResponse, GetLogRequest, GetLogResponse, GetPrintsCountRequest, GetPrintsCountResponse, GetPrintsRequest, GetPrintsResponse, GetRequest, GetResponse, ListRequest, ListResponse, StartRequest, StartResponse, StopRequest, StopResponse } from "./svc_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -78,6 +78,15 @@ export const SessionsService = {
       name: "GetPrints",
       I: GetPrintsRequest,
       O: GetPrintsResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * @generated from rpc autokitteh.sessions.v1.SessionsService.GetPrintsCount
+     */
+    getPrintsCount: {
+      name: "GetPrintsCount",
+      I: GetPrintsCountRequest,
+      O: GetPrintsCountResponse,
       kind: MethodKind.Unary,
     },
     /**

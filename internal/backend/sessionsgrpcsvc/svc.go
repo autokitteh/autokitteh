@@ -266,6 +266,29 @@ func (s *server) GetPrints(ctx context.Context, req *connect.Request[sessionsv1.
 	}), nil
 }
 
+func (s *server) GetPrintsCount(ctx context.Context, req *connect.Request[sessionsv1.GetPrintsCountRequest]) (*connect.Response[sessionsv1.GetPrintsCountResponse], error) {
+	msg := req.Msg
+
+	if err := proto.Validate(msg); err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	sid, err := sdktypes.ParseSessionID(msg.SessionId)
+	if err != nil {
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	count, err := s.sessions.GetPrintsCount(ctx, sid)
+	if err != nil {
+		if errors.Is(err, sdkerrors.ErrNotFound) {
+			return connect.NewResponse(&sessionsv1.GetPrintsCountResponse{}), nil
+		}
+		return nil, sdkerrors.AsConnectError(err)
+	}
+
+	return connect.NewResponse(&sessionsv1.GetPrintsCountResponse{Count: count}), nil
+}
+
 func (s *server) DownloadLogs(ctx context.Context, req *connect.Request[sessionsv1.DownloadLogsRequest]) (*connect.Response[sessionsv1.DownloadLogsResponse], error) {
 	msg := req.Msg
 

@@ -49,6 +49,11 @@ class SessionsServiceStub(object):
                 request_serializer=autokitteh_dot_sessions_dot_v1_dot_svc__pb2.GetPrintsRequest.SerializeToString,
                 response_deserializer=autokitteh_dot_sessions_dot_v1_dot_svc__pb2.GetPrintsResponse.FromString,
                 )
+        self.GetPrintsCount = channel.unary_unary(
+                '/autokitteh.sessions.v1.SessionsService/GetPrintsCount',
+                request_serializer=autokitteh_dot_sessions_dot_v1_dot_svc__pb2.GetPrintsCountRequest.SerializeToString,
+                response_deserializer=autokitteh_dot_sessions_dot_v1_dot_svc__pb2.GetPrintsCountResponse.FromString,
+                )
         self.Delete = channel.unary_unary(
                 '/autokitteh.sessions.v1.SessionsService/Delete',
                 request_serializer=autokitteh_dot_sessions_dot_v1_dot_svc__pb2.DeleteRequest.SerializeToString,
@@ -104,6 +109,12 @@ class SessionsServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def GetPrintsCount(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def Delete(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -147,6 +158,11 @@ def add_SessionsServiceServicer_to_server(servicer, server):
                     servicer.GetPrints,
                     request_deserializer=autokitteh_dot_sessions_dot_v1_dot_svc__pb2.GetPrintsRequest.FromString,
                     response_serializer=autokitteh_dot_sessions_dot_v1_dot_svc__pb2.GetPrintsResponse.SerializeToString,
+            ),
+            'GetPrintsCount': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetPrintsCount,
+                    request_deserializer=autokitteh_dot_sessions_dot_v1_dot_svc__pb2.GetPrintsCountRequest.FromString,
+                    response_serializer=autokitteh_dot_sessions_dot_v1_dot_svc__pb2.GetPrintsCountResponse.SerializeToString,
             ),
             'Delete': grpc.unary_unary_rpc_method_handler(
                     servicer.Delete,
@@ -279,6 +295,23 @@ class SessionsService(object):
         return grpc.experimental.unary_unary(request, target, '/autokitteh.sessions.v1.SessionsService/GetPrints',
             autokitteh_dot_sessions_dot_v1_dot_svc__pb2.GetPrintsRequest.SerializeToString,
             autokitteh_dot_sessions_dot_v1_dot_svc__pb2.GetPrintsResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def GetPrintsCount(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/autokitteh.sessions.v1.SessionsService/GetPrintsCount',
+            autokitteh_dot_sessions_dot_v1_dot_svc__pb2.GetPrintsCountRequest.SerializeToString,
+            autokitteh_dot_sessions_dot_v1_dot_svc__pb2.GetPrintsCountResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 

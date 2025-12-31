@@ -457,3 +457,28 @@ func TestSessionLogRecordNextPageTokenNotEmpty(t *testing.T) {
 	assert.Equal(t, res.TotalCount, int64(3))
 	assert.Equal(t, res.NextPageToken, "")
 }
+
+func TestSessionLogRecordCountOnly(t *testing.T) {
+	f, p, b := preSessionTest(t)
+
+	s := f.newSession(sdktypes.SessionStateTypeCompleted, p, b)
+	l := sdktypes.NewPrintSessionLogRecord(kittehs.Now(), sdktypes.NewStringValue("meow"), 0)
+	logr, err := toSessionLogRecord(s.SessionID, l)
+	assert.NoError(t, err)
+
+	f.createSessionsAndAssert(t, s) // will create session and session record as well
+	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr, ""))
+	assert.NoError(t, f.gormdb.addSessionLogRecord(f.ctx, logr, ""))
+
+	sid := sdktypes.NewIDFromUUID[sdktypes.SessionID](s.SessionID)
+	res, err := f.gormdb.GetSessionLog(t.Context(),
+		sdkservices.SessionLogRecordsFilter{
+			SessionID:         sid,
+			CountOnly:         true,
+			PaginationRequest: sdktypes.PaginationRequest{},
+		})
+
+	assert.NoError(t, err)
+	assert.Nil(t, res.Records)
+	assert.Equal(t, res.TotalCount, int64(3))
+}
