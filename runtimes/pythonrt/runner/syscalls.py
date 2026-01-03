@@ -15,6 +15,7 @@ from autokitteh.activities import ACTIVITY_ATTR
 
 import log
 import pb.autokitteh.user_code.v1.handler_svc_pb2 as pb
+import prof
 import values
 
 
@@ -305,12 +306,15 @@ class SysCalls:
 
 
 def call_grpc(name, fn, args):
+    prof.sample()
+
     try:
         resp = fn(args)
         if resp.error:
             raise AutoKittehError(f"{name}: {resp.error}")
         return resp
     except grpc.RpcError as e:
+        prof.sample()
         if e.code() in (grpc.StatusCode.UNAVAILABLE, grpc.StatusCode.CANCELLED):
             os._exit(1)
         raise AutoKittehError(f"{name}: gRPC error - {e}")
