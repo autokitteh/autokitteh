@@ -68,11 +68,11 @@ func (cs *calls) invoke(ctx context.Context, callv sdktypes.Value, args []sdktyp
 	}
 
 	v, err := func() (v sdktypes.Value, err error) {
-		defer func() {
-			if r := recover(); r != nil {
-				err = fmt.Errorf("panic: %v", r)
-			}
-		}()
+		//defer func() {
+		//	if r := recover(); r != nil {
+		//		err = fmt.Errorf("panic: %v", r)
+		//	}
+		//}()
 
 		return caller.Call(ctx, callv, args, kwargs)
 	}()

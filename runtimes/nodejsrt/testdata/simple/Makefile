@@ -1,0 +1,2 @@
+istall-deps:
+	npm install

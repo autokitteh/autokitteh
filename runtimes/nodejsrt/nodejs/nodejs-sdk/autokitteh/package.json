@@ -1,0 +1,21 @@
+{
+  "name": "autokitteh",
+  "version": "1.0.0",
+  "description": "NodeJS runtime runner for autokitteh",
+  "type": "commonjs",
+  "scripts": {
+    "test": "jest"
+  },
+  "dependencies": {
+  },
+  "devDependencies": {
+    "googleapis": "^129.0.0",
+    "google-auth-library": "^9.6.0",
+    "openai": "^4.28.0"
+  },
+  "exports": {
+    ".": "./index.ts",
+    "./google": "./google.ts",
+    "./openai": "./openai.ts"
+  }
+}

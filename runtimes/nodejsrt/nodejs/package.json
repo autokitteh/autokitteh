@@ -1,0 +1,33 @@
+{
+  "name": "nodejsrt-runner",
+  "version": "1.0.0",
+  "description": "NodeJS runtime runner for autokitteh",
+  "type": "commonjs",
+  "scripts": {
+    "test": "jest"
+  },
+  "dependencies": {
+    "@connectrpc/connect": "^2.0.1",
+    "@connectrpc/connect-node": "^2.0.1",
+    "@types/node": "^22.13.10",
+    "axios": "^1.8.4",
+    "commander": "^13.1.0",
+    "fastify": "^5.2.1",
+    "typescript": "^5.8.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.23.0",
+    "@jest/globals": "^29.7.0",
+    "@types/jest": "^29.5.14",
+    "@types/js-yaml": "^4.0.9",
+    "@types/nock": "^11.1.0",
+    "jest": "^29.7.0",
+    "js-yaml": "^4.1.0",
+    "nock": "^13.5.4",
+    "ts-jest": "^29.1.2",
+    "typescript-eslint": "^8.28.0",
+    "googleapis": "^129.0.0",
+    "google-auth-library": "^9.6.0",
+    "openai": "^4.28.0"
+  }
+}

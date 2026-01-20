@@ -1,6 +1,7 @@
 package svc
 
 import (
+	"go.autokitteh.dev/autokitteh/runtimes/nodejsrt"
 	"go.uber.org/fx"
 	"go.uber.org/zap"
 
@@ -10,7 +11,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/muxes"
 	"go.autokitteh.dev/autokitteh/internal/kittehs"
 	"go.autokitteh.dev/autokitteh/runtimes/configrt"
-	"go.autokitteh.dev/autokitteh/runtimes/pythonrt"
+	//"go.autokitteh.dev/autokitteh/runtimes/pythonrt"
 	"go.autokitteh.dev/autokitteh/runtimes/starlarkrt"
 	"go.autokitteh.dev/autokitteh/sdk/sdkruntimes"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -43,15 +44,25 @@ func runtimesFXOption() fx.Option {
 		runtime("starlarkrt", configset.Empty, starlarkrt.New),
 		runtime("configrt", configset.Empty, configrt.New),
 		runtime(
-			"pythonrt",
-			pythonrt.Configs,
-			func(cfg *pythonrt.Config, l *zap.Logger, httpsvc httpsvc.Svc) (*sdkruntimes.Runtime, error) {
-				return pythonrt.New(cfg, l, httpsvc.Addr)
+			"nodejsrt",
+			nodejsrt.Configs,
+			func(cfg *nodejsrt.Config, l *zap.Logger, httpsvc httpsvc.Svc) (*sdkruntimes.Runtime, error) {
+				return nodejsrt.New(cfg, l, httpsvc.Addr)
 			},
 			fx.Invoke(func(l *zap.Logger, muxes *muxes.Muxes, oauth *oauth.OAuth) {
 				pythonrt.ConfigureWorkerGRPCHandler(l, muxes.NoAuth, oauth)
 			}),
 		),
+		//runtime(
+		//	"pythonrt",
+		//	pythonrt.Configs,
+		//	func(cfg *pythonrt.Config, l *zap.Logger, httpsvc httpsvc.Svc) (*sdkruntimes.Runtime, error) {
+		//		return pythonrt.New(cfg, l, httpsvc.Addr)
+		//	},
+		//	fx.Invoke(func(l *zap.Logger, muxes *muxes.Muxes) {
+		//		pythonrt.ConfigureWorkerGRPCHandler(l, muxes.NoAuth)
+		//	}),
+		//),
 
 		Component(
 			"runtimes",

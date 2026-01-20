@@ -1,0 +1,12 @@
+version: v1
+
+project:
+  name: simpleTest
+  description: A simple test project for autokitteh runner
+
+  # Define the functions we want to expose
+  triggers:
+    - name: test
+      event_type: post
+      call: main.ts:on_event
+      webhook: {}

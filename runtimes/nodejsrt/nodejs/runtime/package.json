@@ -1,0 +1,22 @@
+{
+  "name": "nodejsrt-runtime",
+  "version": "0.1.2",
+  "description": "Node.js Runtime Core for Autokitteh",
+  "private": true,
+  "type": "commonjs",
+  "dependencies": {
+    "@babel/generator": "^7.27.0",
+    "@babel/parser": "^7.27.0",
+    "@babel/traverse": "^7.27.0",
+    "@babel/types": "^7.27.0",
+    "@bufbuild/protobuf": "^2.2.3",
+    "@connectrpc/connect": "^2.0.1",
+    "@connectrpc/connect-fastify": "^2.0.1",
+    "@connectrpc/connect-node": "^2.0.1",
+    "@types/node": "^22.13.10",
+    "commander": "^13.1.0",
+    "fastify": "^5.2.1",
+    "pino": "^9.6.0",
+    "pino-pretty": "^13.0.0"
+  }
+}
