@@ -12,6 +12,7 @@ const (
 	Created  EffectType = "created"
 	Updated  EffectType = "updated"
 	Deleted  EffectType = "deleted"
+	Touched  EffectType = "touched"
 )
 
 type Effect struct {

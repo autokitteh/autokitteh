@@ -25,3 +25,16 @@ func (a UpdateProjectAction) isAction()      {}
 func (a UpdateProjectAction) GetKey() string { return a.Key }
 
 func init() { registerActionType[UpdateProjectAction]() }
+
+// ---
+
+type TouchedProjectAction struct {
+	Key       string             `json:"key"`
+	ProjectID sdktypes.ProjectID `json:"project_id"`
+}
+
+func (a TouchedProjectAction) Type() string   { return "touch_project" }
+func (a TouchedProjectAction) isAction()      {}
+func (a TouchedProjectAction) GetKey() string { return a.Key }
+
+func init() { registerActionType[TouchedProjectAction]() }
