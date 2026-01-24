@@ -100,8 +100,7 @@ func (h handler) handleOAuth(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else {
-		t, ok = ExtendWebhookLife(ctx, l, u, oauthToken.AccessToken, id)
-		if !ok {
+		if t, err = ExtendWebhookLife(ctx, l, u, oauthToken.AccessToken, id); err != nil {
 			c.AbortServerError("failed to extend webhook life")
 			return
 		}
