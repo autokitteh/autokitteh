@@ -29,9 +29,8 @@ import log
 import pb
 import values
 from call import AKCall, activity_marker, full_func_name
-from syscalls import SysCalls, mark_no_activity
-
 from largeobjects import LargeObjectsManager
+from syscalls import SysCalls, mark_no_activity
 
 # Timeouts are in seconds
 SERVER_GRACE_TIMEOUT = 3
@@ -688,9 +687,10 @@ class Runner(pb.runner_rpc.RunnerService):
         log.info("calling %s", func_name)
         value = error = stack = None
 
-        # Add optional arguments as kwargs only if specified as function args.
-        sig = inspect.signature(fn)
-        kw.update({k: v for k, v in opts.items() if k in sig.parameters})
+        if inspect.isfunction(fn):
+            # Add optional arguments as kwargs only if specified as function args.
+            sig = inspect.signature(fn)
+            kw.update({k: v for k, v in opts.items() if k in sig.parameters})
 
         try:
             value = fn(*args, **kw)
