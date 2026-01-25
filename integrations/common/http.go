@@ -11,6 +11,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"go.autokitteh.dev/autokitteh/sdk/sdkerrors"
 )
 
 const (
@@ -126,13 +128,20 @@ func httpRequest(ctx context.Context, method, u, auth, contentType string, body 
 		return nil, fmt.Errorf("failed to read HTTP response's body: %w", err)
 	}
 
-	if resp.StatusCode >= http.StatusBadRequest {
-		s := fmt.Sprintf("%d %s", resp.StatusCode, http.StatusText(resp.StatusCode))
-		if len(payload) > 0 {
-			s = fmt.Sprintf("%s: %s", s, string(payload))
-		}
-		return nil, errors.New(s)
+	if resp.StatusCode < 400 {
+		return payload, nil
 	}
 
-	return payload, nil
+	s := fmt.Sprintf("%d %s", resp.StatusCode, http.StatusText(resp.StatusCode))
+	if len(payload) > 0 {
+		s = fmt.Sprintf("%s: %s", s, string(payload))
+	}
+
+	err = errors.New(s)
+
+	if resp.StatusCode >= 500 {
+		err = sdkerrors.NewRetryableError(err)
+	}
+
+	return nil, err
 }

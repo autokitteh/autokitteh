@@ -216,13 +216,13 @@ type webhookRefreshResponse struct {
 // https://developer.atlassian.com/cloud/jira/platform/webhooks/#using-the-rest-api--refreshing-registered-webhooks
 // https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-webhooks/#api-rest-api-3-webhook-refresh-put
 // https://developer.atlassian.com/server/jira/platform/webhooks/
-func ExtendWebhookLife(ctx context.Context, l *zap.Logger, baseURL, oauthToken string, id int) (time.Time, bool) {
+func ExtendWebhookLife(ctx context.Context, l *zap.Logger, baseURL, oauthToken string, id int) (time.Time, error) {
 	u := baseURL + "/rest/api/3/webhook/refresh"
 	req := fmt.Sprintf(`{"webhookIds": [%d]}`, id)
 	resp, err := common.HTTPPutJSON(ctx, u, "Bearer "+oauthToken, req)
 	if err != nil {
 		l.Error("failed to refresh Jira webhook", zap.Error(err))
-		return time.Time{}, false
+		return time.Time{}, err
 	}
 
 	var ref webhookRefreshResponse
@@ -231,15 +231,15 @@ func ExtendWebhookLife(ctx context.Context, l *zap.Logger, baseURL, oauthToken s
 			zap.ByteString("body", resp),
 			zap.Error(err),
 		)
-		return time.Time{}, false
+		return time.Time{}, err
 	}
 
 	t, err := time.Parse("2006-01-02T15:04:05.000-0700", ref.ExpirationDate)
 	if err != nil {
-		l.Error("Failed to parse Jira webhook expiration date",
+		l.Warn("Failed to parse Jira webhook expiration date, defaulting to 30 days from now",
 			zap.String("time", ref.ExpirationDate),
 		)
-		return utc30Days(), true
+		return utc30Days(), nil
 	}
 
 	l.Info("Refreshed Jira webhook for new connection",
@@ -247,7 +247,7 @@ func ExtendWebhookLife(ctx context.Context, l *zap.Logger, baseURL, oauthToken s
 		zap.Int("id", id),
 		zap.Time("expiration", t),
 	)
-	return t, true
+	return t, nil
 }
 
 func utc30Days() time.Time {
