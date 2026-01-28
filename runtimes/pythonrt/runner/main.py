@@ -15,6 +15,7 @@ from pathlib import Path
 from threading import Lock, Thread, Timer
 from time import sleep
 from traceback import TracebackException, format_exception
+from typing import Callable
 
 import autokitteh
 import autokitteh.store
@@ -233,8 +234,10 @@ def short_name(func_name: str):
     return func_name[i + 1 :]
 
 
-def force_close(server):
+def force_close(server: grpc.Server):
+    log.info("closing server")
     server.stop(SERVER_GRACE_TIMEOUT)
+    log.info("exiting process")
     os._exit(1)
 
 
@@ -295,6 +298,7 @@ class Runner(pb.runner_rpc.RunnerService):
         self.code_dir = code_dir
         self.server: grpc.Server = server
 
+        # DO NOT USE DIRECTLY. Use submit_to_threadpool().
         self.executor = ThreadPoolExecutor()
 
         self.lock = Lock()
@@ -322,6 +326,24 @@ class Runner(pb.runner_rpc.RunnerService):
         self._orig_print(f"error: {err!r}\n\n{exc}", file=io)
 
         return io.getvalue()
+
+    def submit_to_threadpool(self, fn, *args, **kw):
+        log.info("submitting to threadpool: %s", full_func_name(fn))
+
+        def cb(fut):
+            log.info("execution on threadpool done: %s", full_func_name(fn))
+            if exc := fut.exception():
+                log.error(
+                    "Uncaught exception in executor: %r, traceback: %s",
+                    exc,
+                    format_exception(exc),
+                )
+                force_close(self.server)
+
+        fut = self.executor.submit(fn, *args, **kw)
+        fut.add_done_callback(cb)
+
+        return fut
 
     def stop_if_start_not_called(self, timeout):
         log.error("Start not called after %s seconds, terminating", timeout)
@@ -472,7 +494,7 @@ class Runner(pb.runner_rpc.RunnerService):
                 update_wrapper(handler, orig_fn)
                 fn = handler
 
-        self.executor.submit(self.on_event, fn, event, session_id)
+        self.submit_to_threadpool(self.on_event, fn, event, session_id)
 
         return pb.runner.StartResponse()
 
@@ -543,7 +565,8 @@ class Runner(pb.runner_rpc.RunnerService):
         if call is None:
             context.abort(grpc.StatusCode.INTERNAL, "no pending activity calls")
 
-        self.executor.submit(self.execute, call.fn, call.args, call.kw)
+        self.submit_to_threadpool(self.execute, call.fn, call.args, call.kw)
+
         return pb.runner.ExecuteResponse()
 
     def ActivityReply(
@@ -801,16 +824,68 @@ def validate_args(args):
         raise ValueError("start timeout must be positive")
 
 
-class LoggingInterceptor(grpc.ServerInterceptor):
-    runner_id = None
+class GRPCInterceptor(grpc.ServerInterceptor):
+    _runner_id: str
+    _get_server: Callable[[], grpc.Server]
+
+    def __init__(self, runner_id, get_server: Callable[[], grpc.Server]) -> None:
+        self._runner_id = runner_id
+        self._get_server = get_server
+        self._exceptions = []
+        super().__init__()
 
     def intercept_service(self, continuation, handler_call_details):
-        log.info("runner_id %s, call %s", self.runner_id, handler_call_details.method)
-        return continuation(handler_call_details)
+        h = continuation(handler_call_details)
 
-    def __init__(self, runner_id) -> None:
-        self.runner_id = runner_id
-        super().__init__()
+        if not h:
+            return None
+
+        method = handler_call_details.method
+
+        if m := h.unary_unary:
+            # Wrap unary_unary calls to log uncaught exceptions for unary calls.
+
+            def wrapper(request, context):
+                log.info(
+                    "runner_id %s, call %s",
+                    self._runner_id,
+                    method,
+                )
+
+                try:
+                    ret = m(request, context)
+
+                    log.info(
+                        "runner_id %s, call %s returned",
+                        self._runner_id,
+                        method,
+                    )
+
+                    return ret
+                except Exception as err:
+                    log.error(
+                        "Uncaught exception in grpc %s: %r, traceback: %s",
+                        method,
+                        err,
+                        format_exception(err),
+                    )
+                    context.abort(grpc.StatusCode.INTERNAL, f"Internal error: {err}")
+
+                    force_close(self._get_server())
+
+            h = grpc.unary_unary_rpc_method_handler(
+                wrapper,
+                request_deserializer=h.request_deserializer,
+                response_serializer=h.response_serializer,
+            )
+        else:
+            log.warning(
+                "runner_id %s, call %s - not wrapping non-unary_unary method",
+                self._runner_id,
+                method,
+            )
+
+        return h
 
 
 def dir_type(value):
@@ -886,8 +961,10 @@ if __name__ == "__main__":
 
     server = grpc.server(
         thread_pool=ThreadPoolExecutor(max_workers=cpu_count() * 8),
-        interceptors=[LoggingInterceptor(args.runner_id)],
+        interceptors=[GRPCInterceptor(args.runner_id, lambda: server)],
     )
+
+    _grpc_server = server
 
     lom = LargeObjectsManager(
         path=args.large_objects_path, enabled=args.enable_large_objects
