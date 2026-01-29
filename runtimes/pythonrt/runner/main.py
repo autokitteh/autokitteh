@@ -831,7 +831,6 @@ class GRPCInterceptor(grpc.ServerInterceptor):
     def __init__(self, runner_id, get_server: Callable[[], grpc.Server]) -> None:
         self._runner_id = runner_id
         self._get_server = get_server
-        self._exceptions = []
         super().__init__()
 
     def intercept_service(self, continuation, handler_call_details):
@@ -863,15 +862,34 @@ class GRPCInterceptor(grpc.ServerInterceptor):
 
                     return ret
                 except Exception as err:
+                    if (
+                        context.code() is not None
+                        and context.code() != grpc.StatusCode.OK
+                    ):
+                        log.warn(
+                            "context.abort in grpc %s: code %d, details: %s, traceback: %s",
+                            method,
+                            context.code(),
+                            context.details(),
+                            format_exception(err),
+                        )
+                        raise
+
+                    # Log uncaught exceptions that were not triggered by context.abort()
+
                     log.error(
                         "Uncaught exception in grpc %s: %r, traceback: %s",
                         method,
                         err,
                         format_exception(err),
                     )
-                    context.abort(grpc.StatusCode.INTERNAL, f"Internal error: {err}")
 
-                    force_close(self._get_server())
+                    try:
+                        context.abort(
+                            grpc.StatusCode.INTERNAL, f"Internal error: {err}"
+                        )
+                    finally:
+                        force_close(self._get_server())
 
             h = grpc.unary_unary_rpc_method_handler(
                 wrapper,
@@ -963,8 +981,6 @@ if __name__ == "__main__":
         thread_pool=ThreadPoolExecutor(max_workers=cpu_count() * 8),
         interceptors=[GRPCInterceptor(args.runner_id, lambda: server)],
     )
-
-    _grpc_server = server
 
     lom = LargeObjectsManager(
         path=args.large_objects_path, enabled=args.enable_large_objects
