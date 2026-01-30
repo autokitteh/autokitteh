@@ -30,6 +30,7 @@ import (
 	"go.autokitteh.dev/autokitteh/integrations/notion"
 	"go.autokitteh.dev/autokitteh/integrations/oauth"
 	"go.autokitteh.dev/autokitteh/integrations/pipedrive"
+	"go.autokitteh.dev/autokitteh/integrations/pydanticgw"
 	"go.autokitteh.dev/autokitteh/integrations/reddit"
 	"go.autokitteh.dev/autokitteh/integrations/salesforce"
 	"go.autokitteh.dev/autokitteh/integrations/slack"
@@ -60,6 +61,9 @@ var all = []Integration{
 	}, nil},
 	{anthropic.IntegrationName, anthropic.New, func(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, _ *oauth.OAuth, _ sdkservices.DispatchFunc) {
 		anthropic.Start(l, m, v)
+	}, nil},
+	{pydanticgw.IntegrationName, pydanticgw.New, func(l *zap.Logger, m *muxes.Muxes, v sdkservices.Vars, _ *oauth.OAuth, _ sdkservices.DispatchFunc) {
+		pydanticgw.Start(l, m, v)
 	}, nil},
 	{asana.IntegrationName, asana.New, func(l *zap.Logger, m *muxes.Muxes, _ sdkservices.Vars, _ *oauth.OAuth, _ sdkservices.DispatchFunc) {
 		asana.Start(l, m)
