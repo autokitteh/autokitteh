@@ -1,6 +1,6 @@
 [project]
 name = 'autokitteh'
-version = '0.8.2' # Must match the version in runner/pyproject.toml.
+version = '0.8.3' # Must match the version in runner/pyproject.toml.
 description = 'AutoKitteh Python SDK'
 readme = 'README.md'
 license = {file = 'LICENSE'}
