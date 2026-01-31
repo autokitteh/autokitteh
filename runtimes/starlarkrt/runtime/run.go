@@ -252,6 +252,10 @@ func (r *run) ExecutorID() sdktypes.ExecutorID { return sdktypes.NewExecutorID(r
 
 func (r *run) Close() {}
 
+func (r *run) HealthCheck(ctx context.Context) error {
+	return nil
+}
+
 func getProgram(compiled map[string][]byte, path string) (*starlark.Program, error) {
 	data := compiled[path]
 	if data == nil {

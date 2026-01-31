@@ -8,7 +8,7 @@ import (
 	"go.temporal.io/sdk/activity"
 )
 
-func BeginHeartbeat(ctx context.Context, interval time.Duration) (context.Context, func()) {
+func BeginHeartbeat(ctx context.Context, interval time.Duration, shouldHeartbeat func(context.Context) bool) (context.Context, func()) {
 	// Create a context that can be canceled as soon as the worker is stopped
 	ctx, cancel := context.WithCancel(ctx)
 	go func() {
@@ -19,12 +19,12 @@ func BeginHeartbeat(ctx context.Context, interval time.Duration) (context.Contex
 		cancel()
 	}()
 
-	go startHeartbeats(ctx, interval)
+	go startHeartbeats(ctx, interval, shouldHeartbeat)
 
 	return ctx, cancel
 }
 
-func startHeartbeats(ctx context.Context, interval time.Duration) {
+func startHeartbeats(ctx context.Context, interval time.Duration, shouldHeartbeat func(context.Context) bool) {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 
@@ -34,7 +34,9 @@ func startHeartbeats(ctx context.Context, interval time.Duration) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			activity.RecordHeartbeat(ctx)
+			if shouldHeartbeat(ctx) {
+				activity.RecordHeartbeat(ctx)
+			}
 		}
 	}
 }

@@ -136,3 +136,7 @@ func evaluateValue(v sdktypes.Value) (map[string]sdktypes.Value, error) {
 
 	return exports, nil
 }
+
+func (r *run) HealthCheck(ctx context.Context) error {
+	return nil
+}

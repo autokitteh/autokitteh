@@ -14,6 +14,7 @@ import (
 	"runtime"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -101,6 +102,9 @@ type pySvc struct {
 
 	didCleanup bool
 	printDone  chan struct{}
+
+	healthLock sync.RWMutex
+	healthErr  error
 }
 
 func (py *pySvc) cleanup(ctx context.Context) {
@@ -522,6 +526,10 @@ func (py *pySvc) setupHealthcheck(ctx context.Context) chan (error) {
 
 					// TODO: ENG-1675 - cleanup runner junk
 
+					py.healthLock.Lock()
+					py.healthErr = err
+					py.healthLock.Unlock()
+
 					runnerHealthChan <- err
 					return
 				}
@@ -564,6 +572,12 @@ func (py *pySvc) tracebackToLocation(traceback []*pbUserCode.Frame) []sdktypes.C
 	}
 
 	return frames
+}
+
+func (py *pySvc) HealthCheck(ctx context.Context) error {
+	py.healthLock.RLock()
+	defer py.healthLock.RUnlock()
+	return py.healthErr
 }
 
 // Call handles a function call from autokitteh.

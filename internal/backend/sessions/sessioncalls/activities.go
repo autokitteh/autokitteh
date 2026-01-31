@@ -6,6 +6,7 @@ import (
 	"go.temporal.io/sdk/activity"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
+	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -58,7 +59,23 @@ func (cs *calls) sessionCallActivity(ctx context.Context, params *CallActivityIn
 	}
 
 	if !params.CallSpec.Function().GetFunction().HasFlag(sdktypes.DisableAutoHeartbeat) && cs.config.ActivityHeartbeatInterval > 0 {
-		_, done := BeginHeartbeat(ctx, cs.config.ActivityHeartbeatInterval)
+		shouldHeartbeat := func(ctx context.Context) bool {
+			for _, x := range executors.Executors() {
+				r, ok := x.(sdkservices.Run)
+				if !ok {
+					continue
+				}
+
+				if err := r.HealthCheck(ctx); err != nil {
+					sl.Error("executor health check failed for heartbeat", "err", err, "xid", x.ExecutorID())
+					return false
+				}
+			}
+
+			return true
+		}
+
+		_, done := BeginHeartbeat(ctx, cs.config.ActivityHeartbeatInterval, shouldHeartbeat)
 		defer done()
 	}
 
