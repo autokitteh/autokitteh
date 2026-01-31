@@ -77,7 +77,7 @@ func (cs *calls) sessionCallActivity(ctx context.Context, params *CallActivityIn
 				shouldHeartbeat = func(ctx context.Context) bool {
 					for _, r := range runs {
 						if err := r.HealthCheck(ctx); err != nil {
-							sl.Error("runner health check failed for heartbeat", "err", err, "xid", r.ExecutorID())
+							sl.Errorw("runner health check failed for heartbeat", "err", err, "xid", r.ExecutorID())
 							return false
 						}
 					}
