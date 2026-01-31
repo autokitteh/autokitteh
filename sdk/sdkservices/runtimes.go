@@ -85,6 +85,8 @@ type Run interface {
 
 	Close()
 
+	HealthCheck(ctx context.Context) error
+
 	sdkexecutor.Executor
 }
 

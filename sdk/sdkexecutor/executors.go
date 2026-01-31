@@ -11,8 +11,9 @@ import (
 )
 
 type Executors struct {
-	values  map[string]map[string]sdktypes.Value // scope -> {values}; scope is usually module name.
-	callers map[string]Caller                    // xid -> caller
+	values    map[string]map[string]sdktypes.Value // scope -> {values}; scope is usually module name.
+	callers   map[string]Caller                    // xid -> caller
+	executors map[string]Executor                  // xid -> executor
 }
 
 func (ms *Executors) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Value, kwargs map[string]sdktypes.Value) (sdktypes.Value, error) {
@@ -30,6 +31,18 @@ func (ms *Executors) Call(ctx context.Context, v sdktypes.Value, args []sdktypes
 }
 
 func (ms *Executors) AddExecutor(name string, x Executor) error {
+	if ms.executors == nil {
+		ms.executors = make(map[string]Executor)
+	}
+
+	xid := x.ExecutorID()
+
+	if _, ok := ms.executors[xid.String()]; ok {
+		return sdkerrors.ErrConflict
+	}
+
+	ms.executors[xid.String()] = x
+
 	if err := ms.AddCaller(x.ExecutorID(), x); err != nil {
 		return fmt.Errorf("add caller: %w", err)
 	}
@@ -81,4 +94,13 @@ func (ms *Executors) GetCaller(xid sdktypes.ExecutorID) Caller {
 
 func (ms *Executors) GetValues(scope string) map[string]sdktypes.Value {
 	return ms.values[scope]
+}
+
+func (ms *Executors) Executors() []Executor {
+	result := make([]Executor, 0, len(ms.executors))
+	for _, x := range ms.executors {
+		result = append(result, x)
+	}
+
+	return result
 }

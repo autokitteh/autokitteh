@@ -55,3 +55,13 @@ func (g *group) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Valu
 
 	return run.Call(ctx, v, args, kwargs)
 }
+
+func (g *group) HealthCheck(ctx context.Context) error {
+	var errs []error
+	for _, r := range g.runs {
+		if err := r.HealthCheck(ctx); err != nil {
+			errs = append(errs, fmt.Errorf("run %s: %w", r.ID(), err))
+		}
+	}
+	return errors.Join(errs...)
+}

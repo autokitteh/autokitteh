@@ -25,3 +25,8 @@ func (r *run) Call(context.Context, sdktypes.Value, []sdktypes.Value, map[string
 	// Need a way to pass this to the server - will do when the stream will be bidi.
 	return sdktypes.InvalidValue, sdkerrors.ErrNotImplemented
 }
+
+func (*run) HealthCheck(ctx context.Context) error {
+	// TODO
+	return sdkerrors.ErrNotImplemented
+}
