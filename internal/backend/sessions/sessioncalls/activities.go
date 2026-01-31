@@ -59,20 +59,32 @@ func (cs *calls) sessionCallActivity(ctx context.Context, params *CallActivityIn
 	}
 
 	if !params.CallSpec.Function().GetFunction().HasFlag(sdktypes.DisableAutoHeartbeat) && cs.config.ActivityHeartbeatInterval > 0 {
-		shouldHeartbeat := func(ctx context.Context) bool {
+		shouldHeartbeat := func(context.Context) bool { return true }
+
+		var runs []sdkservices.Run
+
+		if executors != nil {
 			for _, x := range executors.Executors() {
 				r, ok := x.(sdkservices.Run)
 				if !ok {
 					continue
 				}
 
-				if err := r.HealthCheck(ctx); err != nil {
-					sl.Error("executor health check failed for heartbeat", "err", err, "xid", x.ExecutorID())
-					return false
-				}
+				runs = append(runs, r)
 			}
 
-			return true
+			if len(runs) > 0 {
+				shouldHeartbeat = func(ctx context.Context) bool {
+					for _, r := range runs {
+						if err := r.HealthCheck(ctx); err != nil {
+							sl.Error("runner health check failed for heartbeat", "err", err, "xid", r.ExecutorID())
+							return false
+						}
+					}
+
+					return true
+				}
+			}
 		}
 
 		_, done := BeginHeartbeat(ctx, cs.config.ActivityHeartbeatInterval, shouldHeartbeat)
