@@ -125,14 +125,6 @@ func (cs *calls) Call(wctx workflow.Context, params *CallParams) (sdktypes.Sessi
 
 		var err error
 		if result, err = cs.executeCall(goCtx, params.CallSpec, params.Executors); err != nil {
-			if !workflow.IsReplaying(wctx) && errors.Is(err, errStuckRuntime) {
-				// If not replaying - this is a new failure. Older failures should be ignored on replays.
-
-				// panic forces workflow to retry - we need it since the runtime is stuck
-				// and need restarting.
-				l.Panic("stuck runtime detected during pure call")
-			}
-
 			l.With(zap.Error(err)).Sugar().Infof("pure call failed: %v", err)
 			return sdktypes.NewSessionCallAttemptResult(sdktypes.InvalidValue, fmt.Errorf("internal call: %w", err)), nil
 		}
@@ -161,6 +153,7 @@ func (cs *calls) Call(wctx workflow.Context, params *CallParams) (sdktypes.Sessi
 			}()
 		}
 
+	retry_loop:
 		for retry := true; retry; {
 			aopts := cs.config.activityConfig().
 				WithUnlimitedTimeToClose(). // Do not limit activities execution duration.
@@ -206,14 +199,15 @@ func (cs *calls) Call(wctx workflow.Context, params *CallParams) (sdktypes.Sessi
 					// This might happen in cases of scale-down events or a recovery from a crashed worker.
 					// In this case we just reshecule it again.
 					l.Warn("call activity schedule to start timeout, retrying")
-					continue
+					continue retry_loop
 				}
 
-				if !isReplaying {
-					// If not replaying - this is a new failure. Older failures should be ignored on replays.
-
-					var aerr *temporal.ApplicationError
-					if ok := errors.As(err, &aerr); ok && aerr.Type() == stuckRuntimeErrorType {
+				var aerr *temporal.ApplicationError
+				if ok := errors.As(err, &aerr); ok && aerr.Type() == stuckRuntimeErrorType {
+					if isReplaying {
+						l.Debug("replaying, forcing retry due to stuck runtime")
+						continue retry_loop
+					} else {
 						// panic forces workflow to retry - we need it since the runtime is stuck
 						// and need restarting.
 						l.Panic("stuck runtime detected during call activity")
@@ -228,7 +222,7 @@ func (cs *calls) Call(wctx workflow.Context, params *CallParams) (sdktypes.Sessi
 				// got started. Since in this case the required session executors where not registered, we just
 				// retry the activity and give a chance to the workflow register the session workers.
 				l.Warn("call activity retrying explicitly")
-				continue
+				continue retry_loop
 			}
 
 			result = ret.Result
