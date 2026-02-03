@@ -15,6 +15,7 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules"
 	"go.autokitteh.dev/autokitteh/internal/backend/sessions/sessionworkflows/modules/testtools"
 	"go.autokitteh.dev/autokitteh/sdk/sdkexecutor"
+	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -67,37 +68,89 @@ func (cs *calls) invoke(ctx context.Context, callv sdktypes.Value, args []sdktyp
 		}
 	}
 
-	v, err := func() (v sdktypes.Value, err error) {
-		defer func() {
-			if r := recover(); r != nil {
-				err = fmt.Errorf("panic: %v", r)
-			}
+	type vAndErr struct {
+		v   sdktypes.Value
+		err error
+	}
+
+	callReturnCh := make(chan vAndErr, 1)
+
+	go func() {
+		v, err := func() (v sdktypes.Value, err error) {
+			defer func() {
+				if r := recover(); r != nil {
+					err = fmt.Errorf("panic: %v", r)
+				}
+			}()
+
+			return caller.Call(ctx, callv, args, kwargs)
 		}()
 
-		return caller.Call(ctx, callv, args, kwargs)
+		callReturnCh <- vAndErr{v: v, err: err}
 	}()
-	if err != nil {
-		if errors.Is(err, workflow.ErrCanceled) && errors.Is(ctx.Err(), context.DeadlineExceeded) {
-			err = context.DeadlineExceeded
-		}
 
-		if errors.Is(err, testtools.ErrTestHard) {
-			return sdktypes.InvalidSessionCallAttemptResult, err
-		}
+	var (
+		heartbeatTimeoutCh <-chan time.Time
+		run                sdkservices.Run
+	)
 
-		if errors.Is(err, context.DeadlineExceeded) {
-			v = sdktypes.InvalidValue
-			err = sdktypes.NewProgramError(
-				fixtures.TimeoutError,
-				nil,
-				map[string]string{
-					"duration": timeout.String(),
-				},
-			).ToError()
+	if cs.config.ActivityHeartbeatInterval > 0 && !callv.GetFunction().HasFlag(sdktypes.DisableAutoHeartbeat) {
+		if executor := executors.GetExecutor(xid); executor != nil {
+			if run, _ = executor.(sdkservices.Run); run != nil {
+				ticker := time.NewTicker(cs.config.ActivityHeartbeatInterval)
+				defer ticker.Stop()
+
+				heartbeatTimeoutCh = ticker.C
+			}
 		}
 	}
 
-	return sdktypes.NewSessionCallAttemptResult(v, err), nil
+	for {
+		select {
+		case <-heartbeatTimeoutCh:
+			if err := run.HealthCheck(ctx); err != nil {
+				return sdktypes.InvalidSessionCallAttemptResult, errStuckRuntime
+			}
+
+			activity.RecordHeartbeat(ctx)
+
+		case <-ctx.Done():
+			if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+				return sdktypes.NewSessionCallAttemptResult(sdktypes.InvalidValue, sdktypes.NewProgramError(
+					fixtures.TimeoutError,
+					nil,
+					map[string]string{
+						"duration": timeout.String(),
+					},
+				).ToError()), nil
+			}
+
+		case ve := <-callReturnCh:
+			v, err := ve.v, ve.err
+			if err != nil {
+				if errors.Is(err, workflow.ErrCanceled) && errors.Is(ctx.Err(), context.DeadlineExceeded) {
+					err = context.DeadlineExceeded
+				}
+
+				if errors.Is(err, testtools.ErrTestHard) {
+					return sdktypes.InvalidSessionCallAttemptResult, err
+				}
+
+				if errors.Is(err, context.DeadlineExceeded) {
+					v = sdktypes.InvalidValue
+					err = sdktypes.NewProgramError(
+						fixtures.TimeoutError,
+						nil,
+						map[string]string{
+							"duration": timeout.String(),
+						},
+					).ToError()
+				}
+			}
+
+			return sdktypes.NewSessionCallAttemptResult(v, err), nil
+		}
+	}
 }
 
 // This is executed either in an activity (for regular calls) or directly in a workflow (for internal calls).

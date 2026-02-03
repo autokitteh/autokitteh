@@ -2,11 +2,12 @@ package sessioncalls
 
 import (
 	"context"
+	"errors"
 
 	"go.temporal.io/sdk/activity"
+	"go.temporal.io/sdk/temporal"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/temporalclient"
-	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
@@ -58,41 +59,18 @@ func (cs *calls) sessionCallActivity(ctx context.Context, params *CallActivityIn
 		return &CallActivityOutputs{Retry: true}, nil
 	}
 
-	if !params.CallSpec.Function().GetFunction().HasFlag(sdktypes.DisableAutoHeartbeat) && cs.config.ActivityHeartbeatInterval > 0 {
-		shouldHeartbeat := func(context.Context) bool { return true }
-
-		var runs []sdkservices.Run
-
-		if executors != nil {
-			for _, x := range executors.Executors() {
-				r, ok := x.(sdkservices.Run)
-				if !ok {
-					continue
-				}
-
-				runs = append(runs, r)
-			}
-
-			if len(runs) > 0 {
-				shouldHeartbeat = func(ctx context.Context) bool {
-					for _, r := range runs {
-						if err := r.HealthCheck(ctx); err != nil {
-							sl.Errorw("runner health check failed for heartbeat", "err", err, "xid", r.ExecutorID())
-							return false
-						}
-					}
-
-					return true
-				}
-			}
-		}
-
-		_, done := BeginHeartbeat(ctx, cs.config.ActivityHeartbeatInterval, shouldHeartbeat)
-		defer done()
-	}
-
 	result, err := cs.executeCall(ctx, params.CallSpec, executors)
 	if err != nil {
+		if errors.Is(err, errStuckRuntime) {
+			sl.Warnf("stuck runtime")
+
+			return nil, temporal.NewNonRetryableApplicationError(
+				"stuck runtime detected",
+				stuckRuntimeErrorType,
+				err,
+			)
+		}
+
 		return nil, temporalclient.TranslateError(err, "execute call for %v", params.SessionID)
 	}
 

@@ -96,6 +96,10 @@ func (ms *Executors) GetValues(scope string) map[string]sdktypes.Value {
 	return ms.values[scope]
 }
 
+func (ms *Executors) GetExecutor(xid sdktypes.ExecutorID) Executor {
+	return ms.executors[xid.String()]
+}
+
 func (ms *Executors) Executors() []Executor {
 	result := make([]Executor, 0, len(ms.executors))
 	for _, x := range ms.executors {

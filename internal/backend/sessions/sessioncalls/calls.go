@@ -28,8 +28,14 @@ type CallParams struct {
 	Executors *sdkexecutor.Executors // needed for session specific calls (global modules, script functions).
 }
 
+var errStuckRuntime = errors.New("runtime stuck during call execution")
+
+const stuckRuntimeErrorType = "stuck_runtime"
+
 type Calls interface {
 	StartWorkers(context.Context) error
+
+	// returns RuntimeStuckError if the runtime got stuck during the call (require workflow replay).
 	Call(ctx workflow.Context, params *CallParams) (sdktypes.SessionCallAttemptResult, error)
 }
 
@@ -119,6 +125,14 @@ func (cs *calls) Call(wctx workflow.Context, params *CallParams) (sdktypes.Sessi
 
 		var err error
 		if result, err = cs.executeCall(goCtx, params.CallSpec, params.Executors); err != nil {
+			if !workflow.IsReplaying(wctx) && errors.Is(err, errStuckRuntime) {
+				// If not replaying - this is a new failure. Older failures should be ignored on replays.
+
+				// panic forces workflow to retry - we need it since the runtime is stuck
+				// and need restarting.
+				l.Panic("stuck runtime detected during pure call")
+			}
+
 			l.With(zap.Error(err)).Sugar().Infof("pure call failed: %v", err)
 			return sdktypes.NewSessionCallAttemptResult(sdktypes.InvalidValue, fmt.Errorf("internal call: %w", err)), nil
 		}
@@ -174,6 +188,8 @@ func (cs *calls) Call(wctx workflow.Context, params *CallParams) (sdktypes.Sessi
 
 			var ret CallActivityOutputs
 
+			isReplaying := workflow.IsReplaying(wctx)
+
 			future := workflow.ExecuteActivity(
 				actx,
 				CallActivityName,
@@ -191,6 +207,17 @@ func (cs *calls) Call(wctx workflow.Context, params *CallParams) (sdktypes.Sessi
 					// In this case we just reshecule it again.
 					l.Warn("call activity schedule to start timeout, retrying")
 					continue
+				}
+
+				if !isReplaying {
+					// If not replaying - this is a new failure. Older failures should be ignored on replays.
+
+					var aerr *temporal.ApplicationError
+					if ok := errors.As(err, &aerr); ok && aerr.Type() == stuckRuntimeErrorType {
+						// panic forces workflow to retry - we need it since the runtime is stuck
+						// and need restarting.
+						l.Panic("stuck runtime detected during call activity")
+					}
 				}
 
 				return sdktypes.InvalidSessionCallAttemptResult, fmt.Errorf("call activity error: %w", err)
