@@ -1,7 +1,10 @@
-"""Initialize an OpenAI client, based on an AutoKitteh connection."""
+"""Helpers for initializing Pydantic AI providers (OpenAI, Anthropic, Gateway)
+based on AutoKitteh connections."""
 
 import os
+from typing import Any
 
+from pydantic.ai.providers import Provider
 from pydantic_ai.providers.anthropic import AnthropicProvider
 from pydantic_ai.providers.gateway import gateway_provider
 from pydantic_ai.providers.openai import OpenAIProvider
@@ -10,7 +13,7 @@ from .connections import check_connection_name
 from .errors import ConnectionInitError
 
 
-def pydantic_gateway_provider(connection: str, *args, **kwargs) -> gateway_provider:
+def pydantic_gateway_provider(connection: str, *args, **kwargs) -> Provider[Any]:
     """Initialize a Pydantic Gateway provider, based on an AutoKitteh connection.
 
     API reference:
@@ -29,7 +32,7 @@ def pydantic_gateway_provider(connection: str, *args, **kwargs) -> gateway_provi
     """
     check_connection_name(connection)
 
-    api_key = os.getenv(connection + "__apiKey")
+    api_key = os.getenv(connection + "__api_key")
 
     if not api_key:
         raise ConnectionInitError(connection)
@@ -56,7 +59,7 @@ def openai_pydantic_ai_provider(connection: str, **kwargs) -> OpenAIProvider:
     """
     check_connection_name(connection)
 
-    api_key = os.getenv(connection + "__apiKey")
+    api_key = os.getenv(connection + "api_key")
 
     if not api_key:
         raise ConnectionInitError(connection)
