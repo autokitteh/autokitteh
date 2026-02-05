@@ -17,7 +17,7 @@ import (
 type RunnerManager interface {
 	Start(ctx context.Context, sessionID sdktypes.SessionID, buildArtifacts []byte, vars map[string]string) (string, *RunnerClient, error)
 	RunnerHealth(ctx context.Context, runnerID string) error
-	Stop(ctx context.Context, runnerID string) error
+	Stop(ctx context.Context, runnerID string, sessionID sdktypes.SessionID) error
 	Health(ctx context.Context) error
 }
 

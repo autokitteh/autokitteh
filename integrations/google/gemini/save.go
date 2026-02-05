@@ -9,7 +9,9 @@ import (
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 
+	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/common"
+	"go.autokitteh.dev/autokitteh/integrations/google/vars"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
@@ -69,7 +71,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c.Finalize(sdktypes.NewVars().Set(apiKeyVar, api_key, true))
+	c.Finalize(sdktypes.NewVars().Set(apiKeyVar, api_key, true).Set(vars.AuthType, integrations.APIKey, false))
 }
 
 // validateGeminiAPIKey makes a test request to validate the provided API key.

@@ -74,7 +74,7 @@ func (d *deployments) Autodrain() {
 }
 
 func (d *deployments) Activate(ctx context.Context, id sdktypes.DeploymentID) error {
-	if err := authz.CheckContext(ctx, id, "write:activate"); err != nil {
+	if err := authz.CheckContext(ctx, id, authz.OpDeploymentWriteActivate); err != nil {
 		return err
 	}
 
@@ -121,7 +121,7 @@ func (d *deployments) Activate(ctx context.Context, id sdktypes.DeploymentID) er
 }
 
 func (d *deployments) Test(ctx context.Context, id sdktypes.DeploymentID) error {
-	if err := authz.CheckContext(ctx, id, "write:test"); err != nil {
+	if err := authz.CheckContext(ctx, id, authz.OpDeploymentWriteTest); err != nil {
 		return err
 	}
 
@@ -147,7 +147,7 @@ func (d *deployments) Create(ctx context.Context, deployment sdktypes.Deployment
 	if err := authz.CheckContext(
 		ctx,
 		sdktypes.InvalidDeploymentID,
-		"write:create",
+		authz.OpDeploymentWriteCreate,
 		authz.WithData("deployment", deployment),
 		authz.WithAssociationWithID("project", deployment.ProjectID()),
 		authz.WithAssociationWithID("build", deployment.BuildID()),
@@ -166,7 +166,7 @@ func (d *deployments) Create(ctx context.Context, deployment sdktypes.Deployment
 }
 
 func (d *deployments) Deactivate(ctx context.Context, id sdktypes.DeploymentID) error {
-	if err := authz.CheckContext(ctx, id, "write:deactivate"); err != nil {
+	if err := authz.CheckContext(ctx, id, authz.OpDeploymentWriteDeactivate); err != nil {
 		return err
 	}
 
@@ -211,7 +211,7 @@ func updateDeploymentState(ctx context.Context, db db.DB, id sdktypes.Deployment
 }
 
 func (d *deployments) Delete(ctx context.Context, id sdktypes.DeploymentID) error {
-	if err := authz.CheckContext(ctx, id, "delete:delete"); err != nil {
+	if err := authz.CheckContext(ctx, id, authz.OpDeploymentDeleteDelete); err != nil {
 		return err
 	}
 
@@ -234,7 +234,7 @@ func (d *deployments) List(ctx context.Context, filter sdkservices.ListDeploymen
 
 	if err := authz.CheckContext(
 		ctx,
-		sdktypes.InvalidDeploymentID, "read:list",
+		sdktypes.InvalidDeploymentID, authz.OpDeploymentReadList,
 		authz.WithData("filter", filter),
 		authz.WithAssociationWithID("project", filter.ProjectID),
 		authz.WithAssociationWithID("build", filter.BuildID),
@@ -247,7 +247,7 @@ func (d *deployments) List(ctx context.Context, filter sdkservices.ListDeploymen
 }
 
 func (d *deployments) Get(ctx context.Context, id sdktypes.DeploymentID) (sdktypes.Deployment, error) {
-	if err := authz.CheckContext(ctx, id, "read:get", authz.WithConvertForbiddenToNotFound); err != nil {
+	if err := authz.CheckContext(ctx, id, authz.OpDeploymentReadGet, authz.WithConvertForbiddenToNotFound); err != nil {
 		return sdktypes.InvalidDeployment, err
 	}
 

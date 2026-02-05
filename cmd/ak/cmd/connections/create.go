@@ -13,6 +13,7 @@ import (
 
 var (
 	project string
+	org     string
 	quiet   bool
 )
 
@@ -23,17 +24,35 @@ var createCmd = common.StandardCommand(&cobra.Command{
 	Args:    cobra.ExactArgs(1),
 
 	RunE: func(cmd *cobra.Command, args []string) error {
-		r := resolver.Resolver{Client: common.Client()}
+		cli := common.Client()
+		r := resolver.Resolver{Client: cli}
 		ctx, cancel := common.LimitedContext()
 		defer cancel()
 
-		pid, err := r.ProjectNameOrID(ctx, sdktypes.InvalidOrgID, project)
-		if err != nil {
-			return err
+		if org != "" {
+			o, err := r.Org(ctx, org)
+			if err != nil {
+				return err
+			}
+			if !o.IsValid() {
+				err = fmt.Errorf("org %q not found", org)
+				return common.NewExitCodeError(common.NotFoundExitCode, err)
+			}
+			org = o.String()
 		}
-		if !pid.IsValid() {
-			err = fmt.Errorf("project %q not found", project)
-			return common.NewExitCodeError(common.NotFoundExitCode, err)
+
+		var pIDStr string
+
+		if project != "" {
+			pid, err := r.ProjectNameOrID(ctx, sdktypes.InvalidOrgID, project)
+			if err != nil {
+				return err
+			}
+			if !pid.IsValid() {
+				err = fmt.Errorf("project %q not found", project)
+				return common.NewExitCodeError(common.NotFoundExitCode, err)
+			}
+			pIDStr = pid.String()
 		}
 
 		i, iid, err := r.IntegrationNameOrID(ctx, integration)
@@ -47,7 +66,8 @@ var createCmd = common.StandardCommand(&cobra.Command{
 
 		c, err := sdktypes.ConnectionFromProto(&sdktypes.ConnectionPB{
 			IntegrationId: iid.String(),
-			ProjectId:     pid.String(),
+			ProjectId:     pIDStr,
+			OrgId:         org,
 			Name:          args[0],
 		})
 		if err != nil {
@@ -81,8 +101,10 @@ var createCmd = common.StandardCommand(&cobra.Command{
 
 func init() {
 	// Command-specific flags.
-	createCmd.Flags().StringVarP(&project, "project", "p", "", "project name or ID")
-	kittehs.Must0(createCmd.MarkFlagRequired("project"))
+	createCmd.Flags().StringVarP(&project, "project", "p", "", "project name or ID (creates a project-scoped connection)")
+	createCmd.Flags().StringVarP(&org, "org", "o", "", "organization name or ID (creates an org-scoped connection)")
+	createCmd.MarkFlagsOneRequired("project", "org")
+	createCmd.MarkFlagsMutuallyExclusive("project", "org")
 
 	createCmd.Flags().StringVarP(&integration, "integration", "i", "", "integration name or ID")
 	kittehs.Must0(createCmd.MarkFlagRequired("integration"))

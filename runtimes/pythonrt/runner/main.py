@@ -15,6 +15,7 @@ from pathlib import Path
 from threading import Lock, Thread, Timer
 from time import sleep
 from traceback import TracebackException, format_exception
+from typing import Callable
 
 import autokitteh
 import autokitteh.store
@@ -29,6 +30,7 @@ import log
 import pb
 import values
 from call import AKCall, activity_marker, full_func_name
+from largeobjects import LargeObjectsManager
 from syscalls import SysCalls, mark_no_activity
 
 # Timeouts are in seconds
@@ -177,7 +179,7 @@ def set_exception_args(err):
 
 
 Call = namedtuple("Call", "fn args kw fut")
-Result = namedtuple("Result", "value error traceback")
+Result = namedtuple("Result", "value error traceback large_object")
 
 
 def is_pickleable(err):
@@ -232,12 +234,14 @@ def short_name(func_name: str):
     return func_name[i + 1 :]
 
 
-def force_close(server):
+def force_close(server: grpc.Server):
+    log.info("closing server")
     server.stop(SERVER_GRACE_TIMEOUT)
+    log.info("exiting process")
     os._exit(1)
 
 
-MAX_SIZE_OF_REQUEST = 1 * 1024 * 1024
+MIN_LARGE_OBJECT_SIZE = 1 * 1024 * 1024
 
 
 def format_size(size):
@@ -281,13 +285,20 @@ def pickleable_exception(err):
 
 class Runner(pb.runner_rpc.RunnerService):
     def __init__(
-        self, id, worker, code_dir, server, start_timeout=DEFAULT_START_TIMEOUT
+        self,
+        id,
+        worker,
+        code_dir,
+        server,
+        large_objects_manager: LargeObjectsManager,
+        start_timeout=DEFAULT_START_TIMEOUT,
     ):
         self.id = id
         self.worker: pb.handler_rpc.HandlerServiceStub = worker
         self.code_dir = code_dir
         self.server: grpc.Server = server
 
+        # DO NOT USE DIRECTLY. Use submit_to_threadpool().
         self.executor = ThreadPoolExecutor()
 
         self.lock = Lock()
@@ -299,6 +310,8 @@ class Runner(pb.runner_rpc.RunnerService):
         )
         self._inactivity_timer.start()
         self._stopped = False
+
+        self.large_objects_mngr = large_objects_manager
 
     def result_error(self, err):
         io = StringIO()
@@ -313,6 +326,24 @@ class Runner(pb.runner_rpc.RunnerService):
         self._orig_print(f"error: {err!r}\n\n{exc}", file=io)
 
         return io.getvalue()
+
+    def submit_to_threadpool(self, fn, *args, **kw):
+        log.info("submitting to threadpool: %s", full_func_name(fn))
+
+        def cb(fut):
+            log.info("execution on threadpool done: %s", full_func_name(fn))
+            if exc := fut.exception():
+                log.error(
+                    "Uncaught exception in executor: %r, traceback: %s",
+                    exc,
+                    format_exception(exc),
+                )
+                force_close(self.server)
+
+        fut = self.executor.submit(fn, *args, **kw)
+        fut.add_done_callback(cb)
+
+        return fut
 
     def stop_if_start_not_called(self, timeout):
         log.error("Start not called after %s seconds, terminating", timeout)
@@ -409,9 +440,12 @@ class Runner(pb.runner_rpc.RunnerService):
 
         fix_http_body(inputs)
 
+        session_id = inputs.get("session_id")
+
         event = Event(
             data=AttrDict(inputs.get("data", {})),
-            session_id=inputs.get("session_id"),
+            event_type=inputs.get("event_type"),
+            event_id=inputs.get("event_id"),
         )
 
         # Must be before we load user code
@@ -460,7 +494,7 @@ class Runner(pb.runner_rpc.RunnerService):
                 update_wrapper(handler, orig_fn)
                 fn = handler
 
-        self.executor.submit(self.on_event, fn, event)
+        self.submit_to_threadpool(self.on_event, fn, event, session_id)
 
         return pb.runner.StartResponse()
 
@@ -470,7 +504,9 @@ class Runner(pb.runner_rpc.RunnerService):
         )
 
         result = self._call(fn, args, kw)
+
         if result.error and not is_pickleable(result.error):
+            log.info("not pickable")
             err = pickleable_exception(result.error)
             result = result._replace(error=err)
 
@@ -479,15 +515,27 @@ class Runner(pb.runner_rpc.RunnerService):
             req.result.custom.data = data
             req.result.custom.value.CopyFrom(values.safe_wrap(result.value))
             size_of_request = req.ByteSize()
-            if size_of_request > MAX_SIZE_OF_REQUEST:
-                # reset the req.result and use error only
-                req = pb.handler.ExecuteReplyRequest(
-                    runner_id=self.id,
-                )
-                req.error = "response size too large"
-                print(
-                    f"response size {format_size(size_of_request)} is too large, max allowed is {format_size(MAX_SIZE_OF_REQUEST)}"
-                )
+            if size_of_request > MIN_LARGE_OBJECT_SIZE:
+                log.info(f"req size large {format_size(size_of_request)}")
+                if not self.large_objects_mngr.enabled:
+                    log.info("large objects not enabled")
+                    # reset the req.result and use error only
+                    req = pb.handler.ExecuteReplyRequest(
+                        runner_id=self.id,
+                    )
+                    req.error = "response size too large"
+                    print(
+                        f"response size {format_size(size_of_request)} is too large, max allowed is {format_size(MIN_LARGE_OBJECT_SIZE)}"
+                    )
+                else:
+                    ref = self.large_objects_mngr.set(data)
+                    large_object_result = Result(ref, None, None, True)
+                    req.result.custom.data = pickle.dumps(large_object_result)
+                    req.result.custom.value.CopyFrom(
+                        values.safe_wrap(f"large object {size_of_request}")
+                    )
+                    log.info(f"new req size {format_size(req.ByteSize())}")
+
         except Exception as err:
             # Print so it'll get to session log
             msg = f"error processing result - {err!r}"
@@ -517,12 +565,14 @@ class Runner(pb.runner_rpc.RunnerService):
         if call is None:
             context.abort(grpc.StatusCode.INTERNAL, "no pending activity calls")
 
-        self.executor.submit(self.execute, call.fn, call.args, call.kw)
+        self.submit_to_threadpool(self.execute, call.fn, call.args, call.kw)
+
         return pb.runner.ExecuteResponse()
 
     def ActivityReply(
         self, request: pb.runner.ActivityReplyRequest, context: grpc.ServicerContext
     ):
+        log.info("activity reply called")
         if request.error or not request.result.custom.data:
             error = request.error or "activity reply not a Custom value"
             req = pb.handler.DoneRequest(
@@ -537,7 +587,7 @@ class Runner(pb.runner_rpc.RunnerService):
 
             return pb.runner.ActivityReplyResponse(error=request.error)
 
-        result = None
+        result: Result = None
         try:
             result = pickle.loads(request.result.custom.data)
         except Exception as err:
@@ -545,6 +595,33 @@ class Runner(pb.runner_rpc.RunnerService):
             abort_with_exception(
                 context, grpc.StatusCode.INTERNAL, err, show_pickle_help=True
             )
+
+        if getattr(result, "large_object", False):
+            log.info("result is large object")
+            if not self.large_objects_mngr.enabled:
+                abort_with_exception(
+                    context,
+                    grpc.StatusCode.INTERNAL,
+                    "large object manager disabled",
+                    show_pickle_help=True,
+                )
+
+            result = self.large_objects_mngr.get(result.value)
+
+            if result is None:
+                abort_with_exception(
+                    context,
+                    grpc.StatusCode.INTERNAL,
+                    "large object result not found",
+                    show_pickle_help=True,
+                )
+            try:
+                result = pickle.loads(result)
+            except Exception as err:
+                log.exception(f"can't decode large object: pickle: {err}")
+                abort_with_exception(
+                    context, grpc.StatusCode.INTERNAL, err, show_pickle_help=True
+                )
 
         if not isinstance(result, Result):
             context.abort(
@@ -594,7 +671,9 @@ class Runner(pb.runner_rpc.RunnerService):
     def call_in_activity(self, fn, args, kw):
         log.info("call_in_activity: %s", full_func_name(fn))
         fut = self.start_activity(fn, args, kw)
-        return fut.result()
+        resp = fut.result()
+        log.info("returned from future")
+        return resp
 
     def start_activity(self, fn, args, kw) -> Future:
         fn_name = full_func_name(fn)
@@ -616,21 +695,26 @@ class Runner(pb.runner_rpc.RunnerService):
             ),
         )
         req_size = req.ByteSize()
-        if req_size > MAX_SIZE_OF_REQUEST:
+        if req_size > MIN_LARGE_OBJECT_SIZE:
             raise ActivityError(
-                f"Request payload size {format_size(req_size)} is larger than maximum supported ({format_size(MAX_SIZE_OF_REQUEST)})."
+                f"Request payload size {format_size(req_size)} is larger than maximum supported ({format_size(MIN_LARGE_OBJECT_SIZE)})."
             )
-        log.info("activity: sending")
         resp = self.worker.Activity(req)
         if resp.error:
             raise ActivityError(resp.error)
         log.info("activity request ended")
         return call.fut
 
-    def _call(self, fn, args, kw):
+    def _call(self, fn, args, kw, opts={}):
         func_name = full_func_name(fn)
         log.info("calling %s", func_name)
         value = error = stack = None
+
+        if inspect.isfunction(fn):
+            # Add optional arguments as kwargs only if specified as function args.
+            sig = inspect.signature(fn)
+            kw.update({k: v for k, v in opts.items() if k in sig.parameters})
+
         try:
             value = fn(*args, **kw)
             if asyncio.iscoroutine(value):
@@ -652,13 +736,13 @@ class Runner(pb.runner_rpc.RunnerService):
             log.warning("non pickleable: %r", error)
             error = error.__reduce__()
 
-        return Result(value, error, stack)
+        return Result(value, error, stack, large_object=False)
 
-    def on_event(self, fn, event):
+    def on_event(self, fn, event, session_id):
         func_name = full_func_name(fn)
         log.info("start event: %s", func_name)
 
-        result = self._call(fn, [event], {})
+        result = self._call(fn, [event], {}, opts={"session_id": session_id})
 
         log.info("event end: error=%r", result.error)
         self._stopped = True
@@ -740,16 +824,86 @@ def validate_args(args):
         raise ValueError("start timeout must be positive")
 
 
-class LoggingInterceptor(grpc.ServerInterceptor):
-    runner_id = None
+class GRPCInterceptor(grpc.ServerInterceptor):
+    _runner_id: str
+    _get_server: Callable[[], grpc.Server]
+
+    def __init__(self, runner_id, get_server: Callable[[], grpc.Server]) -> None:
+        self._runner_id = runner_id
+        self._get_server = get_server
+        super().__init__()
 
     def intercept_service(self, continuation, handler_call_details):
-        log.info("runner_id %s, call %s", self.runner_id, handler_call_details.method)
-        return continuation(handler_call_details)
+        h = continuation(handler_call_details)
 
-    def __init__(self, runner_id) -> None:
-        self.runner_id = runner_id
-        super().__init__()
+        if not h:
+            return None
+
+        method = handler_call_details.method
+
+        if m := h.unary_unary:
+            # Wrap unary_unary calls to log uncaught exceptions for unary calls.
+
+            def wrapper(request, context):
+                log.info(
+                    "runner_id %s, call %s",
+                    self._runner_id,
+                    method,
+                )
+
+                try:
+                    ret = m(request, context)
+
+                    log.info(
+                        "runner_id %s, call %s returned",
+                        self._runner_id,
+                        method,
+                    )
+
+                    return ret
+                except Exception as err:
+                    if (
+                        context.code() is not None
+                        and context.code() != grpc.StatusCode.OK
+                    ):
+                        log.warn(
+                            "context.abort in grpc %s: code %d, details: %s, traceback: %s",
+                            method,
+                            context.code(),
+                            context.details(),
+                            format_exception(err),
+                        )
+                        raise
+
+                    # Log uncaught exceptions that were not triggered by context.abort()
+
+                    log.error(
+                        "Uncaught exception in grpc %s: %r, traceback: %s",
+                        method,
+                        err,
+                        format_exception(err),
+                    )
+
+                    try:
+                        context.abort(
+                            grpc.StatusCode.INTERNAL, f"Internal error: {err}"
+                        )
+                    finally:
+                        force_close(self._get_server())
+
+            h = grpc.unary_unary_rpc_method_handler(
+                wrapper,
+                request_deserializer=h.request_deserializer,
+                response_serializer=h.response_serializer,
+            )
+        else:
+            log.warning(
+                "runner_id %s, call %s - not wrapping non-unary_unary method",
+                self._runner_id,
+                method,
+            )
+
+        return h
 
 
 def dir_type(value):
@@ -790,6 +944,15 @@ if __name__ == "__main__":
         default=DEFAULT_START_TIMEOUT,
         type=int,
     )
+    parser.add_argument(
+        "--enable-large-objects",
+        help="enable large objects",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--large-objects-path", help="where to store large objects", default="/tmp"
+    )
+
     args = parser.parse_args()
 
     try:
@@ -816,9 +979,21 @@ if __name__ == "__main__":
 
     server = grpc.server(
         thread_pool=ThreadPoolExecutor(max_workers=cpu_count() * 8),
-        interceptors=[LoggingInterceptor(args.runner_id)],
+        interceptors=[GRPCInterceptor(args.runner_id, lambda: server)],
     )
-    runner = Runner(args.runner_id, worker, args.code_dir, server, args.start_timeout)
+
+    lom = LargeObjectsManager(
+        path=args.large_objects_path, enabled=args.enable_large_objects
+    )
+
+    runner = Runner(
+        args.runner_id,
+        worker,
+        args.code_dir,
+        server,
+        lom,
+        args.start_timeout,
+    )
     pb.runner_rpc.add_RunnerServiceServicer_to_server(runner, server)
 
     server.add_insecure_port(f"[::]:{args.port}")

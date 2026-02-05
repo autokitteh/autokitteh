@@ -21,6 +21,7 @@ type Data struct {
 	BuildFile   *sdkbuildfile.BuildFile `json:"build_file"`
 	Triggers    []sdktypes.Trigger      `json:"mappings"`
 	Connections []sdktypes.Connection   `json:"connections"`
+	Event       sdktypes.Event          `json:"event"`
 }
 
 type ConnInfo struct {
@@ -78,6 +79,12 @@ func Get(ctx context.Context, svcs *sessionsvcs.Svcs, session sdktypes.Session) 
 
 		if data.Vars, err = svcs.Vars.Get(ctx, sdktypes.NewVarScopeID(pid)); err != nil {
 			return nil, fmt.Errorf("get vars: %w", err)
+		}
+	}
+
+	if eid := session.EventID(); eid.IsValid() {
+		if data.Event, err = retrieve(ctx, eid, svcs.Events.Get); err != nil {
+			return nil, fmt.Errorf("get event: %w", err)
 		}
 	}
 

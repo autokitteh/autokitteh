@@ -79,16 +79,19 @@ func (gdb *gormdb) findConnectionIDsWithActiveDeploymentByVar(ctx context.Contex
 		db = db.Where("vars.value = ? AND vars.is_secret is false", v)
 	}
 
-	// Join with connections and deployments to filter by projects with active deployments only.
+	// Join with connections and deployments.
+	// For project-level connections (project_id IS NOT NULL), ensure active deployment exists.
+	// For org-level connections (project_id IS NULL), skip deployment check.
 	db = db.Model(&scheme.Var{}).
 		Joins("JOIN connections ON vars.var_id = connections.connection_id").
-		Joins("JOIN deployments ON connections.project_id = deployments.project_id").
-		Where("deployments.state = ? AND deployments.deleted_at IS NULL", int32(sdktypes.DeploymentStateActive.ToProto()))
+		Joins("LEFT JOIN deployments ON connections.project_id = deployments.project_id AND deployments.state = ? AND deployments.deleted_at IS NULL", int32(sdktypes.DeploymentStateActive.ToProto())).
+		Where("connections.project_id IS NULL OR deployments.deployment_id IS NOT NULL")
 
 	// Note(s):
 	// - will skip not user owned vars
 	// - not checking if scope is deleted, since scope deletion will cascade deletion of relevant vars
-	// - only returns connections for projects with active deployments
+	// - returns project-level connections only if they have active deployments
+	// - returns org-level connections regardless of deployment state
 	var ids []uuid.UUID
 	if err := db.Distinct("vars.var_id").Pluck("vars.var_id", &ids).Error; err != nil {
 		return nil, err

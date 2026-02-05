@@ -1,5 +1,4 @@
 //go:build !enterprise
-// +build !enterprise
 
 package db
 

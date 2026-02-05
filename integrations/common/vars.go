@@ -55,7 +55,7 @@ func (o OAuthData) ToToken() *oauth2.Token {
 // This is reused in connection status and test functions of all integrations.
 func CheckOAuthToken(vs sdktypes.Vars) (sdktypes.Status, error) {
 	if vs.GetValue(OAuthAccessTokenVar) == "" {
-		return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+		return sdktypes.NewStatus(sdktypes.StatusCodeInitRequired, "Init required"), nil
 	}
 	return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using OAuth 2.0"), nil
 }
@@ -65,7 +65,7 @@ func CheckOAuthToken(vs sdktypes.Vars) (sdktypes.Status, error) {
 // being preloaded with [LegacyOAuthAccessTokenVar], which isn't validated.
 func CheckLegacyOAuthToken(vs sdktypes.Vars) (sdktypes.Status, error) {
 	if vs.GetValue(LegacyOAuthAccessTokenVar) == "" {
-		return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+		return sdktypes.NewStatus(sdktypes.StatusCodeInitRequired, "Init required"), nil
 	}
 	return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Using OAuth 2.0"), nil
 }
@@ -85,7 +85,7 @@ func EncodeOAuthData(t *oauth2.Token) OAuthData {
 // This is reused in connection status and test functions of all integrations.
 func ReadVarsWithStatus(ctx context.Context, vars sdkservices.Vars, cid sdktypes.ConnectionID) (sdktypes.Vars, sdktypes.Status, error) {
 	if !cid.IsValid() {
-		return nil, sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+		return nil, sdktypes.NewStatus(sdktypes.StatusCodeInitRequired, "Init required"), nil
 	}
 
 	vs, err := vars.Get(ctx, sdktypes.NewVarScopeID(cid))

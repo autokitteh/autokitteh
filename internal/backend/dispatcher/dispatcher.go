@@ -2,6 +2,7 @@ package dispatcher
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -56,17 +57,13 @@ func New(l *zap.Logger, cfg *Config, svcs Svcs) *Dispatcher {
 }
 
 func (d *Dispatcher) DispatchExternal(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) (*sdkservices.DispatchResponse, error) {
-	pid, err := d.svcs.DB.GetProjectIDOf(ctx, event.DestinationID())
+	did := event.DestinationID()
+	orgID, err := d.svcs.DB.GetOrgIDOf(ctx, did)
 	if err != nil {
-		return nil, fmt.Errorf("get project id of destination %v: %w", event.DestinationID(), err)
+		return nil, fmt.Errorf("get org id of destinationID %v: %w", did, err)
 	}
 
-	orgID, err := d.svcs.DB.GetOrgIDOf(ctx, pid)
-	if err != nil {
-		return nil, fmt.Errorf("get org id of project %v: %w", pid, err)
-	}
-
-	d.sl.Info("external dispatch found pid", pid.String(), "and orgID", orgID.String(), "for eventID", event.ID().String(), "and destinationID", event.DestinationID().String())
+	d.sl.Info("external dispatch found orgID", orgID.String(), "for eventID", event.ID().String(), "and destinationID", event.DestinationID().String())
 
 	cli, err := d.svcs.ExternalClient.NewOrgImpersonator(orgID)
 	if err != nil {
@@ -78,6 +75,50 @@ func (d *Dispatcher) DispatchExternal(ctx context.Context, event sdktypes.Event,
 
 func (d *Dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) (*sdkservices.DispatchResponse, error) {
 	event = event.WithCreatedAt(time.Now())
+
+	did := event.DestinationID()
+
+	if !did.IsConnectionID() {
+		return d.dispatchOneEvent(ctx, event, opts)
+	}
+
+	c, err := d.svcs.DB.GetConnection(ctx, did.ToConnectionID())
+	if err != nil {
+		return nil, err
+	}
+
+	if c.ProjectID().IsValid() {
+		// project connection, no need to split
+		return d.dispatchOneEvent(ctx, event, opts)
+	}
+
+	triggers, err := d.svcs.DB.ListTriggers(ctx, sdkservices.ListTriggersFilter{ConnectionID: did.ToConnectionID()})
+	if err != nil {
+		return nil, err
+	}
+
+	var resp sdkservices.DispatchResponse
+	if len(triggers) == 0 {
+		return &resp, nil
+	}
+
+	var dispatchErrors []error
+	for _, trigger := range triggers {
+		r, err := d.dispatchOneEvent(ctx, event.WithTriggerDestinationID(trigger.ID()), opts)
+		if err != nil {
+			d.sl.Error("dispatch for triggerID: "+trigger.ID().String(), err)
+			dispatchErrors = append(dispatchErrors, err)
+			continue
+		}
+
+		resp.SignaledSessionIDs = append(resp.SignaledSessionIDs, r.SignaledSessionIDs...)
+		resp.StartedSessionIDs = append(resp.StartedSessionIDs, r.StartedSessionIDs...)
+	}
+
+	return &resp, errors.Join(dispatchErrors...)
+}
+
+func (d *Dispatcher) dispatchOneEvent(ctx context.Context, event sdktypes.Event, opts *sdkservices.DispatchOptions) (*sdkservices.DispatchResponse, error) {
 	eid, err := d.svcs.Events.Save(ctx, event)
 	if err != nil {
 		return nil, fmt.Errorf("save event: %w", err)
@@ -88,7 +129,7 @@ func (d *Dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *s
 
 	sl.Infof("event saved: %v", eid)
 
-	if err := authz.CheckContext(ctx, event.ID(), "dispatch", authz.WithData("event", event), authz.WithData("opts", opts)); err != nil {
+	if err := authz.CheckContext(ctx, event.ID(), authz.OpDispatch, authz.WithData("event", event), authz.WithData("opts", opts)); err != nil {
 		return nil, err
 	}
 
@@ -129,7 +170,7 @@ func (d *Dispatcher) Dispatch(ctx context.Context, event sdktypes.Event, opts *s
 		return nil, fmt.Errorf("waiting for workflow completion: %w", err)
 	}
 
-	return &sdkservices.DispatchResponse{EventID: eid, SessionIDs: out.Started}, nil
+	return &sdkservices.DispatchResponse{EventID: eid, StartedSessionIDs: out.Started, SignaledSessionIDs: out.Signaled}, nil
 }
 
 func (d *Dispatcher) Redispatch(ctx context.Context, eventID sdktypes.EventID, opts *sdkservices.DispatchOptions) (*sdkservices.DispatchResponse, error) {
@@ -144,7 +185,7 @@ func (d *Dispatcher) Redispatch(ctx context.Context, eventID sdktypes.EventID, o
 		return nil, sdkerrors.ErrNotFound
 	}
 
-	if err := authz.CheckContext(ctx, eventID, "redispatch", authz.WithData("event", event), authz.WithData("opts", opts)); err != nil {
+	if err := authz.CheckContext(ctx, eventID, authz.OpRedispatch, authz.WithData("event", event), authz.WithData("opts", opts)); err != nil {
 		return nil, err
 	}
 

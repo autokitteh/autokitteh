@@ -1,0 +1,10 @@
+26
+
+-- main.py main --
+from datetime import datetime
+
+def main(_):
+    now = datetime.now()
+    # a builtin function that runs as an activity.
+    iso_str = now.isoformat()
+    print(len(iso_str))

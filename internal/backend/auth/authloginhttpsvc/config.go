@@ -1,6 +1,8 @@
 package authloginhttpsvc
 
 import (
+	"net/http"
+
 	"github.com/dghubble/gologin/v2"
 
 	"go.autokitteh.dev/autokitteh/internal/backend/configset"
@@ -35,10 +37,18 @@ type Config struct {
 	// If set, reject logins from new users, meaning users that are
 	// not already in the database are rejected.
 	RejectNewUsers bool `koanf:"reject_new_users"`
+
+	// Session cookie settings (should match authsessions config)
+	CookieDomain   string        `koanf:"ui_domain"`
+	SecureCookie   bool          `koanf:"secure_cookie"`
+	CookieSameSite http.SameSite `koanf:"cookie_samesite"`
 }
 
 var Configs = configset.Set[Config]{
-	Default: &Config{},
+	Default: &Config{
+		SecureCookie:   true,
+		CookieSameSite: http.SameSiteNoneMode,
+	},
 	Dev: &Config{
 		GoogleOAuth: oauth2Config{
 			RedirectURL: "http://localhost:9980/auth/google/callback",
@@ -48,5 +58,7 @@ var Configs = configset.Set[Config]{
 			RedirectURL: "http://localhost:9980/auth/github/callback",
 			Cookie:      &gologin.DebugOnlyCookieConfig,
 		},
+		SecureCookie:   false,
+		CookieSameSite: http.SameSiteLaxMode,
 	},
 }

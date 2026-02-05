@@ -30,7 +30,7 @@ func Status(v sdkservices.Vars) sdkintegrations.OptFn {
 
 		switch common.ReadAuthType(vs) {
 		case "":
-			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeInitRequired, "Init required"), nil
 		case integrations.OAuthDefault, integrations.OAuthPrivate:
 			return common.CheckOAuthToken(vs)
 		case integrations.DaemonApp:
@@ -52,7 +52,7 @@ func Test(v sdkservices.Vars, o *oauth.OAuth) sdkintegrations.OptFn {
 
 		switch authType := common.ReadAuthType(vs); authType {
 		case "":
-			return sdktypes.NewStatus(sdktypes.StatusCodeWarning, "Init required"), nil
+			return sdktypes.NewStatus(sdktypes.StatusCodeInitRequired, "Init required"), nil
 
 		case integrations.OAuthDefault, integrations.OAuthPrivate:
 			desc := common.Descriptor("microsoft", "", "")

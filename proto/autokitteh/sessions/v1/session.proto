@@ -118,6 +118,7 @@ message SessionLogRecord {
 
   message Outcome {
     values.v1.Value value = 1;
+    string event_id = 2; // which event caused this outcome to be recorded.
   }
 
   google.protobuf.Timestamp t = 1;

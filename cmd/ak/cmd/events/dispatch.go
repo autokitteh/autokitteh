@@ -19,7 +19,7 @@ var dispatchCmd = common.StandardCommand(&cobra.Command{
 	Aliases: []string{"dis", "dsp", "d"},
 	Args:    cobra.NoArgs,
 
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, _ []string) error {
 		var event sdktypes.Event
 		pb := &sdktypes.EventPB{}
 
@@ -39,7 +39,7 @@ var dispatchCmd = common.StandardCommand(&cobra.Command{
 		}
 
 		if connection != "" {
-			_, cid, err := r.ConnectionNameOrID(ctx, args[0], "", sdktypes.InvalidOrgID)
+			_, cid, err := r.ConnectionNameOrID(ctx, connection, "", sdktypes.InvalidOrgID)
 			if err != nil {
 				return err
 			}

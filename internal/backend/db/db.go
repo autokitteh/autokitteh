@@ -105,9 +105,12 @@ type Shared interface {
 	UpdateSessionState(ctx context.Context, sessionID sdktypes.SessionID, state sdktypes.SessionState) error
 	AddSessionPrint(ctx context.Context, sessionID sdktypes.SessionID, v sdktypes.Value, callSeq uint32) error
 	AddSessionStopRequest(ctx context.Context, sessionID sdktypes.SessionID, reason string) error
-	AddSessionOutcome(ctx context.Context, sessionID sdktypes.SessionID, v sdktypes.Value) error
+	AddSessionOutcome(ctx context.Context, sessionID sdktypes.SessionID, v sdktypes.Value, eid sdktypes.EventID) error
 	ListSessions(ctx context.Context, f sdkservices.ListSessionsFilter) (*sdkservices.ListSessionResult, error)
 	DeleteSession(ctx context.Context, sessionID sdktypes.SessionID) error
+
+	// If no new outcome is available, returns (InvalidValue, InvalidSessionID, lastSeq, nil).
+	GetNextSessionOutcomeForEvent(ctx context.Context, eventID sdktypes.EventID, lastSeq uint64) (sdktypes.Value, sdktypes.SessionID, uint64, error)
 
 	// -----------------------------------------------------------------------
 	// TODO(ENG-917): Do not expose scheme outside of DB.
@@ -143,6 +146,7 @@ type Shared interface {
 	PublishStoreValue(ctx context.Context, pid sdktypes.ProjectID, key string) error
 	UnpublishStoreValue(ctx context.Context, pid sdktypes.ProjectID, key string) error
 	IsStoreValuePublished(ctx context.Context, pid sdktypes.ProjectID, key string) (bool, error)
+	CountStoreValues(ctx context.Context, pid sdktypes.ProjectID) (int64, error)
 
 	// If len(keys) == 0, it returns all keys.
 	// if getValues is true, it returns values for the keys. Otherwise, it returns only keys without values.

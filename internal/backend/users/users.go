@@ -65,7 +65,7 @@ func (u *users) Setup(ctx context.Context) error {
 
 		if _, err := u.db.GetUser(ctx, authusers.DefaultUser.ID(), ""); err == nil {
 			// user exists - nothing to do.
-			u.l.Info("default user exist in db")
+			u.l.Debug("default user exist in db")
 			return nil
 		} else if !errors.Is(err, sdkerrors.ErrNotFound) {
 			return fmt.Errorf("get default user: %w", err)
@@ -116,7 +116,7 @@ func (u *users) Create(ctx context.Context, user sdktypes.User) (sdktypes.UserID
 	if err := authz.CheckContext(
 		ctx,
 		sdktypes.InvalidUserID,
-		"create:create",
+		authz.OpUserCreateCreate,
 		authz.WithData("user", user),
 		authz.WithData("status", user.Status().String()),
 	); err != nil {
@@ -183,7 +183,7 @@ func (u *users) Get(ctx context.Context, id sdktypes.UserID, email string) (sdkt
 	if err := authz.CheckContext(
 		ctx,
 		id,
-		"read:get",
+		authz.OpUserReadGet,
 		authz.WithData("user_id", id.String()),
 		authz.WithData("email", email),
 		authz.WithConvertForbiddenToNotFound,
@@ -198,7 +198,7 @@ func (u *users) GetID(ctx context.Context, email string) (sdktypes.UserID, error
 	if err := authz.CheckContext(
 		ctx,
 		sdktypes.InvalidUserID,
-		"read:get-id",
+		authz.OpUserReadGetID,
 		authz.WithData("email", email),
 		authz.WithConvertForbiddenToNotFound,
 	); err != nil {
@@ -225,7 +225,7 @@ func (u *users) Update(ctx context.Context, user sdktypes.User, fieldMask *sdkty
 	if err := authz.CheckContext(
 		ctx,
 		user.ID(),
-		"update:update",
+		authz.OpUserUpdateUpdate,
 		authz.WithData("user", user),
 		authz.WithFieldMask(fieldMask),
 		authz.WithData("status", user.Status().String()),

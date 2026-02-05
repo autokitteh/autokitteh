@@ -23,6 +23,7 @@ const (
 	startSessionActivityName        = "start_session"
 	listWaitingSignalsActivityName  = "list_waiting_signals"
 	removeSignalActivityName        = "remove_signal"
+	getTriggerActivityName          = "get_trigger"
 )
 
 func (d *Dispatcher) registerActivities(w worker.Worker) {
@@ -45,6 +46,11 @@ func (d *Dispatcher) registerActivities(w worker.Worker) {
 		d.removeSignalActivity,
 		activity.RegisterOptions{Name: removeSignalActivityName},
 	)
+
+	w.RegisterActivityWithOptions(
+		d.getTriggerActivity,
+		activity.RegisterOptions{Name: getTriggerActivityName},
+	)
 }
 
 type sessionData struct {
@@ -53,6 +59,11 @@ type sessionData struct {
 	Trigger      sdktypes.Trigger
 	Connection   sdktypes.Connection
 	OrgID        sdktypes.OrgID
+}
+
+func (d *Dispatcher) getTriggerActivity(ctx context.Context, tid sdktypes.TriggerID) (sdktypes.Trigger, error) {
+	t, err := d.svcs.DB.GetTriggerByID(ctx, tid)
+	return t, temporalclient.TranslateError(err, "get trigger %v", tid)
 }
 
 func (d *Dispatcher) listWaitingSignalsActivity(ctx context.Context, dstid sdktypes.EventDestinationID) ([]*types.Signal, error) {

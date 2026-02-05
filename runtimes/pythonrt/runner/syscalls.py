@@ -10,7 +10,7 @@ from datetime import timedelta
 from typing import Any
 
 import grpc
-from autokitteh import AttrDict, AutoKittehError, Signal
+from autokitteh import AttrDict, AutoKittehError, Event, Signal
 from autokitteh.activities import ACTIVITY_ATTR
 
 import log
@@ -98,7 +98,7 @@ class SysCalls:
         resp = call_grpc("subscribe", self.worker.Subscribe, req)
         return resp.signal_id
 
-    def ak_next_event(self, subscription_id, *, timeout=None):
+    def ak_next_event(self, subscription_id, *, timeout=None, full=False):
         log.debug("ak_next_event: %r %r", subscription_id, timeout)
 
         ids = subscription_id
@@ -119,11 +119,25 @@ class SysCalls:
             raise AutoKittehError(f"next_event inside activity: {err}") from err
 
         try:
-            data = json.loads(resp.event.data)
+            event = json.loads(resp.event.data)
         except (ValueError, TypeError, AttributeError) as err:
             raise AutoKittehError(f"next_event: invalid event: {err}")
 
-        return AttrDict(data) if isinstance(data, dict) else data
+        if not event:
+            return None
+
+        data = event.get("data")
+        data = AttrDict(data) if isinstance(data, dict) else data
+
+        return (
+            Event(
+                data=data,
+                event_type=event.get("type"),
+                event_id=event.get("id"),
+            )
+            if full
+            else data
+        )
 
     def ak_unsubscribe(self, subscription_id):
         log.debug("ak_unsubscribe: %r", subscription_id)
@@ -247,10 +261,12 @@ class SysCalls:
     def ak_http_outcome(
         self,
         status_code: int = 200,
+        *,
         body: Any = None,
         json: Any = None,
         headers: dict[str, str] = {},
         more: bool = False,
+        event_id: str | None = None,
     ) -> None:
         out = {
             "status_code": status_code,
@@ -267,13 +283,14 @@ class SysCalls:
         if json is not None:
             out["json"] = json
 
-        self.ak_outcome(out)
+        self.ak_outcome(out, event_id=event_id)
 
-    def ak_outcome(self, v: Any) -> None:
+    def ak_outcome(self, v: Any, *, event_id: str | None = None) -> None:
         log.debug("ak_outcome: %r", v)
         req = pb.OutcomeRequest(
             runner_id=self.runner_id,
             value=values.wrap(v),
+            event_id=event_id or "",
         )
         call_grpc("outcome", self.worker.Outcome, req)
 

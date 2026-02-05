@@ -1,12 +1,18 @@
 """AutoKitteh Event class"""
 
 from dataclasses import dataclass
+
 from .attr_dict import AttrDict
 
 
 @dataclass
 class Event:
-    """AutoKitteh Event as passed to entrypoints."""
+    """AutoKitteh Event."""
 
     data: AttrDict
-    session_id: str
+
+    event_id: str | None
+    """None if manual start"""
+
+    event_type: str | None
+    """None if manual start"""

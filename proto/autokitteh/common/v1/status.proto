@@ -8,6 +8,7 @@ message Status {
     CODE_OK = 1;
     CODE_WARNING = 2;
     CODE_ERROR = 3;
+    CODE_INIT_REQUIRED = 4;
   }
 
   Code code = 1;

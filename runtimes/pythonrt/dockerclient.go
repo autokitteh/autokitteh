@@ -96,10 +96,32 @@ func (d *dockerClient) ensureNetwork() (string, error) {
 	return inspectResult.ID, nil
 }
 
+func (d *dockerClient) sessionVolumeName(sessionID sdktypes.SessionID) string {
+	return "sad_" + sessionID.String()
+}
+
+func (d *dockerClient) RemoveVolume(ctx context.Context, sessionID sdktypes.SessionID) error {
+	return d.client.VolumeRemove(ctx, d.sessionVolumeName(sessionID), true)
+}
+
 func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, codePath string, sessionID sdktypes.SessionID, cmd []string, vars map[string]string) (string, string, error) {
 	envVars := make([]string, 0, len(vars))
 	for k, v := range vars {
 		envVars = append(envVars, k+"="+v)
+	}
+
+	mounts := []mount.Mount{
+		{
+			Type:   mount.TypeBind,
+			Source: codePath,
+			Target: "/workflow",
+		},
+		{
+			Type: mount.TypeVolume,
+			// sad == session activity data
+			Source: d.sessionVolumeName(sessionID),
+			Target: "/activity_data",
+		},
 	}
 	resp, err := d.client.ContainerCreate(ctx,
 		&container.Config{
@@ -117,13 +139,7 @@ func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, code
 			NetworkMode:  container.NetworkMode(networkName),
 			PortBindings: nat.PortMap{internalRunnerPort: []nat.PortBinding{{HostIP: "127.0.0.1"}}},
 			Tmpfs:        map[string]string{"/tmp": "size=64m"},
-			Mounts: []mount.Mount{
-				{
-					Type:   mount.TypeBind,
-					Source: codePath,
-					Target: "/workflow",
-				},
-			},
+			Mounts:       mounts,
 			Resources: container.Resources{
 				Memory:   d.maxMemoryBytesPerContainer,
 				NanoCPUs: d.maxNanoCPUPerContainer,
@@ -145,6 +161,7 @@ func (d *dockerClient) StartRunner(ctx context.Context, runnerImage string, code
 	d.setupContainerLogging(ctx, resp.ID, sessionID)
 
 	d.mu.Lock()
+	d.allRunnerIDs[resp.ID] = struct{}{}
 	d.activeRunnerIDs[resp.ID] = struct{}{}
 	d.mu.Unlock()
 

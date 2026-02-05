@@ -3,7 +3,6 @@ package cron
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/url"
 	"strconv"
 	"time"
@@ -171,10 +170,10 @@ func (cr *Cron) renewJiraEventWatchActivity(ctx context.Context, cid sdktypes.Co
 		)
 	}
 
-	newExp, ok := jira.ExtendWebhookLife(ctx, l, u, t.AccessToken, id)
-	if !ok {
-		l.Error("failed to renew Jira event watch")
-		return fmt.Errorf("failed to renew Jira event watch: %s", cid.String())
+	newExp, err := jira.ExtendWebhookLife(ctx, l, u, t.AccessToken, id)
+	if err != nil {
+		l.Error("failed to renew Jira event watch", zap.Error(err))
+		return temporalclient.TranslateError(err, "failed to renew Jira event watch: %s", cid.String())
 	}
 
 	v := sdktypes.NewVar(jira.WebhookExpiration).SetValue(newExp.Format(time.RFC3339))

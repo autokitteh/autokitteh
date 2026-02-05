@@ -19,14 +19,15 @@ type Svcs struct {
 	Builds       sdkservices.Builds
 	Connections  sdkservices.Connections
 	Deployments  sdkservices.Deployments
+	Events       sdkservices.Events
 	Integrations sdkservices.Integrations
+	Projects     sdkservices.Projects
 	Runtimes     sdkservices.Runtimes
+	Store        sdkservices.Store
+	Temporal     temporalclient.Client
+	Tokens       authtokens.Tokens
 	Triggers     sdkservices.Triggers
 	Vars         sdkservices.Vars
-	Projects     sdkservices.Projects
-	Store        sdkservices.Store
-	Tokens       authtokens.Tokens
-	Temporal     temporalclient.Client
 
 	WorkflowExecutor workflowexecutor.WorkflowExecutor
 	ExternalClient   externalclient.ExternalClient

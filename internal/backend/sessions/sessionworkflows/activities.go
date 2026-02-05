@@ -178,8 +178,8 @@ func (ws *workflows) getProjectIDAndActiveBuildIDActivity(ctx context.Context, p
 	}, nil
 }
 
-func (ws *workflows) outcomeActivity(ctx context.Context, sid sdktypes.SessionID, v sdktypes.Value) error {
-	return ws.svcs.DB.AddSessionOutcome(ctx, sid, v)
+func (ws *workflows) outcomeActivity(ctx context.Context, sid sdktypes.SessionID, v sdktypes.Value, eid sdktypes.EventID) error {
+	return ws.svcs.DB.AddSessionOutcome(ctx, sid, v, eid)
 }
 
 func (ws *workflows) listStoreValuesActivity(ctx context.Context, pid sdktypes.ProjectID) ([]string, error) {

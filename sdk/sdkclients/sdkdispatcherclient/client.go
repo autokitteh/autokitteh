@@ -52,14 +52,20 @@ func (c *client) Redispatch(ctx context.Context, eventID sdktypes.EventID, opts 
 		return nil, fmt.Errorf("invalid event id: %w", err)
 	}
 
-	sids, err := kittehs.TransformError(resp.Msg.SessionIds, sdktypes.ParseSessionID)
+	startedSids, err := kittehs.TransformError(resp.Msg.StartedSessionIds, sdktypes.ParseSessionID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid session id: %w", err)
+	}
+
+	signaledSids, err := kittehs.TransformError(resp.Msg.SignaledSessionIds, sdktypes.ParseSessionID)
 	if err != nil {
 		return nil, fmt.Errorf("invalid session id: %w", err)
 	}
 
 	return &sdkservices.DispatchResponse{
-		EventID:    eventId,
-		SessionIDs: sids,
+		EventID:            eventId,
+		StartedSessionIDs:  startedSids,
+		SignaledSessionIDs: signaledSids,
 	}, nil
 }
 
@@ -86,13 +92,19 @@ func (c *client) Dispatch(ctx context.Context, event sdktypes.Event, opts *sdkse
 		return nil, fmt.Errorf("invalid event id: %w", err)
 	}
 
-	sids, err := kittehs.TransformError(resp.Msg.SessionIds, sdktypes.ParseSessionID)
+	startedSids, err := kittehs.TransformError(resp.Msg.StartedSessionIds, sdktypes.ParseSessionID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid session id: %w", err)
+	}
+
+	signaledSids, err := kittehs.TransformError(resp.Msg.SignaledSessionIds, sdktypes.ParseSessionID)
 	if err != nil {
 		return nil, fmt.Errorf("invalid session id: %w", err)
 	}
 
 	return &sdkservices.DispatchResponse{
-		EventID:    eventId,
-		SessionIDs: sids,
+		EventID:            eventId,
+		StartedSessionIDs:  startedSids,
+		SignaledSessionIDs: signaledSids,
 	}, nil
 }

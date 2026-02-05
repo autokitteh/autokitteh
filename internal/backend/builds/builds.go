@@ -33,7 +33,7 @@ func (b *Builds) Save(ctx context.Context, build sdktypes.Build, data []byte) (s
 	if err := authz.CheckContext(
 		ctx,
 		sdktypes.InvalidBuildID,
-		"create:save",
+		authz.OpBuildCreateSave,
 		authz.WithData("build", build),
 		authz.WithAssociationWithID("project", build.ProjectID()),
 	); err != nil {
@@ -56,7 +56,7 @@ func (b *Builds) Save(ctx context.Context, build sdktypes.Build, data []byte) (s
 }
 
 func (b *Builds) Get(ctx context.Context, id sdktypes.BuildID) (sdktypes.Build, error) {
-	if err := authz.CheckContext(ctx, id, "read:get", authz.WithConvertForbiddenToNotFound); err != nil {
+	if err := authz.CheckContext(ctx, id, authz.OpBuildReadGet, authz.WithConvertForbiddenToNotFound); err != nil {
 		return sdktypes.InvalidBuild, err
 	}
 
@@ -67,7 +67,7 @@ func (b *Builds) List(ctx context.Context, filter sdkservices.ListBuildsFilter) 
 	if err := authz.CheckContext(
 		ctx,
 		sdktypes.InvalidBuildID,
-		"read:list",
+		authz.OpBuildReadList,
 		authz.WithData("filter", filter),
 		authz.WithAssociationWithID("project", filter.ProjectID),
 	); err != nil {
@@ -79,7 +79,7 @@ func (b *Builds) List(ctx context.Context, filter sdkservices.ListBuildsFilter) 
 
 // Download implements sdkservices.Builds.
 func (b *Builds) Download(ctx context.Context, id sdktypes.BuildID) (io.ReadCloser, error) {
-	if err := authz.CheckContext(ctx, id, "read:download", authz.WithConvertForbiddenToNotFound); err != nil {
+	if err := authz.CheckContext(ctx, id, authz.OpBuildReadDownload, authz.WithConvertForbiddenToNotFound); err != nil {
 		return nil, err
 	}
 
@@ -91,7 +91,7 @@ func (b *Builds) Download(ctx context.Context, id sdktypes.BuildID) (io.ReadClos
 }
 
 func (b *Builds) Delete(ctx context.Context, bid sdktypes.BuildID) error {
-	if err := authz.CheckContext(ctx, bid, "delete:delete"); err != nil {
+	if err := authz.CheckContext(ctx, bid, authz.OpBuildDeleteDelete); err != nil {
 		return err
 	}
 
@@ -99,7 +99,7 @@ func (b *Builds) Delete(ctx context.Context, bid sdktypes.BuildID) error {
 }
 
 func (b *Builds) Describe(ctx context.Context, bid sdktypes.BuildID) (*sdkbuildfile.BuildFile, error) {
-	if err := authz.CheckContext(ctx, bid, "read:describe", authz.WithConvertForbiddenToNotFound); err != nil {
+	if err := authz.CheckContext(ctx, bid, authz.OpBuildReadDescribe, authz.WithConvertForbiddenToNotFound); err != nil {
 		return nil, err
 	}
 

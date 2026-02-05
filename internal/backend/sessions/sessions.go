@@ -73,7 +73,7 @@ func (s *sessions) StartWorkers(ctx context.Context) error {
 }
 
 func (s *sessions) GetPrints(ctx context.Context, sid sdktypes.SessionID, pagination sdktypes.PaginationRequest) (*sdkservices.GetPrintsResults, error) {
-	if err := authz.CheckContext(ctx, sid, "read:get-prints", authz.WithData("pagination", pagination), authz.WithConvertForbiddenToNotFound); err != nil {
+	if err := authz.CheckContext(ctx, sid, authz.OpSessionReadGetPrints, authz.WithData("pagination", pagination), authz.WithConvertForbiddenToNotFound); err != nil {
 		return nil, err
 	}
 
@@ -103,7 +103,7 @@ func (s *sessions) GetLog(ctx context.Context, filter sdkservices.SessionLogReco
 	if err := authz.CheckContext(
 		ctx,
 		filter.SessionID,
-		"read:get-log",
+		authz.OpSessionReadGetLog,
 		authz.WithData("filter", filter),
 		authz.WithConvertForbiddenToNotFound,
 	); err != nil {
@@ -125,7 +125,7 @@ func (s *sessions) GetLog(ctx context.Context, filter sdkservices.SessionLogReco
 }
 
 func (s *sessions) DownloadLogs(ctx context.Context, sid sdktypes.SessionID) ([]byte, error) {
-	if err := authz.CheckContext(ctx, sid, "read:download-log"); err != nil {
+	if err := authz.CheckContext(ctx, sid, authz.OpSessionReadDownloadLog); err != nil {
 		return nil, err
 	}
 
@@ -200,7 +200,7 @@ func writeFormattedSessionLog(buf io.StringWriter, record sdktypes.SessionLogRec
 }
 
 func (s *sessions) Get(ctx context.Context, sessionID sdktypes.SessionID) (sdktypes.Session, error) {
-	if err := authz.CheckContext(ctx, sessionID, "read:get", authz.WithConvertForbiddenToNotFound); err != nil {
+	if err := authz.CheckContext(ctx, sessionID, authz.OpSessionReadGet, authz.WithConvertForbiddenToNotFound); err != nil {
 		return sdktypes.InvalidSession, err
 	}
 
@@ -211,7 +211,7 @@ func (s *sessions) Stop(ctx context.Context, sessionID sdktypes.SessionID, reaso
 	if err := authz.CheckContext(
 		ctx,
 		sessionID,
-		"write:stop",
+		authz.OpSessionWriteStop,
 		authz.WithData("force", force),
 		authz.WithData("cancel_timeout", cancelTimeout),
 	); err != nil {
@@ -229,7 +229,7 @@ func (s *sessions) List(ctx context.Context, filter sdkservices.ListSessionsFilt
 	if err := authz.CheckContext(
 		ctx,
 		sdktypes.InvalidSessionID,
-		"read:list",
+		authz.OpSessionReadList,
 		authz.WithData("filter", filter),
 		authz.WithAssociationWithID("deployment", filter.DeploymentID),
 		authz.WithAssociationWithID("project", filter.ProjectID),
@@ -244,7 +244,7 @@ func (s *sessions) List(ctx context.Context, filter sdkservices.ListSessionsFilt
 }
 
 func (s *sessions) Delete(ctx context.Context, sessionID sdktypes.SessionID) error {
-	if err := authz.CheckContext(ctx, sessionID, "delete:delete"); err != nil {
+	if err := authz.CheckContext(ctx, sessionID, authz.OpSessionDeleteDelete); err != nil {
 		return err
 	}
 
@@ -271,7 +271,7 @@ func (s *sessions) StartInternal(ctx context.Context, session sdktypes.Session) 
 	if err := authz.CheckContext(
 		ctx,
 		sdktypes.InvalidSessionID,
-		"create:start",
+		authz.OpSessionCreateStart,
 		authz.WithData("session", session),
 		authz.WithAssociationWithID("build", session.BuildID()),
 		authz.WithAssociationWithID("deployment", session.DeploymentID()),

@@ -72,6 +72,11 @@ export enum Status_Code {
    * @generated from enum value: CODE_ERROR = 3;
    */
   ERROR = 3,
+
+  /**
+   * @generated from enum value: CODE_INIT_REQUIRED = 4;
+   */
+  INIT_REQUIRED = 4,
 }
 // Retrieve enum metadata with: proto3.getEnumType(Status_Code)
 proto3.util.setEnumType(Status_Code, "autokitteh.common.v1.Status.Code", [
@@ -79,5 +84,6 @@ proto3.util.setEnumType(Status_Code, "autokitteh.common.v1.Status.Code", [
   { no: 1, name: "CODE_OK" },
   { no: 2, name: "CODE_WARNING" },
   { no: 3, name: "CODE_ERROR" },
+  { no: 4, name: "CODE_INIT_REQUIRED" },
 ]);
 

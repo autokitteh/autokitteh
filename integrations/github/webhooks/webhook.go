@@ -156,12 +156,15 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// To preserve the original event format instead of using the go-github event format,
 	// we unmarshal the payload into a map and use that map to transform the event.
 	var jsonEvent map[string]any
-	err = json.Unmarshal(payload, &jsonEvent)
-	if err != nil {
+	if err := json.Unmarshal(payload, &jsonEvent); err != nil {
 		l.Error("failed to unmarshal payload to map", zap.Error(err))
 		common.HTTPError(w, http.StatusInternalServerError)
 		return
 	}
+
+	slashCommands := extractSlashCommands(ghEvent)
+
+	jsonEvent["slash_commands"] = slashCommands
 
 	// Transform the GitHub event into an AutoKitteh event.
 	akEvent, err := common.TransformEvent(l, jsonEvent, eventType)
@@ -193,6 +196,23 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Dispatch the event to all of them, for potential asynchronous handling.
 	common.DispatchEvent(ctx, l, h.dispatch, akEvent, cids)
+
+	for _, cmd := range slashCommands {
+		m := map[string]any{
+			"command":           cmd,
+			"actual_data":       jsonEvent,
+			"actual_event_type": eventType,
+		}
+
+		akEvent, err := common.TransformEvent(l, m, "slash_command")
+		if err != nil {
+			l.Error("failed to transform slash command event", zap.Any("command", cmd), zap.Error(err))
+			continue
+		}
+
+		// Dispatch the event to all of them, for potential asynchronous handling.
+		common.DispatchEvent(ctx, l, h.dispatch, akEvent, cids)
+	}
 }
 
 // webhookSecret reads the webhook secret from the private connection's

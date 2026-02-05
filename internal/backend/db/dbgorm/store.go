@@ -14,8 +14,6 @@ import (
 	"go.autokitteh.dev/autokitteh/sdk/sdktypes"
 )
 
-const maxValueSize = 64 * 1024
-
 func (db *gormdb) SetStoreValue(ctx context.Context, pid sdktypes.ProjectID, key string, v sdktypes.Value) error {
 	if !pid.IsValid() {
 		return sdkerrors.NewInvalidArgumentError("invalid project id")
@@ -29,10 +27,6 @@ func (db *gormdb) SetStoreValue(ctx context.Context, pid sdktypes.ProjectID, key
 			"delete_store_value",
 			q.Where("project_id = ? AND key = ?", pid.UUIDValue(), key).Delete(&scheme.StoreValue{}).Error,
 		)
-	}
-
-	if v.ProtoSize() > maxValueSize {
-		return sdkerrors.NewInvalidArgumentError("value too large > %d bytes", maxValueSize)
 	}
 
 	bs, err := proto.Marshal(v.ToProto())
@@ -121,6 +115,18 @@ func (db *gormdb) IsStoreValuePublished(ctx context.Context, pid sdktypes.Projec
 	}
 
 	return sv.Published, nil
+}
+
+func (db *gormdb) CountStoreValues(ctx context.Context, pid sdktypes.ProjectID) (n int64, err error) {
+	err = translateError(
+		db.reader.
+			WithContext(ctx).
+			Model(&scheme.StoreValue{}).
+			Where("project_id = ?", pid.UUIDValue()).
+			Count(&n).
+			Error,
+	)
+	return
 }
 
 func (db *gormdb) ListStoreValues(ctx context.Context, pid sdktypes.ProjectID, keys []string, getValues bool) (map[string]sdktypes.Value, error) {

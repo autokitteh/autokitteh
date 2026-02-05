@@ -19,7 +19,7 @@ output equals_jq .state.completed.exports.on_http.function.desc.input[0].name ev
 output equals_jq .state.completed.exports.on_http.function.executor_id run_00000000000000000000000008
 
 output equals_jq .state.completed.return_value.custom.executor_id run_00000000000000000000000008
-output equals_jq .state.completed.return_value.custom.data gASVHgAAAAAAAACMCF9fbWFpbl9flIwGUmVzdWx0lJOUTk5Oh5SBlC4=
+output equals_jq .state.completed.return_value.custom.data gASVIAAAAAAAAACMCF9fbWFpbl9flIwGUmVzdWx0lJOUKE5OTol0lIGULg==
 output equals_jq .state.completed.return_value.custom.value.nothing map[]
 
 -- project.yaml --
@@ -33,9 +33,9 @@ project:
       call: program.py:on_http
 
 -- program.py --
-def on_http(event):
+def on_http(event, session_id):
     print(event.data["method"])
-    print(event.session_id)
+    print(session_id)
 
 -- expected_without_path.json --
 {

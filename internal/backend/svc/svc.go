@@ -249,7 +249,7 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				})
 			}),
 		),
-		Component("store", configset.Empty, fx.Provide(store.New)),
+		Component("store", store.Configs, fx.Provide(store.New)),
 		Component("projects", configset.Empty, fx.Provide(projects.New)),
 		Component("projectsgrpcsvc", projectsgrpcsvc.Configs, fx.Provide(projectsgrpcsvc.New)),
 		Component(
@@ -377,7 +377,12 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 				return
 			}),
 		),
-		Component("authloginhttpsvc", authloginhttpsvc.Configs, fx.Invoke(authloginhttpsvc.Init)),
+		Component("authloginhttpsvc", authloginhttpsvc.Configs,
+			fx.Provide(func(httpCfg *httpsvc.Config) string {
+				// Provide service URL for auth redirects
+				return httpCfg.ServiceUrl
+			}),
+			fx.Invoke(authloginhttpsvc.Init)),
 		fx.Invoke(func(muxes *muxes.Muxes, h integrationsweb.Handler) {
 			muxes.NoAuth.Handle("GET /i/{$}", &h)
 		}),

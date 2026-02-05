@@ -24,10 +24,11 @@ func statusCodeFromProto(e commonv1.Status_Code) StatusCode {
 var (
 	PossibleStatusCodesNames = AllEnumNames[statusCodeTraits]()
 
-	StatusCodeUnspecified = statusCodeFromProto(commonv1.Status_CODE_UNSPECIFIED)
-	StatusCodeOK          = statusCodeFromProto(commonv1.Status_CODE_OK)
-	StatusCodeWarning     = statusCodeFromProto(commonv1.Status_CODE_WARNING)
-	StatusCodeError       = statusCodeFromProto(commonv1.Status_CODE_ERROR)
+	StatusCodeUnspecified  = statusCodeFromProto(commonv1.Status_CODE_UNSPECIFIED)
+	StatusCodeOK           = statusCodeFromProto(commonv1.Status_CODE_OK)
+	StatusCodeWarning      = statusCodeFromProto(commonv1.Status_CODE_WARNING)
+	StatusCodeError        = statusCodeFromProto(commonv1.Status_CODE_ERROR)
+	StatusCodeInitRequired = statusCodeFromProto(commonv1.Status_CODE_INIT_REQUIRED)
 )
 
 func StatusCodeFromProto(e commonv1.Status_Code) (StatusCode, error) {

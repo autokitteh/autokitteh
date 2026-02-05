@@ -35,6 +35,7 @@ def new_test_runner(code_dir, worker=None, server=None):
         worker=worker,
         code_dir=code_dir,
         server=server,
+        large_objects_manager=main.LargeObjectsManager(),
     )
     runner._inactivity_timer.cancel()
     return runner
@@ -106,7 +107,7 @@ def test_activity_reply():
     runner = new_test_runner(workflows.simple)
     fut = Future()
     runner.activity_call = main.Call(print, (), {}, fut)
-    result = main.Result(42, None, None)
+    result = main.Result(42, None, None, False)
     req = runner_pb.ActivityReplyRequest(
         result=pb_values.Value(
             custom=pb_values.Custom(

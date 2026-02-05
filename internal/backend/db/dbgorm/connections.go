@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"maps"
 
 	"github.com/google/uuid"
@@ -18,15 +19,39 @@ import (
 
 func (gdb *gormdb) createConnection(ctx context.Context, conn *scheme.Connection) error {
 	return gdb.writeTransaction(ctx, func(tx *gormdb) error {
-		// ensure there is no connection with the same name for the same project
-		var count int64
-		if err := tx.writer.
-			Model(&scheme.Connection{}).
-			Where("name = ?", conn.Name).Where("project_id = ?", conn.ProjectID).Count(&count).Error; err != nil {
+		if gdb.cfg.Type == "postgres" {
+			h := fnv.New64a()
+			h.Write(conn.OrgID[:])
+			h.Write([]byte(conn.Name))
+			lockID := int64(h.Sum64())
+
+			if err := tx.writer.Exec("SELECT pg_advisory_xact_lock(?)", lockID).Error; err != nil {
+				return err
+			}
+		}
+
+		var conflicts []scheme.Connection
+		query := tx.writer.Where("org_id = ? AND name = ? AND deleted_at IS NULL", conn.OrgID, conn.Name)
+		if err := query.Find(&conflicts).Error; err != nil {
 			return err
 		}
-		if count > 0 {
-			return gorm.ErrDuplicatedKey // active/non-deleted connection was found.
+
+		if conn.ProjectID == nil {
+			if len(conflicts) > 0 {
+				gdb.z.Debug("duplicate org level connection name " + conn.Name + " for org_id: " + conn.OrgID.String())
+				return gorm.ErrDuplicatedKey
+			}
+		} else {
+			for _, conflict := range conflicts {
+				if conflict.ProjectID == nil {
+					gdb.z.Debug("duplicate org/project level connection name " + conn.Name + " for org_id: " + conn.OrgID.String())
+					return gorm.ErrDuplicatedKey
+				}
+				if *conflict.ProjectID == *conn.ProjectID {
+					gdb.z.Debug("duplicate project level connection name " + conn.Name + " for org_id: " + conn.OrgID.String() + " project_id: " + conn.ProjectID.String())
+					return gorm.ErrDuplicatedKey
+				}
+			}
 		}
 		return tx.writer.Create(conn).Error
 	})
@@ -81,39 +106,89 @@ func (gdb *gormdb) deleteConnection(ctx context.Context, id uuid.UUID) error {
 }
 
 func (gdb *gormdb) updateConnection(ctx context.Context, id uuid.UUID, data map[string]any) error {
-	return gdb.writer.WithContext(ctx).Model(&scheme.Connection{ConnectionID: id}).Updates(data).Error
+	if _, exists := data["name"]; !exists {
+		return gdb.writer.WithContext(ctx).Model(&scheme.Connection{ConnectionID: id}).Updates(data).Error
+	}
+
+	return gdb.writeTransaction(ctx, func(tx *gormdb) error {
+		conn, err := gdb.getConnection(ctx, id)
+		if err != nil {
+			return err
+		}
+
+		if gdb.cfg.Type == "postgres" {
+			h := fnv.New64a()
+			h.Write(conn.OrgID[:])
+			h.Write([]byte(conn.Name))
+			lockID := int64(h.Sum64())
+
+			if err := tx.writer.Exec("SELECT pg_advisory_xact_lock(?)", lockID).Error; err != nil {
+				return err
+			}
+			// need to lock the new name as well
+			// to prevent edit and creation at the same time
+			h2 := fnv.New64a()
+			h2.Write(conn.OrgID[:])
+			h2.Write([]byte(data["name"].(string)))
+			lockID2 := int64(h2.Sum64())
+
+			if err := tx.writer.Exec("SELECT pg_advisory_xact_lock(?)", lockID2).Error; err != nil {
+				return err
+			}
+		}
+
+		var connectionsWithSameName []scheme.Connection
+		query := tx.writer.Where("org_id = ? AND name = ? AND deleted_at IS NULL", conn.OrgID, data["name"])
+		if err := query.Find(&connectionsWithSameName).Error; err != nil {
+			return err
+		}
+
+		if conn.ProjectID == nil {
+			// this connection is org connection, can't have any other conflict
+			if len(connectionsWithSameName) > 0 {
+				gdb.z.Debug("duplicate org level connection name " + conn.Name + " for org_id: " + conn.OrgID.String())
+				return gorm.ErrDuplicatedKey
+			}
+		} else {
+			// project level connection
+			for _, otherConnectionWithSamename := range connectionsWithSameName {
+				if *otherConnectionWithSamename.ProjectID == *conn.ProjectID {
+					gdb.z.Debug("duplicate project level connection name " + conn.Name + " for org_id: " + conn.OrgID.String() + " project_id: " + conn.ProjectID.String())
+					return gorm.ErrDuplicatedKey
+				}
+			}
+		}
+		return gdb.writer.WithContext(ctx).Model(&scheme.Connection{ConnectionID: id}).Updates(data).Error
+	})
 }
 
 func (gdb *gormdb) getConnection(ctx context.Context, id uuid.UUID) (*scheme.Connection, error) {
 	return getOne[scheme.Connection](gdb.reader.WithContext(ctx), "connection_id = ?", id)
 }
 
-func findConnections(query *gorm.DB) ([]scheme.Connection, error) {
+func (gdb *gormdb) getConnections(ctx context.Context, ids ...uuid.UUID) ([]scheme.Connection, error) {
 	var cs []scheme.Connection
-	if err := query.Group("connection_id").Find(&cs).Error; err != nil {
+	if err := gdb.reader.WithContext(ctx).Where("connection_id IN (?)", ids).Find(&cs).Error; err != nil {
 		return nil, err
 	}
 	return cs, nil
 }
 
-func (gdb *gormdb) getConnections(ctx context.Context, ids ...uuid.UUID) ([]scheme.Connection, error) {
-	q := gdb.reader.WithContext(ctx).Where("connection_id IN (?)", ids)
-	return findConnections(q)
-}
-
 func (gdb *gormdb) listConnections(ctx context.Context, filter sdkservices.ListConnectionsFilter, idsOnly bool) ([]scheme.Connection, error) {
 	q := gdb.reader.WithContext(ctx)
 
-	q = withProjectID(q, "connections", filter.ProjectID)
-
-	q = withProjectOrgID(q, filter.OrgID, "connections")
+	if filter.OrgID.IsValid() {
+		x := q.Where("org_id = ? AND project_id IS NULL", filter.OrgID.UUIDValue())
+		if filter.ProjectID.IsValid() {
+			x = x.Or(q.Where("org_id = ? AND project_id = ?", filter.OrgID.UUIDValue(), filter.ProjectID.UUIDValue()))
+		}
+		q = x
+	} else if filter.ProjectID.IsValid() {
+		q = q.Where("project_id = ?", filter.ProjectID.UUIDValue())
+	}
 
 	if filter.IntegrationID.IsValid() {
 		q = q.Where("integration_id = ?", filter.IntegrationID.UUIDValue())
-	}
-
-	if filter.ProjectID.IsValid() {
-		q = q.Where("connections.project_id = ?", filter.ProjectID.UUIDValue())
 	}
 
 	if filter.StatusCode != sdktypes.StatusCodeUnspecified {
@@ -124,7 +199,11 @@ func (gdb *gormdb) listConnections(ctx context.Context, filter sdkservices.ListC
 		q = q.Select("connection_id")
 	}
 
-	return findConnections(q)
+	var cs []scheme.Connection
+	if err := q.Find(&cs).Error; err != nil {
+		return nil, err
+	}
+	return cs, nil
 }
 
 func (db *gormdb) CreateConnection(ctx context.Context, conn sdktypes.Connection) error {
@@ -132,9 +211,14 @@ func (db *gormdb) CreateConnection(ctx context.Context, conn sdktypes.Connection
 		return err
 	}
 
+	if !conn.OrgID().IsValid() {
+		return errors.New("org ID is required")
+	}
+
 	c := scheme.Connection{
 		Base:          based(ctx),
-		ProjectID:     conn.ProjectID().UUIDValue(),
+		ProjectID:     conn.ProjectID().UUIDValuePtr(),
+		OrgID:         conn.OrgID().UUIDValue(),
 		ConnectionID:  conn.ID().UUIDValue(),
 		IntegrationID: uuidPtrOrNil(conn.IntegrationID()),
 		Name:          conn.Name().String(),

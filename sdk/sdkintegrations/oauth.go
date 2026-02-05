@@ -31,7 +31,7 @@ func (d OAuthData) ToVars() sdktypes.Vars {
 	}
 
 	return sdktypes.EncodeVars(data).WithPrefix("oauth_").
-		Set(sdktypes.NewSymbol("authType"), "oauth", false)
+		Set(sdktypes.NewSymbol("auth_type"), "oauth", false)
 }
 
 func DecodeOAuthData(raw string) (data *OAuthData, err error) {

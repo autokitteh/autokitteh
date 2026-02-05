@@ -52,7 +52,11 @@ func (s *server) Dispatch(ctx context.Context, req *connect.Request[dispatcher1.
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	return connect.NewResponse(&dispatcher1.DispatchResponse{EventId: resp.EventID.String(), SessionIds: kittehs.TransformToStrings(resp.SessionIDs)}), nil
+	return connect.NewResponse(&dispatcher1.DispatchResponse{
+		EventId:            resp.EventID.String(),
+		StartedSessionIds:  kittehs.TransformToStrings(resp.StartedSessionIDs),
+		SignaledSessionIds: kittehs.TransformToStrings(resp.SignaledSessionIDs),
+	}), nil
 }
 
 func (s *server) Redispatch(ctx context.Context, req *connect.Request[dispatcher1.RedispatchRequest]) (*connect.Response[dispatcher1.RedispatchResponse], error) {
@@ -77,5 +81,9 @@ func (s *server) Redispatch(ctx context.Context, req *connect.Request[dispatcher
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	return connect.NewResponse(&dispatcher1.RedispatchResponse{EventId: resp.EventID.String(), SessionIds: kittehs.TransformToStrings(resp.SessionIDs)}), nil
+	return connect.NewResponse(&dispatcher1.RedispatchResponse{
+		EventId:            resp.EventID.String(),
+		StartedSessionIds:  kittehs.TransformToStrings(resp.StartedSessionIDs),
+		SignaledSessionIds: kittehs.TransformToStrings(resp.SignaledSessionIDs),
+	}), nil
 }

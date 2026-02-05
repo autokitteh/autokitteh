@@ -113,12 +113,12 @@ func (py *pySvc) cleanup(ctx context.Context) {
 
 	py.didCleanup = true
 
-	if err := runnerManager.Stop(ctx, py.runnerID); err != nil {
-		py.log.Warn("stop manager", zap.Error(err))
-	}
-
 	if err := py.runner.Close(); err != nil {
 		py.log.Warn("close runner", zap.Error(err))
+	}
+
+	if err := runnerManager.Stop(ctx, py.runnerID, py.sessionID); err != nil {
+		py.log.Warn("stop manager", zap.Error(err))
 	}
 
 	if err := removeRunnerFromServer(py.runnerID); err != nil {
@@ -705,7 +705,7 @@ func (py *pySvc) Call(ctx context.Context, v sdktypes.Value, args []sdktypes.Val
 			span.AddEvent("health")
 
 			if healthErr != nil {
-				py.cbs.Print(ctx, py.runID, healthErr.Error())
+				py.log.Error("runner health error", zap.Error(healthErr))
 				return sdktypes.InvalidValue, sdkerrors.NewRetryableErrorf("runner health: %w", healthErr)
 			}
 		case done := <-py.channels.done:

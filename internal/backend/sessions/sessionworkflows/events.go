@@ -48,31 +48,31 @@ func (w *sessionWorkflow) waitOnFirstSignal(wctx workflow.Context, signals []uui
 	return signalID, nil
 }
 
-func (w *sessionWorkflow) getNextEventInternal(signalID uuid.UUID, get func(uuid.UUID, uint64) (sdktypes.Event, error)) (map[string]sdktypes.Value, error) {
+func (w *sessionWorkflow) getNextEventInternal(signalID uuid.UUID, get func(uuid.UUID, uint64) (sdktypes.Event, error)) (sdktypes.Event, error) {
 	l := w.l.With(zap.Any("signal_id", signalID))
 
 	minSequenceNumber, ok := w.lastReadEventSeqForSignal[signalID]
 	if !ok {
-		return nil, fmt.Errorf("no such subscription %q", signalID)
+		return sdktypes.InvalidEvent, fmt.Errorf("no such subscription %q", signalID)
 	}
 
 	event, err := get(signalID, minSequenceNumber)
 	if err != nil {
-		return nil, fmt.Errorf("get signal event %v: %w", signalID, err)
+		return sdktypes.InvalidEvent, fmt.Errorf("get signal event %v: %w", signalID, err)
 	}
 
 	if !event.IsValid() {
-		return nil, nil
+		return sdktypes.InvalidEvent, nil
 	}
 
 	w.lastReadEventSeqForSignal[signalID] = event.Seq()
 
 	l.With(zap.Any("event_id", event.ID())).Sugar().Infof("got event: %v", event.ID())
 
-	return event.Data(), nil
+	return event, nil
 }
 
-func (w *sessionWorkflow) getNextEvent(wctx workflow.Context, signalID uuid.UUID) (map[string]sdktypes.Value, error) {
+func (w *sessionWorkflow) getNextEvent(wctx workflow.Context, signalID uuid.UUID) (sdktypes.Event, error) {
 	return w.getNextEventInternal(signalID, func(signalID uuid.UUID, minSequenceNumber uint64) (sdktypes.Event, error) {
 		wctx = temporalclient.WithActivityOptions(wctx, w.ws.svcs.WorkflowExecutor.WorkflowQueue(), w.ws.cfg.Activity)
 
@@ -98,7 +98,7 @@ func (w *sessionWorkflow) getNextEvent(wctx workflow.Context, signalID uuid.UUID
 	})
 }
 
-func (w *sessionWorkflow) getNextEventInActivity(ctx context.Context, signalID uuid.UUID) (map[string]sdktypes.Value, error) {
+func (w *sessionWorkflow) getNextEventInActivity(ctx context.Context, signalID uuid.UUID) (sdktypes.Event, error) {
 	return w.getNextEventInternal(signalID, func(signalID uuid.UUID, minSequenceNumber uint64) (sdktypes.Event, error) {
 		return w.ws.getSignalEventActivity(ctx, signalID, minSequenceNumber)
 	})

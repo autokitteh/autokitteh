@@ -27,13 +27,26 @@ type Connections struct {
 func New(c Connections) sdkservices.Connections { return &c }
 
 func (c *Connections) Create(ctx context.Context, conn sdktypes.Connection) (sdktypes.ConnectionID, error) {
+	// TODO: This is for backwards compatibility.
+	// We should remove it once the UI is updated to always pass org_id
+	if !conn.OrgID().IsValid() {
+		// If OrgID is not set and there is a project ID, infer the OrgID from the project.
+		p, err := c.DB.GetProjectByID(ctx, conn.ProjectID())
+		if err != nil {
+			return sdktypes.InvalidConnectionID, err
+		}
+
+		conn = conn.WithOrgID(p.OrgID())
+	}
+
 	if err := authz.CheckContext(
 		ctx,
 		sdktypes.InvalidConnectionID,
-		"write:create",
+		authz.OpConnectionWriteCreate,
 		authz.WithData("connection", conn),
 		authz.WithAssociationWithID("integration", conn.IntegrationID()),
 		authz.WithAssociationWithID("project", conn.ProjectID()),
+		authz.WithAssociationWithID("org", conn.OrgID()),
 	); err != nil {
 		return sdktypes.InvalidConnectionID, err
 	}
@@ -70,7 +83,7 @@ func (c *Connections) Create(ctx context.Context, conn sdktypes.Connection) (sdk
 }
 
 func (c *Connections) Update(ctx context.Context, conn sdktypes.Connection) error {
-	if err := authz.CheckContext(ctx, conn.ID(), "update:update", authz.WithData("connection", conn)); err != nil {
+	if err := authz.CheckContext(ctx, conn.ID(), authz.OpConnectionUpdateUpdate, authz.WithData("connection", conn)); err != nil {
 		return err
 	}
 
@@ -82,7 +95,7 @@ func (c *Connections) Update(ctx context.Context, conn sdktypes.Connection) erro
 }
 
 func (c *Connections) Delete(ctx context.Context, id sdktypes.ConnectionID) error {
-	if err := authz.CheckContext(ctx, id, "delete:delete", authz.WithConvertForbiddenToNotFound); err != nil {
+	if err := authz.CheckContext(ctx, id, authz.OpConnectionDeleteDelete, authz.WithConvertForbiddenToNotFound); err != nil {
 		return err
 	}
 
@@ -90,14 +103,25 @@ func (c *Connections) Delete(ctx context.Context, id sdktypes.ConnectionID) erro
 }
 
 func (c *Connections) List(ctx context.Context, filter sdkservices.ListConnectionsFilter) ([]sdktypes.Connection, error) {
-	if !filter.AnyIDSpecified() {
-		filter.OrgID = authcontext.GetAuthnInferredOrgID(ctx)
+	if !filter.OrgID.IsValid() {
+		if !filter.ProjectID.IsValid() {
+			// No explicit OrgID and not filtering by ProjectID, infer OrgID as user's default org.
+			filter.OrgID = authcontext.GetAuthnInferredOrgID(ctx)
+		} else {
+			// If OrgID is not set and there is a project ID, infer the OrgID from the project.
+			p, err := c.DB.GetProjectByID(ctx, filter.ProjectID)
+			if err != nil {
+				return nil, err
+			}
+
+			filter.OrgID = p.OrgID()
+		}
 	}
 
 	if err := authz.CheckContext(
 		ctx,
 		sdktypes.InvalidConnectionID,
-		"read:list",
+		authz.OpConnectionReadList,
 		authz.WithData("filter", filter),
 		authz.WithAssociationWithID("org", filter.OrgID),
 		authz.WithAssociationWithID("project", filter.ProjectID),
@@ -126,7 +150,7 @@ func (c *Connections) attachIntegration(ctx context.Context, id sdktypes.Connect
 }
 
 func (c *Connections) Test(ctx context.Context, id sdktypes.ConnectionID) (sdktypes.Status, error) {
-	if err := authz.CheckContext(ctx, id, "test"); err != nil {
+	if err := authz.CheckContext(ctx, id, authz.OpConnectionTest); err != nil {
 		return sdktypes.InvalidStatus, err
 	}
 
@@ -143,7 +167,7 @@ func (c *Connections) Test(ctx context.Context, id sdktypes.ConnectionID) (sdkty
 }
 
 func (c *Connections) RefreshStatus(ctx context.Context, id sdktypes.ConnectionID) (sdktypes.Status, error) {
-	if err := authz.CheckContext(ctx, id, "refresh"); err != nil {
+	if err := authz.CheckContext(ctx, id, authz.OpConnectionRefresh); err != nil {
 		return sdktypes.InvalidStatus, err
 	}
 
@@ -165,7 +189,7 @@ func (c *Connections) RefreshStatus(ctx context.Context, id sdktypes.ConnectionI
 }
 
 func (c *Connections) Get(ctx context.Context, id sdktypes.ConnectionID) (sdktypes.Connection, error) {
-	if err := authz.CheckContext(ctx, id, "read:get", authz.WithConvertForbiddenToNotFound); err != nil {
+	if err := authz.CheckContext(ctx, id, authz.OpConnectionReadGet, authz.WithConvertForbiddenToNotFound); err != nil {
 		return sdktypes.InvalidConnection, err
 	}
 

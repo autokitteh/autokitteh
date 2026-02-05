@@ -27,9 +27,6 @@ func (db *gormdb) writeTransaction(ctx context.Context, f func(tx *gormdb) error
 	})
 }
 
-/* readTransaction is a helper function to run a read-only transaction.
-   for now unused, but keeping it here so we can use it in the future.
-
 func (db *gormdb) readTransaction(ctx context.Context, f func(tx *gormdb) error) error {
 	return db.reader.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		return f(
@@ -42,4 +39,3 @@ func (db *gormdb) readTransaction(ctx context.Context, f func(tx *gormdb) error)
 		)
 	})
 }
-*/

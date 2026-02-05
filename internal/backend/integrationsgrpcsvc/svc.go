@@ -43,7 +43,7 @@ func (s *server) Get(ctx context.Context, req *connect.Request[integrationsv1.Ge
 			return nil, sdkerrors.AsConnectError(err)
 		}
 
-		if err := authz.CheckContext(ctx, id, "get"); err != nil {
+		if err := authz.CheckContext(ctx, id, authz.OpIntegrationGet); err != nil {
 			return nil, sdkerrors.AsConnectError(err)
 		}
 
@@ -60,7 +60,7 @@ func (s *server) Get(ctx context.Context, req *connect.Request[integrationsv1.Ge
 			return nil, sdkerrors.AsConnectError(err)
 		}
 
-		if err := authz.CheckContext(ctx, i.ID(), "get"); err != nil {
+		if err := authz.CheckContext(ctx, i.ID(), authz.OpIntegrationGet); err != nil {
 			return nil, sdkerrors.AsConnectError(err)
 		}
 	}
@@ -73,7 +73,7 @@ func (s *server) List(ctx context.Context, req *connect.Request[integrationsv1.L
 		return nil, sdkerrors.AsConnectError(err)
 	}
 
-	if err := authz.CheckContext(ctx, sdktypes.InvalidIntegrationID, "list"); err != nil {
+	if err := authz.CheckContext(ctx, sdktypes.InvalidIntegrationID, authz.OpIntegrationList); err != nil {
 		return nil, sdkerrors.AsConnectError(err)
 	}
 

@@ -169,6 +169,11 @@ func planProjectVars(ctx context.Context, mvars []*Var, client sdkservices.Servi
 			currVal := v.Value()
 
 			if currVal != mvar.Value {
+				if opts.skipExistingSecrets && (v.IsSecret() || mvar.Secret) {
+					log.Printf("value differs but one of them is secret, skipping")
+					continue
+				}
+
 				log("differs, will set")
 				add(setAction)
 			}
@@ -202,6 +207,12 @@ func planConnections(ctx context.Context, mconns []*Connection, client sdkservic
 		if conns, err = client.Connections().List(ctx, sdkservices.ListConnectionsFilter{ProjectID: pid}); err != nil {
 			return nil, fmt.Errorf("list connections: %w", err)
 		}
+
+		// Filter to only include connections that belong specifically to this project.
+		// Exclude global connections (project_id IS NULL) that may be returned by the List API.
+		conns = kittehs.Filter(conns, func(c sdktypes.Connection) bool {
+			return c.ProjectID().IsValid() && c.ProjectID() == pid
+		})
 
 		log.Printf("found %d connections", len(conns))
 	}
@@ -340,7 +351,8 @@ func planConnection(mconn *Connection, curr sdktypes.Connection, optfns ...Optio
 	desired = desired.
 		WithID(curr.ID()).
 		WithIntegrationID(curr.IntegrationID()).
-		WithProjectID(curr.ProjectID())
+		WithProjectID(curr.ProjectID()).
+		WithOrgID(curr.OrgID())
 
 	if curr.WithoutGeneratedFields().Equal(desired) {
 		log.Printf("no changes needed")

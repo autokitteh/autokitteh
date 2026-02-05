@@ -159,6 +159,7 @@ message StoreUnpublishResponse {
 message OutcomeRequest {
   string runner_id = 1;
   autokitteh.values.v1.Value value = 2;
+  string event_id = 3;
 }
 
 message OutcomeResponse {

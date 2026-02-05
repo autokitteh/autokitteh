@@ -202,3 +202,28 @@ func TestFindConnectionIDByVar(t *testing.T) {
 	assert.NoError(t, err)
 	assert.ElementsMatch(t, vars, []uuid.UUID{vc1.ScopeID, vc2.ScopeID})
 }
+
+func TestFindConnectionIDByVarOrgLevel(t *testing.T) {
+	f := preVarTest(t)
+
+	// Create org-level connections (without project_id)
+	orgID := f.newOrg()
+	cOrg1 := f.newConnection()
+	cOrg1.OrgID = orgID
+	cOrg1.ProjectID = nil // Explicitly set to nil for org-level connection
+	cOrg2 := f.newConnection()
+	cOrg2.OrgID = orgID
+	cOrg2.ProjectID = nil // Explicitly set to nil for org-level connection
+	f.createConnectionsAndAssert(t, cOrg1, cOrg2)
+
+	// Create vars for org-level connections
+	vcOrg1 := f.newVar("v", "cOrg1", cOrg1)
+	vcOrg2 := f.newVar("v", "cOrg2", cOrg2)
+	f.setVarsAndAssert(t, vcOrg1, vcOrg2)
+
+	// Org-level connections should be returned regardless of deployment state
+	varsOrg, err := f.gormdb.findConnectionIDsWithActiveDeploymentByVar(f.ctx, *cOrg1.IntegrationID, "v", "")
+	assert.NoError(t, err)
+	// Should return both org-level connections (no deployment needed)
+	assert.ElementsMatch(t, varsOrg, []uuid.UUID{vcOrg1.ScopeID, vcOrg2.ScopeID})
+}

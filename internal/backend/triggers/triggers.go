@@ -31,7 +31,7 @@ func (m *triggers) Create(ctx context.Context, trigger sdktypes.Trigger) (sdktyp
 	if err := authz.CheckContext(
 		ctx,
 		sdktypes.InvalidTriggerID,
-		"write:create",
+		authz.OpTriggerWriteCreate,
 		authz.WithData("trigger", trigger),
 		authz.WithAssociationWithID("connection", trigger.ConnectionID()),
 		authz.WithAssociationWithID("project", trigger.ProjectID()),
@@ -85,7 +85,7 @@ func (m *triggers) Update(ctx context.Context, trigger sdktypes.Trigger) error {
 	if err := authz.CheckContext(
 		ctx,
 		trigger.ID(),
-		"update:update",
+		authz.OpTriggerUpdateUpdate,
 		authz.WithData("trigger", trigger),
 	); err != nil {
 		return err
@@ -129,7 +129,7 @@ func (m *triggers) Update(ctx context.Context, trigger sdktypes.Trigger) error {
 
 // Delete implements sdkservices.Triggers.
 func (m *triggers) Delete(ctx context.Context, triggerID sdktypes.TriggerID) error {
-	if err := authz.CheckContext(ctx, triggerID, "write:delete"); err != nil {
+	if err := authz.CheckContext(ctx, triggerID, authz.OpTriggerWriteDelete); err != nil {
 		return err
 	}
 
@@ -154,7 +154,7 @@ func (m *triggers) Delete(ctx context.Context, triggerID sdktypes.TriggerID) err
 
 // Get implements sdkservices.Triggers.
 func (m *triggers) Get(ctx context.Context, triggerID sdktypes.TriggerID) (sdktypes.Trigger, error) {
-	if err := authz.CheckContext(ctx, triggerID, "read:get", authz.WithConvertForbiddenToNotFound); err != nil {
+	if err := authz.CheckContext(ctx, triggerID, authz.OpTriggerReadGet, authz.WithConvertForbiddenToNotFound); err != nil {
 		return sdktypes.InvalidTrigger, err
 	}
 
@@ -170,7 +170,7 @@ func (m *triggers) List(ctx context.Context, filter sdkservices.ListTriggersFilt
 	if err := authz.CheckContext(
 		ctx,
 		sdktypes.InvalidTriggerID,
-		"read:list",
+		authz.OpTriggerReadList,
 		authz.WithData("filter", filter),
 		authz.WithAssociationWithID("connection", filter.ConnectionID),
 		authz.WithAssociationWithID("project", filter.ProjectID),
