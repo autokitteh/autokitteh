@@ -80,8 +80,6 @@ autokitteh.zoom module
    :undoc-members:
    :show-inheritance:
 
-
-
 autokitteh.asana module
 -----------------------
 
@@ -126,6 +124,14 @@ autokitteh.linear module
 ------------------------
 
 .. automodule:: autokitteh.linear
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+autokitteh.telegram module
+--------------------------
+
+.. automodule:: autokitteh.telegram
    :members:
    :undoc-members:
    :show-inheritance:
@@ -190,6 +196,14 @@ autokitteh.packages module
 --------------------------
 
 .. automodule:: autokitteh.packages
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+autokitteh.pydantic module
+--------------------------
+
+.. automodule:: autokitteh.pydantic
    :members:
    :undoc-members:
    :show-inheritance:
@@ -270,14 +284,6 @@ autokitteh.reddit module
 ------------------------
 
 .. automodule:: autokitteh.reddit
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-autokitteh.telegram module
-------------------------
-
-.. automodule:: autokitteh.telegram
    :members:
    :undoc-members:
    :show-inheritance:
