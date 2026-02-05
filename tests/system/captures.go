@@ -13,7 +13,7 @@ import (
 var (
 	// Immutable constants that are available to the script.
 	// Expanded prior to validation parsing at the beginning of each test.
-	consts = map[string]string{
+	constants = map[string]string{
 		"DEFAULT_UID": authusers.DefaultUser.ID().String(),
 
 		// Must correspond with `cmd/ak/common/exit.go`.
@@ -72,7 +72,7 @@ func expandCapture(s string) string {
 
 func expandConsts(s string) string {
 	return os.Expand(s, func(key string) string {
-		if v, ok := consts[key]; ok {
+		if v, ok := constants[key]; ok {
 			return v
 		}
 

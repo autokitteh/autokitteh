@@ -43,14 +43,14 @@ func init() {
 			WithID(sdktypes.NewTestUserID(u.name)).
 			WithStatus(sdktypes.UserStatusActive)
 
-		consts[strings.ToUpper(u.name+"_uid")] = uu.ID().String()
+		constants[strings.ToUpper(u.name+"_uid")] = uu.ID().String()
 
 		personalOrgID := sdktypes.NewTestOrgID(u.name + "org")
 
 		// seed user.
 		seedObjects = append(seedObjects, uu.WithDefaultOrgID(personalOrgID))
 
-		consts[strings.ToUpper(u.name+"_oid")] = personalOrgID.String()
+		constants[strings.ToUpper(u.name+"_oid")] = personalOrgID.String()
 
 		// seed personal org.
 		seedObjects = append(seedObjects, sdktypes.NewOrg().WithID(personalOrgID).WithName(sdktypes.NewSymbol(u.name+"_org")))
@@ -68,7 +68,7 @@ func init() {
 			oid = sdktypes.NewTestOrgID(u.org)
 			orgs[u.org] = oid
 
-			consts[strings.ToUpper(u.org+"_oid")] = oid.String()
+			constants[strings.ToUpper(u.org+"_oid")] = oid.String()
 
 			// seed shared org.
 			seedObjects = append(seedObjects, sdktypes.NewOrg().WithID(oid).WithName(sdktypes.NewSymbol(u.org)))
