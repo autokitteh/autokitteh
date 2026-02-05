@@ -119,6 +119,8 @@ func (db *gormdb) IsStoreValuePublished(ctx context.Context, pid sdktypes.Projec
 
 func (db *gormdb) CountStoreValues(ctx context.Context, pid sdktypes.ProjectID) (n int64, err error) {
 	err = translateError(
+		db.z,
+		"count_store_values",
 		db.reader.
 			WithContext(ctx).
 			Model(&scheme.StoreValue{}).

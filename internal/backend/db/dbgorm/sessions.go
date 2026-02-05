@@ -338,7 +338,7 @@ func (db *gormdb) GetNextSessionOutcomeForEvent(ctx context.Context, eventID sdk
 		Find(&lrs)
 
 	if err := r.Error; err != nil {
-		return sdktypes.InvalidValue, sdktypes.InvalidSessionID, 0, translateError(err)
+		return sdktypes.InvalidValue, sdktypes.InvalidSessionID, 0, translateError(db.z, "get_next_session_outcome_for_event", err)
 	}
 
 	if len(lrs) == 0 {

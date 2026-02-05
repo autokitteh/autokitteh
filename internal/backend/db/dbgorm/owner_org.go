@@ -68,7 +68,7 @@ func (gdb *gormdb) getOrgIDOfOrganizationalRecord(
 		First(&con).
 		Error
 	if err != nil {
-		return sdktypes.InvalidOrgID, translateError(err)
+		return sdktypes.InvalidOrgID, translateError(gdb.z, "get_org_id_of_organizational_record", err)
 	}
 
 	return sdktypes.NewIDFromUUID[sdktypes.OrgID](con.OrgID), nil
