@@ -108,11 +108,11 @@ func (cs *calls) invoke(ctx context.Context, callv sdktypes.Value, args []sdktyp
 	for {
 		select {
 		case <-heartbeatTimeoutCh:
+			activity.RecordHeartbeat(ctx)
+
 			if err := run.HealthCheck(ctx); err != nil {
 				return sdktypes.InvalidSessionCallAttemptResult, errStuckRuntime
 			}
-
-			activity.RecordHeartbeat(ctx)
 
 		case <-ctx.Done():
 			if errors.Is(ctx.Err(), context.DeadlineExceeded) {
