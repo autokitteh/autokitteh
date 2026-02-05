@@ -194,12 +194,19 @@ func (cs *calls) Call(wctx workflow.Context, params *CallParams) (sdktypes.Sessi
 			)
 			if err := future.Get(wctx, &ret); err != nil {
 				var terr *temporal.TimeoutError
-				if ok := errors.As(err, &terr); ok && terr.TimeoutType() == enumspb.TIMEOUT_TYPE_SCHEDULE_TO_START {
-					// An activity that was scheduled on a unique worker (ie the workflow worker) did not get to be started.
-					// This might happen in cases of scale-down events or a recovery from a crashed worker.
-					// In this case we just reshecule it again.
-					l.Warn("call activity schedule to start timeout, retrying")
-					continue retry_loop
+				if ok := errors.As(err, &terr); ok {
+					switch terr.TimeoutType() {
+					case enumspb.TIMEOUT_TYPE_SCHEDULE_TO_START:
+						// An activity that was scheduled on a unique worker (ie the workflow worker) did not get to be started.
+						// This might happen in cases of scale-down events or a recovery from a crashed worker.
+						// In this case we just reshecule it again.
+						l.Warn("call activity schedule to start timeout, retrying")
+						continue retry_loop
+					case enumspb.TIMEOUT_TYPE_HEARTBEAT:
+						// panic forces workflow to retry - we need it since the runtime is stuck
+						// and need restarting.
+						l.Panic("stuck runtime detected during call activity")
+					}
 				}
 
 				var aerr *temporal.ApplicationError
