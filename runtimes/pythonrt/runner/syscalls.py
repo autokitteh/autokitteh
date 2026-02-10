@@ -25,6 +25,9 @@ def mark_no_activity(fn):
 
 
 def _timeout_arg_into_ms(timeout: timedelta | int | float) -> int:
+    if not timeout:
+        return 0
+
     if isinstance(timeout, int | float):
         return int(timeout * 1000)
     elif isinstance(timeout, timedelta):
