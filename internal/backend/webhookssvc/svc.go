@@ -42,7 +42,7 @@ type Config struct {
 
 var Configs = configset.Set[Config]{
 	Default: &Config{
-		WebhookResponseTimeout:     30 * time.Second,
+		WebhookResponseTimeout:     150 * time.Second,
 		SessionOutcomePollInterval: 100 * time.Millisecond,
 		MaxBodySize:                512 * 1024, // 512KB
 	},
@@ -171,7 +171,7 @@ func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("X-Accel-Buffering", "no")
 
 	s.handleSyncResponse(ctx, sl, w, resp.EventID)
 }
