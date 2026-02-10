@@ -25,15 +25,14 @@ def mark_no_activity(fn):
 
 
 def _timeout_arg_into_ms(timeout: timedelta | int | float) -> int:
-    if not timeout:
-        return 0
-
     if isinstance(timeout, int | float):
         return int(timeout * 1000)
     elif isinstance(timeout, timedelta):
         return int(timeout.total_seconds() * 1000)
 
-    raise TypeError(f"timeout {timeout!r} should be a timedelta or number of seconds")
+    raise TypeError(
+        f"timeout {timeout!r} should be a timedelta, number of seconds, or None"
+    )
 
 
 class SysCalls:

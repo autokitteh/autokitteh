@@ -4,7 +4,7 @@ based on AutoKitteh connections."""
 import os
 from typing import Any
 
-from pydantic.ai.providers import Provider
+from pydantic_ai.providers import Provider
 from pydantic_ai.providers.anthropic import AnthropicProvider
 from pydantic_ai.providers.gateway import gateway_provider
 from pydantic_ai.providers.openai import OpenAIProvider

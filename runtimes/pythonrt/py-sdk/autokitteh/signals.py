@@ -1,7 +1,7 @@
 """Send and receive signals."""
 
-from datetime import timedelta
 from dataclasses import dataclass
+from datetime import timedelta
 
 
 @dataclass
@@ -21,7 +21,7 @@ def signal(session_id: str, name: str, payload: any = None) -> None:
 
 
 def next_signal(
-    name: str | list[str], *, timeout: timedelta | int | float = None
+    name: str | list[str], *, timeout: timedelta | int | float | None = None
 ) -> Signal | None:
     """Get the next signal.
 
