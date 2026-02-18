@@ -51,7 +51,11 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vsid := sdktypes.NewVarScopeID(cid)
-	common.SaveAuthType(r.Context(), h.vars, vsid, integrations.APIKey)
+	if err := common.SaveAuthType(r.Context(), h.vars, vsid, integrations.APIKey); err != nil {
+		l.Error("failed to save auth type", zap.Error(err))
+		c.AbortServerError("failed to save connection variables")
+		return
+	}
 
 	apiKey := r.FormValue("api_key")
 	if apiKey == "" {
