@@ -1,7 +1,9 @@
 package svc
 
 import (
+	"bytes"
 	_ "embed"
+	"fmt"
 	"os"
 	"strconv"
 	"text/template"
@@ -13,6 +15,13 @@ import (
 	"go.autokitteh.dev/autokitteh/internal/version"
 )
 
+//go:embed banner.txt
+var banner string
+
+var bannerTemplate = template.Must(template.New("banner").Parse(banner))
+
+var plainBanner, colorBanner string
+
 type bannerConfig struct {
 	Show bool `koanf:"show"`
 }
@@ -22,18 +31,17 @@ var bannerConfigs = configset.Set[bannerConfig]{
 	Dev:     &bannerConfig{Show: true},
 }
 
-//go:embed banner.txt
-var banner string
-
-var bannerTemplate = template.Must(template.New("banner").Parse(banner))
-
-func printBanner(cfg *bannerConfig, opts RunOptions, addr, wpAddr, wpVersion, temporalFrontendAddr, temporalUIAddr string) {
+func sprint(plain bool, cfg *bannerConfig, opts RunOptions, addr, wpAddr, wpVersion, temporalFrontendAddr, temporalUIAddr string) string {
 	if !cfg.Show {
-		return
+		return ""
 	}
 
-	fieldColor := color.New(color.FgBlue).Add(color.Bold).SprintFunc()
-	eyeColor := color.New(color.FgGreen).Add(color.Bold).SprintFunc()
+	fieldColor, eyeColor := fmt.Sprint, fmt.Sprint
+
+	if !plain {
+		fieldColor = color.New(color.FgBlue).Add(color.Bold).SprintFunc()
+		eyeColor = color.New(color.FgGreen).Add(color.Bold).SprintFunc()
+	}
 
 	var mode string
 	if opts.Mode != "" {
@@ -59,7 +67,9 @@ func printBanner(cfg *bannerConfig, opts RunOptions, addr, wpAddr, wpVersion, te
 		wpVersion = ":         "
 	}
 
-	kittehs.Must0(bannerTemplate.Execute(os.Stderr, struct {
+	var buf bytes.Buffer
+
+	kittehs.Must0(bannerTemplate.Execute(&buf, struct {
 		Version              string
 		PID                  string
 		Addr                 string
@@ -81,4 +91,11 @@ func printBanner(cfg *bannerConfig, opts RunOptions, addr, wpAddr, wpVersion, te
 		Temporal:        temporalFrontendAddr,
 		TemporalUI:      temporalUIAddr,
 	}))
+
+	return buf.String()
+}
+
+func initBanner(cfg *bannerConfig, opts RunOptions, httpsvcAddr, wpAddr, wpVersion, temporalFrontendAddr, temporalUIAddr string) {
+	plainBanner = sprint(true, cfg, opts, httpsvcAddr, wpAddr, wpVersion, temporalFrontendAddr, temporalUIAddr)
+	colorBanner = sprint(false, cfg, opts, httpsvcAddr, wpAddr, wpVersion, temporalFrontendAddr, temporalUIAddr)
 }

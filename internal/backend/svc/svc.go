@@ -412,14 +412,15 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 			fx.Invoke(func(cfg *bannerConfig, lc fx.Lifecycle, z *zap.Logger, httpsvc httpsvc.Svc, tclient temporalclient.Client, wp *webplatform.Svc) {
 				HookSimpleOnStart(lc, func() {
 					temporalFrontendAddr, temporalUIAddr := tclient.TemporalAddr()
-					printBanner(cfg, opts, httpsvc.Addr(), wp.Addr(), wp.Version(), temporalFrontendAddr, temporalUIAddr)
+					initBanner(cfg, opts, httpsvc.Addr(), wp.Addr(), wp.Version(), temporalFrontendAddr, temporalUIAddr)
+					fmt.Fprint(os.Stderr, colorBanner)
 				})
 			}),
 		),
 		fx.Invoke(func(muxes *muxes.Muxes, svcConfig *svcConfig) {
 			muxes.NoAuth.Handle("/{$}", http.RedirectHandler(svcConfig.RootRedirect, http.StatusSeeOther))
 			muxes.NoAuth.HandleFunc("/internal/{$}", func(w http.ResponseWriter, r *http.Request) {
-				fmt.Fprint(w, `<html><body>
+				fmt.Fprintf(w, `<html><body>
 	<ul>
 		<li><a href="/internal/id">id</a></li>
 		<li><a href="/internal/version">version</a></li>
@@ -428,7 +429,16 @@ func makeFxOpts(cfg *Config, opts RunOptions) []fx.Option {
 		<li><a href="/internal/readyz">readyz</a></li>
 		<li><a href="/internal/dashboard">dashboard</a></li>
 	</ul>
-</body></html>`)
+
+	<pre>
+%s
+
+ServiceBaseURL: %s
+	</pre>
+</body></html>`,
+					plainBanner,
+					fixtures.ServiceBaseURL(),
+				)
 			})
 
 			muxes.NoAuth.HandleFunc("GET /internal/id", func(w http.ResponseWriter, r *http.Request) {
