@@ -53,6 +53,7 @@ func connStatus(cvars sdkservices.Vars) sdkintegrations.OptFn {
 		if at.Value() == integrations.APIKey {
 			return sdktypes.NewStatus(sdktypes.StatusCodeOK, "Initialized"), nil
 		}
+
 		return sdktypes.NewStatus(sdktypes.StatusCodeError, "Bad auth type"), nil
 	})
 }

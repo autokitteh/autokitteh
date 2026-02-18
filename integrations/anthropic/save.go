@@ -5,6 +5,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"go.autokitteh.dev/autokitteh/integrations"
 	"go.autokitteh.dev/autokitteh/integrations/common"
 	"go.autokitteh.dev/autokitteh/sdk/sdkintegrations"
 	"go.autokitteh.dev/autokitteh/sdk/sdkservices"
@@ -50,7 +51,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vsid := sdktypes.NewVarScopeID(cid)
-	common.SaveAuthType(r, h.vars, vsid)
+	common.SaveAuthType(r.Context(), h.vars, vsid, integrations.APIKey)
 
 	apiKey := r.FormValue("api_key")
 	if apiKey == "" {

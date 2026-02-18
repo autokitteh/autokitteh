@@ -52,7 +52,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	common.SaveAuthType(r, h.vars, sdktypes.NewVarScopeID(cid))
+	common.SaveAuthTypeFromRequest(r, h.vars, sdktypes.NewVarScopeID(cid))
 
 	clientID := r.FormValue("client_id")
 	if clientID == "" {

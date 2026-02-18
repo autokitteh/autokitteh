@@ -53,7 +53,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	l = l.With(zap.String("connection_id", cid.String()))
 	vsid := sdktypes.NewVarScopeID(cid)
-	common.SaveAuthType(r, h.vars, vsid)
+	common.SaveAuthTypeFromRequest(r, h.vars, vsid)
 
 	apiKey := r.FormValue("api_key")
 	if apiKey == "" {

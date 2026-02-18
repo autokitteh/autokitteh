@@ -50,7 +50,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 
 	// Determine what to save and how to proceed.
 	vsid := sdktypes.NewVarScopeID(cid)
-	authType := common.SaveAuthType(r, h.vars, vsid)
+	authType := common.SaveAuthTypeFromRequest(r, h.vars, vsid)
 	l = l.With(zap.String("auth_type", authType))
 
 	switch authType {

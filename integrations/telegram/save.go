@@ -88,7 +88,7 @@ func (h handler) handleSave(w http.ResponseWriter, r *http.Request) {
 		WebhookURL:  webhookURL,
 	}
 
-	common.SaveAuthType(r, h.vars, vsid)
+	common.SaveAuthTypeFromRequest(r, h.vars, vsid)
 	vars := sdktypes.EncodeVars(telegramVars)
 	if err := h.vars.Set(r.Context(), vars.WithScopeID(vsid)...); err != nil {
 		l.Error("save connection: failed to save connection variables", zap.Error(err))

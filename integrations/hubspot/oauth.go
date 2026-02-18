@@ -72,7 +72,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	vsid := sdktypes.NewVarScopeID(cid)
-	common.SaveAuthType(r, h.vars, vsid)
+	common.SaveAuthTypeFromRequest(r, h.vars, vsid)
 
 	// Get portal ID
 	accountURL := "https://api.hubapi.com/integrations/v1/me"

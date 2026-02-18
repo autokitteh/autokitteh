@@ -100,12 +100,15 @@ func ReadAuthType(vs sdktypes.Vars) string {
 	return vs.GetValue(AuthTypeVar)
 }
 
-// SaveAuthType saves the authentication type that the user selected for a connection.
+// SaveAuthTypeFromRequest saves the authentication type that the user selected for a connection.
 // This will be redundant if/when the only way to initialize connections is via the web UI,
 // therefore we do not care if this function fails to save it as a connection variable.
-func SaveAuthType(r *http.Request, vars sdkservices.Vars, vsid sdktypes.VarScopeID) string {
+func SaveAuthTypeFromRequest(r *http.Request, vars sdkservices.Vars, vsid sdktypes.VarScopeID) string {
 	authType := r.FormValue("auth_type")
-	v := sdktypes.NewVar(AuthTypeVar).SetValue(authType).WithScopeID(vsid)
-	_ = vars.Set(r.Context(), v)
+	_ = SaveAuthType(r.Context(), vars, vsid, authType)
 	return authType
+}
+
+func SaveAuthType(ctx context.Context, vars sdkservices.Vars, vsid sdktypes.VarScopeID, authType string) error {
+	return vars.Set(ctx, sdktypes.NewVar(AuthTypeVar).SetValue(authType).WithScopeID(vsid))
 }
