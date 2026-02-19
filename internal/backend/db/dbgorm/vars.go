@@ -149,14 +149,14 @@ func (db *gormdb) SetVars(ctx context.Context, vars []sdktypes.Var) error {
 			IntegrationID: iid.UUIDValue(),
 		}
 		if err := db.setVar(ctx, &vr); err != nil {
-			return translateError(err)
+			return translateError(db.z, "set_var", err)
 		}
 	}
 	return nil
 }
 
 func (db *gormdb) DeleteVars(ctx context.Context, sid sdktypes.VarScopeID, names []sdktypes.Symbol) error {
-	return translateError(db.deleteVars(ctx, sid.UUIDValue(), kittehs.TransformToStrings(names)...))
+	return translateError(db.z, "delete_vars", db.deleteVars(ctx, sid.UUIDValue(), kittehs.TransformToStrings(names)...))
 }
 
 func (gdb *gormdb) CountVars(ctx context.Context, sid sdktypes.VarScopeID) (int, error) {
@@ -164,7 +164,7 @@ func (gdb *gormdb) CountVars(ctx context.Context, sid sdktypes.VarScopeID) (int,
 
 	var n int64
 	if err := q.Model(&scheme.Var{}).Count(&n).Error; err != nil {
-		return 0, translateError(err)
+		return 0, translateError(gdb.z, "count_vars", err)
 	}
 
 	return int(n), nil
@@ -173,7 +173,7 @@ func (gdb *gormdb) CountVars(ctx context.Context, sid sdktypes.VarScopeID) (int,
 func (db *gormdb) GetVars(ctx context.Context, sid sdktypes.VarScopeID, names []sdktypes.Symbol) ([]sdktypes.Var, error) {
 	dbvs, err := db.listVars(ctx, sid.UUIDValue(), kittehs.TransformToStrings(names)...)
 	if err != nil {
-		return nil, translateError(err)
+		return nil, translateError(db.z, "get_vars", err)
 	}
 
 	return kittehs.TransformError(
@@ -196,7 +196,7 @@ func (db *gormdb) FindConnectionIDsWithActiveDeploymentByVar(ctx context.Context
 
 	ids, err := db.findConnectionIDsWithActiveDeploymentByVar(ctx, iid.UUIDValue(), n.String(), v)
 	if err != nil {
-		return nil, translateError(err)
+		return nil, translateError(db.z, "find_connection_ids_with_active_deployment_by_var", err)
 	}
 
 	return kittehs.TransformError(ids, func(id uuid.UUID) (sdktypes.ConnectionID, error) {

@@ -112,7 +112,7 @@ func (db *gormdb) Connect(ctx context.Context) (err error) {
 	return
 }
 
-func translateError(err error) error {
+func translateError(l *zap.Logger, operation string, err error) error {
 	switch {
 	case err == nil:
 		return nil
@@ -125,6 +125,7 @@ func translateError(err error) error {
 	case errors.Is(err, sdkerrors.ErrNotFound):
 		return err
 	default:
+		l.Error("unhandled database error", zap.String("operation", operation), zap.Error(err))
 		return fmt.Errorf("db: %w", err)
 	}
 }
@@ -179,7 +180,7 @@ func (db *gormdb) seed(ctx context.Context) error {
 
 	db.z.Info("done seeding", zap.Int64("rows_affected", cmd.RowsAffected))
 
-	return translateError(cmd.Error)
+	return translateError(db.z, "seed", cmd.Error)
 }
 
 func (db *gormdb) Setup(ctx context.Context) error {
@@ -250,11 +251,11 @@ func getOne[T any](db *gorm.DB, where string, args ...any) (*T, error) {
 }
 
 // TODO: this not working for deployments. Consider delete this function
-func delete[T any](db *gorm.DB, ctx context.Context, where string, args ...any) error {
+func delete[T any](l *zap.Logger, operation string, db *gorm.DB, ctx context.Context, where string, args ...any) error {
 	var r T
 	result := db.WithContext(ctx).Where(where, args...).Delete(&r)
 	if result.Error != nil {
-		return translateError(result.Error)
+		return translateError(l, operation, result.Error)
 	}
 
 	if result.RowsAffected == 0 {

@@ -204,22 +204,22 @@ func (db *gormdb) CreateDeployment(ctx context.Context, deployment sdktypes.Depl
 		BuildID:      deployment.BuildID().UUIDValue(),
 		State:        int32(deployment.State().ToProto()),
 	}
-	return translateError(db.createDeployment(ctx, &d))
+	return translateError(db.z, "create_deployment", db.createDeployment(ctx, &d))
 }
 
 func (db *gormdb) DeleteDeployment(ctx context.Context, deploymentID sdktypes.DeploymentID) error {
-	return translateError(db.deleteDeployment(ctx, deploymentID.UUIDValue()))
+	return translateError(db.z, "delete_deployment", db.deleteDeployment(ctx, deploymentID.UUIDValue()))
 }
 
 func (db *gormdb) UpdateDeploymentState(ctx context.Context, id sdktypes.DeploymentID, state sdktypes.DeploymentState) (sdktypes.DeploymentState, error) {
 	state, err := db.updateDeploymentState(ctx, id.UUIDValue(), state)
-	return state, translateError(err)
+	return state, translateError(db.z, "update_deployment_state", err)
 }
 
 func (db *gormdb) GetDeployment(ctx context.Context, id sdktypes.DeploymentID) (sdktypes.Deployment, error) {
 	d, err := db.getDeployment(ctx, id.UUIDValue())
 	if d == nil || err != nil {
-		return sdktypes.InvalidDeployment, translateError(err)
+		return sdktypes.InvalidDeployment, translateError(db.z, "get_deployment", err)
 	}
 	return scheme.ParseDeployment(*d)
 }
@@ -228,13 +228,13 @@ func (db *gormdb) ListDeployments(ctx context.Context, filter sdkservices.ListDe
 	if filter.IncludeSessionStats {
 		ds, err := db.listDeploymentsWithStats(ctx, filter)
 		if ds == nil || err != nil {
-			return nil, translateError(err)
+			return nil, translateError(db.z, "list_deployments_with_stats", err)
 		}
 		return kittehs.TransformError(ds, scheme.ParseDeploymentWithSessionStats)
 	} else {
 		ds, err := db.listDeployments(ctx, filter)
 		if ds == nil || err != nil {
-			return nil, translateError(err)
+			return nil, translateError(db.z, "list_deployments", err)
 		}
 		return kittehs.TransformError(ds, scheme.ParseDeployment)
 	}
@@ -281,7 +281,7 @@ AND NOT EXISTS (
 		sdktypes.DeploymentStateInactive.ToInt(), sdktypes.DeploymentStateDraining.ToInt(), finalSessionStateTypes)
 
 	if err := q.Error; err != nil {
-		return 0, translateError(err)
+		return 0, translateError(db.z, "deactivate_all_drained_deployments", err)
 	}
 
 	return int(q.RowsAffected), nil
@@ -300,7 +300,7 @@ AND NOT EXISTS (
 		sdktypes.DeploymentStateInactive.ToInt(), sdktypes.DeploymentStateDraining.ToInt(), did.UUIDValue(), finalSessionStateTypes)
 
 	if err := q.Error; err != nil {
-		return false, translateError(err)
+		return false, translateError(db.z, "deactivate_drained_deployment", err)
 	}
 
 	return int(q.RowsAffected) > 0, nil
