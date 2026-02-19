@@ -28,8 +28,8 @@ var mcpCmd = common.StandardCommand(&cobra.Command{
 			server.WithLogging(),
 		)
 
+		addPrompts(srv)
 		srv.AddTools(tools...)
-		addResources(srv)
 
 		if stdio {
 			if err := server.ServeStdio(srv); err != nil {

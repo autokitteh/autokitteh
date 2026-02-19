@@ -134,24 +134,12 @@ var tools = []server.ServerTool{
 				return mcp.NewToolResultError(err.Error()), nil
 			}
 
-			args, err := getMandatoryParam[[]any](request.Params.Arguments, "resources")
+			rscs, err := readResources(request)
 			if err != nil {
 				return toolResultErrorf("resources: %v", err)
 			}
 
-			type rsc struct {
-				Path string `json:"path"`
-				Data string `json:"data"`
-			}
-
-			var rscs []rsc
-			if err := mapstructure.Decode(args, &rscs); err != nil {
-				return toolResultErrorf("decode resources: %v", err)
-			}
-
-			if err := common.Client().Projects().SetResources(ctx, p.ID(), kittehs.ListToMap(
-				rscs, func(v rsc) (string, []byte) { return v.Path, []byte(v.Data) },
-			)); err != nil {
+			if err := common.Client().Projects().SetResources(ctx, p.ID(), rscs); err != nil {
 				return toolResultErrorf("%v", err)
 			}
 
@@ -1022,6 +1010,123 @@ var tools = []server.ServerTool{
 			return toolResultTextf("Event redispatched as event id %q, started session ids: %q, signaled session ids: %q", resp.EventID, resp.StartedSessionIDs, resp.SignaledSessionIDs)
 		},
 	},
+	{
+		Tool: mcp.NewTool(
+			"apply_project",
+			mcp.WithDescription(`Create or update a project from resources (files). Files must include autokitteh.yaml. autokitteh.yaml must contain the project name.`),
+			mcp.WithArray(
+				"resources",
+				mcp.Title("Resources"),
+				mcp.Description("Resources to set in the project, which are usually code or manifest files and additional data"),
+				mcp.Required(),
+				mcp.Items(map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"path": map[string]any{
+							"type": "string",
+						},
+						"data": map[string]any{
+							"type": "string",
+						},
+					},
+				}),
+			),
+			orgNameArg,
+		),
+		Handler: func(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+			oid, err := resolveOrgArg(ctx, request)
+			if err != nil {
+				return toolResultErrorf("org: %v", err)
+			}
+
+			rscs, err := readResources(request)
+			if err != nil {
+				return toolResultErrorf("resources: %v", err)
+			}
+
+			manifestContent, ok := rscs["autokitteh.yaml"]
+			if !ok {
+				return toolResultErrorf("no autokitteh.yaml found in resources")
+			}
+
+			// remove autokitteh.yaml from resources, it is not needed in the project.
+			delete(rscs, "autokitteh.yaml")
+
+			m, err := manifest.Read(manifestContent)
+			if err != nil {
+				return toolResultErrorf("read manifest: %v", err)
+			}
+
+			var log []string
+
+			logFunc := func(msg string) { log = append(log, msg) }
+
+			acts, err := manifest.Plan(
+				ctx, m, common.Client(),
+				manifest.WithLogger(logFunc),
+				manifest.WithOrgID(oid),
+			)
+			if err != nil {
+				return toolResultErrorf("plan: %v", err)
+			}
+
+			effects, err := manifest.Execute(ctx, acts, common.Client(), logFunc)
+			if err != nil {
+				return toolResultErrorf("apply: %v", err)
+			}
+
+			pids := effects.ProjectIDs()
+			if len(pids) != 1 {
+				return toolResultErrorf("expected exactly one project to be created or updated, got %d", len(pids))
+			}
+
+			if err := common.Client().Projects().SetResources(ctx, pids[0], rscs); err != nil {
+				return toolResultErrorf("set_resources: %v", err)
+			}
+
+			return &mcp.CallToolResult{
+				Content: []mcp.Content{
+					mcp.TextContent{
+						Type: "text",
+						Text: "Manifest applied successfully",
+					},
+					mcp.TextContent{
+						Type: "text",
+						Text: "Log: " + strings.Join(log, "\n"),
+					},
+				},
+			}, nil
+		},
+	},
+}
+
+func readResources(request mcp.CallToolRequest) (map[string][]byte, error) {
+	args, ok := request.Params.Arguments["resources"]
+	if !ok {
+		return nil, errors.New("missing argument")
+	}
+
+	var rscs []map[string]string
+	if err := mapstructure.Decode(args, &rscs); err != nil {
+		return nil, fmt.Errorf("decode: %w", err)
+	}
+
+	resources := make(map[string][]byte, len(rscs))
+	for _, r := range rscs {
+		data, ok := r["data"]
+		if !ok {
+			return nil, fmt.Errorf("missing data in resource %v", r)
+		}
+
+		path, ok := r["path"]
+		if !ok {
+			return nil, fmt.Errorf("missing path in resource %v", r)
+		}
+
+		resources[path] = []byte(data)
+	}
+
+	return resources, nil
 }
 
 func resolveOrgArg(ctx context.Context, request mcp.CallToolRequest) (oid sdktypes.OrgID, err error) {

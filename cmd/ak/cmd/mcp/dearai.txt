@@ -1,0 +1,2669 @@
+Dear AI, this digest is a summary of everything you need to know about AutoKitteh in order to use it effectively.
+
+- OVERVIEW.md contains a general overview about what AutoKitteh is.
+- MODEL.md explains about AutoKitteh's data model.
+- MANIFEST.md details the structure of a manifest which is used to define projects.
+- INTEGRATIONS.md gives a list of supported integrations.
+- CODE.md explains how to write code for projects.
+- pyak/ contains the AutoKitteh Python SDK defintions.
+- integrations/ contains files with integration specific instructions.
+- samples/ contains important code samples.
+
+With ❤️ and 🐈s, The Kittehs.
+
+---
+Directory structure:
+└── dearai/
+    ├── CODE.md
+    ├── INTEGRATIONS.md
+    ├── MANIFEST.md
+    ├── MODEL.md
+    ├── OVERVIEW.md
+    ├── integrations/
+    │   ├── GITHUB.md
+    │   ├── GMAIL.md
+    │   └── SLACK.md
+    ├── pyak/
+    │   ├── __init__.py
+    │   ├── activities.py
+    │   ├── asana.py
+    │   ├── atlassian.py
+    │   ├── attr_dict.py
+    │   ├── auth0.py
+    │   ├── aws.py
+    │   ├── connections.py
+    │   ├── discord.py
+    │   ├── errors.py
+    │   ├── event.py
+    │   ├── events.py
+    │   ├── github.py
+    │   ├── google.py
+    │   ├── height.py
+    │   ├── hubspot.py
+    │   ├── kubernetes.py
+    │   ├── linear.py
+    │   ├── microsoft.py
+    │   ├── oauth2_session.py
+    │   ├── openai.py
+    │   ├── packages.py
+    │   ├── salesforce.py
+    │   ├── signals.py
+    │   ├── slack.py
+    │   ├── twilio.py
+    │   └── zoom.py
+    └── samples/
+        ├── reviewkitteh/
+        │   ├── autokitteh.yaml
+        │   └── program.py
+        └── slack/
+            ├── approval_message.json.txt
+            ├── autokitteh.yaml
+            ├── message.json
+            └── program.py
+
+================================================
+File: CODE.md
+================================================
+
+
+# Code
+
+An AutoKitteh project contains configuration (as described by a manifest) and code.
+The code is Python 3 code.
+
+By default, AutoKitteh makes available the following packages for the program:
+"""
+asana ~= 5.0
+atlassian-python-api ~= 3.41
+auth0-python ~= 4.7
+azure-identity ~= 1.19
+boto3 ~= 1.35
+discord.py ~= 2.5
+google-api-python-client ~= 2.155
+google-auth-httplib2 ~= 0.2
+google-auth-oauthlib ~= 1.2
+google-generativeai ~= 0.8
+hubspot-api-client ~= 11.1
+kubernetes ~= 31.0
+msgraph-sdk ~= 1.18
+openai ~= 1.57
+PyGithub ~= 2.6
+simple-salesforce ~= 1.12
+slack-sdk ~= 3.33
+tenacity ~= 9.0
+twilio ~= 9.4
+beautifulsoup4 ~= 4.12
+grpcio ~= 1.68
+grpcio-reflection ~= 1.68
+PyYAML ~= 6.0
+requests ~= 2.32
+tenacity ~= 9.0
+"""
+
+If the additional packages are required, they can be specified in a `requirements.txt` file.
+
+The following integration names are supported:
+- asana
+- auth0
+- aws
+- chatgpt
+- confluence
+- discord
+- github
+- gmail
+- googlecalendar
+- googledrive
+- googleforms
+- googlegemini
+- googlesheets
+- height
+- hubspot
+- jira
+- slack
+- twilio
+- zoom
+
+
+## Pitfalls
+
+### Function Return Value Must Be Pickleable
+
+We use pickle to pass function arguments back to AutoKitteh to run as an activity. See What can be pickled and unpickled? for supported types. Most notably, the following can't be pickled:
+
+- Open file handlers (when open returns)
+- lambdas
+- Dynamically generated functions (e.g. os.environ.get)
+
+```txtar
+-- bad.py --
+import db
+
+def handler(event):
+    mapper = lambda n: n.lower()
+    db.apply(mapper)  # BAD
+
+-- good.py --
+import db
+
+def mapper(n):
+    return n.lower()
+
+def handler(event):
+    db.apply(mapper)  # GOOD
+```
+
+NOTE: You can use copyreg.pickle in order to support more types.
+
+### Function Timeout
+
+If a function that runs in a workflow context (not in an activity) takes a long time, it might cause a timeout.
+
+Say you have the following code:
+
+```py
+from collections.abc import Sequence
+
+
+class Response(Sequence):
+    def __init__(self, count):
+        self.count = count
+
+    def __len__(self):
+        return self.count
+
+    def __getitem__(self, index):
+        if index >= self.count:
+            raise IndexError
+
+        print("calling server")  # network call, takes time
+        return {
+            'id': index,
+            'level': 'INFO',
+            'message': f'log #{index+1}',
+        }
+
+
+def get_logs(env: str) -> Response:
+    # TODO: Actual code
+    return Response(3)
+
+
+def on_event(event):
+    logs = get_logs(event.data.env)
+    logs = sorted(logs, key=lambda log: log['id'])  # timeout
+    ...  # More code
+```
+
+When the workflow runs, `sorted(logs)` is not in an activity, and will cause a timeout due to network calls in `__getitem__`.
+
+The solution is to place long running code in an activity:
+
+```py
+@autokitteh.activity
+def on_event(event):
+    logs = get_logs(event.data.env)
+    logs = sorted(logs, key=lambda log: log['id'])  # timeout
+    ...  # More code
+```
+
+## SDK
+
+The AutoKitteh SDK is automatically available for import.
+Its documentation can be found at https://autokitteh.readthedocs.io/en/latest/.
+
+### Explicit Activities using the `autokitteh.activity` Decorator
+
+The autokitteh.activity decorator allow you to mark a function that must run as activity. This allows you to run function with arguments or return values that are not compatible with pickle. This is mostly useful when performing IO.
+
+NOTE: The autokitteh module is installed to the default AutoKitteh virtual environment.
+
+Say you have the following code in your handler:
+
+```py
+import json
+from urllib.request import urlopen
+
+
+def handler(event):
+    login = event['login']
+    url = f'https://api.github.com/users/{login}'
+    with urlopen(url) as fp:
+        resp = json.load(fp)
+    print('user name:', resp['name'])
+```
+
+Running this handler will fail since the result of urlopen can't be pickled. What you can do is move the code into a function marked as activity:
+
+```py
+import json
+from urllib.request import urlopen
+
+import autokitteh
+
+
+def handler(event):
+    login = event['login']
+    info = user_info(login)
+    print('user name:', info['name'])
+
+
+@autokitteh.activity
+def user_info(login):
+    url = f'https://api.github.com/users/{login}'
+    with urlopen(url) as fp:
+        resp = json.load(fp)
+    return resp
+```
+
+All the code in user_info runs in a single activity. Since user_info accepts a str and returns a dict, both are pickleable, it can run as activity.
+
+### Starting new child sessions using `autokitteh.start`
+
+A session can start a new child session using the `autokitteh.start` function from the SDK.
+
+```
+autokitteh.start(loc: str, data: dict = None, memo: dict = None) -> str
+```
+
+- `loc` is the code location of the function start, format: "filename:function_name".
+- `data` is the payload to present to that function. It could read this from the `event` parameter as `event.data`.
+- `memo` is a string to string dictionary for general memo fields that will be displayed in the UI.
+
+The function returns the session ID for the newly created session.
+
+Example:
+
+```txtar
+-- main.py --
+
+import autokitteh
+
+def on_whatever(_):
+    autokitteh.start("main.py:say", {"sound": "meow"})
+
+def say(event):
+    print(event.data.sound) # prints "meow"
+```
+
+# Event Structure
+
+Event handler functions receive a single argument of type `autokitteh.Event`. It is recommended this argument to be called `event`:
+
+```py
+from autokitteh import Event
+
+def on_some_trigger(event: Event):
+    ...
+```
+
+The event contains the `session_id` for the session and the event payload in its `data` field.
+
+Each integration has a different event payload format. See details about each integration format in the `integrations/` folder.
+
+---
+sidebar_position: 1
+description: Programmatic event handling
+title: Subscription
+---
+
+# Programmatic Event Handling
+
+## Overview
+
+Triggers are static definitions in AutoKitteh projects to start sessions that
+run Python workflows when certain events are received.
+
+In addition, workflows can receive events programmatically during runtime.
+This page describes how this works.
+
+## Initial Subscription
+
+```py
+import autokitteh
+
+subscription_id = autokitteh.subscribe(connection_or_trigger_name, filter)
+```
+
+### Subscription ID
+
+The `subscribe` function call returns a UUID string that represents a specific
+event source and the exact time of the `subscribe` call. AutoKitteh queues all
+the events from the given event source, starting at this point in time. This
+UUID is used later as a handle to [consume these events](#consuming-events).
+
+### Connection/Trigger Name
+
+Connection and trigger names are defined in the AutoKitteh project. This name
+identifies the desired event source: a specific third-party connection, or an
+HTTP webhook.
+
+### Filter
+
+The filter string is a single-line CEL (Common Expression Language)
+expression. This is identical to the `filter` field in project triggers.
+
+:::tip
+
+Complete reference:
+https://github.com/google/cel-spec/blob/master/doc/langdef.md
+
+:::
+
+CEL conditions may reference `event_type` (same as in project triggers).
+Unlike the `event_type` field in project triggers, a `filter` conditions may
+check more than simple equality, and filters may contain more than a single
+condition. For example:
+
+```js
+// Either 'issue_created' or 'issue_updated' events
+event_type == 'issue_created' || event_type == 'issue_updated'
+
+// Any issue-related events (e.g. issue_created / issue_updated),
+// but not other entities (e.g. page_created / page_updated)
+event_type.startsWith('issue_')
+
+// Any event that relates to a created entity (e.g. issue_created,
+// page_created), but not other categories (e.g. issue_updated)
+event_type.endsWith('_created')
+
+// More sophisticated string checks
+event_type.contains('substring')
+event_type.matches('regular expression')
+```
+
+In addition to event types, filters can also check event payloads. For
+example:
+
+```js
+data.method in ['GET', 'HEAD'] && data.url.path.endsWith('/meow')
+
+size(data.collection_value) < 5 || size(data.string_value) > 10
+
+data.list_value[0].bar == 'bar value of first element in foo list'
+
+data.dictionary_value['key'] != 'value'
+```
+
+:::tip
+
+Data filtering in triggers and subscriptions - when it's possible - is
+preferable to Python checks in handler functions, because it prevents the
+creation of unnecessary sessions.
+
+:::
+
+## Consuming Events
+
+The `next_event` function receives one or more subscription ID strings, which
+were generated by [`subscribe`](#initial-subscription).
+
+This function is blocking, it returns the data of a single event which was
+received after the `subscribe` call(s) that generared the given ID(s). You can
+call `next_event` any number of times.
+
+Event order is not guaranteed, they are served in the same order they were
+received and processed by AutoKitteh.
+
+Example 1 - single subscription ID, without a timeout:
+
+```py
+subscription_id = autokitteh.subscribe(connection_or_trigger_name, filter)
+
+event_data = autokitteh.next_event(subscription_id)
+```
+
+Example 2 - single subscription ID, with a timeout:
+
+```py
+from datetime import timedelta
+
+subscription_id = autokitteh.subscribe(connection_or_trigger_name, filter)
+
+duration = timedelta(seocnds=10)
+event_data = autokitteh.next_event(subscription_id, timeout=duration)
+```
+
+Example 3 - multiple subscription IDs, without a timeout:
+
+```py
+sub_id_1 = autokitteh.subscribe(connection_or_trigger_name, filter)
+sub_id_2 = autokitteh.subscribe(connection_or_trigger_name, filter)
+sub_id_3 = autokitteh.subscribe(connection_or_trigger_name, filter)
+
+event_data = autokitteh.next_event(sub_id_1, sub_id_2, sub_id_3)
+```
+
+Example 4 - multiple subscription IDs, with a timeout:
+
+```py
+from datetime import timedelta
+
+sub1 = autokitteh.subscribe(connection_or_trigger_name, filter)
+sub2 = autokitteh.subscribe(connection_or_trigger_name, filter)
+sub3 = autokitteh.subscribe(connection_or_trigger_name, filter)
+
+duration = timedelta(minutes=1)
+event_data = autokitteh.next_event(sub1, sub2, sub3, timeout=duration)
+```
+
+### Timeout
+
+This is an optional named parameter.
+
+If you don't specify it, the `next_event` call will block forever and keep the
+session running until someone stops the session manually.
+
+When specified, the expected type is a
+[timedelta](https://docs.python.org/3/library/datetime.html#timedelta-objects)
+object.
+
+## Cleanup
+
+When you're no longer interested in receiving events from a specific
+subscription, you may call this function:
+
+```py
+autokitteh.unsubscribe(subscription_id)
+```
+
+:::note
+
+Calling `unsubscribe` is recommended, but not required. Reasonable amounts of
+unused event subscriptions do not burden AutoKitteh, especially when the
+sessions they were created in have ended.
+
+:::
+
+## Example
+
+```py
+from datetime import timedelta
+
+import autokitteh
+
+
+def on_trigger(_):
+    print("Creating an event subscription")
+    filter = "data.method == 'GET' && data.url.path.endswith('/meow')"
+    get_sub = autokitteh.subscribe("webhook_name", filter)
+
+    print("Waiting for an HTTP GET request without a timeout")
+    event_data = autokitteh.next_event(get_sub)
+    print(event_data)
+
+    print("Creating another event subscription")
+    filter = "data.method == 'POST' && data.url.path.endswith('/meow')"
+    post_sub = autokitteh.subscribe("webhook_name", filter)
+
+    print("Waiting for an HTTP GET or POST request with a 1-minute timeout")
+    delta = timedelta(minutes=1)
+    event_data = autokitteh.next_event(get_sub, post_sub, timeout=delta)
+    print(f"Got an HTTP {event_data.method} request: {event_data}")
+
+    print("Canceling all event subscriptions")
+    autokitteh.unsubscribe(get_sub)
+    autokitteh.unsubscribe(post_sub)
+
+    print("Done")
+```
+
+See also this sample project:
+https://github.com/autokitteh/kittehub/tree/main/samples/runtime_events
+
+
+# TODO
+
+
+## Tour of AutoKitteh by Projects
+
+All code listings are in txtar format.
+
+### Minimal Projects
+
+```txtar
+-- autokitteh.yaml --
+version: v1
+
+project:
+  name: minimal
+
+-- program.py --
+# This can be run using a manual invocation.
+def on_trigger(_):
+  print("Meow, World!")
+```
+
+### Long Running Count
+
+```txtar
+-- autokitteh.yaml --
+version: v1
+
+project:
+  name: minimal
+
+vars:
+  - name: N
+    value: 10
+  - name: T
+    value: 1
+
+-- program.py --
+from os import getenv
+from time import sleep
+
+N = int(getenv("N"))
+T = int(getenv("T"))
+
+# This can be run using a manual invocation.
+def on_trigger(_):
+  for i in range(N):
+    print(i)
+    # NOTE: Sleep is "hijacked" by AutoKitteh, and if interrupted
+    #       (such as by the instance going down), will resume
+    #       execution from the same point taking into consideration
+    #       the time already spent sleeping.
+    sleep(T)
+```
+
+### Simple Webhook to Slack
+
+```txtar
+-- autokitteh.yaml --
+version: v1
+
+project:
+  name: webhook_to_slack
+
+  connections:
+    - # A single slack connection to authenticate to Slack.
+      name: slack_conn
+      integration: slack
+
+  triggers:
+    - # A webhook to trigger the session.
+      # Once applied, AutoKitteh will generate a unique URL for this.
+      name: webhook
+      type: webhook
+      call: program.py:on_webhook
+
+  vars:
+    - # Channel to send text to.
+      name: CHANNEL
+      value: "#general"
+
+-- program.py --
+from autokitteh.slack import slack_client
+
+# `slack_client` returns the official slack client.
+# The helper function `slack_client` just initializes the client
+# according to the manifest.
+#
+# NOTE: Since this is done in the global scope, AutoKitteh
+#       WILL NOT run this as an activity. This is a feature
+#       that allows users to make some things always run, even
+#       on replay. Useful for ephemeral client initializations, etc.
+client = slack_client("slack_conn")
+
+# This is triggered when the webhook is hit.
+def on_webhook(event):
+    # `event.data` always contain the event data as sent from the connection.
+
+    # The following is specific for Webhook payloads:
+    payload = event.data.body.json
+    channel = payload.get("channel", CHANNEL)
+    text = payload.get("text", "Meow, World!")
+
+    # NOTE: This WILL run as an activity, as this is a method called
+    #       on an object that was returned from an external package.
+    client.chat_postMessage(channel=channel, text=text)
+```
+
+### Explicit Activities
+
+```txtar
+-- autokitteh.yaml --
+version: v1
+
+project:
+  name: explicit_activites
+
+  vars:
+    - name: SHEET_ID
+      value: <some sheet id>
+
+  connections:
+    - name: sheets_conn
+      integration: googlesheets
+
+-- program.py --
+import autokitteh # The autokitteh module is installed to the default AutoKitteh virtual environment.
+from autokitteh.google import google_sheets_client
+
+# google_sheets_client returns the official Google's client.
+client = google_sheets_client("sheets_conn").spreadsheets().values()
+
+SHEET_ID = getenv("SHEET_ID")
+
+def on_trigger(_):
+  _write()
+
+
+# The autokitteh.activity decorator allow you to mark a function that must run as activity.
+# This allows you to run function with arguments or return values that are not compatible with pickle.
+#
+# The reason why this is neccessary here is that client.update returns
+# an object that is not serializable (or "pickleable"), so we cannot have `update`
+# and `execute` run in separate activities since the data will need to be serialized
+# between their invocations, and thus fail.
+@autokitteh.activity
+def _write():
+   resp = client.update(
+        spreadsheetId=SHEET_ID,
+        range="Sheet1!A1:B7",
+        valueInputOption="USER_ENTERED",
+        body={
+            "values": [
+                ["String", "Hello, world!"],
+                ["Number", -123.45],
+                ["Formula", "=B2*B3"],
+            ]
+        },
+    ).execute()
+
+    print(f"Updated range: {resp['updatedRange']!r}")
+```
+
+
+## General Guidelines
+
+- Each session is running isolated from other sessions:
+  - You cannot, for example, store state in memory and expect another session to access it.
+  - Environment variables are not shared among different sessions as well.
+- For logging, use `print` functions. Currently the `logging` package is not supported.
+- NEVER "invent" new AutoKitteh functions that are not explicitly exist in AutoKitteh's SDK (pyak).
+- AutoKitteh will display uncaught exceptions to the user. Only catch and translate the exception if absolutely neccessary for the user to understand it.
+- When using `autokitteh.subscribe`, no need to `autokitteh.unsubscribe` at the end of the program. These will be done automatically.
+
+
+
+================================================
+File: INTEGRATIONS.md
+================================================
+The following integration names are supported:
+- asana
+- auth0
+- aws
+- chatgpt
+- confluence
+- discord
+- github
+- gmail
+- googlecalendar
+- googledrive
+- googleforms
+- googlegemini
+- googlesheets
+- height
+- hubspot
+- jira
+- slack
+- twilio
+- zoom
+
+
+
+
+================================================
+File: MANIFEST.md
+================================================
+
+
+## Manifest
+
+An AutoKitteh manifest is a yaml or json file that defines how a project is configured.
+It defines the PROJECT, CONNECTIONs, TRIGGERs, and VARIABLEs.
+
+A manifest is "applied" by the user (via CLI, or automatically by the Web Application). When it is applied, it creates or updates the project configuration accordingly.
+
+The manifest is defined according to this schema:
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://go.autokitteh.dev/autokitteh/internal/manifest/manifest",
+  "$ref": "#/$defs/Manifest",
+  "$defs": {
+    "Connection": {
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "integration": {
+          "type": "string"
+        },
+        "vars": {
+          "items": {
+            "$ref": "#/$defs/Var"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "name",
+        "integration"
+      ]
+    },
+    "Manifest": {
+      "properties": {
+        "version": {
+          "type": "string"
+        },
+        "project": {
+          "$ref": "#/$defs/Project"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "version"
+      ]
+    },
+    "Project": {
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "connections": {
+          "items": {
+            "$ref": "#/$defs/Connection"
+          },
+          "type": "array"
+        },
+        "triggers": {
+          "items": {
+            "$ref": "#/$defs/Trigger"
+          },
+          "type": "array"
+        },
+        "vars": {
+          "items": {
+            "$ref": "#/$defs/Var"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object"
+    },
+    "Trigger": {
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "event_type": {
+          "type": "string"
+        },
+        "filter": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "schedule",
+            "webhook",
+            "connection"
+          ]
+        },
+        "schedule": {
+          "type": "string"
+        },
+        "webhook": {
+          "properties": {},
+          "additionalProperties": false,
+          "type": "object"
+        },
+        "connection": {
+          "type": "string"
+        },
+        "call": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "name"
+      ]
+    },
+    "Var": {
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "secret": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false,
+      "type": "object",
+      "required": [
+        "name",
+        "value"
+      ]
+    }
+  }
+}
+```
+
+### Examples
+
+
+
+```yaml
+# This YAML file is a declarative manifest that describes the setup
+# of an AutoKitteh project that demonstrates integration with Auth0.
+
+version: v1
+
+project:
+  name: auth0_sample
+
+  vars:
+    - name: ROLE_ID
+      value:
+    - name: TIME_INTERVAL
+      value: 7d
+
+  connections:
+    - name: auth_conn
+      integration: auth0
+
+  triggers:
+    - name: weekly
+      schedule: 0 0 * * 1
+      call: program.py:weekly_user_growth
+    - name: assign_role_webhook
+      type: webhook
+      event_type: post
+      call: program.py:assign_role
+```
+
+```yaml
+# This YAML file defines a manifest for an AutoKitteh project that
+# creates a Langgraph bot.
+
+version: v1
+
+project:
+  name: Langgraph_Bot
+
+  connections:
+    - name: slack_conn
+      integration: slack
+    - name: sheets_conn
+      integration: googlesheets
+
+  triggers:
+    - name: on_message
+      event_type: app_mention
+      connection: slack_conn
+      call: program.py:on_app_mention
+
+  vars:
+    - name: GOOGLE_API_KEY
+      value: ""
+    - name: TAVILY_API_KEY
+      value: ""
+```
+
+```yaml
+# This YAML file is a declarative manifest that describes the setup
+# of an AutoKitteh project that monitors comments on GitHub issues.
+
+version: v1
+
+project:
+  name: github_issue_alert
+
+  vars:
+    - name: SLACK_CHANNEL_NAME_OR_ID
+      value: github-issues
+
+  connections:
+    - name: slack_conn
+      integration: slack
+    - name: github_conn
+      integration: github
+
+  triggers:
+    - name: on_issue_comment
+      event_type: issue_comment
+      connection: github_conn
+      call: program.py:on_issue_comment
+    - name: on_issue_event
+      event_type: issues
+      connection: github_conn
+      call: program.py:on_issue_event
+```
+
+```yaml
+# This YAML file is a declarative manifest that describes the setup
+# of an AutoKitteh project that logs messages from Discord to a
+# Google Sheets document.
+
+version: v1
+
+project:
+  name: discord_to_spreadsheet
+
+  vars:
+    - name: RANGE_NAME
+      value: Sheet1!A1
+    - name: SPREADSHEET_ID
+      value:
+
+  connections:
+    - name: discord_conn
+      integration: discord
+    - name: googlesheets_conn
+      integration: googlesheets
+
+  triggers:
+    - name: on_discord_message
+      connection: discord_conn
+      event_type: message_create
+      call: program.py:on_discord_message
+```
+
+
+
+
+================================================
+File: MODEL.md
+================================================
+# Model: Entities & Relationships
+
+- PROJECT has RESOURCEs, CONNECTIONs, TRIGGERs, and VARIABLEs as configuration.
+- AutoKitteh supports a number of native INTEGRATIONs.
+- an INTEGRATION is a native implementation of an interface to an external system, such as Linear, Slack, etc.
+- CONNECTION is a connection to a third-party service using an INTEGRATION, such as Slack, JIRA, Linear, etc.
+  a CONNECTION is always associated with an INTEGRATION.
+  a CONNECTION can have mutliple TRIGGERs defined on it.
+- a DEPLOYMENT is a deployed version of a PROJECT.
+- EVENTs are sent by CONNECTIONs. TRIGGERs define what to do with EVENTs. An EVENT consists on JSON formatted data.
+- a SESSION starts when a DEPLOYMENT is triggered by a TRIGGER. a SESSION a workflow being run.
+- RESOURCE is a source code file, but can be also any file type, like a yaml or json files.
+- TRIGGER is a trigger to start a workflow, such as a CONNECTION event, webhook or a SCHEDULE.
+  - WEBHOOK and SCHEDULE triggers do not require a CONNECTION.
+  - CONNECTION event triggers require a CONNECTION.
+- VARIABLE is a key-value pair that is defined in the project and can be used in the workflow.
+
+## Connections
+
+A CONNECTION is created in order to either receive events from an external application (such as Slack, JIRA, etc) or to perform some operation on an external service.
+
+Certain CONNECTIONs need to be initialized after creation in order for them to function. Often, the initialization means establishing authentication with the external application. For example, if creating either a Slack or GitHub connection, the user is expected to initialize the connection using OAuth, which AutoKitteh supplies a UI for for. Another authentication method, in case of Slack or GitHub, can be using a PAT, which AutoKitteh allows to fill in the connection view.
+
+## Triggers
+
+A TRIGGER can be of one of several types.
+
+- Webhook Trigger: when it is created, AutoKitteh generates a unique URL that when it is hit, the trigger will be invoked.
+- Schedule Trigger: runs on a schedule, defined by a cronspec.
+- Connection Trigger: A third party service sends an event, which when the trigger matches the event - it is invoked.
+
+A TRIGGER can include a FILTER defintion in its `filter` field. The FILTER is specified as a Google CEL expression. The CEL expression takes as input the EVENT payload, under the name `data`. The event type will be under the name `event_type`.
+
+A TRIGGER points to a function execute once is is hit and matches optional filter. The method is specified in the format: "filename:method_name", when `filename` is a name of a RESOURCE in the PROJECT.
+
+### Example: Webhook: Only match with POST JSON requests
+
+```
+name: receive_http_post_json
+type: webhook
+event_type: post
+filter: data.headers["Content-Type"].startsWith("application/json")
+call: webhooks.py:on_http_post_json
+```
+
+### Example: Webhook: Only match with GET or POST requests
+
+```
+name: receive_http_get_or_head
+type: webhook
+filter: data.method in ["GET", "HEAD"]
+call: webhooks.py:on_http_get_or_head
+```
+
+### Example: Slack: Only match `interaction` from a specific user id
+
+```
+name: slack_interaction_from_specific_id
+connection: slack_connection
+filter: event_type == 'interaction' && data.user.id == 'SOME_SLACK_ID'
+```
+
+### Example: Slack: Slack command where its text is "break-glass"
+
+```
+name: break_glass_slack_command
+connection: slack_connection
+event_type: slash_command
+call: program.py:on_slack_slash_command
+filter: data.text == "break-glass"
+```
+
+### Example: GitHub: PR action is either "opened" or "reopened"
+
+```
+name: github_pull_request
+connection: github_conn
+event_type: pull_request
+filter: data.action == "opened" || data.action == "reopened"
+call: program.py:on_github_pull_request
+```
+
+### Example: Schedule Triggers
+
+```
+name: weekly
+schedule: "0 0 * * 1"
+call: program.py:weekly_user_growth
+```
+
+```
+name: weekly
+schedule: @every 1w
+call: program.py:weekly_user_growth
+```
+
+# Sessions
+
+SESSIONs are created as a result of a TRIGGER. A session runs the code in the project, according to the TRIGGER defintion. When a SESSION is being ran, a specific function in its code is being invoked. That function receives the EVENT that triggered it via its argument. If the trigger is a schedule trigger, that event is empty.
+
+IMPORTANT: Session invocation is asynchronic. The CONNECTION or TRIGGER invoking the session do not wait for the result of the session. For example, if a WEBHOOK trigger is invoked, it will ALWAYS return a 202 response, regardless what the session does.
+
+NOTE: A Session is running under the hood as a Temporal Workflow. AutoKitteh knows how to break down the project code running in a session into separate Temporal Activities.
+
+
+
+================================================
+File: OVERVIEW.md
+================================================
+# AutoKitteh Overview
+
+AutoKitteh is a "serverless" platform to build and deploy durable workflows.
+Durable workflows are long-running processes that automatically resume after interruptions.
+
+Important Sites:
+
+- https://autokitteh.com for general information about AutoKitteh.
+- https://autokitteh.cloud, a SaaS deployment of autokitteh that is publicly available.
+
+# Durability
+
+AutoKitteh projects run code in a durable, fault-tolerant manner using Temporal (https://temporal.io) under the hood. Temporal ensures reliability by designating non-deterministic code as ACTIVITIES, which cache their results once completed.
+
+When a project fails due to infrastructure issues—such as instance crashes or network problems—Temporal uses a REPLAY mechanism. It reruns the entire workflow from the beginning, but leverages the cached activity results to skip re-executing those parts, allowing them to return immediately.
+AutoKitteh analyzes the Abstract Syntax Tree (AST) of project code to intelligently determine which function calls should run as ACTIVITIES and which should not.
+
+# Operation
+
+There are three ways to configure a project:
+
+1. Using an autokitteh.yaml, which is also known as "the project manifest".
+2. Using the CLI.
+3. Using the Web UI.
+
+# Documentation Adherence Rules
+
+- Only reference commands, APIs, syntax, or procedures that are explicitly mentioned in the provided documentation
+- If specific CLI commands or API calls are not documented, say "the documentation doesn't specify the exact command" rather than inferring or assuming
+- When documentation mentions something exists (like "CLI" or "API") but doesn't provide details, acknowledge the gap rather than filling it with assumptions
+- If you need to reference external knowledge not in the docs, clearly label it as "based on general knowledge, not the provided documentation"
+- Always cite specific sections of the documentation when making claims about how something works
+
+
+
+================================================
+File: integrations/GITHUB.md
+================================================
+# GitHub Integration
+
+## Event Payload
+
+See https://docs.github.com/en/rest/using-the-rest-api/github-event-types?apiVersion=2022-11-28.
+
+
+
+================================================
+File: integrations/GMAIL.md
+================================================
+# gmail Integration
+
+Reacting on gmail state change can be done in either of two ways:
+
+- Polling using a schedule trigger and checking the state, or -
+- Triggering on gmail events.
+
+
+
+================================================
+File: integrations/SLACK.md
+================================================
+# Slack Integration
+
+## Event Payload
+
+See https://api.slack.com/events.
+
+
+
+================================================
+File: pyak/__init__.py
+================================================
+"""AutoKitteh Python SDK."""
+from . import errors
+from .activities import activity, inhibit_activities, register_no_activity
+from .attr_dict import AttrDict
+from .event import Event
+from .events import next_event, start, subscribe, unsubscribe
+from .signals import Signal, next_signal, signal
+__all__ = ['AttrDict', 'Event', 'Signal', 'activity', 'errors',
+    'inhibit_activities', 'next_event', 'next_signal',
+    'register_no_activity', 'signal', 'start', 'subscribe', 'unsubscribe']
+
+
+
+================================================
+File: pyak/activities.py
+================================================
+"""Decorator to mark a function as a Temporal activity."""
+from typing import Callable
+ACTIVITY_ATTR = '__ak_activity__'
+INHIBIT_ACTIVITIES_ATTR = '__ak_inhibit_activities__'
+
+
+def activity(fn: callable) ->callable:
+    """Decorator to mark a function as a Temporal activity.
+
+    This forces AutoKitteh to run the function as a single Temporal activity,
+    instead of a sequence of activities within a Temporal workflow.
+
+    Use this decorator when you want to run functions with input arguments
+    and/or return values that are not compatible with pickle.
+
+    For more details, see:
+    https://docs.python.org/3/library/pickle.html#what-can-be-pickled-and-unpickled
+    """
+    ...
+
+
+def inhibit_activities(fn: callable) ->callable:
+    """Decorator to inhibit the execution of Temporal activities.
+
+    Functions using this decorator will not spawn activities even if otherwise
+    activities should have been launched. This is useful for performing operations
+    that are required to run even on replay (such as various clients creation) and
+    are completely deterministic. The function results are not cached and would be
+    rerun in case of replay.
+
+    CAVEAT: Do not use this on functions that take a long time to run (more than a second),
+    as they will cause the workflow to timeout.
+    """
+    ...
+
+
+_no_activity = set()
+
+
+def register_no_activity(items: list[Callable]) ->None:
+    """Mark items that should not run as activities.
+
+    Items should be callable and hashable. If an item is a class, all methods in the
+    class are marked as non-activities.
+
+    This helps speeding up your code, but you might risk non-deterministic behavior.
+    """
+    ...
+
+
+
+================================================
+File: pyak/asana.py
+================================================
+import os
+import asana
+from .connections import check_connection_name
+from .errors import ConnectionInitError
+
+
+def asana_client(connection: str) ->asana.ApiClient:
+    """Initialize an Asana client, based on an AutoKitteh connection.
+
+    API reference:
+    https://developers.asana.com/docs/python
+
+    Args:
+        connection: AutoKitteh connection name.
+
+    Returns:
+        Asana client.
+
+    Raises:
+        ValueError: AutoKitteh connection name is invalid.
+        ConnectionInitError: AutoKitteh connection was not initialized yet.
+    """
+    ...
+
+
+
+================================================
+File: pyak/atlassian.py
+================================================
+"""Initialize an Atlassian client, based on an AutoKitteh connection."""
+from datetime import UTC, datetime
+import re
+import os
+from atlassian import Confluence, Jira
+from requests_oauthlib import OAuth2Session
+from .connections import check_connection_name
+from .errors import AtlassianOAuthError, ConnectionInitError, EnvVarError
+__TOKEN_URL = 'https://auth.atlassian.com/oauth/token'
+
+
+def jira_client(connection: str, **kwargs) ->Jira:
+    """Initialize an Atlassian Jira client, based on an AutoKitteh connection.
+
+    API reference:
+    https://atlassian-python-api.readthedocs.io/jira.html
+
+    Code samples:
+    https://github.com/atlassian-api/atlassian-python-api/tree/master/examples/jira
+
+    Args:
+        connection: AutoKitteh connection name.
+        **kwargs: Additional keyword arguments passed to the Jira client.
+            Common options include:
+            - 'url': URL of the Jira instance.
+            - 'username': Username for Jira authentication.
+            - 'password': Password for Jira authentication.
+            - 'token': API token for Jira authentication.
+            - 'verify_ssl': Boolean to verify SSL certificates.
+            For a full list of accepted arguments, see:
+            https://github.com/atlassian-api/atlassian-python-api/blob/master/atlassian/rest_client.py#L48
+
+    Returns:
+        Atlassian-Python-API Jira client.
+
+    Raises:
+        ValueError: AutoKitteh connection name is invalid.
+        ConnectionInitError: AutoKitteh connection was not initialized yet.
+        EnvVarError: Required environment variable is missing or invalid.
+    """
+    ...
+
+
+def confluence_client(connection: str, **kwargs) ->Confluence:
+    """Initialize an Atlassian Confluence client, based on an AutoKitteh connection.
+
+    API reference:
+    https://atlassian-python-api.readthedocs.io/confluence.html
+
+    Code samples:
+    https://github.com/atlassian-api/atlassian-python-api/tree/master/examples/confluence
+
+    Args:
+        connection: AutoKitteh connection name.
+
+    Returns:
+        Atlassian-Python-API Confluence client.
+
+    Raises:
+        ValueError: AutoKitteh connection name is invalid.
+        ConnectionInitError: AutoKitteh connection was not initialized yet.
+        EnvVarError: Required environment variable is missing or invalid.
+        AtlassianOAuthError
+    """
+    ...
+
+
+def get_base_url(connection: str) ->(str | None):
+    """Get the base URL of an AutoKitteh connection's Atlassian server.
+
+    Args:
+        connection: AutoKitteh connection name.
+
+    Returns:
+        Base URL of the Atlassian connection, or None if
+        the AutoKitteh connection was not initialized yet.
+
+    Raises:
+        ValueError: AutoKitteh connection name is invalid.
+    """
+    ...
+
+
+
+================================================
+File: pyak/attr_dict.py
+================================================
+"""Helper class to allow attribute access to dictionary keys."""
+
+
+class AttrDict(dict):
+    """Allow attribute access to dictionary keys.
+
+    >>> config = AttrDict({'server': {'port': 8080}, 'debug': True})
+    >>> config.server.port
+    8080
+    >>> config.debug
+    True
+    """
+
+
+
+================================================
+File: pyak/auth0.py
+================================================
+import os
+from .connections import check_connection_name
+from .errors import ConnectionInitError
+from auth0.management import Auth0
+
+
+def auth0_client(connection: str, **kwargs) ->Auth0:
+    """Initialize an Auth0 client, based on an AutoKitteh connection.
+
+    API reference:
+    https://auth0-python.readthedocs.io/en/latest/
+
+    Args:
+        connection: AutoKitteh connection name.
+
+    Returns:
+        Auth0 SDK client.
+
+    Raises:
+        ConnectionInitError: If the connection is not initialized.
+        ValueError: If the connection name is invalid.
+    """
+    ...
+
+
+
+================================================
+File: pyak/aws.py
+================================================
+"""Initialize a Boto3 (AWS SDK) client, based on an AutoKitteh connection."""
+import os
+import boto3
+from .connections import check_connection_name
+
+
+def boto3_client(connection: str, service: str, region: str='', **kwargs):
+    """Initialize a Boto3 (AWS SDK) client, based on an AutoKitteh connection.
+
+    API reference:
+    https://boto3.amazonaws.com/v1/documentation/api/latest/index.html
+
+    Code samples:
+    https://boto3.amazonaws.com/v1/documentation/api/latest/guide/examples.html
+
+    Args:
+        connection: AutoKitteh connection name.
+        service: AWS service name.
+        region: AWS region name.
+
+    Returns:
+        Boto3 client.
+
+    Raises:
+        ValueError: AutoKitteh connection or AWS service/region names are invalid.
+        BotoCoreError: Authentication error.
+    """
+    ...
+
+
+
+================================================
+File: pyak/connections.py
+================================================
+"""AutoKitteh connection-related utilities."""
+from datetime import UTC, datetime
+import re
+
+
+def check_connection_name(connection: str) ->None:
+    """Check that the given AutoKitteh connection name is valid.
+
+    Args:
+        connection: AutoKitteh connection name.
+
+    Raises:
+        ValueError: The connection name is invalid.
+    """
+    ...
+
+
+def encode_jwt(payload: dict[str, int], connection: str, algorithm: str) ->str:
+    """Mock function to generate JWTs, overridden by the AutoKitteh runner."""
+    ...
+
+
+def refresh_oauth(integration: str, connection: str) ->tuple[str, datetime]:
+    """Mock function to refresh OAuth tokens, overridden by the AutoKitteh runner."""
+    ...
+
+
+
+================================================
+File: pyak/discord.py
+================================================
+import os
+import discord
+from .connections import check_connection_name
+from .errors import ConnectionInitError
+
+
+def discord_client(connection: str, intents=None, **kwargs) ->discord.Client:
+    """Initialize a Discord client, based on an AutoKitteh connection.
+
+    API reference:
+    https://discordpy.readthedocs.io/en/stable/api.html
+
+    Args:
+        connection: AutoKitteh connection name.
+        intents: An object representing the events your bot can receive.
+
+    Returns:
+        Discord client.
+
+    Raises:
+        ValueError: AutoKitteh connection name is invalid.
+        ConnectionInitError: AutoKitteh connection was not initialized yet.
+        DiscordException: Connection attempt failed, or connection is unauthorized.
+    """
+    ...
+
+
+def bot_token(connection: str):
+    ...
+
+
+
+================================================
+File: pyak/errors.py
+================================================
+"""AutoKitteh SDK errors."""
+from google.auth.exceptions import RefreshError
+
+
+class AutoKittehError(Exception):
+    """Generic base class for all errors in the AutoKitteh SDK."""
+
+
+class ConnectionInitError(AutoKittehError):
+    """A required AutoKitteh connection was not initialized yet."""
+
+
+class EnvVarError(AutoKittehError):
+    """A required environment variable is missing or invalid."""
+
+
+class OAuthRefreshError(AutoKittehError):
+    """OAuth token refresh failed."""
+
+
+class AtlassianOAuthError(AutoKittehError):
+    """API calls not supported by OAuth-based Atlassian connections."""
+
+
+
+================================================
+File: pyak/event.py
+================================================
+"""AutoKitteh Event class"""
+from dataclasses import dataclass
+from .attr_dict import AttrDict
+
+
+@dataclass
+class Event:
+    """AutoKitteh Event as passed to entrypoints."""
+    data: AttrDict
+    session_id: str
+
+
+
+================================================
+File: pyak/events.py
+================================================
+"""Un/subscribe and consume AutoKitteh connection events."""
+from datetime import timedelta
+from uuid import uuid4
+from .attr_dict import AttrDict
+
+
+def subscribe(source: str, filter: str='') ->str:
+    """Subscribe to events on connection. Optional filter is a CEL expression."""
+    ...
+
+
+def unsubscribe(subscription_id: str) ->None:
+    """Unsubscribe from events."""
+    ...
+
+
+def next_event(subscription_id: (str | list[str]), *, timeout: (timedelta |
+    int | float)=None) ->AttrDict:
+    """Get the next event from the subscription(s).
+
+    If timeout is not None and there are no new events after timeout, this function will
+    return None.
+    """
+    ...
+
+
+def start(loc: str, data: (dict | None)=None, memo: (dict | None)=None,
+    project: str='') ->str:
+    """Start a new session."""
+    ...
+
+
+
+================================================
+File: pyak/github.py
+================================================
+"""Initialize a GitHub client, based on an AutoKitteh connection."""
+import os
+import time
+from urllib.parse import urljoin
+from github import Auth, Consts, Github, GithubIntegration
+from .connections import check_connection_name, encode_jwt
+from .errors import ConnectionInitError
+
+
+def github_client(connection: str, **kwargs) ->Github:
+    """Initialize a GitHub client, based on an AutoKitteh connection.
+
+    API reference and examples: https://pygithub.readthedocs.io/
+
+    Args:
+        connection: AutoKitteh connection name.
+
+    Returns:
+        PyGithub client.
+
+    Raises:
+        ValueError: AutoKitteh connection name or GitHub app IDs are invalid.
+        ConnectionInitError: AutoKitteh connection was not initialized yet.
+    """
+    ...
+
+
+class AppAuth(Auth.AppAuth):
+    """Generate JWTs without exposing the GitHub app's private key.
+
+    Based on: https://github.com/PyGithub/PyGithub/blob/main/github/Auth.py
+    """
+
+    def create_jwt(self, expiration: (int | None)=None) ->str:
+        ...
+
+
+
+================================================
+File: pyak/google.py
+================================================
+"""Initialize Google API clients, based on AutoKitteh connections."""
+from datetime import UTC, datetime
+import json
+import os
+import re
+from google.auth.exceptions import RefreshError
+from google.auth.transport.requests import Request
+import google.generativeai as genai
+import google.oauth2.credentials as credentials
+import google.oauth2.service_account as service_account
+from googleapiclient.discovery import build
+from .connections import check_connection_name, refresh_oauth
+from .errors import ConnectionInitError, OAuthRefreshError
+
+
+def gmail_client(connection: str, **kwargs):
+    """Initialize a Gmail client, based on an AutoKitteh connection.
+
+    API documentation:
+    https://docs.autokitteh.com/integrations/google/gmail/python
+
+    Code samples:
+    - https://github.com/autokitteh/kittehub/tree/main/samples/google/gmail
+    - https://github.com/googleworkspace/python-samples/tree/main/gmail
+
+    Args:
+        connection: AutoKitteh connection name.
+
+    Returns:
+        Gmail client.
+
+    Raises:
+        ValueError: AutoKitteh connection name is invalid.
+        ConnectionInitError: AutoKitteh connection was not initialized yet.
+        OAuthRefreshError: OAuth token refresh failed.
+    """
+    ...
+
+
+def google_calendar_client(connection: str, **kwargs):
+    """Initialize a Google Calendar client, based on an AutoKitteh connection.
+
+    API documentation:
+    https://docs.autokitteh.com/integrations/google/calendar/python
+
+    Code samples:
+    https://github.com/autokitteh/kittehub/tree/main/samples/google/calendar
+
+    Args:
+        connection: AutoKitteh connection name.
+
+    Returns:
+        Google Calendar client.
+
+    Raises:
+        ValueError: AutoKitteh connection name is invalid.
+        ConnectionInitError: AutoKitteh connection was not initialized yet.
+        OAuthRefreshError: OAuth token refresh failed.
+    """
+    ...
+
+
+def google_drive_client(connection: str, **kwargs):
+    """Initialize a Google Drive client, based on an AutoKitteh connection.
+
+    API documentation:
+    https://docs.autokitteh.com/integrations/google/drive/python
+
+    Code samples:
+    https://github.com/googleworkspace/python-samples/tree/main/drive
+
+    Args:
+        connection: AutoKitteh connection name.
+
+    Returns:
+        Google Drive client.
+
+    Raises:
+        ValueError: AutoKitteh connection name is invalid.
+        ConnectionInitError: AutoKitteh connection was not initialized yet.
+        OAuthRefreshError: OAuth token refresh failed.
+    """
+    ...
+
+
+def google_forms_client(connection: str, **kwargs):
+    """Initialize a Google Forms client, based on an AutoKitteh connection.
+
+    API documentation:
+    https://docs.autokitteh.com/integrations/google/forms/python
+
+    Code samples:
+    - https://github.com/autokitteh/kittehub/tree/main/samples/google/forms
+    - https://github.com/googleworkspace/python-samples/tree/main/forms
+
+    Args:
+        connection: AutoKitteh connection name.
+
+    Returns:
+        Google Forms client.
+
+    Raises:
+        ValueError: AutoKitteh connection name is invalid.
+        ConnectionInitError: AutoKitteh connection was not initialized yet.
+        OAuthRefreshError: OAuth token refresh failed.
+    """
+    ...
+
+
+def gemini_client(connection: str, **kwargs) ->genai.GenerativeModel:
+    """Initialize a Gemini generative AI client, based on an AutoKitteh connection.
+
+    API reference:
+    - https://ai.google.dev/gemini-api/docs
+    - https://github.com/google-gemini/generative-ai-python/blob/main/docs/api/google/generativeai/GenerativeModel.md
+
+    Code samples:
+    - https://ai.google.dev/gemini-api/docs#explore-the-api
+    - https://ai.google.dev/gemini-api/docs/text-generation?lang=python
+    - https://github.com/google-gemini/generative-ai-python/tree/main/samples
+    - https://github.com/google-gemini/cookbook
+
+    Args:
+        connection: AutoKitteh connection name.
+
+    Returns:
+        An initialized GenerativeModel instance.
+
+    Raises:
+        ValueError: AutoKitteh connection name is invalid.
+        ConnectionInitError: AutoKitteh connection was not initialized yet.
+    """
+    ...
+
+
+def google_sheets_client(connection: str, **kwargs):
+    """Initialize a Google Sheets client, based on an AutoKitteh connection.
+
+    API documentation:
+    https://docs.autokitteh.com/integrations/google/sheets/python
+
+    Code samples:
+    - https://github.com/autokitteh/kittehub/tree/main/samples/google/sheets
+    - https://github.com/googleworkspace/python-samples/tree/main/sheets
+
+    Args:
+        connection: AutoKitteh connection name.
+
+    Returns:
+        Google Sheets client.
+
+    Raises:
+        ValueError: AutoKitteh connection name is invalid.
+        ConnectionInitError: AutoKitteh connection was not initialized yet.
+        OAuthRefreshError: OAuth token refresh failed.
+    """
+    ...
+
+
+def google_creds(integration: str, connection: str, scopes: list[str], **kwargs
+    ):
+    """Initialize credentials for a Google APIs client, for service discovery.
+
+    This function supports both AutoKitteh connection modes:
+    users (with OAuth 2.0), and GCP service accounts (with a JSON key).
+
+    Code samples:
+    https://github.com/googleworkspace/python-samples
+
+    For subsequent usage details, see:
+    https://googleapis.github.io/google-api-python-client/docs/epy/googleapiclient.discovery-module.html#build
+
+    Args:
+        integration: AutoKitteh integration name.
+        connection: AutoKitteh connection name.
+        scopes: List of OAuth permission scopes.
+
+    Returns:
+        Google API credentials, ready for usage
+        in "googleapiclient.discovery.build()".
+
+    Raises:
+        ValueError: AutoKitteh connection name is invalid.
+        ConnectionInitError: AutoKitteh connection was not initialized yet.
+        OAuthRefreshError: OAuth token refresh failed.
+    """
+    ...
+
+
+def google_id(url: str) ->str:
+    """Extract the Google Doc/Form/Sheet ID from a URL. This function is idempotent.
+
+    Example: 'https://docs.google.com/.../d/1a2b3c4d5e6f/edit' --> '1a2b3c4d5e6f'
+    """
+    ...
+
+
+
+================================================
+File: pyak/height.py
+================================================
+"""Initialize a Height client, based on an AutoKitteh connection."""
+from requests import Session
+from .oauth2_session import OAuth2Session
+
+
+def height_client(connection: str) ->Session:
+    """Initialize an Height client, based on an AutoKitteh connection.
+
+    API reference:
+    https://height-api.xyz/openapi/
+
+    Args:
+        connection: AutoKitteh connection name.
+
+    Returns:
+        Requests session object.
+
+    Raises:
+        ValueError: AutoKitteh connection name is invalid.
+        ConnectionInitError: AutoKitteh connection was not initialized yet.
+    """
+    ...
+
+
+
+================================================
+File: pyak/hubspot.py
+================================================
+"""Initialize a HubSpot client, based on an AutoKitteh connection."""
+import os
+from hubspot import HubSpot
+from .connections import check_connection_name, refresh_oauth
+from .errors import ConnectionInitError, OAuthRefreshError
+
+
+def hubspot_client(connection: str, **kwargs) ->HubSpot:
+    """Initialize a HubSpot client, based on an AutoKitteh connection.
+
+    Args:
+        connection: AutoKitteh connection name.
+
+    Returns:
+        HubSpot SDK client.
+
+    Raises:
+        ValueError: AutoKitteh connection name is invalid.
+        ConnectionInitError: AutoKitteh connection was not initialized yet.
+        OAuthRefreshError: OAuth token refresh failed.
+    """
+    ...
+
+
+
+================================================
+File: pyak/kubernetes.py
+================================================
+import json
+import os
+from types import ModuleType
+from kubernetes import client, config
+from .connections import check_connection_name
+from .errors import ConnectionInitError
+
+
+def kubernetes_client(connection: str) ->ModuleType:
+    """Initialize a Kubernetes client, based on an AutoKitteh connection.
+
+    Args:
+        connection: AutoKitteh connection name.
+
+    Returns:
+        Kubernetes API client.
+
+    Raises:
+        ValueError: AutoKitteh connection name is invalid.
+        ConnectionInitError: If the connection config is missing or invalid,
+            or if an unexpected error occurs during client initialization.
+
+    """
+    ...
+
+
+
+================================================
+File: pyak/linear.py
+================================================
+"""Initialize a Linear client, based on an AutoKitteh connection."""
+from requests import Session
+from .oauth2_session import OAuth2Session
+
+
+def linear_client(connection: str) ->Session:
+    """Initialize a Linear client, based on an AutoKitteh connection.
+
+    API reference:
+    https://linear.app/developers/graphql
+
+    Args:
+        connection: AutoKitteh connection name.
+
+    Returns:
+        Requests session object.
+
+    Raises:
+        ValueError: AutoKitteh connection name is invalid.
+        ConnectionInitError: AutoKitteh connection was not initialized yet.
+    """
+    ...
+
+
+
+================================================
+File: pyak/microsoft.py
+================================================
+"""Initialize Microsoft Graph SDK clients, based on AutoKitteh connections."""
+from datetime import datetime, timedelta, UTC
+import os
+from azure.core import credentials
+from azure import identity
+from msgraph import GraphServiceClient
+from .connections import check_connection_name, refresh_oauth
+from .errors import ConnectionInitError
+DEFAULT_REFRESH_BUFFER_TIME = timedelta(minutes=5)
+
+
+def teams_client(connection: str, **kwargs) ->GraphServiceClient:
+    """Initialize a Microsoft Teams client, based on an AutoKitteh connection.
+
+    API documentation:
+    https://docs.autokitteh.com/integrations/microsoft/teams/python
+
+    Args:
+        connection: AutoKitteh connection name.
+
+    Returns:
+        Microsoft Graph client.
+
+    Raises:
+        ValueError: AutoKitteh connection name or auth type are invalid.
+        ConnectionInitError: AutoKitteh connection was not initialized yet.
+        OAuthRefreshError: OAuth token refresh failed.
+    """
+    ...
+
+
+class OAuthTokenProvider(credentials.TokenCredential):
+    """OAuth 2.0 token wrapper for Microsoft Graph clients."""
+
+    def get_token(self, *scopes: str, **kwargs) ->credentials.AccessToken:
+        ...
+
+
+
+================================================
+File: pyak/oauth2_session.py
+================================================
+import requests
+from os import getenv
+from .connections import refresh_oauth
+from .connections import check_connection_name
+from .errors import ConnectionInitError
+
+
+class OAuth2Session(requests.Session):
+    """Encapsulates arequests session, based on an AutoKitteh connection.
+
+    - Automatically sets the Authorization header with an OAuth token.
+    - Automatically refreshes an OAuth token if a refresh token is
+      initialized in the connection.
+    """
+
+
+
+================================================
+File: pyak/openai.py
+================================================
+"""Initialize an OpenAI client, based on an AutoKitteh connection."""
+import os
+from openai import OpenAI
+from .connections import check_connection_name
+from .errors import ConnectionInitError
+
+
+def openai_client(connection: str) ->OpenAI:
+    """Initialize an OpenAI client, based on an AutoKitteh connection.
+
+    API reference:
+    https://platform.openai.com/docs/api-reference/
+    https://github.com/openai/openai-python/blob/main/api.md
+
+    Args:
+        connection: AutoKitteh connection name.
+
+    Returns:
+        OpenAI API client.
+
+    Raises:
+        ValueError: AutoKitteh connection name is invalid.
+        ConnectionInitError: AutoKitteh connection was not initialized yet.
+        OpenAIError: Connection attempt failed, or connection is unauthorized.
+    """
+    ...
+
+
+
+================================================
+File: pyak/packages.py
+================================================
+import re
+import sys
+from subprocess import run
+
+
+def install(*packages):
+    """Install Python packages using pip.
+
+    A package can be either a package requirement specifier
+    (see https://pip.pypa.io/en/stable/reference/requirement-specifiers/)
+    or a tuple of (package specifier, import name) in case the import name differs from
+    the package name (e.g. Package `pillow` import imported as `PIL`).
+
+    Examples:
+    >>> install('requests', 'numpy')
+    >>> install('requests ~= 2.32', 'numpy == 2.0.0')
+    >>> install(['pillow ~= 10.4', 'PIL'])
+    """
+    ...
+
+
+
+================================================
+File: pyak/salesforce.py
+================================================
+"""Initialize a Salesforce client, based on an AutoKitteh connection."""
+import os
+from simple_salesforce import Salesforce
+from .connections import check_connection_name
+from .errors import ConnectionInitError
+
+
+def salesforce_client(connection: str, **kwargs) ->Salesforce:
+    """Initialize a Salesforce client, based on an AutoKitteh connection.
+
+    Args:
+        connection: AutoKitteh connection name.
+
+    Returns:
+        Salesforce client.
+
+    Raises:
+        ValueError: AutoKitteh connection name is invalid.
+        ConnectionInitError: AutoKitteh connection was not initialized yet.
+        SalesforceApiError: Connection attempt failed, or connection is unauthorized.
+    """
+    ...
+
+
+
+================================================
+File: pyak/signals.py
+================================================
+"""Send and receive signals."""
+from datetime import timedelta
+from dataclasses import dataclass
+
+
+@dataclass
+class Signal:
+    name: str
+    payload: any = None
+
+
+def signal(session_id: str, name: str, payload: any=None) ->None:
+    """Signal a session."""
+    ...
+
+
+def next_signal(name: (str | list[str]), *, timeout: (timedelta | int |
+    float)=None) ->(Signal | None):
+    """Get the next signal."""
+    ...
+
+
+
+================================================
+File: pyak/slack.py
+================================================
+"""Slack client initialization, and other helper functions."""
+import os
+import re
+from slack_sdk.web.client import WebClient
+from .connections import check_connection_name
+from .errors import ConnectionInitError
+
+
+def slack_client(connection: str, **kwargs) ->WebClient:
+    """Initialize a Slack client, based on an AutoKitteh connection.
+
+    API reference:
+    https://slack.dev/python-slack-sdk/api-docs/slack_sdk/web/client.html
+
+    This function doesn't initialize a Socket Mode client because the
+    AutoKitteh connection already has one to receive incoming events.
+
+    Args:
+        connection: AutoKitteh connection name.
+
+    Returns:
+        Slack SDK client.
+
+    Raises:
+        ValueError: AutoKitteh connection name is invalid.
+        ConnectionInitError: AutoKitteh connection was not initialized yet.
+        SlackApiError: Connection attempt failed, or connection is unauthorized.
+    """
+    ...
+
+
+def normalize_channel_name(name: str) ->str:
+    """Convert arbitrary text into a valid Slack channel name.
+
+    See: https://api.slack.com/methods/conversations.create#naming
+
+    Args:
+        name: Desired name for a Slack channel.
+
+    Returns:
+        Valid Slack channel name.
+    """
+    ...
+
+
+
+================================================
+File: pyak/twilio.py
+================================================
+"""Initialize a Twilio client, based on an AutoKitteh connection."""
+import os
+from twilio.rest import Client
+from .connections import check_connection_name
+from .errors import ConnectionInitError
+
+
+def twilio_client(connection: str) ->Client:
+    """Initialize a Twilio client, based on an AutoKitteh connection.
+
+    API reference:
+    https://www.twilio.com/docs/libraries/python
+
+    Args:
+        connection: AutoKitteh connection name.
+
+    Returns:
+        Twilio client.
+
+    Raises:
+        ValueError: AutoKitteh connection name is invalid.
+        ConnectionInitError: AutoKitteh connection was not initialized yet.
+    """
+    ...
+
+
+
+================================================
+File: pyak/zoom.py
+================================================
+"""Initialize a Zoom client, based on an AutoKitteh connection."""
+from requests import Session
+from .oauth2_session import OAuth2Session
+
+
+def zoom_client(connection: str) ->Session:
+    """Initialize a Zoom client, based on an AutoKitteh connection.
+
+    API reference:
+    https://developers.zoom.us/docs/api/
+
+    Args:
+        connection: AutoKitteh connection name.
+
+    Returns:
+        Requests session object.
+
+    Raises:
+        ValueError: AutoKitteh connection name is invalid.
+        ConnectionInitError: AutoKitteh connection was not initialized yet.
+    """
+    ...
+
+
+
+================================================
+File: samples/reviewkitteh/autokitteh.yaml
+================================================
+# This YAML file is a declarative manifest that describes the setup of
+# an AutoKitteh project that integrates GitHub, Google Sheets, and Slack.
+
+version: v1
+
+project:
+  name: reviewkitteh
+
+  vars:
+    - name: SLACK_CHANNEL_ID
+      value:
+    - name: GOOGLE_SHEET_ID
+      value:
+    - name: ORG_DOMAIN
+      value:
+
+  connections:
+    - name: github_conn
+      integration: github
+    - name: googlesheets_conn
+      integration: googlesheets
+    - name: slack_conn
+      integration: slack
+
+  triggers:
+    - name: github_pull_request
+      connection: github_conn
+      event_type: pull_request
+      filter: data.action == "opened" || data.action == "reopened"
+      call: program.py:on_github_pull_request
+
+
+
+================================================
+File: samples/reviewkitteh/program.py
+================================================
+"""Listen for GitHub pull requests and meow at random people.
+
+This program listens for GitHub pull request events and posts a message
+to a Slack channel when a pull request is opened or reopened. It then polls
+the pull request until it is closed or merged, updating the message with the
+current state of the pull request. Every 15 seconds, it also reads a random
+name from a Google Sheet and pages that person in the Slack channel.
+"""
+
+from datetime import datetime, UTC
+import os
+import random
+import time
+
+from autokitteh.github import github_client
+from autokitteh.google import google_sheets_client
+from autokitteh.slack import slack_client
+
+
+CHANNEL_ID = os.getenv("SLACK_CHANNEL_ID", "")
+SHEET_ID = os.getenv("GOOGLE_SHEET_ID", "")
+ORG_DOMAIN = os.getenv("ORG_DOMAIN", "")
+
+github = github_client("github_conn")
+googlesheets = google_sheets_client("googlesheets_conn").spreadsheets().values()
+slack = slack_client("slack_conn")
+
+
+def on_github_pull_request(event):
+    """Workflow's entry-point."""
+    pr = event.data.pull_request
+    msg = f"{pr.html_url} [{pr.state}]"
+    ts = slack.chat_postMessage(channel=CHANNEL_ID, text=msg)["ts"]
+
+    i = 0
+
+    while pr.state not in ("closed", "merged"):
+        _log(f"Polling #{i}")
+        time.sleep(5)
+
+        repo = github.get_repo(event.data.repository.full_name)
+        pr = repo.get_pull(pr.number)
+        msg = f"{pr.html_url} meow [{pr.state}]"
+        slack.chat_update(channel=CHANNEL_ID, ts=ts, text=msg)
+
+        i += 1
+
+        if i % 3 == 0:
+            # Spreadsheet contains a list of usernames.
+            result = googlesheets.get(spreadsheetId=SHEET_ID, range="A1:A5").execute()
+            rows = result.get("values", [])
+            the_chosen_one = random.choice(rows)[0]
+            _log(f"Meowing at {the_chosen_one}")
+
+            user_email = f"{the_chosen_one}@{ORG_DOMAIN}"
+            user = slack.users_lookupByEmail(email=user_email)["user"]
+            msg = f"Paging <@{user['id']}>"
+            slack.chat_postMessage(channel=CHANNEL_ID, text=msg, thread_ts=ts)
+
+
+def _log(msg):
+    print(f"[{datetime.now(UTC)}] {msg}")
+
+
+
+================================================
+File: samples/slack/approval_message.json.txt
+================================================
+[
+    {
+        "type": "header",
+        "text": {
+            "type":  "plain_text",
+            "emoji": true,
+            "text":  "Title"
+        }
+    },
+    {
+        "type": "divider"
+    },
+    {
+        "type": "section",
+        "text": {
+            "type": "mrkdwn",
+            "text": "Message"
+        }
+    },
+    {
+        "type": "divider"
+    },
+    {
+        "type": "actions",
+        "elements": [
+            {
+                "type":  "button",
+                "style": "primary",
+                "text": {
+                    "type":  "plain_text",
+                    "emoji": true,
+                    "text":  "Approve"
+                },
+                "value":     "Approve",
+                "action_id": "Approve ActionID"
+            },
+            {
+                "type":  "button",
+                "style": "danger",
+                "text": {
+                    "type":  "plain_text",
+                    "emoji": true,
+                    "text":  "Deny"
+                },
+                "value":     "Deny",
+                "action_id": "Deny ActionID"
+            }
+        ]
+    }
+]
+
+
+
+================================================
+File: samples/slack/autokitteh.yaml
+================================================
+# This YAML file is a declarative manifest that describes the setup
+# of an AutoKitteh project that demonstrates 2-way integration with
+# Slack (https://slack.com).
+
+version: v1
+
+project:
+  name: slack_sample
+
+  connections:
+    - name: slack_conn
+      integration: slack
+
+  triggers:
+    - name: slack_app_mention
+      connection: slack_conn
+      event_type: app_mention
+      call: program.py:on_slack_app_mention
+    - name: slack_interaction
+      connection: slack_conn
+      event_type: interaction
+      call: program.py:on_slack_interaction
+    - name: slack_message
+      connection: slack_conn
+      event_type: message
+      call: program.py:on_slack_message
+    - name: slack_reaction_added
+      connection: slack_conn
+      event_type: reaction_added
+      call: program.py:on_slack_reaction_added
+    - name: slack_slash_command
+      connection: slack_conn
+      event_type: slash_command
+      call: program.py:on_slack_slash_command
+
+
+
+================================================
+File: samples/slack/message.json
+================================================
+{
+    "blocks": [
+        {
+            "type": "header",
+            "text": {
+                "type": "plain_text",
+                "text": "This is a header block",
+                "emoji": true
+            }
+        },
+        {
+            "type": "divider"
+        },
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": "This is a section block with a button."
+            },
+            "accessory": {
+                "type": "button",
+                "text": {
+                    "type": "plain_text",
+                    "text": "Click Me",
+                    "emoji": true
+                },
+                "value": "click_me_123",
+                "url": "https://google.com",
+                "action_id": "button-action"
+            }
+        }
+    ]
+}
+
+
+
+================================================
+File: samples/slack/program.py
+================================================
+"""This program demonstrates AutoKitteh's 2-way Slack integration.
+
+This program implements multiple entry-point functions that are triggered
+by incoming Slack events, as defined in the "autokitteh-python.yaml"
+manifest file. These functions also execute various Slack API calls.
+
+Events that this program responds to:
+- Mentions of the Slack app in messages (e.g. "Hi @autokitteh")
+- Slash commands registered by the Slack app (`/autokitteh <channel name or ID>`)
+- New and edited messages and replies
+- New emoji reactions
+
+Slack API documentation:
+- Python client API: https://slack.dev/python-slack-sdk/api-docs/slack_sdk/web/client.html
+- Events API reference: https://api.slack.com/events?filter=Events
+
+This program isn't meant to cover all available functions and events.
+It merely showcases a few illustrative, annotated, reusable examples.
+"""
+
+from pathlib import Path
+import time
+
+import autokitteh
+from autokitteh.slack import slack_client
+
+
+def on_slack_app_mention(event):
+    """https://api.slack.com/events/app_mention
+
+    Args:
+        event: Slack event data.
+    """
+    slack = slack_client("slack_conn")
+
+    # Send messages in response to the event:
+    # - DM to the user who triggered the event (channel ID = user ID)
+    # - Two messages to the channel "#slack-test"
+    # See: https://slack.dev/python-slack-sdk/api-docs/slack_sdk/web/client.html#slack_sdk.web.client.WebClient.chat_postMessage
+    text = f"You mentioned me in <#{event.data.channel}> and wrote: `{event.data.text}`"
+    slack.chat_postMessage(channel=event.data.user, text=text)
+
+    text = text.replace("You", f"<@{event.data.user}>")
+    slack.chat_postMessage(channel="#slack-test", text=text)
+
+    text = "Before update :crying_cat_face:"
+    resp = slack.chat_postMessage(channel="#slack-test", text=text)
+
+    # Encountered an error? Print debugging information
+    # in the AutoKitteh session's log, and finish.
+    resp.validate()
+
+    # Update the last sent message, after a few seconds.
+    # See: https://slack.dev/python-slack-sdk/api-docs/slack_sdk/web/client.html#slack_sdk.web.client.WebClient.chat_update
+    time.sleep(10)
+    resp = autokitteh.AttrDict(resp.data)
+    text = "After update :smiley_cat:"
+    resp = slack.chat_update(channel=resp.channel, ts=resp.ts, text=text)
+    resp = autokitteh.AttrDict(resp.data)
+
+    # Reply to the message's thread, after a few seconds.
+    time.sleep(5)
+    text = "Reply before update :crying_cat_face:"
+    resp = slack.chat_postMessage(channel=resp.channel, text=text, thread_ts=resp.ts)
+    resp = autokitteh.AttrDict(resp.data)
+
+    # Update the threaded reply message, after a few seconds.
+    time.sleep(5)
+    text = "Reply after update :smiley_cat:"
+    slack.chat_update(channel=resp.channel, ts=resp.ts, text=text)
+
+    # Add a reaction to the threaded reply message.
+    # See: https://slack.dev/python-slack-sdk/api-docs/slack_sdk/web/client.html#slack_sdk.web.client.WebClient.reactions_add
+    slack.reactions_add(channel=resp.channel, name="blob-clap", timestamp=resp.ts)
+
+    # Retrieve all the replies.
+    # See: https://slack.dev/python-slack-sdk/api-docs/slack_sdk/web/client.html#slack_sdk.web.client.WebClient.conversations_replies
+    resp = slack.conversations_replies(channel=resp.channel, ts=resp.ts)
+
+    # For educational purposes, print all the replies in the AutoKitteh session's log.
+    resp.validate()
+    for text in resp.get("messages", default=[]):
+        print(text)
+
+
+def on_slack_message(event):
+    """https://api.slack.com/events/message
+
+    Args:
+        event: Slack event data.
+    """
+    slack = slack_client("slack_conn")
+
+    if not event.data.subtype:
+        user = f"<@{event.data.user}>"
+        if not event.data.thread_ts:
+            _on_slack_new_message(slack, event.data, user)
+        else:
+            # https://api.slack.com/events/message/message_replied
+            _on_slack_reply_message(slack, event.data, user)
+    elif event.data.subtype == "message_changed":
+        user = f"<@{event.data.message.user}>"  # Not the same as above!
+        _on_slack_message_changed(slack, event.data, user)
+
+
+def _on_slack_new_message(slack, data, user):
+    """Someone wrote a new message."""
+    text = f":point_up: {user} wrote: `{data.text}`"
+    slack.chat_postMessage(channel=data.channel, text=text)
+
+
+def _on_slack_reply_message(slack, data, user):
+    """Someone wrote a reply in a thread."""
+    text = f":point_up: {user} wrote a reply to <@{data.parent_user_id}>: `{data.text}`"
+    ts = data.thread_ts
+    slack.chat_postMessage(channel=data.channel, text=text, thread_ts=ts)
+
+
+def _on_slack_message_changed(slack, data, user):
+    """Someone edited a message."""
+    old, new = data.previous_message.text, data.message.text
+    text = f":point_up: {user} edited a message from `{old}` to `{new}`"
+
+    # Thread TS may or may not be empty, depending on the edited message.
+    thread = data.message.thread_ts
+
+    slack.chat_postMessage(channel=data.channel, text=text, thread_ts=thread)
+
+
+def on_slack_reaction_added(event):
+    """https://api.slack.com/events/reaction_added
+
+    Args:
+        event: Slack event data.
+    """
+    # For educational purposes, print the event data in the AutoKitteh session's log.
+    print(event.data.user)
+    print(event.data.reaction)
+    print(event.data.item)
+
+
+def on_slack_slash_command(event):
+    """https://api.slack.com/interactivity/slash-commands
+
+    See also: https://api.slack.com/interactivity/handling#message_responses
+
+    The text after the slash command is expected to be a valid target for a
+    Slack message (https://api.slack.com/methods/chat.postMessage#channels):
+    Slack user ID ("U"), user DM ID ("D"), multi-person/group DM ID ("G"),
+    channel ID ("C"), or channel name (with or without the "#" prefix).
+
+    Note that all targets except "U", "D" and public channels require
+    the Slack app to be added in advance.
+
+    Args:
+        event: Slack event data.
+    """
+    slack = slack_client("slack_conn")
+
+    # Retrieve the profile information of the user who triggered this event.
+    # See: https://slack.dev/python-slack-sdk/api-docs/slack_sdk/web/client.html#slack_sdk.web.client.WebClient.users_info
+    user_info = slack.users_info(user=event.data.user_id)
+
+    # Encountered an error? Print debugging information
+    # in the AutoKitteh session's log, and finish.
+    user_info.validate()
+
+    profile = autokitteh.AttrDict(user_info.data).user.profile
+    text = f"Slack mention: <@{event.data.user_id}>"
+    slack.chat_postMessage(channel=event.data.user_id, text=text)
+    text = "Full name: " + profile.real_name
+    slack.chat_postMessage(channel=event.data.user_id, text=text)
+    text = "Email: " + profile.email
+    slack.chat_postMessage(channel=event.data.user_id, text=text)
+
+    # Treat the text of the user's slash command as a message target (e.g.
+    # channel or user), and send an interactive message to that target.
+    blocks = Path("approval_message.json.txt").read_text()
+    changes = [
+        ("Title", "Question From " + profile.real_name),
+        ("Message", "Please select one of these options... :smiley_cat:"),
+        ("ActionID", event.data.user_id),
+    ]
+    for old, new in changes:
+        blocks = blocks.replace(old, new)
+
+    slack.chat_postMessage(channel=event.data.text, blocks=blocks)
+
+
+def on_slack_interaction(event):
+    """https://api.slack.com/reference/interaction-payloads/block-actions
+
+    Args:
+        event: Slack event data.
+    """
+    # The Slack ID of the user who sent the question
+    # (we stored this in the buttons' action IDs).
+    action = autokitteh.AttrDict(event.data.actions[0])
+    origin = action.action_id.split()[-1]
+
+    # User selection = action value = button text
+    # (our convention, not Slack's, alternatives: action style/text).
+    text = f"<@{event.data.user.id}> clicked the `{action.value}` button"
+    if action.style == "primary":  # Green button.
+        text += " :+1:"
+    elif action.style == "danger":  # Red button.
+        text += " :-1:"
+
+    slack = slack_client("slack_conn")
+    slack.chat_postMessage(channel=origin, text=text)
+
+
