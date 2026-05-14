@@ -1,6 +1,6 @@
 module go.autokitteh.dev/autokitteh
 
-go 1.24.2
+go 1.25
 
 tool (
 	github.com/golangci/golangci-lint/v2/cmd/golangci-lint
@@ -65,9 +65,9 @@ require (
 	github.com/qri-io/starlib v0.5.0
 	github.com/rs/cors v1.11.1
 	github.com/sashabaranov/go-openai v1.38.2
-	github.com/slack-go/slack v0.16.0
+	github.com/slack-go/slack v0.23.1
 	github.com/spf13/cobra v1.9.1
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	github.com/testcontainers/testcontainers-go v0.37.0
 	github.com/testcontainers/testcontainers-go/modules/postgres v0.37.0
 	github.com/twilio/twilio-go v1.26.2
